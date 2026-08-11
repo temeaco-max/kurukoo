@@ -16,13 +16,10 @@ import contentRoutes from './routes/contentRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
 import pricingRoutes from './routes/pricingRoutes.js';
 import subscriptionRoutes from './routes/subscriptionRoutes.js';
+import healthRoutes from './routes/healthRoutes.js';
 
-// legacyApp historically supplied a sandbox default at module initialization.
-// In production the composition root must override that legacy default so a
-// missing PSP configuration fails closed instead of silently selecting sandbox.
-if (process.env.NODE_ENV === 'production' && process.env.KURUKOO_PAY_PROVIDER === 'sandbox') {
-    delete process.env.KURUKOO_PAY_PROVIDER;
-}
+// Production must never inherit a sandbox payment default from a legacy module.
+if (process.env.NODE_ENV === 'production' && process.env.KURUKOO_PAY_PROVIDER === 'sandbox') delete process.env.KURUKOO_PAY_PROVIDER;
 
 const app = express();
 app.use(express.json({ limit: process.env.CHAT_ATTACHMENT_BODY_LIMIT || '35mb', verify: (req, _res, buf) => { (req as any).rawBody = Buffer.from(buf); } }));
@@ -35,6 +32,7 @@ app.use('/api', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRouter);
 app.use('/api', orderRoutes);
+app.use('/', healthRoutes);
 app.use('/', presenceRoutes);
 app.use('/', discoveryRoutes);
 app.use('/', contentRoutes);
