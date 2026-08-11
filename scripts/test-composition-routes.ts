@@ -9,12 +9,12 @@ const publicSource = await fs.readFile(new URL('../src/routes/publicRoutes.ts', 
 const canonicalImports = [
   'authRoutes','chatRouter','orderRoutes','presenceRoutes','discoveryRoutes','contentRoutes','publicRoutes',
   'pricingRoutes','subscriptionRoutes','channelRoutes','circleRoutes','economicRequestRouter','adminRoutes',
-  'paymentRoutes','userRoutes','taskRoutes','webrtcRoutes','systemRoutes','healthRoutes',
+  'paymentRoutes','userRoutes','taskRoutes','trustRoutes','webrtcRoutes','systemRoutes','healthRoutes',
 ];
 for (const name of canonicalImports) assert.match(indexSource, new RegExp(`from './routes/${name}\\.js'`), `index.ts must import existing ${name}`);
 
 const requiredMounts = [
-  "app.use('/api/auth', authRoutes)","app.use('/api/chat', chatRouter)","app.use('/api', orderRoutes)","app.use('/api', taskRoutes)","app.use('/api/webrtc', webrtcRoutes)","app.use('/', systemRoutes)",
+  "app.use('/api/auth', authRoutes)","app.use('/api/chat', chatRouter)","app.use('/api', userRoutes)","app.use('/api', taskRoutes)","app.use('/api', trustRoutes)","app.use('/api/webrtc', webrtcRoutes)","app.use('/', systemRoutes)",
   "app.use('/', healthRoutes)","app.use('/', presenceRoutes)","app.use('/', discoveryRoutes)","app.use('/', contentRoutes)",
   "app.use('/', publicRoutes)","app.use('/api/pricing', pricingRoutes)","app.use('/api', subscriptionRoutes)",
 ];
@@ -38,6 +38,8 @@ try {
   assert.equal(response.status, 401, 'mounted WebRTC API must reject anonymous callers');
   const docs = await fetch(`http://127.0.0.1:${port}/api/docs`);
   assert.equal(docs.status, 200, 'mounted system router must serve the existing API documentation');
+  const escrow = await fetch(`http://127.0.0.1:${port}/api/escrow`);
+  assert.equal(escrow.status, 401, 'mounted trust API must reject anonymous escrow access');
 } finally {
   await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 }

@@ -61,6 +61,9 @@ Artists/creators are **not a separate economic system**. Artist booking is a cat
 - SMS and Telegram share the canonical channel handler with an identity-aware intent route. SMS normalizes its phone key before persisting messages or creating an Economic Request.
 - Pulse statistics are derived from the shared active-presence service and do not emit fabricated match, dispatch, payment, or escrow events.
 - An unconfigured FCM adapter fails closed and redacts device tokens from logs. It is not described as a delivery confirmation until a real provider adapter is installed.
+- The authenticated trust boundary is mounted at `/api`: a buyer can list only their own escrow records and open an idempotent dispute against only their own order.
+- Opening a dispute freezes the existing held escrow, transitions its linked Economic Request from `completed` to `disputed` during cooling-off, and blocks escrow release. A duplicate open dispute does not create another dispute or escrow ledger row.
+- Generic customer Economic Request transitions cannot set `disputed`; disputes enter only through the buyer-owned trust boundary so escrow freezing is not bypassed.
 
 ## What is intentionally not claimed as implemented
 
@@ -83,6 +86,7 @@ The application does **not** simulate unavailable real-world infrastructure. In 
 ### P1 — architecture and behavioural completeness
 - Complete universal catalogue/inventory matching for catalogue-bearing skills using the existing provider/product data model rather than creating per-skill ordering systems.
 - Expand economic integration tests so each canonical category proves the same lifecycle with category-specific requirements.
+- Implement the Blueprint §15.1 multi-factor trust-score recalculation and `trust_ledger` audit record on provider completion, dispute resolution, and the documented daily pass; the current profile field alone is not evidence that the formula runs.
 - Strengthen attachment storage/access controls before production-scale media uploads.
 - Keep CSS, messaging, services, skills, security and economic audits behavioural rather than presence-only where practical.
 - Keep documentation aligned with the implementation; stale historical claims must not be treated as current architecture.

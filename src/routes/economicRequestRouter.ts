@@ -171,7 +171,7 @@ router.post('/:id/transition', authenticateUser, async (req: AuthRequest, res) =
   // Customers may only request customer-owned lifecycle transitions. Provider/system
   // transitions are performed by the orchestration/payment/provider services.
   const customerAllowed = new Set<EconomicRequestStatus>([
-    'awaiting_confirmation', 'reserved', 'cancelled', 'disputed', 'completed',
+    'awaiting_confirmation', 'reserved', 'cancelled', 'completed',
   ]);
   if (!customerAllowed.has(status)) {
     return res.status(403).json({ success: false, error: 'This lifecycle transition is performed by the economic service layer.' });

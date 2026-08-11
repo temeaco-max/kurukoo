@@ -97,6 +97,7 @@ export async function freezeEscrowForOrder(orderId: string, reason?: string): Pr
     escrowStmt.free();
     if (!escrowId) return false;
     db.run(`UPDATE escrow SET status = 'disputed', dispute_reason = COALESCE(?, dispute_reason) WHERE id = ? AND status = 'held'`, [reason || 'Dispute opened', escrowId]);
+    db.run(`UPDATE orders SET status = 'disputed' WHERE id = ? AND status IN ('escrow_held', 'paid', 'in_fulfillment', 'delivered', 'completed')`, [orderId]);
     saveDb();
     return true;
 }

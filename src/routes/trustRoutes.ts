@@ -12,7 +12,7 @@ import {
   resolveDispute,
   escalateDispute,
 } from '../services/disputeResolution.js';
-import { releaseEscrow, refundEscrow } from '../services/escrow.js';
+import { ensureEscrowSchema, releaseEscrow, refundEscrow } from '../services/escrow.js';
 
 const router = Router();
 
@@ -48,31 +48,69 @@ async function getEscrowParties(escrowId: number): Promise<{ buyer: string; prov
   return parties;
 }
 
-router.post('/dispute/create', authenticateUser, async (req: AuthRequest, res) => {
-  const phone = sessionPhone(req);
-  if (!phone) return res.status(401).json({ error: 'Authentication required' });
-  const order_id = req.body?.order_id || req.body?.orderId;
-  const reason = req.body?.reason;
-  if (!order_id || !reason) return res.status(400).json({ error: 'Missing order_id or reason' });
-  try {
-    const disputeId = await createDispute(phone, String(order_id), String(reason));
-    res.json({ success: true, disputeId, message: 'Dispute submitted successfully.' });
-  } catch {
-    res.status(500).json({ error: 'Failed to create dispute' });
-  }
-});
+async function listBuyerEscrow(phone: string): Promise<Array<Record<string, unknown>>> {
+  const db = await getDb();
+  await ensureEscrowSchema(db);
+  const stmt = db.prepare(`
+    SELECT e.id, e.order_id, e.amount_minor, e.description, e.status, e.created_at, e.cooling_off_until
+    FROM escrow e
+    WHERE e.buyer_phone = ?
+    ORDER BY e.created_at DESC, e.id DESC
+  `);
+  stmt.bind([phone]);
+  const escrows: Array<Record<string, unknown>> = [];
+  while (stmt.step()) escrows.push(stmt.getAsObject() as Record<string, unknown>);
+  stmt.free();
+  return escrows;
+}
 
-router.post('/disputes', authenticateUser, async (req: AuthRequest, res) => {
+function disputeFailureStatus(error: unknown): number {
+  const message = error instanceof Error ? error.message : '';
+  if (message === 'Order not found') return 404;
+  if (message.includes('Only the order buyer') || message.includes('ownership mismatch')) return 403;
+  if (message.includes('No held escrow') || message.includes('Invalid economic request transition')) return 409;
+  return 500;
+}
+
+async function openBuyerDispute(req: AuthRequest, res: any): Promise<void> {
+  const phone = sessionPhone(req);
+  if (!phone) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+  const orderId = req.body?.order_id || req.body?.orderId;
+  const reason = req.body?.reason;
+  if (!orderId || !reason) {
+    res.status(400).json({ error: 'Missing order_id or reason' });
+    return;
+  }
+  try {
+    const opened = await createDispute(phone, String(orderId), String(reason));
+    res.json({
+      success: true,
+      disputeId: opened.disputeId,
+      escrowFrozen: opened.escrowFrozen,
+      economicRequestId: opened.economicRequestId,
+      message: 'Dispute submitted and held escrow frozen.',
+    });
+  } catch (error) {
+    res.status(disputeFailureStatus(error)).json({ error: error instanceof Error ? error.message : 'Failed to create dispute' });
+  }
+}
+
+router.post('/dispute/create', authenticateUser, openBuyerDispute);
+router.post('/disputes', authenticateUser, openBuyerDispute);
+
+router.get('/escrow', authenticateUser, async (req: AuthRequest, res) => {
   const phone = sessionPhone(req);
   if (!phone) return res.status(401).json({ error: 'Authentication required' });
-  const order_id = req.body?.order_id || req.body?.orderId;
-  const reason = req.body?.reason;
-  if (!order_id || !reason) return res.status(400).json({ error: 'Missing order_id or reason' });
+  if (req.query.phone && String(req.query.phone) !== phone) {
+    return res.status(403).json({ error: 'You can only view your own escrow records' });
+  }
   try {
-    const disputeId = await createDispute(phone, String(order_id), String(reason));
-    res.json({ success: true, disputeId, message: 'Dispute submitted successfully.' });
+    res.json(await listBuyerEscrow(phone));
   } catch {
-    res.status(500).json({ error: 'Failed to create dispute' });
+    res.status(500).json({ error: 'Failed to load escrow records' });
   }
 });
 

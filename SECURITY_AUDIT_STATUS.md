@@ -51,6 +51,8 @@ The following are non-negotiable:
 
 Artist, creator, and celebrity requests remain ordinary Economic Requests. Their representation, rider, travel, contract, and negotiation needs are requirements and capabilities in the shared economic skill/lifecycle model rather than a privileged route or transaction architecture.
 
+The authenticated `/api` trust boundary derives buyer identity from the session, lists only the buyer’s escrow records, and rejects cross-user dispute attempts. Opening an idempotent dispute freezes the existing held escrow, records the linked Economic Request as `disputed` during its cooling-off period, and prevents further release while the escrow remains disputed. Generic Economic Request transition endpoints cannot bypass that freeze by setting `disputed` directly.
+
 ## Remaining security work
 
 1. The repository owner must revoke and rotate the credential types exposed in the historical `.env.example` revision, then review relevant provider and GitHub audit logs. Do not test or reuse historical values.
@@ -61,7 +63,8 @@ Artist, creator, and celebrity requests remain ordinary Economic Requests. Their
 6. Integrate provider/identity verification with auditable evidence, expiry and revocation.
 7. Move chat media to protected object storage with malware/content scanning and signed access when production volume warrants it.
 8. Expand cross-channel behavioural security tests from the SMS identity path to web, WhatsApp, Telegram, USSD and email.
-9. Introduce Redis-backed distributed rate limiting/presence and PostgreSQL only when the documented multi-instance transition conditions are met.
+9. Implement the Blueprint §15.1 trust-score recalculation and auditable `trust_ledger` entry after completion, dispute resolution, and the documented daily pass; the existing profile field does not yet prove a live reputation calculation.
+10. Introduce Redis-backed distributed rate limiting/presence and PostgreSQL only when the documented multi-instance transition conditions are met.
 
 ## History-rewrite decision
 
