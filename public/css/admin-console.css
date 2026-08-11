@@ -1,15 +1,17 @@
 :root {
-  --admin-bg: var(--cream, #FDFCFB);
-  --admin-surface: var(--white, #FFFFFF);
-  --admin-surface-muted: var(--gray-50, #F7F5F2);
-  --admin-border: var(--gray-200, #E2DED7);
-  --admin-text: var(--charcoal, #1A1918);
-  --admin-muted: var(--gray-600, #5C574F);
-  --admin-accent: var(--terracotta, #D97A5C);
+  --admin-bg: var(--cream);
+  --admin-surface: var(--white);
+  --admin-surface-muted: var(--gray-50);
+  --admin-border: var(--gray-200);
+  --admin-text: var(--charcoal);
+  --admin-muted: var(--gray-600);
+  --admin-accent: var(--terracotta);
   --admin-accent-hover: #C56548;
   --admin-sidebar: #24211F;
   --admin-sidebar-muted: #C9C2B9;
-  --admin-radius: var(--border-radius, 12px);
+  --admin-danger: #9A3F2B;
+  --admin-focus-ring: rgba(217, 122, 92, 0.28);
+  --admin-radius: var(--border-radius);
   --admin-shadow: 0 8px 24px rgba(26, 25, 24, 0.06);
 }
 
@@ -26,7 +28,7 @@ body.admin-shell {
 }
 
 .admin-shell :where(button, input, textarea, select):focus-visible {
-  outline: 3px solid rgba(217, 122, 92, 0.28);
+  outline: 3px solid var(--admin-focus-ring);
   outline-offset: 2px;
 }
 
@@ -40,7 +42,7 @@ body.admin-shell {
 .admin-shell :where(.btn-action, .btn-primary) {
   background: var(--admin-accent);
   border-color: var(--admin-accent);
-  color: #fff;
+  color: var(--white);
   min-height: 44px;
 }
 
