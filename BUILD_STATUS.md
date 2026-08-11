@@ -56,6 +56,11 @@ Artists/creators are **not a separate economic system**. Artist booking is a cat
 - The existing authenticated WebRTC signaling router is mounted at `/api/webrtc`; its composition test proves anonymous callers are rejected.
 - The existing API documentation asset is served by `systemRoutes` at `/api/docs`; health remains owned solely by `healthRoutes`.
 - Direct client escrow creation is disabled. The reusable ledger requires a non-empty verified payment reference, and the legacy order-finalizer path fails closed rather than creating an unreferenced held ledger.
+- Deferred re-matching uses the shared Economic Request and Open Intention services. A matched provider without a real listed rate leaves the request partially matched; no worker fallback can invent a payable quote.
+- Escrow release awards the bounded canonical job-completion Points reward (1–5), keyed to the released escrow event for idempotency; the monetary escrow amount is never converted into Points.
+- SMS and Telegram share the canonical channel handler with an identity-aware intent route. SMS normalizes its phone key before persisting messages or creating an Economic Request.
+- Pulse statistics are derived from the shared active-presence service and do not emit fabricated match, dispatch, payment, or escrow events.
+- An unconfigured FCM adapter fails closed and redacts device tokens from logs. It is not described as a delivery confirmation until a real provider adapter is installed.
 
 ## What is intentionally not claimed as implemented
 
@@ -81,6 +86,7 @@ The application does **not** simulate unavailable real-world infrastructure. In 
 - Strengthen attachment storage/access controls before production-scale media uploads.
 - Keep CSS, messaging, services, skills, security and economic audits behavioural rather than presence-only where practical.
 - Keep documentation aligned with the implementation; stale historical claims must not be treated as current architecture.
+- Add a real FCM provider and channel fallback/receipt workflow before treating deferred-match or session nudges as delivered notifications.
 
 ### P2 — scale when justified
 - PostgreSQL when concurrent/multi-instance write load requires it.

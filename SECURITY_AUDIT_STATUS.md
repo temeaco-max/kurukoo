@@ -26,7 +26,11 @@
 | Provider verification semantics | ✅/⚠️ | Matching requires an explicit verification flag. Real-world verification evidence/expiry/revocation adapters remain to be integrated. |
 | Location matching | ✅/⚠️ | Provider matching applies the supplied location against stored service-area fields. Precise geospatial/radius matching requires real geocoding/presence data and is not fabricated. |
 | Escrow semantics | ✅/⚠️ | The reusable ledger requires verified payment evidence with a non-empty reference. Direct client creation and the unreferenced legacy order-finalizer write are disabled; real regulated/PSP escrow remains an external integration. |
-| Monetary quote semantics | ✅ | No fake/default monetary quote is generated. Provider-listed rates are labelled indicative; final quotes must be confirmed. |
+| Monetary quote semantics | ✅ | No fake/default monetary quote is generated. Provider-listed rates are labelled indicative; final quotes must be confirmed; deferred re-matching leaves an unpriced match partially matched rather than creating a fallback quote. |
+| Completion Points integrity | ✅ | Released escrow events award the bounded canonical job-completion reward (1–5 Points), not the monetary escrow amount, with a release-event marker preventing duplicate awards. |
+| Cross-channel economic identity | ✅ | The shared SMS/Telegram handler passes the channel-derived identity to the canonical intent router; SMS normalizes its phone key before message or Economic Request persistence. |
+| Pulse statistics truthfulness | ✅ | `/api/stats/pulse` derives only generic active-provider signals from the shared presence service and does not fabricate matched, dispatched, payment, or escrow events. |
+| Push delivery semantics | ⚠️ | The currently unconfigured FCM adapter fails closed and does not log device tokens or report a simulated delivery. A real adapter and channel fallback/receipt flow are still required. |
 | Attachment security | ⚠️ | Authenticated, size-limited uploads exist; production object storage, malware scanning, signed access URLs and retention controls remain recommended before high-volume media use. |
 | Single-instance persistence | ⚠️ | SQL.js remains the launch database. Exports now write to a same-directory temporary file and atomically replace the live file, but the model remains single-process and is not a multi-writer database. |
 | Distributed rate limiting/presence | ⚠️ | Auth, AI, webhook, and payment limits use explicit process-local buckets. They are suitable only for the documented single-instance launch model; Redis becomes necessary when multi-instance coordination is introduced. |
@@ -53,10 +57,11 @@ Artist, creator, and celebrity requests remain ordinary Economic Requests. Their
 2. Track a compatible `@huggingface/transformers` release that upgrades its `sharp` dependency to a fixed version. Do not force an unverified override merely to suppress the audit.
 3. Protect the `main` branch with required passing CI checks, pull requests, and review before relying on CI as a release gate.
 4. Integrate and certify a real PSP before enabling production payment/escrow claims.
-5. Integrate provider/identity verification with auditable evidence, expiry and revocation.
-6. Move chat media to protected object storage with malware/content scanning and signed access when production volume warrants it.
-7. Add cross-channel behavioural security tests for web, WhatsApp, Telegram, SMS, USSD and email.
-8. Introduce Redis-backed distributed rate limiting/presence and PostgreSQL only when the documented multi-instance transition conditions are met.
+5. Integrate a real FCM provider plus a channel fallback and receipt-confirmation workflow before operational notification delivery can be claimed.
+6. Integrate provider/identity verification with auditable evidence, expiry and revocation.
+7. Move chat media to protected object storage with malware/content scanning and signed access when production volume warrants it.
+8. Expand cross-channel behavioural security tests from the SMS identity path to web, WhatsApp, Telegram, USSD and email.
+9. Introduce Redis-backed distributed rate limiting/presence and PostgreSQL only when the documented multi-instance transition conditions are met.
 
 ## History-rewrite decision
 

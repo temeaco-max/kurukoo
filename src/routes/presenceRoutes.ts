@@ -8,16 +8,13 @@ export function createPresenceRouter(): Router {
     const router = express.Router();
 
     router.get('/api/stats/pulse', async (_req, res) => {
-        const pulses = [
-            { text: 'Rider matched with a nearby food order • Escrow protected', age: 'Just now' },
-            { text: 'Mechanic dispatched to a vehicle repair request • Compatible part verified', age: '1m ago' },
-            { text: 'Caterer matched with a family meal request', age: '2m ago' },
-            { text: 'Event guard booking confirmed', age: '4m ago' },
-            { text: 'Utility payment successfully completed', age: '6m ago' },
-            { text: 'Delivery provider dispatched for a local request', age: '8m ago' },
-            { text: 'Plumber matched with a residential repair request', age: '11m ago' },
-        ];
-        res.json({ success: true, pulses });
+        const providers = await getActivePulseProviders();
+        const pulses = providers.map((provider: any) => ({
+            text: `${provider.source === 'mobile' ? 'Mobile' : 'Stationary'} provider active on Pulse`,
+            age: 'Live',
+            source: provider.source,
+        }));
+        res.json({ success: true, activeProviderCount: providers.length, pulses });
     });
 
     const sessionPhone = (req: AuthRequest): string | null => req.user?.phone ? String(req.user.phone) : null;

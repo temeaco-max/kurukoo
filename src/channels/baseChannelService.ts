@@ -36,7 +36,7 @@ export abstract class BaseChannelHandler {
                 metadata: { channel: this.channelName, inbound: true, ...meta }
             });
 
-            const routing = await routeIntent(text);
+            const routing = await routeIntent(text, phone);
             const reply = `${routing.reply}`;
 
             await appendChatMessage({

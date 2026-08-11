@@ -9,7 +9,7 @@ class SmsHandler extends BaseChannelHandler {
         if (!rawPhone || !text.trim()) return null;
         const phone = String(rawPhone).trim();
         const normalizedPhone = phone.startsWith('+') ? phone : `+${phone}`;
-        return { phone, text: String(text).trim() };
+        return { phone: normalizedPhone, text: String(text).trim() };
     }
 
     protected async sendReply(phone: string, reply: string): Promise<void> {

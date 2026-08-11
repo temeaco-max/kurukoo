@@ -33,26 +33,28 @@ async function safe(label: string, fn: () => Promise<unknown>): Promise<void> {
 }
 
 /** Advance linked economic_request to quoted so storefront resume shows the match. */
-async function quoteLinkedEconomicRequest(
+type DeferredEconomicProgress = 'quoted' | 'matched_without_quote' | 'not_linked' | 'not_eligible';
+
+async function progressLinkedEconomicRequest(
   economicRequestId: string | null | undefined,
   provider: { phone: string; name: string; rating: number; hourly_rate: number }
-): Promise<boolean> {
-  if (!economicRequestId) return false;
+): Promise<DeferredEconomicProgress> {
+  if (!economicRequestId) return 'not_linked';
   const req = await getEconomicRequest(String(economicRequestId));
-  if (!req) return false;
-  if (!['requested', 'awaiting_match', 'partially_matched', 'matched', 'quoting'].includes(req.status)) {
-    return false;
+  if (!req || !['requested', 'awaiting_match', 'partially_matched', 'matched', 'quoting'].includes(req.status)) {
+    return 'not_eligible';
   }
-  const amountMinor = provider.hourly_rate > 0 ? Math.round(provider.hourly_rate) : 500;
   try {
     if (req.status === 'requested' || req.status === 'awaiting_match' || req.status === 'partially_matched') {
-      try {
-        await transitionEconomicRequest(req.id, 'matched', { providerPhone: provider.phone });
-      } catch { /* may already be matched */ }
+      await transitionEconomicRequest(req.id, 'matched', { providerPhone: provider.phone });
     }
-    try {
-      await transitionEconomicRequest(req.id, 'quoting');
-    } catch { /* */ }
+
+    const amountMinor = Math.round(Number(provider.hourly_rate));
+    if (!Number.isInteger(amountMinor) || amountMinor <= 0) {
+      return 'matched_without_quote';
+    }
+
+    await transitionEconomicRequest(req.id, 'quoting');
     await transitionEconomicRequest(req.id, 'quoted', {
       providerPhone: provider.phone,
       quote: {
@@ -62,10 +64,10 @@ async function quoteLinkedEconomicRequest(
         rating: provider.rating,
       },
     });
-    return true;
+    return 'quoted';
   } catch (e) {
-    console.warn('[Worker:deferred] quoteLinkedEconomicRequest failed:', e);
-    return false;
+    console.warn('[Worker:deferred] progressLinkedEconomicRequest failed:', e);
+    return 'not_eligible';
   }
 }
 
@@ -73,7 +75,7 @@ async function quoteLinkedEconomicRequest(
  * Re-check deferred open intentions that are due (Blueprint §4.1.3).
  * On match: resolve intention, quote linked economic_request, notify via FCM.
  */
-async function processDueDeferred(): Promise<{ checked: number; matched: number; notified: number; quoted: number }> {
+export async function processDueDeferred(): Promise<{ checked: number; matched: number; notified: number; quoted: number }> {
   const due = await getDueIntentions(50);
   let matched = 0;
   let notified = 0;
@@ -101,20 +103,26 @@ async function processDueDeferred(): Promise<{ checked: number; matched: number;
       const linkedId = intention.economic_request_id
         ? String(intention.economic_request_id)
         : null;
-      if (linkedId) {
-        const ok = await quoteLinkedEconomicRequest(linkedId, top);
-        if (ok) quoted += 1;
-      }
+      const progress = await progressLinkedEconomicRequest(linkedId, top);
+      if (progress === 'quoted') quoted += 1;
 
-      await resolveOpenIntention(
-        phone,
-        intention.id,
-        'provider_matched',
-        note,
-        `Open chat and continue with ${skill}`
-      ).catch(async () => {
-        await markPartiallyMatched(phone, intention.id, note).catch(() => null);
-      });
+      if (progress === 'matched_without_quote') {
+        await markPartiallyMatched(
+          phone,
+          intention.id,
+          `${note}. A final provider quote is still required before any payment step.`
+        );
+      } else {
+        await resolveOpenIntention(
+          phone,
+          intention.id,
+          'provider_matched',
+          note,
+          `Open chat and continue with ${skill}`
+        ).catch(async () => {
+          await markPartiallyMatched(phone, intention.id, note).catch(() => null);
+        });
+      }
 
       const pushed = await sendFcmPush(
         phone,

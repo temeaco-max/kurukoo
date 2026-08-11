@@ -130,9 +130,10 @@ export async function spendPoints(phone: string, amount: number, feature: string
 
 export async function awardDailyEngagement(phone: string): Promise<void> { await addPoints(phone, POINTS_AWARDS.DAILY_ENGAGEMENT, 'Daily engagement bonus'); }
 export async function awardReferral(phone: string): Promise<void> { await addPoints(phone, POINTS_AWARDS.REFERRAL, 'Referral reward (new subscriber)'); }
-export async function awardJobCompletion(phone: string, rating = 5): Promise<void> {
+export async function awardJobCompletion(phone: string, rating = 5, eventMarker?: string): Promise<void> {
     const clamped = Math.max(POINTS_AWARDS.JOB_COMPLETION_MIN, Math.min(POINTS_AWARDS.JOB_COMPLETION_MAX, Math.round(rating)));
-    await addPoints(phone, clamped, `Job completion bonus (${clamped})`);
+    const marker = eventMarker ? ` [${eventMarker}]` : '';
+    await addPoints(phone, clamped, `Job completion bonus (${clamped})${marker}`);
 }
 export async function awardStarBonus(phone: string): Promise<void> { await addPoints(phone, POINTS_AWARDS.STAR_BONUS, '5-star rating bonus'); }
 
