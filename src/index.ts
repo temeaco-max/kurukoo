@@ -1,6 +1,5 @@
 /** Kurukoo composition root. */
 import express from 'express';
-import { registerLegacyRoutes } from './legacyApp.js';
 import channelRoutes from './routes/channelRoutes.js';
 import circleRoutes from './routes/circleRoutes.js';
 import economicRequestRouter from './routes/economicRequestRouter.js';
@@ -32,12 +31,6 @@ app.use('/api', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRouter);
 app.use('/api', orderRoutes);
-
-// Health check must remain in the composition root.
-app.get('/health', (req, res) => {
-    res.json({ status: 'healthy', timestamp: new Date().toISOString() });
-});
-
 app.use('/', healthRoutes);
 app.use('/', presenceRoutes);
 app.use('/', discoveryRoutes);
@@ -45,12 +38,6 @@ app.use('/', contentRoutes);
 app.use('/', publicRoutes);
 app.use('/api/pricing', pricingRoutes);
 app.use('/api', subscriptionRoutes);
-
-// Remaining legacy/public routes are still registered incrementally. Existing
-// boundaries above intentionally stay mounted first so duplicate legacy
-// handlers cannot become the primary implementation. Routes not covered by an
-// existing canonical module remain owned by legacyApp until parity is proven.
-registerLegacyRoutes(app);
 
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || '0.0.0.0';
