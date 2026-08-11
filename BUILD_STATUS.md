@@ -1,10 +1,10 @@
 # Kurukoo — Current Build Status
 
-**Status:** Economic OS safety/consolidation refactor merged to `main`; follow-up hardening and real-world integration work continues.
+**Status:** Economic OS safety/consolidation refactor merged to `main`; legacy composition cleanup is now implemented on the follow-up branch and awaiting CI/merge.
 **Blueprint:** `BLUEPRINT.md` v5.62 (with the current implementation clarifications below)
 **Date:** 2026-08-11
-**Current main merge:** `a940503976db3a364f2eabcb82ff3d7ddf51c00e`
-**Merged PR:** #1 — `fix: enforce truthful Economic OS lifecycle`
+**Current main merge:** `397e038ddeb22f392598f6ecbd9a783be88239f9`
+**Follow-up:** `refactor/remove-legacy-app-boundary`
 
 ## Current architecture
 
@@ -28,6 +28,17 @@ Real-world execution
 
 Artists/creators are **not a separate economic system**. Artist booking is a category-specific policy adapter over the shared Economic Request lifecycle. Representation verification, technical riders, contracts, travel and negotiation are requirements/capabilities of that request.
 
+## Composition architecture
+
+`src/index.ts` is the composition root only. Route responsibilities are explicit modules under `src/routes/`:
+
+- `seoRoutes.ts` — redirects, robots, llms and public sitemap/markdown discovery.
+- `publicRoutes.ts` — public rendered pages.
+- `adminUiRoutes.ts` — browser-facing admin page delivery.
+- `adminRoutes.ts` — authenticated admin APIs.
+- Economic, chat, channel, payment, presence, discovery and content APIs remain in their existing route modules.
+- `src/legacyApp.ts` has been removed; no new compatibility boundary should be recreated.
+
 ## Completed in the latest Economic OS refactor
 
 - Canonical skill requirements are consumed from `src/services/skillFlows.ts`; duplicate requirement definitions were removed from the economic request route.
@@ -41,7 +52,6 @@ Artists/creators are **not a separate economic system**. Artist booking is a cat
 - Development/demo providers are not seeded into production databases.
 - CI is read-only and cannot rewrite or push `main`.
 - Customer lifecycle transitions are restricted to customer-owned states; provider/system transitions stay in the service layer.
-- `legacyApp.ts` is a transitional page/SEO boundary rather than a place for new business APIs.
 - `/health` and canonical route modules are wired through the application composition root.
 
 ## What is intentionally not claimed as implemented
@@ -60,7 +70,6 @@ The application does **not** simulate unavailable real-world infrastructure. In 
 - Add real provider/identity verification adapters and evidence/expiry/revocation semantics.
 
 ### P1 — architecture and behavioural completeness
-- Finish deleting any genuinely dead legacy route bodies after extraction coverage proves they are unused.
 - Complete universal catalogue/inventory matching for catalogue-bearing skills using the existing provider/product data model rather than creating per-skill ordering systems.
 - Expand economic integration tests so each canonical category proves the same lifecycle with category-specific requirements.
 - Strengthen attachment storage/access controls before production-scale media uploads.
@@ -78,6 +87,6 @@ Do not introduce infrastructure merely because the blueprint names it. Adopt Pos
 
 ## Verification
 
-The merged Economic OS refactor passed the repository CI suite before merge, including lint, build, route tests, CSS audit, messaging audit, skills audit, economic audit, services audit, security audit, email tests, FastText verification and secret scanning.
+The merged Economic OS refactor passed the repository CI suite before merge. The follow-up composition refactor adds a contract test that requires the legacy app boundary to remain absent and requires SEO/admin browser responsibilities to stay in explicit route modules.
 
 **Rule for future implementation:** Before creating or changing a file, inspect the current repository implementation and confirm that the intended capability does not already exist. Never introduce a second architecture for a capability that already has a canonical implementation.
