@@ -9,8 +9,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/site.css?v=1.2.0">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/github-dark.min.css">
-  <link rel="stylesheet" href="/css/kurukoo-chat.css?v=3">
+  <link rel="stylesheet" href="/css/kurukoo-chat.css?v=6">
 </head>
 <body class="kurukoo-chat-page">
   <div class="chat-shell">
@@ -22,36 +23,15 @@
       <div class="sidebar-context"><div class="context-title">Memory Profile</div><div class="context-copy" id="memory-context">Kurukoo remembers your context here.</div></div>
       <div class="sidebar-bottom"><div class="channel-status"><span class="status-dot"></span> Web <span>•</span> WhatsApp <span>•</span> USSD *7000# <span>•</span> SMS</div><button class="sidebar-link" id="theme-toggle">◐ Appearance</button></div>
     </aside>
-
     <main class="chat-main">
-      <header class="chat-header">
-        <div class="header-left"><button class="icon-btn mobile-only" id="open-sidebar" aria-label="Open sidebar">☰</button><div class="model-name">Kurukoo <span class="model-badge" id="model-badge">Economic OS</span></div></div>
-        <div class="header-right"><span class="connection-status" id="connection-status"><span class="status-dot"></span> Connected</span><button class="points-balance" id="points-balance" title="Kurukoo Points">🪙 <span>0</span> Points</button><button class="icon-btn" id="memory-toggle" aria-label="Show memory profile">◎</button></div>
-      </header>
-
-      <section class="chat-scroll" id="chat-scroll" aria-live="polite"><div class="chat-content" id="chat-content">
-        <div class="welcome" id="welcome"><div class="welcome-mark">K</div><h1>What can I help you get done?</h1><p>One conversation for finding work, buying, earning, coordinating services, and everyday questions.</p><div class="quick-actions" id="quick-actions"><button data-prompt="Book a ride for me">🚗 Ride</button><button data-prompt="Order food near me">🍔 Food</button><button data-prompt="Find a verified repair worker">🔧 Repair</button><button data-prompt="I need emergency help">🏥 Emergency</button><button data-prompt="Help me find a way to earn">⚡ Earn</button></div></div>
-      </div></section>
-
-      <section class="composer-wrap">
-        <div class="deferred-status" id="deferred-status" hidden></div>
-        <div class="composer-quick-actions" id="composer-quick-actions" aria-label="Quick actions"><button data-prompt="Book a ride for me">🚗 Ride</button><button data-prompt="Order food near me">🍔 Food</button><button data-prompt="Find a verified repair worker">🔧 Repair</button><button data-prompt="I need emergency help">🏥 Emergency</button><button data-prompt="Help me find a way to earn">⚡ Earn</button></div>
-        <div class="attachment-preview" id="attachment-preview" hidden></div>
-        <div class="composer"><input type="file" id="file-input" hidden accept="image/*,.pdf,.doc,.docx,.txt,video/mp4,video/webm"><button class="composer-btn" id="attach-file" aria-label="Attach file">＋</button><textarea id="message-input" rows="1" maxlength="12000" placeholder="Message Kurukoo" aria-label="Message Kurukoo"></textarea><button class="composer-btn" id="voice-input" aria-label="Voice input">⌕</button><button class="send-btn" id="send-message" aria-label="Send message">↑</button></div>
-        <div class="composer-footer"><span>Kurukoo can make mistakes. Check important information.</span><span id="channel-footer">Multi-channel Economic OS • *7000# • WhatsApp 7000</span></div>
-      </section>
+      <header class="chat-header"><div class="header-left"><button class="icon-btn mobile-only" id="open-sidebar" aria-label="Open sidebar">☰</button><div class="model-name">Kurukoo <span class="model-badge" id="model-badge">Economic OS</span></div></div><div class="header-right"><span class="connection-status" id="connection-status"><span class="status-dot"></span> Connected</span><button class="points-balance" id="points-balance" title="Kurukoo Points">🪙 <span>0</span> Points</button><button class="icon-btn" id="memory-toggle" aria-label="Show memory profile">◎</button></div></header>
+      <section class="chat-scroll" id="chat-scroll" aria-live="polite"><div class="chat-content" id="chat-content"><div class="welcome" id="welcome"><div class="welcome-mark">K</div><h1>What can I help you get done?</h1><p>One conversation for finding work, buying, earning, coordinating services, and everyday questions.</p><div class="quick-actions" id="quick-actions"><button data-prompt="Book a ride for me">🚗 Ride</button><button data-prompt="Order food near me">🍔 Food</button><button data-prompt="Find a verified repair worker">🔧 Repair</button><button data-prompt="I need emergency help">🏥 Emergency</button><button data-prompt="Help me find a way to earn">⚡ Earn</button></div></div></div></section>
+      <section class="composer-wrap"><div class="deferred-status" id="deferred-status" hidden></div><div class="composer-quick-actions" id="composer-quick-actions" aria-label="Quick actions"><button data-prompt="Book a ride for me">🚗 Ride</button><button data-prompt="Order food near me">🍔 Food</button><button data-prompt="Find a verified repair worker">🔧 Repair</button><button data-prompt="I need emergency help">🏥 Emergency</button><button data-prompt="Help me find a way to earn">⚡ Earn</button></div><div class="attachment-preview" id="attachment-preview" hidden></div><div class="composer"><input type="file" id="file-input" hidden accept="image/*,.pdf,.doc,.docx,.txt,video/mp4,video/webm"><button class="composer-btn" id="attach-file" aria-label="Attach file">＋</button><textarea id="message-input" rows="1" maxlength="12000" placeholder="Message Kurukoo" aria-label="Message Kurukoo"></textarea><button class="composer-btn" id="voice-input" aria-label="Voice input">⌕</button><button class="send-btn" id="send-message" aria-label="Send message">↑</button></div><div class="composer-footer"><span>Kurukoo can make mistakes. Check important information.</span><span id="channel-footer">Multi-channel Economic OS • *7000# • WhatsApp 7000</span></div></section>
     </main>
-
-    <aside class="chat-inspector" id="chat-inspector">
-      <div class="inspector-header"><strong>Kurukoo context</strong><button class="icon-btn" id="close-inspector">×</button></div>
-      <div class="inspector-card"><div class="inspector-label">Points</div><div class="inspector-value" id="inspector-points">0</div><button class="primary-btn" id="topup-points">Top up</button></div>
-      <div class="inspector-card"><div class="inspector-label">Nearby Radar</div><div class="radar-list" id="radar-list"><div class="empty-state">Ask “what’s nearby?” to search.</div></div></div>
-      <div class="inspector-card"><div class="inspector-label">Presence</div><div class="presence-row"><span class="status-dot"></span><span id="presence-label">Available across channels</span></div></div>
-      <div class="inspector-card"><div class="inspector-label">Memory</div><div class="empty-state" id="inspector-memory">Shared from your Memory Profile.</div></div>
-    </aside>
+    <aside class="chat-inspector" id="chat-inspector"><div class="inspector-header"><strong>Kurukoo context</strong><button class="icon-btn" id="close-inspector">×</button></div><div class="inspector-card"><div class="inspector-label">Points</div><div class="inspector-value" id="inspector-points">0</div><button class="primary-btn" id="topup-points">Top up</button></div><div class="inspector-card"><div class="inspector-label">Nearby Radar</div><div class="radar-list" id="radar-list"><div class="empty-state">Ask “what’s nearby?” to search.</div></div></div><div class="inspector-card"><div class="inspector-label">Presence</div><div class="presence-row"><span class="status-dot"></span><span id="presence-label">Available across channels</span></div></div><div class="inspector-card"><div class="inspector-label">Memory</div><div class="empty-state" id="inspector-memory">Shared from your Memory Profile.</div></div></aside>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/lib/common.min.js" defer></script>
-  <script src="/js/kurukoo-primary-chat.js?v=5" defer></script>
+  <script src="/js/kurukoo-primary-chat.js?v=6" defer></script>
 </body>
 </html>
