@@ -3,25 +3,22 @@ dotenv.config();
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
-import { generateReferralCode, trackReferral, claimReferral } from './services/referralService.js';
-import {
-    getRobotsTxt, getLlmsTxt, getSitemapIndex, getChildSitemap,
-    getSeoPage, getFaqForPage, matchRedirect,
-} from './services/seoService.js';
+import { getRobotsTxt, getLlmsTxt, getSitemapIndex, getChildSitemap, getSeoPage, getFaqForPage, matchRedirect } from './services/seoService.js';
 
 // Development/test defaults only. Production must not silently select sandbox.
 if (process.env.NODE_ENV !== 'production' && !process.env.KURUKOO_PAY_PROVIDER) process.env.KURUKOO_PAY_PROVIDER = 'sandbox';
 if (!process.env.CREDIT_ECONOMY_ENABLED) process.env.CREDIT_ECONOMY_ENABLED = 'true';
 console.log(`[Kurukoo Startup] Environment initialized. PORT=${process.env.PORT || 3000}, Pay Provider=${process.env.KURUKOO_PAY_PROVIDER || 'unconfigured'}`);
 
+/**
+ * Transitional legacy boundary.
+ *
+ * Canonical product routes live under src/routes/* and are mounted by
+ * src/index.ts. This module now owns only genuinely transitional page/SEO
+ * infrastructure; do not add new business APIs here.
+ */
 export function registerLegacyRoutes(app: express.Application) {
     app.set('trust proxy', 1);
-
-    // Keep parsing/static/view concerns that have not yet moved to dedicated
-    // route modules. Canonical chat/channel/economic routes are mounted by
-    // src/index.ts and are intentionally not duplicated here.
-    app.use('/api/chat/attachments', express.json({ limit: process.env.CHAT_ATTACHMENT_BODY_LIMIT || '35mb' }));
-    app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
     app.set('view engine', 'ejs');
     app.set('views', path.join(process.cwd(), 'views'));
@@ -86,56 +83,6 @@ export function registerLegacyRoutes(app: express.Application) {
             if (fs.existsSync(filePath)) return res.sendFile(filePath);
         }
         next();
-    });
-
-    // Referral endpoints remain here until the dedicated referral router is
-    // extracted. New platform features must not be added to this legacy group.
-    app.post('/api/referral/code', async (req, res) => {
-        const { phone } = req.body;
-        if (!phone) return res.status(400).json({ error: 'Missing phone' });
-        res.json({ success: true, code: await generateReferralCode(phone) });
-    });
-    app.post('/api/referral/claim', async (req, res) => {
-        const { phone, referral_code } = req.body;
-        if (!phone || !referral_code) return res.status(400).json({ error: 'Missing data' });
-        try {
-            const { findReferrerByCode } = await import('./services/referralService.js');
-            const referrer = await findReferrerByCode(referral_code.trim().toUpperCase());
-            if (!referrer) return res.status(400).json({ error: 'Invalid referral code' });
-            if (referrer === phone) return res.status(400).json({ error: 'You cannot refer yourself' });
-            await trackReferral(referrer, phone, referral_code.trim().toUpperCase());
-            res.json({ success: true, message: 'Referral registered successfully.' });
-        } catch { res.status(500).json({ error: 'Failed to register referral code' }); }
-    });
-    app.post('/api/referral/share-reward', async (req, res) => {
-        const { phone } = req.body;
-        if (!phone) return res.status(400).json({ error: 'Missing phone' });
-        try { const { awardShareReward } = await import('./services/referralService.js'); res.json({ success: true, rewarded: await awardShareReward(phone) }); }
-        catch { res.status(500).json({ error: 'Failed to award sharing reward' }); }
-    });
-    app.post('/api/referral/resolve', async (req, res) => {
-        const { code } = req.body;
-        if (!code) return res.status(400).json({ error: 'Missing code' });
-        try { const { findReferrerByCode } = await import('./services/referralService.js'); const phone = await findReferrerByCode(code.trim().toUpperCase()); res.json(phone ? { success: true, phone } : { success: false, error: 'Invalid referral code' }); }
-        catch { res.status(500).json({ error: 'Failed to resolve referral code' }); }
-    });
-    app.get('/api/referral/stats/:phone', async (req, res) => {
-        const { phone } = req.params;
-        if (!phone) return res.status(400).json({ error: 'Missing phone' });
-        try { const { getReferralStats } = await import('./services/referralService.js'); res.json({ success: true, stats: await getReferralStats(phone) }); }
-        catch { res.status(500).json({ error: 'Failed to get referral stats' }); }
-    });
-    app.post('/api/referral/track', async (req, res) => {
-        const { referrer_phone, referred_phone, referral_code } = req.body;
-        if (!referrer_phone || !referred_phone || !referral_code) return res.status(400).json({ error: 'Missing data' });
-        try { await trackReferral(referrer_phone, referred_phone, referral_code); res.json({ success: true }); }
-        catch { res.status(500).json({ error: 'Failed to track referral' }); }
-    });
-    app.post('/api/referral/claim-reward', async (req, res) => {
-        const { phone, referral_code } = req.body;
-        if (!phone || !referral_code) return res.status(400).json({ error: 'Missing data' });
-        try { res.json({ success: true, result: await claimReferral(phone, referral_code) }); }
-        catch { res.status(500).json({ error: 'Failed to claim referral reward' }); }
     });
 }
 
