@@ -1,7 +1,7 @@
 <!-- Kurukoo Simplified Unified Entry Gateway Modal -->
 <div id="kurukoo-onboarding-modal" class="k-modal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="k-gateway-title">
     <div class="k-modal-card">
-        <button type="button" class="k-modal-close" id="k-modal-close-btn" aria-label="Close modal" onclick="closeKurukooOnboarding()">&times;</button>
+        <button type="button" class="k-modal-close" id="k-modal-close-btn" aria-label="Close modal" data-onboarding-close>&times;</button>
         
         <div class="k-modal-body">
             <div class="k-gateway-header">
@@ -14,7 +14,7 @@
             <div class="k-gateway-channels-section">
                 <label class="k-section-subtitle">Instant Direct Access (1-Click Launch)</label>
                 <div class="k-gateway-channels-grid">
-                    <a href="https://wa.me/2347000?text=Hi%2C%20Kurukoo%20I%20want%20to%20get%20started" target="_blank" class="k-channel-direct-card k-channel-wa" id="gateway-wa-link" onclick="handleChannelClick('whatsapp')">
+                    <a href="https://wa.me/2347000?text=Hi%2C%20Kurukoo%20I%20want%20to%20get%20started" target="_blank" class="k-channel-direct-card k-channel-wa" id="gateway-wa-link" data-onboarding-channel="whatsapp">
                         <div class="k-channel-card-icon">💬</div>
                         <div class="k-channel-card-body">
                             <strong class="k-channel-card-title">WhatsApp 7000</strong>
@@ -23,7 +23,7 @@
                         <span class="k-channel-card-badge">Popular</span>
                     </a>
 
-                    <a href="https://t.me/kurukoo_bot" target="_blank" class="k-channel-direct-card k-channel-tg" id="gateway-tg-link" onclick="handleChannelClick('telegram')">
+                    <a href="https://t.me/kurukoo_bot" target="_blank" class="k-channel-direct-card k-channel-tg" id="gateway-tg-link" data-onboarding-channel="telegram">
                         <div class="k-channel-card-icon">✈️</div>
                         <div class="k-channel-card-body">
                             <strong class="k-channel-card-title">Telegram Bot</strong>
@@ -32,7 +32,7 @@
                         <span class="k-channel-card-badge free-badge">Free</span>
                     </a>
 
-                    <a href="/dashboard.html" class="k-channel-direct-card k-channel-pwa" id="gateway-pwa-link" onclick="handleChannelClick('pwa')">
+                    <a href="/dashboard.html" class="k-channel-direct-card k-channel-pwa" id="gateway-pwa-link" data-onboarding-channel="pwa">
                         <div class="k-channel-card-icon">🌐</div>
                         <div class="k-channel-card-body">
                             <strong class="k-channel-card-title">Web App (PWA)</strong>
@@ -41,7 +41,7 @@
                         <span class="k-channel-card-badge pwa-badge">Recommended</span>
                     </a>
 
-                    <a href="tel:*7000%23" class="k-channel-direct-card k-channel-ussd" id="gateway-ussd-link" onclick="handleChannelClick('ussd')">
+                    <a href="tel:*7000%23" class="k-channel-direct-card k-channel-ussd" id="gateway-ussd-link" data-onboarding-channel="ussd">
                         <div class="k-channel-card-icon">📞</div>
                         <div class="k-channel-card-body">
                             <strong class="k-channel-card-title">Dial *7000#</strong>
@@ -57,7 +57,7 @@
             </div>
 
             <!-- Quick Number Linking Form -->
-            <form id="kurukoo-onboarding-form" class="k-gateway-form" onsubmit="handleOnboardingFormSubmit(event)">
+            <form id="kurukoo-onboarding-form" class="k-gateway-form">
                 <div class="k-form-row">
                     <div class="k-form-col">
                         <label for="k-onboard-name" class="form-label">Full Name <span class="label-optional">(optional)</span></label>
@@ -108,7 +108,9 @@
 
 <script>
     // Unified Entry Gateway Controller
+    let onboardingReturnFocus = null;
     window.openKurukooOnboarding = function(goal, category, originalUrl) {
+        onboardingReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         const modal = document.getElementById('kurukoo-onboarding-modal');
         if (!modal) return;
 
@@ -139,6 +141,7 @@
         modal.classList.add('active');
         modal.setAttribute('aria-hidden', 'false');
         document.body.classList.add('modal-open');
+        requestAnimationFrame(() => document.getElementById('k-modal-close-btn')?.focus());
     };
 
     // Alias for developer convenience
@@ -150,6 +153,7 @@
         modal.classList.remove('active');
         modal.setAttribute('aria-hidden', 'true');
         document.body.classList.remove('modal-open');
+        onboardingReturnFocus?.focus?.();
     };
 
     function handleChannelClick(channel) {
@@ -192,21 +196,31 @@
 
         closeKurukooOnboarding();
 
-        // Redirect to dashboard with context
-        const country = (window.location.pathname.match(/^\/(ng|gh|gb)/) || [])[1] || 'ng';
-        window.location.href = `/${country}/dashboard.html?goal=${encodeURIComponent(goal)}`;
+        // The PWA is served from one canonical public URL; the goal remains query context.
+        window.location.href = `/dashboard.html?goal=${encodeURIComponent(goal)}`;
     }
 
-    // Close on backdrop click & Escape key
-    document.addEventListener('DOMContentLoaded', () => {
+    function bindOnboardingControls() {
         const modal = document.getElementById('kurukoo-onboarding-modal');
-        if (modal) {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) closeKurukooOnboarding();
-            });
-        }
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeKurukooOnboarding();
+        if (!modal || modal.dataset.eventsBound) return;
+        modal.dataset.eventsBound = 'true';
+
+        document.querySelectorAll('[data-onboarding-goal]').forEach(trigger => {
+            trigger.addEventListener('click', () => openKurukooOnboarding(trigger.dataset.onboardingGoal || 'buyer'));
         });
-    });
+        modal.querySelector('[data-onboarding-close]')?.addEventListener('click', closeKurukooOnboarding);
+        modal.querySelectorAll('[data-onboarding-channel]').forEach(link => {
+            link.addEventListener('click', () => handleChannelClick(link.dataset.onboardingChannel));
+        });
+        modal.querySelector('#kurukoo-onboarding-form')?.addEventListener('submit', handleOnboardingFormSubmit);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeKurukooOnboarding();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('active')) closeKurukooOnboarding();
+        });
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindOnboardingControls);
+    else bindOnboardingControls();
 </script>

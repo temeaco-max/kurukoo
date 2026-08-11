@@ -24,7 +24,17 @@ try {
 
   const home = await request(base, '/');
   assert.equal(home.status, 200, 'homepage must render');
-  assert.match(await home.text(), /\/css\/kurukoo-home\.css\?v=1\.0\.0/, 'homepage must load its existing dedicated stylesheet');
+  const homeHtml = await home.text();
+  assert.match(homeHtml, /\/css\/kurukoo-home\.css\?v=1\.0\.0/, 'homepage must load its existing dedicated stylesheet');
+  assert.match(homeHtml, /id="kurukoo-onboarding-modal"/, 'homepage navigation must include the existing onboarding modal');
+  assert.match(homeHtml, /data-onboarding-goal="buyer"/, 'homepage navigation must declare its onboarding goal');
+  const homeBodyHtml = homeHtml.slice(homeHtml.indexOf('<body'));
+  assert.doesNotMatch(homeBodyHtml, /onclick=|onsubmit=/, 'homepage navigation and onboarding must use controller-bound events rather than inline handlers');
+
+  for (const pathName of ['/dashboard.html', '/css/site.css', '/js/kurukoo-pwa.js']) {
+    const response = await request(base, pathName);
+    assert.equal(response.status, 200, `${pathName} must be served by the canonical public asset boundary`);
+  }
 
   for (const pathName of ['/explore/food', '/explore/groceries', '/explore/repairs-maintenance', '/explore/sports']) {
     const response = await request(base, pathName);
@@ -60,4 +70,4 @@ try {
 }
 
 console.log('Public runtime contract checks passed');
-console.log('Verified: homepage stylesheet, Explore category aliases, truthful category data, public redirects, pricing, and country routes.');
+console.log('Verified: homepage stylesheet and onboarding events, canonical public assets, Explore category aliases, truthful category data, public redirects, pricing, and country routes.');
