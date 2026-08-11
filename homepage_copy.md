@@ -1,8 +1,8 @@
 # Kurukoo Homepage Copy — Marketing Reference
 
-**Version:** 2.0  
-**Date:** 2026-08-01  
-**Status:** Updated to match live site + new page architecture  
+**Version:** 2.1
+**Date:** 2026-08-11
+**Status:** Aligned with the verified homepage implementation and its no-fabrication preview policy
 **Owner:** Kurukoo Brand  
 **Blueprint reference:** §32.6 (v5.55), FRONTEND_PAGES.md
 
@@ -10,7 +10,7 @@
 
 ## Overview
 
-This document contains the complete homepage copy for `utilityapp.ai.studio`. It is the single source of truth for all homepage messaging. Do not modify without brand review.
+This document records the current homepage copy reference for `kurukoo.ai.studio`. Future material brand changes require review; implementation must not present invented providers, distances, availability, activity, transactions, or social proof as live data.
 
 **Positioning:** Kurukoo is a multi-sided utility product that uses conversational AI to deliver on-demand SaaS tools straight to the informal economy. It is built around the warm, highly personal positioning of a trusted neighbor who knows everyone in the area and is always ready to assist.
 
@@ -25,17 +25,16 @@ This document contains the complete homepage copy for `utilityapp.ai.studio`. It
 | Item | Label | Notes |
 |---|---|---|
 | Logo | Kurukoo | Wordmark + icon |
-| Nav link 1 | Platform ▼ | Mega-dropdown: Conversational Core, Earning & Skills, Safety & Trust, Ecosystem Features |
-| Nav link 2 | Discover | Nearby map — live providers, AI agents, deals, emergency services |
-| Nav link 3 | For You | User type chooser — Consumer, Provider, Business, Agent, Contributor |
-| Nav link 4 | Pricing | Direct link to pricing page |
-| Nav link 5 | Resources | Educational content library (guides, API docs, legal, blog) |
-| Nav link 6 | Explore | 45-category card grid |
-| Nav link 7 | Help | Support desk (FAQ, disputes, contact) |
-| Right side | 🌐 Globe | Country/locale switcher (NG, GH, GB) |
-| CTA button | Open Chat | Primary action. Opens WhatsApp or PWA chat. |
+| Nav link 1 | Features ▼ | Public feature and service entry links |
+| Nav link 2 | How It Works ▼ | Public explanation and role-oriented journey links |
+| Nav link 3 | Discover ▼ | Nearby Pulse discovery surface |
+| Nav link 4 | Earn ▼ | Earning and skills entry links |
+| Nav link 5 | Resources ▼ | Educational content library, API docs, legal, and blog |
+| Nav link 6 | Blog | Public articles |
+| Right side | User account | Login entry point |
+| CTA button | Start Chatting | Primary action. Opens the existing channel/onboarding gateway. |
 
-> **Developer note:** The `nav.ejs` currently contains ~30 inline `style="..."` declarations. These MUST be refactored to CSS classes per the Responsive Design Mandate (FRONTEND_PAGES.md §Responsive Design Mandate). No inline styles in production code.
+> **Developer note:** The public navigation and onboarding gateway use controller-bound event listeners, not inline click or submit handlers. Visual styling remains in shared stylesheets.
 
 ---
 
@@ -45,16 +44,16 @@ This document contains the complete homepage copy for `utilityapp.ai.studio`. It
 The trusted neighbor who knows everyone.
 
 **Subhead:**  
-Meet Kurukoo — a multi-sided utility powered by conversational AI that delivers on-demand SaaS tools straight to the informal economy. Think of it as a deeply connected local friend who is always ready to assist: learning who you are, finding trusted helpers, listing your skills, and serving up proactive neighborhood opportunities.
+Meet Kurukoo — a conversational utility that helps you find trusted people, get everyday things done, offer your skills, and discover useful opportunities nearby.
 
 **Primary CTA:**  
-[Start on WhatsApp]
+[Start chatting] (links to `/chat`)
 
 **Secondary CTA:**  
 [Dial *7000#]
 
 **Trust line (small, under CTAs):**  
-⭐ Trusted by thousands across Nigeria • No app download required • Your Privacy is First
+⭐ Built for everyday coordination • No app download required • Privacy first
 
 ---
 
@@ -74,12 +73,12 @@ One conversation. Every role. No profile switching, no new apps. Kurukoo is like
 Request a service
 
 **Body:**  
-Ask for anything. Need a quick ride, a reliable plumber, fresh produce, or a helper for errands? Just tell your trusted neighbor. We match you with verified locals instantly, hold your payments safely in escrow, and coordinate the details so you never have to worry.
+Need a ride, repair, delivery, food, a worker, or something else? Tell Kurukoo what you need and let the conversation fill in the details.
 
 **CTA button:**  
 Request a service
 
-**Pre-filled WhatsApp prompt (on click):**  
+**Pre-filled chat prompt (on click):**
 > "Hi, I need help with [tell me what you need]"
 
 ---
@@ -90,12 +89,12 @@ Request a service
 Offer your skills
 
 **Body:**  
-Get found by your neighborhood. Whether you ride an okada, fix phones, sell food, or do repairs, list your skill once. Your neighborhood assistant finds clients who need you, manages matches, and routes payments straight to your wallet. You keep what you earn.
+Ride, repair, cook, build, deliver, design, teach, sell or help. List your skills once and let Kurukoo help people find you.
 
 **CTA button:**  
 Offer your skills
 
-**Pre-filled WhatsApp prompt (on click):**  
+**Pre-filled chat prompt (on click):**
 > "Hi, I want to offer my skills. I do [your skill]"
 
 ---
@@ -106,12 +105,12 @@ Offer your skills
 Grow my business
 
 **Body:**  
-A digital storefront without the stress. Run a shop, kiosk, or restaurant? Kurukoo learns your products by importing your WhatsApp catalog and asking simple, friendly questions to keep stock updated. Your goods are recommended to neighbors searching for them — no dashboards, no tech setup, just natural chat.
+Turn your products and services into a discoverable local offering without forcing you into a complicated dashboard.
 
 **CTA button:**  
 Grow my business
 
-**Pre-filled WhatsApp prompt (on click):**  
+**Pre-filled chat prompt (on click):**
 > "Hi, I want to grow my business on Kurukoo"
 
 ---
@@ -159,25 +158,27 @@ Always looking out for you. It surfaces timely alerts, nearby mobile vendors, an
 ## Nearby Pulse Section (Map Preview)
 
 **Section headline:**  
-See what's happening near you
+See how nearby help can work
 
 **Subhead:**  
-Live providers, AI agents, and deals on one map. Locations fuzzed to ~100m for privacy.
+When you choose to share an approximate area, Kurukoo can help surface relevant people, services and opportunities. Exact locations stay private.
 
 **Map preview element:**  
-Interactive Leaflet.js map preview (half-height, non-scrollable on homepage — full experience on `/discover`).
+Illustrative, non-live map preview on the homepage; the full discovery experience is available at `/discover`.
 
-**Mock pins visible in preview:**
-- 🟢 Mama Nkechi — Selling fresh oranges, 150m away (mobile, live)
-- 🔧 Sola Phone Repairs — Open now, 300m away (stationary)
-- 🛵 Musa Keke Rider — Available, 200m away (mobile, live)
-- 🤖 Kurukoo AI Agent — "Ask me about food delivery in Ikeja" (AI agent pin)
+**Illustrative request pins:**
+- 🍊 Food request
+- 🔧 Repair request
+- 🛵 Ride request
+- 🤖 Kurukoo guide
+
+> The preview must be visibly labelled illustrative and must not present names, distances, availability, ratings, provider counts, transactions, or activity as live data without a real source.
 
 **CTA button below map:**  
 [Explore the full map →] (links to `/:country/discover`)
 
 **Privacy notice (small, below CTA):**  
-Your exact location is never shared. Pins are fuzzed to ~100m. You control when you go live.
+Illustrative preview. When active, exact locations remain private and you control when you go live.
 
 ---
 
@@ -236,21 +237,21 @@ Horizontal scroll on mobile (swipeable, snap-scroll), grid on desktop (4-6 colum
 ## "Your Day with Kurukoo" Section (Timeline — replaces pricing)
 
 **Section headline:**  
-From morning move to evening chop — one conversation, all day long
+From morning move to evening chop
 
 **Subhead:**  
-No apps to juggle. No tabs to switch. Just Kurukoo, from dawn to dusk.
+One conversation can help coordinate the day without asking you to juggle apps or tabs.
 
-**Timeline (6 moments, vertical on mobile, horizontal scroll on desktop):**
+**Illustrative timeline (6 moments, vertical on mobile, horizontal scroll on desktop):**
 
-| Time | Moment | What Kurukoo does |
+| Time | Moment | Example prompt |
 |---|---|---|
-| 🌅 6:30 AM | Wake up | Morning nudge: "Ku Kurukoo! 3 okada riders near you. Need a lift?" |
-| 🍲 12:00 PM | Lunch break | "Mama Nkechi is selling fresh oranges 150m away. Stop her or order?" |
-| 🔧 2:00 PM | Get it fixed | "Your tap is leaking? I found a verified plumber in Ikeja. Book?" |
-| 💰 4:00 PM | Hustle time | "New job: phone repair needed in Lekki. Accept? You'll earn ₦3,000." |
-| 📦 6:00 PM | Send it | "Pick up package from Yaba, deliver to VI. ₦1,500. A rider is 200m away." |
-| 🌙 9:00 PM | Wind down | "Tomorrow: 3 errands queued. I'll remind you. Sleep well." |
+| 🌅 6:30 AM | Wake up | "Need a lift this morning? Tell me where you are heading." |
+| 🍲 12:00 PM | Lunch break | "Looking for lunch? Tell me what you would like to order." |
+| 🔧 2:00 PM | Get it fixed | "Describe the repair and your area. I can help start the search." |
+| 💰 4:00 PM | Hustle time | "Want to offer a skill? Tell me what work you do." |
+| 📦 6:00 PM | Send it | "Share the pickup and delivery areas to coordinate a parcel." |
+| 🌙 9:00 PM | Wind down | "Set up tomorrow’s request whenever you are ready." |
 
 **CTA below timeline:**  
 [Start your day with Kurukoo →]
@@ -292,42 +293,13 @@ The world is moving to super apps — one app for everything. But in Africa, dat
 
 ## Social Proof Section
 
-**Headline:**  
-Trusted by thousands across Nigeria
+**Status:** Not rendered on the current homepage.
 
-**Body:**  
-Kurukoo is live in Lagos, Abuja, Port Harcourt, Ibadan, and expanding. Providers are already earning. Customers are already saving time. Here's what they say.
+> Do not add testimonials, customer counts, city coverage, earnings, response times, provider counts, ratings, or a “live activity” feed without verified source data, explicit consent where required, and a live rendering contract.
 
 ---
 
-### Provider Story (Agent Referral)
-
-**Name:** Chinedu, Kuru Agent — Lagos  
-**Story:**  
-"I joined Kurukoo as an agent 3 months ago. I referred 12 providers to the platform and earned ₦45,000 in referral bonuses. Now I manage a network of 40+ active providers in my area."
-
----
-
-### Consumer Story
-
-**Name:** Aisha, Lagos  
-**Story:**  
-"I needed a plumber at 8pm on a Saturday. I sent a WhatsApp message to Kurukoo. Within 10 minutes, a verified plumber was on his way. Payment was held safely until he fixed the leak. No cash. No hassle."
-
----
-
-### Live Activity Feed (Dynamic, via Nearby Pulse)
-
-**Widget headline:**  
-Happening now near you
-
-**Content (auto-updated from backend):**  
-> 🔧 3 plumbers active in Lagos Island  
-> 🛵 12 okada riders available in Ikeja  
-> 📦 5 delivery persons active in Victoria Island  
-> 🍕 2 restaurants accepting orders in Yaba
-
-*Numbers update in real time based on provider_presence data.*
+No testimonials, customer counts, city claims, earnings stories, response-time examples, or activity-feed copy is approved for the current homepage. Add any future social proof only after a verified source, rendering contract, consent review, and brand approval are documented.
 
 ---
 
@@ -411,4 +383,4 @@ No download. No registration form. No credit card. Just start.
 
 ---
 
-*Last updated: 2026-08-01 | Version 2.0 | Blueprint v5.55*
+*Last updated: 2026-08-11 | Version 2.1 | Blueprint v5.55*
