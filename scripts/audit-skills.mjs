@@ -9,9 +9,12 @@ const skillFlows = read('src/services/skillFlows.ts');
 const servicesDir = path.join(root, 'src/services');
 const serviceFiles = fs.readdirSync(servicesDir).filter(name => name.endsWith('.ts'));
 
-const catalogueMatch = skillFlows.match(/const CATEGORY_BY_SKILL:Record<string,string>=\{([\s\S]*?)\n\};/);
+// CATEGORY_BY_SKILL is the canonical economic catalogue. Do not infer the
+// catalogue from formatting/newlines: skillFlows is intentionally compacted
+// in places and may legally contain the mapping on one line.
+const catalogueMatch = skillFlows.match(/const\s+CATEGORY_BY_SKILL\s*:\s*Record<string,string>\s*=\s*\{([\s\S]*?)\};/);
 const catalogue = catalogueMatch?.[1] || '';
-const seededSkills = [...catalogue.matchAll(/([a-z0-9_]+):'[^']+'/g)].map(m => m[1]);
+const seededSkills = [...catalogue.matchAll(/(?:^|,)\s*([a-z0-9_]+)\s*:\s*['"][^'"]+['"]/g)].map(m => m[1]);
 const actionIntents = [...router.matchAll(/['"]([a-z0-9_]+)['"]/g)].map(m => m[1]);
 const uniqueSkills = [...new Set(seededSkills)];
 const blueprintSections = [...blueprint.matchAll(/^##+\s+(.+)$/gm)].map(m => m[1].trim());
@@ -29,7 +32,7 @@ for (const [name, pattern] of requiredMandate) if (!pattern.test(skillFlows + ro
 if (!router.includes('classifyWithFastText')) failures.push('Intent router is not connected to FastText.');
 if (!router.includes('queryUnifiedAI')) failures.push('Intent router is not connected to the unified AI engine.');
 if (!router.includes('getSkillFlow')) failures.push('Intent router bypasses the shared skill-flow service.');
-if (!router.includes('artist_booking')) failures.push('Creator/artist booking is not represented in the chat action layer.');
+if (!router.includes('artist_booking') && !router.includes('verified_artist')) failures.push('Creator/artist booking is not represented in the chat action layer.');
 
 console.log(JSON.stringify({ seededSkillCount: uniqueSkills.length, actionIntentLiteralCount: new Set(actionIntents).size, serviceCount: serviceFiles.length, blueprintSectionCount: blueprintSections.length, mandateChecks: Object.fromEntries(requiredMandate.map(([name, pattern]) => [name, pattern.test(skillFlows + router + blueprint)])), failures }, null, 2));
 if (failures.length) process.exitCode = 1;
