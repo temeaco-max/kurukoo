@@ -1,10 +1,9 @@
 # Kurukoo — Current Build Status
 
-**Status:** Economic OS safety/consolidation refactor merged to `main`; follow-up hardening and real-world integration work continues.
+**Status:** Economic OS safety/consolidation refactor merged to `main`; the legacy route boundary is now being removed and canonical public/composition boundaries are being enforced.
 **Blueprint:** `BLUEPRINT.md` v5.62 (with the current implementation clarifications below)
 **Date:** 2026-08-11
-**Current main merge:** `a940503976db3a364f2eabcb82ff3d7ddf51c00e`
-**Merged PR:** #1 — `fix: enforce truthful Economic OS lifecycle`
+**Latest implementation branch:** `refactor/remove-legacy-boundary`
 
 ## Current architecture
 
@@ -26,9 +25,11 @@ Provider / inventory adapter
 Real-world execution
 ```
 
+The application composition root is `src/index.ts`. Canonical route modules under `src/routes/*` own HTTP boundaries. `src/legacyApp.ts` has been removed; SEO/static/admin compatibility responsibilities must live in their explicit existing boundaries rather than returning to a catch-all legacy module.
+
 Artists/creators are **not a separate economic system**. Artist booking is a category-specific policy adapter over the shared Economic Request lifecycle. Representation verification, technical riders, contracts, travel and negotiation are requirements/capabilities of that request.
 
-## Completed in the latest Economic OS refactor
+## Completed in the Economic OS and route-consolidation work
 
 - Canonical skill requirements are consumed from `src/services/skillFlows.ts`; duplicate requirement definitions were removed from the economic request route.
 - Provider discovery requires an explicit verification state and applies the supplied service location constraint.
@@ -41,8 +42,11 @@ Artists/creators are **not a separate economic system**. Artist booking is a cat
 - Development/demo providers are not seeded into production databases.
 - CI is read-only and cannot rewrite or push `main`.
 - Customer lifecycle transitions are restricted to customer-owned states; provider/system transitions stay in the service layer.
-- `legacyApp.ts` is a transitional page/SEO boundary rather than a place for new business APIs.
-- `/health` and canonical route modules are wired through the application composition root.
+- `/health` is owned by `src/routes/healthRoutes.ts`.
+- `/`, `/explore`, and `/p/:providerSlug` are owned by `src/routes/publicRoutes.ts`.
+- Referral endpoints remain in the existing authenticated `userRoutes.ts` boundary rather than a legacy module.
+- The composition contract test now fails if `legacyApp` or `registerLegacyRoutes` is reintroduced.
+- `src/legacyApp.ts` has been deleted after its remaining route responsibilities were accounted for.
 
 ## What is intentionally not claimed as implemented
 
@@ -60,7 +64,6 @@ The application does **not** simulate unavailable real-world infrastructure. In 
 - Add real provider/identity verification adapters and evidence/expiry/revocation semantics.
 
 ### P1 — architecture and behavioural completeness
-- Finish deleting any genuinely dead legacy route bodies after extraction coverage proves they are unused.
 - Complete universal catalogue/inventory matching for catalogue-bearing skills using the existing provider/product data model rather than creating per-skill ordering systems.
 - Expand economic integration tests so each canonical category proves the same lifecycle with category-specific requirements.
 - Strengthen attachment storage/access controls before production-scale media uploads.
@@ -70,7 +73,7 @@ The application does **not** simulate unavailable real-world infrastructure. In 
 ### P2 — scale when justified
 - PostgreSQL when concurrent/multi-instance write load requires it.
 - Redis/queue workers when presence, rate limiting or asynchronous fulfilment requires distributed coordination.
-- Object storage/CDN when attachment volume and retention requirements justify it.
+- Object storage/CDN when attachment volume and retention requirements justify them.
 
 ## Cost-effective operating rule
 
@@ -78,6 +81,6 @@ Do not introduce infrastructure merely because the blueprint names it. Adopt Pos
 
 ## Verification
 
-The merged Economic OS refactor passed the repository CI suite before merge, including lint, build, route tests, CSS audit, messaging audit, skills audit, economic audit, services audit, security audit, email tests, FastText verification and secret scanning.
+The previous merged Economic OS refactor passed the repository CI suite before merge. The current legacy-boundary removal must pass the full repository CI suite before it is merged to `main`.
 
 **Rule for future implementation:** Before creating or changing a file, inspect the current repository implementation and confirm that the intended capability does not already exist. Never introduce a second architecture for a capability that already has a canonical implementation.
