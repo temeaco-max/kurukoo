@@ -7,7 +7,7 @@
 import { Router } from 'express';
 import { authenticateUser, AuthRequest } from '../middleware/auth.js';
 import { getDb } from '../database.js';
-import { updateDeliveryStatus } from '../services/deliveryService.js';
+import { DeliveryAuthorizationError, DeliveryStateError, updateDeliveryStatus } from '../services/deliveryService.js';
 import { finalizeOrder } from '../services/orderFinalizer.js';
 
 const router = Router();
@@ -17,7 +17,7 @@ function sessionPhone(req: AuthRequest): string | null {
 }
 
 /** List the authenticated user's past orders */
-router.get('/api/orders', authenticateUser, async (req: AuthRequest, res) => {
+router.get('/orders', authenticateUser, async (req: AuthRequest, res) => {
   const phone = sessionPhone(req);
   if (!phone) return res.status(401).json({ error: 'Authentication required' });
   try {
@@ -35,7 +35,7 @@ router.get('/api/orders', authenticateUser, async (req: AuthRequest, res) => {
 });
 
 /** Get a single order owned by the authenticated user */
-router.get('/api/orders/:id', authenticateUser, async (req: AuthRequest, res) => {
+router.get('/orders/:id', authenticateUser, async (req: AuthRequest, res) => {
   const phone = sessionPhone(req);
   if (!phone) return res.status(401).json({ error: 'Authentication required' });
   const orderId = req.params.id;
@@ -55,7 +55,7 @@ router.get('/api/orders/:id', authenticateUser, async (req: AuthRequest, res) =>
 });
 
 /** Create an order via the shared order finalizer (lead/order/booking) */
-router.post('/api/orders', authenticateUser, async (req: AuthRequest, res) => {
+router.post('/orders', authenticateUser, async (req: AuthRequest, res) => {
   const phone = sessionPhone(req);
   if (!phone) return res.status(401).json({ error: 'Authentication required' });
   const { orderType, skill, details } = req.body || {};
@@ -72,23 +72,25 @@ router.post('/api/orders', authenticateUser, async (req: AuthRequest, res) => {
 });
 
 /** Update delivery status — provider-driven, validated transition */
-router.post('/api/orders/:id/delivery-status', authenticateUser, async (req: AuthRequest, res) => {
+router.post('/orders/:id/delivery-status', authenticateUser, async (req: AuthRequest, res) => {
   const phone = sessionPhone(req);
   if (!phone) return res.status(401).json({ error: 'Authentication required' });
   const orderId = req.params.id;
   const { status, message } = req.body || {};
   if (!status) return res.status(400).json({ error: 'Status is required' });
   try {
-    await updateDeliveryStatus(orderId, String(status), message ? String(message) : undefined);
+    await updateDeliveryStatus(orderId, String(status), phone, message ? String(message) : undefined);
     res.json({ success: true, message: `Order ${orderId} updated to ${status}.` });
   } catch (err: any) {
+    if (err instanceof DeliveryAuthorizationError) return res.status(403).json({ error: err.message });
+    if (err instanceof DeliveryStateError) return res.status(err.statusCode).json({ error: err.message });
     console.error('[OrderRoutes] Error updating delivery status:', err);
-    res.status(500).json({ error: err.message || 'Internal server error' });
+    res.status(500).json({ error: 'Failed to update delivery status' });
   }
 });
 
 /** Delivery status lookup for the authenticated user's order */
-router.get('/api/delivery/status', authenticateUser, async (req: AuthRequest, res) => {
+router.get('/delivery/status', authenticateUser, async (req: AuthRequest, res) => {
   const phone = sessionPhone(req);
   if (!phone) return res.status(401).json({ error: 'Authentication required' });
   const orderId = typeof req.query.order_id === 'string' ? req.query.order_id : undefined;

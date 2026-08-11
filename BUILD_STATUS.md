@@ -52,6 +52,10 @@ Artists/creators are **not a separate economic system**. Artist booking is a cat
 - npm is the documented package manager; `package-lock.json` is committed and CI uses `npm ci --ignore-scripts` for reproducible installs.
 - The unused `uuid` and deprecated unused `multer` dependency paths were removed. The active local SmolLM2 path still requires `@huggingface/transformers`, whose transitive `sharp` advisory has no safe npm fix at this time.
 - SQL.js persistence writes to a temporary file before atomic replacement. This improves interrupted-write durability but does not convert the architecture into a multi-instance data store.
+- The canonical `/api/orders` boundary now uses paths relative to its `/api` composition mount. Provider-driven delivery changes require the authenticated phone to match the order’s assigned provider and reject invalid lifecycle jumps deterministically.
+- The existing authenticated WebRTC signaling router is mounted at `/api/webrtc`; its composition test proves anonymous callers are rejected.
+- The existing API documentation asset is served by `systemRoutes` at `/api/docs`; health remains owned solely by `healthRoutes`.
+- Direct client escrow creation is disabled. The reusable ledger requires a non-empty verified payment reference, and the legacy order-finalizer path fails closed rather than creating an unreferenced held ledger.
 
 ## What is intentionally not claimed as implemented
 

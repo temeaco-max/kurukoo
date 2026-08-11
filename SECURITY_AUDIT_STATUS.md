@@ -13,6 +13,7 @@
 | Admin authorization | ✅ | Admin surfaces use admin authentication rather than ordinary user identity. |
 | Economic operational authorization | ✅ | Economic Request user-owned routes explicitly apply `authenticateUser`; orchestration and memory-lifecycle maintenance routes explicitly apply `authenticateAdmin`. The Economic Request audit performs HTTP checks for anonymous, ordinary-user, admin, and cross-user access. |
 | Economic request ownership | ✅ | Customers can only access their own economic requests. |
+| Provider delivery ownership | ✅ | The assigned provider’s authenticated phone is required to advance order-delivery status. Customer/unrelated callers receive an authorization failure, and invalid state jumps are conflicts rather than silent mutations. |
 | Secret scanning | ✅/⚠️ | CI includes a Gitleaks scan and the current `.env.example` contains placeholders only. A historical environment-template exposure was identified; secret scanning cannot revoke historical values. |
 | Historical credential remediation | ⚠️ | A reachable historical `.env.example` revision exposed GitHub, Gemini, Hugging Face, and Groq credential types. Values are not retained in the current tree. Provider-console revocation, rotation, and audit-log review remain required owner actions. |
 | Webhook signatures | ✅ | Channel webhook validation is implemented where the provider supports it. |
@@ -24,11 +25,11 @@
 | Economic lifecycle authorization | ✅ | Customer routes are restricted to customer-owned transitions; provider/system transitions remain in service orchestration. |
 | Provider verification semantics | ✅/⚠️ | Matching requires an explicit verification flag. Real-world verification evidence/expiry/revocation adapters remain to be integrated. |
 | Location matching | ✅/⚠️ | Provider matching applies the supplied location against stored service-area fields. Precise geospatial/radius matching requires real geocoding/presence data and is not fabricated. |
-| Escrow semantics | ✅/⚠️ | The local escrow ledger is created only after a trusted payment reference marks the request paid. Real regulated/PSP escrow remains an external integration. |
+| Escrow semantics | ✅/⚠️ | The reusable ledger requires verified payment evidence with a non-empty reference. Direct client creation and the unreferenced legacy order-finalizer write are disabled; real regulated/PSP escrow remains an external integration. |
 | Monetary quote semantics | ✅ | No fake/default monetary quote is generated. Provider-listed rates are labelled indicative; final quotes must be confirmed. |
 | Attachment security | ⚠️ | Authenticated, size-limited uploads exist; production object storage, malware scanning, signed access URLs and retention controls remain recommended before high-volume media use. |
 | Single-instance persistence | ⚠️ | SQL.js remains the launch database. Exports now write to a same-directory temporary file and atomically replace the live file, but the model remains single-process and is not a multi-writer database. |
-| Distributed rate limiting/presence | ⚠️ | Process-local controls are suitable only for the documented single-instance launch model. Redis becomes necessary when multi-instance coordination is introduced. |
+| Distributed rate limiting/presence | ⚠️ | Auth, AI, webhook, and payment limits use explicit process-local buckets. They are suitable only for the documented single-instance launch model; Redis becomes necessary when multi-instance coordination is introduced. |
 | Database scale | ⚠️ | PostgreSQL is the production transition point when concurrent replicas, high availability, transactional recovery guarantees, or sustained marketplace-scale write volume are required. |
 | Real PSP | ❌ | Production PSP credentials/contracts are still required. The code fails closed rather than pretending a payment succeeded. |
 | External identity/provider verification | ❌ | Production verification adapters/evidence workflows still require external integrations. |

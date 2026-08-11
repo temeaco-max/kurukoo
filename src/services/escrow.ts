@@ -2,6 +2,11 @@ import { getDb, saveDb } from '../database.js';
 
 const DEFAULT_COOLING_OFF_HOURS = 24;
 
+export interface VerifiedPaymentEvidence {
+    verified: true;
+    paymentReference: string;
+}
+
 export async function ensureEscrowSchema(db?: any): Promise<any> {
     const database = db || await getDb();
     database.run(`CREATE TABLE IF NOT EXISTS escrow (
@@ -33,9 +38,12 @@ function isoAfterHours(hours: number): string {
     return new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
 }
 
-export async function createEscrow(orderId: string, buyerPhone: string, providerPhone: string, amountMinor: number, description: string, coolingOffHours = DEFAULT_COOLING_OFF_HOURS): Promise<number> {
+export async function createEscrow(orderId: string, buyerPhone: string, providerPhone: string, amountMinor: number, description: string, payment: VerifiedPaymentEvidence, coolingOffHours = DEFAULT_COOLING_OFF_HOURS): Promise<number> {
     if (!orderId || !buyerPhone || !providerPhone) throw new Error('Escrow parties and order are required');
     if (!Number.isInteger(amountMinor) || amountMinor <= 0) throw new Error('Escrow amount must be a positive integer');
+    if (payment?.verified !== true || !String(payment.paymentReference || '').trim()) {
+        throw new Error('Verified payment evidence is required before an escrow ledger can be created');
+    }
     const db = await ensureEscrowSchema();
     const existing = db.prepare(`SELECT id FROM escrow WHERE order_id = ? AND status IN ('held','disputed') LIMIT 1`);
     existing.bind([orderId]);
@@ -45,7 +53,7 @@ export async function createEscrow(orderId: string, buyerPhone: string, provider
         return id;
     }
     existing.free();
-    db.run(`INSERT INTO escrow (order_id, buyer_phone, provider_phone, amount_minor, description, status, cooling_off_until) VALUES (?, ?, ?, ?, ?, 'held', ?)`, [orderId, buyerPhone, providerPhone, amountMinor, description, isoAfterHours(Math.max(0, coolingOffHours))]);
+    db.run(`INSERT INTO escrow (order_id, buyer_phone, provider_phone, amount_minor, description, status, cooling_off_until) VALUES (?, ?, ?, ?, ?, 'held', ?)`, [orderId, buyerPhone, providerPhone, amountMinor, `${description} [payment:${payment.paymentReference.trim()}]`, isoAfterHours(Math.max(0, coolingOffHours))]);
     const res = db.exec(`SELECT last_insert_rowid() AS id`);
     const id = Number(res[0]?.values[0]?.[0]);
     saveDb();

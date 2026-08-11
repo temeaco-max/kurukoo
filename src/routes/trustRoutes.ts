@@ -12,7 +12,7 @@ import {
   resolveDispute,
   escalateDispute,
 } from '../services/disputeResolution.js';
-import { createEscrow, releaseEscrow, refundEscrow } from '../services/escrow.js';
+import { releaseEscrow, refundEscrow } from '../services/escrow.js';
 
 const router = Router();
 
@@ -140,24 +140,16 @@ router.post('/dispute/:id/escalate', authenticateUser, async (req: AuthRequest, 
   }
 });
 
-router.post('/escrow/create', authenticateUser, async (req: AuthRequest, res) => {
-  const buyer = sessionPhone(req);
-  if (!buyer) return res.status(401).json({ error: 'Authentication required' });
-  const provider_phone = req.body?.provider_phone;
-  const amount_minor = req.body?.amount_minor;
-  const description = req.body?.description || '';
-  const order_id = req.body?.order_id;
-  if (!provider_phone || amount_minor === undefined || amount_minor === null || !order_id) {
-    return res.status(400).json({ error: 'provider_phone, amount_minor and order_id are required' });
-  }
-  const amount = parseInt(String(amount_minor), 10);
-  if (!Number.isInteger(amount) || amount <= 0) return res.status(400).json({ error: 'amount_minor must be a positive integer' });
-  try {
-    const escrowId = await createEscrow(String(order_id), buyer, String(provider_phone), amount, String(description));
-    res.json({ success: true, escrowId, message: 'Escrow created and funds held.' });
-  } catch {
-    res.status(500).json({ error: 'Failed to create escrow' });
-  }
+/**
+ * Direct client escrow creation is deliberately disabled. The shared Economic
+ * Request flow creates an internal ledger only after verified payment evidence
+ * and a confirmed quote have been attached by a trusted payment adapter.
+ */
+router.post('/escrow/create', authenticateUser, async (_req: AuthRequest, res) => {
+  res.status(409).json({
+    error: 'Direct escrow creation is disabled; use the verified Economic Request payment flow.',
+    payment_required: true,
+  });
 });
 
 router.post('/escrow/release', authenticateUser, async (req: AuthRequest, res) => {

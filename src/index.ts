@@ -18,6 +18,8 @@ import publicRoutes from './routes/publicRoutes.js';
 import pricingRoutes from './routes/pricingRoutes.js';
 import subscriptionRoutes from './routes/subscriptionRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
+import webrtcRoutes from './routes/webrtcRoutes.js';
+import systemRoutes from './routes/systemRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
 
 // Development/test defaults only. Production must not silently select sandbox.
@@ -38,6 +40,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRouter);
 app.use('/api', orderRoutes);
 app.use('/api', taskRoutes);
+app.use('/api/webrtc', webrtcRoutes);
+app.use('/', systemRoutes);
 app.use('/', healthRoutes);
 app.use('/', presenceRoutes);
 app.use('/', discoveryRoutes);

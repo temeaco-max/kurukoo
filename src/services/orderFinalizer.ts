@@ -148,12 +148,15 @@ export async function finalizeOrder(buyerPhone: string, arg2: string = '', arg3:
         }
     } else if (!isInstant && jobAmount > 0) {
         const escrowDeducted = await processDirectPayment(buyerPhone, 'ESCROW', jobAmount);
+        // This legacy finalizer does not receive a trusted payment reference.
+        // Even if an adapter later reports a debit, it must hand off through the
+        // Economic Request payment flow before a ledger can be created.
+        db.run(`UPDATE provider_subscriptions SET leads_this_month = leads_this_month - 1 WHERE phone = ?`, [providerPhone]);
+        saveDb();
         if (!escrowDeducted) {
-            db.run(`UPDATE provider_subscriptions SET leads_this_month = leads_this_month - 1 WHERE phone = ?`, [providerPhone]);
-            saveDb();
-            return { success: false, message: `Failed to secure job funds in Escrow. Required: ₦${jobAmount}.` };
+            return { success: false, message: `Verified payment is required before escrow can be created. Required: ₦${jobAmount}.` };
         }
-        db.run(`INSERT INTO escrow (buyer_phone, provider_phone, amount_minor, description, status) VALUES (?, ?, ?, ?, 'held')`, [buyerPhone, providerPhone, jobAmount, `Escrow for ${orderType} job (${orderId})`]);
+        return { success: false, message: 'Payment reference verification must complete through the Economic Request flow before escrow can be created.' };
     }
 
     db.run(`INSERT INTO orders (id, phone, order_type, provider_phone, amount, status, idempotency_key) VALUES (?, ?, ?, ?, ?, ?, ?)`, [orderId, buyerPhone, orderType, providerPhone, jobAmount, isInstant ? 'completed' : 'escrow_held', idempotencyKey]);
