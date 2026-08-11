@@ -36,7 +36,7 @@
             <p><strong>Sign in to chat with Kurukoo</strong></p>
             <p>Your Memory Profile and conversation history stay private until you sign in. Open the full chat to continue.</p>
             <p><a class="primary-btn" href="/login?return=${encodeURIComponent('/chat')}" target="_top" rel="noopener">Sign in</a>
-            <a class="secondary-btn" href="/chat" target="_top" rel="noopener" style="margin-left:8px">Open full chat</a></p>
+            <a class="secondary-btn" href="/chat" target="_top" rel="noopener" class="embed-open-chat">Open full chat</a></p>
           </div>
         </div>
       </div>`;
@@ -143,8 +143,6 @@
       const card = data.card;
       setDeferredStatus(card);
       if (card?.requestId) state.activeStorefrontId = card.requestId;
-
-      // Append assistant update with new card
       const wrap = appendStreamBubble();
       const output = wrap.querySelector('.markdown-body');
       output.innerHTML = renderMarkdown(card.message || 'Updated.');
@@ -169,6 +167,7 @@
     holder.dataset.stage = card.stage || '';
 
     const progress = Math.max(0, Math.min(100, Number(card.progress) || 0));
+    const progressClass = Math.round(progress / 10) * 10;
     const fieldsHtml = Array.isArray(card.fields) && card.fields.length
       ? `<div class="storefront-fields">${card.fields.map(f => {
           const req = f.required ? ' <span class="req">*</span>' : '';
@@ -197,7 +196,7 @@
         <strong>${escapeText(card.title || 'Kurukoo')}</strong>
         <span class="storefront-stage">${escapeText((card.stage || '').replace(/_/g, ' '))}</span>
       </div>
-      <div class="storefront-progress" role="progressbar" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"><i style="width:${progress}%"></i></div>
+      <div class="storefront-progress" role="progressbar" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"><i class="storefront-progress-meter progress-${progressClass}"></i></div>
       ${fieldsHtml}
       ${providersHtml}
       ${quoteHtml}
@@ -210,7 +209,6 @@
         const action = btn.getAttribute('data-sf-action');
         const fields = collectStorefrontFields(holder);
         if (action === 'start' && !card.requestId) {
-          // Preview-only card: nudge user to send a concrete message
           sendMessage(`Continue with ${card.skill || 'this request'}`);
           return;
         }
@@ -219,7 +217,6 @@
       });
     });
 
-    // Enter in a field submits primary action
     holder.querySelectorAll('[data-storefront-field]').forEach(el => {
       el.addEventListener('keydown', e => {
         if (e.key === 'Enter') {
@@ -236,12 +233,7 @@
 
   function renderCard(card, messageEl) {
     if (!card || !messageEl) return;
-
-    if (card.type === 'agentic_storefront') {
-      renderAgenticStorefront(card, messageEl);
-      return;
-    }
-
+    if (card.type === 'agentic_storefront') { renderAgenticStorefront(card, messageEl); return; }
     const holder = document.createElement('div');
     holder.className = 'provider-card';
     if (card.type === 'ride_picker') {
@@ -301,9 +293,7 @@
             assistant.dataset.messageId = data.messageId || '';
             setDeferredStatus(data.cardData);
             if (data.cardData) renderCard(data.cardData, assistant);
-            if (data.cardData?.type === 'agentic_storefront' && data.cardData.requestId) {
-              state.activeStorefrontId = data.cardData.requestId;
-            }
+            if (data.cardData?.type === 'agentic_storefront' && data.cardData.requestId) state.activeStorefrontId = data.cardData.requestId;
           }
           if (data.type === 'error') throw new Error(data.error || 'Stream error');
         }
@@ -316,14 +306,13 @@
   }
 
   function updateModelStatus(data) { const label = $('model-badge'); if (label && data.model) label.textContent = data.model; }
-
-  async function loadPoints() { try { const res = await fetch('/api/points/balance', { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const points = Number(data.points || 0); $('points-balance').querySelector('span').textContent = points; const ip = $('inspector-points'); if (ip) ip.textContent = points; } catch {} }
+  async function loadPoints() { try { const res = await fetch('/api/points/balance', { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const points = Number(data.points || 0); const balance = $('points-balance')?.querySelector('span'); if (balance) balance.textContent = points; const ip = $('inspector-points'); if (ip) ip.textContent = points; } catch {} }
   async function loadMemory() { try { const res = await fetch('/api/profile', { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const profile = data.profile || {}; const text = `Kurukoo remembers ${profile.location || 'your area'}${profile.primary_lga ? `, ${profile.primary_lga}` : ''}. Your Memory Profile is shared across channels.`; const mc = $('memory-context'); if (mc) mc.textContent = text; const im = $('inspector-memory'); if (im) im.textContent = text; } catch {} }
 
   async function refreshHistory() {
     try {
       const url = new URL('/api/chat/history', location.origin); if (state.conversationId) url.searchParams.set('conversationId', state.conversationId); url.searchParams.set('limit', '60');
-      const res = await fetch(url, { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const list = $('history-list'); list.innerHTML = '';
+      const res = await fetch(url, { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const list = $('history-list'); if (!list) return; list.innerHTML = '';
       data.conversations.forEach(c => addHistoryItem(c, c.id === state.conversationId));
       if (data.messages?.length && chatContent.querySelectorAll('.message').length === 0) renderMessages(data.messages);
     } catch { setConnection(false, 'Offline'); }
@@ -335,7 +324,6 @@
 
   function wireQuickActions(root) { if (!root || root.dataset.wired) return; root.dataset.wired = 'true'; root.addEventListener('click', e => { const button = e.target.closest('button[data-prompt]'); if (button) sendMessage(button.dataset.prompt); }); }
   wireQuickActions($('quick-actions')); wireQuickActions($('composer-quick-actions'));
-
   send?.addEventListener('click', () => sendMessage());
   input?.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
   $('attach-file')?.addEventListener('click', () => $('file-input')?.click());
