@@ -1,73 +1,58 @@
-# Security Audit Status (from ChatGPT share + follow-up)
+# Kurukoo Security Audit Status
 
-**Source conversation:** https://chatgpt.com/share/6a7acdf5-f8d0-83eb-ba39-363716ce07f8  
-**Repo milestone:** v5.52.2 (billing extraction + subscription hardening)
+**Date:** 2026-08-11  
+**Blueprint:** `BLUEPRINT.md` v5.62  
+**Current main:** `a940503976db3a364f2eabcb82ff3d7ddf51c00e`
 
-## Original priority list vs current state
+## Current status
 
-| # | Finding | Status |
-|---|---------|--------|
-| 1 | Revoke exposed API keys + GitHub PAT | **Code fixed** — `.env.example` is placeholders only. **You must still revoke any historically committed real keys** in provider consoles. |
-| 2 | Remove phone/header auth bypass | **Fixed** in `src/middleware/auth.ts` — JWT required, fail-closed. |
-| 3 | Remove hard-coded JWT fallback | **Fixed** — `JWT_SECRET` min 32 chars or throw. |
-| 4 | Audit GitHub pull/push endpoints | **Fixed** — admin-only (`authenticateAdmin`). |
-| 5 | Admin routes cannot use normal user auth | **Fixed** — `authenticateAdmin` role check. |
-| 6 | Request/schema validation | **Partial** — rating/points/IoT/disputes validated; expand with Zod over time. |
-| 7 | Rate limiting | **Improved** — auth + AI/webhook/payment limiters. |
-| 8 | Webhook signature validation | **Improved** — WhatsApp HMAC; Telegram secret token path exists. |
-| 9 | Separate routes from `index.ts` | **Improved** — chat/auth/webrtc/pricing/subscription/payment routers; monolith still large. |
-| 10 | Secret scanning in CI | **Fixed** — gitleaks job in `.github/workflows/ci.yml`. |
-| 11 | Client-trusted subscription mutation | **Fixed (v5.52.2)** — no unauthenticated `POST {phone, plan}`; JWT identity + payment confirmation required. |
+| Area | Status | Current implementation |
+|---|---|---|
+| JWT authentication | ✅ | JWT secret is required; browser OTP flow keeps the token in an HttpOnly cookie rather than returning it to page JavaScript. |
+| Header/phone auth bypass | ✅ | Authenticated routes use the canonical authenticated identity. |
+| Admin authorization | ✅ | Admin surfaces use admin authentication rather than ordinary user identity. |
+| Secret scanning | ✅ | CI includes a secret-scan job. |
+| Webhook signatures | ✅ | Channel webhook validation is implemented where the provider supports it. |
+| Payment fail-closed behaviour | ✅ | Production cannot silently use the sandbox payment provider. |
+| Sandbox mutation isolation | ✅ | Sandbox economic mutations are restricted to non-production use. |
+| Demo provider isolation | ✅ | Demo provider seeding is development-only. |
+| Economic request ownership | ✅ | Customers can only access their own economic requests. |
+| Economic lifecycle authorization | ✅ | Customer routes are restricted to customer-owned transitions; provider/system transitions remain in service orchestration. |
+| Provider verification semantics | ✅/⚠️ | Matching requires an explicit verification flag. Real-world verification evidence/expiry/revocation adapters remain to be integrated. |
+| Location matching | ✅/⚠️ | Provider matching applies the supplied location against stored service-area fields. Precise geospatial/radius matching requires real geocoding/presence data and is not fabricated. |
+| Escrow semantics | ✅/⚠️ | The local escrow ledger is created only after a trusted payment reference marks the request paid. Real regulated/PSP escrow remains an external integration. |
+| Monetary quote semantics | ✅ | No fake/default monetary quote is generated. Provider-listed rates are labelled indicative; final quotes must be confirmed. |
+| Attachment security | ⚠️ | Authenticated, size-limited uploads exist; production object storage, malware scanning, signed access URLs and retention controls remain recommended before high-volume media use. |
+| Distributed rate limiting/presence | ⚠️ | Single-instance controls are present. Redis becomes necessary when multi-instance coordination is introduced. |
+| Database scale | ⚠️ | SQL.js is retained as the cost-effective single-instance launch database. PostgreSQL is a scale trigger, not a mandatory premature migration. |
+| Real PSP | ❌ | Production PSP credentials/contracts are still required. The code fails closed rather than pretending a payment succeeded. |
+| External identity/provider verification | ❌ | Production verification adapters/evidence workflows still require external integrations. |
 
-## v5.52.2 continuation (ChatGPT extraction boundary)
+## Economic truth rules
 
-Route modules depending on existing services (no parallel fake billing):
+The following are now non-negotiable:
 
-- `src/routes/pricingRoutes.ts`
-- `src/routes/subscriptionRoutes.ts`
-- `src/routes/paymentRoutes.ts`
-- `src/services/subscriptionService.ts`
+1. A database escrow row is **not** proof that money is held.
+2. A provider record is **not** proof that the provider is verified.
+3. A provider profile is **not** proof of current availability.
+4. A listed starting rate is **not** a confirmed quote.
+5. A successful database transition is **not** proof that an external fulfilment event occurred.
+6. A sandbox payment is never a production payment.
 
-Subscription mutation path:
+User-facing language must reflect these distinctions.
 
-```
-✗ POST { phone, plan }
-✓ authenticated session → memory profile → validated entitlement → confirmed payment → subscription state
-```
+## Remaining security work
 
-Legacy monolith handlers return **410 Gone** and point to authenticated routes. Profile update no longer accepts `subscription_tier` from the client.
+1. Integrate and certify a real PSP before enabling production payment/escrow claims.
+2. Integrate provider/identity verification with auditable evidence, expiry and revocation.
+3. Move chat media to protected object storage with malware/content scanning and signed access when production volume warrants it.
+4. Add cross-channel behavioural security tests for web, WhatsApp, Telegram, SMS, USSD and email.
+5. Introduce Redis-backed distributed rate limiting/presence only when multi-instance deployment requires it.
 
-### Apply wiring
+## Operator actions
 
-```bash
-node scripts/wire-security-routes.mjs
-npm run lint
-```
+If real credentials were ever committed to Git history, rotate them in the relevant provider consoles and treat the historical values as compromised until rotation is confirmed. Code-level secret scanning cannot revoke a credential.
 
-### Env
+## Implementation rule
 
-```
-JWT_SECRET=<32+ chars>
-WHATSAPP_APP_SECRET=<Meta app secret>
-OTP_LEGACY_LOGIN=false   # never true in production
-OTP_DEBUG=true           # local only — exposes OTP in API response
-KURUKOO_PAY_PROVIDER=sandbox
-FORCE_SANDBOX_SUBSCRIPTION=false  # true only for local QA tier grants
-```
-
-## Still recommended (architecture pass)
-
-1. Finish extracting remaining admin/economic routes out of `src/index.ts`.
-2. Remove remaining body-phone trust on pulse/orders/tasks where ownership is not enforced.
-3. Redis-backed rate limits + presence before multi-instance.
-4. PostgreSQL before multi-instance writes.
-5. Wire real PSP adapters (OPay/Moniepoint) so `processDirectPayment` is not permanently fail-closed outside sandbox.
-6. Cross-channel integration tests.
-
-## Operator action (cannot be done in code)
-
-If real keys were ever committed to Git history:
-
-1. Rotate Gemini, Hugging Face, Groq, GitHub PAT immediately.
-2. Search git history for those values.
-3. Treat as compromise until rotation is confirmed.
+Before implementing a security or platform capability, inspect the current repository and confirm whether an existing canonical implementation already provides it. Extend the canonical implementation instead of creating a parallel service or route.
