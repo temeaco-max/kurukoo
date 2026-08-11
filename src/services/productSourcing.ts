@@ -23,22 +23,26 @@ export async function sourceProduct(query: string, country: string): Promise<Sou
     const cards: SourcedProductCard[] = [];
     try {
         const stmt = db.prepare(`
-            SELECT m.name, m.location, s.skill, s.hourly_rate, s.rating
+            SELECT m.name, m.location, m.verified_provider,
+                   s.skill, s.hourly_rate, s.rating, s.verified_artist
             FROM memory_profiles m
             JOIN skills s ON m.phone = s.phone
-            WHERE lower(m.country) = ? AND (lower(s.skill) LIKE ? OR lower(s.skill) = ?)
+            WHERE lower(m.country) = ?
+              AND (lower(s.skill) LIKE ? OR lower(s.skill) = ?)
+              AND (COALESCE(m.verified_provider, 0) = 1 OR COALESCE(s.verified_artist, 0) = 1)
             LIMIT 3
         `);
         stmt.bind([normalizedCountry, `%${cleanQuery}%`, cleanQuery]);
         while (stmt.step()) {
-            const row = stmt.getAsObject() as any;
+            const row = stmt.getAsObject() as Record<string, unknown>;
             const rate = Number(row.hourly_rate);
+            const verified = Boolean(Number(row.verified_provider ?? 0) || Number(row.verified_artist ?? 0));
             cards.push({
-                title: `${row.name || 'Verified provider'} (${row.skill})`,
+                title: `${row.name || 'Provider'} (${row.skill})`,
                 price: Number.isFinite(rate) && rate > 0 ? `₦${rate.toLocaleString()}/hr` : 'Price on request',
                 source: `${row.location || 'Local provider'}`,
-                location: row.location || undefined,
-                verified: true
+                location: row.location ? String(row.location) : undefined,
+                verified,
             });
         }
         stmt.free();
