@@ -13,229 +13,32 @@ import economicRequestRouter from './economicRequestRouter.js';
 import jwt from 'jsonwebtoken';
 
 const router = Router();
-
 const OTP_TTL_MS = 5 * 60 * 1000;
 const OTP_RESEND_MS = 60 * 1000;
 const OTP_MAX_ATTEMPTS = 5;
 const otpRate = new Map<string, number>();
+function normalizePhone(value: unknown): string | null { const raw = String(value || '').trim().replace(/[\s().-]/g, ''); if (!/^\+?[1-9]\d{7,14}$/.test(raw)) return null; return raw.startsWith('+') ? raw : `+${raw}`; }
+function getJwtSecret(): string { const secret = process.env.JWT_SECRET; if (!secret || secret.length < 32) throw new Error('JWT_SECRET is not configured'); return secret; }
+function hashOtp(phone: string, code: string): string { return crypto.createHmac('sha256', getJwtSecret()).update(`${phone}:${code}`).digest('hex'); }
+function setAuthCookie(res: any, token: string): void { const secure = process.env.NODE_ENV === 'production' ? '; Secure' : ''; res.setHeader('Set-Cookie', `kurukoo_auth=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secure}`); }
+async function ensureOtpTable(): Promise<void> { const db = await getDb(); db.run(`CREATE TABLE IF NOT EXISTS auth_otps (phone TEXT PRIMARY KEY, code_hash TEXT NOT NULL, expires_at INTEGER NOT NULL, attempts INTEGER DEFAULT 0, last_sent_at INTEGER NOT NULL)`); saveDb(); }
+async function deliverOtp(phone: string, code: string): Promise<boolean> { const username = process.env.AFRICASTALKING_USERNAME; const apiKey = process.env.AFRICASTALKING_API_KEY; if (!username || !apiKey) return false; try { const response = await fetch('https://api.africastalking.com/version1/messaging', { method: 'POST', headers: { apiKey, 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' }, body: new URLSearchParams({ username, to: phone, message: `Your Kurukoo verification code is ${code}. It expires in 5 minutes.` }) }); return response.ok; } catch (error) { console.error('[Auth] OTP delivery failed:', error); return false; } }
 
-function normalizePhone(value: unknown): string | null {
-    const raw = String(value || '').trim().replace(/[\s().-]/g, '');
-    if (!/^\+?[1-9]\d{7,14}$/.test(raw)) return null;
-    return raw.startsWith('+') ? raw : `+${raw}`;
-}
+router.post('/auth/request-otp', async (req, res) => { const phone = normalizePhone(req.body?.phone); if (!phone) return res.status(400).json({ error: 'Enter a valid international phone number.' }); const now = Date.now(); const lastSent = otpRate.get(phone) || 0; if (now - lastSent < OTP_RESEND_MS) return res.status(429).json({ error: 'Please wait before requesting another code.', retryAfter: Math.ceil((OTP_RESEND_MS - (now - lastSent)) / 1000) }); await ensureOtpTable(); const code = String(crypto.randomInt(100000, 1000000)); const db = await getDb(); db.run('INSERT OR REPLACE INTO auth_otps (phone, code_hash, expires_at, attempts, last_sent_at) VALUES (?, ?, ?, 0, ?)', [phone, hashOtp(phone, code), now + OTP_TTL_MS, now]); saveDb(); otpRate.set(phone, now); const delivered = await deliverOtp(phone, code); if (!delivered && process.env.NODE_ENV === 'production') return res.status(503).json({ error: 'Verification delivery is temporarily unavailable. Please try again later.' }); const response: any = { success: true, expiresIn: 300 }; if (process.env.NODE_ENV !== 'production' && process.env.AUTH_OTP_DEV_CODE) response.devCode = process.env.AUTH_OTP_DEV_CODE; res.json(response); });
 
-function getJwtSecret(): string {
-    const secret = process.env.JWT_SECRET;
-    if (!secret || secret.length < 32) throw new Error('JWT_SECRET is not configured');
-    return secret;
-}
-
-function hashOtp(phone: string, code: string): string {
-    return crypto.createHmac('sha256', getJwtSecret()).update(`${phone}:${code}`).digest('hex');
-}
-
-function setAuthCookie(res: any, token: string): void {
-    const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-    res.setHeader('Set-Cookie', `kurukoo_auth=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secure}`);
-}
-
-async function ensureOtpTable(): Promise<void> {
-    const db = await getDb();
-    db.run(`CREATE TABLE IF NOT EXISTS auth_otps (phone TEXT PRIMARY KEY, code_hash TEXT NOT NULL, expires_at INTEGER NOT NULL, attempts INTEGER DEFAULT 0, last_sent_at INTEGER NOT NULL)`);
-    saveDb();
-}
-
-async function deliverOtp(phone: string, code: string): Promise<boolean> {
-    const username = process.env.AFRICASTALKING_USERNAME;
-    const apiKey = process.env.AFRICASTALKING_API_KEY;
-    if (!username || !apiKey) return false;
-    try {
-        const response = await fetch('https://api.africastalking.com/version1/messaging', {
-            method: 'POST',
-            headers: { 'apiKey': apiKey, 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
-            body: new URLSearchParams({ username, to: phone, message: `Your Kurukoo verification code is ${code}. It expires in 5 minutes.` })
-        });
-        return response.ok;
-    } catch (error) {
-        console.error('[Auth] OTP delivery failed:', error);
-        return false;
-    }
-}
-
-router.post('/auth/request-otp', async (req, res) => {
-    const phone = normalizePhone(req.body?.phone);
-    if (!phone) return res.status(400).json({ error: 'Enter a valid international phone number.' });
-    const now = Date.now();
-    const lastSent = otpRate.get(phone) || 0;
-    if (now - lastSent < OTP_RESEND_MS) return res.status(429).json({ error: 'Please wait before requesting another code.', retryAfter: Math.ceil((OTP_RESEND_MS - (now - lastSent)) / 1000) });
-    await ensureOtpTable();
-    const code = String(crypto.randomInt(100000, 1000000));
-    const db = await getDb();
-    db.run('INSERT OR REPLACE INTO auth_otps (phone, code_hash, expires_at, attempts, last_sent_at) VALUES (?, ?, ?, 0, ?)', [phone, hashOtp(phone, code), now + OTP_TTL_MS, now]);
-    saveDb();
-    otpRate.set(phone, now);
-    const delivered = await deliverOtp(phone, code);
-    if (!delivered && process.env.NODE_ENV === 'production') return res.status(503).json({ error: 'Verification delivery is temporarily unavailable. Please try again later.' });
-    const response: any = { success: true, expiresIn: 300 };
-    if (process.env.NODE_ENV !== 'production' && process.env.AUTH_OTP_DEV_CODE) response.devCode = process.env.AUTH_OTP_DEV_CODE;
-    res.json(response);
-});
-
-router.post('/auth/verify-otp', async (req, res) => {
-    const phone = normalizePhone(req.body?.phone);
-    const code = String(req.body?.code || '').trim();
-    if (!phone || !/^\d{6}$/.test(code)) return res.status(400).json({ error: 'Phone and six-digit verification code are required.' });
-    await ensureOtpTable();
-    const db = await getDb();
-    const result = db.exec('SELECT code_hash, expires_at, attempts FROM auth_otps WHERE phone = ?', [phone]);
-    if (!result.length || !result[0].values.length) return res.status(400).json({ error: 'Verification code expired or not requested.' });
-    const [storedHash, expiresAt, attempts] = result[0].values[0];
-    if (Number(expiresAt) < Date.now()) { db.run('DELETE FROM auth_otps WHERE phone = ?', [phone]); saveDb(); return res.status(400).json({ error: 'Verification code expired. Request a new one.' }); }
-    if (Number(attempts) >= OTP_MAX_ATTEMPTS) return res.status(429).json({ error: 'Too many verification attempts. Request a new code.' });
-    const expectedHash = hashOtp(phone, code);
-    const supplied = Buffer.from(expectedHash);
-    const stored = Buffer.from(String(storedHash));
-    if (process.env.NODE_ENV !== 'production' && process.env.AUTH_OTP_DEV_CODE && code === process.env.AUTH_OTP_DEV_CODE) {
-        // Explicit development-only test path.
-    } else if (stored.length !== supplied.length || !crypto.timingSafeEqual(stored, supplied)) {
-        db.run('UPDATE auth_otps SET attempts = attempts + 1 WHERE phone = ?', [phone]); saveDb();
-        return res.status(401).json({ error: 'Invalid verification code.' });
-    }
-    db.run('DELETE FROM auth_otps WHERE phone = ?', [phone]);
-    db.run(`INSERT INTO memory_profiles (phone, country, points_balance, wallet_balance_minor, created_at, updated_at)
-            VALUES (?, CASE WHEN substr(?,1,4) = '+234' THEN 'ng' WHEN substr(?,1,3) = '+44' THEN 'gb' ELSE 'ng' END, 30, 30, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-            ON CONFLICT(phone) DO UPDATE SET updated_at = CURRENT_TIMESTAMP`, [phone, phone, phone]);
-    saveDb();
-    const token = jwt.sign({ phone, role: 'user' }, getJwtSecret(), { algorithm: 'HS256', expiresIn: '7d' });
-    setAuthCookie(res, token);
-    res.json({ success: true, token, phone });
-});
-
-router.post('/auth/logout', (_req, res) => {
-    res.setHeader('Set-Cookie', 'kurukoo_auth=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
-    res.json({ success: true });
-});
-
-router.use(authenticateUser);
-router.use('/economic-requests', economicRequestRouter);
-
-function userPhone(req: AuthRequest): string | null { const phone = req.user?.phone; return phone ? String(phone) : null; }
+router.post('/auth/verify-otp', async (req, res) => { const phone = normalizePhone(req.body?.phone); const code = String(req.body?.code || '').trim(); if (!phone || !/^\d{6}$/.test(code)) return res.status(400).json({ error: 'Phone and six-digit verification code are required.' }); await ensureOtpTable(); const db = await getDb(); const result = db.exec('SELECT code_hash, expires_at, attempts FROM auth_otps WHERE phone = ?', [phone]); if (!result.length || !result[0].values.length) return res.status(400).json({ error: 'Verification code expired or not requested.' }); const [storedHash, expiresAt, attempts] = result[0].values[0]; if (Number(expiresAt) < Date.now()) { db.run('DELETE FROM auth_otps WHERE phone = ?', [phone]); saveDb(); return res.status(400).json({ error: 'Verification code expired. Request a new one.' }); } if (Number(attempts) >= OTP_MAX_ATTEMPTS) return res.status(429).json({ error: 'Too many verification attempts. Request a new code.' }); const expectedHash = hashOtp(phone, code); const supplied = Buffer.from(expectedHash); const stored = Buffer.from(String(storedHash)); if (process.env.NODE_ENV !== 'production' && process.env.AUTH_OTP_DEV_CODE && code === process.env.AUTH_OTP_DEV_CODE) { /* development-only test path */ } else if (stored.length !== supplied.length || !crypto.timingSafeEqual(stored, supplied)) { db.run('UPDATE auth_otps SET attempts = attempts + 1 WHERE phone = ?', [phone]); saveDb(); return res.status(401).json({ error: 'Invalid verification code.' }); } db.run('DELETE FROM auth_otps WHERE phone = ?', [phone]); db.run(`INSERT INTO memory_profiles (phone, country, points_balance, wallet_balance_minor, created_at, updated_at) VALUES (?, CASE WHEN substr(?,1,4) = '+234' THEN 'ng' WHEN substr(?,1,3) = '+44' THEN 'gb' ELSE 'ng' END, 30, 30, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT(phone) DO UPDATE SET updated_at = CURRENT_TIMESTAMP`, [phone, phone, phone]); saveDb(); const token = jwt.sign({ phone, role: 'user' }, getJwtSecret(), { algorithm: 'HS256', expiresIn: '7d' }); setAuthCookie(res, token); res.json({ success: true, phone }); });
+router.post('/auth/logout', (_req, res) => { res.setHeader('Set-Cookie', 'kurukoo_auth=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0'); res.json({ success: true }); });
+router.use(authenticateUser); router.use('/economic-requests', economicRequestRouter);
+function userPhone(req: AuthRequest): string | null { return req.user?.phone ? String(req.user.phone) : null; }
 function sse(res: any, payload: any) { res.write(`data: ${JSON.stringify(payload)}\n\n`); }
+function chunkText(text: string): string[] { const chunks: string[] = []; const source = String(text || ''); for (let i = 0; i < source.length; i += 24) chunks.push(source.slice(i, i + 24)); return chunks; }
 
-router.post('/stream', async (req: AuthRequest, res) => {
-    const phone = userPhone(req);
-    const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
-    const channel = typeof req.body?.channel === 'string' ? req.body.channel.slice(0, 30) : 'web';
-    const conversationId = typeof req.body?.conversationId === 'string' ? req.body.conversationId : undefined;
-    const attachment = req.body?.attachment;
-    if (!phone || !message) return res.status(400).json({ error: 'Authenticated phone and message are required' });
-    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
-    res.setHeader('Cache-Control', 'no-cache, no-transform');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no');
-    res.flushHeaders?.();
-    let fullReply = '';
-    let cardData: any = null;
-    let activeConversation = conversationId;
-    try {
-        const userMeta = attachment ? { attachment } : undefined;
-        const savedUser = await appendChatMessage({ phone, sender: 'user', content: message, channel, conversationId, metadata: userMeta });
-        activeConversation = savedUser.conversationId;
-        sse(res, { type: 'conversation', conversationId: activeConversation, messageId: savedUser.id });
-        if (await isOnboarding(phone)) {
-            const onboarding = await handleOnboardingInput(phone, message);
-            fullReply = onboarding.reply;
-            cardData = onboarding.cardData;
-            for (const chunk of chunkText(fullReply)) { sse(res, { type: 'text', content: chunk }); await new Promise(r => setTimeout(r, 8)); }
-        } else {
-            const routing = await routeIntent(message, phone);
-            cardData = routing.cardData;
-            const isStorefront = cardData?.type === 'agentic_storefront';
-            if (routing.skill && routing.skill !== 'general_question' && routing.skill !== 'autonomous_agent') {
-                // Agentic storefront already created an economic request — do not also finalizeOrder.
-                if (isStorefront) {
-                    fullReply = routing.reply;
-                } else {
-                    let orderMessage = '';
-                    try {
-                        const orderResult = await finalizeOrder(phone, 'lead', { skill: routing.skill });
-                        orderMessage = orderResult.message || '';
-                    } catch (error) { console.warn('[Chat] skill finalization deferred:', error); }
-                    fullReply = `${routing.reply}${orderMessage ? ` (${orderMessage})` : ''}`.trim();
-                }
-                for (const chunk of chunkText(fullReply)) { sse(res, { type: 'text', content: chunk }); await new Promise(r => setTimeout(r, 8)); }
-            } else {
-                for await (const chunk of streamUnifiedAI(message, { phone, threadId: activeConversation })) {
-                    if (chunk.type === 'metadata') sse(res, chunk);
-                    else if (chunk.type === 'thought') sse(res, chunk);
-                    else if (chunk.type === 'text' && chunk.content) { fullReply += chunk.content; sse(res, chunk); }
-                }
-            }
-        }
-        const savedAssistant = await appendChatMessage({ phone, sender: 'assistant', content: fullReply.trim(), channel, conversationId: activeConversation, cardData, metadata: { ai: true } });
-        sse(res, { type: 'done', fullReply: fullReply.trim(), cardData, conversationId: activeConversation, messageId: savedAssistant.id });
-        sse(res, '[DONE]');
-        res.end();
-    } catch (error: any) {
-        console.error('[Chat] unified stream failed:', error);
-        if (!res.writableEnded) { sse(res, { type: 'error', error: 'Unable to complete your request right now.' }); sse(res, '[DONE]'); res.end(); }
-    }
-});
+router.post('/stream', async (req: AuthRequest, res) => { const phone = userPhone(req); const message = typeof req.body?.message === 'string' ? req.body.message.trim() : ''; const channel = typeof req.body?.channel === 'string' ? req.body.channel.slice(0, 30) : 'web'; const conversationId = typeof req.body?.conversationId === 'string' ? req.body.conversationId : undefined; const attachment = req.body?.attachment; if (!phone || !message) return res.status(400).json({ error: 'Authenticated phone and message are required' }); res.setHeader('Content-Type', 'text/event-stream; charset=utf-8'); res.setHeader('Cache-Control', 'no-cache, no-transform'); res.setHeader('Connection', 'keep-alive'); res.setHeader('X-Accel-Buffering', 'no'); res.flushHeaders?.(); let fullReply = ''; let cardData: any = null; let activeConversation = conversationId; try { const savedUser = await appendChatMessage({ phone, sender: 'user', content: message, channel, conversationId, metadata: attachment ? { attachment } : undefined }); activeConversation = savedUser.conversationId; sse(res, { type: 'conversation', conversationId: activeConversation, messageId: savedUser.id }); if (await isOnboarding(phone)) { const onboarding = await handleOnboardingInput(phone, message); fullReply = onboarding.reply; cardData = onboarding.cardData; for (const chunk of chunkText(fullReply)) { sse(res, { type: 'text', content: chunk }); await new Promise(r => setTimeout(r, 8)); } } else { const routing = await routeIntent(message, phone); cardData = routing.cardData; if (routing.skill && routing.skill !== 'general_question' && routing.skill !== 'autonomous_agent') { if (cardData?.type === 'agentic_storefront') fullReply = routing.reply; else { let orderMessage = ''; try { const orderResult = await finalizeOrder(phone, 'lead', { skill: routing.skill }); orderMessage = orderResult.message || ''; } catch (error) { console.warn('[Chat] skill finalization deferred:', error); } fullReply = `${routing.reply}${orderMessage ? ` (${orderMessage})` : ''}`.trim(); } for (const chunk of chunkText(fullReply)) { sse(res, { type: 'text', content: chunk }); await new Promise(r => setTimeout(r, 8)); } } else { for await (const chunk of streamUnifiedAI(message, { phone, threadId: activeConversation })) { if (chunk.type === 'metadata' || chunk.type === 'thought') sse(res, chunk); else if (chunk.type === 'text' && chunk.content) { fullReply += chunk.content; sse(res, chunk); } } } } const savedAssistant = await appendChatMessage({ phone, sender: 'assistant', content: fullReply.trim(), channel, conversationId: activeConversation, cardData, metadata: { ai: true } }); sse(res, { type: 'done', fullReply: fullReply.trim(), cardData, conversationId: activeConversation, messageId: savedAssistant.id }); sse(res, '[DONE]'); res.end(); } catch (error: any) { console.error('[Chat] unified stream failed:', error); if (!res.writableEnded) { sse(res, { type: 'error', error: 'Unable to complete your request right now.' }); sse(res, '[DONE]'); res.end(); } } });
 
-function chunkText(text: string): string[] {
-    const chunks: string[] = []; const source = String(text || '');
-    for (let i = 0; i < source.length; i += 24) chunks.push(source.slice(i, i + 24));
-    return chunks;
-}
-
-router.get('/history', async (req: AuthRequest, res) => {
-    const phone = userPhone(req); if (!phone) return res.status(401).json({ error: 'Authenticated phone is required' });
-    const conversationId = typeof req.query.conversationId === 'string' ? req.query.conversationId : undefined;
-    const beforeId = typeof req.query.beforeId === 'string' ? Number(req.query.beforeId) : undefined;
-    const limit = typeof req.query.limit === 'string' ? Number(req.query.limit) : 50;
-    try {
-        const [conversations, messages] = await Promise.all([listChatConversations(phone, 50), listChatMessages(phone, { conversationId, beforeId, limit })]);
-        res.json({ success: true, conversations, messages, nextBeforeId: messages.length ? messages[0].id : null });
-    } catch (error) { console.error('[Chat] history failed:', error); res.status(500).json({ error: 'Unable to load conversation history' }); }
-});
-
-router.post('/conversation', async (req: AuthRequest, res) => {
-    const phone = userPhone(req); if (!phone) return res.status(401).json({ error: 'Authenticated phone is required' });
-    const channel = typeof req.body?.channel === 'string' ? req.body.channel.slice(0, 30) : 'web';
-    const title = typeof req.body?.title === 'string' ? req.body.title.slice(0, 120) : undefined;
-    try { const id = await ensureConversation(phone, undefined, channel, title); res.json({ success: true, conversationId: id }); }
-    catch (error) { console.error('[Chat] conversation create failed:', error); res.status(500).json({ error: 'Unable to create conversation' }); }
-});
-
-router.delete('/message/:id', async (req: AuthRequest, res) => {
-    const phone = userPhone(req); const id = Number(req.params.id);
-    if (!phone || !Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid message ID' });
-    try { const deleted = await deleteChatMessage(phone, id); if (!deleted) return res.status(404).json({ error: 'Message not found' }); res.json({ success: true }); }
-    catch (error) { console.error('[Chat] message delete failed:', error); res.status(500).json({ error: 'Unable to delete message' }); }
-});
-
-router.delete('/conversation/:id', async (req: AuthRequest, res) => {
-    const phone = userPhone(req); const conversationId = String(req.params.id || '');
-    if (!phone || !conversationId) return res.status(400).json({ error: 'Invalid conversation ID' });
-    try { const deleted = await clearChatConversation(phone, conversationId); res.json({ success: true, deleted }); }
-    catch (error) { console.error('[Chat] conversation delete failed:', error); res.status(500).json({ error: 'Unable to delete conversation' }); }
-});
-
-router.post('/attachments', async (req: AuthRequest, res) => {
-    const phone = userPhone(req); if (!phone) return res.status(401).json({ error: 'Authenticated phone is required' });
-    const { name, type, data } = req.body || {};
-    if (typeof name !== 'string' || typeof type !== 'string' || typeof data !== 'string') return res.status(400).json({ error: 'name, type and data are required' });
-    const allowed = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'video/mp4', 'video/webm']);
-    if (!allowed.has(type)) return res.status(415).json({ error: 'Unsupported attachment type' });
-    const raw = data.replace(/^data:[^;]+;base64,/, ''); const bytes = Buffer.byteLength(raw, 'base64');
-    const limit = type.startsWith('video/') ? 25 * 1024 * 1024 : 10 * 1024 * 1024;
-    if (bytes > limit) return res.status(413).json({ error: `Attachment exceeds ${Math.floor(limit / 1024 / 1024)}MB limit` });
-    const safeExt = path.extname(name).toLowerCase().replace(/[^a-z0-9.]/g, '').slice(0, 8) || '.bin';
-    const dir = process.env.CHAT_UPLOAD_DIR || path.join(process.cwd(), 'public', 'uploads', 'chat'); await fs.mkdir(dir, { recursive: true });
-    const filename = `${crypto.createHash('sha256').update(`${phone}:${Date.now()}:${Math.random()}`).digest('hex').slice(0, 32)}${safeExt}`;
-    await fs.writeFile(path.join(dir, filename), Buffer.from(raw, 'base64'), { flag: 'wx' });
-    res.json({ success: true, attachment: { url: `/uploads/chat/${filename}`, name: name.slice(0, 160), type, size: bytes } });
-});
+router.get('/history', async (req: AuthRequest, res) => { const phone = userPhone(req); if (!phone) return res.status(401).json({ error: 'Authenticated phone is required' }); const conversationId = typeof req.query.conversationId === 'string' ? req.query.conversationId : undefined; const beforeId = typeof req.query.beforeId === 'string' ? Number(req.query.beforeId) : undefined; const limit = typeof req.query.limit === 'string' ? Number(req.query.limit) : 50; try { const [conversations, messages] = await Promise.all([listChatConversations(phone, 50), listChatMessages(phone, { conversationId, beforeId, limit })]); res.json({ success: true, conversations, messages, nextBeforeId: messages.length ? messages[0].id : null }); } catch (error) { console.error('[Chat] history failed:', error); res.status(500).json({ error: 'Unable to load conversation history' }); } });
+router.post('/conversation', async (req: AuthRequest, res) => { const phone = userPhone(req); if (!phone) return res.status(401).json({ error: 'Authenticated phone is required' }); const channel = typeof req.body?.channel === 'string' ? req.body.channel.slice(0, 30) : 'web'; const title = typeof req.body?.title === 'string' ? req.body.title.slice(0, 120) : undefined; try { const id = await ensureConversation(phone, undefined, channel, title); res.json({ success: true, conversationId: id }); } catch (error) { console.error('[Chat] conversation create failed:', error); res.status(500).json({ error: 'Unable to create conversation' }); } });
+router.delete('/message/:id', async (req: AuthRequest, res) => { const phone = userPhone(req); const id = Number(req.params.id); if (!phone || !Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid message ID' }); try { const deleted = await deleteChatMessage(phone, id); if (!deleted) return res.status(404).json({ error: 'Message not found' }); res.json({ success: true }); } catch (error) { console.error('[Chat] message delete failed:', error); res.status(500).json({ error: 'Unable to delete message' }); } });
+router.delete('/conversation/:id', async (req: AuthRequest, res) => { const phone = userPhone(req); const conversationId = String(req.params.id || ''); if (!phone || !conversationId) return res.status(400).json({ error: 'Invalid conversation ID' }); try { const deleted = await clearChatConversation(phone, conversationId); res.json({ success: true, deleted }); } catch (error) { console.error('[Chat] conversation delete failed:', error); res.status(500).json({ error: 'Unable to delete conversation' }); } });
+router.post('/attachments', async (req: AuthRequest, res) => { const phone = userPhone(req); if (!phone) return res.status(401).json({ error: 'Authenticated phone is required' }); const { name, type, data } = req.body || {}; if (typeof name !== 'string' || typeof type !== 'string' || typeof data !== 'string') return res.status(400).json({ error: 'name, type and data are required' }); const allowed = new Set(['image/jpeg','image/png','image/webp','image/gif','application/pdf','text/plain','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','video/mp4','video/webm']); if (!allowed.has(type)) return res.status(415).json({ error: 'Unsupported attachment type' }); const raw = data.replace(/^data:[^;]+;base64,/, ''); const bytes = Buffer.byteLength(raw, 'base64'); const limit = type.startsWith('video/') ? 25 * 1024 * 1024 : 10 * 1024 * 1024; if (bytes > limit) return res.status(413).json({ error: `Attachment exceeds ${Math.floor(limit / 1024 / 1024)}MB limit` }); const safeExt = path.extname(name).toLowerCase().replace(/[^a-z0-9.]/g, '').slice(0, 8) || '.bin'; const dir = process.env.CHAT_UPLOAD_DIR || path.join(process.cwd(), 'public', 'uploads', 'chat'); await fs.mkdir(dir, { recursive: true }); const filename = `${crypto.createHash('sha256').update(`${phone}:${Date.now()}:${Math.random()}`).digest('hex').slice(0,32)}${safeExt}`; await fs.writeFile(path.join(dir, filename), Buffer.from(raw, 'base64'), { flag: 'wx' }); res.json({ success: true, attachment: { url: `/uploads/chat/${filename}`, name: name.slice(0,160), type, size: bytes } }); });
 
 export default router;
