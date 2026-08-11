@@ -6,6 +6,7 @@ import {
   getEconomicCategory,
   getDefaultCapabilities,
   getSkillFlow,
+  getSkillRequirements,
   createEconomicRequest,
   getEconomicRequest,
   transitionEconomicRequest,
@@ -28,55 +29,6 @@ import { getAiQuotaStatus } from '../services/aiQuotaService.js';
 
 const router = Router();
 
-const CATEGORY_REQUIREMENTS: Record<string, string[]> = {
-  'transport-mobility': ['origin', 'destination'],
-  'food-drink': ['items'],
-  'repairs-maintenance': ['service'],
-  'personal-care': ['service'],
-  'emergency-dispatch': ['location'],
-  'health-medical': ['service'],
-  'education-learning': ['subject'],
-  'events-entertainment': ['event'],
-  'accommodation-lodging': ['location'],
-  'agriculture-produce': ['product'],
-  'professional-services': ['service'],
-  'spiritual-religious': ['service'],
-  'freelance-services': ['service'],
-  'gigs-microtasks': ['task'],
-  'errands-delivery': ['task'],
-  'communication-telecom': ['service'],
-  'logistics-freight': ['origin', 'destination'],
-  'tourism-travel': ['destination'],
-  'creative-arts': ['service'],
-  'security-safety': ['service'],
-  'fitness-coaching': ['service'],
-  'nightlife-lounges': ['event'],
-  'betting-gaming': ['activity'],
-  'money-circle': ['purpose'],
-  'classifieds-marketplace': ['item'],
-  'price-check': ['item'],
-  'government-civic': ['service'],
-  'community-neighbourhood': ['purpose'],
-  'cravings-streetfood': ['item'],
-  'reach-reference': ['query'],
-  'language-services': ['service'],
-  'automotive-mechanics': ['service'],
-  'finance-tax': ['service'],
-  'pet-animal-care': ['service'],
-  'digital-services': ['service'],
-  'property-real-estate': ['property_type'],
-  'childcare-nanny': ['service'],
-  'beauty-wellness': ['service'],
-  'cleaning-sanitation': ['service'],
-  'home-automation': ['service'],
-  'legal-compliance': ['service'],
-  'fashion-apparel': ['service'],
-  'solar-energy': ['service'],
-  'event-rentals': ['item'],
-  'water-beverage': ['item'],
-  'sports-recreation': ['activity'],
-};
-
 const ALLOWED_STATUSES = new Set<EconomicRequestStatus>([
   'requested', 'awaiting_match', 'partially_matched', 'matched', 'quoting', 'quoted',
   'awaiting_confirmation', 'reserved', 'payment_pending', 'paid', 'in_fulfillment',
@@ -95,13 +47,13 @@ function cleanRequirements(value: unknown): Record<string, unknown> {
   );
 }
 
-function validateRequirements(
-  category: string,
-  requirements: Record<string, unknown>,
-  allowPartial: boolean
-): string[] {
+function requiredRequirementKeys(skill: string): string[] {
+  return getSkillRequirements(skill).filter((requirement) => requirement.required).map((requirement) => requirement.key);
+}
+
+function validateRequirements(skill: string, requirements: Record<string, unknown>, allowPartial: boolean): string[] {
   if (allowPartial) return [];
-  return (CATEGORY_REQUIREMENTS[category] || []).filter((key) => {
+  return requiredRequirementKeys(skill).filter((key) => {
     const value = requirements[key];
     return value === undefined || value === null || (typeof value === 'string' && !value.trim());
   });
@@ -112,14 +64,13 @@ router.get('/categories', async (_req: AuthRequest, res) =>
     success: true,
     categories: ECONOMIC_CATEGORIES.map((category) => ({
       id: category,
-      requiredRequirements: CATEGORY_REQUIREMENTS[category] || [],
       capabilities: getDefaultCapabilities(category),
     })),
   })
 );
 
 router.get('/skills/:skill/flow', async (req: AuthRequest, res) => {
-  const skill = String(req.params.skill || '').trim();
+  const skill = String(req.params.skill || '').trim().toLowerCase();
   const category = getEconomicCategory(skill);
   if (!category) return res.status(404).json({ success: false, error: 'Unknown economic skill' });
   const flow = await getSkillFlow(skill);
@@ -128,12 +79,12 @@ router.get('/skills/:skill/flow', async (req: AuthRequest, res) => {
     skill,
     category,
     flow,
-    requiredRequirements: CATEGORY_REQUIREMENTS[category] || [],
+    requiredRequirements: getSkillRequirements(skill).filter((requirement) => requirement.required),
+    requirements: getSkillRequirements(skill),
     capabilities: flow?.capabilities || getDefaultCapabilities(category),
   });
 });
 
-/** Agentic storefront: start a guided multi-stage flow. */
 router.post('/storefront/start', async (req: AuthRequest, res) => {
   const phone = phoneFrom(req);
   if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
@@ -148,7 +99,6 @@ router.post('/storefront/start', async (req: AuthRequest, res) => {
   }
 });
 
-/** Agentic storefront: advance stages / confirm escrow / complete. */
 router.post('/storefront/:id/advance', async (req: AuthRequest, res) => {
   const phone = phoneFrom(req);
   if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
@@ -182,7 +132,7 @@ router.post('/', async (req: AuthRequest, res) => {
   if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
   if (!skill || !category) return res.status(400).json({ success: false, error: 'A supported economic skill is required' });
   const requirements = cleanRequirements(req.body?.requirements);
-  const missing = validateRequirements(category, requirements, req.body?.allowPartial === true);
+  const missing = validateRequirements(skill, requirements, req.body?.allowPartial === true);
   if (missing.length) return res.status(422).json({ success: false, error: 'More information is required', missing });
   try {
     const request = await createEconomicRequest({
@@ -206,9 +156,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
   const phone = phoneFrom(req);
   if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
   const request = await getEconomicRequest(String(req.params.id || ''));
-  if (!request || request.phone !== phone) {
-    return res.status(404).json({ success: false, error: 'Economic request not found' });
-  }
+  if (!request || request.phone !== phone) return res.status(404).json({ success: false, error: 'Economic request not found' });
   res.json({ success: true, request });
 });
 
@@ -216,26 +164,28 @@ router.post('/:id/transition', async (req: AuthRequest, res) => {
   const phone = phoneFrom(req);
   if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
   const request = await getEconomicRequest(String(req.params.id || ''));
-  if (!request || request.phone !== phone) {
-    return res.status(404).json({ success: false, error: 'Economic request not found' });
-  }
+  if (!request || request.phone !== phone) return res.status(404).json({ success: false, error: 'Economic request not found' });
   const status = String(req.body?.status || '').trim() as EconomicRequestStatus;
-  if (!ALLOWED_STATUSES.has(status)) {
-    return res.status(400).json({ success: false, error: 'Unsupported request status' });
+  if (!ALLOWED_STATUSES.has(status)) return res.status(400).json({ success: false, error: 'Unsupported request status' });
+
+  // Customers may only request customer-owned lifecycle transitions. Provider/system
+  // transitions are performed by the orchestration/payment/provider services.
+  const customerAllowed = new Set<EconomicRequestStatus>([
+    'awaiting_confirmation', 'reserved', 'cancelled', 'disputed', 'completed',
+  ]);
+  if (!customerAllowed.has(status)) {
+    return res.status(403).json({ success: false, error: 'This lifecycle transition is performed by the economic service layer.' });
+  }
+  if (status === 'completed' && !['fulfilled', 'in_fulfillment'].includes(request.status)) {
+    return res.status(409).json({ success: false, error: 'A request must be fulfilled before the customer can complete it.' });
   }
   try {
     const updated = await transitionEconomicRequest(request.id, status, {
-      providerPhone: typeof req.body?.providerPhone === 'string' ? req.body.providerPhone : undefined,
-      quote: req.body?.quote && typeof req.body.quote === 'object' ? req.body.quote : undefined,
-      fulfillment:
-        req.body?.fulfillment && typeof req.body.fulfillment === 'object' ? req.body.fulfillment : undefined,
+      fulfillment: req.body?.fulfillment && typeof req.body.fulfillment === 'object' ? req.body.fulfillment : undefined,
     });
     res.json({ success: true, request: updated });
   } catch (error) {
-    res.status(409).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Invalid request transition',
-    });
+    res.status(409).json({ success: false, error: error instanceof Error ? error.message : 'Invalid request transition' });
   }
 });
 
@@ -243,13 +193,8 @@ router.post('/:id/escrow', async (req: AuthRequest, res) => {
   const phone = phoneFrom(req);
   if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
   const request = await getEconomicRequest(String(req.params.id || ''));
-  if (!request || request.phone !== phone) {
-    return res.status(404).json({ success: false, error: 'Economic request not found' });
-  }
-  const amount =
-    typeof req.body?.amount_minor === 'number' && Number.isInteger(req.body.amount_minor)
-      ? req.body.amount_minor
-      : undefined;
+  if (!request || request.phone !== phone) return res.status(404).json({ success: false, error: 'Economic request not found' });
+  const amount = typeof req.body?.amount_minor === 'number' && Number.isInteger(req.body.amount_minor) ? req.body.amount_minor : undefined;
   const result = await lockEscrowForEconomicRequest(request.id, amount);
   res.status(result.success ? 200 : 409).json(result);
 });
@@ -258,11 +203,8 @@ router.post('/:id/complete', async (req: AuthRequest, res) => {
   const phone = phoneFrom(req);
   if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
   const request = await getEconomicRequest(String(req.params.id || ''));
-  if (!request || request.phone !== phone) {
-    return res.status(404).json({ success: false, error: 'Economic request not found' });
-  }
-  const evidence =
-    req.body?.evidence && typeof req.body.evidence === 'object' ? req.body.evidence : undefined;
+  if (!request || request.phone !== phone) return res.status(404).json({ success: false, error: 'Economic request not found' });
+  const evidence = req.body?.evidence && typeof req.body.evidence === 'object' ? req.body.evidence : undefined;
   const result = await completeEconomicRequest(request.id, evidence);
   res.status(result.success ? 200 : 409).json(result);
 });
