@@ -8,12 +8,12 @@ const publicSource = await fs.readFile(new URL('../src/routes/publicRoutes.ts', 
 const canonicalImports = [
   'authRoutes','chatRouter','orderRoutes','presenceRoutes','discoveryRoutes','contentRoutes','publicRoutes',
   'pricingRoutes','subscriptionRoutes','channelRoutes','circleRoutes','economicRequestRouter','adminRoutes',
-  'paymentRoutes','userRoutes','healthRoutes',
+  'paymentRoutes','userRoutes','taskRoutes','healthRoutes',
 ];
 for (const name of canonicalImports) assert.match(indexSource, new RegExp(`from './routes/${name}\\.js'`), `index.ts must import existing ${name}`);
 
 const requiredMounts = [
-  "app.use('/api/auth', authRoutes)","app.use('/api/chat', chatRouter)","app.use('/api', orderRoutes)",
+  "app.use('/api/auth', authRoutes)","app.use('/api/chat', chatRouter)","app.use('/api', orderRoutes)","app.use('/api', taskRoutes)",
   "app.use('/', healthRoutes)","app.use('/', presenceRoutes)","app.use('/', discoveryRoutes)","app.use('/', contentRoutes)",
   "app.use('/', publicRoutes)","app.use('/api/pricing', pricingRoutes)","app.use('/api', subscriptionRoutes)",
 ];

@@ -19,7 +19,7 @@ const channelRoutes = fs.readFileSync(path.join(root, 'src/routes/channelRoutes.
 const artist = fs.readFileSync(path.join(servicesDir, 'artistBookingService.ts'), 'utf8');
 const orderFinalizer = fs.readFileSync(path.join(servicesDir, 'orderFinalizer.ts'), 'utf8');
 const chatRouter = fs.readFileSync(path.join(root, 'src/routes/chatRouter.ts'), 'utf8');
-const legacyApp = fs.readFileSync(path.join(root, 'src/legacyApp.ts'), 'utf8');
+const legacyAppPath = path.join(root, 'src/legacyApp.ts');
 
 const categoryMatch = skillFlows.match(/const CATEGORY_BY_SKILL:Record<string,string>=\{([\s\S]*?)\};/);
 const canonicalSkills = categoryMatch
@@ -43,8 +43,7 @@ const alignment = {
   chatUsesAuthenticatedIdentity: /userPhone\(req\)/.test(chatRouter),
   chatHasStreaming: /text\/event-stream/.test(chatRouter),
   chatHasHistory: /listChatConversations|listChatMessages/.test(chatRouter),
-  legacyChatRoutesPresent: /app\.post\(\['\/api\/chat', '\/api\/pwa\/chat'\]/.test(legacyApp),
-  legacyStreamRoutePresent: /app\.post\('\/api\/chat\/stream'/.test(legacyApp),
+  legacyBoundaryAbsent: !fs.existsSync(legacyAppPath) && !/legacyApp|registerLegacyRoutes/.test(index),
   channelRouterWiredAtCompositionRoot: /app\.use\('\/api', channelRoutes\)/.test(index),
   emailWebhookRoutePresent: /\/webhook\/email/.test(channelRoutes),
   rawWebhookCapturePresent: /rawBody/.test(index) && /verify:/.test(index),
@@ -52,7 +51,7 @@ const alignment = {
 
 const architectureWarnings = [];
 if (alignment.canonicalSkillsWithoutExplicitSeedFlow > 0) architectureWarnings.push('Some canonical skills use the category/default flow path rather than an explicit database flow.');
-if (alignment.legacyChatRoutesPresent || alignment.legacyStreamRoutePresent) architectureWarnings.push('legacyApp still contains duplicate chat/stream endpoints; the canonical chatRouter is registered earlier and should remain the sole chat surface.');
+if (!alignment.legacyBoundaryAbsent) architectureWarnings.push('The removed legacy route boundary has returned; canonical route modules must remain the only HTTP ownership model.');
 if (!alignment.artistUsesSharedLifecycle) architectureWarnings.push('Artist booking is not visibly using the shared Economic Request lifecycle.');
 if (!alignment.orderFinalizerGuardsChatCommitment) architectureWarnings.push('Order finalization does not visibly guard chat intent from automatic commitment.');
 if (!alignment.channelRouterWiredAtCompositionRoot) architectureWarnings.push('Channel router is not wired at the application composition root.');
@@ -62,7 +61,7 @@ console.log(JSON.stringify({
   serviceCount: files.length,
   suspicious,
   alignment,
-  architectureWarnings
+  architectureWarnings,
 }, null, 2));
 
 // Informational by design: the audit reports architectural drift without making

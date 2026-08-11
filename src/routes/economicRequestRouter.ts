@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import crypto from 'crypto';
-import { type AuthRequest } from '../middleware/auth.js';
+import { authenticateAdmin, authenticateUser, type AuthRequest } from '../middleware/auth.js';
 import {
   ECONOMIC_CATEGORIES,
   getEconomicCategory,
@@ -85,7 +85,7 @@ router.get('/skills/:skill/flow', async (req: AuthRequest, res) => {
   });
 });
 
-router.post('/storefront/start', async (req: AuthRequest, res) => {
+router.post('/storefront/start', authenticateUser, async (req: AuthRequest, res) => {
   const phone = phoneFrom(req);
   if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
   const skill = typeof req.body?.skill === 'string' ? req.body.skill.trim().toLowerCase() : 'find_worker';
@@ -99,7 +99,7 @@ router.post('/storefront/start', async (req: AuthRequest, res) => {
   }
 });
 
-router.post('/storefront/:id/advance', async (req: AuthRequest, res) => {
+router.post('/storefront/:id/advance', authenticateUser, async (req: AuthRequest, res) => {
   const phone = phoneFrom(req);
   if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
   const requestId = String(req.params.id || '');
@@ -114,7 +114,7 @@ router.post('/storefront/:id/advance', async (req: AuthRequest, res) => {
   }
 });
 
-router.get('/ai-quota', async (req: AuthRequest, res) => {
+router.get('/ai-quota', authenticateUser, async (req: AuthRequest, res) => {
   const phone = phoneFrom(req);
   if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
   try {
@@ -125,7 +125,7 @@ router.get('/ai-quota', async (req: AuthRequest, res) => {
   }
 });
 
-router.post('/', async (req: AuthRequest, res) => {
+router.post('/', authenticateUser, async (req: AuthRequest, res) => {
   const phone = phoneFrom(req);
   const skill = typeof req.body?.skill === 'string' ? req.body.skill.trim().toLowerCase() : '';
   const category = getEconomicCategory(skill);
@@ -152,7 +152,7 @@ router.post('/', async (req: AuthRequest, res) => {
   }
 });
 
-router.get('/:id', async (req: AuthRequest, res) => {
+router.get('/:id', authenticateUser, async (req: AuthRequest, res) => {
   const phone = phoneFrom(req);
   if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
   const request = await getEconomicRequest(String(req.params.id || ''));
@@ -160,7 +160,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
   res.json({ success: true, request });
 });
 
-router.post('/:id/transition', async (req: AuthRequest, res) => {
+router.post('/:id/transition', authenticateUser, async (req: AuthRequest, res) => {
   const phone = phoneFrom(req);
   if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
   const request = await getEconomicRequest(String(req.params.id || ''));
@@ -189,7 +189,7 @@ router.post('/:id/transition', async (req: AuthRequest, res) => {
   }
 });
 
-router.post('/:id/escrow', async (req: AuthRequest, res) => {
+router.post('/:id/escrow', authenticateUser, async (req: AuthRequest, res) => {
   const phone = phoneFrom(req);
   if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
   const request = await getEconomicRequest(String(req.params.id || ''));
@@ -199,7 +199,7 @@ router.post('/:id/escrow', async (req: AuthRequest, res) => {
   res.status(result.success ? 200 : 409).json(result);
 });
 
-router.post('/:id/complete', async (req: AuthRequest, res) => {
+router.post('/:id/complete', authenticateUser, async (req: AuthRequest, res) => {
   const phone = phoneFrom(req);
   if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
   const request = await getEconomicRequest(String(req.params.id || ''));
@@ -209,7 +209,7 @@ router.post('/:id/complete', async (req: AuthRequest, res) => {
   res.status(result.success ? 200 : 409).json(result);
 });
 
-router.post('/orchestration/run', async (_req: AuthRequest, res) => {
+router.post('/orchestration/run', authenticateAdmin, async (_req: AuthRequest, res) => {
   try {
     const result = await runOrchestrationPass();
     res.json({ success: true, result });
@@ -219,7 +219,7 @@ router.post('/orchestration/run', async (_req: AuthRequest, res) => {
   }
 });
 
-router.post('/memory/lifecycle', async (req: AuthRequest, res) => {
+router.post('/memory/lifecycle', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
     await ensureLivingMemorySchema();
     const job = String(req.body?.job || 'all');
@@ -234,7 +234,7 @@ router.post('/memory/lifecycle', async (req: AuthRequest, res) => {
   }
 });
 
-router.get('/memory/inspector', async (req: AuthRequest, res) => {
+router.get('/memory/inspector', authenticateUser, async (req: AuthRequest, res) => {
   const phone = phoneFrom(req);
   if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
   try {

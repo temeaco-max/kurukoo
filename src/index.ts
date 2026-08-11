@@ -17,6 +17,7 @@ import contentRoutes from './routes/contentRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
 import pricingRoutes from './routes/pricingRoutes.js';
 import subscriptionRoutes from './routes/subscriptionRoutes.js';
+import taskRoutes from './routes/taskRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
 
 // Development/test defaults only. Production must not silently select sandbox.
@@ -36,6 +37,7 @@ app.use('/api', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRouter);
 app.use('/api', orderRoutes);
+app.use('/api', taskRoutes);
 app.use('/', healthRoutes);
 app.use('/', presenceRoutes);
 app.use('/', discoveryRoutes);

@@ -19,11 +19,14 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: package.json
-      - run: npm install --no-audit --no-fund
+          cache-dependency-path: package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run lint
       - run: npm run build
       - run: npm run test:routes
+      # The active transformer chain has a documented upstream high advisory with no safe npm fix.
+      # Keep all advisories visible while blocking any critical production dependency finding.
+      - run: npm audit --omit=dev --audit-level=critical
       - run: npm run audit:css:all
       - run: npm run audit:messaging
       - run: npm run audit:skills
@@ -41,10 +44,10 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: package.json
+          cache-dependency-path: package-lock.json
       - name: Install FastText CLI
         run: sudo apt-get update -qq && sudo apt-get install -y fasttext
-      - run: npm install --no-audit --no-fund
+      - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run fasttext:build
       - name: Verify FastText model
         run: npm run fasttext:test

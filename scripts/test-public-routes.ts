@@ -2,6 +2,8 @@ import publicRouter from '../src/routes/publicRoutes.js';
 
 const expected = [
     '/',
+    '/explore',
+    '/p/:providerSlug',
     '/web',
     '/download',
     '/about',

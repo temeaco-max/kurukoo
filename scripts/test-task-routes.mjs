@@ -39,10 +39,10 @@ for (const m of markers) {
 assert(src.includes("from '../services/appointmentService.js'"), 'imports appointment service');
 assert(src.includes("from '../services/microTasks.js'"), 'imports microTasks service');
 
-// Composition-root contract: index delegates application bootstrap to legacyApp
-// during the final extraction migration; route modules are tested independently.
+// Composition-root contract: src/index.ts mounts canonical route boundaries only.
 const indexSrc = fs.readFileSync(path.join(__dirname, '../src/index.ts'), 'utf8');
-assert(indexSrc.includes("./legacyApp.js"), 'composition root delegates to legacyApp');
+assert(!indexSrc.includes('legacyApp'), 'composition root does not depend on legacyApp');
+assert(indexSrc.includes("./routes/taskRoutes.js"), 'composition root mounts the canonical task route boundary');
 assert(indexSrc.includes('composition root'), 'index is explicitly a composition root');
 
 console.log('PASS test-task-routes');

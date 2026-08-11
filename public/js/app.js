@@ -1210,8 +1210,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const userBubble = document.createElement('div');
             userBubble.className = 'message-bubble user';
             const now = new Date();
-            const tsHtml = `<span class="message-timestamp">${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
-            userBubble.innerHTML = `<span class="message-sender" style="font-size: 0.65rem; font-weight: 800; display: block; margin-bottom: 2px; opacity: 0.8;">You</span><div>${text}</div>${tsHtml}`;
+            const sender = document.createElement('span');
+            sender.className = 'message-sender';
+            sender.style.fontSize = '0.65rem';
+            sender.style.fontWeight = '800';
+            sender.style.display = 'block';
+            sender.style.marginBottom = '2px';
+            sender.style.opacity = '0.8';
+            sender.textContent = 'You';
+            const content = document.createElement('div');
+            content.textContent = text;
+            const timestamp = document.createElement('span');
+            timestamp.className = 'message-timestamp';
+            timestamp.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            userBubble.append(sender, content, timestamp);
             chatMessages.appendChild(userBubble);
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
@@ -1570,11 +1582,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 const providers = data.providers || [];
                 if (pulseProvidersList) {
                     if (providers.length > 0) {
-                        pulseProvidersList.innerHTML = providers.map(p => `
-                            <div class="pulse-provider-item">
-                                <strong>${p.name}</strong> (${p.skill}) - <span class="badge ${p.source === 'stationary' ? 'badge-blue' : 'badge-orange'}">${p.source}</span>
-                            </div>
-                        `).join('');
+                        pulseProvidersList.replaceChildren(...providers.map(p => {
+                            const item = document.createElement('div');
+                            item.className = 'pulse-provider-item';
+                            const name = document.createElement('strong');
+                            name.textContent = String(p.name || 'Provider');
+                            const badge = document.createElement('span');
+                            badge.className = `badge ${p.source === 'stationary' ? 'badge-blue' : 'badge-orange'}`;
+                            badge.textContent = String(p.source || 'unknown');
+                            item.append(name, document.createTextNode(` (${String(p.skill || '')}) - `), badge);
+                            return item;
+                        }));
                         // Render map
                         showPulseMap(providers);
                     } else {
@@ -1595,19 +1613,45 @@ document.addEventListener('DOMContentLoaded', () => {
                         const oppData = await oppRes.json();
                         const opportunities = (oppData.opportunities || []).filter(o => o.type !== 'daily_pick');
                         if (opportunities.length > 0) {
-                            exploreGigs.innerHTML = opportunities.map(o => `
-                                <div class="interactive-card" style="margin-bottom:12px; opacity: ${o.status === 'acted' ? '0.7' : '1'};">
-                                    <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
-                                        <span>${o.title}</span>
-                                        ${o.status === 'acted' ? '<span class="shortcode" style="font-size:10px; background:#28a745; margin:0;">CLAIMED</span>' : ''}
-                                    </div>
-                                    <div class="card-desc">${o.subtitle}</div>
-                                    ${o.status !== 'acted' 
-                                        ? `<button class="btn-card primary" onclick="acceptExploreGig(${o.id}, '${o.title.replace(/'/g, "\\'")}', '${o.type}')">${o.ctaText}</button>`
-                                        : `<button class="btn-card primary" style="background:#ccc; cursor:not-allowed;" disabled>Completed</button>`
-                                    }
-                                </div>
-                            `).join('');
+                            exploreGigs.replaceChildren(...opportunities.map(o => {
+                                const card = document.createElement('div');
+                                card.className = 'interactive-card';
+                                card.style.marginBottom = '12px';
+                                card.style.opacity = o.status === 'acted' ? '0.7' : '1';
+                                const titleRow = document.createElement('div');
+                                titleRow.className = 'card-title';
+                                titleRow.style.display = 'flex';
+                                titleRow.style.justifyContent = 'space-between';
+                                titleRow.style.alignItems = 'center';
+                                const title = document.createElement('span');
+                                title.textContent = String(o.title || 'Opportunity');
+                                titleRow.appendChild(title);
+                                if (o.status === 'acted') {
+                                    const claimed = document.createElement('span');
+                                    claimed.className = 'shortcode';
+                                    claimed.style.fontSize = '10px';
+                                    claimed.style.background = '#28a745';
+                                    claimed.style.margin = '0';
+                                    claimed.textContent = 'CLAIMED';
+                                    titleRow.appendChild(claimed);
+                                }
+                                const description = document.createElement('div');
+                                description.className = 'card-desc';
+                                description.textContent = String(o.subtitle || '');
+                                const action = document.createElement('button');
+                                action.className = 'btn-card primary';
+                                if (o.status === 'acted') {
+                                    action.style.background = '#ccc';
+                                    action.style.cursor = 'not-allowed';
+                                    action.disabled = true;
+                                    action.textContent = 'Completed';
+                                } else {
+                                    action.textContent = String(o.ctaText || 'Accept');
+                                    action.addEventListener('click', () => window.acceptExploreGig(o.id, String(o.title || ''), String(o.type || '')));
+                                }
+                                card.append(titleRow, description, action);
+                                return card;
+                            }));
                         } else {
                             exploreGigs.innerHTML = `<div style="text-align:center; padding: 20px; color: #666; font-size:13px;">No new opportunities matching your skills right now. Try going live on Kuru Pulse!</div>`;
                         }
@@ -1628,17 +1672,41 @@ document.addEventListener('DOMContentLoaded', () => {
                         const picksData = await picksRes.json();
                         const dailyPicks = picksData.daily_picks || [];
                         if (dailyPicks.length > 0) {
-                            exploreDailyPicks.innerHTML = dailyPicks.map(p => `
-                                <div class="interactive-card" style="margin-bottom:12px; border: 1px dashed var(--terracotta); background:#fffaf5; opacity: ${p.status === 'acted' ? '0.7' : '1'};">
-                                    <span class="shortcode" style="font-size:10px; background:var(--terracotta); margin-bottom:8px; display:inline-block;">PROMOTED</span>
-                                    <div class="card-title" style="color:var(--terracotta);">${p.title}</div>
-                                    <div class="card-desc">${p.subtitle}</div>
-                                    ${p.status !== 'acted'
-                                        ? `<button class="btn-card primary" onclick="orderDailyPick(${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.ctaLink.replace(/'/g, "\\'")}')">${p.ctaText}</button>`
-                                        : `<button class="btn-card primary" style="background:#ccc; cursor:not-allowed;" disabled>Ordered</button>`
-                                    }
-                                </div>
-                            `).join('');
+                            exploreDailyPicks.replaceChildren(...dailyPicks.map(p => {
+                                const card = document.createElement('div');
+                                card.className = 'interactive-card';
+                                card.style.marginBottom = '12px';
+                                card.style.border = '1px dashed var(--terracotta)';
+                                card.style.background = '#fffaf5';
+                                card.style.opacity = p.status === 'acted' ? '0.7' : '1';
+                                const promoted = document.createElement('span');
+                                promoted.className = 'shortcode';
+                                promoted.style.fontSize = '10px';
+                                promoted.style.background = 'var(--terracotta)';
+                                promoted.style.marginBottom = '8px';
+                                promoted.style.display = 'inline-block';
+                                promoted.textContent = 'PROMOTED';
+                                const title = document.createElement('div');
+                                title.className = 'card-title';
+                                title.style.color = 'var(--terracotta)';
+                                title.textContent = String(p.title || 'Promotion');
+                                const description = document.createElement('div');
+                                description.className = 'card-desc';
+                                description.textContent = String(p.subtitle || '');
+                                const action = document.createElement('button');
+                                action.className = 'btn-card primary';
+                                if (p.status === 'acted') {
+                                    action.style.background = '#ccc';
+                                    action.style.cursor = 'not-allowed';
+                                    action.disabled = true;
+                                    action.textContent = 'Ordered';
+                                } else {
+                                    action.textContent = String(p.ctaText || 'Order');
+                                    action.addEventListener('click', () => window.orderDailyPick(p.id, String(p.title || ''), String(p.ctaLink || '')));
+                                }
+                                card.append(promoted, title, description, action);
+                                return card;
+                            }));
                         } else {
                             exploreDailyPicks.innerHTML = `<div style="text-align:center; padding: 20px; color: #666; font-size:13px;">No promotional picks today. Check back tomorrow!</div>`;
                         }
