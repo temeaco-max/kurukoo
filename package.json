@@ -24,6 +24,7 @@
     "fasttext:build": "node scripts/build-fasttext.mjs",
     "fasttext:test": "tsx scripts/test-fasttext.ts",
     "test:public-routes": "tsx scripts/test-public-routes.ts",
+    "test:chat-dom-safety": "node scripts/test-chat-dom-safety.mjs",
     "test:discovery-routes": "tsx scripts/test-discovery-routes.ts",
     "test:presence-routes": "tsx scripts/test-presence-routes.ts",
     "test:content-routes": "tsx scripts/test-content-routes.ts",

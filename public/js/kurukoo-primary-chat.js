@@ -160,69 +160,104 @@
     }
   }
 
+  function makeElement(tag, className = '', text = '') {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    if (text) element.textContent = String(text);
+    return element;
+  }
+
   function renderAgenticStorefront(card, messageEl) {
-    const holder = document.createElement('div');
-    holder.className = 'provider-card agentic-storefront';
-    holder.dataset.requestId = card.requestId || '';
-    holder.dataset.stage = card.stage || '';
+    const holder = makeElement('div', 'provider-card agentic-storefront');
+    holder.dataset.requestId = String(card.requestId || '');
+    holder.dataset.stage = String(card.stage || '');
 
     const progress = Math.max(0, Math.min(100, Number(card.progress) || 0));
     const progressClass = Math.round(progress / 10) * 10;
-    const fieldsHtml = Array.isArray(card.fields) && card.fields.length
-      ? `<div class="storefront-fields">${card.fields.map(f => {
-          const req = f.required ? ' <span class="req">*</span>' : '';
-          return `<label class="storefront-field"><span>${escapeText(f.label || f.key)}${req}</span><input data-storefront-field="${escapeAttr(f.key)}" type="text" value="${escapeAttr(f.value || '')}" placeholder="${escapeAttr(f.label || f.key)}" autocomplete="off" /></label>`;
-        }).join('')}</div>`
-      : '';
+    const head = makeElement('div', 'storefront-head');
+    head.append(
+      makeElement('strong', '', card.title || 'Kurukoo'),
+      makeElement('span', 'storefront-stage', String(card.stage || '').replace(/_/g, ' '))
+    );
+    holder.appendChild(head);
 
-    const providersHtml = Array.isArray(card.providers) && card.providers.length
-      ? `<ul class="storefront-providers">${card.providers.map((p, i) => `<li class="${i === 0 ? 'top' : ''}"><strong>${escapeText(p.name || 'Provider')}</strong><span>${Number(p.rating || 0).toFixed(1)}★ · ₦${escapeText(String(p.hourly_rate || 0))}</span></li>`).join('')}</ul>`
-      : '';
+    const progressBar = makeElement('div', 'storefront-progress');
+    progressBar.setAttribute('role', 'progressbar');
+    progressBar.setAttribute('aria-valuenow', String(progress));
+    progressBar.setAttribute('aria-valuemin', '0');
+    progressBar.setAttribute('aria-valuemax', '100');
+    progressBar.appendChild(makeElement('i', `storefront-progress-meter progress-${progressClass}`));
+    holder.appendChild(progressBar);
 
-    const quoteHtml = card.quote
-      ? `<div class="storefront-quote">Quote: <strong>${escapeText(String(card.quote.amount_minor))} ${escapeText(card.quote.currency || 'NGN')}</strong></div>`
-      : '';
+    if (Array.isArray(card.fields) && card.fields.length) {
+      const fields = makeElement('div', 'storefront-fields');
+      card.fields.forEach(field => {
+        const key = String(field.key || '');
+        const label = makeElement('label', 'storefront-field');
+        const labelText = makeElement('span', '', field.label || key);
+        if (field.required) labelText.appendChild(makeElement('span', 'req', '*'));
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.dataset.storefrontField = key;
+        input.value = String(field.value || '');
+        input.placeholder = String(field.label || key);
+        input.autocomplete = 'off';
+        label.append(labelText, input);
+        fields.appendChild(label);
+      });
+      holder.appendChild(fields);
+    }
+
+    if (Array.isArray(card.providers) && card.providers.length) {
+      const providers = makeElement('ul', 'storefront-providers');
+      card.providers.forEach((provider, index) => {
+        const item = makeElement('li', index === 0 ? 'top' : '');
+        const rating = Number(provider.rating || 0).toFixed(1);
+        item.append(
+          makeElement('strong', '', provider.name || 'Provider'),
+          makeElement('span', '', `${rating}★ · ₦${String(provider.hourly_rate || 0)}`)
+        );
+        providers.appendChild(item);
+      });
+      holder.appendChild(providers);
+    }
+
+    if (card.quote) {
+      const quote = makeElement('div', 'storefront-quote', 'Quote: ');
+      quote.appendChild(makeElement('strong', '', `${String(card.quote.amount_minor)} ${String(card.quote.currency || 'NGN')}`));
+      holder.appendChild(quote);
+    }
 
     const actions = Array.isArray(card.actions) ? card.actions : [];
-    const actionsHtml = actions.length
-      ? `<div class="storefront-actions">${actions.map(a => {
-          const style = a.style === 'danger' ? 'danger' : a.style === 'secondary' ? 'secondary' : 'primary';
-          return `<button type="button" class="sf-btn sf-${style}" data-sf-action="${escapeAttr(a.id)}">${escapeText(a.label || a.id)}</button>`;
-        }).join('')}</div>`
-      : '';
-
-    holder.innerHTML = `
-      <div class="storefront-head">
-        <strong>${escapeText(card.title || 'Kurukoo')}</strong>
-        <span class="storefront-stage">${escapeText((card.stage || '').replace(/_/g, ' '))}</span>
-      </div>
-      <div class="storefront-progress" role="progressbar" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"><i class="storefront-progress-meter progress-${progressClass}"></i></div>
-      ${fieldsHtml}
-      ${providersHtml}
-      ${quoteHtml}
-      ${actionsHtml}
-      ${card.escrowProtected !== false ? '<span class="escrow-badge">🔒 Escrow Protected</span>' : ''}
-    `;
-
-    holder.querySelectorAll('[data-sf-action]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const action = btn.getAttribute('data-sf-action');
-        const fields = collectStorefrontFields(holder);
-        if (action === 'start' && !card.requestId) {
-          sendMessage(`Continue with ${card.skill || 'this request'}`);
-          return;
-        }
-        if (!card.requestId) return;
-        void advanceStorefront(card.requestId, action, fields, messageEl);
+    if (actions.length) {
+      const actionGroup = makeElement('div', 'storefront-actions');
+      actions.forEach(action => {
+        const style = action.style === 'danger' ? 'danger' : action.style === 'secondary' ? 'secondary' : 'primary';
+        const button = makeElement('button', `sf-btn sf-${style}`, action.label || action.id || 'Continue');
+        button.type = 'button';
+        button.dataset.sfAction = String(action.id || '');
+        button.addEventListener('click', () => {
+          const actionId = button.dataset.sfAction || '';
+          const fields = collectStorefrontFields(holder);
+          if (actionId === 'start' && !card.requestId) {
+            sendMessage(`Continue with ${card.skill || 'this request'}`);
+            return;
+          }
+          if (!card.requestId || !actionId) return;
+          void advanceStorefront(card.requestId, actionId, fields, messageEl);
+        });
+        actionGroup.appendChild(button);
       });
-    });
+      holder.appendChild(actionGroup);
+    }
 
-    holder.querySelectorAll('[data-storefront-field]').forEach(el => {
-      el.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          const primary = holder.querySelector('.sf-btn.sf-primary');
-          primary?.click();
+    if (card.escrowProtected !== false) holder.appendChild(makeElement('span', 'escrow-badge', '🔒 Escrow Protected'));
+
+    holder.querySelectorAll('[data-storefront-field]').forEach(field => {
+      field.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          holder.querySelector('.sf-btn.sf-primary')?.click();
         }
       });
     });
