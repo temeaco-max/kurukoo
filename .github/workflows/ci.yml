@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -15,45 +15,6 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-
-      - name: Normalize extracted legacy module
-        shell: bash
-        run: |
-          set -euo pipefail
-          if ! test -f src/legacyApp.ts; then exit 0; fi
-          python3 <<'PY'
-          from pathlib import Path
-          p = Path('src/legacyApp.ts')
-          s = p.read_text()
-          if 'export function registerLegacyRoutes(app: express.Application) {' not in s:
-              s = s.replace('function registerLegacyRoutes(app: express.Application) {', 'export function registerLegacyRoutes(app: express.Application) {', 1)
-          marker = 'export function registerLegacyRoutes(app: express.Application) {'
-          start = s.find(marker)
-          if start < 0: raise SystemExit('legacy registration function not found')
-          prefix, body = s[:start], s[start:]
-          imports, kept = [], []
-          for line in body.splitlines(True):
-              if line.startswith('import ') and line.rstrip().endswith(';'):
-                  imports.append(line)
-              else:
-                  kept.append(line)
-          body = ''.join(kept)
-          body = ''.join(line[7:] if line.startswith('export ') else line for line in body.splitlines(True))
-          # Re-add the registration export after removing nested exports.
-          body = 'export function registerLegacyRoutes(app: express.Application) {' + body.split('{', 1)[1]
-          p.write_text(prefix + ''.join(imports) + ('\n' if imports else '') + body)
-          PY
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src/legacyApp.ts
-          if git diff --cached --quiet; then
-            echo 'Legacy module already normalized'
-          else
-            git commit -m 'refactor: normalize legacy route module [legacy-normalize]'
-            git push origin HEAD:main
-            git fetch origin main
-            git reset --hard origin/main
-          fi
 
       - uses: actions/setup-node@v4
         with:
