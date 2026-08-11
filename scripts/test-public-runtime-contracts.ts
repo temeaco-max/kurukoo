@@ -36,6 +36,12 @@ try {
     assert.equal(response.status, 200, `${pathName} must be served by the canonical public asset boundary`);
   }
 
+  for (const pathName of ['/chat', '/chat/']) {
+    const chat = await request(base, pathName);
+    assert.equal(chat.status, 200, `${pathName} must resolve for the homepage, PWA embed, manifest shortcut, and service-worker shell`);
+    assert.match(await chat.text(), /id="chat-shell"|class="chat-shell"/, `${pathName} must serve the existing chat shell`);
+  }
+
   for (const pathName of ['/explore/food', '/explore/groceries', '/explore/repairs-maintenance', '/explore/sports']) {
     const response = await request(base, pathName);
     assert.equal(response.status, 200, `${pathName} must resolve through the canonical Explore route`);
@@ -70,4 +76,4 @@ try {
 }
 
 console.log('Public runtime contract checks passed');
-console.log('Verified: homepage stylesheet and onboarding events, canonical public assets, Explore category aliases, truthful category data, public redirects, pricing, and country routes.');
+console.log('Verified: homepage stylesheet and onboarding events, canonical public assets and chat shell, Explore category aliases, truthful category data, public redirects, pricing, and country routes.');

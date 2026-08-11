@@ -6,6 +6,7 @@ const expected = [
     '/explore/:slug',
     '/p/:providerSlug',
     '/web',
+    '/chat',
     '/download',
     '/how-it-works',
     '/pricing',
