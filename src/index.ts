@@ -2,6 +2,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 import express from 'express';
+import path from 'node:path';
 import channelRoutes from './routes/channelRoutes.js';
 import circleRoutes from './routes/circleRoutes.js';
 import economicRequestRouter from './routes/economicRequestRouter.js';
@@ -26,6 +27,8 @@ if (process.env.NODE_ENV === 'production' && process.env.KURUKOO_PAY_PROVIDER ==
 console.log(`[Kurukoo Startup] Environment initialized. PORT=${process.env.PORT || 3000}, Pay Provider=${process.env.KURUKOO_PAY_PROVIDER || 'unconfigured'}`);
 
 const app = express();
+app.set('view engine', 'ejs');
+app.set('views', path.join(process.cwd(), 'views'));
 app.use(express.json({ limit: process.env.CHAT_ATTACHMENT_BODY_LIMIT || '35mb', verify: (req, _res, buf) => { (req as any).rawBody = Buffer.from(buf); } }));
 app.use('/api', channelRoutes);
 app.use('/api', circleRoutes);

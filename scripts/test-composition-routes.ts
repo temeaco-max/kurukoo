@@ -24,4 +24,6 @@ for (const route of ["router.get('/',", "router.get('/explore',", "router.get('/
   assert.ok(publicSource.includes(route), `publicRoutes must own ${route}`);
 }
 assert.match(indexSource,/dotenv\.config\(\)/, 'startup environment initialization must remain in composition root');
+assert.match(indexSource,/app\.set\('view engine', 'ejs'\)/, 'composition root must configure EJS after legacy route removal');
+assert.match(indexSource,/app\.set\('views', path\.join\(process\.cwd\(\), 'views'\)\)/, 'composition root must configure the canonical views directory');
 console.log('test-composition-routes: PASS');

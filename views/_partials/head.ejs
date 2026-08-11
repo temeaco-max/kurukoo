@@ -50,6 +50,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/site.css?v=1.2.0">
+    <% (typeof pageStyles !== 'undefined' ? pageStyles : []).forEach(function(href) { %>
+    <link rel="stylesheet" href="<%= href %>">
+    <% }); %>
     <link rel="icon" type="image/svg+xml" href="/assets/brand/favicon.svg">
     <link rel="apple-touch-icon" href="/assets/icons/icon-192.svg">
     <link rel="manifest" href="/manifest.json">

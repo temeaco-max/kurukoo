@@ -2,8 +2,15 @@ import publicRouter from '../src/routes/publicRoutes.js';
 
 const expected = [
     '/',
+    '/explore',
+    '/explore/:slug',
+    '/p/:providerSlug',
     '/web',
     '/download',
+    '/how-it-works',
+    '/pricing',
+    '/events',
+    '/earn/:topic',
     '/about',
     '/contact',
     '/help',
@@ -18,6 +25,7 @@ const expected = [
     '/resources/:slug',
     '/partners',
     '/advertise',
+    '/:country(ng|gh|gb)',
 ];
 
 const stack = (publicRouter as any).stack || [];

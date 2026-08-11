@@ -13,9 +13,9 @@
         <div>
           <h1 class="category-hero-title"><%= category.name %></h1>
           <div class="category-hero-meta">
-            <span>🛡️ <%= category.providerCount %> Verified Providers</span>
-            <span>★ <%= category.avgRating %> Rating</span>
-            <span>⚡ Instant Dispatch</span>
+            <% if (typeof category.providerCount === 'number') { %><span>🛡️ <%= category.providerCount %> Verified Providers</span><% } %>
+            <% if (typeof category.avgRating === 'number') { %><span>★ <%= category.avgRating %> Rating</span><% } %>
+            <span>Explore related services</span>
           </div>
         </div>
       </div>

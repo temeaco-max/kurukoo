@@ -24,6 +24,7 @@
     "fasttext:build": "node scripts/build-fasttext.mjs",
     "fasttext:test": "tsx scripts/test-fasttext.ts",
     "test:public-routes": "tsx scripts/test-public-routes.ts",
+    "test:public-runtime": "tsx scripts/test-public-runtime-contracts.ts",
     "test:discovery-routes": "tsx scripts/test-discovery-routes.ts",
     "test:presence-routes": "tsx scripts/test-presence-routes.ts",
     "test:content-routes": "tsx scripts/test-content-routes.ts",
@@ -34,7 +35,7 @@
     "test:seo-admin": "tsx scripts/test-seo-admin-routes.ts",
     "test:composition": "tsx scripts/test-composition-routes.ts",
     "test:task": "node scripts/test-task-routes.mjs",
-    "test:routes": "npm run test:composition && npm run test:public-routes && npm run test:discovery-routes && npm run test:presence-routes && npm run test:content-routes && npm run test:trust && npm run test:circle && npm run test:order && npm run test:admin && npm run test:seo-admin && npm run test:task",
+    "test:routes": "npm run test:composition && npm run test:public-routes && npm run test:public-runtime && npm run test:discovery-routes && npm run test:presence-routes && npm run test:content-routes && npm run test:trust && npm run test:circle && npm run test:order && npm run test:admin && npm run test:seo-admin && npm run test:task",
     "test:security": "npm run test:trust && npm run test:circle && npm run test:order && npm run test:admin && npm run test:task",
     "postinstall": "fasttext --help >/dev/null 2>&1 && echo 'FastText is available' || echo 'FastText CLI not found. Install with: brew install fasttext (macOS) or apt-get install fasttext (Linux). Using template fallback until model is available.'"
   },
