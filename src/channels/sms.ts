@@ -16,7 +16,7 @@ class SmsHandler extends BaseChannelHandler {
         const apiKey = process.env.AFRICASTALKING_API_KEY;
         const username = process.env.AFRICASTALKING_USERNAME;
         const sender = process.env.AFRICASTALKING_SENDER_ID;
-        if (!apiKey || !username) {
+        if (!apiKey || !username || apiKey.toLowerCase() === 'stub' || username.toLowerCase() === 'stub') {
             console.warn('[SMS] Outbound delivery not configured; inbound conversation was persisted.');
             return;
         }

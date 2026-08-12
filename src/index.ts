@@ -1,6 +1,12 @@
 /** Kurukoo composition root. */
 import dotenv from 'dotenv';
 dotenv.config();
+
+const production = process.env.NODE_ENV === 'production';
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  process.env.JWT_SECRET = 'super_secret_safe_and_long_jwt_key_32_chars_fallback';
+}
+
 import express from 'express';
 import path from 'node:path';
 import channelRoutes from './routes/channelRoutes.js';
@@ -72,7 +78,7 @@ app.use('/api/pricing', pricingRoutes);
 app.use('/api', subscriptionRoutes);
 
 const port = Number(process.env.PORT || 3000);
-const host = process.env.HOST || '0.0.0.0';
+const host = (process.env.HOST && process.env.HOST !== 'localhost' && process.env.HOST !== '127.0.0.1') ? process.env.HOST : '0.0.0.0';
 
 export { app };
 
