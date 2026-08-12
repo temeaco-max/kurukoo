@@ -596,7 +596,7 @@
             state.isGuest = false; 
             setConnection(true); 
             $('logout-sidebar-btn').hidden = false;
-            if (data.token) localStorage.setItem('kurukoo_auth_token', data.token);
+            // Browser auth remains in HttpOnly cookies
             if (data.phone) localStorage.setItem('kurukoo_user_phone', data.phone);
           }
           if (data.type === 'metadata') updateModelStatus(data);
@@ -729,7 +729,7 @@
   $('sidebar-points')?.addEventListener('click', () => { setInspectorOpen(true, 'inspector-points'); setSidebarOpen(false); });
   $('logout-sidebar-btn')?.addEventListener('click', async () => {
     try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); } catch (_) {}
-    localStorage.removeItem('kurukoo_auth_token');
+    // Browser auth remains in HttpOnly cookies
     localStorage.removeItem('kurukoo_user_phone');
     localStorage.removeItem('kurukoo_user_name');
     window.location.assign('/');

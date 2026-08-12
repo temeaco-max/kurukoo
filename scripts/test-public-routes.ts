@@ -23,6 +23,7 @@ const expected = [
     '/careers',
     '/discover',
     '/login',
+    '/settings',
     '/resources',
     '/resources/:slug',
     '/partners',
