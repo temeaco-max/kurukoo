@@ -34,6 +34,36 @@
 - `escrow` — held funds with `created_at` for cooling-off timers (§43).
 - **No category should introduce a parallel consumer identity or economic request system.**
 
+## QR Acquisition, Referral, Network & Channel Entry
+QR is a **contextual acquisition and continuity mechanism**, not a separate account, referral, Points, commerce, or messaging subsystem.
+
+### Supported QR contexts
+- `referral` — user-to-user referral onboarding
+- `contributor` — contributor onboarding/invitation
+- `network` — provider, business, physical-agent, AI-agent or network entry
+- `offer` / `product` — known offer or product/service context
+- `location` — physical Kurukoo signage/location entry
+- `channel` — chosen-channel connection hand-off (WhatsApp, Telegram, SMS or USSD when genuinely configured)
+- `continue` — future short-lived cross-device continuation
+- `public` — generic Kurukoo entry
+
+### Canonical flow
+`physical signage / contributor / agent / referral / offer → QR → contextual guest conversation → identity only when required → existing Kurukoo capability`
+
+QR payloads contain only safe contextual identifiers. They must never contain passwords, session cookies, payment credentials, raw personal data, or an authenticated session.
+
+### Referral and Points
+The existing referral service remains authoritative. A scan or link open **never awards Points by itself**. Attribution is registered through the existing referral service, and rewards are released only by the existing qualifying-event rules and Points engine. The personal QR endpoint generates a safe `/start?context=referral&ref=...` URL for sharing or physical printing.
+
+### Contributors and agent networks
+Contributors, businesses, physical agents and AI-agent networks may distribute contextual QR codes for onboarding, referrals, network discovery, approved offers, or other legitimate acquisition activity. A QR code does not make an entity verified, prove inventory/availability, or complete a transaction. Any purchase or service still uses the canonical Economic Request, offer, confirmation, payment and fulfilment boundaries.
+
+### Channel connection
+A channel QR can route a user into the existing channel-connection flow. The UI must only show a channel as connected when the actual adapter/configuration is active. Otherwise the user sees `Not connected`, `Coming soon`, or equivalent truthful deployment state.
+
+### Cross-device continuation
+Any future cross-device QR must contain a short-lived, single-use opaque server token. Conversation content, identity credentials and authenticated session state must never be encoded directly in a QR.
+
 ## Key Internal vs External Terminology Mappings (v5.41)
 | User-Facing (UI / Copy) | Internal (Code / DB) |
 |---|---|
@@ -47,6 +77,7 @@
 | AI Agents | `ai_agents`, `src/services/aiAgentService.ts` |
 | Privacy Bridge | `privacy_bridge`, `src/services/privacyBridge.ts` |
 | Work Toggle | `memory_profiles.is_available` |
+| QR acquisition | `public/start`, `public/referral-qr`, `public/js/kurukoo-qr.js`, `referralService.ts` |
 
 ## Admin Console (`public/admin/*`)
 13 pages: `ai-agents`, `commissions`, `content`, `dashboard`, `login`, `marketing`, `partnerships`, `pricing`, `referrals`, `revenue`, `social`, `users`, `analytics` — backed by `/api/admin/*` routes.
