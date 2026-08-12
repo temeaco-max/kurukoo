@@ -479,6 +479,19 @@
       holder.innerHTML = '<strong>Event coverage request</strong><div class="deferred">Contributor participation and any resulting payment step require separate confirmation.</div>';
     } else if (card.type === 'security_booking') {
       holder.innerHTML = '<strong>Security-related request</strong><span class="escrow-badge">Provider suitability and availability require confirmation.</span>';
+    } else if (card.type === 'reminder') {
+      const reminder = card.reminder || {};
+      const heading = document.createElement('strong');
+      heading.textContent = 'Reminder saved';
+      const detail = document.createElement('div');
+      detail.className = 'deferred';
+      const due = reminder.due_at ? new Date(reminder.due_at) : null;
+      const dueText = due && !Number.isNaN(due.getTime()) ? ` for ${due.toLocaleString()}` : '';
+      detail.textContent = reminder.title ? `${reminder.title}${dueText}.` : 'Your reminder is attached to this conversation.';
+      const boundary = document.createElement('span');
+      boundary.className = 'escrow-badge';
+      boundary.textContent = 'This personal reminder does not create a provider request or payment step.';
+      holder.append(heading, detail, boundary);
     } else if (card.type === 'artist_booking') {
       holder.innerHTML = '<strong>Creator request</strong><div class="deferred">Availability and representation details require confirmation before a request can proceed.</div><span class="escrow-badge">Payment availability is assessed separately.</span>';
     } else {
