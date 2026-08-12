@@ -21,6 +21,29 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+export function calculateTrustScoreValue(input: {
+  avgRating: number;
+  completedJobs: number;
+  verifiedProvider: boolean;
+  disputesLost: number;
+  accountAgeDays: number;
+}): number {
+  const avgRating = Number.isFinite(input.avgRating) && input.avgRating > 0 ? clamp(input.avgRating, 1, 5) : 3;
+  const completedJobs = Math.max(0, Number(input.completedJobs) || 0);
+  const disputesLost = Math.max(0, Number(input.disputesLost) || 0);
+  const accountAgeDays = Math.max(0, Number(input.accountAgeDays) || 0);
+  return Number(clamp(
+    5.0
+      + ((avgRating - 3.0) * 0.5)
+      + Math.min(completedJobs / 100, 1.0)
+      + (input.verifiedProvider ? 0.5 : 0)
+      - (disputesLost * 0.2)
+      + Math.min(accountAgeDays / 365, 0.5),
+    0,
+    8,
+  ).toFixed(2));
+}
+
 function accountAgeDays(createdAt: unknown): number {
   const created = new Date(String(createdAt || '')).getTime();
   if (!Number.isFinite(created)) return 0;
@@ -80,26 +103,9 @@ async function calculate(phone: string): Promise<TrustScoreBreakdown | null> {
   disputeStmt.free();
 
   const ageDays = accountAgeDays(profile.created_at);
-  const score = clamp(
-    5.0
-      + ((avgRating - 3.0) * 0.5)
-      + Math.min(completedJobs / 100, 1.0)
-      + (verifiedProvider ? 0.5 : 0)
-      - (disputesLost * 0.2)
-      + Math.min(ageDays / 365, 0.5),
-    0,
-    8,
-  );
+  const score = calculateTrustScoreValue({ avgRating, completedJobs, verifiedProvider, disputesLost, accountAgeDays: ageDays });
 
-  return {
-    phone,
-    avgRating,
-    completedJobs,
-    verifiedProvider,
-    disputesLost,
-    accountAgeDays: ageDays,
-    score: Number(score.toFixed(2)),
-  };
+  return { phone, avgRating, completedJobs, verifiedProvider, disputesLost, accountAgeDays: ageDays, score };
 }
 
 export async function recalculateTrustScore(phone: string): Promise<TrustScoreBreakdown | null> {
