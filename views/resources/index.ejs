@@ -2,101 +2,55 @@
 <%- include('../_partials/nav') %>
 
 <main class="container page-container">
-    <section class="section-heading">
-        <span class="eyebrow">Knowledge & Guides</span>
-        <h1>How Kurukoo works for you</h1>
-        <p class="lead">
-            Educational resources to help you get the most out of the Kurukoo orchestration network.
-        </p>
+  <section class="section-heading">
+    <span class="eyebrow">Knowledge &amp; Guides</span>
+    <h1>How Kurukoo works for you</h1>
+    <p class="lead">Educational resources to help you get the most out of Kurukoo.</p>
+  </section>
+
+  <div class="resources-hub-grid">
+    <section class="resource-hub-section">
+      <h2>For everyone</h2>
+      <div class="resource-links">
+        <a href="/how-it-works" class="hub-link">How Kurukoo works <span aria-hidden="true">→</span></a>
+        <a href="/chat?prompt=What%20can%20I%20ask%20Kurukoo%3F" class="hub-link">What can I ask? <span aria-hidden="true">→</span></a>
+        <a href="/pricing" class="hub-link">Understanding Points &amp; fulfilment <span aria-hidden="true">→</span></a>
+        <a href="/legal/trust-safety" class="hub-link">Trust &amp; safety <span aria-hidden="true">→</span></a>
+      </div>
     </section>
 
-    <div class="resources-hub-grid">
-        <div class="resource-hub-section">
-            <h2>For Everyone</h2>
-            <div class="resource-links">
-                <a href="/how-it-works" class="hub-link">How Kurukoo Works <span>→</span></a>
-                <a href="/chat?prompt=What%20can%20I%20ask%20Kurukoo?" class="hub-link">What can I ask? <span>→</span></a>
-                <a href="/pricing" class="hub-link">Understanding Points & Fulfillment <span>→</span></a>
-                <a href="/legal/trust-safety" class="hub-link">Trust & Safety <span>→</span></a>
-            </div>
-        </div>
-
-        <div class="resource-hub-section">
-            <h2>For Providers</h2>
-            <div class="resource-links">
-                <a href="/chat?prompt=I%20want%20to%20become%20a%20provider" class="hub-link">Become a Provider <span>→</span></a>
-                <a href="/chat?prompt=How%20do%20skills%20work?" class="hub-link">Skills & Capabilities <span>→</span></a>
-                <a href="/chat?prompt=How%20do%20I%20get%20paid?" class="hub-link">Getting Paid <span>→</span></a>
-            </div>
-        </div>
-
-        <div class="resource-hub-section">
-            <h2>For Businesses</h2>
-            <div class="resource-links">
-                <a href="/chat?prompt=I%20want%20to%20onboard%20my%20business" class="hub-link">Business Onboarding <span>→</span></a>
-                <a href="/chat?prompt=How%20do%20I%20sync%20my%20catalog?" class="hub-link">Catalog Syncing <span>→</span></a>
-                <a href="/partners" class="hub-link">Partnering with Kurukoo <span>→</span></a>
-            </div>
-        </div>
-
-        <div class="resource-hub-section">
-            <h2>For Contributors</h2>
-            <div class="resource-links">
-                <a href="/chat?prompt=I%20want%20to%20be%20a%20contributor" class="hub-link">Contributor Programme <span>→</span></a>
-                <a href="/chat?prompt=Tell%20me%20about%20ambassador%20rewards" class="hub-link">Ambassador Rewards <span>→</span></a>
-            </div>
-        </div>
-    </div>
-
-    <section class="latest-guides-section">
-        <h3>Latest Detailed Guides</h3>
-        <div id="resources-list" class="resources-grid">
-            <div class="muted-info-text">Loading latest guides…</div>
-        </div>
+    <section class="resource-hub-section">
+      <h2>For providers</h2>
+      <div class="resource-links">
+        <a href="/chat?prompt=I%20want%20to%20become%20a%20provider" class="hub-link">Become a provider <span aria-hidden="true">→</span></a>
+        <a href="/chat?prompt=How%20do%20skills%20work%3F" class="hub-link">Skills &amp; capabilities <span aria-hidden="true">→</span></a>
+        <a href="/chat?prompt=How%20do%20I%20get%20paid%3F" class="hub-link">Getting paid <span aria-hidden="true">→</span></a>
+      </div>
     </section>
+
+    <section class="resource-hub-section">
+      <h2>For businesses</h2>
+      <div class="resource-links">
+        <a href="/chat?prompt=I%20want%20to%20onboard%20my%20business" class="hub-link">Business onboarding <span aria-hidden="true">→</span></a>
+        <a href="/chat?prompt=How%20do%20I%20sync%20my%20catalog%3F" class="hub-link">Catalog syncing <span aria-hidden="true">→</span></a>
+        <a href="/partners" class="hub-link">Partnering with Kurukoo <span aria-hidden="true">→</span></a>
+      </div>
+    </section>
+
+    <section class="resource-hub-section">
+      <h2>For contributors</h2>
+      <div class="resource-links">
+        <a href="/chat?prompt=I%20want%20to%20be%20a%20contributor" class="hub-link">Contributor programme <span aria-hidden="true">→</span></a>
+        <a href="/chat?prompt=Tell%20me%20about%20ambassador%20rewards" class="hub-link">Ambassador rewards <span aria-hidden="true">→</span></a>
+      </div>
+    </section>
+  </div>
+
+  <section class="latest-guides-section">
+    <h2>Latest detailed guides</h2>
+    <div id="resources-list" class="resources-grid" aria-live="polite"><div class="muted-info-text">Loading latest guides…</div></div>
+  </section>
 </main>
 
-<script>
-(async function(){
-    const list = document.getElementById('resources-list');
-    try {
-        const res = await fetch('/api/resources?page=1');
-        const data = await res.json();
-        const items = (data && data.resources) ? data.resources : [];
-        list.innerHTML = '';
-        if (!items.length) { list.innerHTML = '<div class="muted-info-text">More guides coming soon.</div>'; return; }
-        items.forEach(r => {
-            const card = document.createElement('a');
-            card.href = `/resources/${r.slug}`;
-            card.className = 'resource-card-link';
-            card.innerHTML = `
-                <div class="resource-card-cat">${r.category||'Guide'}</div>
-                <h4 class="resource-card-title">${r.title}</h4>
-                <p class="resource-card-excerpt">${r.excerpt||''}</p>
-                <span class="resource-read-link">Read guide →</span>`;
-            list.appendChild(card);
-        });
-    } catch(e) {
-        list.innerHTML = '<div class="muted-info-text">Could not load resources.</div>';
-    }
-})();
-</script>
-
-<style>
-.resources-hub-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 40px; margin: 60px 0; }
-.resource-hub-section h2 { font-size: 1.25rem; margin-bottom: 24px; border-bottom: 2px solid var(--terracotta); display: inline-block; padding-bottom: 8px; }
-.resource-links { display: flex; flex-direction: column; gap: 12px; }
-.hub-link { display: flex; justify-content: space-between; padding: 12px 16px; background: var(--white); border: 1px solid var(--gray-200); border-radius: 8px; font-size: 0.95rem; }
-.hub-link:hover { border-color: var(--terracotta); }
-
-.latest-guides-section { margin-top: 80px; padding-top: 60px; border-top: 1px solid var(--gray-200); }
-.latest-guides-section h3 { margin-bottom: 32px; }
-.resources-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
-.resource-card-link { padding: 24px; background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--border-radius); display: block; }
-.resource-card-cat { font-size: 0.75rem; text-transform: uppercase; color: var(--terracotta); font-weight: 700; margin-bottom: 12px; }
-.resource-card-title { margin-bottom: 12px; }
-.resource-card-excerpt { font-size: 0.9rem; color: var(--gray-600); margin-bottom: 20px; }
-.resource-read-link { font-size: 0.9rem; font-weight: 700; color: var(--terracotta); }
-</style>
-
+<script src="/js/kurukoo-resources.js?v=1" defer></script>
 <%- include('../_partials/footer') %>

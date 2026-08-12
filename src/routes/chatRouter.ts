@@ -3,13 +3,14 @@ import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import { authenticateUser, optionalAuthenticateUser, type AuthRequest } from '../middleware/auth.js';
-import { getDb, saveDb } from '../database.js';
+import { getDb } from '../database.js';
 import { deleteChatMessage, listChatConversations, listChatMessages, clearChatConversation, ensureConversation, appendChatMessage } from '../services/chatConversationService.js';
 import { isOnboarding, handleOnboardingInput } from '../services/progressiveOnboarding.js';
 import { routeIntent } from '../services/intentRouter.js';
 import { getAuthState, setAuthState, handleConversationalAuth } from '../services/conversationalAuthService.js';
 import { handleSafetyContactInput, setSafetyCaptureState } from '../services/safetyService.js';
 import { finalizeOrder } from '../services/orderFinalizer.js';
+import { migrateGuestSessionToAccount } from '../services/guestSessionMigration.js';
 import { streamUnifiedAI } from '../services/unifiedAiEngine.js';
 import economicRequestRouter from './economicRequestRouter.js';
 
@@ -94,15 +95,9 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
           `kurukoo_guest_id=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`
         ]);
         
-        // Migration logic (reuse from authRoutes if possible, but here it is inline)
-        const db = await getDb();
-        db.run('UPDATE chat_conversations SET phone = ? WHERE phone = ?', [userPhoneValue, phone]);
-        db.run('UPDATE messages SET phone = ? WHERE phone = ?', [userPhoneValue, phone]);
-        db.run('UPDATE economic_requests SET phone = ? WHERE phone = ?', [userPhoneValue, phone]);
-        db.run('UPDATE orders SET phone = ? WHERE phone = ?', [userPhoneValue, phone]);
-        saveDb();
+        await migrateGuestSessionToAccount(phone, userPhoneValue);
         
-        sse(res, { type: 'auth_success', token, phone: userPhoneValue });
+        sse(res, { type: 'auth_success', phone: userPhoneValue });
       }
       
       for (const chunk of chunkText(fullReply)) {

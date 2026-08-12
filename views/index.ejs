@@ -3,6 +3,33 @@
 <main class="home-page">
   <section class="home-hero section"><div class="container home-hero__grid"><div class="home-hero__copy"><span class="eyebrow">Conversational fulfilment</span><h1>Tell Kurukoo what you need. Kurukoo figures out who or what can fulfil it.</h1><p class="home-hero__lead">Start with a conversation. Kurukoo can help directly, capture a request, organise a reminder, surface relevant options, or coordinate people and services when a fulfilment path is available.</p><div class="home-hero__actions"><a class="btn btn-primary home-cta" href="/chat">Start chatting</a><a class="btn btn-outline home-cta" href="/how-it-works">How it works</a></div><p class="home-trust"><span>Web Chat available</span><span>•</span><span>Other channels shown only when connected</span></p></div><div class="home-chat-card" aria-label="Illustrative Kurukoo conversation"><div class="home-chat-card__top"><img src="/assets/brand/logo-icon.svg" alt="Kurukoo" width="40" height="40"><div><strong>Kurukoo</strong><small>Your conversational assistant</small></div><span class="home-online">●</span></div><div class="home-chat-card__body"><div class="chat-bubble chat-bubble--user">I need to get a generator delivered tomorrow.</div><div class="chat-bubble chat-bubble--assistant">I can help capture the request, check supported options and show you what needs confirmation.</div><div class="chat-result"><div><span class="result-icon">⌁</span><div><strong>Request path</strong><small>Requirements → options → confirmation → fulfilment</small></div></div><span class="result-arrow">→</span></div></div><div class="home-chat-card__footer">The conversation stays connected to your request.</div></div></div></section>
 
+  <section class="home-storefront section" aria-labelledby="storefront-demo-title">
+    <div class="container">
+      <div class="section-heading"><span class="eyebrow">Agentic Storefront · demo</span><h2 id="storefront-demo-title">See a request become a clear next step.</h2><p>This interactive preview illustrates Kurukoo’s canonical request flow. It does not show a live provider, inventory, price or payment state.</p></div>
+      <div class="storefront-demo" data-storefront-demo>
+        <div class="storefront-demo__controls" role="group" aria-label="Choose a request example">
+          <button type="button" class="is-active" data-storefront-scenario="food">Find food</button>
+          <button type="button" data-storefront-scenario="repair">Arrange a repair</button>
+          <button type="button" data-storefront-scenario="ride">Plan a ride</button>
+        </div>
+        <div class="storefront-demo__grid">
+          <article class="storefront-demo__conversation">
+            <div class="storefront-demo__bar"><img src="/assets/brand/logo-icon.svg" alt="Kurukoo" width="28" height="28"><strong>Kurukoo request preview</strong><span>Demo</span></div>
+            <div class="storefront-demo__messages"><p class="demo-message demo-message--user" data-demo-user>Help me find dinner nearby.</p><p class="demo-message demo-message--assistant" data-demo-assistant>I’ll capture what you need, then show an option only when availability and pricing are confirmed.</p></div>
+            <div class="storefront-demo__offer"><span class="workspace-eyebrow" data-demo-category>Food &amp; drink</span><h3 data-demo-title>Request details first</h3><p data-demo-detail>Choose what you want and where you need it. No provider is selected yet.</p><div class="storefront-demo__offer-row"><strong data-demo-price>Price on request</strong><span data-demo-state>Awaiting details</span></div><button type="button" class="btn btn-outline" data-demo-action>Continue in chat</button></div>
+          </article>
+          <div class="storefront-demo__explain">
+            <div><span class="workspace-eyebrow">Execution teardown</span><h3>One request, visible boundaries.</h3></div>
+            <ol class="execution-steps"><li><strong>Capture</strong><span>Conversation collects the request details.</span></li><li><strong>Coordinate</strong><span>Eligible options are considered against real availability.</span></li><li><strong>Confirm</strong><span>A quote or next step is shown only when its state is known.</span></li><li><strong>Fulfil</strong><span>Any coordination follows the same Economic Request lifecycle.</span></li></ol>
+            <a href="/how-it-works" class="text-link">How request states work →</a>
+          </div>
+        </div>
+      </div>
+      <div class="storefront-comparison" aria-label="Kurukoo storefront truthfulness comparison"><div><span>Surface</span><strong>What it can show</strong></div><div><span>Discovery</span><strong>Useful context, not a live-stock claim</strong></div><div><span>Quote</span><strong>Awaiting confirmation until a provider confirms</strong></div><div><span>Payment</span><strong>Verified only after a configured payment adapter confirms it</strong></div><div><span>Escrow ledger</span><strong>Internal ledger state, not a claim that funds are held</strong></div></div>
+      <div class="home-pulse-ticker" aria-label="Example request lifecycle states"><span>Live pulse · illustrative states</span><div><b>Request captured</b><i>→</i><b>Availability checked</b><i>→</i><b>Quote awaiting confirmation</b><i>→</i><b>Fulfilment when confirmed</b></div></div>
+    </div>
+  </section>
+
   <section class="home-roles section"><div class="container"><div class="section-heading"><span class="eyebrow">One relationship with Kurukoo</span><h2>Ask, organise, coordinate or discover.</h2><p>Kurukoo is not a collection of separate apps. The same conversation can move between everyday help, requests, reminders, discovery and network coordination.</p></div><div class="network-preview-grid"><div class="network-mini-card"><span class="icon" aria-hidden="true">⌁</span><strong>Ask Kurukoo</strong><p>Describe what you need in your own words and let Kurukoo work out the useful next step.</p><a href="/chat" class="text-link">Start chatting →</a></div><div class="network-mini-card"><span class="icon" aria-hidden="true">◷</span><strong>Keep life moving</strong><p>Create reminders, follow up on requests and return to conversations without starting over.</p><a href="/reminders" class="text-link">See reminders →</a></div><div class="network-mini-card"><span class="icon" aria-hidden="true">◇</span><strong>Use the network</strong><p>When a request needs someone else, Kurukoo can work with eligible providers, businesses, agents and other participants.</p><a href="/network" class="text-link">Explore the network →</a></div></div></div></section>
 
   <section class="home-living section"><div class="container"><div class="section-heading"><span class="eyebrow">Living memory</span><h2>Useful context, under your control.</h2><p>When you choose to keep information connected to your profile, Kurukoo can use it to make future conversations more useful.</p></div><div class="network-preview-grid"><div class="network-mini-card"><span class="icon">✦</span><strong>Preferences</strong><p>Keep useful choices and habits connected to your Kurukoo relationship.</p></div><div class="network-mini-card"><span class="icon">⌖</span><strong>Locations</strong><p>Save places you choose to use for future requests and reminders.</p></div><div class="network-mini-card"><span class="icon">☆</span><strong>Your control</strong><p>Edit, forget or disable personalisation from your Memory and Settings areas.</p></div></div></div></section>
@@ -15,4 +42,5 @@
 
   <section class="home-final section"><div class="container home-final__inner"><span class="eyebrow">Ready when you are</span><h2>Tell Kurukoo what you need.</h2><p>Start with the conversation. You do not need to know which service, provider or category should handle it.</p><a href="/chat" class="btn btn-light home-cta">Start chatting</a></div></section>
 </main>
+<script src="/js/kurukoo-home.js?v=1" defer></script>
 <%- include('_partials/footer') %>

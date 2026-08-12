@@ -9462,3 +9462,7 @@ body.dark-mode .quick-chip {
 /* Footer Supplementary Classes */
 .footer-desc { max-width: 300px; margin-bottom: 20px; color: var(--gray-600); }
 .footer-cta-box { margin-top: 20px; }
+
+/* Resources hub: shared presentation, never embedded in templates. */
+.resources-hub-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:40px;margin:60px 0}.resource-hub-section h2{font-size:1.25rem;margin-bottom:24px;border-bottom:2px solid var(--terracotta);display:inline-block;padding-bottom:8px}.resource-links{display:flex;flex-direction:column;gap:12px}.hub-link{display:flex;justify-content:space-between;gap:12px;padding:12px 16px;background:var(--white);border:1px solid var(--gray-200);border-radius:8px;font-size:.95rem;text-decoration:none;color:var(--charcoal)}.hub-link:hover{border-color:var(--terracotta)}.latest-guides-section{margin-top:80px;padding-top:60px;border-top:1px solid var(--gray-200)}.latest-guides-section h2{margin-bottom:32px}.resources-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}.resource-card-cat{color:var(--terracotta)}
+@media(max-width:640px){.resources-hub-grid{gap:24px;margin:40px 0}.latest-guides-section{margin-top:48px;padding-top:40px}.resources-grid{grid-template-columns:1fr}}

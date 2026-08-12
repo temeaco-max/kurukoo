@@ -2,6 +2,7 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { getDb, saveDb } from '../database.js';
+import { migrateGuestSessionToAccount } from '../services/guestSessionMigration.js';
 import { requestPhoneOtp, verifyPhoneOtp } from '../services/otpAuthService.js';
 import { authRateLimit } from '../middleware/rateLimit.js';
 import { authenticateUser, AuthRequest } from '../middleware/auth.js';
@@ -62,28 +63,8 @@ router.post('/verify-otp', authRateLimit, async (req, res) => {
     await upsertProfile(userPhone, req.body?.name, req.body?.email, req.body?.goal);
 
     if (guestPhone.startsWith('anon_')) {
-      try {
-        const db = await getDb();
-        db.run('UPDATE chat_conversations SET phone = ? WHERE phone = ?', [userPhone, guestPhone]);
-        db.run('UPDATE messages SET phone = ? WHERE phone = ?', [userPhone, guestPhone]);
-        db.run('UPDATE economic_requests SET phone = ? WHERE phone = ?', [userPhone, guestPhone]);
-        db.run('UPDATE orders SET phone = ? WHERE phone = ?', [userPhone, guestPhone]);
-
-        const profileStmt = db.prepare('SELECT preferences FROM memory_profiles WHERE phone = ?');
-        profileStmt.bind([userPhone]);
-        let preferences: Record<string, unknown> = {};
-        if (profileStmt.step()) {
-          const profile = profileStmt.getAsObject() as { preferences?: string };
-          try { preferences = profile.preferences ? JSON.parse(profile.preferences) : {}; } catch { preferences = {}; }
-        }
-        profileStmt.free();
-        preferences.onboarding_complete = true;
-        preferences.onboarding_step = 'done';
-        db.run('UPDATE memory_profiles SET preferences = ? WHERE phone = ?', [JSON.stringify(preferences), userPhone]);
-        saveDb();
-      } catch (migrationError) {
-        console.error('Guest migration failed during verify-otp:', migrationError);
-      }
+      try { await migrateGuestSessionToAccount(guestPhone, userPhone); }
+      catch (migrationError) { console.error('Guest migration failed during verify-otp:', migrationError); }
     }
 
     const token = issueUserToken(userPhone);

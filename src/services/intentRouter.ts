@@ -1,7 +1,8 @@
 import { queryUnifiedAI, type AIProvider } from './unifiedAiEngine.js';
 import { getProfile } from './memoryProfile.js';
 import { delegateToAgentForSkill } from './aiAgentService.js';
-import { getEconomicCategory, getKnownSkills, getSkillFlow } from './skillFlows.js';
+import { getContextualIntentSuggestions, getEconomicCategory, getKnownSkills, getSkillFlow } from './skillFlows.js';
+import { classifyWithFastText } from './fastTextService.js';
 import { previewStorefrontCard, startStorefrontSession, tryResumeStorefront } from './agenticStorefront.js';
 import { searchKnownEconomicOffers } from './economicParticipants.js';
 import { createReminder } from './reminderService.js';
@@ -136,21 +137,19 @@ function parseReminderQuery(q: string): { dueAt: string; title: string; displayT
   return null;
 }
 
-function classifyWithFastText(query: string): { intent: string; confidence: number } | null {
-  // Placeholder for FastText classification
-  return null;
+function suggestionCard(intent: string) {
+  const suggestions = getContextualIntentSuggestions(intent);
+  return suggestions.length ? { type: 'intent_suggestions', intent, suggestions } : undefined;
+}
+
+function decorateCardWithSuggestions(card: any, intent: string) {
+  const suggestions = getContextualIntentSuggestions(intent);
+  return suggestions.length ? { ...(card || {}), suggestions } : card;
 }
 
 export async function routeIntent(query: string, phone?: string, provider?: AIProvider): Promise<IntentRoutingResult> {
   const q = query.trim().toLowerCase();
   if (!q) return { skill: 'general_question', reply: 'Tell me what you need.' };
-
-  const suggestions: string[] = [];
-  if (q.includes('hungry') || q.includes('food') || q.includes('eat')) suggestions.push('Find food', 'Order a meal', 'Nearby restaurants');
-  if (q.includes('ride') || q.includes('go to') || q.includes('travel') || q.includes('transport')) suggestions.push('Find a ride', 'Taxi nearby', 'Okada/Keke');
-  if (q.includes('fix') || q.includes('repair') || q.includes('broken')) suggestions.push('Find a repairer', 'Plumber nearby', 'Electrician');
-  if (q.includes('forget') || q.includes('remind')) suggestions.push('Set a reminder', 'View my reminders');
-  if (q.includes('safe') || q.includes('contact')) suggestions.push('Add emergency contact', 'Start safety check-in');
 
   if (/^remind me\b/.test(q)) {
     if (!phone || phone.startsWith('anon_')) return { skill: 'reminder', reply: 'I can save that reminder as soon as you sign in, so it stays with your Kurukoo profile.' };
@@ -158,7 +157,7 @@ export async function routeIntent(query: string, phone?: string, provider?: AIPr
     if (reminder) {
       try {
         const created = await createReminder(phone, { title: reminder.title, dueAt: reminder.dueAt });
-        return { skill: 'reminder', reply: `⏰ Done. I’ll remind you **${created.title}** (${reminder.displayTime}).`, cardData: { type: 'reminder', reminder: created } };
+        return { skill: 'reminder', reply: `⏰ Done. I’ll remind you **${created.title}** (${reminder.displayTime}).`, cardData: decorateCardWithSuggestions({ type: 'reminder', reminder: created }, 'reminder') };
       } catch (e) {
         return { skill: 'reminder', reply: e instanceof Error ? e.message : 'I could not create that reminder.' };
       }
@@ -181,7 +180,7 @@ export async function routeIntent(query: string, phone?: string, provider?: AIPr
         cardData: { type: 'safety_contact_capture', name }
       };
     }
-    return { skill: 'safety_contact', reply: 'I can manage your safety contacts. You can add a contact by saying “Add [Name] as my emergency contact” or review them in the context inspector.', cardData: { type: 'safety_contact_action' } };
+    return { skill: 'safety_contact', reply: 'I can manage your safety contacts. You can add a contact by saying “Add [Name] as my emergency contact” or review them in the context inspector.', cardData: suggestionCard('safety_contact') };
   }
 
   if (phone && isResumePhrase(q)) {
@@ -206,7 +205,7 @@ export async function routeIntent(query: string, phone?: string, provider?: AIPr
   if (directSkill && phone) {
     try {
       const card = await startStorefrontSession(phone, directSkill, {});
-      return { skill: directSkill, reply: card.message, cardData: card };
+      return { skill: directSkill, reply: card.message, cardData: decorateCardWithSuggestions(card, directSkill) };
     } catch (e) {
       console.warn('[Router] storefront start failed:', e);
     }
@@ -233,8 +232,8 @@ export async function routeIntent(query: string, phone?: string, provider?: AIPr
         console.warn('[Router] storefront start failed:', e);
       }
     }
-    const cardData = actionCard(classification.intent);
-    let reply = flowReply(flowSkill, flow);
+    const cardData = decorateCardWithSuggestions(actionCard(classification.intent), flowSkill) || suggestionCard(flowSkill);
+    const reply = flowReply(flowSkill, flow);
     return { skill: flowSkill, reply, cardData };
   }
 
@@ -251,10 +250,9 @@ export async function routeIntent(query: string, phone?: string, provider?: AIPr
   const ads = await matchAdCampaigns(query);
   const sponsored = ads.map(ad => ({ title: ad.title, desc: ad.desc, keyword: ad.targetKeyword }));
 
-  if (suggestions.length > 0 || sponsored.length > 0) {
-    const finalCard = cardData || { type: 'suggestions' };
-    if (suggestions.length > 0) finalCard.options = suggestions;
-    if (sponsored.length > 0) finalCard.sponsored = sponsored;
+  if (sponsored.length > 0) {
+    const finalCard = cardData || { type: 'intent_suggestions', intent: 'general_question', suggestions: [] };
+    finalCard.sponsored = sponsored;
     return { skill: 'general_question', reply: ai.text, cardData: finalCard };
   }
 

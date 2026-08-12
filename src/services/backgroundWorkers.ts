@@ -19,6 +19,7 @@ import { purgeExpiredData } from '../database.js';
 import { find_worker } from './find-worker.js';
 import { sendFcmPush } from './pushNotifications.js';
 import { getEconomicRequest, transitionEconomicRequest } from './skillFlows.js';
+import { ensureTrustScoreSchema, recalculateAllTrustScores } from './trustScore.js';
 
 let started = false;
 const timers: NodeJS.Timeout[] = [];
@@ -104,6 +105,7 @@ export function startBackgroundWorkers(): void {
   const safetyMs = process.env.KURUKOO_SAFETY_INTERVAL_SEC ? Math.max(30_000, Number(process.env.KURUKOO_SAFETY_INTERVAL_SEC) * 1000) : 60 * 1000;
   const memoryMs = process.env.KURUKOO_MEMORY_INTERVAL_SEC ? Math.max(300_000, Number(process.env.KURUKOO_MEMORY_INTERVAL_SEC) * 1000) : 24 * 60 * 60 * 1000;
   const purgeMs = process.env.KURUKOO_PURGE_INTERVAL_SEC ? Math.max(300_000, Number(process.env.KURUKOO_PURGE_INTERVAL_SEC) * 1000) : 24 * 60 * 60 * 1000;
+  const trustMs = process.env.KURUKOO_TRUST_SCORE_INTERVAL_SEC ? Math.max(300_000, Number(process.env.KURUKOO_TRUST_SCORE_INTERVAL_SEC) * 1000) : 24 * 60 * 60 * 1000;
 
   timers.push(setInterval(() => {
     void safe('orchestration', async () => {
@@ -151,6 +153,14 @@ export function startBackgroundWorkers(): void {
     });
   }, purgeMs));
 
+  timers.push(setInterval(() => {
+    void safe('trust-score', async () => {
+      await ensureTrustScoreSchema();
+      const updated = await recalculateAllTrustScores();
+      if (updated) console.log(`[Worker:trust-score] recalculated=${updated}`);
+    });
+  }, trustMs));
+
   for (const t of timers) t.unref?.();
 
   setTimeout(() => {
@@ -158,9 +168,10 @@ export function startBackgroundWorkers(): void {
     void safe('memory:boot', async () => { await ensureLivingMemorySchema(); });
     void safe('reminders:boot', async () => { await processDueReminders(100); });
     void safe('safety:boot', async () => { await processExpiredCheckIns(); });
+    void safe('trust-score:boot', async () => { await ensureTrustScoreSchema(); await recalculateAllTrustScores(); });
   }, 15_000).unref?.();
 
-  console.log(`[Workers] Started orchestration=${Math.round(orchMs / 1000)}s deferred=${Math.round(deferredMs / 1000)}s reminders=${Math.round(reminderMs / 1000)}s safety=${Math.round(safetyMs / 1000)}s memory=${Math.round(memoryMs / 1000)}s purge=${Math.round(purgeMs / 1000)}s`);
+  console.log(`[Workers] Started orchestration=${Math.round(orchMs / 1000)}s deferred=${Math.round(deferredMs / 1000)}s reminders=${Math.round(reminderMs / 1000)}s safety=${Math.round(safetyMs / 1000)}s memory=${Math.round(memoryMs / 1000)}s purge=${Math.round(purgeMs / 1000)}s trust=${Math.round(trustMs / 1000)}s`);
 }
 
 export function stopBackgroundWorkers(): void {

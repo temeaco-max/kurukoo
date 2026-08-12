@@ -82,12 +82,11 @@
     const body = makeElement('div', 'message-body');
     const bubble = makeElement('div', 'bubble');
     const md = makeElement('div', 'markdown-body');
-    const p1 = document.createElement('p'); p1.appendChild(makeElement('strong', '', 'Sign in to chat with Kurukoo'));
-    const p2 = document.createElement('p'); p2.textContent = 'Your Memory Profile and conversation history stay private until you sign in. Open the full chat to continue.';
+    const p1 = document.createElement('p'); p1.appendChild(makeElement('strong', '', 'Continue chatting with Kurukoo'));
+    const p2 = document.createElement('p'); p2.textContent = 'Your Memory Profile and conversation history stay private until you complete the name, phone and verification conversation in full chat.';
     const p3 = document.createElement('p');
-    const a1 = makeElement('a', 'primary-btn', 'Sign in'); a1.href = `/login?return=${encodeURIComponent('/chat')}`; a1.target = '_top'; a1.rel = 'noopener';
-    const a2 = makeElement('a', 'secondary-btn', 'Open full chat'); a2.href = '/chat'; a2.target = '_top'; a2.rel = 'noopener'; a2.className = 'secondary-btn embed-open-chat';
-    p3.append(a1, ' ', a2);
+    const a1 = makeElement('a', 'primary-btn', 'Open full chat'); a1.href = '/chat'; a1.target = '_top'; a1.rel = 'noopener';
+    p3.append(a1);
     md.append(p1, p2, p3);
     bubble.appendChild(md);
     body.appendChild(bubble);
@@ -522,15 +521,18 @@
   function renderSuggestions(options, messageEl, sponsored = []) {
     if ((!Array.isArray(options) || !options.length) && (!Array.isArray(sponsored) || !sponsored.length)) return;
     const holder = document.createElement('div');
-    holder.className = 'suggestions-list';
+    holder.className = 'intent-suggestion-bar';
+    holder.setAttribute('aria-label', 'Suggested next actions');
     
     if (Array.isArray(options)) {
-      options.forEach(opt => {
+      options.forEach(option => {
+        const opt = typeof option === 'string' ? { label: option, prompt: option } : option;
+        if (!opt?.label || !opt?.prompt) return;
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'suggestion-btn';
-        btn.textContent = opt;
-        btn.addEventListener('click', () => sendMessage(opt));
+        btn.textContent = opt.label;
+        btn.addEventListener('click', () => sendMessage(opt.prompt));
         holder.appendChild(btn);
       });
     }
@@ -552,8 +554,12 @@
 
   function renderCard(card, messageEl) {
     if (!card || !messageEl) return;
-    if (card.type === 'agentic_storefront') return renderAgenticStorefront(card, messageEl);
+    if (card.type === 'agentic_storefront') {
+      renderAgenticStorefront(card, messageEl);
+      return renderSuggestions(card.suggestions, messageEl, card.sponsored);
+    }
     if (card.type === 'suggestions') return renderSuggestions(card.options, messageEl, card.sponsored);
+    if (card.type === 'intent_suggestions') return renderSuggestions(card.suggestions, messageEl, card.sponsored);
     if (card.type === 'ai_metadata') return updateModelStatus(card);
 
     if (card.type === 'auth_otp_input') {
@@ -613,16 +619,10 @@
         const body = makeElement('div', 'auth-gate-body');
         const p = document.createElement('p'); p.textContent = card.message || 'Please sign in to proceed with your request.';
         body.appendChild(p);
-        if (card.type === 'auth_in_chat_start') {
-          const btn = makeElement('button', 'primary-btn', 'Tell Kurukoo your name');
-          btn.type = 'button';
-          btn.dataset.action = 'focus-input';
-          body.appendChild(btn);
-        } else {
-          const a = makeElement('a', 'primary-btn', 'Sign in to Kurukoo');
-          a.href = `/login?return=${encodeURIComponent(returnUrl)}${guestId ? `&guest_id=${guestId}` : ''}`;
-          body.appendChild(a);
-        }
+        const btn = makeElement('button', 'primary-btn', 'Tell Kurukoo your name');
+        btn.type = 'button';
+        btn.dataset.action = 'focus-input';
+        body.appendChild(btn);
         gate.append(header, body);
         gate.querySelector('[data-action="focus-input"]')?.addEventListener('click', () => input?.focus());
       }
