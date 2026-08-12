@@ -276,3 +276,6 @@ body.dark .auth-gate-card {
 @keyframes kurukoo-message-enter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .message.message-enter{animation:kurukoo-message-enter 240ms cubic-bezier(.22,1,.36,1) both;will-change:opacity,transform}
 @media (prefers-reduced-motion:reduce){.message.message-enter{animation:none}}
+
+.pinned-message{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-top:1px solid color-mix(in srgb,var(--chat-border) 75%,transparent)}.pinned-message:first-child{border-top:0}.pinned-message-reference{flex:1;min-width:0;padding:0;border:0;background:transparent;color:var(--chat-charcoal);font:inherit;font-size:12px;line-height:1.45;text-align:left;cursor:pointer;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.pinned-message-reference:hover,.pinned-message-reference:focus-visible{color:var(--chat-primary);text-decoration:underline}.message-pinned-focus{outline:2px solid color-mix(in srgb,var(--chat-primary) 55%,transparent);outline-offset:5px;border-radius:14px;transition:outline-color 260ms ease}
+@media (prefers-reduced-motion:reduce){.message-pinned-focus{transition:none}}

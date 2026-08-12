@@ -4,10 +4,18 @@
     messages: [], busy: false, attached: null,
     theme: localStorage.getItem('kurukoo_theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
     activeStorefrontId: null,
-    nativeAssistance: { reminders: [], checkIns: [] }
+    nativeAssistance: { reminders: [], checkIns: [] },
+    pinnedMessages: []
   };
   const $ = id => document.getElementById(id);
   const chatContent = $('chat-content'), scroll = $('chat-scroll'), input = $('message-input'), send = $('send-message');
+  const pinStorageKey = () => `kurukoo_pins_${state.conversationId || 'draft'}`;
+  function savePinnedMessages() { try { localStorage.setItem(pinStorageKey(), JSON.stringify(state.pinnedMessages)); } catch {} }
+  function loadPinnedMessages() { try { const parsed = JSON.parse(localStorage.getItem(pinStorageKey()) || '[]'); state.pinnedMessages = Array.isArray(parsed) ? parsed.slice(0, 12) : []; } catch { state.pinnedMessages = []; } renderPinnedMessages(); }
+  function renderPinnedMessages() { const card = $('pinned-card'), list = $('pinned-list'); if (!card || !list) return; card.hidden = false; list.replaceChildren(); if (!state.pinnedMessages.length) { list.appendChild(makeElement('p', 'empty-state', 'Long-press or right-click a message to pin it here.')); return; } state.pinnedMessages.forEach(pin => { const row = makeElement('div', 'pinned-message'); const reference = makeElement('button', 'pinned-message-reference', pin.text); reference.type = 'button'; reference.title = 'Jump to pinned message'; reference.addEventListener('click', () => { const target = chatContent.querySelector(`[data-pin-key="${CSS.escape(pin.key)}"]`); if (target) { target.scrollIntoView({ behavior: 'smooth', block: 'center' }); target.classList.add('message-pinned-focus'); setTimeout(() => target.classList.remove('message-pinned-focus'), 1200); } }); const remove = makeElement('button', 'text-btn', 'Unpin'); remove.type = 'button'; remove.addEventListener('click', () => togglePinnedMessage(pin.key)); row.append(reference, remove); list.appendChild(row); }); }
+  function togglePinnedMessage(key, message = null) { const index = state.pinnedMessages.findIndex(pin => pin.key === key); if (index >= 0) state.pinnedMessages.splice(index, 1); else if (message) state.pinnedMessages.unshift({ key, role: message.role, text: String(message.text || '').slice(0, 280) }); else return; savePinnedMessages(); renderPinnedMessages(); }
+  function wirePinGestures(wrap, role, text) { const key = wrap.dataset.pinKey || (wrap.dataset.messageId ? `message-${wrap.dataset.messageId}` : `local-${crypto.randomUUID()}`); wrap.dataset.pinKey = key; const toggle = () => togglePinnedMessage(key, { role, text }); let timer = null; wrap.addEventListener('contextmenu', event => { event.preventDefault(); toggle(); }); wrap.addEventListener('pointerdown', event => { if (event.pointerType !== 'touch' || event.target.closest('button,a,input,textarea')) return; timer = setTimeout(() => { timer = null; toggle(); }, 560); }); ['pointerup','pointercancel','pointerleave','pointermove'].forEach(type => wrap.addEventListener(type, () => { if (timer) { clearTimeout(timer); timer = null; } })); }
+
   
   const makeElement = (tag, className = '', text = '') => {
     const el = document.createElement(tag);
@@ -142,7 +150,7 @@
     bubble.appendChild(md);
     
     const actions = makeElement('div', 'message-actions');
-    const buttons = role === 'assistant' ? [['copy', 'Copy'], ['regenerate', 'Regenerate'], ['delete', 'Delete']] : [['copy', 'Copy'], ['edit', 'Edit'], ['delete', 'Delete']];
+    const buttons = role === 'assistant' ? [['pin', 'Pin'], ['copy', 'Copy'], ['regenerate', 'Regenerate'], ['delete', 'Delete']] : [['pin', 'Pin'], ['copy', 'Copy'], ['edit', 'Edit'], ['delete', 'Delete']];
     buttons.forEach(([act, lab]) => {
       const btn = makeElement('button', '', lab);
       btn.dataset.action = act;
@@ -155,6 +163,7 @@
     
     actions.addEventListener('click', async event => {
       const button = event.target.closest('button'); if (!button) return; const action = button.dataset.action;
+      if (action === 'pin') togglePinnedMessage(wrap.dataset.pinKey, { role, text });
       if (action === 'copy') await navigator.clipboard?.writeText(wrap.querySelector('.bubble').innerText);
       if (action === 'edit') { input.value = text; input.focus(); input.dispatchEvent(new Event('input')); }
       if (action === 'delete') { 
@@ -170,6 +179,7 @@
     });
     
     chatContent.appendChild(wrap); 
+    wirePinGestures(wrap, role, text);
     if (cardData) renderCard(cardData, wrap); 
     scroll.scrollTop = scroll.scrollHeight; 
     enhanceCode(wrap);
@@ -203,6 +213,7 @@
     body.append(bubble, actions);
     wrap.append(avatar, body);
     chatContent.appendChild(wrap); 
+    wirePinGestures(wrap, 'assistant', 'Kurukoo is responding…');
     return wrap;
   }
 
@@ -796,6 +807,7 @@
   }
 
   async function refreshHistory() {
+    loadPinnedMessages();
     try {
       const url = new URL('/api/chat/history', location.origin); if (state.conversationId) url.searchParams.set('conversationId', state.conversationId); url.searchParams.set('limit', '60');
       const res = await fetch(url, { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const list = $('history-list'); if (!list) return; list.replaceChildren();
@@ -844,6 +856,7 @@
     if (detail.type === 'conversation' && detail.conversationId) {
       state.conversationId = detail.conversationId;
       localStorage.setItem('kurukoo_conversation_id', state.conversationId);
+      loadPinnedMessages();
       return;
     }
     if (detail.type === 'transcript' && detail.text) {
