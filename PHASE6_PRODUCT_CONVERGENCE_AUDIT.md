@@ -8,17 +8,17 @@
 
 Kurukoo is most coherent when treated as a **conversation-first fulfilment network** rather than a directory, a collection of vertical mini-products, or a dashboard-led SaaS application. The implementation has a viable canonical backbone: a persistent profile identity, a shared conversation boundary, declarative skills, Economic Requests, explicit provider/execution boundaries, and a truthfulness-first public surface.
 
-The Phase 6 audit found that the highest-value missing native-assistance capability was not another category flow. It was **personal continuity**: a user should be able to ask the conversation to remember a future action, while safety check-ins should be represented accurately without pretending that an external contact was reached. The selected implementation therefore added conversation-native reminders and personal safety-contact/check-in records using the existing profile, message, authentication, and background-worker boundaries. It deliberately did not create a new wallet, identity, notification system, provider lifecycle, dashboard application, or emergency-dispatch claim.
+The Phase 6 and 7 audit found that the highest-value missing native-assistance capability was not another category flow. It was **personal continuity**: a user should be able to ask the conversation to remember a future action, while safety check-ins should be represented accurately without pretending that an external contact was reached. The selected implementation therefore added conversation-native reminders and personal safety-contact/check-in records using the existing profile, message, authentication, and background-worker boundaries. It deliberately did not create a new wallet, identity, notification system, provider lifecycle, dashboard application, or emergency-dispatch claim.
 
-> **Phase 6 decision:** Native assistance belongs inside the same conversation and profile as fulfilment. A reminder is not an Economic Request, a lead, a payment action, or a provider request.
+> **Convergence decision:** Native assistance belongs inside the same conversation and profile as fulfilment. A reminder is not an Economic Request, a lead, a payment action, or a provider request. Discovery and management of these capabilities must reside within the primary conversational interface.
 
 ## Product capability map
 
 | Capability class | Canonical implementation boundary | Current status | Truthful product boundary |
 |---|---|---:|---|
 | **Conversation and identity** | `src/routes/chatRouter.ts`, `src/routes/authRoutes.ts`, `src/services/chatConversationService.ts`, `memory_profiles` | Implemented | Guests can express intent; a persistent or protected action requires the existing authenticated phone-based session. |
-| **Native reminders** | `src/services/reminderService.ts`, `src/routes/reminderRoutes.ts`, `src/services/intentRouter.ts`, `src/services/backgroundWorkers.ts` | **Implemented in Phase 6** | An authenticated user can create, list, cancel, and receive a conversation-recorded reminder. Push is queued rather than described as delivered when FCM is unconfigured. |
-| **Personal safety contacts and check-ins** | `src/services/safetyService.ts`, `src/routes/safetyRoutes.ts`, `src/services/backgroundWorkers.ts` | **Implemented in Phase 6** | Contacts and timed check-ins are owner-scoped. An expired check-in becomes `escalation_pending`; Kurukoo does not claim that a contact or emergency service was reached without a configured, authorised delivery provider. |
+| **Native reminders** | `src/services/reminderService.ts`, `src/routes/reminderRoutes.ts`, `src/services/intentRouter.ts`, `src/services/backgroundWorkers.ts` | **Implemented in Phase 6 & 7** | An authenticated user can create, list, cancel, and receive a conversation-recorded reminder. Push is queued rather than described as delivered when FCM is unconfigured. Supports absolute and relative time parsing. |
+| **Personal safety contacts and check-ins** | `src/services/safetyService.ts`, `src/routes/safetyRoutes.ts`, `src/services/backgroundWorkers.ts` | **Implemented in Phase 6 & 7** | Contacts and timed check-ins are owner-scoped. Supports explicit consent activation. An expired check-in becomes `escalation_pending`; Kurukoo does not claim that a contact or emergency service was reached without a configured, authorised delivery provider. |
 | **Matching and fulfilment** | `src/services/skillFlows.ts`, `src/services/find-worker.ts`, `src/services/agenticStorefront.ts`, Economic Request routes | Implemented with guarded boundaries | Provider matching, quote review, payment evidence, fulfilment evidence, disputes, and completion remain distinct lifecycle steps. |
 | **Known seller and delivery coordination** | `economic_offers`, `economic_participants`, `src/services/economicParticipants.ts` | Implemented | Seller availability, listed prices, and participant evidence remain declared data. They are not stock confirmation, tracking, or multi-party settlement. |
 | **External execution** | `src/services/executionConnector.ts`, `provider_execution_connectors`, `execution_requests` | Implemented boundary; external adapters not configured | Connectors require explicit authorisation and idempotency. No named external provider, PSP, hardware platform, or fleet integration is claimed. |
@@ -60,7 +60,7 @@ The adoption audit found two boundary defects that were corrected before validat
 | Any non-general chat skill entered the generic `finalizeOrder(..., 'lead')` path. | An authenticated reminder could create an economic lead/order, violating the native-assistance/economic-lifecycle separation. | The reminder card type remains in the shared conversation but bypasses `finalizeOrder`. | `test:native-assistance` asserts that a chat-created reminder persists to the owner profile and creates no lead order. |
 | Guest reminder intent reached `routeIntent` with a temporary anonymous phone. | A guest could create persistent reminder data before identity was established. | Reminder persistence now requires a non-anonymous authenticated profile; the guest flow returns the existing chat auth gate without a reminder row. | `test:native-assistance` asserts no `anon_%` reminder row exists after a guest request. |
 
-The canonical chat client now renders a safe, inline reminder confirmation card. Dynamic reminder fields are inserted with DOM node text content. The card states the essential commercial boundary: the personal reminder does not create a provider request or payment step.
+The canonical chat client now renders a safe, inline reminder confirmation card and provides a unified management surface in the context inspector (right sidebar). Dynamic fields are inserted with DOM node text content. The cards state the essential commercial boundary: personal reminders and safety check-ins do not create provider requests or payment steps.
 
 ## Route and data ownership
 
@@ -70,8 +70,10 @@ The canonical chat client now renders a safe, inline reminder confirmation card.
 | Create reminder | `POST /api/reminders` | Required | Session phone only | Validates non-empty title and future due time. |
 | Cancel reminder | `POST /api/reminders/:id/cancel` | Required | `id` and session phone | Cannot cancel another user’s reminder. |
 | List safety contacts | `GET /api/safety/contacts` | Required | Session phone only | Excludes revoked records. |
-| Add safety contact | `POST /api/safety/contacts` | Required | Session phone only | The caller explicitly chooses whether the contact is active. |
+| Add safety contact | `POST /api/safety/contacts` | Required | Session phone only | Defaults to pending status. |
+| Activate contact | `POST /api/safety/contacts/:id/activate` | Required | `id` and session phone | Requires explicit `consentConfirmed: true`. |
 | Revoke safety contact | `POST /api/safety/contacts/:id/revoke` | Required | `id` and session phone | Cannot revoke another user’s contact. |
+| List check-ins | `GET /api/safety/check-ins` | Required | Session phone only | Returns all check-ins for the session user. |
 | Start/complete check-in | `POST /api/safety/check-ins`, `POST /api/safety/check-ins/:id/complete` | Required | Contact/check-in owner only | Expiry remains a pending escalation until an actual delivery integration is configured. |
 
 ## Duplication and legacy assessment

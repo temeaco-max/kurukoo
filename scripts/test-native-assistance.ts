@@ -126,6 +126,28 @@ try {
   assert.match(chatReminderBody, /Done\. I’ll remind you/i, 'Authenticated chat should confirm the scheduled reminder');
   const savedChatReminder = db.exec("SELECT id FROM reminders WHERE phone = ? AND title = 'stretch'", [phone]);
   assert.equal(savedChatReminder[0]?.values?.length, 1, 'Authenticated chat should persist the reminder to the owner profile');
+
+  const absoluteReminder = await fetch(`${baseUrl}/api/chat/stream`, {
+    method: 'POST',
+    headers: authFor(phone),
+    body: JSON.stringify({ message: 'Remind me tomorrow at 9am to check reports', channel: 'web' }),
+  });
+  assert.equal(absoluteReminder.status, 200, 'Authenticated chat should accept an absolute reminder time');
+  assert.match(await absoluteReminder.text(), /Done\. I’ll remind you/i, 'Absolute reminder should return the native confirmation');
+  const absoluteRows = db.exec("SELECT due_at FROM reminders WHERE phone = ? AND title = 'check reports'", [phone]);
+  assert.equal(absoluteRows[0]?.values?.length, 1, 'Absolute reminder should be persisted');
+  assert.ok(new Date(String(absoluteRows[0]?.values?.[0]?.[0])).getTime() > Date.now(), 'Absolute reminder must be scheduled in the future');
+
+  const dayReminder = await fetch(`${baseUrl}/api/chat/stream`, {
+    method: 'POST',
+    headers: authFor(phone),
+    body: JSON.stringify({ message: 'Remind me in 2 days to take bins', channel: 'web' }),
+  });
+  assert.equal(dayReminder.status, 200, 'Authenticated chat should accept day-based relative reminders');
+  assert.match(await dayReminder.text(), /Done\. I’ll remind you/i, 'Day-based reminder should return the native confirmation');
+  const dayRows = db.exec("SELECT due_at FROM reminders WHERE phone = ? AND title = 'take bins'", [phone]);
+  assert.equal(dayRows[0]?.values?.length, 1, 'Day-based reminder should be persisted');
+
   const reminderOrders = db.exec("SELECT id FROM orders WHERE phone = ? AND order_type = 'lead'", [phone]);
   assert.equal(reminderOrders[0]?.values?.length || 0, 0, 'Native reminders must not create economic lead orders');
 
@@ -143,12 +165,51 @@ try {
   assert.equal(routeContact.status, 201, 'Authenticated owner should create a safety contact through the canonical route');
   assert.ok(routeContactPayload.contact?.id, 'Safety-contact route should return the owner-scoped record');
 
+  const pendingContact = await fetch(`${baseUrl}/api/safety/contacts`, {
+    method: 'POST',
+    headers: authFor(phone),
+    body: JSON.stringify({ name: 'Pending contact', phone: '+2348020000012', relationship: 'sibling' }),
+  });
+  const pendingPayload = await pendingContact.json() as { contact?: { id?: string; status?: string } };
+  assert.equal(pendingContact.status, 201, 'Safety contacts should default to pending when activation is not requested');
+  assert.equal(pendingPayload.contact?.status, 'pending', 'Unconfirmed safety contacts must remain pending');
+
+  const withoutConsent = await fetch(`${baseUrl}/api/safety/contacts/${pendingPayload.contact?.id}/activate`, {
+    method: 'POST', headers: authFor(phone), body: JSON.stringify({ consentConfirmed: false }),
+  });
+  assert.equal(withoutConsent.status, 400, 'Pending safety contacts require explicit owner consent');
+
+  const activated = await fetch(`${baseUrl}/api/safety/contacts/${pendingPayload.contact?.id}/activate`, {
+    method: 'POST', headers: authFor(phone), body: JSON.stringify({ consentConfirmed: true }),
+  });
+  const activatedPayload = await activated.json() as { contact?: { status?: string }; message?: string };
+  assert.equal(activated.status, 200, 'Owner consent should activate a pending safety contact');
+  assert.equal(activatedPayload.contact?.status, 'active', 'Consent activation should produce active status');
+  assert.match(String(activatedPayload.message), /No notification has been sent/i, 'Activation must not claim external contact delivery');
+
+  const otherActivation = await fetch(`${baseUrl}/api/safety/contacts/${pendingPayload.contact?.id}/activate`, {
+    method: 'POST', headers: authFor(otherPhone), body: JSON.stringify({ consentConfirmed: true }),
+  });
+  assert.equal(otherActivation.status, 404, 'Another user must not activate a safety contact they do not own');
+
   const crossUserCheckIn = await fetch(`${baseUrl}/api/safety/check-ins`, {
     method: 'POST',
     headers: authFor(otherPhone),
     body: JSON.stringify({ contactId: routeContactPayload.contact?.id, durationMinutes: 10 }),
   });
   assert.equal(crossUserCheckIn.status, 400, 'A user must not start a check-in using another user’s safety contact');
+
+  const ownerCheckIn = await fetch(`${baseUrl}/api/safety/check-ins`, {
+    method: 'POST',
+    headers: authFor(phone),
+    body: JSON.stringify({ contactId: routeContactPayload.contact?.id, durationMinutes: 10 }),
+  });
+  assert.equal(ownerCheckIn.status, 201, 'Owner should start a check-in through the canonical route');
+  const checkInPayload = await ownerCheckIn.json() as { checkIn?: { id?: string } };
+  const listedCheckIns = await fetch(`${baseUrl}/api/safety/check-ins`, { headers: authFor(phone) });
+  assert.equal(listedCheckIns.status, 200, 'Owner should list safety check-ins');
+  const listedCheckInPayload = await listedCheckIns.json() as { checkIns?: Array<{ id?: string }> };
+  assert.equal(listedCheckInPayload.checkIns?.some(item => item.id === checkInPayload.checkIn?.id), true, 'Check-in listing must remain owner-scoped');
 
   console.log('Native assistance tests passed');
 } finally {

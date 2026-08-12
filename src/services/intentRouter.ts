@@ -17,9 +17,38 @@ function flowReply(intent:string,flow:Awaited<ReturnType<typeof getSkillFlow>>):
 function matchCanonicalSkill(query:string):string|null{for(const[pattern,skill]of CANONICAL_ALIASES)if(pattern.test(query))return skill;const skills=getKnownSkills().filter(skill=>skill.length>=4);for(const skill of skills){const phrase=skill.replace(/_/g,' ').toLowerCase();if(query.includes(phrase))return skill;}return null;}
 async function balanceReply(phone?:string):Promise<string>{if(!phone)return'Your Kurukoo Points balance is available in the header.';const profile=await getProfile(phone,'conversation_balance');const points=profile?.points_balance??0;const location=profile?.location||'your area';return`🪙 **${points} Points**\n\nKurukoo remembers you’re in **${location}**. Your Points stay attached to the same Memory Profile across channels.`;}
 function isResumePhrase(q:string):boolean{return/\b(continue|resume|open request|my request|the match|found a match|provider matched|pick up|where we left|deferred request|continue with)\b/.test(q);}
-function parseRelativeReminder(q:string):{minutes:number;title:string}|null{const match=q.match(/^remind me\s+(?:in\s+)?(\d+)\s+(minute|minutes|hour|hours)\s+(?:to\s+)?(.+)$/i);if(!match)return null;const amount=Number(match[1]);const unit=match[2].startsWith('hour')?'hours':'minutes';const minutes=unit==='hours'?amount*60:amount;if(!Number.isFinite(minutes)||minutes<1||minutes>60*24*365)return null;return{minutes,title:match[3].trim()};}
+function parseReminderQuery(q:string):{dueAt:string;title:string;displayTime:string}|null{
+  const rel=q.match(/^remind me\s+(?:in\s+)?(\d+)\s+(minute|minutes|hour|hours|day|days)\s+(?:to\s+)?(.+)$/i);
+  if(rel){
+    const amount=Number(rel[1]);
+    const unit=rel[2].toLowerCase();
+    const multiplier=unit.startsWith('hour')?3600_000:unit.startsWith('day')?86400_000:60_000;
+    const ms=amount*multiplier;
+    if(Number.isFinite(ms)&&ms>0){
+      const dueAt=new Date(Date.now()+ms).toISOString();
+      return{dueAt,title:rel[3].trim(),displayTime:`in ${amount} ${unit}`};
+    }
+  }
+  const abs=q.match(/^remind me\s+(?:(tomorrow)\s+)?(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s+(?:to\s+)?(.+)$/i);
+  if(abs){
+    const isTomorrow=Boolean(abs[1]);
+    let hours=Number(abs[2]);
+    const mins=abs[3]?Number(abs[3]):0;
+    const ampm=abs[4]?abs[4].toLowerCase():null;
+    if(ampm==='pm'&&hours<12)hours+=12;
+    if(ampm==='am'&&hours===12)hours=0;
+    const d=new Date();
+    if(isTomorrow)d.setUTCDate(d.getUTCDate()+1);
+    d.setUTCHours(hours,mins,0,0);
+    if(d.getTime()<=Date.now()&&!isTomorrow){
+      d.setUTCDate(d.getUTCDate()+1);
+    }
+    return{dueAt:d.toISOString(),title:abs[5].trim(),displayTime:d.toLocaleString()};
+  }
+  return null;
+}
 export async function routeIntent(query:string,phone?:string,provider?:AIProvider):Promise<IntentRoutingResult>{const q=query.trim().toLowerCase();if(!q)return{skill:'general_question',reply:'Tell me what you need.'};
-	if(/^remind me\b/.test(q)){if(!phone||phone.startsWith('anon_'))return{skill:'reminder',reply:'I can save that reminder as soon as you sign in, so it stays with your Kurukoo profile.'};const reminder=parseRelativeReminder(q);if(reminder){try{const created=await createReminder(phone,{title:reminder.title,dueAt:new Date(Date.now()+reminder.minutes*60_000).toISOString()});return{skill:'reminder',reply:`⏰ Done. I’ll remind you **${created.title}** in about ${reminder.minutes} ${reminder.minutes===1?'minute':'minutes'}.`,cardData:{type:'reminder',reminder:created}};}catch(e){return{skill:'reminder',reply:e instanceof Error?e.message:'I could not create that reminder.'};}}return{skill:'reminder',reply:'I can set that reminder. Tell me the time, for example: “Remind me in 20 minutes to call Mum.”'};}
+		if(/^remind me\b/.test(q)){if(!phone||phone.startsWith('anon_'))return{skill:'reminder',reply:'I can save that reminder as soon as you sign in, so it stays with your Kurukoo profile.'};const reminder=parseReminderQuery(q);if(reminder){try{const created=await createReminder(phone,{title:reminder.title,dueAt:reminder.dueAt});return{skill:'reminder',reply:`⏰ Done. I’ll remind you **${created.title}** (${reminder.displayTime}).`,cardData:{type:'reminder',reminder:created}};}catch(e){return{skill:'reminder',reply:e instanceof Error?e.message:'I could not create that reminder.'};}}return{skill:'reminder',reply:'I can set that reminder. Tell me the time, for example: “Remind me in 20 minutes to call Mum” or “Remind me tomorrow at 9am to check reports”.'};}
 if(q==='reset onboarding')return{skill:'general_question',reply:'Onboarding reset is available from your profile settings.'};if(q.includes('balance')||q.includes('points')||q.includes('wallet')||q.includes('credits'))return{skill:'view_balance',reply:await balanceReply(phone)};if(q.includes('show nearby')||q.includes('nearby active')||q.includes('radar')||q.includes('where are providers'))return{skill:'nearby_radar',reply:'📡 **Nearby Radar is on.** I’ll use your shared presence and Memory Profile to surface providers around you.',cardData:{type:'nearby_radar'}};
 if(phone&&isResumePhrase(q)){try{const resumed=await tryResumeStorefront(phone);if(resumed)return{skill:resumed.skill||'find_worker',reply:resumed.message,cardData:resumed};}catch(e){console.warn('[Router] resume failed:',e);}}
 if(phone&&(/\b(listing|offer)\b/.test(q)||/\b[a-z][a-z-]{1,40}['’]s\b/.test(q))){try{const offers=await searchKnownEconomicOffers(query,3);if(offers.length)return{skill:'product_sourcing',reply:`I found ${offers.length===1?'a known seller offer':'known seller offers'} matching that reference. Choose one to start a single Economic Request; availability is seller-stated and payment/escrow will remain subject to the canonical checks.`,cardData:{type:'agentic_storefront',stage:'offer_review',skill:'product_sourcing',title:'Known seller offers',message:'Choose a verified seller offer to continue. Kurukoo can record coordination but does not confirm inventory or create multi-party settlement.',knownOffers:offers,escrowProtected:false,progress:55}};}catch(e){console.warn('[Router] known offer lookup failed:',e);}}
