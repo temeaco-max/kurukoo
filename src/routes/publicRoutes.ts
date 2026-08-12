@@ -23,17 +23,14 @@ export function createPublicRouter():Router{const router=express.Router();
  router.get('/web',optionalAuthenticateUser,(req:AuthRequest,res)=>{if(!req.user?.phone)return res.redirect(302,'/login?return=%2Fweb');res.sendFile(path.join(process.cwd(),'public','dashboard.html'));});
  router.get('/admin/login',async(_req,res)=>res.sendFile(path.join(process.cwd(),'public','admin','login.html')));
  router.get('/chat',async(_req,res)=>res.sendFile(path.join(process.cwd(),'public','chat','index.html')));
-<<<<<<< HEAD
 router.get('/settings',optionalAuthenticateUser,(req:AuthRequest,res)=>{if(!req.user?.phone)return res.redirect(302,'/login?return=%2Fsettings');res.sendFile(path.join(process.cwd(),'public','settings.html'));});
  router.get('/how-it-works',async(req,res,next)=>{try{await renderPage(req,res,'how-it-works','/how-it-works');}catch(error){next(error);}});
  router.get('/network',async(req,res,next)=>{try{await renderPage(req,res,'network','/network');}catch(error){next(error);}});
  router.get('/channels',async(req,res,next)=>{try{await renderPage(req,res,'channels','/channels');}catch(error){next(error);}});
-=======
  router.get('/channels',async(req,res,next)=>{try{await renderPage(req,res,'channels','/channels');}catch(error){next(error);}});
  router.get('/settings',async(req,res,next)=>{try{await renderPage(req,res,'settings','/settings');}catch(error){next(error);}});
  router.get('/download',async(req,res,next)=>{try{await renderPage(req,res,'download','/download');}catch(error){next(error);}});
  router.get('/how-it-works',(_req,res)=>res.redirect(302,'/#how'));
->>>>>>> origin/feat/kurukoo-conversation-workspace
  router.get('/pricing',async(req,res,next)=>{try{await renderPage(req,res,'pricing','/pricing');}catch(error){next(error);}});
  router.get('/events',(_req,res)=>res.redirect(302,'/explore/events'));
  router.get('/earn/:topic',(req,res,next)=>{const category=EARN_CATEGORY[req.params.topic];if(!category)return next();res.redirect(302,`/explore/${category}`);});
@@ -45,13 +42,10 @@ router.get('/settings',optionalAuthenticateUser,(req:AuthRequest,res)=>{if(!req.
  router.get('/blog',async(req,res,next)=>{try{await renderPage(req,res,'blog');}catch(error){next(error);}});
  router.get('/careers',async(req,res,next)=>{try{await renderPage(req,res,'careers');}catch(error){next(error);}});
  router.get('/discover',async(req,res,next)=>{try{await renderPage(req,res,'discover');}catch(error){next(error);}});
-<<<<<<< HEAD
  router.get('/login',optionalAuthenticateUser,async(req:AuthRequest,res,next)=>{try{const returnTo=typeof req.query.return==='string'?req.query.return:'';if(req.user?.phone){return res.redirect(302,returnTo||'/web');}const conversationId=typeof req.query.conversationId==='string'?req.query.conversationId:'';let guestId=typeof req.query.guest_id==='string'?req.query.guest_id:'';if(!guestId){const cookie=String(req.headers.cookie||'');const pair=cookie.split(';').map(v=>v.trim()).find(v=>v.startsWith('kurukoo_guest_id='));if(pair)guestId=decodeURIComponent(pair.slice(17));}await renderPage(req,res,'login','/login',{returnTo,conversationId,guestId});}catch(error){next(error);}});
 
-=======
  router.get('/login',async(req,res,next)=>{try{await renderPage(req,res,'login','/login',{pageStyles:['/css/kurukoo-auth.css?v=1.0.0']});}catch(error){next(error);}});
  router.get('/for-you',async(req,res,next)=>{try{await renderPage(req,res,'for-you');}catch(error){next(error);}});
->>>>>>> origin/feat/kurukoo-conversation-workspace
  router.get('/resources',async(req,res,next)=>{try{await renderPage(req,res,'resources/index');}catch(error){next(error);}});
  router.get('/resources/:slug',async(req,res,next)=>{try{await renderPage(req,res,'resources/article',`/resources/${req.params.slug}`,{slug:req.params.slug});}catch(error){next(error);}});
  router.get('/partners',async(req,res,next)=>{try{await renderPage(req,res,'partners');}catch(error){next(error);}});

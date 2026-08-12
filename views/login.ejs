@@ -1,6 +1,5 @@
 <%- include('_partials/head', { pageStyles: ['/css/kurukoo-auth.css'] }) %>
 <%- include('_partials/nav') %>
-<<<<<<< HEAD
 
 <main class="container login-page-container">
     <div class="login-split-grid">
@@ -125,7 +124,6 @@
             </div>
         </section>
     </div>
-=======
 <main class="auth-shell">
   <div class="auth-layout">
     <section class="auth-intro" aria-labelledby="auth-intro-title">
@@ -169,10 +167,8 @@
       <a class="auth-return" href="/">← Back to Kurukoo</a>
     </section>
   </div>
->>>>>>> origin/feat/kurukoo-conversation-workspace
 </main>
 <script>
-<<<<<<< HEAD
     document.addEventListener('DOMContentLoaded', () => {
         const loginForm = document.getElementById('kurukoo-login-form');
         const phoneSection = document.getElementById('phone-entry-section');
@@ -283,7 +279,6 @@
             feedback.hidden = !msg;
         }
     });
-=======
 (() => {
   const $ = id => document.getElementById(id);
   const phone = $('auth-phone'), prefix = $('auth-prefix'), code = $('auth-code'), feedback = $('auth-feedback');
@@ -304,5 +299,4 @@
   });
   $('auth-back').addEventListener('click', () => { codeStep.classList.remove('active'); phoneStep.classList.add('active'); show(''); phone.focus(); });
 })();
->>>>>>> origin/feat/kurukoo-conversation-workspace
 </script>

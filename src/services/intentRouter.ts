@@ -6,10 +6,7 @@ import { getEconomicCategory, getKnownSkills, getSkillFlow } from './skillFlows.
 import { previewStorefrontCard, startStorefrontSession, tryResumeStorefront } from './agenticStorefront.js';
 import { searchKnownEconomicOffers } from './economicParticipants.js';
 import { createReminder } from './reminderService.js';
-<<<<<<< HEAD
 import { matchAdCampaigns } from './adManager.js';
-=======
->>>>>>> origin/feat/kurukoo-conversation-workspace
 import type { IntentRoutingResult } from '../types.js';
 const ACTION_INTENTS=new Set(['ride_request','order_food','find_worker','universal_vendor_order','sports_matchmaking','event_coverage','how_to_video','security_booking','circle_create','artist_booking']);
 const STOREFRONT_INTENTS=new Set(['ride_request','order_food','find_worker','universal_vendor_order','security_booking']);
@@ -21,7 +18,6 @@ function flowReply(intent:string,flow:Awaited<ReturnType<typeof getSkillFlow>>):
 function matchCanonicalSkill(query:string):string|null{for(const[pattern,skill]of CANONICAL_ALIASES)if(pattern.test(query))return skill;const skills=getKnownSkills().filter(skill=>skill.length>=4);for(const skill of skills){const phrase=skill.replace(/_/g,' ').toLowerCase();if(query.includes(phrase))return skill;}return null;}
 async function balanceReply(phone?:string):Promise<string>{if(!phone)return'Your Kurukoo Points balance is available in the header.';const profile=await getProfile(phone,'conversation_balance');const points=profile?.points_balance??0;const location=profile?.location||'your area';return`🪙 **${points} Points**\n\nKurukoo remembers you’re in **${location}**. Your Points stay attached to the same Memory Profile across channels.`;}
 function isResumePhrase(q:string):boolean{return/\b(continue|resume|open request|my request|the match|found a match|provider matched|pick up|where we left|deferred request|continue with)\b/.test(q);}
-<<<<<<< HEAD
 function parseReminderQuery(q:string):{dueAt:string;title:string;displayTime:string}|null{
   const rel=q.match(/^remind me\s+(?:in\s+)?(\d+)\s+(minute|minutes|hour|hours|day|days)\s+(?:to\s+)?(.+)$/i);
   if(rel){
@@ -90,12 +86,10 @@ if(q.includes('emergency contact')||q.includes('safety contact')){
 
   return{skill:'safety_contact',reply:'I can manage your safety contacts. You can add a contact by saying “Add [Name] as my emergency contact” or review them in the context inspector.',cardData:{type:'safety_contact_action'}};
 }
-=======
 function parseRelativeReminder(q:string):{minutes:number;title:string}|null{const match=q.match(/^remind me\s+(?:in\s+)?(\d+)\s+(minute|minutes|hour|hours)\s+(?:to\s+)?(.+)$/i);if(!match)return null;const amount=Number(match[1]);const unit=match[2].startsWith('hour')?'hours':'minutes';const minutes=unit==='hours'?amount*60:amount;if(!Number.isFinite(minutes)||minutes<1||minutes>60*24*365)return null;return{minutes,title:match[3].trim()};}
 export async function routeIntent(query:string,phone?:string,provider?:AIProvider):Promise<IntentRoutingResult>{const q=query.trim().toLowerCase();if(!q)return{skill:'general_question',reply:'Tell me what you need.'};
 if(phone&&/^remind me\b/.test(q)){const reminder=parseRelativeReminder(q);if(reminder){try{const created=await createReminder(phone,{title:reminder.title,dueAt:new Date(Date.now()+reminder.minutes*60_000).toISOString()});return{skill:'reminder',reply:`⏰ Done. I’ll remind you **${created.title}** in about ${reminder.minutes} ${reminder.minutes===1?'minute':'minutes'}.`,cardData:{type:'reminder',reminder:created}};}catch(e){return{skill:'reminder',reply:e instanceof Error?e.message:'I could not create that reminder.'};}}return{skill:'reminder',reply:'I can set that reminder. Tell me the time, for example: “Remind me in 20 minutes to call Mum.”'};}
 if(q==='reset onboarding')return{skill:'general_question',reply:'Onboarding reset is available from your profile settings.'};if(q.includes('balance')||q.includes('points')||q.includes('wallet')||q.includes('credits'))return{skill:'view_balance',reply:await balanceReply(phone)};if(q.includes('show nearby')||q.includes('nearby active')||q.includes('radar')||q.includes('where are providers'))return{skill:'nearby_radar',reply:'📡 **Nearby Radar is on.** I’ll use your shared presence and Memory Profile to surface providers around you.',cardData:{type:'nearby_radar'}};
->>>>>>> origin/feat/kurukoo-conversation-workspace
 if(phone&&isResumePhrase(q)){try{const resumed=await tryResumeStorefront(phone);if(resumed)return{skill:resumed.skill||'find_worker',reply:resumed.message,cardData:resumed};}catch(e){console.warn('[Router] resume failed:',e);}}
 if(phone&&(/\b(listing|offer)\b/.test(q)||/\b[a-z][a-z-]{1,40}['’]s\b/.test(q))){try{const offers=await searchKnownEconomicOffers(query,3);if(offers.length)return{skill:'product_sourcing',reply:`I found ${offers.length===1?'a known seller offer':'known seller offers'} matching that reference. Choose one to start a single Economic Request; availability is seller-stated and payment/escrow will remain subject to the canonical checks.`,cardData:{type:'agentic_storefront',stage:'offer_review',skill:'product_sourcing',title:'Known seller offers',message:'Choose a verified seller offer to continue. Kurukoo can record coordination but does not confirm inventory or create multi-party settlement.',knownOffers:offers,escrowProtected:false,progress:55}};}catch(e){console.warn('[Router] known offer lookup failed:',e);}}
 if(q.includes('book an artist')||q.includes('book a musician')||q.includes('book a dj')||q.includes('book a celebrity')||q.includes('hire an artist')){const flow=await getSkillFlow('verified_artist').catch(()=>null);if(phone){try{const card=await startStorefrontSession(phone,'verified_artist',{});return{skill:'verified_artist',reply:card.message,cardData:card};}catch(e){console.warn('[Router] artist storefront start failed:',e);}}return{skill:'verified_artist',reply:'🎤 I can coordinate a creator/artist booking, but I’ll only present verified representatives and the booking terms before any escrow is funded. Tell me the artist/act, event date, venue/city, expected set or appearance, and budget.',cardData:{...(actionCard('artist_booking')||{}),flow}};}

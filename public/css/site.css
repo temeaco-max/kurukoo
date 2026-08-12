@@ -231,9 +231,7 @@ button:disabled, input:disabled, select:disabled, textarea:disabled { cursor: no
   stroke: #ffffff;
 }
 
-/* ==========================================================================
    LOGIN PAGE & SINGLE SIGN-ON (SSO) DUAL-SIDED STYLES
-   ========================================================================== */
 
 .login-page-container {
   padding-top: 48px;
@@ -746,9 +744,7 @@ button:disabled, input:disabled, select:disabled, textarea:disabled { cursor: no
   background: rgba(217, 122, 92, 0.08);
 }
 
-/* ==========================================================================
    SIMPLIFIED UNIFIED ENTRY GATEWAY MODAL STYLES
-   ========================================================================== */
 
 .k-modal-overlay {
   display: none;
@@ -1466,9 +1462,7 @@ button:disabled, input:disabled, select:disabled, textarea:disabled { cursor: no
   }
 }
 
-/* ==========================================================================
    Kurukoo Conversational PWA Styles (African Modernism)
-   ========================================================================== */
 
 /* PWA General & Chat Container Styles */
 .pwa-header {
@@ -2230,9 +2224,7 @@ button:disabled, input:disabled, select:disabled, textarea:disabled { cursor: no
   }
 }
 
-/* ==========================================
    KURUKOO UI POLISH v5.34 STYLING
-   ========================================== */
 
 
 
@@ -2421,9 +2413,7 @@ table td, .admin-table td {
   color: var(--gray-600);
 }
 
-/* ==========================================================================
    HOMEPAGE & NAVIGATION CLASS-BASED STYLING (NO INLINE STYLES MANDATE)
-   ========================================================================== */
 
 /* Top Announcement Banner & Live Activity Ticker (Consolidated) */
 .announcement-banner {
@@ -3134,9 +3124,7 @@ table td, .admin-table td {
         to { opacity: 1; transform: translateY(0); }
     }
 
-    /* ==========================================================================
        RESPONSIVE MOBILE HEADER & NAV PRECISION STYLES (<= 992px)
-       ========================================================================== */
     @media (max-width: 992px) {
         .navbar-inner {
             padding: 10px 0;
@@ -7879,9 +7867,7 @@ table td, .admin-table td {
   to { transform: scale(1); opacity: 1; }
 }
 
-/* ==========================================================================
    ChatGPT UI Dashboard Layout for Kurukoo PWA
-   ========================================================================== */
 
 .dashboard-wrapper {
   display: flex;
@@ -8922,9 +8908,7 @@ h6 {
   margin-top: 2px;
 }
 
-/* ==========================================================================
    DEEPSEEK-STYLE AFRICAN MODERNISM CHAT ENGINE & UI
-   ========================================================================== */
 
 /* Dark Mode Theme Variables */
 body.dark-mode {

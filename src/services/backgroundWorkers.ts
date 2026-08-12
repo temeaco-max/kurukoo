@@ -26,7 +26,6 @@ async function progressLinkedEconomicRequest(economicRequestId: string | null | 
     return 'quoted';
   } catch (e) { console.warn('[Worker:deferred] progressLinkedEconomicRequest failed:', e); return 'not_eligible'; }
 }
-<<<<<<< HEAD
 let deferredPassActive = false;
 
 export async function processDueDeferred(): Promise<{ checked: number; matched: number; notified: number; quoted: number }> {
@@ -50,7 +49,6 @@ export async function processDueDeferred(): Promise<{ checked: number; matched: 
   } finally {
     deferredPassActive = false;
   }
-=======
 export async function processDueDeferred(): Promise<{ checked: number; matched: number; notified: number; quoted: number }> {
   const due = await getDueIntentions(50); let matched = 0; let notified = 0; let quoted = 0;
   for (const intention of due) {
@@ -66,7 +64,6 @@ export async function processDueDeferred(): Promise<{ checked: number; matched: 
     } else await incrementAttempt(phone, intention.id);
   }
   return { checked: due.length, matched, notified, quoted };
->>>>>>> origin/feat/kurukoo-conversation-workspace
 }
 export function startBackgroundWorkers(): void {
   if (started) return;

@@ -7,30 +7,24 @@ import { authRateLimit } from '../middleware/rateLimit.js';
 import { authenticateUser, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
-<<<<<<< HEAD
 
 export function getJwtSecret(): string {
-=======
 function getJwtSecret(): string {
->>>>>>> origin/feat/kurukoo-conversation-workspace
   const secret = process.env.JWT_SECRET;
   if (!secret || secret.length < 32) throw new Error('JWT_SECRET must be configured with at least 32 characters');
   return secret;
 }
-<<<<<<< HEAD
 
 export function issueUserToken(phone: string): string {
   return jwt.sign({ phone, role: 'user' }, getJwtSecret(), { expiresIn: '30d', algorithm: 'HS256' });
 }
 
 export async function upsertProfile(phone: string, name?: string, email?: string, goal?: string): Promise<void> {
-=======
 function issueUserToken(phone: string): string { return jwt.sign({ phone, role: 'user' }, getJwtSecret(), { expiresIn: '30d', algorithm: 'HS256' }); }
 function setAuthCookie(res: any, token: string): void {
   res.cookie('kurukoo_auth', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 30 * 24 * 60 * 60 * 1000, path: '/' });
 }
 async function upsertProfile(phone: string, name?: string, email?: string, goal?: string): Promise<void> {
->>>>>>> origin/feat/kurukoo-conversation-workspace
   const db = await getDb();
   const stmt = db.prepare('SELECT phone FROM memory_profiles WHERE phone = ?'); stmt.bind([phone]);
   const exists = stmt.step(); stmt.free();
@@ -44,7 +38,6 @@ router.post('/request-otp', authRateLimit, async (req, res) => {
 });
 router.post('/verify-otp', authRateLimit, async (req, res) => {
   try {
-<<<<<<< HEAD
     const phone = String(req.body?.phone || '').trim();
     const code = String(req.body?.code || '').trim();
     const guestPhone = String(req.body?.guestPhone || '').trim();
@@ -101,14 +94,12 @@ router.post('/verify-otp', authRateLimit, async (req, res) => {
     console.error('verify-otp error:', e);
     res.status(500).json({ success: false, message: e.message || 'Verification failed' });
   }
-=======
     const result = await verifyPhoneOtp(String(req.body?.phone || '').trim(), String(req.body?.code || '').trim());
     if (!result.success || !result.phone) return res.status(401).json(result);
     await upsertProfile(result.phone, req.body?.name, req.body?.email, req.body?.goal);
     const token = issueUserToken(result.phone); setAuthCookie(res, token);
     res.json({ success: true, phone: result.phone, token, message: 'Authenticated' });
   } catch (e: any) { console.error('verify-otp error:', e); res.status(500).json({ success: false, message: e.message || 'Verification failed' }); }
->>>>>>> origin/feat/kurukoo-conversation-workspace
 });
 router.post('/login', authRateLimit, async (req, res) => {
   try {
@@ -128,7 +119,6 @@ router.post('/login', authRateLimit, async (req, res) => {
     return res.status(401).json({ success: false, error: 'Phone login requires OTP.', require_otp: true });
   } catch (e: any) { console.error('Auth login error:', e); res.status(500).json({ success: false, error: e.message || 'Login failed' }); }
 });
-<<<<<<< HEAD
 
 router.post('/logout', (_req, res) => {
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
@@ -138,11 +128,9 @@ router.post('/logout', (_req, res) => {
 
 router.get('/me', authenticateUser, async (req: AuthRequest, res) => {
   res.json({ success: true, user: req.user });
-=======
 router.post('/logout', (_req, res) => {
   res.clearCookie('kurukoo_auth', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
   res.json({ success: true });
->>>>>>> origin/feat/kurukoo-conversation-workspace
 });
 router.get('/me', authenticateUser, async (req: AuthRequest, res) => { res.json({ success: true, user: req.user }); });
 export default router;

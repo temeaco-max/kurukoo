@@ -203,9 +203,7 @@ for (const [key, items] of selectorMap.entries()) {
   }
 }
 
-console.log(`\n========================================`);
 console.log(`DUPLICATE SELECTORS: ${duplicateSelectors.length}`);
-console.log(`========================================`);
 
 duplicateSelectors.forEach((dup, idx) => {
   console.log(`\n#${idx + 1}: ${dup.key} (${dup.items.length} occurrences)`);
@@ -243,9 +241,7 @@ for (const [body, items] of bodyMap.entries()) {
 // Sort by potential saved characters / lines
 duplicateBodies.sort((a, b) => (b.body.length * b.items.length) - (a.body.length * a.items.length));
 
-console.log(`\n========================================`);
 console.log(`DUPLICATE DECLARATION BODIES (Exact property sets): ${duplicateBodies.length}`);
-console.log(`========================================`);
 
 duplicateBodies.slice(0, 30).forEach((dup, idx) => {
   console.log(`\n#${idx + 1}: Shared by ${dup.items.length} selectors [Saved chars: ~${dup.body.length * (dup.items.length - 1)}]:`);
