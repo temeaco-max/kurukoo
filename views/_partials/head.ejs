@@ -1,106 +1,23 @@
 <!DOCTYPE html>
-<html lang="<%= (typeof seo !== 'undefined' && seo.locale) ? seo.locale : (typeof country !== 'undefined' ? 'en-' + country.toUpperCase() : 'en') %>">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <%
-        const seoTitle = (typeof seo !== 'undefined' && seo.title) ? seo.title : 'Kurukoo — Your everyday, sorted.';
-        const seoDesc = (typeof seo !== 'undefined' && seo.meta_description) ? seo.meta_description : 'Kurukoo is a conversational utility that helps you get everyday things done, find trusted people, offer your skills and discover useful opportunities nearby.';
+        const seoTitle = (typeof seo !== 'undefined' && seo.title) ? seo.title : 'Kurukoo — Tell us what you need.';
+        const seoDesc = (typeof seo !== 'undefined' && seo.meta_description) ? seo.meta_description : 'Kurukoo is a conversational fulfillment network. Tell us what you need, and we figure out who or what can fulfil it.';
         const seoCanonical = (typeof seo !== 'undefined' && seo.canonical) ? seo.canonical : 'https://kurukoo.com' + (typeof reqPath !== 'undefined' ? reqPath : '');
-        const seoRobots = (typeof seo !== 'undefined' && seo.robots_directive) ? seo.robots_directive : 'index,follow';
-        const seoOgTitle = (typeof seo !== 'undefined' && seo.og_title) ? seo.og_title : seoTitle;
-        const seoOgDesc = (typeof seo !== 'undefined' && seo.og_description) ? seo.og_description : seoDesc;
-        const seoOgImage = (typeof seo !== 'undefined' && seo.og_image) ? seo.og_image : '/assets/brand/og-image-ng.png';
-        const seoTwitterCard = (typeof seo !== 'undefined' && seo.twitter_card) ? seo.twitter_card : 'summary_large_image';
-        const seoLocale = (typeof seo !== 'undefined' && seo.locale) ? seo.locale : (typeof country !== 'undefined' ? 'en-' + country.toUpperCase() : 'en');
-        const seoSchemas = (typeof schemas !== 'undefined') ? schemas : [];
-        const seoFaqs = (typeof faqs !== 'undefined') ? faqs : [];
     %>
     <title><%= seoTitle %></title>
     <meta name="description" content="<%= seoDesc %>">
-    <meta name="robots" content="<%= seoRobots %>">
     <link rel="canonical" href="<%= seoCanonical %>">
-    <link rel="alternate" hreflang="en-NG" href="https://kurukoo.com/ng">
-    <link rel="alternate" hreflang="en-GH" href="https://kurukoo.com/gh">
-    <link rel="alternate" hreflang="en-GB" href="https://kurukoo.com/gb">
-    <link rel="alternate" hreflang="x-default" href="https://kurukoo.com/">
-
-    <meta property="og:title" content="<%= seoOgTitle %>">
-    <meta property="og:description" content="<%= seoOgDesc %>">
-    <meta property="og:image" content="<%= seoOgImage %>">
-    <meta property="og:url" content="<%= seoCanonical %>">
-    <meta property="og:type" content="website">
-    <meta property="og:locale" content="<%= seoLocale %>">
-    <meta property="og:site_name" content="Kurukoo">
-    <meta name="twitter:card" content="<%= seoTwitterCard %>">
-    <meta name="twitter:title" content="<%= seoOgTitle %>">
-    <meta name="twitter:description" content="<%= seoOgDesc %>">
-    <meta name="twitter:image" content="<%= seoOgImage %>">
-
-    <% seoSchemas.forEach(function(s) { %>
-    <script type="application/ld+json"><%- JSON.stringify(s) %></script>
-    <% }); %>
-    <% if (seoFaqs.length > 0) { %>
-    <script type="application/ld+json">
-    {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[<%- seoFaqs.map(function(f) { return JSON.stringify({"@type":"Question","name":f.question,"acceptedAnswer":{"@type":"Answer","text":f.answer}}); }).join(',') %>]}
-    </script>
-    <% } %>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/site.css?v=1.2.0">
-    <% (typeof pageStyles !== 'undefined' ? pageStyles : []).forEach(function(href) { %>
-    <link rel="stylesheet" href="<%= href %>">
-    <% }); %>
-    <% if (typeof reqPath !== 'undefined' && /^\/(?:ng|gh|gb)?\/$/.test(reqPath)) { %>
-    <link rel="stylesheet" href="/css/kurukoo-home.css?v=1.0.0">
-    <% } %>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="/css/site.css?v=1.3.0">
     <link rel="icon" type="image/svg+xml" href="/assets/brand/favicon.svg">
-    <link rel="apple-touch-icon" href="/assets/icons/icon-192.svg">
     <link rel="manifest" href="/manifest.json">
-    <script src="/js/chat-ui-enhancements.js?v=1.1.0" defer></script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').then((reg) => {
-                    reg.addEventListener('updatefound', () => {
-                        const newWorker = reg.installing;
-                        if (newWorker) {
-                            newWorker.addEventListener('statechange', () => {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) showUpdateToast();
-                            });
-                        }
-                    });
-                }).catch(function() {});
-            });
-        }
-        function showUpdateToast() {
-            if (document.getElementById('sw-update-toast')) return;
-            const toast = document.createElement('div');
-            toast.id = 'sw-update-toast';
-            toast.className = 'pwa-update-toast';
-            const message = document.createElement('span');
-            message.textContent = 'A new version is available. Refresh to update.';
-            const refresh = document.createElement('button');
-            refresh.type = 'button';
-            refresh.className = 'pwa-refresh-btn';
-            refresh.textContent = 'Refresh';
-            refresh.addEventListener('click', () => window.location.reload());
-            toast.append(message, refresh);
-            document.body.appendChild(toast);
-        }
-        window.KurukooChat = window.KurukooChat || {
-            _queue: [], _cardQueue: [],
-            runScenario: function(scenarioKey) {
-                if (this.initComplete) this.realRunScenario ? this.realRunScenario(scenarioKey) : console.log('KurukooChat: scenario handler unavailable');
-                else this._queue.push(scenarioKey);
-            },
-            handleCardClick: function(messageText) {
-                if (this.initComplete) this.realHandleCardClick ? this.realHandleCardClick(messageText) : console.log('KurukooChat: card handler unavailable');
-                else this._cardQueue.push(messageText);
-            }
-        };
-    </script>
 </head>
 <body>

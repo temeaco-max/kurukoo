@@ -1,53 +1,79 @@
 <%- include('_partials/head') %>
 <%- include('_partials/nav') %>
 
-<main>
-    <section class="section page-hero-about">
-        <div class="container text-center">
-            <h1 class="page-hero-title">Our Mission</h1>
-            <p class="page-hero-subtitle">
-                We are building the conversational SaaS infrastructure for the informal economy, acting as the trusted neighborhood assistant for everyone.
-            </p>
+<main class="container page-container">
+    <section class="section-heading">
+        <span class="eyebrow">The Vision</span>
+        <h1>Orchestrating the Informal Economy</h1>
+        <p class="lead">
+            We are building the conversational infrastructure that connects human needs to capable fulfillment, one conversation at a time.
+        </p>
+    </section>
+
+    <section class="about-content">
+        <div class="about-grid">
+            <div class="about-text">
+                <h2>Beyond the Bot</h2>
+                <p>
+                    Kurukoo is not just a chatbot. It is a fulfillment and orchestration network. We believe the most powerful interface is a natural conversation, and the most valuable product is the successful completion of a real-world request.
+                </p>
+                <p>
+                    By turning simple chat threads into command centers for escrow payments, catalog syncing, and real-time coordination, we are empowering millions to trade safely and grow their income without complex dashboards.
+                </p>
+            </div>
+            <div class="about-visual">
+                <div class="network-viz">
+                    <div class="node node-core">K</div>
+                    <div class="node node-p">👤</div>
+                    <div class="node node-b">🏪</div>
+                    <div class="node node-a">🤖</div>
+                    <div class="node node-c">🏅</div>
+                </div>
+            </div>
         </div>
     </section>
 
-    <section class="section container">
-        <div class="grid grid-2 align-center">
-            <div>
-                <h2 class="mb-24 text-2_5rem">A Trusted Neighbor with the Power of AI.</h2>
-                <p class="text-gray mb-24 text-1_125rem">
-                    Kurukoo is a multi-sided utility product that uses conversational AI to deliver on-demand SaaS tools straight to the informal economy. Our software operates like a helpful, connected local companion who is always ready to assist: learning who you are, finding trusted helpers, listing your skills, and serving up proactive opportunities nearby.
-                </p>
-                <p class="text-gray text-1_125rem">
-                    We started with a simple observation: the most powerful tool in most pockets is a chat window. By turning that thread into a command center for escrow payments, catalog syncing, location broadcasting, and real-time coordination, we are empowering millions across Nigeria, Ghana, and beyond to trade safely and grow their income without complex tech dashboards.
-                </p>
+    <section class="about-values">
+        <h2 class="text-center">Our Principles</h2>
+        <div class="values-grid">
+            <div class="value-card">
+                <h3>Conversation First</h3>
+                <p>Start with the need, not the form. We use AI to understand context and requirements naturally.</p>
             </div>
-            <div class="card h-400 flex-center text-5rem bg-white">
-                🤝
+            <div class="value-card">
+                <h3>Trust as Infrastructure</h3>
+                <p>Secure escrow, verified providers, and transparent evidence are built into every request.</p>
             </div>
-        </div>
-    </section>
-
-    <section class="section container text-center">
-        <h2 class="mb-60">Our Core Values</h2>
-        <div class="grid grid-3">
-            <div class="card">
-                <div class="card-icon">🔒</div>
-                <h3>Privacy First</h3>
-                <p>Your data is yours. We never sell your personal information or reveal your phone number without your permission.</p>
-            </div>
-            <div class="card">
-                <div class="card-icon">⚡</div>
-                <h3>Radical Simplicity</h3>
-                <p>If it takes more than a few words to describe, it's too complex. We focus on getting things done, fast.</p>
-            </div>
-            <div class="card">
-                <div class="card-icon">🤝</div>
-                <h3>Community Trust</h3>
-                <p>We build tools that empower neighborhoods and foster economic growth through peer-to-peer connection.</p>
+            <div class="value-card">
+                <h3>Channel Agnostic</h3>
+                <p>The network is the product; the web, WhatsApp, and USSD are just access points.</p>
             </div>
         </div>
     </section>
 </main>
+
+<style>
+.about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; margin: 60px 0; }
+.network-viz { position: relative; height: 300px; width: 300px; margin: 0 auto; }
+.node { 
+    position: absolute; width: 60px; height: 60px; border-radius: 50%; 
+    display: flex; align-items: center; justify-content: center; 
+    font-size: 1.5rem; background: var(--white); border: 2px solid var(--terracotta);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.node-core { top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--terracotta); color: white; z-index: 2; }
+.node-p { top: 10%; left: 50%; transform: translateX(-50%); }
+.node-b { bottom: 10%; left: 50%; transform: translateX(-50%); }
+.node-a { top: 50%; left: 10%; transform: translateY(-50%); }
+.node-c { top: 50%; right: 10%; transform: translateY(-50%); }
+
+.values-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 32px; margin-top: 40px; }
+.value-card { padding: 32px; background: var(--gray-50); border-radius: var(--border-radius); }
+.value-card h3 { margin-bottom: 16px; color: var(--terracotta); }
+
+@media (max-width: 768px) {
+    .about-grid { grid-template-columns: 1fr; }
+}
+</style>
 
 <%- include('_partials/footer') %>

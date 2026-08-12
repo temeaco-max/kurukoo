@@ -57,32 +57,32 @@ CREATE TABLE IF NOT EXISTS provider_subscriptions (phone TEXT PRIMARY KEY,tier T
 CREATE TABLE IF NOT EXISTS commission_config (id INTEGER PRIMARY KEY AUTOINCREMENT,type TEXT UNIQUE,rate_minor INTEGER,description TEXT,active INTEGER DEFAULT 1);
 `);const result=database.exec("PRAGMA table_info(referrals)");if(result?.length&&result[0].values){const c=result[0].values.map((x:any)=>x[1]);if(!c.includes('status'))database.run("ALTER TABLE referrals ADD COLUMN status TEXT DEFAULT 'pending'");if(!c.includes('referral_code'))database.run("ALTER TABLE referrals ADD COLUMN referral_code TEXT");if(!c.includes('created_at'))database.run("ALTER TABLE referrals ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP");}const profilesResult=database.exec("PRAGMA table_info(memory_profiles)");if(profilesResult?.length&&profilesResult[0].values){const c=profilesResult[0].values.map((x:any)=>x[1]);if(!c.includes('provider_type'))database.run("ALTER TABLE memory_profiles ADD COLUMN provider_type TEXT NOT NULL DEFAULT 'human'");database.run("UPDATE memory_profiles SET provider_type='human' WHERE provider_type IS NULL OR provider_type NOT IN ('human','business','software_service','vehicle','robot','drone','autonomous_asset','external_platform')");}const skillsResult=database.exec("PRAGMA table_info(skills)");if(skillsResult?.length&&skillsResult[0].values){const c=skillsResult[0].values.map((x:any)=>x[1]);if(!c.includes('verified_artist'))database.run("ALTER TABLE skills ADD COLUMN verified_artist BOOLEAN DEFAULT 0");}const agentsResult=database.exec("PRAGMA table_info(ai_agents)");if(agentsResult?.length&&agentsResult[0].values){const c=agentsResult[0].values.map((x:any)=>x[1]);if(!c.includes('avatar'))database.run("ALTER TABLE ai_agents ADD COLUMN avatar TEXT DEFAULT '🤖'");}const messagesResult=database.exec("PRAGMA table_info(messages)");if(messagesResult?.length&&messagesResult[0].values){const c=messagesResult[0].values.map((x:any)=>x[1]);if(!c.includes('status'))database.run("ALTER TABLE messages ADD COLUMN status TEXT DEFAULT 'sent'");if(!c.includes('whatsapp_msg_id'))database.run("ALTER TABLE messages ADD COLUMN whatsapp_msg_id TEXT");}database.run("CREATE INDEX IF NOT EXISTS idx_messages_phone ON messages(phone)");database.run("CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at)");const emergency=[['ng','Police Emergency','112'],['ng','Federal Road Safety (FRSC)','122'],['ng','Lagos State Emergency (LASEMA)','767']];for(const e of emergency)database.run(`INSERT OR IGNORE INTO emergency_contacts(country,name,phone) VALUES(?,?,?)`,e);}
 function initEconomicParticipantTables(database:any){database.run(`
-CREATE TABLE IF NOT EXISTS economic_offers (
-  id TEXT PRIMARY KEY,
-  request_id TEXT NOT NULL UNIQUE,
-  seller_phone TEXT NOT NULL,
-  description TEXT NOT NULL,
-  price_minor INTEGER,
-  currency TEXT NOT NULL DEFAULT 'NGN',
-  source TEXT NOT NULL,
-  availability_note TEXT,
-  external_source TEXT,
-  created_at TEXT DEFAULT CURRENT_TIMESTAMP
-);
-CREATE TABLE IF NOT EXISTS economic_participants (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  request_id TEXT NOT NULL,
-  role TEXT NOT NULL CHECK(role IN ('seller','delivery_provider','external_platform','agent')),
-  provider_phone TEXT NOT NULL,
-  capability TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'invited' CHECK(status IN ('invited','offered','selected','confirmed','handover_pending','handed_over','collected','in_progress','delivered','declined','withdrawn')),
-  evidence_json TEXT NOT NULL DEFAULT '{}',
-  added_at TEXT DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(request_id,role,provider_phone)
-);
-CREATE INDEX IF NOT EXISTS idx_economic_offers_request ON economic_offers(request_id);
-CREATE INDEX IF NOT EXISTS idx_economic_participants_request ON economic_participants(request_id);
-`);}
+	CREATE TABLE IF NOT EXISTS economic_offers (
+	  id TEXT PRIMARY KEY,
+	  request_id TEXT NOT NULL UNIQUE,
+	  seller_phone TEXT NOT NULL,
+	  description TEXT NOT NULL,
+	  price_minor INTEGER,
+	  currency TEXT NOT NULL DEFAULT 'NGN',
+	  source TEXT NOT NULL,
+	  availability_note TEXT,
+	  external_source TEXT,
+	  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+	);
+	CREATE TABLE IF NOT EXISTS economic_participants (
+	  id INTEGER PRIMARY KEY AUTOINCREMENT,
+	  request_id TEXT NOT NULL,
+	  role TEXT NOT NULL CHECK(role IN ('seller','delivery_provider','external_platform','agent')),
+	  provider_phone TEXT NOT NULL,
+	  capability TEXT NOT NULL,
+	  status TEXT NOT NULL DEFAULT 'invited' CHECK(status IN ('invited','offered','selected','confirmed','handover_pending','handed_over','collected','in_progress','delivered','declined','withdrawn')),
+	  evidence_json TEXT NOT NULL DEFAULT '{}',
+	  added_at TEXT DEFAULT CURRENT_TIMESTAMP,
+	  UNIQUE(request_id,role,provider_phone)
+	);
+	CREATE INDEX IF NOT EXISTS idx_economic_offers_request ON economic_offers(request_id);
+	CREATE INDEX IF NOT EXISTS idx_economic_participants_request ON economic_participants(request_id);
+	`);const offerResult=database.exec("PRAGMA table_info(economic_offers)");if(offerResult?.length&&offerResult[0].values){const c=offerResult[0].values.map((x:any)=>x[1]);if(!c.includes('status'))database.run("ALTER TABLE economic_offers ADD COLUMN status TEXT NOT NULL DEFAULT 'available'");if(!c.includes('provenance'))database.run("ALTER TABLE economic_offers ADD COLUMN provenance TEXT NOT NULL DEFAULT 'conversationally_created'");if(!c.includes('media_reference'))database.run("ALTER TABLE economic_offers ADD COLUMN media_reference TEXT");if(!c.includes('external_url'))database.run("ALTER TABLE economic_offers ADD COLUMN external_url TEXT");if(!c.includes('origin_offer_id'))database.run("ALTER TABLE economic_offers ADD COLUMN origin_offer_id TEXT");if(!c.includes('updated_at'))database.run("ALTER TABLE economic_offers ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP");}database.run("CREATE INDEX IF NOT EXISTS idx_economic_offers_seller_status ON economic_offers(seller_phone,status)");}
 function initExecutionTables(database:any){database.run(`
 CREATE TABLE IF NOT EXISTS provider_execution_connectors (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

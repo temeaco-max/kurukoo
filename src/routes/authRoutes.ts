@@ -59,14 +59,35 @@ router.post('/verify-otp', authRateLimit, async (req, res) => {
   try {
     const phone = String(req.body?.phone || '').trim();
     const code = String(req.body?.code || '').trim();
+    const guestPhone = String(req.body?.guestPhone || '').trim();
+    
     const result = await verifyPhoneOtp(phone, code);
     if (!result.success || !result.phone) return res.status(401).json(result);
 
-    await upsertProfile(result.phone, req.body?.name, req.body?.email, req.body?.goal);
-    const token = issueUserToken(result.phone);
+    const userPhone = result.phone;
+    await upsertProfile(userPhone, req.body?.name, req.body?.email, req.body?.goal);
+    
+    // Migrate guest data if guestPhone is provided
+    if (guestPhone && guestPhone.startsWith('anon_')) {
+      try {
+        const db = await getDb();
+        db.run('UPDATE chat_conversations SET phone = ? WHERE phone = ?', [userPhone, guestPhone]);
+        db.run('UPDATE messages SET phone = ? WHERE phone = ?', [userPhone, guestPhone]);
+        db.run('UPDATE economic_requests SET phone = ? WHERE phone = ?', [userPhone, guestPhone]);
+        db.run('UPDATE orders SET phone = ? WHERE phone = ?', [userPhone, guestPhone]);
+        saveDb();
+      } catch (migrationError) {
+        console.error('Guest migration failed during verify-otp:', migrationError);
+      }
+    }
+
+    const token = issueUserToken(userPhone);
+    const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+    res.setHeader('Set-Cookie', `kurukoo_auth=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secure}`);
+    
     res.json({
       success: true,
-      phone: result.phone,
+      phone: userPhone,
       token,
       message: 'Authenticated',
     });

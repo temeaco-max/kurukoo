@@ -46,16 +46,20 @@
 
   async function ensureIdentity() {
     const sessionCheck = await fetch('/api/chat/history?limit=1', { credentials: 'same-origin' }).catch(() => null);
-    if (sessionCheck?.ok) { setConnection(true); return true; }
-    setConnection(false, sessionCheck?.status === 401 ? 'Sign in required' : 'Offline');
-    if (sessionCheck?.status === 401) {
-      if (isEmbed) {
-        showEmbedSignInGate();
-        return false;
-      }
-      const returnTo = `${location.pathname}${location.search}`;
-      window.location.href = `/login?return=${encodeURIComponent(returnTo)}`;
+    if (sessionCheck?.ok) { 
+      setConnection(true); 
+      state.isGuest = false;
+      return true; 
     }
+    
+    if (sessionCheck?.status === 401) {
+      // Allow 'Conversation First' for non-authenticated users
+      state.isGuest = true;
+      setConnection(true, 'Guest Mode');
+      return true;
+    }
+    
+    setConnection(false, 'Offline');
     return false;
   }
 
@@ -77,8 +81,22 @@
       const button = event.target.closest('button'); if (!button) return; const action = button.dataset.action;
       if (action === 'copy') await navigator.clipboard?.writeText(wrap.querySelector('.bubble').innerText);
       if (action === 'edit') { input.value = text; input.focus(); input.dispatchEvent(new Event('input')); }
-      if (action === 'delete') { if (wrap.dataset.messageId) await deleteMessage(Number(wrap.dataset.messageId)); wrap.remove(); }
-      if (action === 'regenerate') { const lastUser = [...state.messages].reverse().find(m => m.role === 'user'); if (lastUser) await sendMessage(lastUser.text); }
+      if (action === 'delete') { 
+        if (state.isGuest) {
+          alert('Please sign in to delete messages.');
+          return;
+        }
+        if (wrap.dataset.messageId) await deleteMessage(Number(wrap.dataset.messageId)); 
+        wrap.remove(); 
+      }
+      if (action === 'regenerate') { 
+        if (state.isGuest) {
+          alert('Please sign in to regenerate messages.');
+          return;
+        }
+        const lastUser = [...state.messages].reverse().find(m => m.role === 'user'); 
+        if (lastUser) await sendMessage(lastUser.text); 
+      }
     });
     chatContent.appendChild(wrap); if (cardData) renderCard(cardData, wrap); scroll.scrollTop = scroll.scrollHeight; return wrap;
   }
@@ -413,6 +431,25 @@
   function renderCard(card, messageEl) {
     if (!card || !messageEl) return;
     if (card.type === 'agentic_storefront') { renderAgenticStorefront(card, messageEl); return; }
+    
+    if (card.type === 'auth_gate') {
+      const gate = document.createElement('div');
+      gate.className = 'auth-gate-card';
+      const guestId = document.cookie.split('; ').find(row => row.startsWith('kurukoo_guest_id='))?.split('=')[1];
+      const returnUrl = card.returnUrl || window.location.pathname + window.location.search;
+      gate.innerHTML = `
+        <div class="auth-gate-header">
+          <h4 style="margin:0 0 8px; color:var(--chat-charcoal);">${escapeText(card.title || 'Sign in to Continue')}</h4>
+        </div>
+        <div class="auth-gate-body">
+          <p style="margin:0 0 12px; font-size:13px; color:var(--chat-muted);">${escapeText(card.message || 'Please sign in to proceed with your request.')}</p>
+          <a href="/login?return=${encodeURIComponent(returnUrl)}${guestId ? `&guest_id=${guestId}` : ''}" class="primary-btn" style="display:inline-block; text-decoration:none; text-align:center;">Sign in to Kurukoo</a>
+        </div>
+      `;
+      messageEl.querySelector('.bubble').appendChild(gate);
+      return;
+    }
+
     const holder = document.createElement('div');
     holder.className = 'provider-card';
     if (card.type === 'ride_picker') {

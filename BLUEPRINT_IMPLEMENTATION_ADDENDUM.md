@@ -209,3 +209,29 @@ Before changing or creating anything:
 3. reuse/extend the canonical implementation if it exists;
 4. create a new file only when the required boundary genuinely does not exist;
 5. never create a parallel artist, ride, food, car, ticket, repair or worker economic engine.
+
+## 12. Phase 4: Frontend & Product Experience Convergence
+
+### Core Principle
+"Tell Kurukoo what you need. Kurukoo figures out who or what can fulfil it."
+
+### Information Architecture Redesign
+- **Navigation**: Simplified to Discover, How it works, Network, Channels, Resources, About.
+- **Primary CTA**: "Start chatting" - seeds conversational intent.
+- **Access Points**: Reframed as channels (Web, WhatsApp, USSD) into one underlying orchestration network.
+
+### Identity & Onboarding
+- **Conversation First**: Users can start requests as guests.
+- **Auth Gate**: Identity intercepted only when protected actions (booking, quotes) are required.
+- **Continuity**: Seamless migration of guest data to authenticated profiles via OTP verification.
+
+### Key Terminologies
+- **Orchestration Network**: The product model.
+- **Request / Conversation**: The user-facing interaction.
+- **Fulfillment**: The outcome.
+- **Capability**: The functional match.
+
+### Visual System
+- **Canonical Hero**: Exact language hierarchy enforced on homepage.
+- **Icon Language**: Consolidated semantic icons for fulfillment, providers, and agents.
+- **Dashboard**: Rethought as "Request Hub" focusing on active conversations.

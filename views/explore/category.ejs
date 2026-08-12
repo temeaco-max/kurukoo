@@ -1,67 +1,105 @@
 <%- include('../_partials/head', { country, t, seo, schemas, faqs, reqPath }) %>
 <%- include('../_partials/nav', { country, t, shortcode }) %>
 
-<main class="viewsexplorecategoryejs-st-1 container">
-  <div class="viewsexplorecategoryejs-st-2">
-    <a href="/explore" class="viewsexplorecategoryejs-st-3">← Back to Explore Hub</a> / <span><%= category.name %></span>
-  </div>
-
-  <div class="hybrid-chat-hero-grid">
-    <div>
-      <div class="flex-align-center-gap-16">
-        <div class="explore-category-icon category-hero-icon-box"><%= category.icon %></div>
-        <div>
-          <h1 class="category-hero-title"><%= category.name %></h1>
-          <div class="category-hero-meta">
-            <span>Explore related services</span>
-          </div>
-        </div>
-      </div>
-
-      <p class="category-detail-desc"><%= category.description %> Start a conversation to describe what you need and coordinate the next step.</p>
-
-      <h3 class="subcat-section-title">Related Services &amp; Sub-categories</h3>
-      <div class="subcat-grid">
-        <% category.subCategories.forEach(sub => { %>
-          <a href="/explore/<%= sub.slug %>" class="subcat-card"><span><%= sub.name %></span><span class="subcat-arrow">→</span></a>
-        <% }) %>
-      </div>
-
-      <% if (ads && ads.length > 0) { const ad = ads[0]; %>
-        <div class="sponsored-ad-card">
-          <span class="sponsored-badge">Featured Partner Offer</span>
-          <h4 class="sponsored-title"><%= ad.title %></h4>
-          <p class="sponsored-desc"><%= ad.desc %></p>
-          <a href="/chat?intent=<%= encodeURIComponent(category.name) %>" class="sponsored-btn">Ask Kurukoo →</a>
-        </div>
-      <% } %>
+<main class="container page-container">
+    <div class="breadcrumb">
+        <a href="/explore">← Back to Capabilities</a> / <span><%= category.name %></span>
     </div>
 
-    <aside class="sticky-sidebar">
-      <div class="chat-preview-window">
-        <div class="chat-embed-header">
-          <strong>Talk to Kurukoo about <%= category.name %></strong>
-          <a href="/chat?intent=<%= encodeURIComponent(category.name) %>" class="btn btn-primary">Open full chat</a>
-        </div>
-        <iframe
-          class="chat-embed-container"
-          title="Kurukoo chat"
-          loading="lazy"
-          src="/chat/?embed=1&amp;prompt=<%= encodeURIComponent('I need a ' + category.name.toLowerCase() + ' service.') %>"></iframe>
-      </div>
+    <div class="category-hero-layout">
+        <div class="category-info">
+            <div class="category-header">
+                <div class="category-icon-large"><%= category.icon %></div>
+                <h1><%= category.name %></h1>
+            </div>
+            <p class="lead"><%= category.description %></p>
+            
+            <div class="category-actions">
+                <a href="/chat?prompt=I%20need%20help%20with%20<%= encodeURIComponent(category.name) %>" class="btn btn-primary">Start conversation</a>
+            </div>
 
-      <div class="card workflow-summary">
-        <h3>How Kurukoo coordinates this</h3>
-        <ol class="workflow-steps">
-          <li><strong>Understand</strong><span>Intent and local language are interpreted into a structured request.</span></li>
-          <li><strong>Remember</strong><span>Memory Profile and preferences are applied.</span></li>
-          <li><strong>Match</strong><span>Relevant options and available catalog information are evaluated when available.</span></li>
-          <li><strong>Protect</strong><span>Eligible transactions can use escrow.</span></li>
-          <li><strong>Coordinate</strong><span>Dispatch, updates and follow-up stay in the conversation.</span></li>
-        </ol>
-      </div>
-    </aside>
-  </div>
+            <% if (category.subCategories && category.subCategories.length > 0) { %>
+                <div class="sub-capabilities">
+                    <h3>Related Capabilities</h3>
+                    <div class="subcat-grid">
+                        <% category.subCategories.forEach(sub => { %>
+                            <a href="/explore/<%= sub.slug %>" class="subcat-card">
+                                <span><%= sub.name %></span>
+                                <span class="arrow">→</span>
+                            </a>
+                        <% }) %>
+                    </div>
+                </div>
+            <% } %>
+        </div>
+
+        <aside class="category-sidebar">
+            <div class="workflow-card">
+                <h3>The Fulfillment Journey</h3>
+                <ul class="workflow-list">
+                    <li>
+                        <span class="w-num">1</span>
+                        <div>
+                            <strong>Ask Naturally</strong>
+                            <p>Tell Kurukoo what you need in plain language.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="w-num">2</span>
+                        <div>
+                            <strong>Match Capability</strong>
+                            <p>Kurukoo finds the right provider or business.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="w-num">3</span>
+                        <div>
+                            <strong>Review & Confirm</strong>
+                            <p>See quotes and profiles directly in chat.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="w-num">4</span>
+                        <div>
+                            <strong>Coordinate & Pay</strong>
+                            <p>Secure escrow and real-time status updates.</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </aside>
+    </div>
 </main>
+
+<style>
+.breadcrumb { margin-bottom: 32px; color: var(--gray-600); font-size: 0.9rem; }
+.category-hero-layout { display: grid; grid-template-columns: 1fr 350px; gap: 60px; }
+.category-header { display: flex; align-items: center; gap: 20px; margin-bottom: 24px; }
+.category-icon-large { font-size: 3.5rem; }
+.category-actions { margin: 32px 0 60px; }
+
+.sub-capabilities h3 { margin-bottom: 24px; font-size: 1.25rem; }
+.subcat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+.subcat-card { 
+    padding: 16px 20px; background: var(--white); border: 1px solid var(--gray-200); 
+    border-radius: var(--border-radius); display: flex; justify-content: space-between; align-items: center;
+}
+.subcat-card:hover { border-color: var(--terracotta); }
+
+.workflow-card { padding: 32px; background: var(--gray-50); border-radius: var(--border-radius-lg); }
+.workflow-card h3 { margin-bottom: 24px; }
+.workflow-list { list-style: none; display: flex; flex-direction: column; gap: 24px; }
+.workflow-list li { display: flex; gap: 16px; }
+.w-num { 
+    width: 28px; height: 28px; border-radius: 50%; background: var(--terracotta); color: white;
+    display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0;
+}
+.workflow-list strong { display: block; font-size: 0.95rem; margin-bottom: 4px; }
+.workflow-list p { font-size: 0.85rem; color: var(--gray-600); margin: 0; }
+
+@media (max-width: 900px) {
+    .category-hero-layout { grid-template-columns: 1fr; }
+}
+</style>
 
 <%- include('../_partials/footer') %>
