@@ -1,5 +1,6 @@
 import { routeIntent } from '../services/intentRouter.js';
 import { appendChatMessage } from '../services/chatConversationService.js';
+import { recordChannelUsage } from '../services/channelUsageService.js';
 
 export interface ChannelWebhookResult {
     status: string;
@@ -35,6 +36,14 @@ export abstract class BaseChannelHandler {
                 channel: this.channelName,
                 metadata: { channel: this.channelName, inbound: true, ...meta }
             });
+            await recordChannelUsage({
+                phone,
+                channel: this.channelName,
+                direction: 'inbound',
+                units: 1,
+                conversationId: userMessage.conversationId,
+                metadata: { source: 'shared-channel-handler' }
+            });
 
             const routing = await routeIntent(text, phone);
             const reply = `${routing.reply}`;
@@ -47,6 +56,14 @@ export abstract class BaseChannelHandler {
                 conversationId: userMessage.conversationId,
                 cardData: routing.cardData,
                 metadata: { channel: this.channelName, outbound: true }
+            });
+            await recordChannelUsage({
+                phone,
+                channel: this.channelName,
+                direction: 'outbound',
+                units: 1,
+                conversationId: userMessage.conversationId,
+                metadata: { source: 'shared-channel-handler' }
             });
 
             await this.sendReply(phone, reply, meta);
