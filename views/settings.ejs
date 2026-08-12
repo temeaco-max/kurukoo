@@ -1,0 +1,12 @@
+<%- include('_partials/head') %>
+<%- include('_partials/nav') %>
+<main>
+  <section class="section page-hero-about"><div class="container text-center"><p class="eyebrow">Your Kurukoo</p><h1 class="page-hero-title">Settings</h1><p class="page-hero-subtitle">Manage the relationship around your Kurukoo account. Sensitive changes remain protected by your authenticated session.</p></div></section>
+  <section class="section container"><div class="grid grid-2">
+    <article class="card"><h2>Conversation & memory</h2><p>Kurukoo can remember useful preferences and request context so you do not have to repeat yourself.</p><a class="btn btn-primary" href="/chat?prompt=Help%20me%20manage%20my%20memory">Manage in chat</a></article>
+    <article class="card"><h2>Reminders</h2><p>Create, review or change scheduled help without leaving the conversation.</p><a class="btn btn-secondary" href="/chat?prompt=Show%20my%20reminders">View reminders</a></article>
+    <article class="card"><h2>Safety & check-ins</h2><p>Review safety contacts and check-in arrangements. These are coordination tools, not emergency-response services.</p><a class="btn btn-secondary" href="/chat?prompt=Show%20my%20safety%20contacts">Review safety</a></article>
+    <article class="card"><h2>Channels</h2><p>See which ways of reaching Kurukoo are actually connected for this deployment.</p><a class="btn btn-secondary" href="/channels">View channels</a></article>
+  </div></section>
+</main>
+<%- include('_partials/footer') %>
