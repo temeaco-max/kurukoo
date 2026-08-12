@@ -353,6 +353,25 @@
       holder.appendChild(coordination);
     }
 
+    if (card.execution && typeof card.execution === 'object') {
+      const execution = makeElement('section', 'storefront-execution');
+      execution.appendChild(makeElement('strong', '', 'Execution status'));
+      execution.appendChild(makeElement('span', 'storefront-execution-status', String(card.execution.status || 'pending').replace(/_/g, ' ')));
+      execution.appendChild(makeElement('small', '', `Connector: ${String(card.execution.connectorId || 'not specified')}`));
+      if (card.execution.externalReference) execution.appendChild(makeElement('small', '', `Provider reference: ${String(card.execution.externalReference)}`));
+      if (card.execution.failureReason) execution.appendChild(makeElement('small', 'storefront-execution-failure', `Dispatch failed: ${String(card.execution.failureReason)}. Manual confirmation is required.`));
+      if (Array.isArray(card.execution.evidence) && card.execution.evidence.length) {
+        const evidence = makeElement('ul', 'storefront-execution-evidence');
+        card.execution.evidence.forEach(item => {
+          const source = String(item.source || 'evidence').replace(/_/g, ' ');
+          const state = String(item.verificationState || 'unverified').replace(/_/g, ' ');
+          evidence.appendChild(makeElement('li', '', `${String(item.type || 'event')} · ${source} · ${state}`));
+        });
+        execution.appendChild(evidence);
+      }
+      holder.appendChild(execution);
+    }
+
     const actions = Array.isArray(card.actions) ? card.actions : [];
     if (actions.length) {
       const actionGroup = makeElement('div', 'storefront-actions');
