@@ -86,7 +86,7 @@
 
   function createMessage(role, text = '', id = null, cardData = null) {
     const wrap = document.createElement('article'); wrap.className = `message ${role}`; if (id) wrap.dataset.messageId = id;
-    const avatar = role === 'assistant' ? '<div class="avatar" aria-hidden="true">K</div>' : '';
+    const avatar = role === 'assistant' ? '<div class="avatar" aria-hidden="true"><img src="/assets/brand/logo-icon.svg" alt="K" width="20"></div>' : '';
     wrap.innerHTML = `${avatar}<div class="message-body"><div class="bubble"><div class="markdown-body"></div></div><div class="message-actions"></div></div>`;
     const bubble = wrap.querySelector('.markdown-body'); bubble.innerHTML = renderMarkdown(text); enhanceCode(wrap);
     const actions = wrap.querySelector('.message-actions');
@@ -117,7 +117,7 @@
 
   function appendStreamBubble() {
     $('welcome')?.remove(); const wrap = document.createElement('article'); wrap.className = 'message assistant';
-    wrap.innerHTML = '<div class="avatar" aria-hidden="true">K</div><div class="message-body"><div class="bubble"><div class="markdown-body"></div><div class="thinking" hidden><details><summary>Reasoning completed</summary><div>Kurukoo selected the appropriate response path. Private model reasoning is not exposed.</div></details></div></div><div class="message-actions"><button data-action="copy">Copy</button><button data-action="regenerate">Regenerate</button><button data-action="delete">Delete</button></div></div>';
+    wrap.innerHTML = '<div class="avatar" aria-hidden="true"><img src="/assets/brand/logo-icon.svg" alt="K" width="20"></div><div class="message-body"><div class="bubble"><div class="markdown-body"></div><div class="thinking" hidden><details><summary>Reasoning completed</summary><div>Kurukoo selected the appropriate response path. Private model reasoning is not exposed.</div></details></div></div><div class="message-actions"><button data-action="copy">Copy</button><button data-action="regenerate">Regenerate</button><button data-action="delete">Delete</button></div></div>';
     chatContent.appendChild(wrap); return wrap;
   }
 
@@ -440,11 +440,28 @@
     if (card.requestId) state.activeStorefrontId = card.requestId;
   }
 
+  function renderSuggestions(options, messageEl) {
+    if (!Array.isArray(options) || !options.length) return;
+    const holder = document.createElement('div');
+    holder.className = 'suggestions-list';
+    options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'suggestion-btn';
+      btn.textContent = opt;
+      btn.addEventListener('click', () => sendMessage(opt));
+      holder.appendChild(btn);
+    });
+    messageEl.querySelector('.bubble').appendChild(holder);
+  }
+
   function renderCard(card, messageEl) {
     if (!card || !messageEl) return;
+    if (card.suggestions) renderSuggestions(card.suggestions, messageEl);
+    if (card.type === 'suggestions') { renderSuggestions(card.options, messageEl); return; }
     if (card.type === 'agentic_storefront') { renderAgenticStorefront(card, messageEl); return; }
     
-    if (card.type === 'auth_gate') {
+    if (card.type === 'auth_gate' || card.type === 'auth_in_chat_start') {
       const gate = document.createElement('div');
       gate.className = 'auth-gate-card';
       const signedIn = state.isGuest === false;
@@ -471,8 +488,9 @@
           </div>
           <div class="auth-gate-body">
             <p>${escapeText(card.message || 'Please sign in to proceed with your request.')}</p>
-            <a href="/login?return=${encodeURIComponent(returnUrl)}${guestId ? `&guest_id=${guestId}` : ''}" class="primary-btn">Sign in to Kurukoo</a>
+            ${card.type === 'auth_in_chat_start' ? '<button type="button" class="primary-btn" data-action="focus-input">Tell Kurukoo your name</button>' : `<a href="/login?return=${encodeURIComponent(returnUrl)}${guestId ? `&guest_id=${guestId}` : ''}" class="primary-btn">Sign in to Kurukoo</a>`}
           </div>`;
+        gate.querySelector('[data-action="focus-input"]')?.addEventListener('click', () => input?.focus());
       }
       messageEl.querySelector('.bubble').appendChild(gate);
       return;
@@ -543,6 +561,13 @@
           const line = event.split('\n').find(x => x.startsWith('data: ')); if (!line) continue; const payload = line.slice(6); if (payload === '[DONE]') continue;
           let data; try { data = JSON.parse(payload); } catch { continue; }
           if (data.type === 'conversation') { state.conversationId = data.conversationId; localStorage.setItem('kurukoo_conversation_id', state.conversationId); user.dataset.messageId = data.messageId || ''; }
+          if (data.type === 'auth_success') { 
+            state.isGuest = false; 
+            setConnection(true); 
+            $('logout-sidebar-btn').hidden = false;
+            if (data.token) localStorage.setItem('kurukoo_auth_token', data.token);
+            if (data.phone) localStorage.setItem('kurukoo_user_phone', data.phone);
+          }
           if (data.type === 'metadata') updateModelStatus(data);
           if (data.type === 'thought' && thinking) thinking.hidden = false;
           if (data.type === 'text') { full += data.content || ''; output.innerHTML = renderMarkdown(full); enhanceCode(assistant); scroll.scrollTop = scroll.scrollHeight; }
@@ -647,18 +672,50 @@
   $('file-input')?.addEventListener('change', e => { const file = e.target.files?.[0] || null; state.attached = file; const preview = $('attachment-preview'); if (file && preview) { preview.hidden = false; preview.textContent = `📎 ${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB`; } });
   $('theme-toggle')?.addEventListener('click', () => { state.theme = state.theme === 'dark' ? 'light' : 'dark'; applyTheme(); });
   function setSidebarOpen(open) { const sidebar = $('chat-sidebar'); const toggle = $('open-sidebar'); sidebar?.classList.toggle('open', open); toggle?.setAttribute('aria-expanded', String(open)); if (!open) toggle?.focus(); }
-  function setInspectorOpen(open) { const inspector = $('chat-inspector'); const toggle = $('memory-toggle'); const collapsible = window.matchMedia('(max-width: 1100px)').matches; if (collapsible) inspector?.classList.toggle('open', open); toggle?.setAttribute('aria-expanded', String(collapsible ? open : true)); if (open && collapsible) inspector?.querySelector('button, input, textarea')?.focus(); }
+  function setInspectorOpen(open, sectionId = null) {
+    const inspector = $('chat-inspector');
+    const toggle = $('memory-toggle');
+    const collapsible = window.matchMedia('(max-width: 1100px)').matches;
+    if (collapsible) inspector?.classList.toggle('open', open);
+    toggle?.setAttribute('aria-expanded', String(collapsible ? open : true));
+    if (open && sectionId) {
+      const section = $(sectionId);
+      if (section) {
+        section.hidden = false;
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+    if (open && collapsible) inspector?.querySelector('button, input, textarea')?.focus();
+  }
   $('open-sidebar')?.addEventListener('click', () => setSidebarOpen(true));
   $('close-sidebar')?.addEventListener('click', () => setSidebarOpen(false));
   $('memory-toggle')?.addEventListener('click', () => setInspectorOpen(!$('chat-inspector')?.classList.contains('open')));
   $('close-inspector')?.addEventListener('click', () => setInspectorOpen(false));
+  
+  // Sidebar wiring
+  $('sidebar-reminders')?.addEventListener('click', () => { setInspectorOpen(true, 'reminders-card'); setSidebarOpen(false); });
+  $('sidebar-safety')?.addEventListener('click', () => { setInspectorOpen(true, 'safety-card'); setSidebarOpen(false); });
+  $('sidebar-points')?.addEventListener('click', () => { setInspectorOpen(true, 'inspector-points'); setSidebarOpen(false); });
+  $('logout-sidebar-btn')?.addEventListener('click', async () => {
+    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); } catch (_) {}
+    localStorage.removeItem('kurukoo_auth_token');
+    localStorage.removeItem('kurukoo_user_phone');
+    localStorage.removeItem('kurukoo_user_name');
+    window.location.assign('/');
+  });
+
   setInspectorOpen(false);
   $('new-chat')?.addEventListener('click', async () => { if (!await ensureIdentity()) return; try { const res = await fetch('/api/chat/conversation', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ channel: 'web', title: 'New conversation' }) }); const data = await res.json(); if (data.conversationId) { state.conversationId = data.conversationId; localStorage.setItem('kurukoo_conversation_id', data.conversationId); } } catch {} state.messages = []; state.activeStorefrontId = null; chatContent.innerHTML = ''; const ds = $('deferred-status'); if (ds) ds.hidden = true; renderWelcome(); refreshHistory(); });
   $('topup-points')?.addEventListener('click', () => sendMessage('I have a question about Points'));
   $('safety-contact-form')?.addEventListener('submit', async event => { event.preventDefault(); const name = $('safety-contact-name')?.value.trim(); const phone = $('safety-contact-phone')?.value.trim(); const relationship = $('safety-contact-relationship')?.value.trim(); if (!name || !phone) return; const submit = event.target.querySelector('button[type="submit"]'); if (submit) submit.disabled = true; try { await nativeAction('/api/safety/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, phone, relationship }) }); event.target.reset(); setInspectorFeedback('Pending contact saved. Review the explicit consent action before activation.'); await loadSafety(); } catch (error) { setInspectorFeedback(error.message, 'error'); } finally { if (submit) submit.disabled = false; } });
   $('points-balance')?.addEventListener('click', () => sendMessage('Show my Points balance and the actions available to me'));
   $('voice-input')?.addEventListener('click', () => { const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!Recognition) return input?.focus(); const recognition = new Recognition(); recognition.lang = 'en-NG'; recognition.onresult = e => { if (input) { input.value = e.results[0][0].transcript; input.dispatchEvent(new Event('input')); } }; recognition.start(); });
-  function renderWelcome() { chatContent.innerHTML = '<div class="welcome" id="welcome"><div class="welcome-mark">K</div><h1>What can I help you get done?</h1><p>Describe a service, work, coordination, or everyday information need. Kurukoo will show the supported request path.</p><div class="quick-actions" id="quick-actions"><button data-prompt="I need a ride request">🚗 Ride</button><button data-prompt="I have a food request">🍔 Food</button><button data-prompt="I need repair help">🔧 Repair</button><button data-prompt="I have an urgent non-emergency service request">🏥 Urgent request</button><button data-prompt="I want to discuss a work request">⚡ Work</button></div></div>'; wireQuickActions($('quick-actions')); }
+  function renderWelcome() { chatContent.innerHTML = '<div class="welcome" id="welcome"><div class="welcome-mark"><img src="/assets/brand/logo-icon.svg" alt="K" width="32"></div><h1>What can I help you get done?</h1><p>Describe a service, work, coordination, or everyday information need. Kurukoo will show the supported request path.</p><div class="quick-actions" id="quick-actions"><button data-prompt="I need a ride request">🚗 Ride</button><button data-prompt="I have a food request">🍔 Food</button><button data-prompt="I need repair help">🔧 Repair</button><button data-prompt="I have an urgent non-emergency service request">🏥 Urgent request</button><button data-prompt="I want to discuss a work request">⚡ Work</button></div></div>'; wireQuickActions($('quick-actions')); }
   applyTheme();
-  ensureIdentity().then(ok => { if (ok) Promise.all([loadPoints(), loadMemory(), loadReminders(), loadSafety(), refreshHistory()]); });
+  ensureIdentity().then(ok => { 
+    if (ok) {
+      Promise.all([loadPoints(), loadMemory(), loadReminders(), loadSafety(), refreshHistory()]);
+      if (!state.isGuest) $('logout-sidebar-btn').hidden = false;
+    }
+  });
 })();

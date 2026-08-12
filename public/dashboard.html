@@ -16,11 +16,11 @@
                 <span>Kurukoo</span>
             </a>
             <ul class="hub-nav">
-                <li><a href="/web" class="active">Requests</a></li>
-                <li><a href="/chat">Conversations</a></li>
-                <li><a href="/discover">Nearby Radar</a></li>
-                <li><a href="/resources">Resources</a></li>
-                <li><button type="button" id="logout-button">Log out</button></li>
+                <li><a href="/web" class="active">📋 Requests</a></li>
+                <li><a href="/chat">💬 Conversations</a></li>
+                <li><a href="/discover">📡 Nearby Radar</a></li>
+                <li><a href="/resources">❓ Resources</a></li>
+                <li><button type="button" id="logout-button">↪ Log out</button></li>
             </ul>
         </aside>
 
@@ -34,14 +34,37 @@
             </header>
 
             <div class="hub-grid">
-                <section class="requests-list">
-                    <h3>Active Requests</h3>
-                    <div id="active-requests-container">
-                        <div class="muted-info-text" id="loading-requests">Loading your requests...</div>
-                        <div class="muted-info-text" id="no-requests-msg" style="display:none;">No active requests. Start a conversation to get going.</div>
+                <!-- Active Section -->
+                <section class="hub-section">
+                    <div class="hub-section-header">
+                        <h3>Active Requests</h3>
+                    </div>
+                    <div id="active-requests-container" class="item-list">
+                        <div class="muted-info-text">Loading activity...</div>
                     </div>
                 </section>
 
+                <!-- Upcoming Section -->
+                <section class="hub-section">
+                    <div class="hub-section-header">
+                        <h3>Upcoming & Reminders</h3>
+                    </div>
+                    <div id="upcoming-container" class="item-list">
+                        <div class="muted-info-text">Loading reminders...</div>
+                    </div>
+                </section>
+
+                <!-- Personal Section -->
+                <section class="hub-section">
+                    <div class="hub-section-header">
+                        <h3>Safety Contacts</h3>
+                    </div>
+                    <div id="safety-container" class="item-list">
+                        <div class="muted-info-text">Loading contacts...</div>
+                    </div>
+                </section>
+
+                <!-- Stats/Points Section -->
                 <aside class="hub-stats">
                     <div class="points-summary">
                         <h3>Your Points</h3>
@@ -56,48 +79,84 @@
     <script>
         async function loadHubData() {
             try {
-                const [profileRes, requestsRes] = await Promise.all([
+                const [profileRes, requestsRes, remindersRes, safetyRes] = await Promise.all([
                     fetch('/api/profile', { credentials: 'same-origin' }),
-                    fetch('/api/chat/economic-requests', { credentials: 'same-origin' })
+                    fetch('/api/chat/economic-requests', { credentials: 'same-origin' }),
+                    fetch('/api/reminders', { credentials: 'same-origin' }),
+                    fetch('/api/safety/contacts', { credentials: 'same-origin' })
                 ]);
 
+                // 1. Profile & Points
                 if (profileRes.ok) {
                     const profileData = await profileRes.json();
                     const profile = profileData.profile || {};
-                    if (profile.name) {
-                        document.getElementById('user-greeting').textContent = `Welcome, ${profile.name}`;
-                    }
+                    if (profile.name) document.getElementById('user-greeting').textContent = `Welcome, ${profile.name}`;
                     document.getElementById('points-display').textContent = profile.points_balance || 0;
                 }
 
+                // 2. Active Requests
+                const activeContainer = document.getElementById('active-requests-container');
                 if (requestsRes.ok) {
-                    const requestsData = await requestsRes.json();
-                    const container = document.getElementById('active-requests-container');
-                    const loadingMsg = document.getElementById('loading-requests');
-                    const noMsg = document.getElementById('no-requests-msg');
-                    
-                    loadingMsg.style.display = 'none';
-                    
-                    const requests = requestsData.requests || [];
+                    const data = await requestsRes.json();
+                    const requests = data.requests || [];
                     if (requests.length === 0) {
-                        noMsg.style.display = 'block';
+                        activeContainer.innerHTML = '<div class="muted-info-text">No active requests. Start a conversation to get going.</div>';
                     } else {
-                        container.innerHTML = requests.slice(0, 10).map(r => `
-                            <div class="request-card">
-                                <span class="request-status">${r.status.replace(/_/g, ' ')}</span>
-                                <div class="request-title">${r.skill.replace(/_/g, ' ')}</div>
-                                <div class="request-meta">
-                                    Started ${new Date(r.created_at).toLocaleDateString()} 
-                                    ${r.quote ? `· ₦${(r.quote.amount_minor / 100).toLocaleString()}` : ''}
+                        activeContainer.innerHTML = requests.slice(0, 5).map(r => `
+                            <div class="hub-item-card">
+                                <div class="item-info">
+                                    <span class="item-badge ${r.status === 'requested' ? 'pending' : 'active'}">${r.status.replace(/_/g, ' ')}</span>
+                                    <div class="item-title">${r.skill.replace(/_/g, ' ')}</div>
+                                    <div class="item-subtitle">Started ${new Date(r.created_at).toLocaleDateString()}</div>
                                 </div>
-                                <a href="/chat" class="text-link" style="margin-top: 16px; display: inline-block;">View in chat <span>→</span></a>
+                                <a href="/chat" class="btn btn-outline btn-sm">View</a>
                             </div>
                         `).join('');
                     }
                 }
+
+                // 3. Upcoming & Reminders
+                const upcomingContainer = document.getElementById('upcoming-container');
+                if (remindersRes.ok) {
+                    const data = await remindersRes.json();
+                    const reminders = data.reminders || [];
+                    if (reminders.length === 0) {
+                        upcomingContainer.innerHTML = '<div class="muted-info-text">No active reminders.</div>';
+                    } else {
+                        upcomingContainer.innerHTML = reminders.slice(0, 5).map(rem => `
+                            <div class="hub-item-card">
+                                <div class="item-info">
+                                    <span class="item-badge active">Reminder</span>
+                                    <div class="item-title">${rem.title || 'Untitled Reminder'}</div>
+                                    <div class="item-subtitle">Due ${new Date(rem.due_at).toLocaleString()}</div>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                }
+
+                // 4. Safety Contacts
+                const safetyContainer = document.getElementById('safety-container');
+                if (safetyRes.ok) {
+                    const data = await safetyRes.json();
+                    const contacts = data.contacts || [];
+                    if (contacts.length === 0) {
+                        safetyContainer.innerHTML = '<div class="muted-info-text">No safety contacts added.</div>';
+                    } else {
+                        safetyContainer.innerHTML = contacts.map(c => `
+                            <div class="hub-item-card">
+                                <div class="item-info">
+                                    <span class="item-badge ${c.status === 'active' ? 'active' : 'pending'}">${c.status}</span>
+                                    <div class="item-title">${c.name}</div>
+                                    <div class="item-subtitle">${c.relationship || 'Contact'} · ${c.phone}</div>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                }
+
             } catch (error) {
                 console.error('Failed to load hub data:', error);
-                document.getElementById('loading-requests').textContent = 'Could not load your activity. Please try again.';
             }
         }
 

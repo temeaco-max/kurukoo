@@ -7,6 +7,7 @@ import { getDb, saveDb } from '../database.js';
 import { deleteChatMessage, listChatConversations, listChatMessages, clearChatConversation, ensureConversation, appendChatMessage } from '../services/chatConversationService.js';
 import { isOnboarding, handleOnboardingInput } from '../services/progressiveOnboarding.js';
 import { routeIntent } from '../services/intentRouter.js';
+import { getAuthState, setAuthState, handleConversationalAuth } from '../services/conversationalAuthService.js';
 import { finalizeOrder } from '../services/orderFinalizer.js';
 import { streamUnifiedAI } from '../services/unifiedAiEngine.js';
 import economicRequestRouter from './economicRequestRouter.js';
@@ -58,8 +59,40 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
     activeConversation = savedUser.conversationId;
     sse(res, { type: 'conversation', conversationId: activeConversation, messageId: savedUser.id });
 
-    // Skip onboarding for guests to allow 'Conversation First' intent capture
-    if (!isGuest && await isOnboarding(phone)) {
+    // Handle conversational auth for guests
+    const authState = isGuest ? await getAuthState(phone) : { state: 'none' };
+    
+    if (isGuest && authState.state !== 'none') {
+      const authResult = await handleConversationalAuth(phone, message);
+      fullReply = authResult.reply;
+      cardData = authResult.cardData;
+      
+      if (authResult.authenticated && authResult.token && authResult.phone) {
+        // Authenticated! Issue cookies and migrate.
+        const token = authResult.token;
+        const userPhoneValue = authResult.phone;
+        const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+        res.setHeader('Set-Cookie', [
+          `kurukoo_auth=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secure}`,
+          `kurukoo_guest_id=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`
+        ]);
+        
+        // Migration logic (reuse from authRoutes if possible, but here it is inline)
+        const db = await getDb();
+        db.run('UPDATE chat_conversations SET phone = ? WHERE phone = ?', [userPhoneValue, phone]);
+        db.run('UPDATE messages SET phone = ? WHERE phone = ?', [userPhoneValue, phone]);
+        db.run('UPDATE economic_requests SET phone = ? WHERE phone = ?', [userPhoneValue, phone]);
+        db.run('UPDATE orders SET phone = ? WHERE phone = ?', [userPhoneValue, phone]);
+        saveDb();
+        
+        sse(res, { type: 'auth_success', token, phone: userPhoneValue });
+      }
+      
+      for (const chunk of chunkText(fullReply)) {
+        sse(res, { type: 'text', content: chunk });
+        await new Promise(r => setTimeout(r, 8));
+      }
+    } else if (!isGuest && await isOnboarding(phone)) {
       const onboarding = await handleOnboardingInput(phone, message);
       fullReply = onboarding.reply;
       cardData = onboarding.cardData;
@@ -73,16 +106,13 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
 
       if (routing.skill && routing.skill !== 'general_question' && routing.skill !== 'autonomous_agent') {
         if (isGuest) {
-          // Intercept all economic actions for guests while retaining the safe,
-          // read-only storefront projection for resumption after authentication.
-          const continuationCard = cardData;
-          fullReply = `${routing.reply}\n\nTo continue with this request and review the next supported action, please sign in to your Kurukoo account.`;
+          // Start conversational identity flow
+          await setAuthState(phone, 'awaiting_name', { intent: routing.skill, continuationCard: cardData });
+          fullReply = `${routing.reply}\n\nI can help with that. Before I save this for you, let's create your Kurukoo profile. What's your name?`;
           cardData = {
-            type: 'auth_gate',
-            title: 'Sign in to Continue',
-            message: `We've captured your request for ${routing.skill.replace(/_/g, ' ')}. Sign in to continue it and review any supported next step.`,
-            returnUrl: `/chat?conversationId=${activeConversation}`,
-            continuationCard,
+            type: 'auth_in_chat_start',
+            title: 'Create Your Profile',
+            message: 'Your request is captured. Tell me your name to continue.'
           };
         } else if (cardData?.type === 'agentic_storefront' || routing.skill === 'reminder') {
           // Native assistance remains in the shared conversation but must not

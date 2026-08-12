@@ -79,9 +79,9 @@ export async function seedDemoAdCampaigns(): Promise<void> {
     if (existing[0].values[0][0] === 0) {
         db.run(`
             INSERT INTO ad_campaigns (title, desc, image_url, target_keyword, credits_budget) VALUES 
-            ('Premium Jasmine Rice (50kg)', 'Get premium quality jasmine rice delivered to your doorstep in 30 minutes.', 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=400', 'rice', 50),
+            ('Premium Jasmine Rice (50kg)', 'Get premium quality jasmine rice delivered to your doorstep.', 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=400', 'rice', 50),
             ('Swift Okada Riders Ibadan', 'Request Ibadan fast local okada. 10% discount on first ride today.', 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80&w=400', 'ride', 100),
-            ('Dugbe Bakers Association', 'Get hot, freshly baked Ibadan soft bread delivered instantly.', 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=400', 'bread', 80)
+            ('Dugbe Bakers Association', 'Get hot, freshly baked Ibadan soft bread delivered to your area.', 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=400', 'bread', 80)
         `);
         saveDb();
         console.log('Demo ad campaigns seeded successfully');

@@ -12,17 +12,17 @@ import { authenticateUser, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
 
-function getJwtSecret(): string {
+export function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
   if (!secret || secret.length < 32) throw new Error('JWT_SECRET must be configured with at least 32 characters');
   return secret;
 }
 
-function issueUserToken(phone: string): string {
+export function issueUserToken(phone: string): string {
   return jwt.sign({ phone, role: 'user' }, getJwtSecret(), { expiresIn: '30d', algorithm: 'HS256' });
 }
 
-async function upsertProfile(phone: string, name?: string, email?: string, goal?: string): Promise<void> {
+export async function upsertProfile(phone: string, name?: string, email?: string, goal?: string): Promise<void> {
   const db = await getDb();
   const stmt = db.prepare(`SELECT phone FROM memory_profiles WHERE phone = ?`);
   stmt.bind([phone]);
