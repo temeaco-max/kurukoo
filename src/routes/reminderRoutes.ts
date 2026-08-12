@@ -3,12 +3,13 @@ import { authenticateUser, AuthRequest } from '../middleware/auth.js';
 import { cancelReminder, createReminder, listReminders } from '../services/reminderService.js';
 
 const router = Router();
+router.use(authenticateUser);
 
 function phoneFromRequest(req: AuthRequest): string {
   return String(req.user?.phone || '');
 }
 
-router.get('/reminders', authenticateUser, async (req: AuthRequest, res) => {
+router.get('/reminders', async (req: AuthRequest, res) => {
   try {
     const phone = phoneFromRequest(req);
     const reminders = await listReminders(phone, String(req.query.includeCompleted || '') === 'true');
@@ -18,7 +19,7 @@ router.get('/reminders', authenticateUser, async (req: AuthRequest, res) => {
   }
 });
 
-router.post('/reminders', authenticateUser, async (req: AuthRequest, res) => {
+router.post('/reminders', async (req: AuthRequest, res) => {
   try {
     const reminder = await createReminder(phoneFromRequest(req), {
       title: String(req.body?.title || ''),
@@ -32,7 +33,7 @@ router.post('/reminders', authenticateUser, async (req: AuthRequest, res) => {
   }
 });
 
-router.post('/reminders/:id/cancel', authenticateUser, async (req: AuthRequest, res) => {
+router.post('/reminders/:id/cancel', async (req: AuthRequest, res) => {
   try {
     const cancelled = await cancelReminder(phoneFromRequest(req), String(req.params.id));
     if (!cancelled) return res.status(404).json({ success: false, error: 'Reminder not found or already resolved' });
