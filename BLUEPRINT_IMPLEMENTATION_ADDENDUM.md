@@ -41,6 +41,15 @@ Shared capabilities include:
 - cancellation
 - dispute
 - completion
+- execution_request
+
+### Generic Execution & Explicit Connector Authorization
+
+The platform provides a provider-neutral execution request service (`src/services/executionConnector.ts`) and explicit connector authorization (`provider_execution_connectors`). 
+- Execution requests tie action execution (e.g. `dispatch_delivery`) to an existing Economic Request and a verified participant.
+- Execution **fails closed** unless an active authorization record exists for the exact provider and capability.
+- Idempotency keys prevent duplicate dispatches.
+- Evidence is recorded with typed payloads, `connector_reported` sources, and `pending_review` verification states, without altering the underlying request status, quote, or single-recipient escrow model.
 
 ## 2. Artist / creator / celebrity policy
 

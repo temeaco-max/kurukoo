@@ -30,6 +30,7 @@ import {
   addEconomicParticipant,
   attachEconomicOffer,
   getEconomicRequestCoordination,
+  getEconomicParticipants,
   updateEconomicParticipant,
   searchKnownEconomicOffers,
   startKnownOfferEconomicRequest,
@@ -38,6 +39,11 @@ import {
   type EconomicParticipantRole,
   type EconomicParticipantStatus,
 } from '../services/economicParticipants.js';
+import {
+  createExecutionRequest,
+  dispatchExecutionRequest,
+  getExecutionRequestsForRequest,
+} from '../services/executionConnector.js';
 
 const router = Router();
 
@@ -358,6 +364,68 @@ router.post('/:id/complete', authenticateUser, async (req: AuthRequest, res) => 
   const evidence = req.body?.evidence && typeof req.body.evidence === 'object' ? req.body.evidence : undefined;
   const result = await completeEconomicRequest(request.id, evidence);
   res.status(result.success ? 200 : 409).json(result);
+});
+
+router.get('/:id/execution', authenticateUser, async (req: AuthRequest, res) => {
+  const request = await getEconomicRequest(req.params.id);
+  if (!request) {
+    return res.status(404).json({ ok: false, error: 'Economic request not found' });
+  }
+  const userPhone = phoneFrom(req);
+  if (request.phone !== userPhone) {
+    return res.status(403).json({ ok: false, error: 'Unauthorized: only request owner can inspect execution requests' });
+  }
+  const executions = await getExecutionRequestsForRequest(req.params.id);
+  return res.json({ ok: true, executionRequests: executions });
+});
+
+router.post('/:id/execution', authenticateUser, async (req: AuthRequest, res) => {
+  const request = await getEconomicRequest(req.params.id);
+  if (!request) {
+    return res.status(404).json({ ok: false, error: 'Economic request not found' });
+  }
+  const userPhone = phoneFrom(req);
+  if (request.phone !== userPhone) {
+    return res.status(403).json({ ok: false, error: 'Unauthorized: only request owner can dispatch execution' });
+  }
+
+  const { providerPhone, capability, actionRequested, role, idempotencyKey } = req.body || {};
+  if (!providerPhone || !capability || !actionRequested || !role || !idempotencyKey) {
+    return res.status(400).json({
+      ok: false,
+      error: 'providerPhone, capability, actionRequested, role, and idempotencyKey are required'
+    });
+  }
+
+  const participants = await getEconomicParticipants(req.params.id);
+  const participant = participants.find((p) => p.providerPhone === providerPhone && p.role === role);
+  if (!participant) {
+    return res.status(400).json({ ok: false, error: 'Specified provider is not a registered participant on this request' });
+  }
+
+  try {
+    const actionId = `act_${Math.random().toString(36).substring(2, 10)}`;
+    const correlationId = `corr_${request.id}`;
+    const created = await createExecutionRequest({
+      requestId: request.id,
+      actionId,
+      providerPhone,
+      role,
+      capability,
+      actionRequested,
+      idempotencyKey: String(idempotencyKey),
+      correlationId,
+      authorizationContext: {
+        invoked_by: userPhone,
+        participant_status: participant.status,
+      }
+    });
+    const execution = await dispatchExecutionRequest(created.id);
+
+    return res.json({ ok: true, executionRequest: execution });
+  } catch (err: any) {
+    return res.status(400).json({ ok: false, error: err?.message || 'Failed to create execution request' });
+  }
 });
 
 router.post('/orchestration/run', authenticateAdmin, async (_req: AuthRequest, res) => {
