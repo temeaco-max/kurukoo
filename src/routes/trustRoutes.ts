@@ -12,6 +12,7 @@ import {
   resolveDispute,
   escalateDispute,
 } from '../services/disputeResolution.js';
+import { recordDisputeFault } from '../services/trustScore.js';
 import { ensureEscrowSchema, releaseEscrow, refundEscrow } from '../services/escrow.js';
 
 const router = Router();
@@ -153,9 +154,20 @@ router.get('/dispute/:id', authenticateUser, async (req: AuthRequest, res) => {
 router.post('/dispute/:id/resolve', authenticateAdmin, async (req: AuthRequest, res) => {
   const disputeId = parseInt(req.params.id, 10);
   const resolution = req.body?.resolution;
+  const faultParty = req.body?.fault_party;
+  const faultPhone = req.body?.fault_phone;
   if (isNaN(disputeId) || !resolution) return res.status(400).json({ error: 'Missing disputeId or resolution' });
+  if (faultParty !== undefined && !['buyer', 'provider'].includes(String(faultParty))) {
+    return res.status(400).json({ error: 'fault_party must be buyer or provider' });
+  }
+  if (String(faultParty) === 'provider' && !String(faultPhone || '').trim()) {
+    return res.status(400).json({ error: 'fault_phone is required when fault_party is provider' });
+  }
   try {
     await resolveDispute(disputeId, String(resolution));
+    if (faultParty) {
+      await recordDisputeFault(disputeId, String(faultParty) as 'buyer' | 'provider', String(faultPhone || ''));
+    }
     res.json({ success: true, message: 'Dispute resolved successfully.' });
   } catch {
     res.status(500).json({ error: 'Failed to resolve dispute' });
