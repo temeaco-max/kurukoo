@@ -3,6 +3,7 @@ import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { getDb, saveDb } from '../database.js';
 import { migrateGuestSessionToAccount } from '../services/guestSessionMigration.js';
+import { applyQrReferralAttribution } from '../services/qrContextService.js';
 import { requestPhoneOtp, verifyPhoneOtp } from '../services/otpAuthService.js';
 import { authRateLimit } from '../middleware/rateLimit.js';
 import { authenticateUser, AuthRequest } from '../middleware/auth.js';
@@ -63,8 +64,12 @@ router.post('/verify-otp', authRateLimit, async (req, res) => {
     await upsertProfile(userPhone, req.body?.name, req.body?.email, req.body?.goal);
 
     if (guestPhone.startsWith('anon_')) {
-      try { await migrateGuestSessionToAccount(guestPhone, userPhone); }
-      catch (migrationError) { console.error('Guest migration failed during verify-otp:', migrationError); }
+      try {
+        await migrateGuestSessionToAccount(guestPhone, userPhone);
+        // Attribution records a qualified referral only after identity is verified;
+        // it does not award Points and never runs during QR scan/activation.
+        await applyQrReferralAttribution(guestPhone, userPhone);
+      } catch (migrationError) { console.error('Guest migration or QR attribution failed during verify-otp:', migrationError); }
     }
 
     const token = issueUserToken(userPhone);

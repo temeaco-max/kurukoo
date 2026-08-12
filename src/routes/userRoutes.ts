@@ -3,7 +3,8 @@ import { authenticateUser, AuthRequest } from '../middleware/auth.js';
 import { getDb, saveDb } from '../database.js';
 import { exportUserData, deleteUserData } from '../services/dataRetention.js';
 import { getProfile } from '../services/memoryProfile.js';
-import { generateReferralCode, trackReferral, buildQrContextUrl } from '../services/referralService.js';
+import { generateReferralCode, trackReferral } from '../services/referralService.js';
+import { buildQrEntryUrl, parseQrContext } from '../services/qrContextService.js';
 import { submitRating } from '../services/ratingService.js';
 
 const router = Router();
@@ -68,12 +69,13 @@ router.post('/referral/code', authenticateUser, async (req: AuthRequest, res) =>
 
 router.get('/referral/qr', authenticateUser, async (req: AuthRequest, res) => {
   const phone = sessionPhone(req); if (!phone) return res.status(401).json({ error: 'Authentication required' });
-  const context = String(req.query.context || 'referral');
   const channel = req.query.channel ? String(req.query.channel) : undefined;
   const code = await generateReferralCode(phone);
+  const context = parseQrContext({ context: 'referral', ref: code, source: 'user-referral', ...(channel ? { channel } : {}) });
+  if (!context) return res.status(400).json({ error: 'Invalid QR channel context.' });
   const baseUrl = `${req.protocol}://${req.get('host')}`;
-  const url = buildQrContextUrl(baseUrl, { context, referralCode: code, source: 'user-referral', channel });
-  res.json({ success: true, context, referralCode: code, url });
+  const url = buildQrEntryUrl(baseUrl, context);
+  res.json({ success: true, context: context.type, referralCode: code, url });
 });
 
 router.post('/referral/claim', authenticateUser, async (req: AuthRequest, res) => { const phone = sessionPhone(req); if (!phone) return res.status(401).json({ error: 'Authentication required' }); const referral_code = String(req.body?.referral_code || '').trim().toUpperCase(); if (!referral_code) return res.status(400).json({ error: 'Missing referral_code' }); try { const { findReferrerByCode } = await import('../services/referralService.js'); const referrer_phone = await findReferrerByCode(referral_code); if (!referrer_phone) return res.status(400).json({ error: 'Invalid referral code' }); if (referrer_phone === phone) return res.status(400).json({ error: 'You cannot refer yourself' }); await trackReferral(referrer_phone, phone, referral_code); res.json({ success: true, message: 'Referral registered successfully. Reward activates only after the qualifying event.' }); } catch (_) { res.status(500).json({ error: 'Failed to register referral code' }); } });

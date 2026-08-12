@@ -45,6 +45,18 @@ export const channelRegistry = {
 
 export type ChannelName = keyof typeof channelRegistry;
 
+/** Whether an adapter has the credentials required to make a truthful public availability claim. */
+export function isChannelConfigured(channel: string | undefined): boolean {
+    switch (String(channel || '').toLowerCase()) {
+        case 'web': return true;
+        case 'whatsapp': return Boolean(process.env.WHATSAPP_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID);
+        case 'telegram': return Boolean(process.env.TELEGRAM_BOT_TOKEN);
+        case 'sms': return Boolean(process.env.AFRICASTALKING_API_KEY && process.env.AFRICASTALKING_USERNAME);
+        case 'ussd': return Boolean(process.env.AFRICASTALKING_API_KEY && process.env.AFRICASTALKING_USERNAME);
+        default: return false;
+    }
+}
+
 export async function dispatchWebhook(
     channel: ChannelName,
     body: any,

@@ -2,9 +2,6 @@ import { getDb, saveDb } from '../database.js';
 import { getProfile, updateProfile } from './memoryProfile.js';
 import { addCredits } from './pointsEngine.js';
 
-const QR_CONTEXTS = new Set(['referral', 'contributor', 'network', 'offer', 'product', 'location', 'channel', 'continue', 'public']);
-const CHANNELS = new Set(['whatsapp', 'telegram', 'sms', 'ussd', 'web']);
-
 export async function generateReferralCode(phone: string): Promise<string> {
     const profile = await getProfile(phone);
     if (profile && profile.preferences && profile.preferences.referral_code) {
@@ -84,24 +81,4 @@ export async function getReferralStats(phone: string): Promise<{ totalReferrals:
     if (stmtSub.step()) successfulReferrals = stmtSub.getAsObject().count as number;
     stmtSub.free();
     return { totalReferrals, totalPointsEarned: successfulReferrals * 200, successfulReferrals };
-}
-
-/** Build a QR-safe Kurukoo entry URL. No credentials or personal data are encoded. */
-export function buildQrContextUrl(baseUrl: string, options: {
-    context?: string;
-    referralCode?: string;
-    source?: string;
-    entity?: string;
-    capability?: string;
-    channel?: string;
-} = {}): string {
-    const url = new URL('/start', baseUrl);
-    const context = QR_CONTEXTS.has(options.context || '') ? options.context! : 'public';
-    url.searchParams.set('context', context);
-    if (options.referralCode) url.searchParams.set('ref', options.referralCode.slice(0, 64).toUpperCase());
-    if (options.source) url.searchParams.set('source', options.source.slice(0, 128));
-    if (options.entity) url.searchParams.set('entity', options.entity.slice(0, 128));
-    if (options.capability) url.searchParams.set('capability', options.capability.slice(0, 128));
-    if (options.channel && CHANNELS.has(options.channel.toLowerCase())) url.searchParams.set('channel', options.channel.toLowerCase());
-    return url.toString();
 }
