@@ -5,103 +5,23 @@ import path from 'node:path';
 import { AddressInfo } from 'node:net';
 
 const dbPath = path.join(os.tmpdir(), `kurukoo-public-contracts-${process.pid}-${Date.now()}.sqlite`);
-process.env.DB_PATH = dbPath;
-process.env.NODE_ENV = 'test';
-process.env.KURUKOO_DISABLE_LISTEN = 'true';
-process.env.JWT_SECRET = 'public-contracts-test-secret-that-is-long-enough';
-
+process.env.DB_PATH = dbPath; process.env.NODE_ENV = 'test'; process.env.KURUKOO_DISABLE_LISTEN = 'true'; process.env.JWT_SECRET = 'public-contracts-test-secret-that-is-long-enough';
 const { app } = await import('../src/index.ts');
-const server = app.listen(0, '127.0.0.1');
-await new Promise<void>((resolve) => server.once('listening', resolve));
-
-async function request(base: string, pathName: string, redirect: RequestRedirect = 'follow') {
-  return fetch(`${base}${pathName}`, { redirect });
-}
-
-try {
-  const { port } = server.address() as AddressInfo;
-  const base = `http://127.0.0.1:${port}`;
-
-  const home = await request(base, '/');
-  assert.equal(home.status, 200, 'homepage must render');
-  const homeHtml = await home.text();
-  assert.match(homeHtml, /\/css\/kurukoo-home\.css\?v=1\.0\.0/, 'homepage must load its existing dedicated stylesheet');
-  assert.doesNotMatch(homeHtml, /kurukoo-onboarding-modal|openUnifiedEntryGateway|data-onboarding-goal=/, 'homepage must use the canonical chat entry rather than a duplicate onboarding gateway');
-  const homeBodyHtml = homeHtml.slice(homeHtml.indexOf('<body'));
-  assert.doesNotMatch(homeBodyHtml, /onclick=|onsubmit=/, 'homepage navigation and onboarding must use controller-bound events rather than inline handlers');
-  assert.match(homeHtml, /Tell Kurukoo what you need\. Kurukoo figures out who or what can fulfil it\./, 'homepage must retain the canonical fulfillment-orchestration tagline');
-  assert.match(homeHtml, /aria-label="Illustrative Kurukoo conversation"/, 'homepage chat preview must be clearly labelled as illustrative');
-  assert.doesNotMatch(homeHtml, /Mama Nkechi|Sola Phone Repairs|Musa Keke Rider|150m away|300m away|200m away|3 okada riders are nearby/, 'homepage must not present unsupported named providers, distances, availability, or activity as live data');
-  assert.match(homeHtml, /href="\/chat\?prompt=I%20need%20a%20ride"/, 'homepage ride capability must start through the canonical chat request path');
-  assert.match(homeHtml, /channel-item--unavailable/, 'homepage must visually mark inactive access channels as unavailable');
-  assert.doesNotMatch(homeHtml, /https:\/\/wa\.me|tel:\*7000|\*7000#/, 'homepage must not expose an unsupported direct-channel route');
-
-  for (const pathName of ['/dashboard.html', '/css/site.css', '/js/kurukoo-pwa.js']) {
-    const response = await request(base, pathName);
-    assert.equal(response.status, 200, `${pathName} must be served by the canonical public asset boundary`);
-  }
-
-  const adminLogin = await request(base, '/admin/login');
-  assert.equal(adminLogin.status, 200, 'extensionless admin login entry must resolve to the deployed admin login asset');
-  assert.match(await adminLogin.text(), /id="login-form"/, 'extensionless admin login entry must serve the canonical admin login form');
-
-  const login = await request(base, '/login');
-  assert.equal(login.status, 200, 'login entry must render');
-  const loginHtml = await login.text();
-  assert.doesNotMatch(loginHtml, /automated escrow|instant verified payouts|NDPA 2023 .*Compliant|AES-256 encrypted/i, 'login copy must not make unsupported payment or compliance claims');
-  assert.match(loginHtml, /verified payment is available/, 'login copy must describe payment and escrow conditionally');
-
-  for (const pathName of ['/chat', '/chat/']) {
-    const chat = await request(base, pathName);
-    assert.equal(chat.status, 200, `${pathName} must resolve for the homepage, PWA embed, manifest shortcut, and service-worker shell`);
-    assert.match(await chat.text(), /id="chat-shell"|class="chat-shell"/, `${pathName} must serve the existing chat shell`);
-  }
-
-  const explore = await request(base, '/explore');
-  assert.equal(explore.status, 200, 'Explore navigation must render the category index');
-  const exploreHtml = await explore.text();
-  assert.doesNotMatch(exploreHtml, /verified local providers|express delivery|\d+\s+providers|★\s*\d+(?:\.\d+)?|Instant SOS dispatch|real-time market prices|vetted artisans/i, 'Explore index must not present unsupported provider, delivery, count, rating, dispatch, or pricing claims');
-  assert.match(exploreHtml, /Start request/, 'Explore index must retain a truthful request CTA');
-
-  for (const pathName of ['/explore/food', '/explore/groceries', '/explore/repairs-maintenance', '/explore/sports']) {
-    const response = await request(base, pathName);
-    assert.equal(response.status, 200, `${pathName} must resolve through the canonical Explore route`);
-    const html = await response.text();
-    assert.doesNotMatch(html, /Verified Providers|★\s*\d+(?:\.\d+)?\s+Rating/, `${pathName} must not invent provider verification or rating statistics`);
-    assert.match(html, /How a Request Can Proceed/, `${pathName} must render the conditional request-flow template`);
-    assert.match(html, /Related Capabilities/, `${pathName} must render its related-category navigation`);
-  }
-
-  const unknownCategory = await request(base, '/explore/not-a-real-category');
-  assert.equal(unknownCategory.status, 404, 'unknown Explore categories must remain not found');
-
-  const pricing = await request(base, '/pricing');
-  assert.equal(pricing.status, 200, 'pricing navigation must render the public access-and-economic-request page');
-  const pricingHtml = await pricing.text();
-  assert.match(pricingHtml, /Start with a conversation/, 'pricing page must describe the active Web Chat entry point');
-  assert.match(pricingHtml, /payment service provider is not configured/, 'pricing page must state the current payment integration boundary');
-  assert.doesNotMatch(pricingHtml, /₦2,500\/mo|₦10,000\/mo|Upgrade to Plus|automated escrow/i, 'pricing page must not advertise unsupported plans or payment execution');
-
-  const country = await request(base, '/gb');
-  assert.equal(country.status, 200, 'supported country path must render the homepage');
-  assert.match(await country.text(), /\/css\/kurukoo-home\.css\?v=1\.0\.0/, 'country homepage must preserve dedicated styling');
-
-  const howItWorks = await request(base, '/how-it-works');
-  assert.equal(howItWorks.status, 200, 'How It Works must render at its canonical public route');
-  assert.match(await howItWorks.text(), /How Kurukoo Works/, 'How It Works must retain its public page heading');
-
-  for (const [pathName, location] of [
-    ['/events', '/explore/events'],
-    ['/earn/rides', '/explore/transport'],
-  ] as const) {
-    const response = await request(base, pathName, 'manual');
-    assert.equal(response.status, 302, `${pathName} must use an explicit public redirect`);
-    assert.equal(response.headers.get('location'), location, `${pathName} must redirect to its canonical public destination`);
-  }
-} finally {
-  await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
-  try { fs.rmSync(dbPath, { force: true }); } catch { /* best-effort temporary database cleanup */ }
-}
-
+const server = app.listen(0, '127.0.0.1'); await new Promise<void>((resolve) => server.once('listening', resolve));
+async function request(base:string,pathName:string,redirect:RequestRedirect='follow'){return fetch(`${base}${pathName}`,{redirect});}
+try{const{port}=server.address() as AddressInfo;const base=`http://127.0.0.1:${port}`;
+const home=await request(base,'/');assert.equal(home.status,200,'homepage must render');const homeHtml=await home.text();assert.match(homeHtml,/\/css\/kurukoo-home\.css\?v=1\.0\.0/,'homepage must load its existing dedicated stylesheet');assert.doesNotMatch(homeHtml,/kurukoo-onboarding-modal|openUnifiedEntryGateway|data-onboarding-goal=/,'homepage must use the canonical chat entry rather than a duplicate onboarding gateway');const homeBodyHtml=homeHtml.slice(homeHtml.indexOf('<body'));assert.doesNotMatch(homeBodyHtml,/onclick=|onsubmit=/,'homepage navigation and onboarding must use controller-bound events rather than inline handlers');assert.match(homeHtml,/Tell Kurukoo what you need\. Kurukoo figures out who or what can fulfil it\./,'homepage must retain the canonical fulfillment-orchestration tagline');assert.match(homeHtml,/aria-label="Illustrative Kurukoo conversation"/,'homepage chat preview must be clearly labelled as illustrative');assert.doesNotMatch(homeHtml,/Mama Nkechi|Sola Phone Repairs|Musa Keke Rider|150m away|300m away|200m away|3 okada riders are nearby/,'homepage must not present unsupported named providers, distances, availability, or activity as live data');assert.match(homeHtml,/href="\/chat\?prompt=I%20need%20to%20get%20somewhere"/,'homepage transport capability must start through the canonical chat request path');assert.match(homeHtml,/channel-item--unavailable/,'homepage must visually mark inactive access channels as unavailable');assert.doesNotMatch(homeHtml,/https:\/\/wa\.me|tel:\*7000|\*7000#/,'homepage must not expose an unsupported direct-channel route');
+for(const pathName of ['/dashboard.html','/css/site.css','/js/kurukoo-pwa.js']){const response=await request(base,pathName);assert.equal(response.status,200,`${pathName} must be served by the canonical public asset boundary`);}
+const adminLogin=await request(base,'/admin/login');assert.equal(adminLogin.status,200,'extensionless admin login entry must resolve to the deployed admin login asset');assert.match(await adminLogin.text(),/id="login-form"/,'extensionless admin login entry must serve the canonical admin login form');
+const login=await request(base,'/login');assert.equal(login.status,200,'login entry must render');const loginHtml=await login.text();assert.doesNotMatch(loginHtml,/automated escrow|instant verified payouts|NDPA 2023 .*Compliant|AES-256 encrypted/i,'login copy must not make unsupported payment or compliance claims');assert.match(loginHtml,/one-time verification code|verification code/,'login copy must explain phone verification rather than a legacy password/trial flow');assert.match(loginHtml,/Tell me your name first/,'login entry must preserve the conversation-first identity sequence');
+for(const pathName of ['/chat','/chat/']){const chat=await request(base,pathName);assert.equal(chat.status,200,`${pathName} must resolve for the homepage, PWA embed, manifest shortcut, and service-worker shell`);assert.match(await chat.text(),/id="chat-shell"|class="chat-shell"/,`${pathName} must serve the existing chat shell`);}
+const explore=await request(base,'/explore');assert.equal(explore.status,200,'Explore navigation must render the category index');const exploreHtml=await explore.text();assert.doesNotMatch(exploreHtml,/verified local providers|express delivery|\d+\s+providers|★\s*\d+(?:\.\d+)?|Instant SOS dispatch|real-time market prices|vetted artisans/i,'Explore index must not present unsupported provider, delivery, count, rating, dispatch, or pricing claims');assert.match(exploreHtml,/Start request/,'Explore index must retain a truthful request CTA');
+for(const pathName of ['/explore/food','/explore/groceries','/explore/repairs-maintenance','/explore/sports']){const response=await request(base,pathName);assert.equal(response.status,200,`${pathName} must resolve through the canonical Explore route`);const html=await response.text();assert.doesNotMatch(html,/Verified Providers|★\s*\d+(?:\.\d+)?\s+Rating/,`${pathName} must not invent provider verification or rating statistics`);assert.match(html,/How a Request Can Proceed/,`${pathName} must render the conditional request-flow template`);assert.match(html,/Related Capabilities/,`${pathName} must render its related-category navigation`);}
+const unknownCategory=await request(base,'/explore/not-a-real-category');assert.equal(unknownCategory.status,404,'unknown Explore categories must remain not found');
+const pricing=await request(base,'/pricing');assert.equal(pricing.status,200,'pricing navigation must render the public access-and-economic-request page');const pricingHtml=await pricing.text();assert.match(pricingHtml,/Start with a conversation/,'pricing page must describe the active Web Chat entry point');assert.match(pricingHtml,/payment service provider is not configured/,'pricing page must state the current payment integration boundary');assert.doesNotMatch(pricingHtml,/₦2,500\/mo|₦10,000\/mo|Upgrade to Plus|automated escrow/i,'pricing page must not advertise unsupported plans or payment execution');
+const country=await request(base,'/gb');assert.equal(country.status,200,'supported country path must render the homepage');assert.match(await country.text(),/\/css\/kurukoo-home\.css\?v=1\.0\.0/,'country homepage must preserve dedicated styling');
+const howItWorks=await request(base,'/how-it-works');assert.equal(howItWorks.status,200,'How It Works must render at its canonical public route');assert.match(await howItWorks.text(),/How Kurukoo Works/,'How It Works must retain its public page heading');
+for(const[pathName,location]of[['/events','/explore/events'],['/earn/rides','/explore/transport']] as const){const response=await request(base,pathName,'manual');assert.equal(response.status,302,`${pathName} must use an explicit public redirect`);assert.equal(response.headers.get('location'),location,`${pathName} must redirect to its canonical public destination`);}
+}finally{await new Promise<void>((resolve,reject)=>server.close(error=>error?reject(error):resolve()));try{fs.rmSync(dbPath,{force:true});}catch{}}
 console.log('Public runtime contract checks passed');
-console.log('Verified: homepage stylesheet and onboarding events, canonical public assets and chat shell, truthful Explore index/category data, public redirects, pricing, and country routes.');
+console.log('Verified: homepage stylesheet and onboarding events, canonical public assets and chat shell, truthful Explore index/category data, public redirects, pricing, conversation-first identity and country routes.');
