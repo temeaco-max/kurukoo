@@ -9458,3 +9458,7 @@ body.dark-mode .quick-chip {
 
 
 
+
+/* Footer Supplementary Classes */
+.footer-desc { max-width: 300px; margin-bottom: 20px; color: var(--gray-600); }
+.footer-cta-box { margin-top: 20px; }

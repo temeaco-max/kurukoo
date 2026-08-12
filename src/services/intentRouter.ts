@@ -30,21 +30,34 @@ function parseReminderQuery(q:string):{dueAt:string;title:string;displayTime:str
       return{dueAt,title:rel[3].trim(),displayTime:`in ${amount} ${unit}`};
     }
   }
-  const abs=q.match(/^remind me\s+(?:(tomorrow)\s+)?(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s+(?:to\s+)?(.+)$/i);
-  if(abs){
-    const isTomorrow=Boolean(abs[1]);
-    let hours=Number(abs[2]);
-    const mins=abs[3]?Number(abs[3]):0;
-    const ampm=abs[4]?abs[4].toLowerCase():null;
-    if(ampm==='pm'&&hours<12)hours+=12;
-    if(ampm==='am'&&hours===12)hours=0;
-    const d=new Date();
-    if(isTomorrow)d.setUTCDate(d.getUTCDate()+1);
-    d.setUTCHours(hours,mins,0,0);
-    if(d.getTime()<=Date.now()&&!isTomorrow){
-      d.setUTCDate(d.getUTCDate()+1);
+  const abs = q.match(/^remind me\s+(?:(every\s+day|every\s+week|daily|weekly)?\s*)?(?:on\s+([a-z]+)\s+)?(?:(tomorrow|today)\s+)?(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s+(?:to\s+)?(.+)$/i);
+  if (abs) {
+    const recurrenceMatch = abs[1] ? abs[1].toLowerCase() : null;
+    const recurrence = recurrenceMatch?.includes('week') ? 'weekly' : recurrenceMatch ? 'daily' : null;
+    const dayName = abs[2] ? abs[2].toLowerCase() : null;
+    const dayModifier = abs[3] ? abs[3].toLowerCase() : null;
+    let hours = Number(abs[4]);
+    const mins = abs[5] ? Number(abs[5]) : 0;
+    const ampm = abs[6] ? abs[6].toLowerCase() : null;
+    if (ampm === 'pm' && hours < 12) hours += 12;
+    if (ampm === 'am' && hours === 12) hours = 0;
+    const d = new Date();
+    d.setUTCHours(hours, mins, 0, 0);
+    if (dayModifier === 'tomorrow') {
+      d.setUTCDate(d.getUTCDate() + 1);
+    } else if (dayName) {
+      const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const targetDay = days.indexOf(dayName);
+      if (targetDay !== -1) {
+        let currentDay = d.getUTCDay();
+        let diff = targetDay - currentDay;
+        if (diff <= 0) diff += 7;
+        d.setUTCDate(d.getUTCDate() + diff);
+      }
+    } else if (d.getTime() <= Date.now()) {
+      d.setUTCDate(d.getUTCDate() + 1);
     }
-    return{dueAt:d.toISOString(),title:abs[5].trim(),displayTime:d.toLocaleString()};
+    return { dueAt: d.toISOString(), title: abs[7].trim(), displayTime: `${d.toLocaleString()}${recurrence ? ` (${recurrence})` : ''}` };
   }
   return null;
 }

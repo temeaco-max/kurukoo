@@ -209,3 +209,21 @@
   .hub-grid { grid-template-columns: 1fr; }
   .hub-main { padding: 32px 20px; }
 }
+
+/* Additional Settings & Hub Classes */
+.settings-container { max-width: 800px; margin: 0 auto; }
+.settings-group { background: var(--white); border: 1px solid var(--gray-100); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+.settings-group h3 { margin: 0 0 20px; font-size: 1.1rem; border-bottom: 1px solid var(--gray-50); padding-bottom: 12px; }
+.settings-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--gray-50); }
+.settings-row:last-child { border-bottom: 0; }
+.settings-info { display: grid; gap: 4px; }
+.settings-label { font-weight: 600; font-size: 0.95rem; }
+.settings-value { font-size: 0.85rem; color: var(--gray-600); }
+.settings-form-hidden { display: none; margin-top: 10px; }
+.settings-form-grid { display: grid; gap: 12px; margin-bottom: 20px; }
+.settings-input { padding: 10px; border: 1px solid var(--gray-200); border-radius: 8px; width: 100%; font: inherit; }
+.settings-actions { display: flex; gap: 10px; }
+.settings-group--danger { border-color: rgba(154, 63, 43, 0.2); }
+.danger-title { color: var(--danger); }
+.danger-btn { color: var(--danger); border-color: var(--danger); }
+.danger-btn:hover { background: var(--danger); color: #fff; }
