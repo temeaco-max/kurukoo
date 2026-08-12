@@ -6,45 +6,67 @@
 .storefront-execution-evidence{margin:.2rem 0 0;padding-left:1.1rem;font-size:.82rem}
 @media (max-width:600px){.storefront-execution{font-size:.9rem}.storefront-execution-evidence{overflow-wrap:anywhere}}
 
-/* Auth Gate Card */
+/* Auth Gate Card — Living Economic Profile Aesthetic */
 .auth-gate-card {
-  margin: 12px 0;
-  padding: 16px;
+  margin: 1.25rem 0;
+  padding: 1.75rem;
   border: 1px solid var(--chat-border);
-  border-radius: 12px;
+  border-radius: 1rem;
   background: var(--chat-surface);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.04);
   text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.auth-gate-card::before {
+  content: '✦';
+  position: absolute;
+  top: -10px;
+  right: -5px;
+  font-size: 4rem;
+  opacity: 0.03;
+  color: var(--chat-primary);
 }
 .auth-gate-header h4 {
-  margin: 0 0 8px;
+  margin: 0 0 0.75rem;
   color: var(--chat-charcoal);
-  font-weight: 700;
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: -0.01em;
 }
 .auth-gate-body p {
-  margin: 0 0 16px;
-  font-size: 14px;
+  margin: 0 0 1.5rem;
+  font-size: 0.95rem;
   color: var(--chat-muted);
-  line-height: 1.5;
+  line-height: 1.6;
 }
 .auth-gate-body .primary-btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  max-width: 200px;
+  max-width: 220px;
   text-decoration: none;
-  line-height: 40px;
-  height: 40px;
-  padding: 0 16px;
+  height: 44px;
+  padding: 0 1.5rem;
+  border-radius: 100px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: var(--transition);
 }
 body.dark .auth-gate-card {
   background: var(--chat-surface-muted);
 }
 .auth-gate-card--resolved {
-  border-color: color-mix(in srgb, var(--chat-green) 42%, var(--chat-border));
-  background: color-mix(in srgb, var(--chat-green) 8%, var(--chat-surface));
+  border-color: rgba(46, 125, 50, 0.3);
+  background: rgba(46, 125, 50, 0.03);
 }
 .auth-gate-card--resolved .primary-btn {
   background: var(--chat-charcoal);
+}
+.auth-gate-card--resolved::before {
+  color: var(--chat-green);
+  opacity: 0.05;
 }
 
 .reminder-list-item{display:grid;gap:5px;padding:9px 0;border-top:1px solid var(--chat-border);font-size:12px}.reminder-list-item:first-child{border-top:0}.reminder-list-item span{color:var(--chat-muted);font-size:11px}.text-btn{justify-self:start;border:0;background:transparent;color:var(--chat-primary);cursor:pointer;font-size:11px;font-weight:700;padding:3px 0;min-height:30px}.text-btn:disabled{opacity:.5;cursor:wait}

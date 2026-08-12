@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import { authenticateAdmin, authenticateUser, type AuthRequest } from '../middleware/auth.js';
+import { getDb } from '../database.js';
 import {
   ECONOMIC_CATEGORIES,
   getEconomicCategory,
@@ -306,6 +307,28 @@ router.post('/:id/participants/:role/evidence', authenticateUser, async (req: Au
     const message = error instanceof Error ? error.message : 'Unable to update participant evidence';
     const status = /ownership|not found/.test(message) ? 404 : 422;
     res.status(status).json({ success: false, error: message });
+  }
+});
+
+router.get('/', authenticateUser, async (req: AuthRequest, res) => {
+  const phone = phoneFrom(req);
+  if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
+  try {
+    const db = await getDb();
+    const stmt = db.prepare('SELECT * FROM economic_requests WHERE phone = ? ORDER BY created_at DESC LIMIT 50');
+    stmt.bind([phone]);
+    const requests: any[] = [];
+    while (stmt.step()) {
+      const row = stmt.getAsObject();
+      try { row.requirements = row.requirements ? JSON.parse(String(row.requirements)) : {}; } catch { row.requirements = {}; }
+      try { row.quote = row.quote ? JSON.parse(String(row.quote)) : null; } catch { row.quote = null; }
+      requests.push(row);
+    }
+    stmt.free();
+    res.json({ success: true, requests });
+  } catch (error) {
+    console.error('[EconomicRequest] list failed:', error);
+    res.status(500).json({ success: false, error: 'Unable to list economic requests' });
   }
 });
 

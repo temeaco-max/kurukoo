@@ -310,3 +310,13 @@ The primary Web Chat now contains an accessible live Native Assistance status re
 Deferred matching is now guarded against overlapping worker passes. Partial matches consume a bounded retry attempt and schedule a future check, while malformed intentions also consume an attempt rather than remaining permanently due. A provider match without a valid quote remains partial and cannot create a payment or escrow effect.
 
 **Validation:** `npm run lint`, `npm run build`, `npm run test:admin`, `npm run test:chat-dom-safety`, `npm run test:native-assistance`, `npm run test:economic-lifecycle`, and `npm run test:notification-queue` passed after this hardening. `FRONTEND_PAGES.md` and `homepage_copy.md` remain synchronized with the current extensionless route registry and Web Chat-only deployment boundary.
+
+## 18. Phase 5/6: Login via Chat, Request Hub Dynamic Data, and CSS Consolidation
+
+The login-via-chat flow was hardened by consolidating guest migration logic into the canonical `authRoutes.ts` and removing the redundant `/claim` route in `chatRouter.ts`. The `auth_gate` card in the chat interface was refined with better UX and consistent semantic tokens, ensuring a seamless handoff from guest intent capture to authenticated session resumption.
+
+The Request Hub (`dashboard.html`) was upgraded from static placeholders to dynamic data fetching. It now retrieves the user's Memory Profile (name, points) and their 10 most recent Economic Requests via a new `GET /api/chat/economic-requests` endpoint. The "Profile" link was corrected to avoid redundant login prompts, and already-authenticated users are now redirected from `/login` to their destination.
+
+CSS was consolidated across the core authentication and management surfaces. New standardized stylesheets `kurukoo-auth.css` and `kurukoo-hub.css` were created using the shared platform tokens. This ensures visual consistency across the homepage, login page, chat interface, and Request Hub while removing internal style blocks and inline styles.
+
+**Validation:** `npm run lint`, `npm run build`, and the existing `test:conversation-first-auth` regression suite passed. The Request Hub and Login surfaces now align with the "Living Economic Profile" aesthetic and use canonical platform boundaries for all data and authentication.

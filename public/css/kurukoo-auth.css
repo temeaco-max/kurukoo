@@ -1,0 +1,237 @@
+/* Authentication Page Styles — Standardized on Shared Tokens */
+.login-page-container {
+  padding-top: 60px;
+  padding-bottom: 60px;
+}
+
+.login-split-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+@media (max-width: 1024px) {
+  .login-split-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+}
+
+/* Info Side */
+.login-info-side {
+  max-width: 520px;
+}
+
+.login-badge {
+  display: inline-block;
+  padding: 6px 16px;
+  background: var(--surface-soft);
+  color: var(--terracotta);
+  font-weight: 700;
+  font-size: 0.85rem;
+  border-radius: 100px;
+  margin-bottom: 24px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.login-title {
+  font-size: 2.5rem;
+  line-height: 1.1;
+  margin-bottom: 24px;
+  color: var(--charcoal);
+}
+
+.login-desc {
+  font-size: 1.1rem;
+  color: var(--gray-600);
+  margin-bottom: 40px;
+  line-height: 1.6;
+}
+
+.login-benefits-list {
+  display: grid;
+  gap: 24px;
+}
+
+.login-benefit-item {
+  display: flex;
+  gap: 20px;
+}
+
+.login-benefit-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.login-benefit-title {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.login-benefit-sub {
+  font-size: 0.9rem;
+  color: var(--gray-600);
+  line-height: 1.5;
+}
+
+.login-trust-footer {
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 1px solid var(--gray-100);
+}
+
+.login-trust-badge {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  color: var(--gray-400);
+  font-size: 0.85rem;
+}
+
+/* Form Side */
+.auth-card {
+  background: var(--white);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--border-radius-lg);
+  padding: 40px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.04);
+}
+
+.auth-card-header {
+  margin-bottom: 32px;
+}
+
+.auth-card-title {
+  font-size: 1.75rem;
+  margin-bottom: 8px;
+}
+
+.auth-card-subtitle {
+  color: var(--gray-600);
+}
+
+.auth-form .form-group {
+  margin-bottom: 24px;
+}
+
+.phone-input-group {
+  display: flex;
+  gap: 12px;
+}
+
+.phone-prefix-select {
+  width: 100px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--border-radius-sm);
+  padding: 0 12px;
+  font-weight: 600;
+}
+
+.phone-number-input {
+  flex: 1;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--border-radius-sm);
+  font-size: 1rem;
+  transition: var(--transition);
+}
+
+.form-input:focus {
+  border-color: var(--terracotta);
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(217, 122, 92, 0.1);
+}
+
+.field-hint {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: var(--gray-400);
+}
+
+.auth-submit-btn {
+  margin-top: 8px;
+  height: 52px;
+  font-size: 1.05rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-arrow {
+  font-size: 1.2rem;
+  transition: transform 0.3s ease;
+}
+
+.auth-submit-btn:hover .btn-arrow {
+  transform: translateX(4px);
+}
+
+.otp-input {
+  letter-spacing: 0.5em;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.otp-resend-btn {
+  margin-top: 16px;
+  color: var(--gray-600);
+}
+
+.auth-feedback {
+  margin-top: 24px;
+  padding: 12px 16px;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.auth-feedback-error {
+  background: #FEF2F2;
+  color: var(--danger);
+  border: 1px solid #FEE2E2;
+}
+
+.auth-feedback-success {
+  background: #F0FDF4;
+  color: var(--success);
+  border: 1px solid #DCFCE7;
+}
+
+.auth-alternative-links {
+  margin-top: 40px;
+  padding-top: 32px;
+  border-top: 1px solid var(--gray-100);
+  text-align: center;
+}
+
+.alt-text {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--gray-400);
+  margin-bottom: 16px;
+}
+
+.alt-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--terracotta);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.alt-link:hover {
+  text-decoration: underline;
+}
