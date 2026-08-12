@@ -8,55 +8,46 @@
   <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/site.css?v=1.2.0"><link rel="stylesheet" href="/css/kurukoo-auth.css?v=2">
+  <link rel="stylesheet" href="/css/site.css?v=1.2.0"><link rel="stylesheet" href="/css/kurukoo-auth.css?v=3">
 </head>
 <body class="kurukoo-auth-page">
-<main class="conversation-auth-shell">
-  <section class="conversation-auth-intro"><a href="/chat" class="auth-brand"><img src="/assets/brand/logo-icon.svg" alt="Kurukoo" width="42" height="42"><span>Kurukoo</span></a><div class="auth-intro-copy"><span class="auth-kicker">Continue your conversation</span><h1>Let's keep going.</h1><p>Kurukoo lets you start as a guest. When a request needs your identity, verify your phone and return to the exact conversation you started.</p><div class="auth-principles"><div><strong>One conversation</strong><span>Your requests stay connected.</span></div><div><strong>One account</strong><span>Your phone is your account identity.</span></div><div><strong>One-time code</strong><span>No password to remember.</span></div></div></div></section>
-  <section class="conversation-auth-card" aria-labelledby="auth-title"><img src="/assets/brand/logo-icon.svg" alt="Kurukoo" class="auth-card-logo" width="48" height="48"><span class="auth-kicker">Kurukoo identity</span><h2 id="auth-title">Who am I helping?</h2><p id="auth-subtitle">Tell me your name first. We’ll only ask for your phone when it is time to verify you.</p>
-    <div class="auth-progress"><span class="active" id="progress-1"></span><span id="progress-2"></span><span id="progress-3"></span></div>
-    <div id="auth-step-name" class="auth-step active"><label for="auth-name">Your name</label><input id="auth-name" class="auth-input" autocomplete="name" placeholder="What should Kurukoo call you?"><button class="auth-button" id="auth-name-next" type="button">Continue</button></div>
-    <div id="auth-step-phone" class="auth-step"><label for="auth-phone">Best phone number</label><div class="auth-phone"><select id="auth-prefix" class="auth-input" aria-label="Country code"><option value="+234" <%= country === 'ng' ? 'selected' : '' %>>+234</option><option value="+233" <%= country === 'gh' ? 'selected' : '' %>>+233</option><option value="+44" <%= country === 'gb' ? 'selected' : '' %>>+44</option></select><input id="auth-phone" class="auth-input" type="tel" inputmode="tel" autocomplete="tel" placeholder="803 000 0000"></div><p class="auth-note">We'll send a one-time verification code. You do not need a password.</p><button class="auth-button" id="auth-send-code" type="button">Send verification code</button><button class="auth-back" id="auth-phone-back" type="button">Back</button></div>
-    <div id="auth-step-code" class="auth-step"><div class="auth-sent">Code sent to <strong id="auth-phone-display"></strong></div><label for="auth-code">Verification code</label><input id="auth-code" class="auth-input auth-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"><button class="auth-button" id="auth-verify-code" type="button">Verify and continue</button><div class="auth-actions"><button class="auth-back" id="auth-code-back" type="button">Change number</button><button class="auth-back" id="auth-resend" type="button">Resend code</button></div></div>
-    <div id="auth-feedback" class="auth-feedback" hidden role="status"></div>
-    <p class="auth-legal">By continuing, you agree to Kurukoo's <a href="/legal/terms">Terms</a> and <a href="/legal/privacy">Privacy Policy</a>. Kurukoo is not an emergency service.</p>
-    <a class="auth-return" href="/chat">← Back to chat</a>
-  </section>
-</main>
-<script>
-(() => {
-  const $ = id => document.getElementById(id);
-  const returnTo = <%- JSON.stringify(returnTo || '') %>;
-  const conversationId = <%- JSON.stringify(conversationId || '') %>;
-  const guestId = <%- JSON.stringify(guestId || '') %>;
-  let name = '';
-  let phone = '';
-  const setStep = (step) => {
-    ['name','phone','code'].forEach(s => $('auth-step-' + s).classList.toggle('active', s === step));
-    [1,2,3].forEach(n => $('progress-' + n).classList.toggle('active', n <= ({name:1,phone:2,code:3}[step])));
-    const copy = {name:['Who am I helping?','Tell me your name first. We’ll only ask for your phone when it is time to verify you.'],phone:['What’s the best number?','I’ll use it to protect your Kurukoo account and reconnect your conversations.'],code:['Confirm it’s you.','Enter the one-time code we sent.']};
-    $('auth-title').textContent = copy[step][0]; $('auth-subtitle').textContent = copy[step][1];
-  };
-  const feedback = (message, error=false) => { $('auth-feedback').hidden = !message; $('auth-feedback').textContent = message || ''; $('auth-feedback').className = 'auth-feedback' + (error ? ' error' : ''); };
-  const normalizePhone = () => { let raw = String($('auth-phone').value || '').replace(/\D/g,''); if(raw.startsWith('0')) raw = raw.slice(1); return $('auth-prefix').value + raw; };
-  $('auth-name-next').addEventListener('click', () => { name = $('auth-name').value.trim(); if(!name) return feedback('Tell me what I should call you.', true); feedback(''); setStep('phone'); $('auth-phone').focus(); });
-  $('auth-phone-back').addEventListener('click', () => setStep('name'));
-  $('auth-code-back').addEventListener('click', () => setStep('phone'));
-  $('auth-send-code').addEventListener('click', async () => {
-    phone = normalizePhone(); if(phone.length < 10) return feedback('Enter a valid phone number.', true);
-    const button = $('auth-send-code'); button.disabled = true; button.textContent = 'Sending…'; feedback('');
-    try { const response = await fetch('/api/auth/request-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone})}); const data = await response.json(); if(!response.ok || !data.success) throw new Error(data.error || data.message || 'Could not send a verification code.'); $('auth-phone-display').textContent = phone; setStep('code'); $('auth-code').focus(); if(data.debugCode || data.devCode) feedback(`Development verification code: ${data.debugCode || data.devCode}`); }
-    catch(error){ feedback(error.message || 'Could not send a verification code.',true); } finally { button.disabled=false; button.textContent='Send verification code'; }
-  });
-  $('auth-resend').addEventListener('click', () => $('auth-send-code').click());
-  $('auth-verify-code').addEventListener('click', async () => {
-    const code = $('auth-code').value.trim(); if(!/^\d{6}$/.test(code)) return feedback('Enter the 6-digit code.',true);
-    const button = $('auth-verify-code'); button.disabled=true; button.textContent='Checking…'; feedback('');
-    try { const response = await fetch('/api/auth/verify-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,code,name,guestPhone:guestId||undefined,conversationId:conversationId||undefined})}); const data=await response.json(); if(!response.ok || !data.success) throw new Error(data.error || data.message || 'That code could not be verified.'); if(data.token){localStorage.setItem('kurukoo_auth_token',data.token);} localStorage.setItem('kurukoo_user_phone',data.phone || phone); if(name)localStorage.setItem('kurukoo_user_name',name); feedback(`You’re signed in, ${name}. Returning to your conversation…`); window.setTimeout(()=>{window.location.assign(returnTo || '/chat');},450); }
-    catch(error){ feedback(error.message || 'Verification failed. Try again.',true); button.disabled=false; button.textContent='Verify and continue'; }
-  });
-  $('auth-code').addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g,'').slice(0,6); if(e.target.value.length === 6) $('auth-verify-code').focus(); });
-})();
-</script>
+  <main class="conversation-auth-shell">
+    <section class="conversation-auth-intro">
+      <a href="/chat" class="auth-brand"><img src="/assets/brand/logo-icon.svg" alt="Kurukoo" width="42" height="42"><span>Kurukoo</span></a>
+      <div class="auth-intro-copy">
+        <span class="auth-kicker">Continue your conversation</span>
+        <h1>Tell Kurukoo what you need. Kurukoo figures out who or what can fulfil it.</h1>
+        <p>Start as a guest, then verify your phone when a request needs an identity. Your existing conversation and request stay connected when you return.</p>
+        <div class="auth-principles"><div><strong>One conversation</strong><span>Your requests stay connected.</span></div><div><strong>One account</strong><span>Your phone is your account identity.</span></div><div><strong>One-time code</strong><span>No password to remember.</span></div></div>
+      </div>
+    </section>
+
+    <section class="conversation-auth-card" aria-labelledby="auth-title">
+      <img src="/assets/brand/logo-icon.svg" alt="Kurukoo" class="auth-card-logo" width="48" height="48">
+      <span class="auth-kicker">Kurukoo identity</span><h2 id="auth-title">Continue your conversation</h2>
+      <p id="auth-subtitle">Verify your phone to save this request and keep your Kurukoo context together. If a supported payment step applies, verified payment is available only when a payment provider has been configured.</p>
+      <input id="auth-return" type="hidden" value="<%= returnTo || '/chat' %>">
+      <input id="auth-guest-phone" type="hidden" value="<%= guestId || '' %>">
+      <input id="auth-conversation-id" type="hidden" value="<%= conversationId || '' %>">
+
+      <form id="auth-phone-form" class="auth-step active" data-auth-step="phone">
+        <label for="auth-phone">Best phone number</label>
+        <div class="auth-phone"><select id="auth-prefix" class="auth-input" aria-label="Country code"><option value="+234" <%= country === 'ng' ? 'selected' : '' %>>+234</option><option value="+233" <%= country === 'gh' ? 'selected' : '' %>>+233</option><option value="+44" <%= country === 'gb' ? 'selected' : '' %>>+44</option></select><input id="auth-phone" class="auth-input" type="tel" inputmode="tel" autocomplete="tel" placeholder="803 000 0000" required></div>
+        <p class="auth-note">We will send a one-time verification code. You do not need a password.</p><button class="auth-button" type="submit">Send verification code</button>
+      </form>
+
+      <form id="auth-otp-form" class="auth-step" data-auth-step="otp" hidden>
+        <p class="auth-sent">Code sent to <strong id="auth-requested-phone"></strong></p><label for="auth-otp">Verification code</label><input id="auth-otp" class="auth-input auth-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="000000" required><button class="auth-button" type="submit">Verify and continue</button><button class="auth-back" data-auth-back type="button">Change number</button>
+      </form>
+
+      <form id="auth-profile-form" class="auth-step" data-auth-step="profile" hidden>
+        <label for="auth-name">What should Kurukoo call you? <span class="optional">Optional</span></label><input id="auth-name" class="auth-input" autocomplete="name" placeholder="Your name"><label for="auth-email">Email <span class="optional">Optional</span></label><input id="auth-email" class="auth-input" type="email" autocomplete="email" placeholder="you@example.com"><label for="auth-goal">What would you like to do first?</label><select id="auth-goal" class="auth-input"><option value="buyer">Get something done</option><option value="provider">Offer a skill or service</option><option value="explore">Explore Kurukoo</option></select><button class="auth-button" type="submit">Save and continue</button><button class="auth-back" data-auth-skip-profile type="button">Skip for now</button>
+      </form>
+
+      <div id="auth-feedback" class="auth-feedback" hidden role="status" aria-live="polite"></div>
+      <p class="auth-legal">By continuing, you agree to Kurukoo's <a href="/legal/terms">Terms</a> and <a href="/legal/privacy">Privacy Policy</a>. Kurukoo is not an emergency service.</p><a class="auth-return" href="/chat">← Back to chat</a>
+    </section>
+  </main>
+  <script src="/js/kurukoo-auth.js?v=2" defer></script>
 </body>
 </html>

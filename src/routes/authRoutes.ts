@@ -7,6 +7,7 @@ import { authRateLimit } from '../middleware/rateLimit.js';
 import { authenticateUser, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
+const AUTH_COOKIE = 'kurukoo_auth';
 
 export function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
@@ -19,10 +20,9 @@ export function issueUserToken(phone: string): string {
 }
 
 function setAuthCookie(res: any, token: string, clearGuest = false): void {
-  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  const cookies = [`kurukoo_auth=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000${secure}`];
-  if (clearGuest) cookies.push(`kurukoo_guest_id=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`);
-  res.setHeader('Set-Cookie', cookies);
+  const options = { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' as const, maxAge: 30 * 24 * 60 * 60 * 1000, path: '/' };
+  res.cookie(AUTH_COOKIE, token, options);
+  if (clearGuest) res.clearCookie('kurukoo_guest_id', { httpOnly: true, secure: options.secure, sameSite: 'lax', path: '/' });
 }
 
 export async function upsertProfile(phone: string, name?: string, email?: string, goal?: string): Promise<void> {
@@ -126,11 +126,11 @@ router.post('/login', authRateLimit, async (req, res) => {
 });
 
 router.post('/logout', (_req, res) => {
-  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  res.setHeader('Set-Cookie', [
-    `kurukoo_auth=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`,
-    `kurukoo_guest_id=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`,
-  ]);
+  const options = { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' as const, path: '/' };
+  res.clearCookie(AUTH_COOKIE, options);
+  res.clearCookie('kurukoo_guest_id', options);
+  res.cookie(AUTH_COOKIE, '', { ...options, maxAge: 0 });
+  res.cookie('kurukoo_guest_id', '', { ...options, maxAge: 0 });
   res.json({ success: true });
 });
 

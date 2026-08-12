@@ -15,6 +15,10 @@ import economicRequestRouter from './economicRequestRouter.js';
 
 const router = Router();
 
+// Authentication is owned exclusively by /api/auth. Keep retired chat-scoped auth paths
+// visibly absent rather than allowing another middleware to report an authorization error.
+router.all('/auth/*', (_req, res) => res.status(404).json({ error: 'Not found' }));
+
 function getGuestPhone(req: any, res: any): string {
   const cookie = String(req.headers.cookie || '');
   const pair = cookie.split(';').map(v => v.trim()).find(v => v.startsWith('kurukoo_guest_id='));

@@ -11,6 +11,8 @@
   const goalInput = document.getElementById('auth-goal');
   const requestedPhone = document.getElementById('auth-requested-phone');
   const returnInput = document.getElementById('auth-return');
+  const guestPhoneInput = document.getElementById('auth-guest-phone');
+  const conversationIdInput = document.getElementById('auth-conversation-id');
   let verifiedPhone = '';
 
   const show = (message, success = false) => {
@@ -79,7 +81,12 @@
     try {
       const response = await fetch('/api/auth/verify-otp', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
-        body: JSON.stringify({ phone: verifiedPhone, code })
+        body: JSON.stringify({
+          phone: verifiedPhone,
+          code,
+          guestPhone: String(guestPhoneInput?.value || '') || undefined,
+          conversationId: String(conversationIdInput?.value || '') || undefined,
+        })
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.success) throw new Error(data.message || data.error || 'That code could not be verified.');
