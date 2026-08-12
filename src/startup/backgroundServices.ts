@@ -4,6 +4,7 @@ import { startContactSyncService } from '../services/contactSyncService.js';
 import { startDeliveryStatusService } from '../services/deliveryService.js';
 import { runEscrowPass } from '../services/tradeEngine.js';
 import { notifyGoalIfNeeded, reenterDueDeferredGoals, runDueAgentGoals } from '../services/agentRuntime.js';
+import { expireDueProviderVerifications } from '../services/providerVerification.js';
 
 export async function startBackgroundServices(): Promise<void> {
     try { await seedDemoAdCampaigns(); } catch (error) { console.error('Error seeding demo ad campaigns:', error); }
@@ -16,6 +17,8 @@ export async function startBackgroundServices(): Promise<void> {
     setInterval(logHeartbeat, 5 * 60 * 1000);
     setTimeout(() => runEscrowPass().catch((error) => console.error('Error running initial escrow pass:', error)), 30000);
     setInterval(() => runEscrowPass().catch((error) => console.error('Error running daily escrow pass:', error)), 24 * 60 * 60 * 1000);
+    expireDueProviderVerifications().catch((error) => console.error('Error expiring provider verification evidence:', error));
+    setInterval(() => expireDueProviderVerifications().catch((error) => console.error('Error expiring provider verification evidence:', error)), 24 * 60 * 60 * 1000);
 
     if (process.env.KURUKOO_AGENT_ENABLED === 'true') {
         const intervalMs = Math.max(30_000, Math.min(15 * 60_000, Number(process.env.KURUKOO_AGENT_WORKER_INTERVAL_MS || 60_000)));
