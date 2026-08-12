@@ -8,6 +8,7 @@ import { deleteChatMessage, listChatConversations, listChatMessages, clearChatCo
 import { isOnboarding, handleOnboardingInput } from '../services/progressiveOnboarding.js';
 import { routeIntent } from '../services/intentRouter.js';
 import { getAuthState, setAuthState, handleConversationalAuth } from '../services/conversationalAuthService.js';
+import { handleSafetyContactInput, setSafetyCaptureState } from '../services/safetyService.js';
 import { finalizeOrder } from '../services/orderFinalizer.js';
 import { streamUnifiedAI } from '../services/unifiedAiEngine.js';
 import economicRequestRouter from './economicRequestRouter.js';
@@ -62,6 +63,18 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
     // Handle conversational auth for guests
     const authState = isGuest ? await getAuthState(phone) : { state: 'none' };
     
+    // Check for safety capture state
+    const db = await getDb();
+    const profileStmt = db.prepare('SELECT preferences FROM memory_profiles WHERE phone = ?');
+    profileStmt.bind([phone]);
+    let prefs: any = {};
+    if (profileStmt.step()) {
+      const obj = profileStmt.getAsObject();
+      prefs = obj.preferences ? JSON.parse(String(obj.preferences)) : {};
+    }
+    profileStmt.free();
+    const safetyState = prefs.safety_capture_state || 'none';
+
     if (isGuest && authState.state !== 'none') {
       const authResult = await handleConversationalAuth(phone, message);
       fullReply = authResult.reply;
@@ -92,6 +105,14 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
         sse(res, { type: 'text', content: chunk });
         await new Promise(r => setTimeout(r, 8));
       }
+    } else if (!isGuest && safetyState !== 'none') {
+      const safetyResult = await handleSafetyContactInput(phone, message);
+      fullReply = safetyResult.reply;
+      cardData = safetyResult.cardData;
+      for (const chunk of chunkText(fullReply)) {
+        sse(res, { type: 'text', content: chunk });
+        await new Promise(r => setTimeout(r, 8));
+      }
     } else if (!isGuest && await isOnboarding(phone)) {
       const onboarding = await handleOnboardingInput(phone, message);
       fullReply = onboarding.reply;
@@ -114,6 +135,9 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
             title: 'Create Your Profile',
             message: 'Your request is captured. Tell me your name to continue.'
           };
+        } else if (cardData?.type === 'safety_contact_capture') {
+          await setSafetyCaptureState(phone, 'awaiting_phone', { name: cardData.name });
+          fullReply = routing.reply;
         } else if (cardData?.type === 'agentic_storefront' || routing.skill === 'reminder') {
           // Native assistance remains in the shared conversation but must not
           // create an Economic Request, lead charge, or order.

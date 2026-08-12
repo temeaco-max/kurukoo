@@ -6,6 +6,7 @@ import { getEconomicCategory, getKnownSkills, getSkillFlow } from './skillFlows.
 import { previewStorefrontCard, startStorefrontSession, tryResumeStorefront } from './agenticStorefront.js';
 import { searchKnownEconomicOffers } from './economicParticipants.js';
 import { createReminder } from './reminderService.js';
+import { matchAdCampaigns } from './adManager.js';
 import type { IntentRoutingResult } from '../types.js';
 const ACTION_INTENTS=new Set(['ride_request','order_food','find_worker','universal_vendor_order','sports_matchmaking','event_coverage','how_to_video','security_booking','circle_create','artist_booking']);
 const STOREFRONT_INTENTS=new Set(['ride_request','order_food','find_worker','universal_vendor_order','security_booking']);
@@ -59,6 +60,17 @@ export async function routeIntent(query:string,phone?:string,provider?:AIProvide
 if(q==='reset onboarding')return{skill:'general_question',reply:'Onboarding reset is available from your profile settings.'};if(q.includes('balance')||q.includes('points')||q.includes('wallet')||q.includes('credits'))return{skill:'view_balance',reply:await balanceReply(phone)};if(q.includes('show nearby')||q.includes('nearby active')||q.includes('radar')||q.includes('where are providers'))return{skill:'nearby_radar',reply:'📡 **Nearby Radar is on.** I’ll use your shared presence and Memory Profile to surface providers around you.',cardData:{type:'nearby_radar'}};
 if(q.includes('emergency contact')||q.includes('safety contact')){
   if(!phone||phone.startsWith('anon_'))return{skill:'safety_contact',reply:'I can save your personal emergency contacts as soon as you sign in, so they stay with your Kurukoo profile.'};
+  
+  const addMatch = q.match(/add\s+(.+?)\s+as\s+(?:my\s+)?(?:emergency|safety)\s+contact/i);
+  if (addMatch) {
+    const name = addMatch[1].trim();
+    return {
+      skill: 'safety_contact',
+      reply: `I've captured **${name}** as a potential safety contact. To finish adding them, please provide their phone number.`,
+      cardData: { type: 'safety_contact_capture', name }
+    };
+  }
+
   return{skill:'safety_contact',reply:'I can manage your safety contacts. You can add a contact by saying “Add [Name] as my emergency contact” or review them in the context inspector.',cardData:{type:'safety_contact_action'}};
 }
 if(phone&&isResumePhrase(q)){try{const resumed=await tryResumeStorefront(phone);if(resumed)return{skill:resumed.skill||'find_worker',reply:resumed.message,cardData:resumed};}catch(e){console.warn('[Router] resume failed:',e);}}
@@ -71,9 +83,21 @@ if(classification?.intent&&getEconomicCategory(classification.intent)){const ski
 if(phone&&q.split(/\s+/).length<=6){try{const resumed=await tryResumeStorefront(phone);if(resumed&&['quote_review','fulfillment','deferred','offer_review','delivery_selection','seller_handover','delivery_in_progress'].includes(resumed.stage))return{skill:resumed.skill||'find_worker',reply:resumed.message,cardData:resumed};}catch{}}
   const ai=await queryUnifiedAI(query,{provider,phone});
   const cardData: any = ai.provider==='SmolLM2'?{type:'ai_metadata',provider:ai.provider,model:ai.model}:undefined;
-  if (suggestions.length > 0) {
-    if (!cardData) return { skill: 'general_question', reply: ai.text, cardData: { type: 'suggestions', options: suggestions } };
-    cardData.suggestions = suggestions;
+  
+  // Contextual sponsored suggestions
+  const ads = await matchAdCampaigns(query);
+  const sponsored = ads.map(ad => ({
+    title: ad.title,
+    desc: ad.desc,
+    keyword: ad.targetKeyword
+  }));
+
+  if (suggestions.length > 0 || sponsored.length > 0) {
+    const finalCard = cardData || { type: 'suggestions' };
+    if (suggestions.length > 0) finalCard.options = suggestions;
+    if (sponsored.length > 0) finalCard.sponsored = sponsored;
+    return { skill: 'general_question', reply: ai.text, cardData: finalCard };
   }
+  
   return {skill:'general_question',reply:ai.text,cardData};
 }

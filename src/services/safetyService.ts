@@ -128,6 +128,66 @@ export async function listCheckIns(ownerPhone: string): Promise<CheckIn[]> {
   return (result[0]?.values || []).map((row: any[]) => Object.fromEntries((result[0].columns || []).map((c: string, i: number) => [c, row[i]])) as CheckIn);
 }
 
+export async function handleSafetyContactInput(phone: string, text: string): Promise<{ reply: string, cardData?: any, success?: boolean }> {
+  const db = await getDb();
+  const stmt = db.prepare('SELECT preferences FROM memory_profiles WHERE phone = ?');
+  stmt.bind([phone]);
+  let prefs: any = {};
+  if (stmt.step()) {
+    const obj = stmt.getAsObject();
+    prefs = obj.preferences ? JSON.parse(String(obj.preferences)) : {};
+  }
+  stmt.free();
+
+  const state = prefs.safety_capture_state || 'none';
+  const data = prefs.safety_capture_data || {};
+
+  if (state === 'awaiting_phone') {
+    const contactPhone = text.trim().replace(/\D/g, '');
+    if (contactPhone.length < 10) return { reply: "That doesn't look like a valid phone number. Please enter the full phone number for your contact." };
+    
+    // Normalize phone
+    const fullPhone = contactPhone.startsWith('0') ? '+234' + contactPhone.slice(1) : (contactPhone.startsWith('+') ? contactPhone : '+234' + contactPhone);
+    
+    try {
+      await addSafetyContact(phone, { name: data.name, phone: fullPhone });
+      // Clear state
+      delete prefs.safety_capture_state;
+      delete prefs.safety_capture_data;
+      db.run('UPDATE memory_profiles SET preferences = ? WHERE phone = ?', [JSON.stringify(prefs), phone]);
+      saveDb();
+      
+      return { 
+        reply: `✅ Saved! **${data.name}** (${fullPhone}) has been added as a pending safety contact. They'll need to confirm consent before you can start check-ins with them.`,
+        success: true,
+        cardData: { type: 'safety_contact_added', name: data.name }
+      };
+    } catch (e: any) {
+      return { reply: `I couldn't save that contact: ${e.message}. Please try again.` };
+    }
+  }
+
+  return { reply: "I'm not sure how to help with that safety step." };
+}
+
+export async function setSafetyCaptureState(phone: string, state: string, data: any = {}): Promise<void> {
+  const db = await getDb();
+  const stmt = db.prepare('SELECT preferences FROM memory_profiles WHERE phone = ?');
+  stmt.bind([phone]);
+  let prefs: any = {};
+  if (stmt.step()) {
+    const obj = stmt.getAsObject();
+    prefs = obj.preferences ? JSON.parse(String(obj.preferences)) : {};
+  }
+  stmt.free();
+  
+  prefs.safety_capture_state = state;
+  prefs.safety_capture_data = data;
+  
+  db.run('UPDATE memory_profiles SET preferences = ? WHERE phone = ?', [JSON.stringify(prefs), phone]);
+  saveDb();
+}
+
 /**
  * Escalation is intentionally represented as pending until an authorised
  * notification transport is configured. This prevents the UI from claiming
