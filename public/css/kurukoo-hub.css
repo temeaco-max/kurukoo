@@ -227,3 +227,8 @@
 .danger-title { color: var(--danger); }
 .danger-btn { color: var(--danger); border-color: var(--danger); }
 .danger-btn:hover { background: var(--danger); color: #fff; }
+
+/* Points Card Additional Classes */
+.points-desc { color: var(--gray-400); font-size: 0.85rem; }
+.points-topup-btn { margin-top: 20px; color: var(--white); border-color: var(--white); }
+.points-topup-btn:hover { background: var(--white); color: var(--charcoal); }
