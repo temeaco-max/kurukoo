@@ -43,20 +43,12 @@ function parseReminderQuery(q:string):{dueAt:string;title:string;displayTime:str
     if (ampm === 'am' && hours === 12) hours = 0;
     const d = new Date();
     d.setUTCHours(hours, mins, 0, 0);
-    if (dayModifier === 'tomorrow') {
-      d.setUTCDate(d.getUTCDate() + 1);
-    } else if (dayName) {
+    if (dayModifier === 'tomorrow') d.setUTCDate(d.getUTCDate() + 1);
+    else if (dayName) {
       const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
       const targetDay = days.indexOf(dayName);
-      if (targetDay !== -1) {
-        let currentDay = d.getUTCDay();
-        let diff = targetDay - currentDay;
-        if (diff <= 0) diff += 7;
-        d.setUTCDate(d.getUTCDate() + diff);
-      }
-    } else if (d.getTime() <= Date.now()) {
-      d.setUTCDate(d.getUTCDate() + 1);
-    }
+      if (targetDay !== -1) { let diff = targetDay - d.getUTCDay(); if (diff <= 0) diff += 7; d.setUTCDate(d.getUTCDate() + diff); }
+    } else if (d.getTime() <= Date.now()) d.setUTCDate(d.getUTCDate() + 1);
     return { dueAt: d.toISOString(), title: abs[7].trim(), displayTime: `${d.toLocaleString()}${recurrence ? ` (${recurrence})` : ''}` };
   }
   return null;
@@ -69,23 +61,14 @@ export async function routeIntent(query:string,phone?:string,provider?:AIProvide
   if (q.includes('fix') || q.includes('repair') || q.includes('broken')) suggestions.push('Find a repairer', 'Plumber nearby', 'Electrician');
   if (q.includes('forget') || q.includes('remind')) suggestions.push('Set a reminder', 'View my reminders');
   if (q.includes('safe') || q.includes('contact')) suggestions.push('Add emergency contact', 'Start safety check-in');
-		if(/^remind me\b/.test(q)){if(!phone||phone.startsWith('anon_'))return{skill:'reminder',reply:'I can save that reminder as soon as you sign in, so it stays with your Kurukoo profile.'};const reminder=parseReminderQuery(q);if(reminder){try{const created=await createReminder(phone,{title:reminder.title,dueAt:reminder.dueAt});return{skill:'reminder',reply:`⏰ Done. I’ll remind you **${created.title}** (${reminder.displayTime}).`,cardData:{type:'reminder',reminder:created}};}catch(e){return{skill:'reminder',reply:e instanceof Error?e.message:'I could not create that reminder.'};}}return{skill:'reminder',reply:'I can set that reminder. Tell me the time, for example: “Remind me in 20 minutes to call Mum” or “Remind me tomorrow at 9am to check reports”.'};}
-if(q==='reset onboarding')return{skill:'general_question',reply:'Onboarding reset is available from your profile settings.'};if(q.includes('balance')||q.includes('points')||q.includes('wallet')||q.includes('credits'))return{skill:'view_balance',reply:await balanceReply(phone)};if(q.includes('show nearby')||q.includes('nearby active')||q.includes('radar')||q.includes('where are providers'))return{skill:'nearby_radar',reply:'📡 **Nearby Radar is on.** I’ll use your shared presence and Memory Profile to surface providers around you.',cardData:{type:'nearby_radar'}};
-if(q.includes('emergency contact')||q.includes('safety contact')){
-  if(!phone||phone.startsWith('anon_'))return{skill:'safety_contact',reply:'I can save your personal emergency contacts as soon as you sign in, so they stay with your Kurukoo profile.'};
-  
-  const addMatch = q.match(/add\s+(.+?)\s+as\s+(?:my\s+)?(?:emergency|safety)\s+contact/i);
-  if (addMatch) {
-    const name = addMatch[1].trim();
-    return {
-      skill: 'safety_contact',
-      reply: `I've captured **${name}** as a potential safety contact. To finish adding them, please provide their phone number.`,
-      cardData: { type: 'safety_contact_capture', name }
-    };
+  if(/^remind me\b/.test(q)){if(!phone||phone.startsWith('anon_'))return{skill:'reminder',reply:'I can save that reminder as soon as you sign in, so it stays with your Kurukoo profile.'};const reminder=parseReminderQuery(q);if(reminder){try{const created=await createReminder(phone,{title:reminder.title,dueAt:reminder.dueAt});return{skill:'reminder',reply:`⏰ Done. I’ll remind you **${created.title}** (${reminder.displayTime}).`,cardData:{type:'reminder',reminder:created}};}catch(e){return{skill:'reminder',reply:e instanceof Error?e.message:'I could not create that reminder.'};}}return{skill:'reminder',reply:'I can set that reminder. Tell me the time, for example: “Remind me in 20 minutes to call Mum” or “Remind me tomorrow at 9am to check reports”.'};}
+  if(q==='reset onboarding')return{skill:'general_question',reply:'Onboarding reset is available from your profile settings.'};if(q.includes('balance')||q.includes('points')||q.includes('wallet')||q.includes('credits'))return{skill:'view_balance',reply:await balanceReply(phone)};if(q.includes('show nearby')||q.includes('nearby active')||q.includes('radar')||q.includes('where are providers'))return{skill:'nearby_radar',reply:'📡 **Nearby Radar is on.** I’ll use your shared presence and Memory Profile to surface providers around you.',cardData:{type:'nearby_radar'}};
+  if(q.includes('emergency contact')||q.includes('safety contact')){
+    if(!phone||phone.startsWith('anon_'))return{skill:'safety_contact',reply:'I can save your personal emergency contacts as soon as you sign in, so they stay with your Kurukoo profile.'};
+    const addMatch = q.match(/add\s+(.+?)\s+as\s+(?:my\s+)?(?:emergency|safety)\s+contact/i);
+    if (addMatch) return { skill: 'safety_contact', reply: `I've captured **${addMatch[1].trim()}** as a potential safety contact. To finish adding them, please provide their phone number.`, cardData: { type: 'safety_contact_capture', name: addMatch[1].trim() } };
+    return{skill:'safety_contact',reply:'I can manage your safety contacts. You can add a contact by saying “Add [Name] as my emergency contact” or review them in the context inspector.',cardData:{type:'safety_contact_action'}};
   }
-
-  return{skill:'safety_contact',reply:'I can manage your safety contacts. You can add a contact by saying “Add [Name] as my emergency contact” or review them in the context inspector.',cardData:{type:'safety_contact_action'}};
-}
 if(phone&&isResumePhrase(q)){try{const resumed=await tryResumeStorefront(phone);if(resumed)return{skill:resumed.skill||'find_worker',reply:resumed.message,cardData:resumed};}catch(e){console.warn('[Router] resume failed:',e);}}
 if(phone&&(/\b(listing|offer)\b/.test(q)||/\b[a-z][a-z-]{1,40}['’]s\b/.test(q))){try{const offers=await searchKnownEconomicOffers(query,3);if(offers.length)return{skill:'product_sourcing',reply:`I found ${offers.length===1?'a known seller offer':'known seller offers'} matching that reference. Choose one to start a single Economic Request; availability is seller-stated and payment/escrow will remain subject to the canonical checks.`,cardData:{type:'agentic_storefront',stage:'offer_review',skill:'product_sourcing',title:'Known seller offers',message:'Choose a verified seller offer to continue. Kurukoo can record coordination but does not confirm inventory or create multi-party settlement.',knownOffers:offers,escrowProtected:false,progress:55}};}catch(e){console.warn('[Router] known offer lookup failed:',e);}}
 if(q.includes('book an artist')||q.includes('book a musician')||q.includes('book a dj')||q.includes('book a celebrity')||q.includes('hire an artist')){const flow=await getSkillFlow('verified_artist').catch(()=>null);if(phone){try{const card=await startStorefrontSession(phone,'verified_artist',{});return{skill:'verified_artist',reply:card.message,cardData:card};}catch(e){console.warn('[Router] artist storefront start failed:',e);}}return{skill:'verified_artist',reply:'🎤 I can coordinate a creator/artist booking, but I’ll only present verified representatives and the booking terms before any escrow is funded. Tell me the artist/act, event date, venue/city, expected set or appearance, and budget.',cardData:{...(actionCard('artist_booking')||{}),flow}};}
