@@ -1,0 +1,131 @@
+/* Request Hub / Dashboard Styles — Standardized on Shared Tokens */
+.hub-layout { 
+  display: grid; 
+  grid-template-columns: 280px 1fr; 
+  min-height: 100vh; 
+  background: var(--cream); 
+}
+
+.hub-sidebar { 
+  background: var(--white); 
+  border-right: 1px solid var(--gray-100); 
+  padding: 32px 24px; 
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.hub-main { 
+  padding: 48px 60px; 
+}
+
+.hub-nav { 
+  list-style: none; 
+  margin-top: 40px; 
+}
+
+.hub-nav li { 
+  margin-bottom: 8px; 
+}
+
+.hub-nav a, .hub-nav button { 
+  display: block; 
+  width: 100%; 
+  padding: 12px 16px; 
+  border: 0; 
+  border-radius: var(--border-radius-sm); 
+  background: transparent; 
+  font: inherit; 
+  font-weight: 600; 
+  color: var(--gray-600); 
+  text-align: left; 
+  cursor: pointer; 
+  transition: var(--transition);
+}
+
+.hub-nav a.active { 
+  background: var(--surface-soft); 
+  color: var(--terracotta); 
+}
+
+.hub-nav a:hover:not(.active), .hub-nav button:hover { 
+  background: var(--gray-50); 
+  color: var(--charcoal); 
+}
+
+.hub-header { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: flex-end; 
+  margin-bottom: 48px; 
+}
+
+.hub-grid { 
+  display: grid; 
+  grid-template-columns: 2fr 1fr; 
+  gap: 32px; 
+}
+
+.request-card { 
+  background: var(--white); 
+  border: 1px solid var(--gray-100); 
+  border-radius: var(--border-radius); 
+  padding: 24px; 
+  margin-bottom: 16px; 
+  transition: var(--transition);
+}
+
+.request-card:hover {
+  border-color: var(--terracotta);
+  box-shadow: 0 4px 12px rgba(217, 122, 92, 0.05);
+}
+
+.request-status { 
+  font-size: 0.75rem; 
+  text-transform: uppercase; 
+  font-weight: 700; 
+  color: var(--terracotta); 
+  margin-bottom: 8px; 
+  display: block; 
+}
+
+.request-title { 
+  font-size: 1.1rem; 
+  font-weight: 700; 
+  margin-bottom: 8px; 
+}
+
+.request-meta { 
+  font-size: 0.85rem; 
+  color: var(--gray-600); 
+}
+
+.points-summary { 
+  background: var(--charcoal); 
+  color: var(--white); 
+  padding: 32px; 
+  border-radius: var(--border-radius-lg); 
+}
+
+.points-value { 
+  font-size: 2.5rem; 
+  font-weight: 800; 
+  color: var(--terracotta); 
+  margin: 12px 0; 
+}
+
+.muted-info-text {
+  color: var(--gray-400);
+  font-size: 0.95rem;
+  padding: 32px;
+  text-align: center;
+  border: 2px dashed var(--gray-100);
+  border-radius: var(--border-radius);
+}
+
+@media (max-width: 900px) {
+  .hub-layout { grid-template-columns: 1fr; }
+  .hub-sidebar { display: none; }
+  .hub-grid { grid-template-columns: 1fr; }
+  .hub-main { padding: 32px 20px; }
+}
