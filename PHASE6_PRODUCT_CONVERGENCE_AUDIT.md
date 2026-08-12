@@ -84,7 +84,7 @@ The following areas remain deliberately **unmodified** because changing them wou
 
 | Area | Audit observation | Required future approach |
 |---|---|---|
-| `public/js/app.js` and `public/dashboard.html` | The legacy/parallel dashboard client contains a local-storage/mock-OTP application model and feature surfaces that overlap with current chat, profile, tasks, and emergency UX. | Establish runtime reachability and migration coverage before removal or replacement. Do not copy its client state or mock authentication into Web Chat. |
+| `public/js/app.js` and `public/dashboard.html` | The legacy/parallel dashboard client has been removed. The Request Hub (`/web`) now uses `kurukoo-hub.css` and secure DOM node creation for rendering active requests, reminders, and safety contacts. | Cleanup complete. |
 | `src/services/iotBridge.ts` and device UI prototypes | They are future integration stubs, not a controlled device execution boundary. | Keep hardware control out of public claims until a shared authorised connector, identity, audit, and evidence design exists. |
 | Payments, escrow, external provider verification, and FCM delivery | The architecture fails closed but production adapters are not configured. | Add credentialed, contract-reviewed adapters with receipt/evidence semantics; do not simulate success. |
 | AI-agent/provider representation | First-class AI agents have a separate operational model; mirrored provider records are descriptive `software_service` entities. | Preserve skills as the capability source of truth and do not create a second agent/provider lifecycle. |

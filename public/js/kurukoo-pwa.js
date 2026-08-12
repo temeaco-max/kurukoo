@@ -1,13 +1,9 @@
-(() => {
-  let deferredPrompt;
-  const install = document.getElementById('install-pwa');
-  window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); deferredPrompt = event; if (install) install.hidden = false; });
-  install?.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    install.hidden = true;
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(registration => {
+      console.log('Kurukoo PWA ServiceWorker registered');
+    }).catch(err => {
+      console.log('Kurukoo PWA ServiceWorker registration failed: ', err);
+    });
   });
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
-})();
+}

@@ -133,7 +133,8 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
           cardData = {
             type: 'auth_in_chat_start',
             title: 'Create Your Profile',
-            message: 'Your request is captured. Tell me your name to continue.'
+            message: 'Your request is captured. Tell me your name to continue.',
+            continuationCard: routing.cardData
           };
         } else if (cardData?.type === 'safety_contact_capture') {
           await setSafetyCaptureState(phone, 'awaiting_phone', { name: cardData.name });

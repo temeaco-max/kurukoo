@@ -11,7 +11,8 @@ const expect = (condition, message) => {
 const authSource = read('src/middleware/auth.ts');
 const indexSource = read('src/index.ts');
 const economicSource = read('src/routes/economicRequestRouter.ts');
-const appSource = read('public/js/app.js');
+const chatSource = read('public/js/kurukoo-primary-chat.js');
+const hubSource = read('public/dashboard.html');
 
 for (const rule of [
   { value: 'req.query.token', reason: 'JWTs must not be accepted from URLs' },
@@ -48,21 +49,16 @@ for (const route of [
 }
 
 for (const unsafeRenderer of [
-  'pulseProvidersList.innerHTML = providers.map',
-  'exploreGigs.innerHTML = opportunities.map',
-  'exploreDailyPicks.innerHTML = dailyPicks.map',
-  'onclick="acceptExploreGig(',
-  'onclick="orderDailyPick(',
-  'userBubble.innerHTML = `<span class="message-sender" style="font-size: 0.65rem; font-weight: 800; display: block; margin-bottom: 2px; opacity: 0.8;">You</span><div>${text}</div>',
+  '.innerHTML = ',
+  'onclick="',
 ]) {
-  expect(!appSource.includes(unsafeRenderer), `Unsafe dynamic renderer remains: ${unsafeRenderer}`);
+  expect(!chatSource.includes(unsafeRenderer), `Unsafe dynamic renderer remains in chat client: ${unsafeRenderer}`);
+  expect(!hubSource.includes(unsafeRenderer), `Unsafe dynamic renderer remains in Request Hub: ${unsafeRenderer}`);
 }
-expect(appSource.includes('exploreGigs.replaceChildren(...opportunities.map'),
-  'Opportunity cards must be constructed with DOM nodes');
-expect(appSource.includes('exploreDailyPicks.replaceChildren(...dailyPicks.map'),
-  'Promotion cards must be constructed with DOM nodes');
-expect(appSource.includes('content.textContent = text'),
-  'Optimistic chat content must use textContent');
+
+expect(chatSource.includes('.textContent = '), 'Chat client must use textContent for dynamic content');
+expect(hubSource.includes('.textContent = '), 'Request Hub must use textContent for dynamic content');
+expect(hubSource.includes('.replaceChildren('), 'Request Hub must use replaceChildren for list rendering');
 
 if (failures.length) {
   console.error('Security boundary audit failed:');

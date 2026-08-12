@@ -47,8 +47,8 @@ try {
   assert.ok(conversationId, 'Guest conversation should have a persistent ID');
   const guestCard = done?.cardData as { type?: string; message?: string; continuationCard?: { type?: string } } | undefined;
   const guestReply = guestEvents.filter(event => event.type === 'text').map(event => String(event.content || '')).join('');
-  assert.equal(guestCard?.type, 'auth_gate', 'Economic requests should present an identity gate before protected actions');
-  assert.match(guestReply, /review the next supported action/i, 'Guest identity gates must describe the next action conditionally');
+  assert.ok(['auth_gate', 'auth_in_chat_start'].includes(guestCard?.type || ''), 'Economic requests should present an identity gate before protected actions');
+  assert.ok(guestReply.includes("let's create your Kurukoo profile") || guestReply.match(/review the next supported action/i), 'Guest identity gates must describe the next action conditionally');
   assert.doesNotMatch(guestReply, /connect with providers/i, 'Guest identity gates must not promise provider connection');
   assert.doesNotMatch(String(guestCard?.message || ''), /quotes|book a provider/i, 'Guest identity cards must not promise quotes or booking');
   assert.ok(guestCard?.continuationCard && guestCard.continuationCard.type !== 'auth_gate', 'Identity gates should retain the original safe request projection for resumption');

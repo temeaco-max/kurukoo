@@ -135,7 +135,10 @@
                     const data = await requestsRes.json();
                     const requests = data.requests || [];
                     if (requests.length === 0) {
-                        activeContainer.innerHTML = '<div class="muted-info-text">No active requests. Start a conversation to get going.</div>';
+                        const empty = document.createElement('div');
+                        empty.className = 'muted-info-text';
+                        empty.textContent = 'No active requests. Start a conversation to get going.';
+                        activeContainer.replaceChildren(empty);
                     } else {
                         activeContainer.replaceChildren(...requests.slice(0, 5).map(r => {
                             const statusText = String(r.status || 'requested').replace(/_/g, ' ');
@@ -153,7 +156,10 @@
                     const data = await remindersRes.json();
                     const reminders = data.reminders || [];
                     if (reminders.length === 0) {
-                        upcomingContainer.innerHTML = '<div class="muted-info-text">No active reminders.</div>';
+                        const empty = document.createElement('div');
+                        empty.className = 'muted-info-text';
+                        empty.textContent = 'No active reminders.';
+                        upcomingContainer.replaceChildren(empty);
                     } else {
                         upcomingContainer.replaceChildren(...reminders.slice(0, 5).map(rem => {
                             const titleText = rem.title || 'Untitled Reminder';
@@ -169,7 +175,10 @@
                     const data = await safetyRes.json();
                     const contacts = data.contacts || [];
                     if (contacts.length === 0) {
-                        safetyContainer.innerHTML = '<div class="muted-info-text">No safety contacts added.</div>';
+                        const empty = document.createElement('div');
+                        empty.className = 'muted-info-text';
+                        empty.textContent = 'No safety contacts added.';
+                        safetyContainer.replaceChildren(empty);
                     } else {
                         safetyContainer.replaceChildren(...contacts.map(c => {
                             const status = c.status || 'pending';
