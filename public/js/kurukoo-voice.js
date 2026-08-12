@@ -81,9 +81,10 @@
     utterance.onend = () => {
       state.speaking = false;
       if (state.listening && !state.manuallyStopped) {
+        state.expectingResponse = false;
         setStatus('Listening…');
         beginRecognition();
-      } else if (state.expectingResponse) {
+      } else {
         state.expectingResponse = false;
         setStatus('Voice conversation paused.', true);
         setTimeout(() => { if (!state.listening) setStatus('', false); }, 1800);
@@ -91,6 +92,7 @@
     };
     utterance.onerror = () => {
       state.speaking = false;
+      state.expectingResponse = false;
       setStatus('Voice playback is unavailable.');
     };
     speechSynthesis.speak(utterance);
@@ -150,7 +152,7 @@
     };
 
     recognition.onend = () => {
-      if (state.listening && !state.speaking && !state.manuallyStopped) {
+      if (state.listening && !state.speaking && !state.manuallyStopped && !state.expectingResponse) {
         setTimeout(beginRecognition, 120);
       }
     };
@@ -165,11 +167,12 @@
   }
 
   function watchAssistantResponses() {
-    if (!chatContent || !state.expectingResponse) return;
+    if (!chatContent) return;
     const observer = new MutationObserver(() => {
       if (!state.expectingResponse) return;
       clearTimeout(state.responseTimer);
       state.responseTimer = setTimeout(() => {
+        if (!state.expectingResponse) return;
         const messages = [...chatContent.querySelectorAll('.message.assistant')];
         const latest = messages[messages.length - 1];
         const text = extractAssistantText(latest);
