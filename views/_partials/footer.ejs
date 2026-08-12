@@ -1,69 +1,11 @@
 <footer class="footer">
-    <div class="container">
-        <div class="footer-grid">
-            <div class="footer-brand">
-                <a href="/" class="logo footer-logo">
-                    <img src="/assets/brand/logo-icon.svg" alt="Kurukoo Logo" width="32" height="32" class="footer-logo-icon">
-                    <img src="/assets/brand/logo-text.svg?v=3" alt="Kurukoo" height="30" class="footer-logo-text">
-                </a>
-                <p class="footer-desc">
-                    Wake up. Get going. Nigeria's leading everyday utility platform. One conversation to request anything, offer any skill, grow business, gain employment and earn.
-                </p>
-                <div class="footer-social-list">
-                    <a href="#" data-coming-soon class="footer-social-item" aria-label="X social channel coming soon">𝕏</a>
-                    <a href="#" data-coming-soon class="footer-social-item" aria-label="Instagram social channel coming soon">📸</a>
-                    <a href="#" data-coming-soon class="footer-social-item" aria-label="Facebook social channel coming soon">📘</a>
-                </div>
-            </div>
-            
-            <div>
-                <h4>Platform & Apps</h4>
-                <ul class="footer-links">
-                    <li><a href="/web">Web App (web.kurukoo.com)</a></li>
-                    <li><a href="/download">Mac OS & Windows App</a></li>
-                    <li><a href="/download">Android & iOS App</a></li>
-                    <li><a href="https://wa.me/2347000">WhatsApp Chat</a></li>
-                    <li><a href="tel:*7000%23">USSD Service (*7000#)</a></li>
-                    <li><a href="/pricing">Pricing Plans</a></li>
-                </ul>
-            </div>
-            
-            <div>
-                <h4>Company</h4>
-                <ul class="footer-links">
-                    <li><a href="/about">About Us</a></li>
-                    <li><a href="/blog">Our Blog</a></li>
-                    <li><a href="/careers">Careers</a></li>
-                    <li><a href="/contact">Contact</a></li>
-                </ul>
-            </div>
-            
-            <div>
-                <h4>Support</h4>
-                <ul class="footer-links">
-                    <li><a href="/help">Help Centre</a></li>
-                    <li><a href="/legal/privacy">Privacy Policy</a></li>
-                    <li><a href="/legal/terms">Terms of Service</a></li>
-                    <li><a href="/api-docs">API Docs</a></li>
-                </ul>
-            </div>
-        </div>
-        
-        <div class="footer-bottom">
-            <p>&copy; 2026 Kurukoo Platform. Wake up. Get going.</p>
-        </div>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand"><a href="/" class="logo footer-logo"><img src="/assets/brand/logo-icon.svg" alt="" width="32" height="32" class="logo-icon"><img src="/assets/brand/logo-text.svg?v=5" alt="Kurukoo" height="35" class="logo-text"></a><p>Tell Kurukoo what you need. Kurukoo figures out who or what can fulfil it.</p><a href="/chat" class="btn btn-primary">Start chatting</a></div>
+      <div><h4>What Kurukoo does</h4><a href="/how-it-works">How it works</a><a href="/explore">What you can ask</a><a href="/discover">Discover</a><a href="/channels">Channels</a></div>
+      <div><h4>Network</h4><a href="/explore">Providers &amp; businesses</a><a href="/partners">Partners</a><a href="/advertise">Advertise</a><a href="/about">About</a></div>
+      <div><h4>Resources</h4><a href="/resources">Resources</a><a href="/help">Help</a><a href="/blog">Blog &amp; Kuru Media</a><a href="/api-docs">Developers</a><a href="/legal">Safety, privacy &amp; legal</a></div>
     </div>
+    <div class="footer-bottom"><span>© <%= new Date().getFullYear() %> Kurukoo</span><span>Built around one conversation, one profile and one fulfillment model.</span></div>
+  </div>
 </footer>
-
-<%- include('onboarding-modal') %>
-<script>
-  document.addEventListener('click', (event) => {
-    const link = event.target.closest('[data-coming-soon]');
-    if (!link) return;
-    event.preventDefault();
-    window.alert('Coming soon!');
-  });
-</script>
-
-</body>
-</html>
