@@ -9,9 +9,9 @@
 
 ## Overview
 
-This document is the **single source of truth** for every page and surface in the Kurukoo ecosystem. It covers the public marketing site (`utilityapp.ai.studio`), the PWA application, and the admin console. Each entry includes its route, purpose, status, key components, and responsive design notes.
+This document is the **implementation reference** for every page and surface in the Kurukoo ecosystem. It covers the public marketing site (`kurukoo.ai.studio`), the Web Chat application, and the admin console. The route registry in `src/routes/publicRoutes.ts` and the runtime contract tests are authoritative when this document and an older blueprint section differ.
 
-**Design principle — no inline styles:** All pages MUST use semantic CSS classes from shared stylesheets (`/css/main.css`, `/css/admin.css`, per-page CSS files). Inline `style="..."` attributes are prohibited in production code. The current `nav.ejs` and several admin pages contain inline styles that must be refactored to class-based CSS as part of the responsive audit.
+**Design principle — shared styles:** All pages MUST use semantic CSS classes from the shared stylesheets (`/css/site.css`, `/css/kurukoo-home.css`, `/css/kurukoo-chat.css`, and the admin stylesheets). Inline `style="..."` attributes and inline event handlers are prohibited in production templates; the audited navigation style block has been moved into `site.css`.
 
 ---
 
@@ -19,7 +19,7 @@ This document is the **single source of truth** for every page and surface in th
 
 > **Developer note (v5.55):** A responsiveness, UI, and UX audit must be conducted across the entire ecosystem. The following rules apply to ALL pages — public, PWA, and admin:
 
-1. **No inline styles.** Every visual property must come from a CSS class. Inline `style="..."` attributes are prohibited. The current `nav.ejs` (which has ~30 inline style declarations), `index.ejs`, and all admin HTML pages must be refactored.
+1. **No inline styles.** Every visual property must come from a CSS class. Inline `style="..."` attributes and inline event handlers are prohibited. The current production audit reports no inline style attributes or inline handlers in server-rendered templates.
 2. **Mobile-first.** Every page is designed for a 360px viewport first, then enhanced for tablet (768px) and desktop (1024px+). Breakpoints: `sm: 640px`, `md: 768px`, `lg: 1024px`, `xl: 1280px`.
 3. **Touch targets.** Minimum 44×44px tap targets (WCAG 2.1 AA). No hover-dependent functionality on mobile.
 4. **Images.** Use `<img>` with `loading="lazy"`, `width`/`height` attributes (prevent CLS), `srcset` for responsive sizes, and WebP/AVIF formats. All `alt` text must be present (auto-generated via §53.2.3 if missing).
@@ -35,7 +35,7 @@ This document is the **single source of truth** for every page and surface in th
 ### A1. Homepage
 | Field | Value |
 |---|---|
-| **Route** | `/:country` (redirects `/` → `/ng`) |
+| **Route** | `/` (with optional country prefix `/:country(ng|gh|gb)`) |
 | **Template** | `views/index.ejs` |
 | **Purpose** | Hero, role priming (3 cards), Living Profile (3 cards), Nearby Pulse map preview, "What can you do on Kurukoo?" scrollable cards, "Your Day with Kurukoo" timeline, How It Works (3 steps), social proof, final CTA |
 | **Status** | ✅ Exists (needs section additions — see homepage_copy.md v2.0) |
@@ -44,7 +44,7 @@ This document is the **single source of truth** for every page and surface in th
 ### A2. Pricing
 | Field | Value |
 |---|---|
-| **Route** | `/:country/pricing` |
+| **Route** | `/pricing` |
 | **Template** | `views/pricing.ejs` |
 | **Purpose** | 3-tier subscription (Base/Plus/Business), Points explanation, feature comparison table, FAQ |
 
@@ -55,7 +55,7 @@ This document is the **single source of truth** for every page and surface in th
 ### B1. Explore Hub
 | Field | Value |
 |---|---|
-| **Route** | `/:country/explore` |
+| **Route** | `/explore` |
 | **Template** | `views/explore/index.ejs` |
 | **Purpose** | 45-category card grid. Every 6th card is a sponsored placement. Trending strip, Nearby (Pulse-active providers), Daily Picks card. |
 | **Status** | ✅ Exists |
@@ -64,7 +64,7 @@ This document is the **single source of truth** for every page and surface in th
 ### B2. Category Page
 | Field | Value |
 |---|---|
-| **Route** | `/:country/explore/:slug` |
+| **Route** | `/explore/:slug` |
 | **Template** | `views/explore/category.ejs` |
 | **Purpose** | Category detail with embedded live hybrid chat (phone mockup hero), dynamically calculated trust metrics (verified provider count, completed jobs, avg ratings), ad slots, sub-category navigation |
 | **Status** | ✅ Exists |
@@ -72,7 +72,7 @@ This document is the **single source of truth** for every page and surface in th
 ### B3. Discover (Nearby Map) — ✅ Done
 | Field | Value |
 |---|---|
-| **Route** | `/:country/discover` |
+| **Route** | `/discover` |
 | **Template** | `views/discover.ejs` |
 | **Purpose** | Live interactive map showing nearby providers, AI agents, deals, emergency services. The visual counterpart to the conversational discovery engine. |
 | **Status** | ✅ Done — template, backend route, and `/api/discover/map` API all implemented |
@@ -90,7 +90,7 @@ This document is the **single source of truth** for every page and surface in th
 | **Purpose** | Shows the 5 user types in the Kurukoo ecosystem with explanations of what each type gets and what they can do. Acts as a "who are you?" entry point that routes users to the right onboarding path. |
 | **Status** | ✅ Done — template and backend route implemented |
 | **User types** | 1. **Consumer** — Request any service, get matched with trusted providers, escrow protection, Daily Picks. 2. **Provider** — List skills, Work Toggle, Nearby Pulse (Go Live), Boost listings, earn. 3. **Business** — Verified storefront (chat-managed product inventory), catalogue import, analytics, team accounts, advertising. 4. **Physical Agent** — Cash-in/out, onboarding, walk-in assistance, earn commissions. 5. **Contributor** — Micro-tasks (update prices, confirm locations, incident alerts, security updates), earn airtime from Growth Fund, badge progression. |
-| **Design** | 5 cards in a responsive grid. Each card: icon, type name, 3-bullet "what you get", 3-bullet "what you can do", CTA button → pre-filled WhatsApp prompt or PWA onboarding with role pre-selected. |
+| **Design** | This legacy role chooser is not registered in the current public router. Role and intent entry now remain conversation-first through `/chat` and are not represented as WhatsApp or PWA deep-link claims. |
 | **Responsive** | Cards: 1-column on mobile (stacked), 2-column on tablet, 3-column on desktop. |
 | **Blueprint ref** | §40 (Pick a Role), §C Contributor model below |
 
@@ -108,23 +108,23 @@ This document is the **single source of truth** for every page and surface in th
 ### A3. About
 | Field | Value |
 |---|---|
-| **Route** | `/:country/about` |
+| **Route** | `/about` |
 | **Template** | `views/about.ejs` |
-| **Purpose** | Company story, mission, team, investors, press |
+| **Purpose** | Company story, mission, team, and public contact context |
 | **Status** | ✅ Exists |
 
 ### A4. Contact
 | Field | Value |
 |---|---|
-| **Route** | `/:country/contact` |
+| **Route** | `/contact` |
 | **Template** | `views/contact.ejs` |
-| **Purpose** | Contact form, office locations, WhatsApp/email/phone |
+| **Purpose** | Public contact information and the supported contact form/channel boundary |
 | **Status** | ✅ Exists |
 
 ### A5. Careers
 | Field | Value |
 |---|---|
-| **Route** | `/:country/careers` |
+| **Route** | `/careers` |
 | **Template** | `views/careers.ejs` |
 | **Purpose** | Open roles, culture, application form |
 | **Status** | ✅ Exists |
@@ -136,7 +136,7 @@ This document is the **single source of truth** for every page and surface in th
 ### C1. Resources Hub — ✅ Done
 | Field | Value |
 |---|---|
-| **Route** | `/:country/resources` |
+| **Route** | `/resources` |
 | **Template** | `views/resources/index.ejs` |
 | **Purpose** | Educational content library (the "library"). Evergreen, searchable, SEO-optimized content that feeds into §53 programmatic SEO. |
 | **Status** | ✅ Done — template, backend route, and `/api/resources` API all implemented |
@@ -148,7 +148,7 @@ This document is the **single source of truth** for every page and surface in th
 ### C2. Resource Article — ✅ Done
 | Field | Value |
 |---|---|
-| **Route** | `/:country/resources/:slug` |
+| **Route** | `/resources/:slug` |
 | **Template** | `views/resources/article.ejs` |
 | **Purpose** | Individual guide/article with TOC, reading progress, related articles |
 | **Status** | ✅ Done — template, backend route, and `/api/resources/:slug` API all implemented |
@@ -156,7 +156,7 @@ This document is the **single source of truth** for every page and surface in th
 ### C3. Blog
 | Field | Value |
 |---|---|
-| **Route** | `/:country/blog` |
+| **Route** | `/blog` |
 | **Template** | `views/blog/index.ejs` |
 | **Purpose** | Market intel, news, updates, provider stories |
 | **Status** | ✅ Exists |
@@ -164,7 +164,7 @@ This document is the **single source of truth** for every page and surface in th
 ### C4. Blog Post
 | Field | Value |
 |---|---|
-| **Route** | `/:country/blog/:slug` |
+| **Route** | `/blog/:slug` |
 | **Template** | `views/blog/post.ejs` |
 | **Purpose** | Individual blog article |
 | **Status** | ✅ Exists |
@@ -172,14 +172,14 @@ This document is the **single source of truth** for every page and surface in th
 ### C5. API Docs
 | Field | Value |
 |---|---|
-| **Route** | `/:country/api/docs` (also `/api/docs`) |
+| **Route** | `/api-docs` |
 | **Purpose** | Developer integration guides, endpoint reference, authentication |
 | **Status** | ✅ Exists |
 
 ### C6. Legal
 | Field | Value |
 |---|---|
-| **Route** | `/:country/legal/:section` |
+| **Route** | `/legal/:section?` |
 | **Purpose** | Terms of Service, Privacy Policy, Cookie Policy, NDPA compliance |
 | **Status** | ✅ Exists |
 
@@ -190,11 +190,11 @@ This document is the **single source of truth** for every page and surface in th
 ### D1. Help Centre
 | Field | Value |
 |---|---|
-| **Route** | `/:country/help` |
+| **Route** | `/help` |
 | **Template** | `views/help.ejs` |
-| **Purpose** | Transactional support desk (the "help desk"). FAQ, dispute center, live chat (WhatsApp), report a problem, contact support, status page. |
+| **Purpose** | Transactional support desk with FAQ, request support, report-a-problem guidance, and an explicit Web Chat boundary. |
 | **Status** | ✅ Exists (needs refinement — educational content moves to Resources) |
-| **Content to KEEP** | FAQ, Dispute Center (`/api/dispute/:id`), Live Chat → WhatsApp, Report a Problem, Contact Support, Status Page |
+| **Content to KEEP** | FAQ, support guidance, report-a-problem guidance, contact support, and links into the canonical Web Chat/request lifecycle where available. |
 | **Content to MOVE to Resources** | Getting Started, How-To Guides, Privacy & Trust explainer, Earning Money guides |
 | **SEO** | `noindex` for support-specific pages (not SEO targets). |
 
@@ -205,7 +205,7 @@ This document is the **single source of truth** for every page and surface in th
 ### E1. Partners — ✅ Done
 | Field | Value |
 |---|---|
-| **Route** | `/:country/partners` |
+| **Route** | `/partners` |
 | **Template** | `views/partners.ejs` |
 | **Purpose** | Public entry point for all partnership types. Partner type cards, commission structure, application form. |
 | **Status** | ✅ Done — template and backend route implemented (admin `partnerships.html` + `/api/admin/partnerships` + `partnerships` table exist) |
@@ -216,7 +216,7 @@ This document is the **single source of truth** for every page and surface in th
 ### E2. Advertise — ✅ Done
 | Field | Value |
 |---|---|
-| **Route** | `/:country/advertise` |
+| **Route** | `/advertise` |
 | **Template** | `views/advertise.ejs` |
 | **Purpose** | Public page for businesses/brands to advertise. Ad placement inventory, targeting, pricing, self-serve portal, enterprise contact. |
 | **Status** | ✅ Done — template and backend route implemented (`/api/ads` endpoint + admin `marketing.html` + `revenue.html` exist) |
@@ -232,9 +232,9 @@ This document is the **single source of truth** for every page and surface in th
 
 | Country | Route | Currency | Status | Notes |
 |---|---|---|---|---|
-| Nigeria (default) | `/ng/` | NGN (₦) | ✅ | 45 categories, Pidgin/English, OPay/Moniepoint, USSD *7000# |
-| Ghana | `/gh/` | GHS (₵) | ✅ Route | Local categories, MTN Mobile Money |
-| UK | `/gb/` | GBP (£) | ✅ | Diaspora features, Stripe, community board, child safety, UK life-admin |
+| Nigeria (default) | `/ng` | NGN (₦) | ✅ | Country-aware homepage rendering. Web Chat is the supported conversational channel in this deployment. |
+| Ghana | `/gh` | GHS (₵) | ✅ Route | Country-aware homepage rendering; channel adapters remain subject to deployment configuration. |
+| UK | `/gb` | GBP (£) | ✅ Route | Country-aware homepage rendering; no unsupported payment or messaging integration is implied by the route. |
 
 **Locale files:** `en`, `ha`, `yo`, `ig`, `pcm` (Nigerian Pidgin), `en-GB`.
 
@@ -242,36 +242,43 @@ This document is the **single source of truth** for every page and surface in th
 
 ## G. PWA Application
 
-### G1. PWA Dashboard (Chat Interface)
+### G1. Web Chat
 | Field | Value |
 |---|---|
-| **Route** | `/dashboard.html` |
+| **Route** | `/chat` |
+| **Template** | `public/chat/index.html` |
+| **Purpose** | Canonical conversation-first interface for requests, Web Chat fulfilment, reminders, personal safety check-ins, and context inspection. |
+| **Status** | ✅ Exists and covered by runtime/chat contracts |
+
+### G1a. Request Hub shell
+| Field | Value |
+|---|---|
+| **Route** | `/web` |
 | **Template** | `public/dashboard.html` |
-| **Purpose** | Full chat interface — the primary and only interface of the platform. Memory-driven: adapts based on user's profile. |
-| **Status** | ✅ Exists (needs sidebar + discover/explore enhancement) |
-| **Layout** | ChatGPT/Grok/Claude-style: **sidebar** (left) + **chat window** (center/right). Sidebar: conversation history, Balance, Activity, Settings, **Discover panel**. Chat window: single unified thread with inline cards. |
-| **Discover panel (sidebar)** | NEW — discover/explore area showing: Daily Picks cards, activity feed ("3 plumbers active in your area"), intent-based suggestions ("Demand for delivery driver in your area", "Cheaper rice found — buy?", "{Business} serving hot pepper soup — book table or order?", "{Event} in {area} — attend?"). All personalized to user type via `memory_profiles.inferred_roles`. |
-| **Monetization** | Sponsored cards in the Discover panel (labelled "Sponsored"), promoted provider spotlights, Daily Picks with CPM/CPV bids. High-engagement surface — visible every time user opens PWA. |
-| **Inline cards** | Ride picker, Go Live/Pulse toggle, product cards (4 layouts), trade offer card, survey questions, provider cards (dynamic display), Daily Pick cards, event cards, price alert cards |
-| **Responsive** | Mobile: sidebar collapses to drawer (hamburger), chat fills screen. Desktop: sidebar fixed 280px, chat fills remaining. Pull-down drawer for Balance/Activity/Settings. Emergency SOS always visible top-right. |
+| **Purpose** | Authenticated shell linking to canonical chat, discovery, resources, profile, and logout surfaces. It is not a second chat architecture. |
+| **Status** | ✅ Exists as a shell; do not treat placeholder copy as live economic data. |
+| **Layout** | Lightweight authenticated navigation shell. The canonical conversation thread remains `/chat`; this shell must not be documented as a second chat, storefront, or dashboard architecture. |
+| **Linked discovery** | Links to the registered `/discover` and `/explore` surfaces. Any provider, activity, distance, availability, or sponsored content must be data-backed at runtime. |
+| **Product truthfulness** | The shell does not claim live monetization, sponsored inventory, or activity unless the corresponding backend data is present and labelled. |
+| **Inline cards** | Canonical chat response cards and request-state evidence only; card content must remain provider-neutral and tied to the supported Economic Request lifecycle. |
+| **Responsive** | Mobile: the sidebar becomes a drawer and the context inspector opens as a keyboard-accessible overlay. Desktop: chat and context inspector remain visible in the shared shell. No emergency-services capability is claimed. |
 | **Blueprint ref** | §32.3, §32.9, §33 |
 
 ### G2. Login
 | Field | Value |
 |---|---|
-| **Route** | Modal (no dedicated route) |
-| **Purpose** | Phone + PIN authentication. SSO (Google/Apple) + email/password for UK (§1.5.2). |
+| **Route** | `/login` |
+| **Purpose** | Phone number and one-time verification code authentication with conversation and guest-continuity handoff. |
 | **Status** | ✅ Exists |
 
-### G3. Unified Onboarding Gateway Modal
+### G3. Conversation-first identity continuation
 | Field | Value |
 |---|---|
-| **Route** | Modal (no dedicated route, embedded partial `onboarding-modal.ejs`) |
-| **Template** | `views/_partials/onboarding-modal.ejs` |
-| **Purpose** | High-conversion unified entry gateway that pre-registers users into memory profiles and routes them to their preferred messaging/PWA interface. |
-| **Status** | ✅ Done — fully implemented and integrated across the landing and explore pages |
-| **Components** | • **First 1,000 Users Promo Banner:** Highlights live campaign counts for lifetime free USSD/WhatsApp sessions.<br>• **Adaptive Channel Selectors:** Dynamic toggles for Web App (PWA), WhatsApp, Alternative Free Chat Bots (Telegram, FB Messenger, Instagram, TikTok), and USSD code.<br>• **Self-Hosted Custom Business WhatsApp API Panel:** Available for sellers. Supports Custom Number, Meta App ID, Meta System Access Token, and optional Assisted Activation (₦5,000 setup fee).<br>• **FCM Keep-Alive Standby Info:** Educational block explaining the automated 15-hour push keep-alive cycle. |
-| **Responsive** | Mobile-first custom modal design with glassmorphism overlays and fluid adaptive layouts that fit perfectly on 360px viewports without horizontal scrolling. |
+| **Route** | `/login` with optional return, conversation, and guest-continuity query parameters |
+| **Template** | `views/login.ejs` |
+| **Purpose** | Phone verification that preserves continuity into Web Chat and protected actions through the existing HttpOnly-cookie/JWT boundary. |
+| **Status** | ✅ Exists; no separate multi-channel onboarding subsystem is documented or implied. |
+| **Responsive** | Mobile-first form with keyboard-visible focus states and touch-safe controls. |
 
 ---
 
@@ -317,15 +324,15 @@ All admin pages use separate JWT-based auth (roles: admin, moderator, finance, v
 ### I1. Category × City/LGA Landing Pages — ✅ Done
 | Field | Value |
 |---|---|
-| **Route** | `/:country/:category/:city-or-lga` |
+| **Route** | Not registered in the current public router; treat programmatic SEO landing pages as deferred until a verified route is added. |
 | **Template** | `views/programmatic.ejs` |
-| **Purpose** | Auto-generated landing pages for SEO (e.g., `/ng/food/lagos`). Combines category info with location-specific provider counts, trust metrics, embedded chat. |
-| **Status** | ✅ Done (PA-20, §53.2.4) — Route, template, dynamic sitemap, Service schema, auto-generated SEO meta |
+| **Purpose** | Deferred SEO concept. Do not render provider counts, trust metrics, availability, or embedded chat from an unverified route. |
+| **Status** | ⏸ Deferred — not part of the current public route contract. |
 
 ### I2. Public Provider Profile Pages — ✅ Done (conditional)
 | Field | Value |
 |---|---|
-| **Route** | `/:country/p/:provider-slug` |
+| **Route** | `/p/:providerSlug` |
 | **Template** | `views/provider-profile.ejs` |
 | **Purpose** | Auto-generated provider profile pages for SEO (LocalBusiness schema). ONLY generated for providers who have boosted a listing, created an advert, or explicitly opted in. NOT a public directory. |
 | **Status** | ✅ Done (PA-20, §53.1) — Route, template, LocalBusiness schema, opt-in gate (verified_provider / public_profile_opt_in / paid subscription), auto-generated SEO meta |
@@ -399,35 +406,27 @@ This section appears on the homepage and feeds into the Explore hub. Each card l
 
 ## L. Navigation Structure (Live)
 
-The current `nav.ejs` header (to be refactored — remove inline styles):
+The current `nav.ejs` header is:
 
 ```
-[Logo: Kurukoo]     [Platform ▼] [Discover] [For You ▼] [Pricing] [Resources] [Partners]     [Help] [🌐]
+[Logo: Kurukoo] [Discover] [How it works] [Network] [Channels] [Resources] [About] [Start chatting] [Account]
 ```
 
-**Platform dropdown (mega-menu):**
-- 💬 Conversational Core: Request Anything, Order Essentials, USSD Offline Portal
-- ⚡ Earning & Skills: The Work Toggle, Offer Any Skill, Live Nearby Pulse
-- ⭕ Safety & Trust: Neighbourhood Watch, P2P Money Circles (Soon)
-- 🔌 Ecosystem Features: Nearby Pulse, Price Alerts, Universal Remote Controller, 
-
-**Footer additions (new links):** Partners, Advertise, Resources
+All destinations are extensionless and registered in `src/routes/publicRoutes.ts`. The navigation does not claim a mega-dropdown, WhatsApp, USSD, SMS, app-store distribution, or an unconfigured external adapter.
 
 ---
 
 ## M. Storefront Clarification (Per User Direction)
 
-> **Developer note:** The storefront feature is NOT a public business listing directory. Many providers already have profiles on Jiji, Instagram, WhatsApp Business, etc. Kurukoo will not compete as another directory.
+> **Developer note:** The storefront feature is NOT a public business listing directory. External provider profiles or catalogues may exist independently, but Kurukoo does not claim a WhatsApp, Jiji, or other external-platform integration in this deployment.
 
-**What the storefront IS:**
-1. **Chat-managed product inventory** — Kurukoo knows what products a Business-tier provider has by: (a) importing from their WhatsApp Business catalogue (catalog scraper, PA-17), and (b) asking the provider questions periodically ("You listed rice last week — is it still in stock? Has the price changed?"). This keeps inventory updated without the provider manually maintaining a dashboard.
-2. **Products stored in `skills.business_products`** (JSON array) — product name, price, availability, image URL (optional), last_confirmed timestamp.
-3. **Products surface conversationally** — NOT in a browseable directory. Products appear when: (a) a user requests something matching, (b) Daily Picks features a product, (c) the provider boosts a product or creates an advert.
-4. **Future possibility** — a marketplace where users can browse and order from the overall storefront inventory. Explicitly FUTURE. Until then, products surface via conversation and Daily Picks only.
+**Current storefront boundary:**
+1. Product and offer information may surface only through the canonical conversation and provider-neutral response cards when backend data is present.
+2. Products stored in `skills.business_products` remain capability data, not a public directory.
+3. Marketplace browse, external catalogue import, provider boosting, and external-channel synchronization are deferred capabilities and must not be presented as live.
+4. Payment, escrow, fulfilment, and release language remains conditional on the documented Economic Request lifecycle and configured payment boundary.
 
-**What the storefront IS NOT:** NOT a public provider profile page, NOT a browseable product catalogue, NOT a Jiji/Amazon competitor, NOT visible to other providers.
-
-**Business subscription clarity:** "Storefront: Kurukoo learns your products from your WhatsApp catalogue and keeps them updated by asking you questions. Your products appear to nearby customers when they search for what you sell. No dashboard to maintain — just chat."
+**What the storefront IS NOT:** NOT a public provider directory, NOT a browseable global product catalogue, and NOT an external messaging-platform integration.
 
 ---
 
@@ -443,7 +442,7 @@ The current `nav.ejs` header (to be refactored — remove inline styles):
 **System architecture:**
 - `national_events` table: `id`, `country`, `name`, `type` (public_holiday/religious/cultural/festival/sporting), `date` or `date_rule` (lunar/variable), `description`, `image_url`, `is_recurring`, `locale_relevance` (JSON)
 - **Cultural Calendar AI Agent** — dedicated AI agent (§38) that: (a) maintains events calendar, (b) generates contextual reminders ("Tomorrow is Eid al-Fitr — need help finding a butcher?"), (c) personalizes based on inferred religion/culture from `memory_profiles.behavior_patterns`, (d) suggests relevant services (Independence Day → event planners, caterers), (e) creates Daily Picks themed around events (Valentine's → flowers, gifts, restaurants)
-- **Reminder delivery:** Daily Picks (themed), push notifications (FCM), WhatsApp messages, PWA Discover panel sidebar
+- **Reminder delivery:** Native reminder state and the authenticated internal notification inbox are implemented. External FCM, SMS, and messaging-platform delivery remain unconfigured and must not be claimed.
 - **Intent creation from frontend:** Website surfaces event-themed content ("Valentine's Day is coming — get ready with Kurukoo" → relevant categories). Creates latent intent without exposing other users' requests.
 
 ---
@@ -463,35 +462,27 @@ The price checker (`price_check` category, `price_checker` skill) is currently i
 
 ---
 
-## P. Universal Remote Placement
+## P. Universal Remote and autonomous hardware boundary
 
-The Universal Remote & IoT Control (§32.12) appears in:
-
-1. **Homepage scrollable cards** — "Universal Remote" card → Resources guide
-2. **For You page** — Consumer card ("Control your devices from the same chat")
-3. **PWA** — "Smart Devices" panel in pull-down drawer (appears when devices discovered)
-4. **Resources** — setup and usage guide
-5. **Business tier** — listed as a feature
-6. **Explore** — category/explainer page for smart home services
+Universal Remote, IoT, drone, robot, and autonomous hardware control are **not implemented capabilities** in the current application. They must not be listed as live features, device panels, or fulfilment promises. A future implementation would require an explicit provider integration, authorization boundary, safety review, and runtime evidence before any frontend claim is added.
 
 ---
 
-## Summary — New Pages to Build
+## Current Implementation and Deferred Work
 
-| # | Page | Route | Priority | Dependencies |
-|---|---|---|---|---|
-| 1 | Discover (Nearby Map) | `/:country/discover` | HIGH | Leaflet.js, `/api/discover/map` |
-| 2 | For You (User Type Chooser) | `/:country/for-you` | HIGH | None (static + WhatsApp deep links) |
-| 3 | Resources Hub | `/:country/resources` | HIGH | `/api/resources`, CMS content |
-| 4 | Partners | `/:country/partners` | MEDIUM | `/api/partner/apply` |
-| 5 | Advertise | `/:country/advertise` | MEDIUM | Admin ads module |
-| 6 | Programmatic SEO Pages | `/:country/:category/:city` | MEDIUM | §53 SEO, PA-20 |
-| 7 | Admin Ads | `/admin/ads.html` | MEDIUM | `/api/admin/ads` CRUD |
-| 8 | Admin SEO | `/admin/seo.html` | MEDIUM | §53, PA-18/19/20 |
-| 9 | Admin Providers | `/admin/providers.html` | LOW | Provider management APIs |
-| 10 | Admin Compliance | `/admin/compliance.html` | LOW | Dispute/compliance APIs |
-| 11 | Admin Settings | `/admin/settings.html` | LOW | Feature flag system (PA-3) |
+| Surface | Route | Status | Truthfulness boundary |
+|---|---|---|---|
+| Homepage | `/` and `/:country(ng|gh|gb)` | Implemented | Illustrative previews must remain labelled; no live provider, distance, activity, or channel claims without data. |
+| Explore | `/explore`, `/explore/:slug` | Implemented | Category aliases resolve through the canonical explore registry. |
+| Discovery | `/discover` | Implemented | Map data and provider visibility remain conditional on verified backend data and privacy controls. |
+| Web Chat | `/chat` | Implemented | Canonical conversation-first request surface with reminders and personal safety check-ins. |
+| Request Hub shell | `/web` | Implemented | Authenticated navigation shell; not a second chat or economic architecture. |
+| Login | `/login` | Implemented | Phone OTP and continuity handoff; no unsupported SSO, USSD, SMS, or external-channel claim. |
+| Resources, legal, support, partners, advertising | `/resources`, `/legal/:section?`, `/help`, `/partners`, `/advertise` | Implemented | Public pages must link only to registered destinations and configured capabilities. |
+| Provider profile | `/p/:providerSlug` | Conditional | Only rendered when provider data and profile eligibility exist; not a browseable directory. |
+| Programmatic SEO category/city pages | No current route | Deferred | Do not add route or claim generated metrics until the runtime contract is implemented. |
+| Universal Remote / IoT / autonomous hardware | No current route | Not implemented | Do not present as a live feature without a dedicated authorized integration and safety review. |
 
 ---
 
-*Last updated: 2026-08-01 | Blueprint v5.55*
+*Last updated: 2026-08-12 | Reconciled with the current public route registry, Web Chat shell, CSS audit, and product-truthfulness boundary.*

@@ -571,6 +571,8 @@
     } catch {}
   }
 
+  function setInspectorFeedback(message, kind = 'info') { const feedback = $('inspector-feedback'); if (!feedback) return; feedback.hidden = !message; feedback.textContent = message || ''; feedback.dataset.kind = kind; }
+  async function nativeAction(url, options = {}) { const response = await fetch(url, { credentials: 'same-origin', ...options }); let data = {}; try { data = await response.json(); } catch {} if (!response.ok) throw new Error(data.error || 'Action could not be completed.'); return data; }
   async function loadSafety() {
     try {
       const [contactsResponse, checkInsResponse] = await Promise.all([
@@ -589,13 +591,14 @@
         const label = document.createElement('span'); label.textContent = `${contact.name} · ${contact.status}`; row.appendChild(label);
         if (contact.status === 'pending') {
           const activate = document.createElement('button'); activate.className = 'text-btn'; activate.type = 'button'; activate.textContent = 'Confirm consent';
-          activate.addEventListener('click', async () => { activate.disabled = true; await fetch(`/api/safety/contacts/${encodeURIComponent(contact.id)}/activate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ consentConfirmed: true }) }); loadSafety(); });
+          activate.addEventListener('click', async () => { activate.disabled = true; try { await nativeAction(`/api/safety/contacts/${encodeURIComponent(contact.id)}/activate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ consentConfirmed: true }) }); setInspectorFeedback('Contact activated by your explicit consent. No notification was sent.'); await loadSafety(); } catch (error) { setInspectorFeedback(error.message, 'error'); } finally { activate.disabled = false; } });
           row.appendChild(activate);
         } else if (contact.status === 'active') {
           const start = document.createElement('button'); start.className = 'text-btn'; start.type = 'button'; start.textContent = 'Start 60-minute check-in';
-          start.addEventListener('click', async () => { start.disabled = true; await fetch('/api/safety/check-ins', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ contactId: contact.id, durationMinutes: 60 }) }); loadSafety(); });
+          start.addEventListener('click', async () => { start.disabled = true; try { await nativeAction('/api/safety/check-ins', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contactId: contact.id, durationMinutes: 60 }) }); setInspectorFeedback('60-minute check-in started. This remains a personal instruction and does not contact emergency services.'); await loadSafety(); } catch (error) { setInspectorFeedback(error.message, 'error'); } finally { start.disabled = false; } });
           row.appendChild(start);
         }
+        const revoke = document.createElement('button'); revoke.className = 'text-btn text-btn-danger'; revoke.type = 'button'; revoke.textContent = 'Revoke'; revoke.addEventListener('click', async () => { revoke.disabled = true; try { await nativeAction(`/api/safety/contacts/${encodeURIComponent(contact.id)}/revoke`, { method: 'POST' }); setInspectorFeedback('Safety contact revoked.'); await loadSafety(); } catch (error) { setInspectorFeedback(error.message, 'error'); } finally { revoke.disabled = false; } }); row.appendChild(revoke);
         contactsList.appendChild(row);
       });
       const checkInHeading = document.createElement('strong'); checkInHeading.textContent = 'Check-ins'; checkInsList.appendChild(checkInHeading);
@@ -603,7 +606,7 @@
       checkIns.forEach(checkIn => {
         const row = document.createElement('div'); row.className = 'safety-list-item';
         const status = document.createElement('span'); const expires = checkIn.expires_at ? new Date(checkIn.expires_at) : null; const when = expires && !Number.isNaN(expires.getTime()) ? ` · ${expires.toLocaleString()}` : ''; status.textContent = `${checkIn.status}${when}`; row.appendChild(status);
-        if (checkIn.status === 'active') { const complete = document.createElement('button'); complete.className = 'text-btn'; complete.type = 'button'; complete.textContent = 'Complete'; complete.addEventListener('click', async () => { complete.disabled = true; await fetch(`/api/safety/check-ins/${encodeURIComponent(checkIn.id)}/complete`, { method: 'POST', credentials: 'same-origin' }); loadSafety(); }); row.appendChild(complete); }
+        if (checkIn.status === 'active') { const complete = document.createElement('button'); complete.className = 'text-btn'; complete.type = 'button'; complete.textContent = 'Complete'; complete.addEventListener('click', async () => { complete.disabled = true; try { await nativeAction(`/api/safety/check-ins/${encodeURIComponent(checkIn.id)}/complete`, { method: 'POST' }); setInspectorFeedback('Check-in completed.'); await loadSafety(); } catch (error) { setInspectorFeedback(error.message, 'error'); } finally { complete.disabled = false; } }); row.appendChild(complete); }
         checkInsList.appendChild(row);
       });
     } catch {}
@@ -629,13 +632,16 @@
   $('attach-file')?.addEventListener('click', () => $('file-input')?.click());
   $('file-input')?.addEventListener('change', e => { const file = e.target.files?.[0] || null; state.attached = file; const preview = $('attachment-preview'); if (file && preview) { preview.hidden = false; preview.textContent = `📎 ${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB`; } });
   $('theme-toggle')?.addEventListener('click', () => { state.theme = state.theme === 'dark' ? 'light' : 'dark'; applyTheme(); });
-  $('open-sidebar')?.addEventListener('click', () => $('chat-sidebar')?.classList.add('open'));
-  $('close-sidebar')?.addEventListener('click', () => $('chat-sidebar')?.classList.remove('open'));
-  $('memory-toggle')?.addEventListener('click', () => $('chat-inspector')?.classList.toggle('open'));
-  $('close-inspector')?.addEventListener('click', () => $('chat-inspector')?.classList.remove('open'));
+  function setSidebarOpen(open) { const sidebar = $('chat-sidebar'); const toggle = $('open-sidebar'); sidebar?.classList.toggle('open', open); toggle?.setAttribute('aria-expanded', String(open)); if (!open) toggle?.focus(); }
+  function setInspectorOpen(open) { const inspector = $('chat-inspector'); const toggle = $('memory-toggle'); const collapsible = window.matchMedia('(max-width: 1100px)').matches; if (collapsible) inspector?.classList.toggle('open', open); toggle?.setAttribute('aria-expanded', String(collapsible ? open : true)); if (open && collapsible) inspector?.querySelector('button, input, textarea')?.focus(); }
+  $('open-sidebar')?.addEventListener('click', () => setSidebarOpen(true));
+  $('close-sidebar')?.addEventListener('click', () => setSidebarOpen(false));
+  $('memory-toggle')?.addEventListener('click', () => setInspectorOpen(!$('chat-inspector')?.classList.contains('open')));
+  $('close-inspector')?.addEventListener('click', () => setInspectorOpen(false));
+  setInspectorOpen(false);
   $('new-chat')?.addEventListener('click', async () => { if (!await ensureIdentity()) return; try { const res = await fetch('/api/chat/conversation', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ channel: 'web', title: 'New conversation' }) }); const data = await res.json(); if (data.conversationId) { state.conversationId = data.conversationId; localStorage.setItem('kurukoo_conversation_id', data.conversationId); } } catch {} state.messages = []; state.activeStorefrontId = null; chatContent.innerHTML = ''; const ds = $('deferred-status'); if (ds) ds.hidden = true; renderWelcome(); refreshHistory(); });
   $('topup-points')?.addEventListener('click', () => sendMessage('I have a question about Points'));
-  $('safety-contact-form')?.addEventListener('submit', async event => { event.preventDefault(); const name = $('safety-contact-name')?.value.trim(); const phone = $('safety-contact-phone')?.value.trim(); const relationship = $('safety-contact-relationship')?.value.trim(); if (!name || !phone) return; const response = await fetch('/api/safety/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ name, phone, relationship }) }); if (response.ok) { event.target.reset(); loadSafety(); } });
+  $('safety-contact-form')?.addEventListener('submit', async event => { event.preventDefault(); const name = $('safety-contact-name')?.value.trim(); const phone = $('safety-contact-phone')?.value.trim(); const relationship = $('safety-contact-relationship')?.value.trim(); if (!name || !phone) return; const submit = event.target.querySelector('button[type="submit"]'); if (submit) submit.disabled = true; try { await nativeAction('/api/safety/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, phone, relationship }) }); event.target.reset(); setInspectorFeedback('Pending contact saved. Review the explicit consent action before activation.'); await loadSafety(); } catch (error) { setInspectorFeedback(error.message, 'error'); } finally { if (submit) submit.disabled = false; } });
   $('points-balance')?.addEventListener('click', () => sendMessage('Show my Points balance and the actions available to me'));
   $('voice-input')?.addEventListener('click', () => { const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!Recognition) return input?.focus(); const recognition = new Recognition(); recognition.lang = 'en-NG'; recognition.onresult = e => { if (input) { input.value = e.results[0][0].transcript; input.dispatchEvent(new Event('input')); } }; recognition.start(); });
   function renderWelcome() { chatContent.innerHTML = '<div class="welcome" id="welcome"><div class="welcome-mark">K</div><h1>What can I help you get done?</h1><p>Describe a service, work, coordination, or everyday information need. Kurukoo will show the supported request path.</p><div class="quick-actions" id="quick-actions"><button data-prompt="I need a ride request">🚗 Ride</button><button data-prompt="I have a food request">🍔 Food</button><button data-prompt="I need repair help">🔧 Repair</button><button data-prompt="I have an urgent non-emergency service request">🏥 Urgent request</button><button data-prompt="I want to discuss a work request">⚡ Work</button></div></div>'; wireQuickActions($('quick-actions')); }
