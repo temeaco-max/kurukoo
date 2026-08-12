@@ -36,6 +36,10 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(process.cwd(), 'views'));
 app.use(express.static(path.join(process.cwd(), 'public'), { index: false, fallthrough: true }));
 app.use(express.json({ limit: process.env.CHAT_ATTACHMENT_BODY_LIMIT || '35mb', verify: (req, _res, buf) => { (req as any).rawBody = Buffer.from(buf); } }));
+
+// Public system documentation must remain reachable before authenticated /api route boundaries.
+app.use('/', systemRoutes);
+
 app.use('/api', channelRoutes);
 app.use('/api', circleRoutes);
 app.use('/api/economic-requests', economicRequestRouter);
@@ -50,7 +54,6 @@ app.use('/api', safetyRoutes);
 app.use('/api', taskRoutes);
 app.use('/api', trustRoutes);
 app.use('/api/webrtc', webrtcRoutes);
-app.use('/', systemRoutes);
 app.use('/', healthRoutes);
 app.use('/', presenceRoutes);
 app.use('/', discoveryRoutes);
