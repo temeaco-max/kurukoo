@@ -5,6 +5,7 @@ import { find_worker, type FindWorkerResult } from './find-worker.js';
 
 export const ECONOMIC_PARTICIPANT_ROLES = [
   'seller',
+  'service_provider',
   'delivery_provider',
   'external_platform',
   'agent',
@@ -14,6 +15,7 @@ export type EconomicParticipantRole = typeof ECONOMIC_PARTICIPANT_ROLES[number];
 
 export const ECONOMIC_PARTICIPANT_STATUSES = [
   'invited',
+  'accepted',
   'offered',
   'selected',
   'confirmed',

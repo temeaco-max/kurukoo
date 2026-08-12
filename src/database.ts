@@ -221,10 +221,10 @@ function initEconomicParticipantTables(database: any) {
     CREATE TABLE IF NOT EXISTS economic_participants (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       request_id TEXT NOT NULL,
-      role TEXT NOT NULL CHECK(role IN ('seller', 'delivery_provider', 'external_platform', 'agent')),
+      role TEXT NOT NULL CHECK(role IN ('seller', 'service_provider', 'delivery_provider', 'external_platform', 'agent')),
       provider_phone TEXT NOT NULL,
       capability TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'invited' CHECK(status IN ('invited', 'offered', 'selected', 'confirmed', 'handover_pending', 'handed_over', 'collected', 'in_progress', 'delivered', 'declined', 'withdrawn')),
+      status TEXT NOT NULL DEFAULT 'invited' CHECK(status IN ('invited', 'accepted', 'offered', 'selected', 'confirmed', 'handover_pending', 'handed_over', 'collected', 'in_progress', 'delivered', 'declined', 'withdrawn')),
       evidence_json TEXT NOT NULL DEFAULT '{}',
       added_at TEXT DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(request_id, role, provider_phone)
@@ -233,6 +233,28 @@ function initEconomicParticipantTables(database: any) {
     CREATE INDEX IF NOT EXISTS idx_economic_participants_request ON economic_participants(request_id);
     CREATE INDEX IF NOT EXISTS idx_economic_offers_seller_status ON economic_offers(seller_phone, status);
   `);
+  // SQLite cannot widen a CHECK constraint in place. Preserve existing rows while
+  // adding the service-provider coordination role to older pilot databases.
+  const participantSql = database.exec(`SELECT sql FROM sqlite_master WHERE type='table' AND name='economic_participants'`);
+  const existingSql = String(participantSql[0]?.values?.[0]?.[0] || '');
+  if (existingSql && !existingSql.includes("'service_provider'")) {
+    database.run(`CREATE TABLE economic_participants_next (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      request_id TEXT NOT NULL,
+      role TEXT NOT NULL CHECK(role IN ('seller', 'service_provider', 'delivery_provider', 'external_platform', 'agent')),
+      provider_phone TEXT NOT NULL,
+      capability TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'invited' CHECK(status IN ('invited', 'accepted', 'offered', 'selected', 'confirmed', 'handover_pending', 'handed_over', 'collected', 'in_progress', 'delivered', 'declined', 'withdrawn')),
+      evidence_json TEXT NOT NULL DEFAULT '{}',
+      added_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(request_id, role, provider_phone)
+    );
+    INSERT INTO economic_participants_next(id,request_id,role,provider_phone,capability,status,evidence_json,added_at)
+      SELECT id,request_id,role,provider_phone,capability,status,evidence_json,added_at FROM economic_participants;
+    DROP TABLE economic_participants;
+    ALTER TABLE economic_participants_next RENAME TO economic_participants;
+    CREATE INDEX IF NOT EXISTS idx_economic_participants_request ON economic_participants(request_id);`);
+  }
 }
 
 function initExecutionTables(database: any) {
@@ -254,7 +276,7 @@ function initExecutionTables(database: any) {
       request_id TEXT NOT NULL,
       action_id TEXT NOT NULL,
       provider_phone TEXT NOT NULL,
-      role TEXT NOT NULL CHECK(role IN ('seller', 'delivery_provider', 'external_platform', 'agent')),
+      role TEXT NOT NULL CHECK(role IN ('seller', 'service_provider', 'delivery_provider', 'external_platform', 'agent')),
       capability TEXT NOT NULL,
       action_requested TEXT NOT NULL,
       idempotency_key TEXT NOT NULL UNIQUE,

@@ -14,6 +14,7 @@
   <section id="decision" class="decision"><span class="muted">Loading pilot decision…</span></section>
   <section id="metrics" class="grid"></section>
   <section><h2>Recovery signals</h2><div id="recovery" class="grid"></div></section>
+  <section><h2>Coordinator handoffs</h2><div id="handoffs" class="table-wrap"><p class="muted" style="padding:16px">Loading…</p></div></section>
   <section><h2>Recent feedback</h2><div id="feedback" class="table-wrap"><p class="muted" style="padding:16px">Loading…</p></div></section>
 </main>
 <script>
@@ -25,6 +26,12 @@
     document.querySelector('#decision').className=`decision ${noGo?'no-go':'go'}`;
     document.querySelector('#decision').innerHTML=`<strong>${noGo?'NO-GO':'GO — continue controlled pilot'}</strong><p class="muted">${noGo?'Failure rate is above the controlled-pilot threshold; pause invites and inspect recovery paths.':'No aggregate stop signal exceeded the current threshold. Keep the invite cohort at 5–10 users and review this surface daily.'} Feedback records in window: ${feedback}.</p>`;
   }
+  async function updateHandoff(id,status){
+    try{const response=await fetch(`/api/coordination/admin/handoffs/${encodeURIComponent(id)}`,{method:'PATCH',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});const data=await response.json().catch(()=>({}));if(!response.ok||!data.success)throw new Error(data.error||'Coordinator action unavailable');await load();}catch(error){document.querySelector('#handoffs').innerHTML=`<p class="error" style="padding:16px">${esc(error.message)}</p>`;}
+  }
+  async function loadHandoffs(){
+    const response=await fetch('/api/coordination/admin/handoffs',{credentials:'same-origin'});if(!response.ok)throw new Error('Coordinator queue unavailable.');const data=await response.json();const rows=data.handoffs||[];document.querySelector('#handoffs').innerHTML=rows.length?`<table><thead><tr><th>Created</th><th>Request</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead><tbody>${rows.map(row=>`<tr><td>${esc(row.createdAt)}</td><td><code>${esc(row.requestId)}</code></td><td>${esc(row.reason)}</td><td><span class="pill">${esc(row.status)}</span></td><td>${row.status==='requested'?`<button data-handoff="${esc(row.id)}" data-status="claimed">Claim</button>`:row.status==='claimed'?`<button data-handoff="${esc(row.id)}" data-status="resolved">Resolve</button>`:'—'}</td></tr>`).join('')}</tbody></table>`:'<p class="muted" style="padding:16px">No open coordinator handoffs.</p>';document.querySelectorAll('[data-handoff]').forEach(button=>button.addEventListener('click',()=>updateHandoff(button.dataset.handoff,button.dataset.status)));
+  }
   async function load(){
     try{
       const response=await fetch('/api/admin/pilot-dashboard?days=30',{credentials:'same-origin'});
@@ -35,6 +42,7 @@
       document.querySelector('#recovery').innerHTML=Object.entries(byEvent).map(([name,value])=>metric(name,value)).join('')||'<p class="muted">No events recorded yet.</p>';
       document.querySelector('#feedback').innerHTML=(data.feedback||[]).length?`<table><thead><tr><th>When</th><th>Rating</th><th>Context</th><th>Note</th></tr></thead><tbody>${data.feedback.map(row=>`<tr><td>${esc(row.created_at)}</td><td><span class="pill">${esc(row.rating)}</span></td><td>${esc(row.context?.surface||'web')}</td><td>${esc(row.note||'—')}</td></tr>`).join('')}</tbody></table>`:'<p class="muted" style="padding:16px">No feedback received in the selected window.</p>';
       decision(data);
+      await loadHandoffs();
     }catch(error){document.querySelector('#decision').className='decision no-go';document.querySelector('#decision').innerHTML=`<strong>UNAVAILABLE</strong><p class="error">${esc(error.message)}</p>`;}
   }
   document.querySelector('#refresh').addEventListener('click',load); load();

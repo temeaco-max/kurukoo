@@ -493,6 +493,21 @@
       holder.appendChild(providers);
     }
 
+    if (Array.isArray(card.providerResponses) && card.providerResponses.length) {
+      const responses = makeElement('section', 'storefront-known-offers');
+      responses.appendChild(makeElement('strong', '', 'Provider responses'));
+      const list = makeElement('ul', 'storefront-offers-list');
+      card.providerResponses.forEach(response => {
+        const item = makeElement('li');
+        const details = makeElement('div');
+        const amount = Number.isInteger(Number(response.quoteMinor)) ? `${String(response.quoteMinor)} ${String(response.currency || 'NGN')}` : 'Quote pending';
+        details.append(makeElement('strong', '', String(response.providerName || 'Verified provider')), makeElement('span', '', `${String(response.status || 'invited').replace(/_/g, ' ')} · ${amount}`));
+        if (response.note) details.appendChild(makeElement('small', '', String(response.note)));
+        item.appendChild(details); list.appendChild(item);
+      });
+      responses.appendChild(list); holder.appendChild(responses);
+    }
+
     if (card.quote) {
       const quote = makeElement('div', 'storefront-quote', 'Quote: ');
       quote.appendChild(makeElement('strong', '', `${String(card.quote.amount_minor)} ${String(card.quote.currency || 'NGN')}`));
