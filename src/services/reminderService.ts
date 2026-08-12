@@ -66,6 +66,19 @@ export async function createReminder(phone: string, input: {
      VALUES (?, ?, ?, ?, ?, ?, 'scheduled')`,
     [id, phone, input.title.trim(), String(input.note || '').trim(), due.toISOString(), input.recurrence || null]
   );
+  try {
+    const pStmt = db.prepare(`SELECT behavior_patterns FROM memory_profiles WHERE phone = ?`);
+    pStmt.bind([phone]);
+    if (pStmt.step()) {
+      const res = pStmt.getAsObject();
+      let patterns: any = {};
+      try { patterns = JSON.parse(String(res.behavior_patterns || '{}')); } catch {}
+      patterns.last_reminder_created = new Date().toISOString();
+      patterns.reminder_count = (Number(patterns.reminder_count) || 0) + 1;
+      db.run(`UPDATE memory_profiles SET behavior_patterns = ?, updated_at = CURRENT_TIMESTAMP WHERE phone = ?`, [JSON.stringify(patterns), phone]);
+    }
+    pStmt.free();
+  } catch {}
   saveDb();
 
   const stmt = db.prepare('SELECT * FROM reminders WHERE id = ?');
