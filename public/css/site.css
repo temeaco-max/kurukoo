@@ -4877,12 +4877,6 @@ table td, .admin-table td {
   font-size: clamp(2.5rem, 5vw, 4rem);
   margin-top: 16px;
 }
-.blog-hero-desc {
-  color: var(--gray-400);
-  font-size: 1.25rem;
-  max-width: 600px;
-  margin-top: 24px;
-}
 .featured-article-img {
   height: 100%;
   min-height: 400px;
@@ -5752,17 +5746,6 @@ table td, .admin-table td {
 }
 
 /* Help Center Specific */
-.help-hero {
-  background: var(--electric-blue);
-  color: var(--white);
-  padding-top: 100px;
-  padding-bottom: 100px;
-}
-.help-title {
-  color: var(--white);
-  font-size: 4rem;
-  margin-top: 16px;
-}
 .help-badge {
   background: rgba(255,255,255,0.1);
   color: var(--white);
@@ -5978,43 +5961,6 @@ table td, .admin-table td {
 
 
 /* Explore Hub Styles */
-.explore-body {
-  background: var(--cream);
-  color: var(--charcoal);
-  font-family: var(--font-body);
-  margin: 0;
-  padding: 0;
-}
-.explore-header-section {
-  text-align: center;
-  margin-bottom: 50px;
-}
-.explore-badge {
-  display: inline-block;
-  background: rgba(217, 122, 92, 0.1);
-  color: var(--terracotta);
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  margin-bottom: 16px;
-}
-.explore-h1 {
-  font-family: var(--font-heading);
-  font-size: 2.75rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  margin-bottom: 16px;
-  color: var(--charcoal);
-}
-.explore-subtitle {
-  font-size: 1.15rem;
-  color: var(--gray-600);
-  max-width: 600px;
-  margin: 0 auto 32px auto;
-  line-height: 1.6;
-}
 .explore-search-container {
   max-width: 600px;
   margin: 0 auto;
@@ -6034,19 +5980,6 @@ table td, .admin-table td {
   outline: none;
   background: transparent;
   font-family: var(--font-body);
-}
-.explore-search-btn {
-  background: var(--terracotta);
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: var(--transition);
-}
-.explore-search-btn:hover {
-  opacity: 0.9;
 }
 .trending-section {
   margin-bottom: 40px;
