@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import jwt from 'jsonwebtoken';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -8,6 +9,7 @@ process.env.DB_PATH = dbPath;
 process.env.KURUKOO_DISABLE_LISTEN = 'true';
 process.env.KURUKOO_WORKERS = '0';
 process.env.NODE_ENV = 'test';
+process.env.JWT_SECRET = 'pilot_observability_test_secret_with_32_chars';
 
 const { app } = await import('../src/index.js');
 const server = app.listen(0);
@@ -33,6 +35,17 @@ try {
 
   const admin = await fetch(`${baseUrl}/api/admin/pilot-dashboard`);
   assert.equal(admin.status, 401, 'pilot dashboard must remain behind admin authentication');
+  const adminToken = jwt.sign({ username: 'pilot-admin', role: 'admin' }, process.env.JWT_SECRET!, { algorithm: 'HS256', expiresIn: '10m' });
+  const dashboardResponse = await fetch(`${baseUrl}/api/admin/pilot-dashboard?days=30`, { headers: { Authorization: `Bearer ${adminToken}` } });
+  assert.equal(dashboardResponse.status, 200, 'authenticated operator can load pilot aggregates');
+  const dashboardBody = await dashboardResponse.json();
+  assert.equal(dashboardBody.privacy.aggregate_only, true);
+  assert.equal(Object.prototype.hasOwnProperty.call(dashboardBody, 'feedback'), false, 'ordinary dashboard must not return raw feedback rows');
+  assert.equal(typeof dashboardBody.dashboard.feedback_total, 'number');
+  assert.equal(dashboardBody.dashboard.feedback.something_wrong, 1);
+  assert.doesNotMatch(JSON.stringify(dashboardBody), /messy-human-note|request-messy|conv-messy/i, 'aggregate dashboard must omit raw notes and raw identifiers');
+  const dashboardHtml = fs.readFileSync(path.join(process.cwd(), 'public/admin/pilot.html'), 'utf8');
+  assert.doesNotMatch(dashboardHtml, /row\.note|data\.feedback\.map|row\.requestId/, 'operator dashboard must not render raw feedback notes or request identifiers');
 
   const source = fs.readFileSync(path.join(process.cwd(), 'src/services/pilotObservability.ts'), 'utf8');
   assert.match(source, /hashIdentifier\(input\.ownerId\)/, 'owner identifiers must be hashed before persistence');

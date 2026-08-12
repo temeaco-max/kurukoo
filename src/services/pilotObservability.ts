@@ -184,6 +184,7 @@ export async function getPilotDashboard(days = 30): Promise<Record<string, unkno
   const feedbackRows = db.exec(`SELECT rating, COUNT(*) FROM pilot_feedback WHERE created_at >= ? GROUP BY rating`, [since]);
   const feedback: Record<string, number> = {};
   for (const row of feedbackRows[0]?.values || []) feedback[String(row[0])] = Number(row[1]);
+  const feedbackTotal = db.exec(`SELECT COUNT(*) FROM pilot_feedback WHERE created_at >= ?`, [since]);
   const users = db.exec(`SELECT COUNT(DISTINCT owner_hash) FROM pilot_events WHERE owner_hash IS NOT NULL AND created_at >= ?`, [since]);
   const sessions = db.exec(`SELECT COUNT(DISTINCT session_hash) FROM pilot_events WHERE session_hash IS NOT NULL AND created_at >= ?`, [since]);
   const totalEvents = db.exec(`SELECT COUNT(*) FROM pilot_events WHERE created_at >= ?`, [since]);
@@ -202,6 +203,7 @@ export async function getPilotDashboard(days = 30): Promise<Record<string, unkno
     events,
     by_event: events,
     feedback,
+    feedback_total: Number(feedbackTotal[0]?.values?.[0]?.[0] || 0),
     cost_counters: {
       voice_sessions: events.voice_started || 0,
       agent_goals: events.agent_goal_created || 0,

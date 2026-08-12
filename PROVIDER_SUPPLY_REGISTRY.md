@@ -100,3 +100,18 @@ The registry regression proves that a public-source entity requires a source URL
 ## Seeding decision
 
 **NO-GO for provider scraping or bulk Nigerian business import.** The implemented registry is the prerequisite, not an import authorization. Before any seeding, Kurukoo needs a source allowlist, terms/permissions review, field minimisation and retention policy, duplicate-resolution policy, geographic normalisation policy, import review queue, opt-out/removal process, claim/QR invitation design, and a controlled sample dataset approved by an operator.
+
+
+## Controlled Nigerian acquisition safeguards
+
+The registry is now operationally useful for a controlled Nigerian pilot without becoming a web scraper. Every import must identify an approved source policy, use an allowed source type, remain within the bounded batch limit, carry an import batch ID, preserve source retrieval time and field provenance, and pass the Nigeria-only geography normalizer. The importer never fetches a source URL; it records provenance supplied by an operator and rejects unapproved sources before persistence.
+
+The review lifecycle is distinct from provider verification. Imported records start as `review_required` and are not public listings until an operator records review evidence. A reviewed record receives a freshness deadline from the approved source policy. Overdue records become `stale`; closed or source-removed records become `removed`. Stale records are excluded from the public current-supply projection. Review evidence does not mean KYC, membership, provider verification, availability, payment readiness, or fulfilment.
+
+Duplicate detection compares normalized business name, website domain, public business phone, address, state, and LGA. It creates a non-destructive `possible_duplicate` candidate with matching signals and confidence. The system never automatically merges or deletes a record. An operator must record an explicit merge or reject decision while retaining the provenance of all source records.
+
+Public supply is a separate projection. It may show a reviewed, current record as **Publicly listed business**, with source/freshness, services, location, and opening hours where available. It must show **provider verification false**, **availability unknown**, and **price unknown** unless separate authoritative state exists. Public supply cannot receive a coordination invitation. Only a linked Kurukoo account that passes the existing evidence-backed verification, capability, freshness, and activation gates may enter provider coordination.
+
+Operator-issued claim invitations are opaque, expiring, and stored by token hash. Issuing one records an internal event and returns a claim token for a deliberate operator-controlled handoff. It does not send WhatsApp, SMS, email, push, or any other external message. A claim is authenticated, evidence-reviewed, and remains separate from provider verification.
+
+No real Nigerian seed records were added in this pass. Test fixtures use non-real example URLs solely to exercise boundaries. Future seed data must be approved by an operator, sourced from a policy-approved public business source, field-minimized, provenance-bearing, reviewed for duplicates and geography, and explicitly labelled when facts are unavailable. The registry must never fabricate a provider, address, opening hours, price, availability, source URL, coordinate, review, payment, dispatch, or fulfilment result.

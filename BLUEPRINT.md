@@ -5374,3 +5374,25 @@ Text, Web Voice, QR contextual entry, and future configured channels converge on
 ### 21b.5 Production requirements
 
 The runtime is feature-flagged off by default. Production activation requires an always-running Kurukoo application worker, policy-reviewed event adapters for each external source, notification preference checks, provider/connector evidence, and configured channel or push adapters before any external delivery claim. The default server worker is suitable for the present SQLite deployment; horizontally scaled production deployment requires a shared queue/lease before multiple worker replicas process the same due goal.
+
+
+## Canonical Provider Supply Architecture — Controlled Nigerian Pilot
+
+The Provider Supply Registry is a **provenance-first public-supply layer**, not a second provider system and not a scraper. It separates facts about a public business listing from facts about a business account, evidence-backed provider verification, capability, availability, coordination, payment, and fulfilment.
+
+| Authority | Meaning | What it does not imply |
+|---|---|---|
+| **Public Supply** | A source-backed public business record with provenance, geography, review, freshness, and duplicate state. | Kurukoo membership, verification, availability, price, payment, dispatch, or fulfilment. |
+| **Provider Claim** | An authenticated account requests to claim a reviewed public listing; an operator records evidence and approves or rejects the claim. | Provider verification, capability, availability, or endorsement. |
+| **Provider Verification** | The existing evidence-backed provider-verification lifecycle determines whether the linked account may enter provider discovery. | A public listing review, trust score, payment readiness, or fulfilment completion. |
+| **Provider Capability** | The existing skill/capability model records an available capability for the linked account. | Current availability outside that capability record, price, or acceptance of a request. |
+| **Provider Availability** | Availability is represented only by the existing provider presence/capability mechanisms and their evidence. | A public directory record being current. |
+| **Provider Coordination** | The existing internal invitation, quote, selection, acceptance, and operator-handoff loop acts only on a claimed, verified, capable, active Kurukoo provider. | External message delivery, payment, escrow, dispatch, arrival, or fulfilment. |
+| **Payment** | The existing payment boundary requires authoritative PSP evidence and remains disabled without configured production contracts. | A quote, claim, provider verification, or registry review. |
+| **Fulfilment** | The existing execution/evidence boundary records only authorized, evidence-backed execution. | A public listing, provider activation, payment, or coordination response. |
+
+Controlled Nigerian supply acquisition follows this sequence:
+
+> **Approved source policy → bounded operator import → provenance and field minimization → Nigerian geography normalization → duplicate candidate review → freshness/review decision → public listing projection → authenticated claim → claim evidence review → existing provider verification → capability and availability → provider activation → internal coordination.**
+
+The system does not crawl arbitrary domains, bypass robots.txt or access controls, send automatic WhatsApp/SMS/email invitations, create accounts for imported businesses, invent coordinates or opening hours, or expose public listings as verified providers. The public projection uses explicit labels such as **“Publicly listed business,” “availability unknown,” and “price unknown.”**

@@ -1,10 +1,13 @@
 import crypto from 'node:crypto';
 import { getDb, saveDb } from '../database.js';
 import { providerMayBeDiscovered } from './providerVerification.js';
+import { normalizeNigeriaGeography } from './nigeriaGeography.js';
+import { assertSupplySourceApproved } from './providerSupplyPolicy.js';
+import { detectSupplyDuplicates } from './providerSupplyDuplicates.js';
 
 export const SUPPLY_ENTITY_STATUSES = [
   'discovered', 'imported', 'invited', 'claim_requested', 'claimed',
-  'verification_pending', 'verified', 'active', 'suspended',
+  'verification_pending', 'verified', 'active', 'suspended', 'removed',
 ] as const;
 export type SupplyEntityStatus = typeof SUPPLY_ENTITY_STATUSES[number];
 
@@ -32,6 +35,20 @@ export interface ProviderSupplyEntity {
   sourceUrl: string | null;
   sourceRetrievedAt: string | null;
   sourceConfidence: number | null;
+  source: string | null;
+  importBatchId: string | null;
+  reviewStatus: 'required' | 'reviewed' | 'rejected';
+  freshnessState: 'current' | 'stale' | 'review_required' | 'removed';
+  nextReviewAt: string | null;
+  lastReviewedBy: string | null;
+  reviewEvidenceRef: string | null;
+  reviewedAt: string | null;
+  duplicateReviewStatus: 'clear' | 'possible_duplicate' | 'merged' | 'rejected';
+  normalizedState: string | null;
+  normalizedStateCode: string | null;
+  normalizedLga: string | null;
+  locality: string | null;
+  geographyStatus: 'normalized' | 'partial' | 'unavailable';
   claimedProviderPhone: string | null;
   linkedProviderPhone: string | null;
   createdAt: string | null;
@@ -72,8 +89,9 @@ const TRANSITIONS: Record<SupplyEntityStatus, SupplyEntityStatus[]> = {
   claimed: ['verification_pending', 'suspended'],
   verification_pending: ['verified', 'suspended'],
   verified: ['active', 'suspended'],
-  active: ['suspended'],
-  suspended: ['verification_pending'],
+  active: ['suspended', 'removed'],
+  suspended: ['verification_pending', 'removed'],
+  removed: [],
 };
 
 function cleanText(value: unknown, field: string, maxLength = 500): string {
@@ -134,6 +152,15 @@ function cleanObject(value: unknown, field: string): Record<string, unknown> | n
   return JSON.parse(encoded);
 }
 
+function cleanOpeningHours(value: unknown): Record<string, unknown> | null {
+  const output = cleanObject(value, 'Opening hours'); if (!output) return null;
+  const allowedKey = /^(mon|tue|wed|thu|fri|sat|sun)(day)?([_-].*)?$/i;
+  for (const [key, item] of Object.entries(output)) {
+    if (!allowedKey.test(key) || /password|token|otp|jwt|nin|employee|customer|private|email/i.test(`${key}:${String(item)}`)) throw new Error('Opening hours may contain only public day and opening-time fields');
+  }
+  return output;
+}
+
 function hashValue(value: unknown): string | null {
   if (value === undefined || value === null) return null;
   return crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -159,6 +186,20 @@ function entityFromRow(row: any): ProviderSupplyEntity {
     sourceType: String(row.source_type) as SupplySourceType, sourceUrl: row.source_url ? String(row.source_url) : null,
     sourceRetrievedAt: row.source_retrieved_at ? String(row.source_retrieved_at) : null,
     sourceConfidence: row.source_confidence === null || row.source_confidence === undefined ? null : Number(row.source_confidence),
+    source: row.source ? String(row.source) : null,
+    importBatchId: row.import_batch_id ? String(row.import_batch_id) : null,
+    reviewStatus: String(row.review_status || 'required') as ProviderSupplyEntity['reviewStatus'],
+    freshnessState: String(row.freshness_state || 'review_required') as ProviderSupplyEntity['freshnessState'],
+    nextReviewAt: row.next_review_at ? String(row.next_review_at) : null,
+    lastReviewedBy: row.last_reviewed_by ? String(row.last_reviewed_by) : null,
+    reviewEvidenceRef: row.review_evidence_ref ? String(row.review_evidence_ref) : null,
+    reviewedAt: row.reviewed_at ? String(row.reviewed_at) : null,
+    duplicateReviewStatus: String(row.duplicate_review_status || 'clear') as ProviderSupplyEntity['duplicateReviewStatus'],
+    normalizedState: row.normalized_state ? String(row.normalized_state) : null,
+    normalizedStateCode: row.normalized_state_code ? String(row.normalized_state_code) : null,
+    normalizedLga: row.normalized_lga ? String(row.normalized_lga) : null,
+    locality: row.locality ? String(row.locality) : null,
+    geographyStatus: String(row.geography_status || 'unavailable') as ProviderSupplyEntity['geographyStatus'],
     claimedProviderPhone: row.claimed_provider_phone ? String(row.claimed_provider_phone) : null,
     linkedProviderPhone: row.linked_provider_phone ? String(row.linked_provider_phone) : null,
     createdAt: row.created_at ? String(row.created_at) : null, updatedAt: row.updated_at ? String(row.updated_at) : null,
@@ -182,6 +223,10 @@ function claimFromRow(row: any): SupplyClaim {
   };
 }
 
+function tableColumns(db: any, table: string): Set<string> {
+  return new Set((db.exec(`PRAGMA table_info(${table})`)[0]?.values || []).map((row: any[]) => String(row[1])));
+}
+
 export async function ensureProviderSupplyRegistrySchema(): Promise<void> {
   const db = await getDb();
   db.run(`CREATE TABLE IF NOT EXISTS provider_supply_entities (
@@ -203,6 +248,20 @@ export async function ensureProviderSupplyRegistrySchema(): Promise<void> {
     source_url TEXT,
     source_retrieved_at TEXT,
     source_confidence REAL,
+    source TEXT,
+    import_batch_id TEXT,
+    review_status TEXT NOT NULL DEFAULT 'required',
+    freshness_state TEXT NOT NULL DEFAULT 'review_required',
+    next_review_at TEXT,
+    last_reviewed_by TEXT,
+    review_evidence_ref TEXT,
+    reviewed_at TEXT,
+    duplicate_review_status TEXT NOT NULL DEFAULT 'clear',
+    normalized_state TEXT,
+    normalized_state_code TEXT,
+    normalized_lga TEXT,
+    locality TEXT,
+    geography_status TEXT NOT NULL DEFAULT 'unavailable',
     claimed_provider_phone TEXT,
     linked_provider_phone TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -211,6 +270,8 @@ export async function ensureProviderSupplyRegistrySchema(): Promise<void> {
   CREATE INDEX IF NOT EXISTS idx_supply_entities_country_status ON provider_supply_entities(country,status,updated_at DESC);
   CREATE INDEX IF NOT EXISTS idx_supply_entities_location ON provider_supply_entities(country,state,lga);
   CREATE INDEX IF NOT EXISTS idx_supply_entities_linked_provider ON provider_supply_entities(linked_provider_phone);
+  CREATE INDEX IF NOT EXISTS idx_supply_entities_freshness ON provider_supply_entities(country,freshness_state,next_review_at);
+  CREATE INDEX IF NOT EXISTS idx_supply_entities_duplicate ON provider_supply_entities(duplicate_review_status);
   CREATE TABLE IF NOT EXISTS provider_supply_provenance (
     id TEXT PRIMARY KEY,
     entity_id TEXT NOT NULL,
@@ -245,7 +306,27 @@ export async function ensureProviderSupplyRegistrySchema(): Promise<void> {
     evidence_json TEXT NOT NULL DEFAULT '{}',
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
-  CREATE INDEX IF NOT EXISTS idx_supply_events_entity ON provider_supply_events(entity_id,created_at);`);
+  CREATE INDEX IF NOT EXISTS idx_supply_events_entity ON provider_supply_events(entity_id,created_at);
+  CREATE TABLE IF NOT EXISTS provider_supply_duplicates (
+    id TEXT PRIMARY KEY,
+    entity_id TEXT NOT NULL,
+    candidate_entity_id TEXT NOT NULL,
+    matching_signals_json TEXT NOT NULL DEFAULT '{}',
+    confidence REAL NOT NULL DEFAULT 0,
+    operator_decision TEXT NOT NULL DEFAULT 'pending',
+    reviewed_by_hash TEXT,
+    reviewed_at TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(entity_id,candidate_entity_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_supply_duplicates_decision ON provider_supply_duplicates(operator_decision,created_at);`);
+  const columns = tableColumns(db, 'provider_supply_entities');
+  const additions: Array<[string, string]> = [
+    ['source', 'TEXT'], ['import_batch_id', 'TEXT'], ['review_status', "TEXT NOT NULL DEFAULT 'required'"], ['freshness_state', "TEXT NOT NULL DEFAULT 'review_required'"],
+    ['next_review_at', 'TEXT'], ['last_reviewed_by', 'TEXT'], ['review_evidence_ref', 'TEXT'], ['reviewed_at', 'TEXT'], ['duplicate_review_status', "TEXT NOT NULL DEFAULT 'clear'"],
+    ['normalized_state', 'TEXT'], ['normalized_state_code', 'TEXT'], ['normalized_lga', 'TEXT'], ['locality', 'TEXT'], ['geography_status', "TEXT NOT NULL DEFAULT 'unavailable'"],
+  ];
+  for (const [column, definition] of additions) if (!columns.has(column)) db.run(`ALTER TABLE provider_supply_entities ADD COLUMN ${column} ${definition}`);
 }
 
 async function recordSupplyEvent(input: { entityId: string; claimId?: string; event: string; actor: string; evidence?: Record<string, unknown> }): Promise<void> {
@@ -270,24 +351,29 @@ export async function getProviderSupplyEntity(id: string): Promise<ProviderSuppl
   return row ? entityFromRow(row) : null;
 }
 
-export async function importProviderSupplyEntity(input: { businessName: unknown; entityType?: unknown; country: unknown; state?: unknown; lga?: unknown; address?: unknown; latitude?: unknown; longitude?: unknown; publicPhone?: unknown; website?: unknown; openingHours?: unknown; services?: unknown; sourceType: unknown; sourceUrl?: unknown; sourceRetrievedAt?: unknown; sourceConfidence?: unknown; operatorId: string; }): Promise<ProviderSupplyEntity> {
+export async function importProviderSupplyEntity(input: { businessName: unknown; entityType?: unknown; country: unknown; state?: unknown; lga?: unknown; locality?: unknown; address?: unknown; latitude?: unknown; longitude?: unknown; publicPhone?: unknown; website?: unknown; openingHours?: unknown; services?: unknown; source?: unknown; sourceType: unknown; sourceUrl?: unknown; sourceRetrievedAt?: unknown; sourceConfidence?: unknown; importBatchId?: unknown; operatorId: string; }): Promise<ProviderSupplyEntity> {
   await ensureProviderSupplyRegistrySchema();
   const businessName = cleanText(input.businessName, 'Business name', 300);
   const entityType = cleanOptionalText(input.entityType ?? 'business', 'Entity type', 64) || 'business';
-  const country = cleanCountry(input.country);
-  const state = cleanOptionalText(input.state, 'State', 128); const lga = cleanOptionalText(input.lga, 'LGA', 128);
-  const address = cleanOptionalText(input.address, 'Address', 1_000); const publicPhone = cleanOptionalText(input.publicPhone, 'Public phone', 128);
-  const website = cleanUrl(input.website, 'Website'); const openingHours = cleanObject(input.openingHours, 'Opening hours'); const services = cleanServices(input.services);
+  const geography = normalizeNigeriaGeography(input.country, input.state, input.lga, input.locality);
+  const country = geography.countryCode;
+  const state = geography.stateName; const lga = geography.lgaName; const locality = geography.locality;
+  const address = cleanOptionalText(input.address, 'Address', 1_000); const publicPhone = cleanOptionalText(input.publicPhone, 'Public business phone', 128);
+  const website = cleanUrl(input.website, 'Website'); const openingHours = cleanOpeningHours(input.openingHours); const services = cleanServices(input.services);
   const sourceType = cleanSourceType(input.sourceType); const sourceUrl = cleanUrl(input.sourceUrl, 'Source URL');
+  const source = cleanOptionalText(input.source, 'Source', 300) || (sourceUrl ? new URL(sourceUrl).hostname : 'manual_operator');
+  await assertSupplySourceApproved({ source, sourceType, sourceUrl });
   const sourceRetrievedAt = cleanOptionalText(input.sourceRetrievedAt, 'Source retrieved at', 64) || new Date().toISOString();
+  const retrievedDate = new Date(sourceRetrievedAt); if (!Number.isFinite(retrievedDate.getTime()) || retrievedDate.getTime() > Date.now() + 60_000) throw new Error('Source retrieved at must be a valid non-future timestamp');
   const sourceConfidence = input.sourceConfidence === undefined || input.sourceConfidence === null || input.sourceConfidence === '' ? null : Number(input.sourceConfidence);
   if (sourceConfidence !== null && (!Number.isFinite(sourceConfidence) || sourceConfidence < 0 || sourceConfidence > 1)) throw new Error('Source confidence must be between 0 and 1');
-  if (sourceType === 'public_website' || sourceType === 'public_directory') { if (!sourceUrl) throw new Error('Public-source imports require a source URL'); }
-  const entity: ProviderSupplyEntity = { id: crypto.randomUUID(), businessName, entityType, country, state, lga, address, latitude: cleanCoordinate(input.latitude, 'Latitude', -90, 90), longitude: cleanCoordinate(input.longitude, 'Longitude', -180, 180), publicPhone, website, openingHours, services, status: 'imported', sourceType, sourceUrl, sourceRetrievedAt, sourceConfidence, claimedProviderPhone: null, linkedProviderPhone: null, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+  const importBatchId = cleanOptionalText(input.importBatchId, 'Import batch id', 128) || `batch-${crypto.randomUUID()}`;
+  const entity: ProviderSupplyEntity = { id: crypto.randomUUID(), businessName, entityType, country, state, lga, address, latitude: cleanCoordinate(input.latitude, 'Latitude', -90, 90), longitude: cleanCoordinate(input.longitude, 'Longitude', -180, 180), publicPhone, website, openingHours, services, status: 'imported', sourceType, sourceUrl, sourceRetrievedAt, sourceConfidence, source, importBatchId, reviewStatus: 'required', freshnessState: 'review_required', nextReviewAt: null, lastReviewedBy: null, reviewEvidenceRef: null, reviewedAt: null, duplicateReviewStatus: 'clear', normalizedState: geography.stateName, normalizedStateCode: geography.stateCode, normalizedLga: geography.lgaName, locality, geographyStatus: geography.normalizationStatus, claimedProviderPhone: null, linkedProviderPhone: null, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
   const db = await getDb();
-  db.run(`INSERT INTO provider_supply_entities(id,business_name,entity_type,country,state,lga,address,latitude,longitude,public_phone,website,opening_hours_json,services_json,status,source_type,source_url,source_retrieved_at,source_confidence) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, [entity.id, entity.businessName, entity.entityType, entity.country, entity.state, entity.lga, entity.address, entity.latitude, entity.longitude, entity.publicPhone, entity.website, entity.openingHours ? JSON.stringify(entity.openingHours) : null, JSON.stringify(entity.services), entity.status, entity.sourceType, entity.sourceUrl, entity.sourceRetrievedAt, entity.sourceConfidence]);
-  await recordProvenance({ entityId: entity.id, fieldScope: 'business_profile', sourceType, sourceUrl, retrievedAt: sourceRetrievedAt, confidence: sourceConfidence, value: { businessName, country, state, lga, address, website, services } });
-  await recordSupplyEvent({ entityId: entity.id, event: 'supply_entity_imported', actor: input.operatorId, evidence: { source_type: sourceType, source_url_present: Boolean(sourceUrl), public_listing_only: true } });
+  db.run(`INSERT INTO provider_supply_entities(id,business_name,entity_type,country,state,lga,address,latitude,longitude,public_phone,website,opening_hours_json,services_json,status,source_type,source_url,source_retrieved_at,source_confidence,source,import_batch_id,review_status,freshness_state,normalized_state,normalized_state_code,normalized_lga,locality,geography_status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, [entity.id, entity.businessName, entity.entityType, entity.country, entity.state, entity.lga, entity.address, entity.latitude, entity.longitude, entity.publicPhone, entity.website, entity.openingHours ? JSON.stringify(entity.openingHours) : null, JSON.stringify(entity.services), entity.status, entity.sourceType, entity.sourceUrl, entity.sourceRetrievedAt, entity.sourceConfidence, entity.source, entity.importBatchId, entity.reviewStatus, entity.freshnessState, entity.normalizedState, entity.normalizedStateCode, entity.normalizedLga, entity.locality, entity.geographyStatus]);
+  await recordProvenance({ entityId: entity.id, fieldScope: 'business_profile', sourceType, sourceUrl, retrievedAt: sourceRetrievedAt, confidence: sourceConfidence, value: { businessName, country, state, lga, locality, address, website, services, publicPhone } });
+  const duplicateCandidates = await detectSupplyDuplicates(entity.id);
+  await recordSupplyEvent({ entityId: entity.id, event: 'supply_entity_imported', actor: input.operatorId, evidence: { source_type: sourceType, source_url_present: Boolean(sourceUrl), source, import_batch_id: importBatchId, review_status: 'required', freshness_state: 'review_required', duplicate_candidates: duplicateCandidates.length, public_listing_only: true } });
   saveDb();
   return (await getProviderSupplyEntity(entity.id))!;
 }
@@ -312,6 +398,7 @@ export async function listSupplyProvenance(entityId: string): Promise<SupplyProv
 export async function requestSupplyEntityClaim(input: { entityId: string; claimantPhone: string }): Promise<SupplyClaim> {
   const entity = await getProviderSupplyEntity(input.entityId); if (!entity) throw new Error('Supply entity not found');
   if (!['discovered', 'imported', 'invited', 'claim_requested'].includes(entity.status)) throw new Error('This supply entity is not open for a claim request');
+  if (entity.reviewStatus !== 'reviewed' || entity.freshnessState !== 'current') throw new Error('A current operator-reviewed supply listing is required before claiming');
   const claimantPhone = cleanText(input.claimantPhone, 'Authenticated claimant', 128); const db = await getDb();
   const existing = db.prepare('SELECT * FROM provider_supply_claims WHERE entity_id=? AND claimant_phone=? LIMIT 1'); existing.bind([entity.id, claimantPhone]); const existingRow = existing.step() ? existing.getAsObject() : null; existing.free(); if (existingRow) return claimFromRow(existingRow);
   const claim: SupplyClaim = { id: crypto.randomUUID(), entityId: entity.id, claimantPhone, status: 'requested', evidenceRef: null, reviewedByHash: null, createdAt: new Date().toISOString(), reviewedAt: null };
@@ -348,4 +435,52 @@ export async function activateClaimedSupplyEntity(input: { entityId: string; ope
 
 export async function listSupplyClaims(status?: unknown): Promise<SupplyClaim[]> {
   await ensureProviderSupplyRegistrySchema(); const normalized = status === undefined || status === null || status === '' ? null : cleanText(status, 'Claim status', 32) as SupplyClaimStatus; if (normalized && !claimStatusSet.has(normalized)) throw new Error('Unsupported claim status'); const db = await getDb(); const stmt = db.prepare(`SELECT * FROM provider_supply_claims ${normalized ? 'WHERE status=?' : ''} ORDER BY created_at ASC`); if (normalized) stmt.bind([normalized]); const output: SupplyClaim[] = []; while (stmt.step()) output.push(claimFromRow(stmt.getAsObject())); stmt.free(); return output;
+}
+
+export interface PublicSupplyListing {
+  id: string;
+  label: 'Publicly listed business';
+  businessName: string;
+  category: string;
+  state: string | null;
+  lga: string | null;
+  locality: string | null;
+  address: string | null;
+  website: string | null;
+  publicPhone: string | null;
+  openingHours: Record<string, unknown> | null;
+  services: string[];
+  sourceType: SupplySourceType;
+  sourceRetrievedAt: string | null;
+  freshnessState: 'current';
+  providerStatus: 'not_claimed' | 'claimed_verification_pending';
+  providerVerified: false;
+  availability: 'unknown';
+  price: 'unknown';
+}
+
+export async function listPublicProviderSupplyListings(input: { state?: unknown; lga?: unknown; limit?: unknown }): Promise<PublicSupplyListing[]> {
+  await ensureProviderSupplyRegistrySchema();
+  const state = input.state ? normalizeNigeriaGeography('ng', input.state, undefined).stateName : null;
+  const lga = input.lga ? normalizeNigeriaGeography('ng', undefined, input.lga).lgaName : null;
+  const limit = Math.min(Math.max(Number(input.limit) || 20, 1), 50); const db = await getDb();
+  const clauses = ["country='ng'", "review_status='reviewed'", "freshness_state='current'", "duplicate_review_status IN ('clear','rejected')", "status IN ('imported','invited','claim_requested','claimed','verification_pending')"]; const params: unknown[] = [];
+  if (state) { clauses.push('normalized_state=?'); params.push(state); } if (lga) { clauses.push('normalized_lga=?'); params.push(lga); }
+  const stmt = db.prepare(`SELECT * FROM provider_supply_entities WHERE ${clauses.join(' AND ')} ORDER BY updated_at DESC,id DESC LIMIT ?`); stmt.bind([...params, limit]); const output: PublicSupplyListing[] = [];
+  while (stmt.step()) { const entity = entityFromRow(stmt.getAsObject()); output.push({ id: entity.id, label: 'Publicly listed business', businessName: entity.businessName, category: entity.entityType, state: entity.normalizedState, lga: entity.normalizedLga, locality: entity.locality, address: entity.address, website: entity.website, publicPhone: entity.publicPhone, openingHours: entity.openingHours, services: entity.services, sourceType: entity.sourceType, sourceRetrievedAt: entity.sourceRetrievedAt, freshnessState: 'current', providerStatus: entity.claimedProviderPhone ? 'claimed_verification_pending' : 'not_claimed', providerVerified: false, availability: 'unknown', price: 'unknown' }); }
+  stmt.free(); return output;
+}
+
+export async function importProviderSupplyBatch(input: { records: unknown; operatorId: string; batchId?: unknown }): Promise<{ batchId: string; imported: ProviderSupplyEntity[]; rejected: Array<{ index: number; error: string }>; limits: { maxRecords: number; maxPayloadBytes: number } }> {
+  if (!Array.isArray(input.records)) throw new Error('Import records must be an array');
+  const maxRecords = 10; const maxPayloadBytes = 100_000; const payloadBytes = Buffer.byteLength(JSON.stringify(input.records), 'utf8');
+  if (input.records.length < 1 || input.records.length > maxRecords) throw new Error(`Controlled imports allow 1-${maxRecords} records per batch`);
+  if (payloadBytes > maxPayloadBytes) throw new Error('Import payload exceeds the controlled batch size');
+  const batchId = cleanOptionalText(input.batchId, 'Import batch id', 128) || `batch-${crypto.randomUUID()}`; const imported: ProviderSupplyEntity[] = []; const rejected: Array<{ index: number; error: string }> = [];
+  for (const [index, record] of input.records.entries()) {
+    if (!record || typeof record !== 'object' || Array.isArray(record)) { rejected.push({ index, error: 'Each import record must be an object' }); continue; }
+    try { const payload = { ...(record as Record<string, unknown>), importBatchId: batchId, operatorId: input.operatorId } as Parameters<typeof importProviderSupplyEntity>[0]; imported.push(await importProviderSupplyEntity(payload)); }
+    catch (error) { rejected.push({ index, error: error instanceof Error ? error.message : 'Record rejected' }); }
+  }
+  return { batchId, imported, rejected, limits: { maxRecords, maxPayloadBytes } };
 }

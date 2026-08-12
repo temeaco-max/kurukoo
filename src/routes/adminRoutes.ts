@@ -29,7 +29,7 @@ import { schedulePost } from '../services/socialScheduler.js';
 import { queryGroq } from '../services/groqService.js';
 import { isProviderEntityType } from '../services/providerEntity.js';
 import { ensureProviderVerificationSchema, setProviderVerification } from '../services/providerVerification.js';
-import { getPilotDashboard, getPilotFeedbackSummary } from '../services/pilotObservability.js';
+import { getPilotDashboard } from '../services/pilotObservability.js';
 
 const router = Router();
 
@@ -106,8 +106,8 @@ router.get('/stats', authenticateAdmin, async (_req: AuthRequest, res) => {
 router.get('/pilot-dashboard', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
     const days = Number(req.query.days || 30);
-    const [dashboard, feedback] = await Promise.all([getPilotDashboard(days), getPilotFeedbackSummary(days)]);
-    res.json({ success: true, dashboard, feedback, privacy: { aggregate_only: true, owner_identifiers: 'omitted', raw_conversations: 'omitted', secrets: 'omitted' } });
+    const dashboard = await getPilotDashboard(days);
+    res.json({ success: true, dashboard, privacy: { aggregate_only: true, raw_feedback: 'omitted', owner_identifiers: 'omitted', raw_conversations: 'omitted', secrets: 'omitted' } });
   } catch (error) {
     console.error('[PilotDashboard] failed:', error instanceof Error ? error.name : 'unknown');
     res.status(500).json({ success: false, error: 'Failed to retrieve pilot dashboard' });

@@ -80,3 +80,25 @@ The controlled pilot must keep production payment collection, regulated escrow, 
 ## Human-test protocol status
 
 No real human cohort was available in this environment. The exact protocol is documented in `PILOT_OPERATING_GUIDE.md`; the certification result therefore does not claim human usability or real-world latency results.
+
+
+## Controlled Nigerian supply acquisition certification
+
+| Scenario | Result | Evidence and current state | Failure, impact, and remaining action | Severity |
+|---|---|---|---|---|
+| Approved source policy before import | PASS | Import requires an approved, operator-approved source policy with approved terms status and a matching source URL pattern. | A real source allowlist and terms review must be created by the operator before any real seed. | P1 operations/legal |
+| Bounded controlled import | PASS | Batch import is limited to 10 records and 100 KB, retains batch ID and operator provenance, and returns per-record rejection results. | Bulk ingestion and arbitrary crawling remain intentionally unavailable. | P1 |
+| Nigerian geography normalization | PASS | `NG`/Nigeria, state aliases, FCT/Abuja, and pilot LGA/locality aliases normalize deterministically; coordinates are never invented. | A complete authoritative LGA dataset and later geocoding provider require owner approval if broader coverage is needed. | P1 data policy |
+| Field minimization | PASS | The registry accepts only defined public-supply fields and rejects sensitive/authentication/private-person patterns in opening-hours metadata. | Legal review must define acceptable public-business contact fields and retention/removal rules. | P1 legal |
+| Duplicate detection | PASS | Exact normalized name, domain, public-business phone, address, and geography signals create `possible_duplicate` candidates; merge/reject is operator-controlled and non-destructive. | Human merge policy and provenance-preserving merge UX remain operational work. | P1 operations |
+| Freshness and stale transition | PASS | Source retrieval time, review evidence, reviewer hash, next review time, current/stale/review-required/removed states, and bounded overdue revalidation are implemented. | Review cadence and closure/removal policy must be owned by the pilot operator. | P1 operations |
+| Public listing versus provider discovery | PASS | Public listings are exposed only through a separate projection and are labelled `Publicly listed business`; provider verification, availability, and price remain false/unknown. | A full customer-facing discovery UI is not a prerequisite for the internal pilot and must preserve these labels if added. | P0 truthfulness |
+| Claim invitation | PASS | An authenticated operator can issue an expiring opaque claim token; the token hash is stored and no external outreach is attempted. | Business-contact consent and manual invitation policy remain required before real use. | P1 legal/operations |
+| Registry lifecycle authority | PASS | Generic admin transition is disabled; review, claim review, readiness, freshness, duplicate, and activation actions are separate. | Continue regression coverage whenever lifecycle states change. | P0 |
+| Pilot dashboard privacy | PASS | Ordinary `/api/admin/pilot-dashboard` returns aggregate event counts and feedback distribution only; raw notes are omitted and handoff labels are pseudonymous. | Separate stronger-access incident review would require an explicit operator policy if ever added. | P1 |
+
+### Current classification
+
+> **CONTROLLED PILOT READY — PROVENANCE-FIRST NIGERIAN SUPPLY**, subject to approved real sources, operator review, no automatic external outreach, and the existing no-payment/no-dispatch/no-fulfilment boundaries.
+
+This matrix does not certify any real Nigerian business record because none has been imported into the production database during this pass.

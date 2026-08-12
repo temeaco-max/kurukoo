@@ -19,6 +19,7 @@ const expected = [
     '/admin/login',
     '/admin/pilot',
     '/provider/coordination',
+    '/public-supply',
     '/referral-qr/',
     '/start',
     '/chat',

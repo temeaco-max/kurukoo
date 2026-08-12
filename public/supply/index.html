@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Public supply listings | Kurukoo</title>
+  <link rel="stylesheet" href="/css/kurukoo-supply.css?v=1">
+</head>
+<body>
+  <main class="supply-page">
+    <header class="supply-header">
+      <p class="eyebrow">Supply directory</p>
+      <h1>Publicly listed options</h1>
+      <p class="lede">These are source-backed public business listings. They are not Kurukoo providers unless the business has separately claimed, verified, and activated a Kurukoo account.</p>
+    </header>
+    <section class="truth-panel" aria-label="Listing meaning">
+      <strong>What this means</strong>
+      <span>Provider verification: not implied</span>
+      <span>Availability: unknown</span>
+      <span>Price: unknown</span>
+      <span>External outreach: not sent</span>
+    </section>
+    <section aria-labelledby="listing-heading">
+      <div class="section-heading"><h2 id="listing-heading">Current public listings</h2><button id="refresh" type="button">Refresh</button></div>
+      <div id="status" class="status" role="status">Loading source-backed listings…</div>
+      <div id="listings" class="listing-grid"></div>
+    </section>
+  </main>
+  <script>
+    const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    const render = listing => `<article class="listing-card"><div class="listing-label">${esc(listing.label)}</div><h3>${esc(listing.businessName)}</h3><p class="muted">${esc(listing.category)} · ${esc(listing.state || 'Nigeria')}${listing.lga ? ` · ${esc(listing.lga)}` : ''}${listing.locality ? ` · ${esc(listing.locality)}` : ''}</p>${listing.address ? `<p>${esc(listing.address)}</p>` : ''}<p><strong>Services:</strong> ${esc((listing.services || []).join(', ') || 'Not listed')}</p><p class="truth">Provider verification: ${listing.providerVerified ? 'verified' : 'not implied'} · Availability: ${esc(listing.availability)} · Price: ${esc(listing.price)}</p>${listing.website ? `<a href="${esc(listing.website)}" rel="nofollow noopener" target="_blank">View public source</a>` : ''}</article>`;
+    async function load(){const status=document.querySelector('#status');try{const response=await fetch('/api/supply-registry/public-listings');if(!response.ok)throw new Error('Public supply is unavailable.');const data=await response.json();const listings=data.listings||[];document.querySelector('#listings').innerHTML=listings.map(render).join('');status.textContent=listings.length?`${listings.length} current public listing${listings.length===1?'':'s'}.`: 'No current reviewed public listings are available.';}catch(error){status.textContent=error.message;status.className='status error';}}
+document.querySelector('#refresh').addEventListener('click',load);load();
+  </script>
+</body>
+</html>

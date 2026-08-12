@@ -180,3 +180,18 @@ The repository has undergone a controlled-real-world pilot certification pass. T
 This pass added three safety boundaries: production startup fails closed when `JWT_SECRET` or `MEMORY_ENCRYPTION_KEY` is missing or shorter than 32 characters; `KURUKOO_EXTERNAL_EXECUTION_ENABLED=false` blocks connector authorization by default; and referral, OTP, safety-circle, money-circle, and deletion logs no longer emit phone numbers, peer lists, or transaction amounts. The execution and QR regression fixtures cover the new controls.
 
 No human-test results, real provider availability, real payment, escrow custody, fulfilment, emergency notification, or outbound channel delivery are claimed without external evidence. See `PILOT_CERTIFICATION_MATRIX.md` for the exact remaining activation requirements.
+
+
+## 2026-08-13 controlled Nigerian supply acquisition hardening
+
+The canonical `integration/main-convergence-audit` branch now contains a provenance-first Provider Supply Registry suitable for a controlled, operator-reviewed Nigerian pilot. This is **not unrestricted scraping** and is not a public-launch claim.
+
+Implemented repository boundaries include approved source policies, Nigeria-only state/LGA normalization, bounded imports of at most 10 records and 100 KB per batch, import-batch provenance, field minimization for opening-hours metadata, deterministic duplicate candidates with non-destructive operator decisions, freshness/review state, stale revalidation, evidence-backed listing review, expiring operator-issued claim invitations, authenticated claims, and a distinct public-supply projection.
+
+Public supply remains separate from Kurukoo provider membership. Imported entities do not create accounts, provider verification, Trust Scores, capabilities, availability, coordination invitations, payment, dispatch, or fulfilment. The public projection labels records **Publicly listed business**, **provider verification false**, **availability unknown**, and **price unknown**. Provider activation continues to require the existing independent claim, verification, capability, freshness, and activation gates.
+
+The ordinary pilot dashboard is aggregate-only: it reports event counts, failure rates, feedback distribution, and recovery/cost counters without raw feedback notes or raw request identifiers. Raw feedback is not part of the ordinary dashboard response.
+
+No Nigerian real-world seed records have been added to the production database. The repository contains only controlled test fixtures using non-real example source URLs; no fabricated provider, address, opening hours, price, availability, coordinate, review, or source claim is presented as real. Any future seed must use an approved source, operator review, provenance, and explicit rejection handling.
+
+Remaining dependencies are external or policy-owned: source allowlist and terms review, data-retention and removal policy, lawful business-contact/claim policy, duplicate-merge policy, operator ownership, approved public data sources, provider identity/KYC evidence, real notification adapters, PSP/payment contracts, settlement, dispatch, fulfilment, and legal review for Nigerian data acquisition and business outreach.
