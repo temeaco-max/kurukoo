@@ -13,7 +13,6 @@ import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { authenticateAdmin, AuthRequest } from '../middleware/auth.js';
 import { getDb, saveDb, getSystemSetting, setSystemSetting } from '../database.js';
-import { getKeepAliveAnalyticsStats } from '../services/analytics.js';
 import { getCategoryTrends, getGeographicDensity, getMarketIntelData } from '../services/analyticsEngine.js';
 import {
   getAllAIAgents,
@@ -77,7 +76,7 @@ router.get('/stats', authenticateAdmin, async (_req: AuthRequest, res) => {
       reminders = remObj;
     } catch {}
     try {
-      const safeRes = db.exec("SELECT status, COUNT(*) as cnt FROM user_check_ins GROUP BY status");
+      const safeRes = db.exec("SELECT status, COUNT(*) as cnt FROM safety_checkins GROUP BY status");
       const safeRows = safeRes[0]?.values || [];
       const safeObj: Record<string, number> = {};
       for (const row of safeRows) safeObj[String(row[0])] = Number(row[1]);
@@ -269,16 +268,6 @@ router.get('/stats', authenticateAdmin, async (_req: AuthRequest, res) => {
     });
   } catch (e) {
     res.status(500).json({ error: 'Failed to fetch stats' });
-  }
-});
-
-router.get('/keep-alive-analytics', authenticateAdmin, async (_req: AuthRequest, res) => {
-  try {
-    const stats = await getKeepAliveAnalyticsStats();
-    res.json(stats);
-  } catch (err) {
-    console.error('Error fetching keep-alive stats:', err);
-    res.status(500).json({ error: 'Failed to fetch keep-alive stats' });
   }
 });
 

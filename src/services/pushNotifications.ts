@@ -1,8 +1,4 @@
 import { getDb, saveDb } from '../database.js';
-import { generateWhatsAppDeepLink } from '../utils/whatsappLinks.js';
-
-export { generateWhatsAppDeepLink };
-
 async function ensureNotificationTable() {
     const db = await getDb();
     db.run(`CREATE TABLE IF NOT EXISTS internal_notifications (
@@ -20,10 +16,10 @@ async function ensureNotificationTable() {
 
 export async function sendFcmPush(phone: string, title: string, body: string, link?: string): Promise<boolean> {
     const db = await ensureNotificationTable();
-    const clickLink = link || generateWhatsAppDeepLink();
+    const clickLink = link || null;
 
     // Persist an internal inbox notification even when no external adapter is configured.
-    // This is a durable fallback, not evidence that an FCM/SMS/WhatsApp delivery occurred.
+    // This is a durable fallback, not evidence that an external delivery occurred.
     try {
         db.run(
             `INSERT INTO internal_notifications (phone, title, body, link, status) VALUES (?, ?, ?, ?, 'unread')`,

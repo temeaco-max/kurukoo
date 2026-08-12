@@ -60,6 +60,8 @@ assert.equal(deferredResult.quoted, 0, 'a provider without a listed rate must no
 assert.equal(deferredRequest?.status, 'matched', 'the linked request should record the provider match');
 assert.equal(deferredRequest?.quote == null, true, 'the linked request must not contain a fabricated quote');
 assert.equal(deferredIntention?.status, 'partially_matched', 'the open intention should remain open pending a real quote');
+assert.equal(Number(deferredIntention?.attempts), 1, 'a partial match should consume one bounded deferred retry attempt');
+assert.ok(deferredIntention?.next_check_at, 'a partial match should schedule the next deferred check');
 
 const orderId = 'settlement-lifecycle-order';
 db.run(

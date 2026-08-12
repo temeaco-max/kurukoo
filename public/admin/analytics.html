@@ -578,7 +578,7 @@
         <div class="header-bar">
             <div class="header-title">
                 <h1>Analytics & Strategy</h1>
-                <p>Track geographic demand heatmaps, WhatsApp session performance, and cost-saving bypass stats.</p>
+                <p>Track geographic demand heatmaps and configured internal platform observability metrics.</p>
             </div>
             <div style="font-size: 13px; color: var(--neutral-muted); font-weight: 500;" id="current-time-display">
                 Nigeria Standard Time
@@ -587,47 +587,47 @@
 
         <!-- Tab Controls -->
         <div class="tabs-header">
-            <button class="tab-btn active" onclick="switchTab('keep-alive-tab')">Keep-Alive & Session bypass</button>
+            <button class="tab-btn active" onclick="switchTab('platform-observability-tab')">Platform Observability</button>
             <button class="tab-btn" onclick="switchTab('heatmap-tab')">Demand Heatmap</button>
         </div>
 
-        <!-- Tab 1: Keep-Alive -->
-        <div id="keep-alive-tab" class="tab-content active">
+        <!-- Tab 1: Platform Observability -->
+        <div id="platform-observability-tab" class="tab-content active">
             <div class="metrics-grid">
                 <div class="metric-card">
                     <div>
-                        <div class="metric-label" style="color: #0284C7;">FCM Pushes Sent</div>
+                        <div class="metric-label" style="color: #0284C7;">Unread Internal Notifications</div>
                         <div class="metric-value" id="fcm-sent">0</div>
                     </div>
-                    <div class="metric-desc">Triggered 15h after user activity</div>
+                    <div class="metric-desc">Queued items requiring owner or admin review</div>
                 </div>
                 <div class="metric-card">
                     <div>
-                        <div class="metric-label" style="color: #059669;">Session Resets</div>
+                        <div class="metric-label" style="color: #059669;">Active Reminders</div>
                         <div class="metric-value" id="session-resets">0</div>
                     </div>
-                    <div class="metric-desc">Bypass webhook loophole resets</div>
+                    <div class="metric-desc">Native reminders currently active</div>
                 </div>
                 <div class="metric-card">
                     <div>
-                        <div class="metric-label" style="color: #D97A5C;">Reset Open Rate</div>
-                        <div class="metric-value" id="reset-rate">0%</div>
+                        <div class="metric-label" style="color: #D97A5C;">Active Safety Check-ins</div>
+                        <div class="metric-value" id="reset-rate">0</div>
                     </div>
-                    <div class="metric-desc">Successfully bypassed sessions</div>
+                    <div class="metric-desc">Check-ins awaiting completion or expiry processing</div>
                 </div>
                 <div class="metric-card">
                     <div>
-                        <div class="metric-label" style="color: #9333EA;">Total Savings</div>
-                        <div class="metric-value" id="total-savings">₦0.00</div>
+                        <div class="metric-label" style="color: #9333EA;">Open Economic Requests</div>
+                        <div class="metric-value" id="total-savings">0</div>
                     </div>
-                    <div class="metric-desc">Saved ₦9.28 per conversation fee</div>
+                    <div class="metric-desc">Requests still within the shared lifecycle</div>
                 </div>
                 <div class="metric-card">
                     <div>
-                        <div class="metric-label" style="color: #4B5563;">Avg. Session Duration</div>
-                        <div class="metric-value" id="avg-duration">24.0 hours</div>
+                        <div class="metric-label" style="color: #4B5563;">Completed Requests</div>
+                        <div class="metric-value" id="avg-duration">0</div>
                     </div>
-                    <div class="metric-desc">Prolonged active communication</div>
+                    <div class="metric-desc">Requests recorded as completed</div>
                 </div>
             </div>
 
@@ -640,17 +640,17 @@
                             <line x1="12" y1="18" x2="12" y2="12"></line>
                             <line x1="12" y1="8" x2="12.01" y2="8"></line>
                         </svg>
-                        Messaging Cost Effectiveness
+                        Internal Queue and Lifecycle Evidence
                     </h3>
                     <p style="font-size: 13px; color: var(--neutral-muted); margin-bottom: 24px;">
-                        By intercepting notification clicks to pre-fill WhatsApp conversation strings, Kurukoo keeps client channels active without incurring Meta's 24-hour window renewal fees.
+                        External messaging and push adapters are not configured in this deployment. Internal notification records and lifecycle counts are shown only when backed by the canonical database tables.
                     </p>
 
                     <div class="cost-comparison-container">
                         <div class="cost-bar-group">
                             <div class="cost-bar-header">
-                                <span>Simulated cost without Bypass Strategy</span>
-                                <span style="color:#EF4444;" id="cost-without-label">₦0.00</span>
+                                <span>Unread notifications requiring review</span>
+                                <span style="color:#EF4444;" id="cost-without-label">0</span>
                             </div>
                             <div class="cost-bar-track">
                                 <div class="cost-bar-fill red" id="cost-without-bar" style="width: 0%"></div>
@@ -659,8 +659,8 @@
 
                         <div class="cost-bar-group">
                             <div class="cost-bar-header">
-                                <span>Actual Cost with Bypass Strategy</span>
-                                <span style="color:#10B981;" id="cost-with-label">₦0.00</span>
+                                <span>Active reminders and check-ins</span>
+                                <span style="color:#10B981;" id="cost-with-label">0</span>
                             </div>
                             <div class="cost-bar-track">
                                 <div class="cost-bar-fill green" id="cost-with-bar" style="width: 0%"></div>
@@ -669,21 +669,21 @@
                     </div>
 
                     <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 8px; padding: 16px; margin-top: 24px; font-size: 13px; line-height: 1.5;">
-                        <strong>Strategy Effectiveness Note:</strong> 
-                        Our WhatsApp Keep-Alive algorithm schedules pre-filled quick deep-links automatically via Firebase Cloud Messaging precisely at the 15-hour standby mark. This maintains free organic sessions and keeps your platform operating at 100% free margins.
+                        <strong>Delivery boundary:</strong>
+                        Web Chat and the authenticated internal notification inbox are the supported surfaces. FCM, SMS, WhatsApp, and USSD delivery are not represented as active until their adapters are configured and produce delivery evidence.
                     </div>
                 </div>
 
-                <!-- Recent Keep-Alive Stream -->
+                <!-- Recent Platform Observability Stream -->
                 <div class="panel-card">
                     <h3>
                         <svg style="width:20px; height:20px; color:#D97A5C;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                         </svg>
-                        Live Session Feed
+                        Internal Notification Queue
                     </h3>
                     <p style="font-size: 13px; color: var(--neutral-muted); margin-bottom: 16px;">
-                        Latest system activity log of active sessions, FCM push sends, and resets:
+                        Latest internal notification and lifecycle evidence available to the admin boundary:
                     </p>
                     <div class="stream-list" id="stream-container">
                         <div style="padding: 24px; text-align: center; color: var(--neutral-muted);">
@@ -729,7 +729,7 @@
             
             // Highlight the correct tab button
             const buttons = document.querySelectorAll('.tab-btn');
-            if (tabId === 'keep-alive-tab') {
+            if (tabId === 'platform-observability-tab') {
                 buttons[0].classList.add('active');
             } else {
                 buttons[1].classList.add('active');
@@ -799,75 +799,41 @@
             day: 'numeric'
         });
 
-        // Fetch Keep-Alive Analytics Data
-        function loadKeepAliveData() {
-            fetch('/api/admin/keep-alive-analytics')
+        // Fetch canonical internal observability metrics. External delivery is intentionally absent.
+        function loadPlatformStats() {
+            fetch('/api/admin/stats')
                 .then(res => res.json())
                 .then(data => {
-                    document.getElementById('fcm-sent').innerText = data.sentCount || 0;
-                    document.getElementById('session-resets').innerText = data.openedCount || 0;
-                    document.getElementById('reset-rate').innerText = (data.openRate || 0) + '%';
-                    document.getElementById('total-savings').innerText = '₦' + (data.totalSavings || 0.0).toFixed(2);
-                    document.getElementById('avg-duration').innerText = (data.averageSessionDurationHours || 24.0) + ' hours';
+                    const requests = data.economic_requests || {};
+                    const reminders = data.reminders || {};
+                    const checkIns = data.check_ins || {};
+                    const openStatuses = ['requested', 'awaiting_match', 'quoting', 'quoted', 'partially_matched', 'matched', 'in_progress', 'disputed'];
+                    const openRequests = openStatuses.reduce((total, status) => total + Number(requests[status] || 0), 0);
+                    const activeReminders = Number(reminders.active || 0);
+                    const activeCheckIns = Number(checkIns.active || 0);
+                    const completedRequests = Number(requests.completed || 0);
+                    const unreadNotifications = Number(data.unread_internal_notifications || 0);
+                    document.getElementById('fcm-sent').innerText = unreadNotifications;
+                    document.getElementById('session-resets').innerText = activeReminders;
+                    document.getElementById('reset-rate').innerText = activeCheckIns;
+                    document.getElementById('total-savings').innerText = openRequests;
+                    document.getElementById('avg-duration').innerText = completedRequests;
 
-                    // Update comparative cost graph metrics
-                    const maxCost = Math.max(data.simulatedCostWithoutLoophole || 10, data.actualCostWithLoophole || 10, 100);
-                    const percentWithout = ((data.simulatedCostWithoutLoophole || 0) / maxCost) * 100;
-                    const percentWith = ((data.actualCostWithLoophole || 0) / maxCost) * 100;
+                    const leftTotal = Math.max(unreadNotifications, 1);
+                    const rightTotal = Math.max(activeReminders + activeCheckIns, 1);
+                    const leftPercent = Math.min(100, (unreadNotifications / leftTotal) * 100);
+                    const rightPercent = Math.min(100, ((activeReminders + activeCheckIns) / rightTotal) * 100);
+                    document.getElementById('cost-without-label').innerText = unreadNotifications;
+                    document.getElementById('cost-with-label').innerText = activeReminders + activeCheckIns;
+                    document.getElementById('cost-without-bar').style.width = leftPercent + '%';
+                    document.getElementById('cost-with-bar').style.width = rightPercent + '%';
 
-                    document.getElementById('cost-without-label').innerText = '₦' + (data.simulatedCostWithoutLoophole || 0.0).toFixed(2);
-                    document.getElementById('cost-with-label').innerText = '₦' + (data.actualCostWithLoophole || 0.0).toFixed(2);
-
-                    document.getElementById('cost-without-bar').style.width = percentWithout + '%';
-                    document.getElementById('cost-without-bar').innerText = percentWithout > 15 ? 'Simulated: ₦' + (data.simulatedCostWithoutLoophole || 0.0).toFixed(2) : '';
-
-                    document.getElementById('cost-with-bar').style.width = percentWith + '%';
-                    document.getElementById('cost-with-bar').innerText = percentWith > 15 ? 'Actual: ₦' + (data.actualCostWithLoophole || 0.0).toFixed(2) : '';
-
-                    // Update Recent Feed Stream list
                     const container = document.getElementById('stream-container');
-                    if (data.recentEvents && data.recentEvents.length > 0) {
-                        container.innerHTML = data.recentEvents.map(e => {
-                            let label = e.event_type;
-                            let badgeBg = '#E0F2FE';
-                            let badgeColor = '#0369A1';
-                            if (e.event_type === 'session_start') {
-                                label = 'Session Started';
-                                badgeBg = '#E0F2FE';
-                                badgeColor = '#0369A1';
-                            } else if (e.event_type === 'push_sent') {
-                                label = 'FCM Push Sent';
-                                badgeBg = '#FEF3C7';
-                                badgeColor = '#D97706';
-                            } else if (e.event_type === 'push_opened') {
-                                label = 'Keep-Alive Reset';
-                                badgeBg = '#D1FAE5';
-                                badgeColor = '#059669';
-                            } else if (e.event_type === 'session_expired') {
-                                label = 'Session Expired';
-                                badgeBg = '#FEE2E2';
-                                badgeColor = '#DC2626';
-                            }
-
-                            const d = e.timestamp ? new Date(e.timestamp) : new Date();
-                            const localTime = isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                            return `
-                                <div class="stream-item">
-                                    <div>
-                                        <span style="font-size: 11px; font-weight:700; padding:4px 8px; border-radius:12px; background:${badgeBg}; color:${badgeColor}; margin-right:8px;">${label}</span>
-                                        <span style="font-weight: 500; color: #4B5563;">User: ${e.phone}</span>
-                                    </div>
-                                    <span style="font-size: 11px; color: var(--neutral-muted); font-weight:500;">${localTime}</span>
-                                </div>
-                            `;
-                        }).join('');
-                    } else {
-                        container.innerHTML = `<div style="padding:32px; text-align:center; color:var(--neutral-muted); font-size:13px;">No system keep-alive events logged yet.</div>`;
-                    }
+                    container.textContent = `Internal queue: ${unreadNotifications} unread notification(s). Active reminders: ${activeReminders}. Active safety check-ins: ${activeCheckIns}.`;
                 })
                 .catch(err => {
-                    console.error('Error fetching keep-alive metrics:', err);
+                    console.error('Error fetching admin observability metrics:', err);
+                    document.getElementById('stream-container').textContent = 'Internal observability is temporarily unavailable.';
                 });
         }
 
@@ -918,10 +884,10 @@
             }
         }
 
-        // Load console keep-alive data on window load
-        loadKeepAliveData();
+        // Load console platform observability data on window load
+        loadPlatformStats();
         // Auto-refresh feed updates every 15 seconds
-        setInterval(loadKeepAliveData, 15000);
+        setInterval(loadPlatformStats, 15000);
     </script>
 </body>
 </html>

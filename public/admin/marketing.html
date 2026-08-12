@@ -35,8 +35,8 @@
         </div>
         <div style="background: #FFF; padding: 24px; border-radius: 12px; border: 1px solid #E0D0C0;">
             <h3>Create Promotion</h3>
-            <p>Generate a shareable WhatsApp link with a tracking code.</p>
-            <button class="btn" onclick="generateLink()">Generate WhatsApp Link</button>
+            <p>Generate an internal campaign reference for configured promotion channels. External messaging links are not generated in this deployment.</p>
+            <button class="btn" id="generate-campaign-code" type="button">Generate Campaign Reference</button>
             <div id="link-result" style="margin-top: 15px; font-family: monospace; color: var(--terracotta); font-weight: bold;"></div>
         </div>
     </div>
@@ -57,11 +57,11 @@
                 </div>
             `;
         });
-        function generateLink() {
+        function generateCampaignReference() {
             const tracking = 'PROMO_' + Math.random().toString(36).substr(2, 6).toUpperCase();
-            const text = encodeURIComponent(`I'm using Kurukoo to sort my everyday needs. Join using my code: ${tracking}`);
-            document.getElementById('link-result').innerText = `https://wa.me/?text=${text}`;
+            document.getElementById('link-result').innerText = `Campaign reference: ${tracking}. Configure an approved delivery adapter before publishing externally.`;
         }
+        document.getElementById('generate-campaign-code')?.addEventListener('click', generateCampaignReference);
     </script>
 </body>
 </html>

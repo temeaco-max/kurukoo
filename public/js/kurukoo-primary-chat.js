@@ -3,7 +3,8 @@
     conversationId: localStorage.getItem('kurukoo_conversation_id') || '',
     messages: [], busy: false, attached: null,
     theme: localStorage.getItem('kurukoo_theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
-    activeStorefrontId: null
+    activeStorefrontId: null,
+    nativeAssistance: { reminders: [], checkIns: [] }
   };
   const $ = id => document.getElementById(id);
   const chatContent = $('chat-content'), scroll = $('chat-scroll'), input = $('message-input'), send = $('send-message');
@@ -22,6 +23,19 @@
   function enhanceCode(root) { root.querySelectorAll('pre code').forEach(block => { if (window.hljs && !block.dataset.highlighted) hljs.highlightElement(block); }); }
   function escapeAttr(value) { return String(value || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function escapeText(value) { return String(value || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function updateNativeAssistanceStatus() {
+    const banner = $('native-assistance-status'); if (!banner) return;
+    const now = Date.now(); const reminders = Array.isArray(state.nativeAssistance?.reminders) ? state.nativeAssistance.reminders : []; const checkIns = Array.isArray(state.nativeAssistance?.checkIns) ? state.nativeAssistance.checkIns : [];
+    const activeCheckIns = checkIns.filter(item => item?.status === 'active' && item?.expires_at).map(item => ({ ...item, expiresAt: new Date(item.expires_at).getTime() })).filter(item => Number.isFinite(item.expiresAt)).sort((a, b) => a.expiresAt - b.expiresAt);
+    const expiringCheckIn = activeCheckIns.find(item => item.expiresAt <= now + (2 * 60 * 60 * 1000));
+    if (expiringCheckIn) {
+      const when = expiringCheckIn.expiresAt <= now ? 'has reached its scheduled end' : `ends at ${new Date(expiringCheckIn.expiresAt).toLocaleString()}`;
+      banner.textContent = `Personal safety check-in ${when}. Review it in the context inspector; no contact is notified automatically.`; banner.dataset.kind = 'safety'; banner.hidden = false; return;
+    }
+    const upcomingReminder = reminders.filter(item => item?.status === 'active' && item?.due_at).map(item => ({ ...item, dueAt: new Date(item.due_at).getTime() })).filter(item => Number.isFinite(item.dueAt) && item.dueAt <= now + (24 * 60 * 60 * 1000)).sort((a, b) => a.dueAt - b.dueAt)[0];
+    if (upcomingReminder) { const title = String(upcomingReminder.title || 'Reminder'); const due = upcomingReminder.dueAt <= now ? 'needs your attention now' : `is scheduled for ${new Date(upcomingReminder.dueAt).toLocaleString()}`; banner.textContent = `Reminder: ${title} ${due}. Review it in the context inspector.`; banner.dataset.kind = 'reminder'; banner.hidden = false; return; }
+    banner.hidden = true; banner.textContent = '';
+  }
 
   function showEmbedSignInGate() {
     if (!chatContent || chatContent.querySelector('[data-embed-signin-gate]')) return;
@@ -556,7 +570,7 @@
       const res = await fetch('/api/reminders', { credentials: 'same-origin' });
       const card = $('reminders-card'); const list = $('reminder-list');
       if (!res.ok || !card || !list) return;
-      const data = await res.json(); const reminders = Array.isArray(data.reminders) ? data.reminders : [];
+      const data = await res.json(); const reminders = Array.isArray(data.reminders) ? data.reminders : []; state.nativeAssistance.reminders = reminders; updateNativeAssistanceStatus();
       card.hidden = false; list.innerHTML = '';
       if (!reminders.length) { list.textContent = 'No active reminders.'; return; }
       reminders.forEach(reminder => {
@@ -583,7 +597,7 @@
       if (!contactsResponse.ok || !checkInsResponse.ok || !card || !contactsList || !checkInsList) return;
       const contactsData = await contactsResponse.json(); const checkInsData = await checkInsResponse.json();
       const contacts = Array.isArray(contactsData.contacts) ? contactsData.contacts : [];
-      const checkIns = Array.isArray(checkInsData.checkIns) ? checkInsData.checkIns : [];
+      const checkIns = Array.isArray(checkInsData.checkIns) ? checkInsData.checkIns : []; state.nativeAssistance.checkIns = checkIns; updateNativeAssistanceStatus();
       card.hidden = false; contactsList.innerHTML = ''; checkInsList.innerHTML = '';
       const contactHeading = document.createElement('strong'); contactHeading.textContent = contacts.length ? 'Contacts' : 'No safety contacts yet.'; contactsList.appendChild(contactHeading);
       contacts.forEach(contact => {

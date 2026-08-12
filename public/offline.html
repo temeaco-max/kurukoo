@@ -4,109 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>You are Offline — Kurukoo</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --cream: #FFF8F0;
-            --terracotta: #D97A5C;
-            --electric-blue: #1E88E5;
-            --charcoal: #2E2E2E;
-            --card-bg: #FFFFFF;
-        }
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--cream);
-            color: var(--charcoal);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 24px;
-            text-align: center;
-        }
-        .offline-card {
-            background: var(--card-bg);
-            border: 1px solid #E0D5C9;
-            border-radius: 16px;
-            padding: 40px 28px;
-            max-width: 440px;
-            width: 100%;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.05);
-        }
-        .offline-icon {
-            width: 72px;
-            height: 72px;
-            background: rgba(217, 122, 92, 0.1);
-            color: var(--terracotta);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            font-size: 32px;
-        }
-        h1 {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--charcoal);
-            margin-bottom: 12px;
-        }
-        p {
-            font-size: 15px;
-            line-height: 1.6;
-            color: #555;
-            margin-bottom: 24px;
-        }
-        .actions {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .btn-primary {
-            background-color: var(--terracotta);
-            color: #FFFFFF;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            text-decoration: none;
-            transition: background 0.2s;
-        }
-        .btn-primary:hover {
-            background-color: #c06549;
-        }
-        .btn-secondary {
-            background-color: transparent;
-            color: var(--electric-blue);
-            border: 1px solid var(--electric-blue);
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            text-decoration: none;
-        }
-    </style>
+    <link rel="stylesheet" href="/css/site.css?v=1.2.0">
+    <link rel="stylesheet" href="/css/offline.css?v=1.0.0">
 </head>
-<body>
+<body class="offline-page">
     <div class="offline-card">
         <div class="offline-icon">📡</div>
         <h1>You're Offline</h1>
         <p>Don't worry—Kurukoo still works for the basics. Connect to the internet to use all features.</p>
         <div class="actions">
-            <button class="btn-primary" onclick="window.location.reload()">Try Reconnecting</button>
-            <a href="/dashboard.html" class="btn-secondary">Open Kurukoo App</a>
+            <button class="btn-primary" id="retry-button" type="button">Try Reconnecting</button>
+            <a href="/web" class="btn-secondary">Open Kurukoo</a>
         </div>
     </div>
+    <script src="/js/offline.js?v=1.0.0" defer></script>
 </body>
 </html>

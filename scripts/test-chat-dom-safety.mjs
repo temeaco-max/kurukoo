@@ -21,8 +21,11 @@ assert.match(source, /function renderMarkdown\(text\).*sanitizeHtml/s, 'sanitize
 assert.match(source, /output\.innerHTML\s*=\s*renderMarkdown\(full\)/, 'streaming Markdown must continue through its existing sanitization boundary');
 assert.match(shell, /aria-controls="chat-inspector"/, 'context inspector toggle must declare its controlled region');
 assert.match(shell, /id="inspector-feedback"[^>]*role="status"/, 'Native Assistance feedback must be announced to assistive technology');
+assert.match(shell, /id="native-assistance-status"[^>]*role="status"/, 'primary chat must announce proactive Native Assistance status');
 assert.match(source, /function setInspectorOpen\(/, 'context inspector must have a responsive open-state controller');
 assert.match(source, /async function nativeAction\(/, 'Native Assistance actions must use a shared error-aware request helper');
 assert.match(source, /\/api\/safety\/contacts\/.*\/revoke/, 'context inspector must expose owner-scoped safety contact revocation');
+assert.match(source, /function updateNativeAssistanceStatus\(/, 'primary chat must derive proactive Native Assistance status from canonical state');
+assert.match(source, /no contact is notified automatically/, 'safety status must preserve the non-emergency delivery boundary');
 
 console.log('Chat DOM-safety contract passed: storefront cards use DOM APIs, Markdown remains sanitized, and Native Assistance controls are accessible and error-aware.');
