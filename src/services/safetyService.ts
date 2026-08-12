@@ -145,20 +145,15 @@ export async function handleSafetyContactInput(phone: string, text: string): Pro
   if (state === 'awaiting_phone') {
     const contactPhone = text.trim().replace(/\D/g, '');
     if (contactPhone.length < 10) return { reply: "That doesn't look like a valid phone number. Please enter the full phone number for your contact." };
-    
-    // Normalize phone
     const fullPhone = contactPhone.startsWith('0') ? '+234' + contactPhone.slice(1) : (contactPhone.startsWith('+') ? contactPhone : '+234' + contactPhone);
-    
     try {
       await addSafetyContact(phone, { name: data.name, phone: fullPhone });
-      // Clear state
       delete prefs.safety_capture_state;
       delete prefs.safety_capture_data;
       db.run('UPDATE memory_profiles SET preferences = ? WHERE phone = ?', [JSON.stringify(prefs), phone]);
       saveDb();
-      
-      return { 
-        reply: `✅ Saved! **${data.name}** (${fullPhone}) has been added as a pending safety contact. They'll need to confirm consent before you can start check-ins with them.`,
+      return {
+        reply: `Saved. **${data.name}** (${fullPhone}) has been added as a pending safety contact. They need to confirm consent before you can start check-ins with them.`,
         success: true,
         cardData: { type: 'safety_contact_added', name: data.name }
       };
@@ -180,10 +175,8 @@ export async function setSafetyCaptureState(phone: string, state: string, data: 
     prefs = obj.preferences ? JSON.parse(String(obj.preferences)) : {};
   }
   stmt.free();
-  
   prefs.safety_capture_state = state;
   prefs.safety_capture_data = data;
-  
   db.run('UPDATE memory_profiles SET preferences = ? WHERE phone = ?', [JSON.stringify(prefs), phone]);
   saveDb();
 }
