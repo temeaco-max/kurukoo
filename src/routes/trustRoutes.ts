@@ -13,6 +13,7 @@ import {
   escalateDispute,
 } from '../services/disputeResolution.js';
 import { ensureEscrowSchema, releaseEscrow, refundEscrow } from '../services/escrow.js';
+import { getTrustScoreBreakdown, listTrustScoreLedger } from '../services/trustScore.js';
 
 const router = Router();
 
@@ -97,6 +98,21 @@ async function openBuyerDispute(req: AuthRequest, res: any): Promise<void> {
     res.status(disputeFailureStatus(error)).json({ error: error instanceof Error ? error.message : 'Failed to create dispute' });
   }
 }
+
+router.get('/trust/score', authenticateUser, async (req: AuthRequest, res) => {
+  const phone = sessionPhone(req);
+  if (!phone) return res.status(401).json({ error: 'Authentication required' });
+  const breakdown = await getTrustScoreBreakdown(phone);
+  if (!breakdown) return res.status(404).json({ error: 'Trust Score is unavailable for this profile.' });
+  res.json({ score: breakdown.score, breakdown: { avgRating: breakdown.avgRating, completedJobs: breakdown.completedJobs, verifiedProvider: breakdown.verifiedProvider, disputesLost: breakdown.disputesLost, accountAgeDays: Number(breakdown.accountAgeDays.toFixed(2)) } });
+});
+
+router.get('/trust/ledger', authenticateUser, async (req: AuthRequest, res) => {
+  const phone = sessionPhone(req);
+  if (!phone) return res.status(401).json({ error: 'Authentication required' });
+  const limit = Number(req.query.limit || 25);
+  res.json({ entries: await listTrustScoreLedger(phone, limit) });
+});
 
 router.post('/dispute/create', authenticateUser, openBuyerDispute);
 router.post('/disputes', authenticateUser, openBuyerDispute);

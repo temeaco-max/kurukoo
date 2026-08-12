@@ -53,6 +53,8 @@ export async function ensureTrustScoreSchema(): Promise<void> {
   const disputeColumns = columnsFor(db, 'disputes');
   if (!disputeColumns.has('fault_party')) db.run('ALTER TABLE disputes ADD COLUMN fault_party TEXT');
   if (!disputeColumns.has('fault_phone')) db.run('ALTER TABLE disputes ADD COLUMN fault_phone TEXT');
+  db.run(`CREATE TABLE IF NOT EXISTS trust_score_ledger (id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT NOT NULL, score REAL NOT NULL, breakdown_json TEXT NOT NULL, reason TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_trust_score_ledger_phone ON trust_score_ledger(phone, created_at DESC)`);
   saveDb();
 }
 
@@ -91,13 +93,25 @@ async function calculateTrustScore(phone: string): Promise<TrustScoreBreakdown |
   return breakdown;
 }
 
-export async function recalculateTrustScore(phone: string): Promise<TrustScoreBreakdown | null> {
+export async function recalculateTrustScore(phone: string, reason = 'scheduled_recalculation'): Promise<TrustScoreBreakdown | null> {
   const breakdown = await calculateTrustScore(String(phone || '').trim());
   if (!breakdown) return null;
   const db = await getDb();
   db.run('UPDATE memory_profiles SET trust_score=?, updated_at=CURRENT_TIMESTAMP WHERE phone=?', [breakdown.score, breakdown.phone]);
+  db.run('INSERT INTO trust_score_ledger(phone, score, breakdown_json, reason) VALUES (?, ?, ?, ?)', [breakdown.phone, breakdown.score, JSON.stringify({ avgRating: breakdown.avgRating, completedJobs: breakdown.completedJobs, verifiedProvider: breakdown.verifiedProvider, disputesLost: breakdown.disputesLost, accountAgeDays: Number(breakdown.accountAgeDays.toFixed(2)) }), String(reason || 'scheduled_recalculation').slice(0, 120)]);
   saveDb();
   return breakdown;
+}
+
+export async function listTrustScoreLedger(phone: string, limit = 25): Promise<Array<{ score: number; reason: string; createdAt: string; breakdown: Omit<TrustScoreBreakdown, 'phone' | 'score'> }>> {
+  await ensureTrustScoreSchema();
+  const db = await getDb();
+  const statement = db.prepare('SELECT score, breakdown_json, reason, created_at FROM trust_score_ledger WHERE phone=? ORDER BY id DESC LIMIT ?');
+  statement.bind([String(phone || '').trim(), Math.max(1, Math.min(100, Number(limit) || 25))]);
+  const entries: Array<{ score: number; reason: string; createdAt: string; breakdown: Omit<TrustScoreBreakdown, 'phone' | 'score'> }> = [];
+  while (statement.step()) { const row = statement.getAsObject() as Record<string, unknown>; try { entries.push({ score: Number(row.score), reason: String(row.reason), createdAt: String(row.created_at || ''), breakdown: JSON.parse(String(row.breakdown_json || '{}')) }); } catch { /* malformed historical evidence is ignored rather than trusted */ } }
+  statement.free();
+  return entries;
 }
 
 export async function recalculateAllTrustScores(): Promise<number> {
@@ -124,5 +138,5 @@ export async function recordDisputeFault(disputeId: number, faultParty: 'buyer' 
   const db = await getDb();
   db.run('UPDATE disputes SET fault_party=?, fault_phone=? WHERE id=?', [faultParty, phone, disputeId]);
   saveDb();
-  await recalculateTrustScore(phone);
+  await recalculateTrustScore(phone, 'reviewed_dispute_fault');
 }
