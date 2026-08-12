@@ -18,43 +18,22 @@
             <%= category.name %> in <%= city.name %>
         </h1>
         <p class="programmatic-desc">
-            <%= category.description %> Connect instantly with trusted <%= category.name.toLowerCase() %> providers in <%= city.name %> through Kurukoo's conversation-first platform.
+            <%= category.description %> Start a request in Web Chat for <%= city.name %>; provider availability and any next action are confirmed in the request flow.
         </p>
     </section>
-
-    <!-- Stats Bar -->
-    <div class="stats-bar">
-        <div class="stat-box">
-            <div class="stat-box-val"><%= stats.providerCount %></div>
-            <div class="stat-box-lbl">Verified Providers</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-box-val"><%= stats.avgRating %> &starf;</div>
-            <div class="stat-box-lbl">Average Rating</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-box-val"><%= stats.jobsCompleted %></div>
-            <div class="stat-box-lbl">Jobs Completed</div>
-        </div>
-    </div>
 
     <!-- CTA -->
     <div class="banner-cta-card">
         <h2 class="banner-cta-h2">
-            Need a <%= category.name.toLowerCase() %> in <%= city.name %> right now?
+            Need to discuss a <%= category.name.toLowerCase() %> request in <%= city.name %>?
         </h2>
         <p class="banner-cta-p">
-            Chat with Kurukoo on WhatsApp and get connected to a verified provider in minutes. No app downloads, no forms &mdash; just a conversation.
+            Start a Web Chat request. Kurukoo will clarify the requirement and show a provider or quote only when the relevant capability and availability are confirmed.
         </p>
         <div class="banner-cta-btns">
-            <a href="https://wa.me/2347000?text=Hi%2C%20I%20need%20a%20<%= encodeURIComponent(category.name.toLowerCase()) %>%20in%20<%= encodeURIComponent(city.name.toLowerCase()) %>"
-               target="_blank" rel="nofollow noopener"
+            <a href="/chat?prompt=I%20need%20a%20<%= encodeURIComponent(category.name.toLowerCase()) %>%20in%20<%= encodeURIComponent(city.name.toLowerCase()) %>"
                class="btn-wa-green">
-                &rightarrow;&nbsp;Chat on WhatsApp
-            </a>
-            <a href="tel:*7000%23"
-               class="btn-ussd-translucent">
-                *7000#
+                &rightarrow;&nbsp;Start in Web Chat
             </a>
         </div>
     </div>
@@ -66,17 +45,17 @@
             <div class="how-card">
                 <div class="how-num">1&middot;</div>
                 <h3 class="how-title">Send a message</h3>
-                <p class="how-desc">Tell Kurukoo what you need on WhatsApp or USSD. No app to download &mdash; just your phone.</p>
+                <p class="how-desc">Tell Kurukoo what you need in Web Chat. Identity is requested only when a protected action needs it.</p>
             </div>
             <div class="how-card">
                 <div class="how-num">2&middot;</div>
                 <h3 class="how-title">Get matched</h3>
-                <p class="how-desc">Kurukoo finds the nearest verified <%= category.name.toLowerCase() %> provider in <%= city.name %> and connects you instantly.</p>
+                <p class="how-desc">Kurukoo identifies the appropriate request path and presents matching details only when the underlying provider data is available.</p>
             </div>
             <div class="how-card">
                 <div class="how-num">3&middot;</div>
                 <h3 class="how-title">Job done</h3>
-                <p class="how-desc">Pay safely through escrow, rate the provider, and earn Points for every completed job.</p>
+                <p class="how-desc">Eligible requests can follow the documented payment and escrow lifecycle after verified payment is available.</p>
             </div>
         </div>
     </section>

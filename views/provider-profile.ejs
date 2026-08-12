@@ -18,9 +18,8 @@
                 <%= provider.name %>
             </h1>
             <div class="provider-meta-row">
-                <span>&#128205; Service area: <%= provider.location %></span>
-                <% if (provider.verified) { %><span>&#9989; Verified Provider</span><% } %>
-                <span>&starf; <%= provider.trustScore.toFixed(1) %> Trust Score</span>
+                <span>&#128205; Listed service area: <%= provider.location %></span>
+                <span>Request details require confirmation</span>
             </div>
         </div>
     </div>
@@ -33,9 +32,8 @@
             <div class="skill-card">
                 <div class="skill-name"><%= skill.skill %></div>
                 <div class="skill-meta">
-                    <span>&starf; <%= skill.rating.toFixed(1) %></span>
-                    <span>&#10003; <%= skill.jobsCompleted %> jobs</span>
-                    <% if (skill.hourlyRate > 0) { %><span>&#8358;<%= skill.hourlyRate %>/hr</span><% } %>
+                    <span>Listed capability</span>
+                    <% if (skill.hourlyRate > 0) { %><span>Rate subject to confirmation</span><% } %>
                 </div>
             </div>
             <% }) %>
@@ -48,12 +46,11 @@
             Connect with <%= provider.name %>
         </h2>
         <p class="banner-cta-p">
-            Chat with Kurukoo on WhatsApp to request a service from this provider. Your phone number stays private.
+            Start a request in Web Chat. Kurukoo will preserve the provider reference and present the next supported action only after the required checks.
         </p>
-        <a href="https://wa.me/2347000?text=Hi%2C%20I%20want%20to%20connect%20with%20<%= encodeURIComponent(provider.name) %>"
-           target="_blank" rel="nofollow noopener"
+        <a href="/chat?prompt=I%20want%20to%20request%20a%20service%20from%20<%= encodeURIComponent(provider.name) %>"
            class="btn-wa-green">
-            &rightarrow;&nbsp;Connect via WhatsApp
+            &rightarrow;&nbsp;Start in Web Chat
         </a>
     </div>
 
@@ -63,19 +60,14 @@
         <div class="trust-safety-card">
             <ul class="trust-list">
                 <li class="trust-item">
-                    <span class="check-green">&#10003;</span> All payments protected by Kurukoo escrow
+                    <span class="check-green">&#10003;</span> Provider details are reviewed in the request flow before a protected action is presented.
                 </li>
                 <li class="trust-item">
-                    <span class="check-green">&#10003;</span> Rate the provider after every completed job
+                    <span class="check-green">&#10003;</span> Payment and escrow steps apply only when their verified integrations are available.
                 </li>
                 <li class="trust-item">
-                    <span class="check-green">&#10003;</span> Dispute resolution support available 24/7
+                    <span class="check-green">&#10003;</span> The canonical request lifecycle records applicable evidence and dispute steps when those actions are used.
                 </li>
-                <% if (provider.verified) { %>
-                <li class="trust-item">
-                    <span class="check-green">&#10003;</span> Identity verified by Kurukoo
-                </li>
-                <% } %>
             </ul>
         </div>
     </section>
@@ -97,7 +89,7 @@
 
     <!-- Privacy Notice -->
     <p class="privacy-notice-text">
-        &#128274; This profile is publicly visible because the provider has verified their account or explicitly opted in. Phone numbers are never shown publicly &mdash; all connections go through Kurukoo's privacy-protected chat.
+        &#128274; This public profile does not display a phone number. Any follow-up begins in Web Chat and presents only the next supported action.
     </p>
 </main>
 

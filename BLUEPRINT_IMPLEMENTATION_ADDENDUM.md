@@ -235,3 +235,21 @@ Before changing or creating anything:
 - **Canonical Hero**: Exact language hierarchy enforced on homepage.
 - **Icon Language**: Consolidated semantic icons for fulfillment, providers, and agents.
 - **Dashboard**: Rethought as "Request Hub" focusing on active conversations.
+
+239	## 13. Phase 5: Product Truthfulness & Integration Boundaries
+240	
+241	### Truthful Availability
+242	The public surface must not guarantee verified availability, payment, or fulfillment where its integration adapters are not configured.
+243	- **Channel Availability**: Homepage, Channels, and Help pages must show only Web Chat as active. WhatsApp, USSD, and SMS are "not connected" until their messaging/carrier adapters are configured.
+244	- **Fulfillment Promises**: Claims of "instant matching," "verified providers," "secure escrow," or "real-time dispatch" must be reframed as conditional request paths.
+245	- **SEO/SEO Copy**: Programmatic and Explore category pages must use conditional language ("eligible requests," "next supported action") rather than guaranteeing outcomes.
+246	
+247	### Identity & Intent Continuity
+248	- **Guest Auth Gate**: The guest identity gate must retain the safe "continuation card" (e.g., a storefront projection) so it can be restored immediately after the user authenticates.
+249	- **Onboarding Bypass**: Profiles claimed from a guest session are marked `onboarding-complete` to prevent the conversational flow from being diverted into a generic welcome survey.
+250	- **Auth Consolidation**: Authentication routes are owned by `src/routes/authRoutes.ts`. The Chat Router must not own duplicate auth endpoints.
+251	
+252	### Deployment-Specific Content
+253	- **Pricing & Points**: The pricing page must truthfully state that no payment provider is configured for the current deployment.
+254	- **Contact Guidance**: The contact page directs all operational support through Web Chat and provides only conditional guidance for other channels.
+255	- **Partnership Scope**: Partnership claims are framed as "scoped roles" and "discussions" rather than pre-existing deployment promises.

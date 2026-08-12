@@ -45,20 +45,20 @@
   }
 
   async function ensureIdentity() {
-    const sessionCheck = await fetch('/api/chat/history?limit=1', { credentials: 'same-origin' }).catch(() => null);
-    if (sessionCheck?.ok) { 
-      setConnection(true); 
+    const sessionCheck = await fetch('/api/auth/me', { credentials: 'same-origin' }).catch(() => null);
+    if (sessionCheck?.ok) {
+      setConnection(true);
       state.isGuest = false;
-      return true; 
+      return true;
     }
-    
+
     if (sessionCheck?.status === 401) {
-      // Allow 'Conversation First' for non-authenticated users
+      // Allow Conversation First for visitors without an authenticated session.
       state.isGuest = true;
       setConnection(true, 'Guest Mode');
       return true;
     }
-    
+
     setConnection(false, 'Offline');
     return false;
   }
@@ -116,13 +116,13 @@
     if (card.type === 'agentic_storefront') {
       if (card.stage === 'deferred') {
         status.hidden = false;
-        status.textContent = '⏳ Request deferred — Kurukoo will re-check for a provider and notify you.';
+        status.textContent = '⏳ Request deferred — Kurukoo will retain the request for a supported next step. Any notification depends on a configured channel.';
       } else if (card.stage === 'fulfillment') {
         status.hidden = false;
-        status.textContent = '🔒 Escrow locked. Confirm completion when the job is done.';
+        status.textContent = 'Fulfilment milestone recorded. Confirm completion to continue the documented request lifecycle.';
       } else if (['slot_fill', 'quote_review', 'offer_review', 'delivery_selection', 'seller_handover', 'delivery_in_progress'].includes(card.stage)) {
         status.hidden = false;
-        status.textContent = `🛒 Storefront · ${card.stage.replace(/_/g, ' ')} · ${card.progress || 0}%`;
+        status.textContent = `Request flow · ${card.stage.replace(/_/g, ' ')} · ${card.progress || 0}%`;
       } else {
         status.hidden = true;
       }
@@ -131,8 +131,8 @@
     if (!['worker_match','service_search','nearby_radar'].includes(card.type)) { status.hidden = true; return; }
     status.hidden = false;
     status.textContent = card.type === 'nearby_radar'
-      ? '📡 Searching your shared Nearby Pulse for active providers…'
-      : '🔎 Searching for a verified match. If none is available now, Kurukoo will keep the request open and notify you when a match appears.';
+      ? '📡 Checking request context for a supported nearby path…'
+      : '🔎 Assessing the request for a supported match. If no path is currently available, the request can be deferred.';
   }
 
   function collectStorefrontFields(holder) {
@@ -287,7 +287,7 @@
         const amount = Number.isInteger(price) ? `${price} ${String(offer.currency || 'NGN')}` : 'Price pending confirmation';
         details.append(
           makeElement('strong', '', offer.description || 'Seller offer'),
-          makeElement('span', '', `${String(offer.sellerName || 'Verified seller')} · ${amount}`)
+          makeElement('span', '', `${String(offer.sellerName || 'Seller')} · ${amount}`)
         );
         if (offer.availabilityNote) details.appendChild(makeElement('small', '', String(offer.availabilityNote)));
         const button = makeElement('button', 'sf-btn sf-primary', 'Choose offer');
@@ -302,15 +302,14 @@
 
     if (Array.isArray(card.deliveryCandidates) && card.deliveryCandidates.length) {
       const candidates = makeElement('section', 'storefront-delivery-candidates');
-      candidates.appendChild(makeElement('strong', '', 'Verified delivery options'));
+      candidates.appendChild(makeElement('strong', '', 'Delivery options'));
       const list = makeElement('ul', 'storefront-offers-list');
       card.deliveryCandidates.forEach(provider => {
         const item = makeElement('li');
         const details = makeElement('div');
-        const rating = Number(provider.rating || 0).toFixed(1);
         details.append(
           makeElement('strong', '', provider.name || 'Delivery provider'),
-          makeElement('span', '', `${rating}★ · listed rate ${String(provider.hourly_rate || 0)} NGN`)
+          makeElement('span', '', `Profile details · listed rate ${String(provider.hourly_rate || 0)} NGN`)
         );
         const button = makeElement('button', 'sf-btn sf-primary', 'Choose delivery');
         button.type = 'button';
@@ -326,10 +325,9 @@
       const providers = makeElement('ul', 'storefront-providers');
       card.providers.forEach((provider, index) => {
         const item = makeElement('li', index === 0 ? 'top' : '');
-        const rating = Number(provider.rating || 0).toFixed(1);
         item.append(
           makeElement('strong', '', provider.name || 'Provider'),
-          makeElement('span', '', `${rating}★ · ₦${String(provider.hourly_rate || 0)}`)
+          makeElement('span', '', `Profile details · listed rate ${String(provider.hourly_rate || 0)} NGN`)
         );
         providers.appendChild(item);
       });
@@ -435,17 +433,33 @@
     if (card.type === 'auth_gate') {
       const gate = document.createElement('div');
       gate.className = 'auth-gate-card';
+      const signedIn = state.isGuest === false;
       const guestId = document.cookie.split('; ').find(row => row.startsWith('kurukoo_guest_id='))?.split('=')[1];
       const returnUrl = card.returnUrl || window.location.pathname + window.location.search;
-      gate.innerHTML = `
-        <div class="auth-gate-header">
-          <h4 style="margin:0 0 8px; color:var(--chat-charcoal);">${escapeText(card.title || 'Sign in to Continue')}</h4>
-        </div>
-        <div class="auth-gate-body">
-          <p style="margin:0 0 12px; font-size:13px; color:var(--chat-muted);">${escapeText(card.message || 'Please sign in to proceed with your request.')}</p>
-          <a href="/login?return=${encodeURIComponent(returnUrl)}${guestId ? `&guest_id=${guestId}` : ''}" class="primary-btn" style="display:inline-block; text-decoration:none; text-align:center;">Sign in to Kurukoo</a>
-        </div>
-      `;
+
+      if (signedIn) {
+        gate.classList.add('auth-gate-card--resolved');
+        const continuationCard = card.continuationCard;
+        gate.innerHTML = `
+          <div class="auth-gate-header"><h4>You're signed in</h4></div>
+          <div class="auth-gate-body">
+            <p>${continuationCard ? 'Your request is ready to continue.' : 'Your request is preserved. Share the remaining details above so Kurukoo can continue matching it.'}</p>
+            ${continuationCard ? '' : '<button type="button" class="primary-btn">Continue this request</button>'}
+          </div>`;
+        gate.querySelector('button')?.addEventListener('click', () => input?.focus());
+        messageEl.querySelector('.bubble').appendChild(gate);
+        if (continuationCard) renderCard(continuationCard, messageEl);
+        return;
+      } else {
+        gate.innerHTML = `
+          <div class="auth-gate-header">
+            <h4>${escapeText(card.title || 'Sign in to Continue')}</h4>
+          </div>
+          <div class="auth-gate-body">
+            <p>${escapeText(card.message || 'Please sign in to proceed with your request.')}</p>
+            <a href="/login?return=${encodeURIComponent(returnUrl)}${guestId ? `&guest_id=${guestId}` : ''}" class="primary-btn">Sign in to Kurukoo</a>
+          </div>`;
+      }
       messageEl.querySelector('.bubble').appendChild(gate);
       return;
     }
@@ -453,20 +467,20 @@
     const holder = document.createElement('div');
     holder.className = 'provider-card';
     if (card.type === 'ride_picker') {
-      holder.innerHTML = '<strong>Choose a ride</strong><div class="quick-actions"><button type="button">🚗 Okada</button><button type="button">🛺 Keke</button><button type="button">🚕 Taxi</button></div><span class="escrow-badge">🔒 Escrow Protected</span>';
+      holder.innerHTML = '<strong>Describe a ride request</strong><div class="quick-actions"><button type="button">🚗 Okada</button><button type="button">🛺 Keke</button><button type="button">🚕 Taxi</button></div><span class="escrow-badge">Availability is confirmed in the request flow.</span>';
       holder.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => sendMessage(`${btn.textContent.trim()} ride`)));
     } else if (card.type === 'worker_match' || card.type === 'service_search') {
-      holder.innerHTML = `<strong>${card.category === 'food' ? 'Local food vendors' : 'Verified providers'}</strong><div class="deferred">Searching with your shared Memory Profile and real-time presence.</div><span class="escrow-badge">🔒 Escrow Protected</span>`;
+      holder.innerHTML = `<strong>${card.category === 'food' ? 'Food request' : 'Service request'}</strong><div class="deferred">Kurukoo is assessing the request context for a supported path.</div><span class="escrow-badge">Availability is confirmed before a next action is presented.</span>`;
     } else if (card.type === 'nearby_radar') {
-      holder.innerHTML = '<strong>Nearby Pulse</strong><div class="deferred">Active providers will surface here as Kurukoo matches your request.</div>';
+      holder.innerHTML = '<strong>Nearby context</strong><div class="deferred">Location-based information is shown only when relevant data is available.</div>';
     } else if (card.type === 'sports_search') {
       holder.innerHTML = '<strong>Sports network</strong><div class="deferred">Searching leagues, teams, matches and nearby play.</div>';
     } else if (card.type === 'event_coverage') {
-      holder.innerHTML = '<strong>Event Coverage</strong><div class="deferred">Contributor workflow ready: offer → accept → check-in → capture → moderation → payout.</div>';
+      holder.innerHTML = '<strong>Event coverage request</strong><div class="deferred">Contributor participation and any resulting payment step require separate confirmation.</div>';
     } else if (card.type === 'security_booking') {
-      holder.innerHTML = '<strong>Vetted security</strong><span class="escrow-badge">🔒 Escrow Protected</span>';
+      holder.innerHTML = '<strong>Security-related request</strong><span class="escrow-badge">Provider suitability and availability require confirmation.</span>';
     } else if (card.type === 'artist_booking') {
-      holder.innerHTML = '<strong>Verified creator booking</strong><div class="deferred">Representation must be verified before Kurukoo presents a booking for confirmation.</div><span class="escrow-badge">🔒 Escrow Protected</span>';
+      holder.innerHTML = '<strong>Creator request</strong><div class="deferred">Availability and representation details require confirmation before a request can proceed.</div><span class="escrow-badge">Payment availability is assessed separately.</span>';
     } else {
       holder.innerHTML = `<strong>${escapeAttr(card.category || card.type || 'Kurukoo action')}</strong>`;
     }
@@ -523,7 +537,7 @@
 
   function updateModelStatus(data) { const label = $('model-badge'); if (label && data.model) label.textContent = data.model; }
   async function loadPoints() { try { const res = await fetch('/api/points/balance', { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const points = Number(data.points || 0); const balance = $('points-balance')?.querySelector('span'); if (balance) balance.textContent = points; const ip = $('inspector-points'); if (ip) ip.textContent = points; } catch {} }
-  async function loadMemory() { try { const res = await fetch('/api/profile', { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const profile = data.profile || {}; const text = `Kurukoo remembers ${profile.location || 'your area'}${profile.primary_lga ? `, ${profile.primary_lga}` : ''}. Your Memory Profile is shared across channels.`; const mc = $('memory-context'); if (mc) mc.textContent = text; const im = $('inspector-memory'); if (im) im.textContent = text; } catch {} }
+  async function loadMemory() { try { const res = await fetch('/api/profile', { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const profile = data.profile || {}; const text = `Kurukoo remembers ${profile.location || 'your area'}${profile.primary_lga ? `, ${profile.primary_lga}` : ''}. Your Memory Profile remains attached to your account.`; const mc = $('memory-context'); if (mc) mc.textContent = text; const im = $('inspector-memory'); if (im) im.textContent = text; } catch {} }
 
   async function refreshHistory() {
     try {
@@ -550,10 +564,10 @@
   $('memory-toggle')?.addEventListener('click', () => $('chat-inspector')?.classList.toggle('open'));
   $('close-inspector')?.addEventListener('click', () => $('chat-inspector')?.classList.remove('open'));
   $('new-chat')?.addEventListener('click', async () => { if (!await ensureIdentity()) return; try { const res = await fetch('/api/chat/conversation', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ channel: 'web', title: 'New conversation' }) }); const data = await res.json(); if (data.conversationId) { state.conversationId = data.conversationId; localStorage.setItem('kurukoo_conversation_id', data.conversationId); } } catch {} state.messages = []; state.activeStorefrontId = null; chatContent.innerHTML = ''; const ds = $('deferred-status'); if (ds) ds.hidden = true; renderWelcome(); refreshHistory(); });
-  $('topup-points')?.addEventListener('click', () => sendMessage('I want to top up my Points'));
-  $('points-balance')?.addEventListener('click', () => sendMessage('Show my Points balance and ways to top up'));
+  $('topup-points')?.addEventListener('click', () => sendMessage('I have a question about Points'));
+  $('points-balance')?.addEventListener('click', () => sendMessage('Show my Points balance and the actions available to me'));
   $('voice-input')?.addEventListener('click', () => { const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!Recognition) return input?.focus(); const recognition = new Recognition(); recognition.lang = 'en-NG'; recognition.onresult = e => { if (input) { input.value = e.results[0][0].transcript; input.dispatchEvent(new Event('input')); } }; recognition.start(); });
-  function renderWelcome() { chatContent.innerHTML = '<div class="welcome" id="welcome"><div class="welcome-mark">K</div><h1>What can I help you get done?</h1><p>One conversation for finding work, buying, earning, coordinating services, and everyday questions.</p><div class="quick-actions" id="quick-actions"><button data-prompt="Book a ride for me">🚗 Ride</button><button data-prompt="Order food near me">🍔 Food</button><button data-prompt="Find a verified repair worker">🔧 Repair</button><button data-prompt="I need emergency help">🏥 Emergency</button><button data-prompt="Help me find a way to earn">⚡ Earn</button></div></div>'; wireQuickActions($('quick-actions')); }
+  function renderWelcome() { chatContent.innerHTML = '<div class="welcome" id="welcome"><div class="welcome-mark">K</div><h1>What can I help you get done?</h1><p>Describe a service, work, coordination, or everyday information need. Kurukoo will show the supported request path.</p><div class="quick-actions" id="quick-actions"><button data-prompt="I need a ride request">🚗 Ride</button><button data-prompt="I have a food request">🍔 Food</button><button data-prompt="I need repair help">🔧 Repair</button><button data-prompt="I have an urgent non-emergency service request">🏥 Urgent request</button><button data-prompt="I want to discuss a work request">⚡ Work</button></div></div>'; wireQuickActions($('quick-actions')); }
   applyTheme();
   ensureIdentity().then(ok => { if (ok) Promise.all([loadPoints(), loadMemory(), refreshHistory()]); });
 })();

@@ -25,13 +25,13 @@
             </a>
             <a href="/legal/privacy" class="help-category card">
                 <div class="help-category-icon">🔒</div>
-                <h3>Privacy & Trust</h3>
-                <p class="text-gray mt-12 text-0_9rem">Understand how we protect your data and verify service providers in your area.</p>
+                <h3>Privacy &amp; request boundaries</h3>
+                <p class="text-gray mt-12 text-0_9rem">Understand how Kurukoo handles account data and when protected request actions require identity.</p>
             </a>
             <a href="#earning" class="help-category card">
                 <div class="help-category-icon">💰</div>
-                <h3>Earning Money</h3>
-                <p class="text-gray mt-12 text-0_9rem">Learn how to add skills, find jobs nearby, and manage your point earnings.</p>
+                <h3>Provider participation</h3>
+                <p class="text-gray mt-12 text-0_9rem">Learn how to describe a skill and discuss provider participation through Web Chat.</p>
             </a>
         </div>
 
@@ -41,19 +41,19 @@
             <div class="grid grid-2 gap-40">
                 <div class="card" id="setup">
                     <span class="category-tag">Setup</span>
-                    <h3 class="help-guide-title">How to use Kurukoo via WhatsApp</h3>
-                    <p class="text-gray mb-20">Follow these steps to link your phone number and start chatting with our assistant.</p>
+                    <h3 class="help-guide-title">How to use Kurukoo in Web Chat</h3>
+                    <p class="text-gray mb-20">Describe what you need first. Sign in only when a protected action needs your identity.</p>
                     <ol class="help-guide-list pl-20">
-                        <li>Save <%= country === 'gb' ? '+44 7000' : (country === 'gh' ? '+233 7000' : '+234 7000') %> 000 000 to your contacts.</li>
-                        <li>Send "Hi" to start the conversation.</li>
-                        <li>Follow the automated prompts to set up your name and location.</li>
+                        <li>Open Web Chat from any page.</li>
+                        <li>Describe the request in your own words.</li>
+                        <li>Use the sign-in step when Kurukoo needs to preserve or protect the request.</li>
                     </ol>
                 </div>
 
                 <div class="card" id="earning">
                     <span class="category-tag">Earning</span>
                     <h3 class="help-guide-title">Adding your skills as a Provider</h3>
-                    <p class="text-gray mb-20">Turn on your earning potential by letting neighbors know what you can do.</p>
+                    <p class="text-gray mb-20">Describe the capability you can offer. Participation, matching, and any payment terms require separate confirmation.</p>
                     <ul class="help-guide-list list-none">
                         <li>✓ Type "Add skill" in the chat.</li>
                         <li>✓ Select your primary skill category (e.g., Plumbing).</li>
@@ -69,58 +69,54 @@
                 <div class="flex-column gap-24">
                     <div class="help-question-item">
                         <h4 class="mb-8">How do I top up my Points?</h4>
-                        <p class="text-gray text-0_95rem">You can top up via OPay, Moniepoint, or any verified Kurukoo agent in your neighbourhood. Simply tell the assistant "Top up" to get started.</p>
+                        <p class="text-gray text-0_95rem">Open Web Chat and ask about Points. Kurukoo shows only the funding paths configured for the current deployment.</p>
                     </div>
                     <div class="help-question-item">
-                        <h4 class="mb-8">What is USSD code for Kurukoo?</h4>
-                        <p class="text-gray text-0_95rem">Simply dial <strong>*7000#</strong> on any phone to access our services without data. This works on basic feature phones too!</p>
+                        <h4 class="mb-8">Can I use another channel?</h4>
+                        <p class="text-gray text-0_95rem">Web Chat is the available channel in this deployment. Messaging, USSD, and SMS are shown only when their adapters are connected.</p>
                     </div>
                     <div class="help-question-item">
                         <h4 class="mb-8">Is my phone number private?</h4>
-                        <p class="text-gray text-0_95rem">No – we use a privacy bridge. Your number is masked until you choose to share it.</p>
+                        <p class="text-gray text-0_95rem">Kurukoo uses your authenticated account to keep your requests together. Review the Privacy Policy before sharing information with a provider.</p>
                     </div>
                     <div class="help-question-item">
                         <h4 class="mb-8">What if no one is available right now?</h4>
-                        <p class="text-gray text-0_95rem">Kurukoo keeps looking. We track your request and notify you as soon as a match is found.</p>
+                        <p class="text-gray text-0_95rem">Kurukoo can record a deferred request when matching cannot continue immediately. Any notification depends on a configured delivery channel.</p>
                     </div>
                     <div class="help-question-item">
                         <h4 class="mb-8">Can I share photos or videos for quotes?</h4>
-                        <p class="text-gray text-0_95rem">Yes – send pictures, PDFs, or videos of what needs fixing. The provider can give you an accurate quote.</p>
+                        <p class="text-gray text-0_95rem">You can attach supported images, PDFs, and videos in Web Chat. A provider may use that context when preparing a quote.</p>
                     </div>
                     <div class="help-question-item">
                         <h4 class="mb-8">Can I book a football match or join a league?</h4>
-                        <p class="text-gray text-0_95rem">Yes – find players, book pitches, join leagues, and coordinate tournaments through Kurukoo.</p>
+                        <p class="text-gray text-0_95rem">Describe the activity you need. Kurukoo will clarify the available fulfilment path rather than promise a booking or league connection.</p>
                     </div>
                     <div class="help-question-item">
                         <h4 class="mb-8">Can I get a security guard or bodyguard?</h4>
-                        <p class="text-gray text-0_95rem">Yes – book verified security personnel for events, homes, or personal protection.</p>
+                        <p class="text-gray text-0_95rem">Describe the need in Web Chat. Any provider presentation remains subject to capability, verification, and authorization checks.</p>
                     </div>
                     <div class="help-question-item">
                         <h4 class="mb-8">Can I hire a car or motorbike?</h4>
-                        <p class="text-gray text-0_95rem">Yes – list your vehicle for hire or find one to rent.</p>
+                        <p class="text-gray text-0_95rem">Describe the vehicle need in Web Chat. Kurukoo will clarify the next available fulfilment step.</p>
                     </div>
                     <div class="help-question-item">
                         <h4 class="mb-8">Can I find a resort, motel, lounge, or play zone?</h4>
-                        <p class="text-gray text-0_95rem">Yes – discover and book local venues through Kurukoo.</p>
-                    </div>
-                    <div class="help-question-item">
-                        <h4 class="mb-8">Can I control my smart devices?</h4>
-                        <p class="text-gray text-0_95rem">Yes – Universal Remote lets you control TVs, ACs, and other smart devices from the chat.</p>
+                        <p class="text-gray text-0_95rem">Describe the venue need in Web Chat. Availability and a booking path are never implied until they are confirmed.</p>
                     </div>
                     <div class="help-question-item">
                         <h4 class="mb-8">Can I get reminders for important things?</h4>
-                        <p class="text-gray text-0_95rem">Yes – set reminders for appointments, payments, or events.</p>
+                        <p class="text-gray text-0_95rem">Use your calendar or device reminders for time-sensitive commitments. Kurukoo does not represent reminder delivery unless that capability is configured.</p>
                     </div>
                 </div>
             </div>
             
             <div class="card help-support-card">
                 <h3 class="mb-24">Still need help?</h3>
-                <p class="text-gray mb-32">Our support team is available 24/7 to assist you with any issues or feedback.</p>
+                <p class="text-gray mb-32">Use Web Chat to describe a product issue or share feedback. For a written enquiry, use the contact page.</p>
                 
                 <div class="flex-column gap-20">
-                    <a href="https://wa.me/7000" class="btn btn-primary btn-whatsapp">Chat on WhatsApp</a>
-                    <a href="/contact" class="btn btn-secondary w-full flex-center">Email Support</a>
+                    <a href="/chat" class="btn btn-primary">Open Web Chat</a>
+                    <a href="/contact" class="btn btn-secondary w-full flex-center">Open Contact Guidance</a>
                 </div>
             </div>
         </div>
@@ -143,7 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
     feedbackDiv.innerHTML = `
         <div class="search-empty-icon">🔍</div>
         <h3 class="mb-8">No matching answers found</h3>
-        <p class="text-gray mb-16">Try searching for other terms like "WhatsApp", "Points", "USSD", or "Earning".</p>
+        <p class="text-gray mb-16">Try searching for terms like "Web Chat", "Points", "provider", or "Earning".</p>
         <button class="btn btn-secondary btn-sm" id="reset-help-search">Reset Search</button>
     `;
     

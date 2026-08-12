@@ -39,3 +39,10 @@
 body.dark .auth-gate-card {
   background: var(--chat-surface-muted);
 }
+.auth-gate-card--resolved {
+  border-color: color-mix(in srgb, var(--chat-green) 42%, var(--chat-border));
+  background: color-mix(in srgb, var(--chat-green) 8%, var(--chat-surface));
+}
+.auth-gate-card--resolved .primary-btn {
+  background: var(--chat-charcoal);
+}
