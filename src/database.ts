@@ -2,7 +2,7 @@ import initSqlJs from 'sql.js';
 import fs from 'fs';
 import path from 'path';
 let db:any=null; const dbFilePath=process.env.DB_PATH||path.join(process.cwd(),'kurukoo.sqlite');
-export async function getDb(){if(db)return db;const SQL=await initSqlJs();if(fs.existsSync(dbFilePath)){db=new SQL.Database(fs.readFileSync(dbFilePath));initTables(db);initEconomicParticipantTables(db);auditAppointmentSkillFlows(db);saveDb();}else{db=new SQL.Database();initTables(db);initEconomicParticipantTables(db);seedSkillFlows(db);if(process.env.NODE_ENV!=='production'){seedDemoProviders(db);seedNigerianProviders(db);}auditAppointmentSkillFlows(db);saveDb();console.log(`Kurukoo database initialized${process.env.NODE_ENV==='production'?'':' with development seed data'}.`);}return db;}
+export async function getDb(){if(db)return db;const SQL=await initSqlJs();if(fs.existsSync(dbFilePath)){db=new SQL.Database(fs.readFileSync(dbFilePath));initTables(db);initEconomicParticipantTables(db);initExecutionTables(db);auditAppointmentSkillFlows(db);saveDb();}else{db=new SQL.Database();initTables(db);initEconomicParticipantTables(db);initExecutionTables(db);seedSkillFlows(db);if(process.env.NODE_ENV!=='production'){seedDemoProviders(db);seedNigerianProviders(db);}auditAppointmentSkillFlows(db);saveDb();console.log(`Kurukoo database initialized${process.env.NODE_ENV==='production'?'':' with development seed data'}.`);}return db;}
 let saveTimer:NodeJS.Timeout|null=null;const SAVE_DEBOUNCE_MS=Math.max(50,Number(process.env.KURUKOO_DB_SAVE_DEBOUNCE_MS||250));function flushDb(){if(!db)return;const data=db.export();const directory=path.dirname(dbFilePath);fs.mkdirSync(directory,{recursive:true});const tempPath=path.join(directory,`.${path.basename(dbFilePath)}.${process.pid}.tmp`);fs.writeFileSync(tempPath,Buffer.from(data));fs.renameSync(tempPath,dbFilePath);}export function saveDb(immediate=false){if(!db)return;if(immediate){if(saveTimer){clearTimeout(saveTimer);saveTimer=null;}flushDb();return;}if(saveTimer)return;saveTimer=setTimeout(()=>{saveTimer=null;flushDb();},SAVE_DEBOUNCE_MS);}process.once('beforeExit',()=>flushDb());
 function initTables(database:any){database.run(`
 CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY,value TEXT);
@@ -82,6 +82,42 @@ CREATE TABLE IF NOT EXISTS economic_participants (
 );
 CREATE INDEX IF NOT EXISTS idx_economic_offers_request ON economic_offers(request_id);
 CREATE INDEX IF NOT EXISTS idx_economic_participants_request ON economic_participants(request_id);
+`);}
+function initExecutionTables(database:any){database.run(`
+CREATE TABLE IF NOT EXISTS provider_execution_connectors (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  provider_phone TEXT NOT NULL,
+  connector_id TEXT NOT NULL,
+  capability TEXT NOT NULL,
+  external_provider_id TEXT,
+  authorization_status TEXT NOT NULL DEFAULT 'active' CHECK(authorization_status IN ('active','revoked','expired')),
+  allowed_actions_json TEXT NOT NULL DEFAULT '[]',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(provider_phone,connector_id,capability)
+);
+CREATE TABLE IF NOT EXISTS execution_requests (
+  id TEXT PRIMARY KEY,
+  request_id TEXT NOT NULL,
+  action_id TEXT NOT NULL,
+  provider_phone TEXT NOT NULL,
+  role TEXT NOT NULL CHECK(role IN ('seller','delivery_provider','external_platform','agent')),
+  capability TEXT NOT NULL,
+  action_requested TEXT NOT NULL,
+  idempotency_key TEXT NOT NULL UNIQUE,
+  correlation_id TEXT NOT NULL,
+  connector_id TEXT NOT NULL,
+  authorization_context TEXT NOT NULL DEFAULT '{}',
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','dispatched','acknowledged','in_progress','succeeded','failed','cancelled','expired')),
+  external_reference TEXT,
+  failure_reason TEXT,
+  evidence_json TEXT NOT NULL DEFAULT '[]',
+  requested_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_provider_execution_connectors_provider ON provider_execution_connectors(provider_phone,capability);
+CREATE INDEX IF NOT EXISTS idx_execution_requests_request ON execution_requests(request_id,requested_at);
+CREATE INDEX IF NOT EXISTS idx_execution_requests_provider ON execution_requests(provider_phone,requested_at);
 `);}
 function seedSkillFlows(database:any){const skills=[['rider',[{q:'What is your pickup location?',options:[]},{q:'What is your dropoff location?',options:[]}],'lead','credits','Find nearest active riders'],['plumber',[{q:'What plumbing issue are you facing?',options:['Leaking pipe','Blocked drain','Toilet repair','Other']}],'lead','credits','Match with certified local plumber'],['electrician',[{q:'Describe the electrical job',options:['Wiring','Fixture install','Fault finding','Other']}],'lead','credits','Match with licensed electrician'],['mechanic',[{q:'What is the vehicle issue?',options:['Engine sound','Brakes','Oil change','Battery','Not starting']}],'lead','credits','Match vehicle mechanic'],['phone_repair',[{q:'Select your phone issue',options:['Screen replacement','Battery change','Charging port','Software']}],'lead','credits','Match mobile repair technician'],['order_food',[{q:'What would you like to order, and how many?',options:[]},{q:'Delivery location',options:[]}],'order','payment','Match catalog vendor, confirm inventory, then dispatch if needed'],['buy_car',[{q:'Make, model, year and budget',options:[]}],'listing','escrow','Match verified vehicle sellers and inspection options'],['buy_ticket',[{q:'Which event, date, quantity and seating preference?',options:[]}],'reservation','payment','Check real inventory and reserve only after provider confirmation'],['verified_artist',[{q:'What event are you planning?',options:['Wedding','Corporate','Concert','Private event']},{q:'Event date and venue',options:[]},{q:'Approximate budget',options:[]}],'booking','escrow','Match verified talent/representative'],['keke_driver',[{q:'Pickup and destination',options:[]},{q:'When?',options:['Now','Later']}],'ride','payment','Match available keke provider'],['okada_rider',[{q:'Pickup and destination',options:[]},{q:'When?',options:['Now','Later']}],'ride','payment','Match available rider'],['find_worker',[{q:'What work do you need done?',options:[]},{q:'Where?',options:[]},{q:'When?',options:[]}],'lead','quote','Match by skill, presence, availability and trust'],['repair',[{q:'What needs fixing?',options:[]},{q:'Where are you?',options:[]},{q:'How urgent is it?',options:['Now','Today','Flexible']}],'lead','quote','Match the appropriate repair provider'],['emergency',[{q:'What is happening and where?',options:[]}],'dispatch','none','Provide verified emergency contacts and escalate to appropriate services'],['product_sourcing',[{q:'What product, quantity and budget?',options:[]},{q:'Delivery location',options:[]}],'order','escrow','Source from verified catalog providers and confirm inventory'],['security_personnel',[{q:'What protection/service is needed?',options:[]},{q:'Location, date and duration',options:[]},{q:'Vetting level required?',options:['Standard','Enhanced']}],'booking','escrow','Match licensed/verified security providers'],['sports_coach',[{q:'Sport, level and schedule',options:[]}],'booking','payment','Match sports provider']];for(const s of skills)database.run(`INSERT OR IGNORE INTO skill_flows(skill,question_set,post_match_action,payment_model,fulfillment_instructions) VALUES(?,?,?,?,?)`,[s[0],JSON.stringify(s[1]),s[2],s[3],s[4]]);}
 function seedDemoProviders(database:any){const skills=['plumber','electrician','mechanic','carpenter','painter','tailor','baker','caterer','photographer','cleaner','tutor','nanny','nurse','doctor','dj','event_planner','solar_installer','phone_repair','graphic_designer','web_developer','delivery','rider'];for(let i=1;i<=40;i++){const phone=`+23480${String(i).padStart(8,'0')}`;const skill=skills[i%skills.length];database.run(`INSERT OR IGNORE INTO memory_profiles(phone,name,location,country,subscription_tier,wallet_balance_minor,is_available) VALUES(?,?,?,'ng','Plus',200,1)`,[phone,`Provider ${i}`,'Lagos']);database.run(`INSERT OR IGNORE INTO skills(phone,skill,source,confidence,is_available,operation_mode,hourly_rate,rating,jobs_completed) VALUES(?,?, 'explicit',1,1,'mobile',2500,4.8,15)`,[phone,skill]);}}
