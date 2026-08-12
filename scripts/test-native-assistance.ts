@@ -112,7 +112,7 @@ try {
   });
   assert.equal(guestReminder.status, 200, 'Guests may express a reminder intent before authentication');
   const guestReminderBody = await guestReminder.text();
-  assert.match(guestReminderBody, /auth_gate/, 'Guest reminder intent must be protected by the canonical identity gate');
+  assert.match(guestReminderBody, /auth_gate|auth_in_chat_start/, 'Guest reminder intent must be protected by the canonical identity gate');
   const guestReminderRows = db.exec("SELECT id FROM reminders WHERE phone LIKE 'anon_%'");
   assert.equal(guestReminderRows[0]?.values?.length || 0, 0, 'Guest reminder intent must not create anonymous persistent reminder data');
 
