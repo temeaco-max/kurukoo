@@ -30,7 +30,7 @@ assert.match(indexSource,/app\.set\('views', path\.join\(process\.cwd\(\), 'view
 
 process.env.KURUKOO_DISABLE_LISTEN = 'true';
 process.env.NODE_ENV = 'test';
-process.env.JWT_SECRET = 'test';
+process.env.JWT_SECRET = 'test-secret-for-composition-route-contract-32';
 const { app } = await import('../src/index.ts');
 const server = app.listen(0, '127.0.0.1');
 await new Promise<void>((resolve) => server.once('listening', resolve));
