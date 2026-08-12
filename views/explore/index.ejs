@@ -1,103 +1,120 @@
 <%- include('../_partials/head', { country, t, seo, schemas, faqs, reqPath }) %>
 <%- include('../_partials/nav', { country, t, shortcode }) %>
 
-    <main class="explore-container">
-        <!-- Hero Section -->
-        <section class="explore-header-section">
-            <div class="explore-badge">
-                Kurukoo Explore Hub
-            </div>
-            <h1 class="explore-h1">
-                What do you need today?
-            </h1>
-            <p class="explore-subtitle">
-                Browse everyday service categories and start a private conversation to describe what you need. Kurukoo helps you coordinate the next step.
-            </p>
+<main class="explore-container container page-container">
+    <!-- Hero Section -->
+    <section class="section-heading">
+        <span class="eyebrow">Explore Capabilities</span>
+        <h1>What can I ask Kurukoo?</h1>
+        <p class="lead">
+            Kurukoo handles a wide range of requests by matching you with the right capabilities across our network.
+        </p>
 
-            <!-- Search & Instant Intent Bar -->
-            <div class="explore-search-container">
-                <input type="text" id="explore-search" class="explore-search-input" placeholder="Search service (e.g. plumbing, rider, solar, tailoring)...">
-                <button type="button" id="explore-search-btn" class="explore-search-btn">
-                    Search
-                </button>
-            </div>
-        </section>
+        <!-- Search & Instant Intent Bar -->
+        <div class="explore-search-container">
+            <input type="text" id="explore-search" class="explore-search-input" placeholder="What do you need? (e.g. plumber, ride, food)...">
+            <button type="button" id="explore-search-btn" class="btn btn-primary">
+                Ask Kurukoo
+            </button>
+        </div>
+    </section>
 
-        <!-- Trending Strip -->
-        <section class="trending-section">
-            <h3 class="trending-h3">
-                🔥 Trending Services Today
-            </h3>
-            <div class="trending-scroll-row">
-                <% const trending = categories.slice(0, 6); %>
-                <% trending.forEach(cat => { %>
-                    <a href="/explore/<%= cat.slug %>" class="trending-tag">
-                        <span class="trending-tag-icon"><%= cat.icon %></span>
-                        <span><%= cat.name %></span>
-                    </a>
-                <% }) %>
-            </div>
-        </section>
+    <!-- Categories Responsive Grid -->
+    <section class="categories-section">
+        <div id="categories-grid" class="categories-grid">
+            <% categories.forEach((cat, index) => { %>
+                <!-- Category Card -->
+                <div class="category-card explore-category-card" data-name="<%= cat.name.toLowerCase() %>">
+                    <div class="explore-category-icon"><%= cat.icon %></div>
+                    <h3 class="explore-category-title"><%= cat.name %></h3>
+                    <p class="explore-category-desc"><%= cat.description %></p>
+                    <div class="explore-category-footer">
+                        <a href="/chat?prompt=I%20need%20help%20with%20<%= encodeURIComponent(cat.name) %>" class="btn btn-outline btn-sm">Start request</a>
+                    </div>
+                </div>
 
-        <!-- Categories Responsive Grid (Every 6th slot replaced by Ad placement) -->
-        <section class="categories-section">
-            <h2 class="categories-h2">
-                All Categories (45+ Services)
-            </h2>
-            <div id="categories-grid" class="categories-grid">
-                <% categories.forEach((cat, index) => { %>
-                    <!-- Category Card -->
-                    <a href="/explore/<%= cat.slug %>" class="category-card explore-category-card" data-name="<%= cat.name.toLowerCase() %>">
-                        <div>
-                            <div class="explore-category-icon"><%= cat.icon %></div>
-                            <h3 class="explore-category-title"><%= cat.name %></h3>
-                            <p class="explore-category-desc"><%= cat.description.substring(0, 85) %>...</p>
-                        </div>
-                        <div class="explore-category-footer">
-                            <span>Explore this category</span>
-                            <span aria-hidden="true">→</span>
-                        </div>
-                    </a>
+                <!-- Ad Placement Boundary -->
+                <% if ((index + 1) % 8 === 0 && ads && ads.length > 0) { %>
+                    <% const adIndex = Math.floor(index / 8) % ads.length; %>
+                    <% const ad = ads[adIndex]; %>
+                    <div class="sponsored-ad-card">
+                        <span class="sponsored-badge">Partner Placement</span>
+                        <h4><%= ad.title %></h4>
+                        <p><%= ad.desc %></p>
+                        <a href="/chat?prompt=Tell%20me%20about%20<%= encodeURIComponent(ad.title) %>" class="text-link">Learn more <span>→</span></a>
+                    </div>
+                <% } %>
+            <% }) %>
+        </div>
+    </section>
+</main>
 
-                    <!-- Every 6th card insert Ad Placement -->
-                    <% if ((index + 1) % 6 === 0 && ads && ads.length > 0) { %>
-                        <% const adIndex = Math.floor(index / 6) % ads.length; %>
-                        <% const ad = ads[adIndex]; %>
-                        <% if (ad) { %>
-                            <div class="sponsored-ad-card">
-                                <div>
-                                    <span class="sponsored-badge">Sponsored Ad</span>
-                                    <h4 class="sponsored-title"><%= ad.title %></h4>
-                                    <p class="sponsored-desc"><%= ad.desc %></p>
-                                </div>
-                                <a href="https://wa.me/2347000" target="_blank" class="sponsored-btn">
-                                    Explore Offer →
-                                </a>
-                            </div>
-                        <% } %>
-                    <% } %>
-                <% }) %>
-            </div>
-        </section>
-    </main>
+<%- include('../_partials/footer') %>
 
-    <%- include('../_partials/footer') %>
-
-    <script>
-        function filterCategories() {
-            const query = document.getElementById('explore-search').value.toLowerCase().trim();
-            const cards = document.querySelectorAll('.category-card');
-            cards.forEach(card => {
-                const name = card.getAttribute('data-name');
-                if (!query || name.includes(query)) {
-                    card.style.display = 'flex';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
+<script>
+    const searchInput = document.getElementById('explore-search');
+    const searchBtn = document.getElementById('explore-search-btn');
+    
+    function filterCategories() {
+        const query = searchInput.value.toLowerCase().trim();
+        const cards = document.querySelectorAll('.category-card');
+        cards.forEach(card => {
+            const name = card.getAttribute('data-name');
+            card.style.display = (!query || name.includes(query)) ? 'flex' : 'none';
+        });
+    }
+    
+    searchInput.addEventListener('input', filterCategories);
+    searchBtn.addEventListener('click', () => {
+        const query = searchInput.value.trim();
+        if (query) {
+            window.location.href = `/chat?prompt=${encodeURIComponent(query)}`;
         }
-        document.getElementById('explore-search').addEventListener('input', filterCategories);
-        document.getElementById('explore-search-btn').addEventListener('click', filterCategories);
-    </script>
-</body>
-</html>
+    });
+</script>
+
+<style>
+.explore-search-container {
+    display: flex;
+    gap: 12px;
+    max-width: 600px;
+    margin: 32px auto 0;
+}
+.explore-search-input {
+    flex: 1;
+    padding: 12px 20px;
+    border: 1px solid var(--gray-200);
+    border-radius: 100px;
+    font-size: 1rem;
+}
+.categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
+    margin-top: 60px;
+}
+.category-card {
+    padding: 32px;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+}
+.explore-category-icon { font-size: 2.5rem; margin-bottom: 20px; }
+.explore-category-title { margin-bottom: 12px; }
+.explore-category-desc { color: var(--gray-600); font-size: 0.9rem; margin-bottom: 24px; flex: 1; }
+.sponsored-ad-card {
+    grid-column: 1 / -1;
+    padding: 24px;
+    background: var(--gray-50);
+    border: 1px dashed var(--terracotta);
+    border-radius: var(--border-radius);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+.sponsored-badge { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--terracotta); font-weight: 700; margin-bottom: 8px; }
+</style>

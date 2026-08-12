@@ -1,0 +1,91 @@
+<%- include('_partials/head') %>
+<%- include('_partials/nav') %>
+
+<main class="container page-container">
+    <section class="section-heading">
+        <span class="eyebrow">The Kurukoo Ecosystem</span>
+        <h1>The Orchestration Network</h1>
+        <p class="lead">Kurukoo is powered by a diverse network of capable participants, from local providers to automated agents.</p>
+    </section>
+
+    <div class="network-grid">
+        <div class="network-card">
+            <div class="network-icon">👤</div>
+            <h3>Providers</h3>
+            <p>Individual specialists who offer their skills—rides, repairs, teaching, or any everyday service. Verified for trust and capability.</p>
+        </div>
+
+        <div class="network-card">
+            <div class="network-icon">🏪</div>
+            <h3>Businesses</h3>
+            <p>Local shops and vendors who list their product catalogs on Kurukoo. From roadside food to specialized hardware.</p>
+        </div>
+
+        <div class="network-card">
+            <div class="network-icon">🤖</div>
+            <h3>AI Agents</h3>
+            <p>Automated software services that handle data-driven tasks, price checking, and digital coordination within the network.</p>
+        </div>
+
+        <div class="network-card">
+            <div class="network-icon">🏅</div>
+            <h3>Contributors</h3>
+            <p>Community members who keep the network accurate by verifying locations, updating prices, and assisting with onboarding.</p>
+        </div>
+
+        <div class="network-card">
+            <div class="network-icon">🤝</div>
+            <h3>Partners</h3>
+            <p>External platforms and agent networks that integrate with Kurukoo to expand the reach and depth of available services.</p>
+        </div>
+
+        <div class="network-card">
+            <div class="network-icon">📦</div>
+            <h3>Delivery Providers</h3>
+            <p>The logistics backbone that ensures physical goods move from sellers to buyers through coordinated dispatch.</p>
+        </div>
+    </div>
+
+    <section class="network-vision">
+        <div class="vision-box">
+            <h2>Join the Network</h2>
+            <p>Whether you want to offer a skill, grow your business, or build an integration, there's a place for you in the Kurukoo orchestration network.</p>
+            <div class="vision-actions">
+                <a href="/chat?prompt=I%20want%20to%20join%20the%20network" class="btn btn-primary">Start chatting</a>
+                <a href="/partners" class="btn btn-outline">Become a Partner</a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<style>
+.network-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    margin: 60px 0;
+}
+.network-card {
+    padding: 32px;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    text-align: center;
+}
+.network-icon {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+}
+.network-vision {
+    background: var(--charcoal);
+    color: var(--white);
+    padding: 80px 40px;
+    border-radius: var(--border-radius-lg);
+    text-align: center;
+}
+.network-vision h2 { color: var(--white); margin-bottom: 16px; }
+.network-vision p { color: var(--gray-400); margin-bottom: 32px; max-width: 600px; margin-left: auto; margin-right: auto; }
+.vision-actions { display: flex; gap: 16px; justify-content: center; }
+</style>
+
+<%- include('_partials/footer') %>

@@ -7,34 +7,22 @@
                     <img src="/assets/brand/logo-text.svg?v=3" alt="Kurukoo" height="30" class="footer-logo-text">
                 </a>
                 <p class="footer-desc">
-                    Wake up. Get going. Nigeria's leading everyday utility platform. One conversation to request anything, offer any skill, grow business, gain employment and earn.
+                    Tell Kurukoo what you need. Kurukoo figures out who or what can fulfil it.
                 </p>
-                <div class="footer-social-list">
-                    <a href="#" data-coming-soon class="footer-social-item" aria-label="X social channel coming soon">𝕏</a>
-                    <a href="#" data-coming-soon class="footer-social-item" aria-label="Instagram social channel coming soon">📸</a>
-                    <a href="#" data-coming-soon class="footer-social-item" aria-label="Facebook social channel coming soon">📘</a>
+                <div class="footer-cta-box">
+                    <a href="/chat" class="btn btn-primary">Start chatting</a>
                 </div>
             </div>
             
             <div>
-                <h4>Platform & Apps</h4>
+                <h4>Core</h4>
                 <ul class="footer-links">
-                    <li><a href="/web">Web App (web.kurukoo.com)</a></li>
-                    <li><a href="/download">Mac OS & Windows App</a></li>
-                    <li><a href="/download">Android & iOS App</a></li>
-                    <li><a href="https://wa.me/2347000">WhatsApp Chat</a></li>
-                    <li><a href="tel:*7000%23">USSD Service (*7000#)</a></li>
-                    <li><a href="/pricing">Pricing Plans</a></li>
-                </ul>
-            </div>
-            
-            <div>
-                <h4>Company</h4>
-                <ul class="footer-links">
-                    <li><a href="/about">About Us</a></li>
-                    <li><a href="/blog">Our Blog</a></li>
-                    <li><a href="/careers">Careers</a></li>
-                    <li><a href="/contact">Contact</a></li>
+                    <li><a href="/discover">Discover</a></li>
+                    <li><a href="/how-it-works">How it works</a></li>
+                    <li><a href="/network">Network</a></li>
+                    <li><a href="/channels">Channels</a></li>
+                    <li><a href="/resources">Resources</a></li>
+                    <li><a href="/about">About</a></li>
                 </ul>
             </div>
             
@@ -42,6 +30,15 @@
                 <h4>Support</h4>
                 <ul class="footer-links">
                     <li><a href="/help">Help Centre</a></li>
+                    <li><a href="/contact">Contact</a></li>
+                    <li><a href="/legal/trust-safety">Trust & Safety</a></li>
+                    <li><a href="/pricing">Points & Fulfillment</a></li>
+                </ul>
+            </div>
+            
+            <div>
+                <h4>Legal</h4>
+                <ul class="footer-links">
                     <li><a href="/legal/privacy">Privacy Policy</a></li>
                     <li><a href="/legal/terms">Terms of Service</a></li>
                     <li><a href="/api-docs">API Docs</a></li>
@@ -50,20 +47,17 @@
         </div>
         
         <div class="footer-bottom">
-            <p>&copy; 2026 Kurukoo Platform. Wake up. Get going.</p>
+            <p>&copy; <%= new Date().getFullYear() %> Kurukoo. One conversational fulfillment and orchestration network.</p>
         </div>
     </div>
 </footer>
 
 <%- include('onboarding-modal') %>
-<script>
-  document.addEventListener('click', (event) => {
-    const link = event.target.closest('[data-coming-soon]');
-    if (!link) return;
-    event.preventDefault();
-    window.alert('Coming soon!');
-  });
-</script>
+
+<style>
+.footer-cta-box { margin-top: 20px; }
+.footer-desc { max-width: 300px; margin-bottom: 20px; }
+</style>
 
 </body>
 </html>

@@ -57,6 +57,24 @@ export function authenticateUser(req: Request, res: Response, next: NextFunction
 }
 
 /**
+ * Optional authentication middleware. Populates req.user if a valid token is
+ * present, but does not block the request if it is missing or invalid.
+ */
+export function optionalAuthenticateUser(req: Request, res: Response, next: NextFunction): void {
+    const token = getToken(req);
+    if (!token) return next();
+    try {
+        const decoded = jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'] }) as AuthUser;
+        if (decoded && decoded.phone) {
+            (req as AuthRequest).user = decoded;
+        }
+    } catch {
+        // Ignore invalid tokens in optional auth
+    }
+    next();
+}
+
+/**
  * Explicit middleware for administrator-only operational routes. Background
  * workers call services directly and therefore do not need an HTTP bypass.
  */

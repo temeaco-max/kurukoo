@@ -1,92 +1,108 @@
 <%- include('_partials/head') %>
 <%- include('_partials/nav') %>
 
-<main>
-    <section class="section pricing-hero-section">
-        <div class="container text-center">
-            <h1 class="pricing-title">Simple, Transparent Pricing</h1>
-            <p class="pricing-subtitle">
-                One subscription unlocks everything. No hidden costs. Tell Kurukoo what you need or what you can do.
-            </p>
-        </div>
+<main class="container page-container">
+    <section class="section-heading">
+        <span class="eyebrow">The Economic Model</span>
+        <h1>Points & Fulfillment</h1>
+        <p class="lead">
+            Kurukoo uses a transparent Points system to power the orchestration network and ensure secure fulfillment.
+        </p>
     </section>
 
-    <section class="section container">
-        <div class="grid grid-3 pricing-grid">
-            <div class="card pricing-card base-pricing-card pricing-card-base">
-                <div>
-                    <h3 class="pricing-card-title">Base</h3>
-                    <div class="price"><%= t.currency %><%= t.pricing.base %><span>/mo</span></div>
-                    <ul class="features-list">
-                        <li>✓ 30 Daily Points included</li>
-                        <li>✓ Full access to living chat & memory</li>
-                        <li>✓ Default Nearby Radar discovery</li>
-                        <li>✓ Access to all 45 service verticals</li>
-                        <li>✓ Web App (PWA) — 100% Free daily access</li>
-                        <li>⚠ WhatsApp &amp; USSD (deducts 1 Point/session to cover carrier/Meta fees)</li>
-                    </ul>
-                </div>
-                <a href="https://wa.me/2347000" class="btn w-full font-bold mt-24">Start on Base</a>
+    <div class="points-grid">
+        <div class="points-card">
+            <h3>What are Points?</h3>
+            <p>Points are Kurukoo's internal utility tokens. They power the interaction between you and the network.</p>
+            <ul class="points-usage">
+                <li><strong>Request Services</strong>: Use Points to start conversations and coordinate tasks.</li>
+                <li><strong>Unlock Leads</strong>: Providers use Points to access verified request details.</li>
+                <li><strong>Boost Visibility</strong>: Highlight your skills or business in the network.</li>
+            </ul>
+        </div>
+
+        <div class="points-card">
+            <h3>Earning Points</h3>
+            <p>The Kurukoo economy is circular. You can earn Points in several ways:</p>
+            <ul class="points-usage">
+                <li><strong>Daily Engagement</strong>: Active users receive daily Point allowances.</li>
+                <li><strong>Completed Jobs</strong>: Earn Points by successfully fulfilling requests.</li>
+                <li><strong>Referrals</strong>: Invite others to join the orchestration network.</li>
+                <li><strong>Contributions</strong>: Complete micro-tasks to keep the network accurate.</li>
+            </ul>
+        </div>
+    </div>
+
+    <section class="fulfillment-section">
+        <h2>How Fulfillment Works</h2>
+        <div class="fulfillment-steps">
+            <div class="fulfillment-step">
+                <div class="f-icon">🔒</div>
+                <h4>Secure Escrow</h4>
+                <p>When you agree on a price, Kurukoo holds the funds in secure escrow. The provider is only paid once fulfillment is verified.</p>
             </div>
-            
-            <div class="card pricing-card featured featured-pricing-card pricing-card-base">
-                <div>
-                    <span class="pricing-badge">RECOMMENDED</span>
-                    <h3 class="pricing-card-title">Plus</h3>
-                    <div class="price"><%= t.currency %><%= t.pricing.plus %><span>/mo</span></div>
-                    <ul class="features-list">
-                        <li>✓ 60 Daily Points included</li>
-                        <li>✓ Priority Provider Matching</li>
-                        <li>✓ Default Nearby Radar discovery</li>
-                        <li>✓ 1 Free Listing Boost per month</li>
-                        <li>✓ SMS Fallback Notifications</li>
-                        <li>✓ Proactive Opportunity Nudges</li>
-                        <li>✓ **Zero-fee WhatsApp &amp; USSD access** (fees fully covered)</li>
-                    </ul>
-                </div>
-                <a href="https://wa.me/2347000" class="btn btn-primary w-full font-bold mt-24">Choose Plus</a>
+            <div class="fulfillment-step">
+                <div class="f-icon">📝</div>
+                <h4>Evidence & Tracking</h4>
+                <p>Providers and delivery partners record evidence of progress directly in the conversation. You see the status in real-time.</p>
             </div>
-            
-            <div class="card pricing-card base-pricing-card pricing-card-base">
-                <div>
-                    <h3 class="pricing-card-title">Business</h3>
-                    <div class="price"><%= t.currency %><%= t.pricing.business %><span>/mo</span></div>
-                    <ul class="features-list">
-                        <li>✓ 120 Daily Points included</li>
-                        <li>✓ Verified Business Storefront</li>
-                        <li>✓ Sales & Lead Analytics</li>
-                        <li>✓ 10 Free Listing Boosts per month</li>
-                        <li>✓ Priority Search Placement</li>
-                        <li>✓ Bulk Product Catalogue Import</li>
-                        <li>✓ **Zero-fee WhatsApp &amp; USSD access** (fees fully covered)</li>
-                    </ul>
-                </div>
-                <a href="https://wa.me/2347000" class="btn w-full font-bold mt-24">Choose Business</a>
+            <div class="fulfillment-step">
+                <div class="f-icon">🛡️</div>
+                <h4>Dispute Protection</h4>
+                <p>If something goes wrong, Kurukoo's dispute policy protects both parties. Funds remain in escrow until the issue is resolved.</p>
             </div>
         </div>
     </section>
 
-    <section class="section container pricing-faq-section">
-        <h2 class="text-center mb-12">Frequently Asked Questions</h2>
-        <div class="flex-col gap-8 pricing-faq-wrapper">
-            <div>
-                <h4 class="pricing-faq-title">What are Points?</h4>
-                <p class="pricing-faq-text">Points are Kurukoo's internal loyalty tokens. They are used to request services, boost your visibility, or unlock provider leads. You earn Points through daily engagement, completed jobs, and referrals.</p>
+    <section class="subscription-tiers">
+        <h2 class="text-center">Subscription Tiers</h2>
+        <div class="tier-grid">
+            <div class="tier-card">
+                <h3>Base</h3>
+                <div class="tier-price">Free</div>
+                <p>30 Daily Points included. Standard access to the network.</p>
+                <a href="/chat" class="btn btn-outline btn-block">Start Chatting</a>
             </div>
-            <div>
-                <h4 class="pricing-faq-title">How does Kurukoo learn my routine?</h4>
-                <p class="pricing-faq-text">There are no complex forms to fill. Every chat updates your single private living memory profile dynamically. Over time, Kurukoo remembers your usual services, preferred locations, and skills.</p>
+            <div class="tier-card featured">
+                <span class="badge">Recommended</span>
+                <h3>Plus</h3>
+                <div class="tier-price">₦2,500/mo</div>
+                <p>60 Daily Points. Priority matching and proactive nudges.</p>
+                <a href="/chat?prompt=I%20want%20to%20upgrade%20to%20Plus" class="btn btn-primary btn-block">Upgrade to Plus</a>
             </div>
-            <div>
-                <h4 class="pricing-faq-title">Why do WhatsApp and USSD deduct Points on the Base tier?</h4>
-                <p class="pricing-faq-text">Meta charges a standard commercial session fee of ₦9.28 for each 24-hour conversation window on WhatsApp Business, and telecom carriers levy session charges on USSD shortcodes (*7000#). To keep Kurukoo sustainable, we deduct 1 Point per daily active session on the Base tier to offset these costs. On our **Plus** and **Business** tiers, these costs are 100% absorbed by your subscription.</p>
-            </div>
-            <div>
-                <h4 class="pricing-faq-title">Is the Web App (PWA) free to use?</h4>
-                <p class="pricing-faq-text">Yes! The **Kurukoo Progressive Web App (PWA)** is completely free of any messaging session fees. It is the highly recommended and most interactive channel for smart devices, offering detailed maps, instant messaging, and state caching without incurring any WhatsApp or USSD carrier billing overheads.</p>
+            <div class="tier-card">
+                <h3>Business</h3>
+                <div class="tier-price">₦10,000/mo</div>
+                <p>120 Daily Points. Verified storefront and bulk catalog tools.</p>
+                <a href="/chat?prompt=I%20want%20to%20register%20a%20business" class="btn btn-outline btn-block">Register Business</a>
             </div>
         </div>
     </section>
 </main>
+
+<style>
+.points-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin: 60px 0; }
+.points-card { padding: 32px; background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--border-radius); }
+.points-usage { list-style: none; margin-top: 20px; }
+.points-usage li { margin-bottom: 12px; padding-left: 24px; position: relative; font-size: 0.95rem; }
+.points-usage li::before { content: '•'; position: absolute; left: 0; color: var(--terracotta); font-weight: bold; }
+
+.fulfillment-section { background: var(--gray-50); padding: 60px 40px; border-radius: var(--border-radius-lg); margin-bottom: 60px; }
+.fulfillment-section h2 { text-align: center; margin-bottom: 40px; }
+.fulfillment-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 32px; }
+.fulfillment-step { text-align: center; }
+.f-icon { font-size: 2.5rem; margin-bottom: 16px; }
+
+.tier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 40px; }
+.tier-card { padding: 40px 32px; background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--border-radius); text-align: center; position: relative; }
+.tier-card.featured { border-color: var(--terracotta); box-shadow: 0 10px 30px rgba(217,122,92,0.1); transform: scale(1.05); z-index: 2; }
+.tier-price { font-size: 2rem; font-weight: 800; margin: 16px 0; color: var(--terracotta); }
+.tier-card .badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--terracotta); color: white; padding: 4px 12px; border-radius: 100px; font-size: 0.75rem; font-weight: 700; }
+
+@media (max-width: 768px) {
+    .points-grid { grid-template-columns: 1fr; }
+    .tier-card.featured { transform: none; margin: 20px 0; }
+}
+</style>
 
 <%- include('_partials/footer') %>
