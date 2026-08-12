@@ -284,3 +284,16 @@ Economic Request transitions now append structured `economic_request_transition`
 The sandbox payment boundary remains intentionally non-production. It can validate local ledger and escrow invariants, but it does not represent a real PSP, regulated escrow account, external payment settlement, or provider payout. Those integrations remain deployment work rather than fabricated product capability.
 
 **Validation:** `npm run lint`, `npm run build`, `npm run test:routes`, `npm run test:native-assistance`, `npm run test:conversation-first-auth`, `npm run test:economic-lifecycle`, `npm run test:provider-entities`, `npm run test:execution-boundary`, `npm run audit:security`, `npm run audit:economic`, and `npm run audit:services` all passed on the convergence branch.
+
+
+## 16. Phase 10: Deferred Fulfilment, Notifications, and Observability
+
+Deferred Economic Request continuity is handled by the existing `open_intentions` service and background worker. Due requested, awaiting-match, and partially matched intentions are re-checked within the configured attempt and TTL boundaries; expired intentions are marked `abandoned` with an `expired` resolution. When a provider is found, the worker may progress the linked Economic Request to matching and quoting only when the provider data supports a positive quote. A provider match without a valid quote remains explicitly partial and does not create a payment or escrow effect.
+
+External push delivery remains unconfigured and is not represented as successful. Instead, the existing push boundary now persists an owner-scoped `internal_notifications` inbox record as a durable fallback, while returning `false` to preserve the distinction between queued internal delivery and external FCM delivery. Authenticated users can retrieve and mark their own records through `/api/notifications` and `/api/notifications/:id/read`; no user can read or mutate another user's notification.
+
+The public `/health` endpoint now reports active Economic Requests, scheduled reminders, and active safety check-ins in addition to database and payment-adapter state. The authenticated admin `/api/admin/stats` endpoint reports grouped request, reminder, safety-check-in, and unread internal-notification counts. Both observability surfaces use the service-owned table names and fail safely when an optional table has not yet been initialized.
+
+High-value category flows now include idempotent tailored records for `taxi_quick`, `street_food_cart`, `food_nearby`, `phone_repairer`, and `roadside_mechanic`. These flows refine questions, post-match action, payment model, and fulfilment guidance while retaining the shared capability source, provider authorization, Economic Request transitions, quote boundary, escrow boundary, and completion controls. Existing seeded aliases such as `rider`, `phone_repair`, and `emergency` are mapped into the canonical taxonomy rather than treated as parallel economic systems.
+
+**Validation:** In addition to the Phase 9 checks, `npm run test:notification-queue`, `npm run test:skill-flows`, `npm run test:native-assistance`, `npm run audit:services`, `npm run audit:security`, `npm run audit:economic`, `npm run test:routes`, and the full TypeScript/build validation passed after these changes.

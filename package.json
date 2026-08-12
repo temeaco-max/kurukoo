@@ -27,6 +27,8 @@
     "test:multi-party": "tsx scripts/test-multi-party-economic-request.ts",
     "test:execution-boundary": "tsx scripts/test-execution-boundary.ts",
     "test:native-assistance": "tsx scripts/test-native-assistance.ts",
+    "test:notification-queue": "tsx scripts/test-notification-queue.ts",
+    "test:skill-flows": "tsx scripts/test-skill-flows.ts",
     "db:migrate:messages": "tsx scripts/migrate-messages.ts",
     "test:ai": "tsx scripts/test-ai-pipeline.ts",
     "fasttext:build": "node scripts/build-fasttext.mjs",
