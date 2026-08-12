@@ -42,6 +42,7 @@
     "test:chat-dom-safety": "node scripts/test-chat-dom-safety.mjs",
     "test:conversation-first-auth": "tsx scripts/test-conversation-first-auth.ts",
     "test:voice": "tsx scripts/test-voice-integration.ts",
+    "test:pilot-observability": "tsx scripts/test-pilot-observability.ts",
     "test:qr": "tsx scripts/test-qr-context.ts",
     "test:agent-runtime": "tsx scripts/test-agent-runtime.ts",
     "test:stripe-payment": "tsx scripts/test-stripe-payment.ts",

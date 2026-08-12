@@ -45,6 +45,7 @@ import healthRoutes from './routes/healthRoutes.js';
 import voiceRouter from './routes/voiceRouter.js';
 import qrRouter from './routes/qrRouter.js';
 import agentRouter from './routes/agentRouter.js';
+import pilotRouter from './routes/pilotRouter.js';
 import { startBackgroundServices } from './startup/backgroundServices.js';
 
 if (process.env.NODE_ENV !== 'production' && !process.env.KURUKOO_PAY_PROVIDER) process.env.KURUKOO_PAY_PROVIDER = 'sandbox';
@@ -72,6 +73,7 @@ app.use('/api/chat', chatRouter);
 app.use('/api/voice', voiceRouter);
 app.use('/api/qr', qrRouter);
 app.use('/api/agent', agentRouter);
+app.use('/api', pilotRouter);
 app.use('/api', orderRoutes);
 app.use('/api', reminderRoutes);
 app.use('/api', notificationRoutes);

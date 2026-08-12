@@ -12,6 +12,7 @@ import { getEconomicRequest, transitionEconomicRequest } from '../services/skill
 import { lockEscrowForEconomicRequest } from '../services/tradeEngine.js';
 import { createStripePaymentIntent, stripeStatus, verifyStripeWebhook } from '../services/stripePayment.js';
 import { getDb, saveDb } from '../database.js';
+import { emitPilotEvent } from '../services/pilotObservability.js';
 
 const router = Router();
 function configuredPaymentProvider(): string | null {
@@ -44,7 +45,10 @@ router.post('/payments/stripe/intents', authenticateUser, paymentRateLimit, asyn
     const intent = await createStripePaymentIntent({ amountMinor, currency, economicRequestId: request.id, idempotencyKey: `kurukoo:stripe:${request.id}:${amountMinor}:${currency}` });
     if (request.status !== 'payment_pending') await transitionEconomicRequest(request.id, 'payment_pending', { fulfillment: { ...(request.fulfillment || {}), payment_provider: 'stripe', payment_intent_id: intent.id, payment_started_at: new Date().toISOString() } });
     res.json({ provider: 'stripe', paymentIntentId: intent.id, clientSecret: intent.clientSecret, amountMinor: intent.amountMinor, currency: intent.currency, status: intent.status });
-  } catch (error) { res.status(503).json({ error: error instanceof Error ? error.message : 'Payment provider is unavailable.', payment_required: true }); }
+  } catch (error) {
+    await emitPilotEvent({ event: 'payment_unavailable', ownerId: phone, requestId: request.id, status: 'unavailable', context: { surface: 'stripe_intent', external_configured: Boolean(process.env.STRIPE_SECRET_KEY), error_class: 'payment_provider' } });
+    res.status(503).json({ error: error instanceof Error ? error.message : 'Payment provider is unavailable.', payment_required: true });
+  }
 });
 
 /** Public only to Stripe; raw request bytes are signature-verified before any state change. */

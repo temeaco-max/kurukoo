@@ -160,6 +160,23 @@
     item.classList.toggle('active', active);
   }
 
+  async function submitPilotFeedback(wrap, rating) {
+    if (!wrap || wrap.dataset.feedbackSubmitted === 'true') return;
+    const buttons = [...wrap.querySelectorAll('[data-feedback-rating]')];
+    buttons.forEach(button => { button.disabled = true; });
+    try {
+      const response = await fetch('/api/pilot/feedback', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+        body: JSON.stringify({ rating, conversationId: state.conversationId || null, messageId: wrap.dataset.messageId ? Number(wrap.dataset.messageId) : null, requestId: state.activeStorefrontId || null, channel: state.channel || 'web' }),
+      });
+      if (!response.ok) throw new Error('feedback unavailable');
+      wrap.dataset.feedbackSubmitted = 'true';
+      const selected = wrap.querySelector(`[data-feedback-rating="${rating}"]`); selected?.classList.add('selected');
+    } catch {
+      buttons.forEach(button => { button.disabled = false; });
+    }
+  }
+
   function createMessage(role, text = '', id = null, cardData = null, animate = true) {
     const wrap = document.createElement('article'); wrap.className = `message ${role}`; wrap.dataset.messageState = animate ? 'incoming' : 'history'; if (animate) wrap.classList.add('message-enter'); if (id) wrap.dataset.messageId = id;
     
@@ -184,6 +201,19 @@
     });
     
     body.append(bubble, actions);
+    if (role === 'assistant') {
+      const feedback = makeElement('div', 'message-feedback');
+      feedback.setAttribute('aria-label', 'Rate this response');
+      [['helpful', 'Helpful'], ['not_helpful', 'Not helpful'], ['something_wrong', 'Something went wrong']].forEach(([rating, label]) => {
+        const button = makeElement('button', '', label);
+        button.type = 'button'; button.dataset.feedbackRating = rating; feedback.appendChild(button);
+      });
+      feedback.addEventListener('click', event => {
+        const button = event.target.closest('[data-feedback-rating]');
+        if (button) void submitPilotFeedback(wrap, button.dataset.feedbackRating);
+      });
+      body.appendChild(feedback);
+    }
     if (role === 'assistant') wrap.appendChild(avatarDiv);
     wrap.appendChild(body);
     

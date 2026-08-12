@@ -15,6 +15,7 @@ import { applyQrReferralAttribution } from '../services/qrContextService.js';
 import { streamUnifiedAI } from '../services/unifiedAiEngine.js';
 import economicRequestRouter from './economicRequestRouter.js';
 import { createConversationGoal } from '../services/agentRuntime.js';
+import { emitPilotEvent } from '../services/pilotObservability.js';
 
 const router = Router();
 
@@ -63,6 +64,8 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
   const isGuest = phone.startsWith('anon_');
 
   try {
+    await emitPilotEvent({ event: conversationId ? 'conversation_resumed' : 'conversation_started', ownerId: req.user?.phone, sessionId: phone, conversationId, context: { channel, surface: 'chat' } });
+    await emitPilotEvent({ event: 'request_started', ownerId: req.user?.phone, sessionId: phone, conversationId, context: { channel, intent: 'conversation_message' } });
     const savedUser = await appendChatMessage({ phone, sender: 'user', content: message, channel, conversationId, metadata: attachment ? { attachment } : undefined });
     activeConversation = savedUser.conversationId;
     sse(res, { type: 'conversation', conversationId: activeConversation, messageId: savedUser.id });
@@ -72,6 +75,7 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
 
     // Handle conversational auth for guests
     const authState = isGuest ? await getAuthState(phone) : { state: 'none' };
+    if (isGuest && authState.state !== 'none') await emitPilotEvent({ event: 'guest_auth_started', sessionId: phone, conversationId: activeConversation, context: { channel, surface: 'chat' } });
     
     // Check for safety capture state
     const db = await getDb();
@@ -103,6 +107,7 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
         await migrateGuestSessionToAccount(phone, userPhoneValue);
         await applyQrReferralAttribution(phone, userPhoneValue).catch(() => undefined);
         
+        await emitPilotEvent({ event: 'guest_auth_completed', ownerId: userPhoneValue, sessionId: phone, conversationId: activeConversation, context: { channel, surface: 'chat' } });
         sse(res, { type: 'auth_success', phone: userPhoneValue });
       }
       
@@ -137,7 +142,10 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
         economicRequestId: typeof cardData?.requestId === 'string' ? cardData.requestId : undefined,
         source: channel === 'web_qr' ? 'qr' : 'conversation',
       }) : null;
-      if (agentGoal) sse(res, { type: 'agent_goal', goal: { id: agentGoal.id, status: agentGoal.status, objective: agentGoal.objective, summary: agentGoal.summary, autonomy: agentGoal.autonomy, economicRequestId: agentGoal.economicRequestId || null } });
+      if (agentGoal) {
+        await emitPilotEvent({ event: 'agent_goal_created', ownerId: req.user?.phone, sessionId: phone, conversationId: activeConversation, requestId: agentGoal.economicRequestId || null, context: { channel, status: agentGoal.status } });
+        sse(res, { type: 'agent_goal', goal: { id: agentGoal.id, status: agentGoal.status, objective: agentGoal.objective, summary: agentGoal.summary, autonomy: agentGoal.autonomy, economicRequestId: agentGoal.economicRequestId || null } });
+      }
 
       if (routing.skill && routing.skill !== 'general_question' && routing.skill !== 'autonomous_agent') {
         if (isGuest) {
@@ -183,12 +191,14 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
       }
     }
 
+    if (typeof cardData?.requestId === 'string') await emitPilotEvent({ event: 'request_created', ownerId: req.user?.phone, sessionId: phone, conversationId: activeConversation, requestId: cardData.requestId, context: { channel, surface: 'chat' } });
     const savedAssistant = await appendChatMessage({ phone, sender: 'assistant', content: fullReply.trim(), channel, conversationId: activeConversation, cardData, metadata: { ai: true } });
     sse(res, { type: 'status', status: 'complete' });
     sse(res, { type: 'done', fullReply: fullReply.trim(), cardData, conversationId: activeConversation, messageId: savedAssistant.id });
     sse(res, '[DONE]');
     res.end();
   } catch (error: any) {
+    await emitPilotEvent({ event: isGuest ? 'guest_auth_failed' : 'error_boundary', ownerId: req.user?.phone, sessionId: phone, conversationId: activeConversation, status: 'failed', context: { channel, error_class: isGuest ? 'guest_auth' : 'chat_stream' } });
     console.error('[Chat] unified stream failed:', error);
     if (!res.writableEnded) {
       sse(res, { type: 'status', status: 'error' });

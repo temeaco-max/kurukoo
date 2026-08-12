@@ -146,6 +146,32 @@ function initTables(database: any) {
     CREATE TABLE IF NOT EXISTS appointment_slots (id INTEGER PRIMARY KEY AUTOINCREMENT, client_phone TEXT, provider_phone TEXT, slot_time TEXT, status TEXT);
     CREATE TABLE IF NOT EXISTS affiliate_clicks (id INTEGER PRIMARY KEY AUTOINCREMENT, product TEXT);
     CREATE TABLE IF NOT EXISTS audit_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT, details TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+    CREATE TABLE IF NOT EXISTS pilot_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_name TEXT NOT NULL,
+      owner_hash TEXT,
+      session_hash TEXT,
+      conversation_id TEXT,
+      request_id TEXT,
+      status TEXT NOT NULL DEFAULT 'ok',
+      context_json TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_pilot_events_name_created ON pilot_events(event_name, created_at);
+    CREATE INDEX IF NOT EXISTS idx_pilot_events_owner_created ON pilot_events(owner_hash, created_at);
+    CREATE TABLE IF NOT EXISTS pilot_feedback (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      owner_hash TEXT,
+      session_hash TEXT,
+      conversation_id TEXT,
+      message_id INTEGER,
+      request_id TEXT,
+      rating TEXT NOT NULL CHECK(rating IN ('helpful', 'not_helpful', 'something_wrong')),
+      note TEXT,
+      context_json TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_pilot_feedback_created ON pilot_feedback(created_at);
     CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, phone TEXT, order_type TEXT, provider_phone TEXT, amount INTEGER, status TEXT, idempotency_key TEXT UNIQUE, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS ad_campaigns (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, desc TEXT, image_url TEXT, target_keyword TEXT, credits_budget INTEGER, credits_spent INTEGER DEFAULT 0, status TEXT DEFAULT 'active', created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS email_log (id INTEGER PRIMARY KEY AUTOINCREMENT, recipient TEXT, subject TEXT, body TEXT, status TEXT, sent_at TEXT DEFAULT CURRENT_TIMESTAMP);

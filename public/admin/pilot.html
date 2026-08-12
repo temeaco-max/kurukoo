@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kurukoo Pilot Dashboard</title>
+  <style>
+    :root{color-scheme:light;--ink:#202124;--muted:#667085;--line:#e5e7eb;--surface:#fff7ef;--accent:#d97a5c;--good:#26734d;--bad:#b42318}*{box-sizing:border-box}body{margin:0;background:var(--surface);color:var(--ink);font:15px/1.5 Inter,system-ui,sans-serif}main{max-width:1180px;margin:0 auto;padding:32px 20px 64px}header{display:flex;justify-content:space-between;gap:16px;align-items:end;border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:24px}h1,h2{margin:0;font-family:Georgia,serif;letter-spacing:-.03em}h1{font-size:clamp(30px,5vw,48px)}h2{font-size:23px;margin-bottom:12px}.muted{color:var(--muted)}.decision{padding:18px 20px;border-radius:14px;background:#fff;border:1px solid var(--line);margin-bottom:22px}.decision.go{border-color:#9ad1b2}.decision.no-go{border-color:#efb0aa}.decision strong{font-size:24px;color:var(--good)}.decision.no-go strong{color:var(--bad)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:26px}.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px}.metric{font-size:32px;font-weight:750;margin-top:6px}.label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}.card ul{padding-left:18px;margin:8px 0 0}.table-wrap{overflow:auto;background:#fff;border:1px solid var(--line);border-radius:12px}table{border-collapse:collapse;width:100%;min-width:680px}th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.pill{display:inline-block;border-radius:999px;padding:3px 8px;font-size:12px;background:#f2f4f7}.error{color:var(--bad)}button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 11px;cursor:pointer}button:hover{border-color:var(--accent)}@media(max-width:600px){header{align-items:start;flex-direction:column}}
+  </style>
+</head>
+<body>
+<main>
+  <header><div><p class="label">Operator surface</p><h1>Human pilot observability</h1><p class="muted">Aggregate signals only. No owner identifiers, secrets, or raw conversations are loaded here.</p></div><button id="refresh" type="button">Refresh</button></header>
+  <section id="decision" class="decision"><span class="muted">Loading pilot decision…</span></section>
+  <section id="metrics" class="grid"></section>
+  <section><h2>Recovery signals</h2><div id="recovery" class="grid"></div></section>
+  <section><h2>Recent feedback</h2><div id="feedback" class="table-wrap"><p class="muted" style="padding:16px">Loading…</p></div></section>
+</main>
+<script>
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  const metric = (label, value) => `<article class="card"><div class="label">${esc(label)}</div><div class="metric">${esc(value)}</div></article>`;
+  function decision(data){
+    const d=data.dashboard||{}, total=Number(d.total_events||0), failed=Number(d.failed_events||0), feedback=(data.feedback||[]).length;
+    const noGo=total>0 && failed/total>.2;
+    document.querySelector('#decision').className=`decision ${noGo?'no-go':'go'}`;
+    document.querySelector('#decision').innerHTML=`<strong>${noGo?'NO-GO':'GO — continue controlled pilot'}</strong><p class="muted">${noGo?'Failure rate is above the controlled-pilot threshold; pause invites and inspect recovery paths.':'No aggregate stop signal exceeded the current threshold. Keep the invite cohort at 5–10 users and review this surface daily.'} Feedback records in window: ${feedback}.</p>`;
+  }
+  async function load(){
+    try{
+      const response=await fetch('/api/admin/pilot-dashboard?days=30',{credentials:'same-origin'});
+      if(response.status===401||response.status===403) throw new Error('Admin authentication required. Open /admin/login first.');
+      if(!response.ok) throw new Error('Pilot dashboard unavailable.');
+      const data=await response.json(), d=data.dashboard||{}, byEvent=d.by_event||{}, recovery=d.recovery||{};
+      document.querySelector('#metrics').innerHTML=[metric('Events',d.total_events||0),metric('Failures',d.failed_events||0),metric('Failure rate',`${Math.round(Number(d.failure_rate||0)*100)}%`),metric('Days covered',d.days||30)].join('');
+      document.querySelector('#recovery').innerHTML=Object.entries(byEvent).map(([name,value])=>metric(name,value)).join('')||'<p class="muted">No events recorded yet.</p>';
+      document.querySelector('#feedback').innerHTML=(data.feedback||[]).length?`<table><thead><tr><th>When</th><th>Rating</th><th>Context</th><th>Note</th></tr></thead><tbody>${data.feedback.map(row=>`<tr><td>${esc(row.created_at)}</td><td><span class="pill">${esc(row.rating)}</span></td><td>${esc(row.context?.surface||'web')}</td><td>${esc(row.note||'—')}</td></tr>`).join('')}</tbody></table>`:'<p class="muted" style="padding:16px">No feedback received in the selected window.</p>';
+      decision(data);
+    }catch(error){document.querySelector('#decision').className='decision no-go';document.querySelector('#decision').innerHTML=`<strong>UNAVAILABLE</strong><p class="error">${esc(error.message)}</p>`;}
+  }
+  document.querySelector('#refresh').addEventListener('click',load); load();
+</script>
+</body>
+</html>

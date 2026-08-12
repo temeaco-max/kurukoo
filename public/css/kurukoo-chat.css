@@ -290,3 +290,5 @@ body.dark .auth-gate-card {
 #agent-goal-card .agent-goal-event:first-child { border-top: 0; }
 #agent-goal-card #agent-goal-cancel { margin-top: .45rem; min-height: 44px; }
 @media (prefers-reduced-motion: reduce) { #agent-goal-card, #agent-goal-card * { transition: none !important; } }
+/* Pilot feedback: compact, privacy-safe response quality signal. */
+.message-feedback{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.45rem;opacity:.82}.message-feedback button{border:1px solid var(--chat-border);border-radius:999px;background:transparent;color:var(--chat-muted);cursor:pointer;font:inherit;font-size:.72rem;padding:.26rem .55rem}.message-feedback button:hover,.message-feedback button:focus-visible,.message-feedback button.selected{border-color:var(--chat-primary);color:var(--chat-primary);outline:none}.message-feedback button:disabled{cursor:default;opacity:.55}
