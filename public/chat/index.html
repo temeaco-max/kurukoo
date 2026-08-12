@@ -4,42 +4,44 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#FFF8F0">
-  <meta name="description" content="Kurukoo — the multi-channel Economic OS. One conversation for everyday economic coordination.">
-  <title>Kurukoo Chat — Economic OS</title>
+  <meta name="description" content="Kurukoo — conversation-first assistance and fulfilment.">
+  <title>Kurukoo Chat</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/github-dark.min.css">
   <link rel="stylesheet" href="/css/kurukoo-chat.css?v=3">
   <link rel="stylesheet" href="/css/kurukoo-voice.css?v=1">
+  <link rel="stylesheet" href="/css/kurukoo-qr.css?v=1">
 </head>
 <body class="kurukoo-chat-page">
   <div class="chat-shell">
     <aside class="chat-sidebar" id="chat-sidebar">
       <div class="sidebar-top"><a class="brand" href="/" aria-label="Kurukoo home"><span class="brand-mark">K</span><span>Kurukoo</span></a><button class="icon-btn mobile-only" id="close-sidebar" aria-label="Close sidebar">×</button></div>
       <button class="new-chat" id="new-chat"><span>＋</span> New chat</button>
+      <button class="sidebar-link" id="qr-scan" type="button" aria-label="Scan a Kurukoo QR code">Scan QR code</button>
       <div class="history-heading">Recent chats</div>
       <div class="history-list" id="history-list"></div>
       <div class="sidebar-context"><div class="context-title">Memory Profile</div><div class="context-copy" id="memory-context">Kurukoo remembers your context here.</div></div>
-      <div class="sidebar-bottom"><div class="channel-status"><span class="status-dot"></span> Web <span>•</span> WhatsApp <span>•</span> USSD *7000# <span>•</span> SMS</div><button class="sidebar-link" id="theme-toggle">◐ Appearance</button></div>
+      <div class="sidebar-bottom"><div class="channel-status"><span class="status-dot"></span> Web Chat</div><button class="sidebar-link" id="theme-toggle">◐ Appearance</button></div>
     </aside>
 
     <main class="chat-main">
       <header class="chat-header">
-        <div class="header-left"><button class="icon-btn mobile-only" id="open-sidebar" aria-label="Open sidebar">☰</button><div class="model-name">Kurukoo <span class="model-badge" id="model-badge">Economic OS</span></div></div>
-        <div class="header-right"><span class="connection-status" id="connection-status"><span class="status-dot"></span> Connected</span><button class="points-balance" id="points-balance" title="Kurukoo Points">🪙 <span>0</span> Points</button><button class="icon-btn" id="memory-toggle" aria-label="Show memory profile">◎</button></div>
+        <div class="header-left"><button class="icon-btn mobile-only" id="open-sidebar" aria-label="Open sidebar">☰</button><div class="model-name">Kurukoo</div></div>
+        <div class="header-right"><span class="connection-status" id="connection-status"><span class="status-dot"></span> Connected</span><button class="points-balance" id="points-balance" title="Kurukoo Points">Points <span>0</span></button><button class="icon-btn" id="memory-toggle" aria-label="Show memory profile">◎</button></div>
       </header>
 
       <section class="chat-scroll" id="chat-scroll" aria-live="polite"><div class="chat-content" id="chat-content">
-        <div class="welcome" id="welcome"><div class="welcome-mark">K</div><h1>What can I help you get done?</h1><p>One conversation for finding work, buying, earning, coordinating services, and everyday questions.</p><div class="quick-actions" id="quick-actions"><button data-prompt="Book a ride for me">🚗 Ride</button><button data-prompt="Order food near me">🍔 Food</button><button data-prompt="Find a verified repair worker">🔧 Repair</button><button data-prompt="I need emergency help">🏥 Emergency</button><button data-prompt="Help me find a way to earn">⚡ Earn</button></div></div>
+        <div class="welcome" id="welcome"><div class="welcome-mark">K</div><h1>What can I help you get done?</h1><p>Tell Kurukoo what you need and it will work out the next step with you.</p><div class="quick-actions" id="quick-actions"><button data-prompt="Book a ride for me">Ride</button><button data-prompt="Order food near me">Food</button><button data-prompt="Find a verified repair worker">Repair</button><button data-prompt="I need emergency help">Emergency</button><button data-prompt="Help me find a way to earn">Earn</button></div></div>
       </div></section>
 
       <section class="composer-wrap">
         <div class="deferred-status" id="deferred-status" hidden></div>
-        <div class="composer-quick-actions" id="composer-quick-actions" aria-label="Quick actions"><button data-prompt="Book a ride for me">🚗 Ride</button><button data-prompt="Order food near me">🍔 Food</button><button data-prompt="Find a verified repair worker">🔧 Repair</button><button data-prompt="I need emergency help">🏥 Emergency</button><button data-prompt="Help me find a way to earn">⚡ Earn</button></div>
+        <div class="composer-quick-actions" id="composer-quick-actions" aria-label="Quick actions"><button data-prompt="Book a ride for me">Ride</button><button data-prompt="Order food near me">Food</button><button data-prompt="Find a verified repair worker">Repair</button><button data-prompt="I need emergency help">Emergency</button><button data-prompt="Help me find a way to earn">Earn</button></div>
         <div class="attachment-preview" id="attachment-preview" hidden></div>
-        <div class="composer"><input type="file" id="file-input" hidden accept="image/*,.pdf,.doc,.docx,.txt,video/mp4,video/webm"><button class="composer-btn" id="attach-file" aria-label="Attach file">＋</button><textarea id="message-input" rows="1" maxlength="12000" placeholder="Message Kurukoo" aria-label="Message Kurukoo"></textarea><button class="composer-btn" id="voice-input" aria-label="Voice input">⌕</button><button class="send-btn" id="send-message" aria-label="Send message">↑</button></div>
-        <div class="composer-footer"><span>Kurukoo can make mistakes. Check important information.</span><span id="channel-footer">Multi-channel Economic OS • *7000# • WhatsApp 7000</span></div>
+        <div class="composer"><input type="file" id="file-input" hidden accept="image/*,.pdf,.doc,.docx,.txt,video/mp4,video/webm"><button class="composer-btn" id="attach-file" aria-label="Attach file">＋</button><textarea id="message-input" rows="1" maxlength="12000" placeholder="Message Kurukoo" aria-label="Message Kurukoo"></textarea><button class="composer-btn" id="voice-input" type="button" aria-label="Start voice conversation" aria-pressed="false">Voice</button><button class="composer-btn" id="qr-scan-composer" type="button" aria-label="Scan a Kurukoo QR code">QR</button><button class="send-btn" id="send-message" aria-label="Send message">↑</button></div>
+        <div class="composer-footer"><span>Kurukoo can make mistakes. Check important information.</span><span id="channel-footer">Web Chat</span></div>
       </section>
     </main>
 
@@ -47,13 +49,46 @@
       <div class="inspector-header"><strong>Kurukoo context</strong><button class="icon-btn" id="close-inspector">×</button></div>
       <div class="inspector-card"><div class="inspector-label">Points</div><div class="inspector-value" id="inspector-points">0</div><button class="primary-btn" id="topup-points">Top up</button></div>
       <div class="inspector-card"><div class="inspector-label">Nearby Radar</div><div class="radar-list" id="radar-list"><div class="empty-state">Ask “what’s nearby?” to search.</div></div></div>
-      <div class="inspector-card"><div class="inspector-label">Presence</div><div class="presence-row"><span class="status-dot"></span><span id="presence-label">Available across channels</span></div></div>
+      <div class="inspector-card"><div class="inspector-label">Presence</div><div class="presence-row"><span class="status-dot"></span><span id="presence-label">Web Chat available</span></div></div>
       <div class="inspector-card"><div class="inspector-label">Memory</div><div class="empty-state" id="inspector-memory">Shared from your Memory Profile.</div></div>
     </aside>
   </div>
+
+  <div class="qr-modal" id="qr-modal" hidden role="dialog" aria-modal="true" aria-labelledby="qr-title">
+    <div class="qr-dialog">
+      <div class="qr-dialog-header"><h2 id="qr-title">Scan a Kurukoo QR code</h2><button class="icon-btn" id="qr-close" type="button" aria-label="Close QR scanner">×</button></div>
+      <video class="qr-camera" id="qr-video" playsinline muted></video>
+      <canvas id="qr-canvas" hidden></canvas>
+      <div class="qr-status" id="qr-status" role="status" aria-live="polite">Starting camera…</div>
+      <div class="qr-result" id="qr-result" hidden>
+        <h3 id="qr-result-title">Kurukoo</h3>
+        <p id="qr-result-text"></p>
+        <div class="qr-actions"><button class="qr-primary" id="qr-continue" type="button">Continue with Kurukoo</button><button id="qr-file-button" type="button">Scan an image</button></div>
+      </div>
+      <input id="qr-file" type="file" accept="image/*" aria-label="Choose an image containing a QR code">
+      <div class="qr-actions"><button id="qr-file-button-secondary" type="button" onclick="document.getElementById('qr-file')?.click()">Choose QR image</button></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/lib/common.min.js" defer></script>
   <script src="/js/kurukoo-primary-chat.js?v=5" defer></script>
   <script src="/js/kurukoo-voice.js?v=1" defer></script>
+  <script src="/js/kurukoo-qr.js?v=1" defer></script>
+  <script>
+    document.getElementById('qr-scan-composer')?.addEventListener('click', () => window.kurukooQR?.open());
+    window.addEventListener('DOMContentLoaded', () => {
+      const prompt = sessionStorage.getItem('kurukoo_qr_prompt');
+      if (!prompt) return;
+      sessionStorage.removeItem('kurukoo_qr_prompt');
+      const input = document.getElementById('message-input');
+      if (input) {
+        input.value = prompt;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.focus();
+      }
+    });
+  </script>
 </body>
 </html>
