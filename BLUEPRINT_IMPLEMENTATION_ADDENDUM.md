@@ -272,3 +272,15 @@ Native assistance is a first-class part of the conversation-first product, but i
 These capabilities reuse the single profile, conversation, and background-worker boundaries. They do not introduce a second user model, notification system, safety-dispatch system, or economic lifecycle.
 
 **Validation:** `scripts/test-native-assistance.ts` covers owner isolation, guest gating, route authentication, scheduled-message idempotency, fail-closed escalation, absolute parsing, and the prohibition on reminder-created economic lead orders.
+
+## 15. Phase 9: Final Convergence Hardening
+
+The final convergence pass confirmed that Kurukoo already had the canonical shared rate-limiting middleware in `src/middleware/rateLimit.ts`. OTP requests use `authRateLimit`, payment and escrow mutation routes use `paymentRateLimit`, AI and webhook boundaries have dedicated buckets, and authenticated routes retain their separate authenticated-request guard. A second sensitive limiter was deliberately not retained because it would duplicate policy and create inconsistent throttling semantics.
+
+The Request Hub remains the only authenticated `/web` request-management surface. `public/dashboard.html` is the current Request Hub shell and routes users back to the canonical Web Chat, discovery, resources, and profile boundaries; no application-level GitHub workspace service or GitHub admin route remains in `src`.
+
+Economic Request transitions now append structured `economic_request_transition` records to `audit_logs`, including request ID, owner phone, skill, prior status, and next status. The local audit trail improves lifecycle traceability without asserting that it is an immutable compliance log or replacing production observability.
+
+The sandbox payment boundary remains intentionally non-production. It can validate local ledger and escrow invariants, but it does not represent a real PSP, regulated escrow account, external payment settlement, or provider payout. Those integrations remain deployment work rather than fabricated product capability.
+
+**Validation:** `npm run lint`, `npm run build`, `npm run test:routes`, `npm run test:native-assistance`, `npm run test:conversation-first-auth`, `npm run test:economic-lifecycle`, `npm run test:provider-entities`, `npm run test:execution-boundary`, `npm run audit:security`, `npm run audit:economic`, and `npm run audit:services` all passed on the convergence branch.
