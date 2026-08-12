@@ -1,240 +1,62 @@
-<%- include('_partials/head', { pageStyles: ['/css/kurukoo-auth.css'] }) %>
-<%- include('_partials/nav') %>
-
-<main class="container login-page-container">
-    <div class="login-split-grid">
-        <!-- Left Side: Informational / Value Proposition -->
-        <section class="login-info-side">
-            <div class="badge-pill login-badge">
-                ✦ Living Economic Profile
-            </div>
-            <h1 class="login-title">
-                One account. One memory. All your economic life in one conversation.
-            </h1>
-            <p class="login-desc">
-                Kurukoo is your conversational utility. It learns who you are as you use it — remembering your skills, orders, and trusted connections without repetitive sign-up forms.
-            </p>
-
-            <div class="login-benefits-list">
-                <div class="login-benefit-item">
-                    <div class="login-benefit-icon">💬</div>
-                    <div class="login-benefit-text">
-                        <strong class="login-benefit-title">One secure profile</strong>
-                        <p class="login-benefit-sub">Your account keeps your requests and conversation context together whenever you return to Web Chat.</p>
-                    </div>
-                </div>
-
-                <div class="login-benefit-item">
-                    <div class="login-benefit-icon">🛡️</div>
-                    <div class="login-benefit-text">
-                        <strong class="login-benefit-title">Protected transaction lifecycle</strong>
-                        <p class="login-benefit-sub">Eligible requests can follow a documented payment and escrow lifecycle after verified payment is available.</p>
-                    </div>
-                </div>
-
-                <div class="login-benefit-item">
-                    <div class="login-benefit-icon">📍</div>
-                    <div class="login-benefit-text">
-                        <strong class="login-benefit-title">Request context</strong>
-                        <p class="login-benefit-sub">Continue a saved request, review matching details, and return to the conversation without starting over.</p>
-                    </div>
-                </div>
-
-                <div class="login-benefit-item">
-                    <div class="login-benefit-icon">⚡</div>
-                    <div class="login-benefit-text">
-                        <strong class="login-benefit-title">Secure phone verification</strong>
-                        <p class="login-benefit-sub">Use a one-time verification code to protect your account before taking protected actions.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="login-trust-footer">
-                <div class="login-trust-badge">
-                    <span class="trust-icon">🔒</span>
-                    <span class="trust-text">Review how Kurukoo handles account information in the Privacy Policy before continuing.</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- Right Side: Fields + SSO Login -->
-        <section class="login-form-side">
-            <div class="card auth-card">
-                <div class="auth-card-header">
-                    <h2 class="auth-card-title"><%= returnTo ? 'Continue with Kurukoo' : 'Sign In or Register' %></h2>
-                    <p class="auth-card-subtitle">
-                        <%= returnTo ? 'Sign in to proceed with your request.' : 'Enter your phone number to continue.' %>
-                    </p>
-                </div>
-
-                <!-- Phone Entry Form -->
-                <form id="kurukoo-login-form" class="auth-form">
-                    <div id="phone-entry-section">
-                        <div class="form-group">
-                            <label for="login-phone" class="form-label">Phone Number <span class="label-required">*</span></label>
-                            <div class="phone-input-group">
-                                <select id="login-prefix" class="phone-prefix-select" aria-label="Country Dial Code">
-                                    <option value="+234" <%= country === 'ng' ? 'selected' : '' %>>🇳🇬 +234</option>
-                                    <option value="+233" <%= country === 'gh' ? 'selected' : '' %>>🇬🇭 +233</option>
-                                    <option value="+44" <%= country === 'gb' ? 'selected' : '' %>>🇬🇧 +44</option>
-                                </select>
-                                <input type="tel" id="login-phone" class="form-input phone-number-input" placeholder="803 000 0000" required autocomplete="tel">
-                            </div>
-                            <span class="field-hint">We'll send a verification code to this number.</span>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="login-name" class="form-label">Full Name <span class="label-optional">(optional)</span></label>
-                            <input type="text" id="login-name" class="form-input" placeholder="e.g. Chinedu Okafor" autocomplete="name">
-                        </div>
-
-                        <button type="submit" class="btn btn-primary btn-block auth-submit-btn" id="login-submit-btn">
-                            <span id="login-submit-text">Send Verification Code</span>
-                            <span class="btn-arrow">→</span>
-                        </button>
-                    </div>
-
-                    <!-- OTP Entry Section (hidden by default) -->
-                    <div id="otp-entry-section" hidden>
-                        <div class="form-group">
-                            <label for="login-otp" class="form-label">Verification Code <span class="label-required">*</span></label>
-                            <input type="text" id="login-otp" class="form-input otp-input" placeholder="000000" maxlength="6" inputmode="numeric">
-                            <span class="field-hint">Enter the 6-digit code sent to your phone.</span>
-                        </div>
-
-                        <button type="button" class="btn btn-primary btn-block auth-submit-btn" id="otp-verify-btn">
-                            <span>Verify & Continue</span>
-                            <span class="btn-arrow">→</span>
-                        </button>
-                        
-                        <button type="button" class="btn btn-link btn-block otp-resend-btn" id="otp-resend-btn">
-                            Didn't get a code? Resend
-                        </button>
-                    </div>
-
-                    <div id="auth-feedback" class="auth-feedback" hidden></div>
-                </form>
-
-                <div class="auth-alternative-links">
-                    <span class="alt-text">Web Chat is the available conversational channel in this deployment.</span>
-                    <div class="alt-buttons-row">
-                        <a href="/chat" class="alt-link"><span>Open Web Chat</span></a>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </div>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Continue with Kurukoo</title>
+  <meta name="description" content="Continue your Kurukoo conversation securely with phone verification.">
+  <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/site.css?v=1.2.0"><link rel="stylesheet" href="/css/kurukoo-auth.css?v=2">
+</head>
+<body class="kurukoo-auth-page">
+<main class="conversation-auth-shell">
+  <section class="conversation-auth-intro"><a href="/chat" class="auth-brand"><img src="/assets/brand/logo-icon.svg" alt="Kurukoo" width="42" height="42"><span>Kurukoo</span></a><div class="auth-intro-copy"><span class="auth-kicker">Continue your conversation</span><h1>Let's keep going.</h1><p>Kurukoo lets you start as a guest. When a request needs your identity, verify your phone and return to the exact conversation you started.</p><div class="auth-principles"><div><strong>One conversation</strong><span>Your requests stay connected.</span></div><div><strong>One account</strong><span>Your phone is your account identity.</span></div><div><strong>One-time code</strong><span>No password to remember.</span></div></div></div></section>
+  <section class="conversation-auth-card" aria-labelledby="auth-title"><img src="/assets/brand/logo-icon.svg" alt="Kurukoo" class="auth-card-logo" width="48" height="48"><span class="auth-kicker">Kurukoo identity</span><h2 id="auth-title">Who am I helping?</h2><p id="auth-subtitle">Tell me your name first. We’ll only ask for your phone when it is time to verify you.</p>
+    <div class="auth-progress"><span class="active" id="progress-1"></span><span id="progress-2"></span><span id="progress-3"></span></div>
+    <div id="auth-step-name" class="auth-step active"><label for="auth-name">Your name</label><input id="auth-name" class="auth-input" autocomplete="name" placeholder="What should Kurukoo call you?"><button class="auth-button" id="auth-name-next" type="button">Continue</button></div>
+    <div id="auth-step-phone" class="auth-step"><label for="auth-phone">Best phone number</label><div class="auth-phone"><select id="auth-prefix" class="auth-input" aria-label="Country code"><option value="+234" <%= country === 'ng' ? 'selected' : '' %>>+234</option><option value="+233" <%= country === 'gh' ? 'selected' : '' %>>+233</option><option value="+44" <%= country === 'gb' ? 'selected' : '' %>>+44</option></select><input id="auth-phone" class="auth-input" type="tel" inputmode="tel" autocomplete="tel" placeholder="803 000 0000"></div><p class="auth-note">We'll send a one-time verification code. You do not need a password.</p><button class="auth-button" id="auth-send-code" type="button">Send verification code</button><button class="auth-back" id="auth-phone-back" type="button">Back</button></div>
+    <div id="auth-step-code" class="auth-step"><div class="auth-sent">Code sent to <strong id="auth-phone-display"></strong></div><label for="auth-code">Verification code</label><input id="auth-code" class="auth-input auth-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"><button class="auth-button" id="auth-verify-code" type="button">Verify and continue</button><div class="auth-actions"><button class="auth-back" id="auth-code-back" type="button">Change number</button><button class="auth-back" id="auth-resend" type="button">Resend code</button></div></div>
+    <div id="auth-feedback" class="auth-feedback" hidden role="status"></div>
+    <p class="auth-legal">By continuing, you agree to Kurukoo's <a href="/legal/terms">Terms</a> and <a href="/legal/privacy">Privacy Policy</a>. Kurukoo is not an emergency service.</p>
+    <a class="auth-return" href="/chat">← Back to chat</a>
+  </section>
 </main>
-
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const loginForm = document.getElementById('kurukoo-login-form');
-        const phoneSection = document.getElementById('phone-entry-section');
-        const otpSection = document.getElementById('otp-entry-section');
-        const feedback = document.getElementById('auth-feedback');
-        
-        const returnTo = "<%= returnTo %>";
-        const guestId = "<%= guestId %>";
-        const conversationId = "<%= conversationId %>";
-
-        let currentPhone = '';
-
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const prefix = document.getElementById('login-prefix').value;
-            const rawPhone = document.getElementById('login-phone').value.trim().replace(/\D/g, '');
-            const name = document.getElementById('login-name').value.trim();
-            
-            if (!rawPhone) return showFeedback('Please enter a phone number.', 'error');
-            
-            currentPhone = prefix + rawPhone;
-            const submitBtn = document.getElementById('login-submit-btn');
-            submitBtn.disabled = true;
-            
-            try {
-                const res = await fetch('/api/auth/request-otp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: currentPhone })
-                });
-                const data = await res.json();
-                
-                if (data.success) {
-                    phoneSection.hidden = true;
-                    otpSection.hidden = false;
-                    showFeedback('Code sent! Please check your phone.', 'success');
-                    if (data.devCode) {
-                        console.log('Development OTP Code:', data.devCode);
-                        document.getElementById('login-otp').value = data.devCode;
-                    }
-                } else {
-                    showFeedback(data.error || 'Failed to request code.', 'error');
-                    submitBtn.disabled = false;
-                }
-            } catch (err) {
-                showFeedback('Connection error. Please try again.', 'error');
-                submitBtn.disabled = false;
-            }
-        });
-
-        document.getElementById('otp-verify-btn').addEventListener('click', async () => {
-            const code = document.getElementById('login-otp').value.trim();
-            const name = document.getElementById('login-name').value.trim();
-            
-            if (!code || code.length !== 6) return showFeedback('Enter the 6-digit code.', 'error');
-            
-            const verifyBtn = document.getElementById('otp-verify-btn');
-            verifyBtn.disabled = true;
-            
-            try {
-                const res = await fetch('/api/auth/verify-otp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        phone: currentPhone, 
-                        code, 
-                        name,
-                        guestPhone: guestId || undefined
-                    })
-                });
-                const data = await res.json();
-                
-                if (data.success) {
-                    localStorage.setItem('kurukoo_auth_token', data.token);
-                    localStorage.setItem('kurukoo_user_phone', data.phone);
-                    if (name) localStorage.setItem('kurukoo_user_name', name);
-                    
-                    showFeedback('Authenticated! Redirecting...', 'success');
-                    
-                    setTimeout(() => {
-                        if (returnTo) {
-                            window.location.href = returnTo;
-                        } else {
-                            window.location.href = '/chat';
-                        }
-                    }, 800);
-                } else {
-                    showFeedback(data.error || 'Invalid code.', 'error');
-                    verifyBtn.disabled = false;
-                }
-            } catch (err) {
-                showFeedback('Verification failed. Try again.', 'error');
-                verifyBtn.disabled = false;
-            }
-        });
-
-        document.getElementById('otp-resend-btn').addEventListener('click', () => {
-            otpSection.hidden = true;
-            phoneSection.hidden = false;
-            document.getElementById('login-submit-btn').disabled = false;
-            showFeedback('', 'info');
-        });
-
-        function showFeedback(msg, type) {
-            if (!feedback) return;
-            feedback.textContent = msg;
-            feedback.className = `auth-feedback auth-feedback-${type}`;
-            feedback.hidden = !msg;
-        }
-    });
+(() => {
+  const $ = id => document.getElementById(id);
+  const returnTo = <%- JSON.stringify(returnTo || '') %>;
+  const conversationId = <%- JSON.stringify(conversationId || '') %>;
+  const guestId = <%- JSON.stringify(guestId || '') %>;
+  let name = '';
+  let phone = '';
+  const setStep = (step) => {
+    ['name','phone','code'].forEach(s => $('auth-step-' + s).classList.toggle('active', s === step));
+    [1,2,3].forEach(n => $('progress-' + n).classList.toggle('active', n <= ({name:1,phone:2,code:3}[step])));
+    const copy = {name:['Who am I helping?','Tell me your name first. We’ll only ask for your phone when it is time to verify you.'],phone:['What’s the best number?','I’ll use it to protect your Kurukoo account and reconnect your conversations.'],code:['Confirm it’s you.','Enter the one-time code we sent.']};
+    $('auth-title').textContent = copy[step][0]; $('auth-subtitle').textContent = copy[step][1];
+  };
+  const feedback = (message, error=false) => { $('auth-feedback').hidden = !message; $('auth-feedback').textContent = message || ''; $('auth-feedback').className = 'auth-feedback' + (error ? ' error' : ''); };
+  const normalizePhone = () => { let raw = String($('auth-phone').value || '').replace(/\D/g,''); if(raw.startsWith('0')) raw = raw.slice(1); return $('auth-prefix').value + raw; };
+  $('auth-name-next').addEventListener('click', () => { name = $('auth-name').value.trim(); if(!name) return feedback('Tell me what I should call you.', true); feedback(''); setStep('phone'); $('auth-phone').focus(); });
+  $('auth-phone-back').addEventListener('click', () => setStep('name'));
+  $('auth-code-back').addEventListener('click', () => setStep('phone'));
+  $('auth-send-code').addEventListener('click', async () => {
+    phone = normalizePhone(); if(phone.length < 10) return feedback('Enter a valid phone number.', true);
+    const button = $('auth-send-code'); button.disabled = true; button.textContent = 'Sending…'; feedback('');
+    try { const response = await fetch('/api/auth/request-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone})}); const data = await response.json(); if(!response.ok || !data.success) throw new Error(data.error || data.message || 'Could not send a verification code.'); $('auth-phone-display').textContent = phone; setStep('code'); $('auth-code').focus(); if(data.debugCode || data.devCode) feedback(`Development verification code: ${data.debugCode || data.devCode}`); }
+    catch(error){ feedback(error.message || 'Could not send a verification code.',true); } finally { button.disabled=false; button.textContent='Send verification code'; }
+  });
+  $('auth-resend').addEventListener('click', () => $('auth-send-code').click());
+  $('auth-verify-code').addEventListener('click', async () => {
+    const code = $('auth-code').value.trim(); if(!/^\d{6}$/.test(code)) return feedback('Enter the 6-digit code.',true);
+    const button = $('auth-verify-code'); button.disabled=true; button.textContent='Checking…'; feedback('');
+    try { const response = await fetch('/api/auth/verify-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,code,name,guestPhone:guestId||undefined,conversationId:conversationId||undefined})}); const data=await response.json(); if(!response.ok || !data.success) throw new Error(data.error || data.message || 'That code could not be verified.'); if(data.token){localStorage.setItem('kurukoo_auth_token',data.token);} localStorage.setItem('kurukoo_user_phone',data.phone || phone); if(name)localStorage.setItem('kurukoo_user_name',name); feedback(`You’re signed in, ${name}. Returning to your conversation…`); window.setTimeout(()=>{window.location.assign(returnTo || '/chat');},450); }
+    catch(error){ feedback(error.message || 'Verification failed. Try again.',true); button.disabled=false; button.textContent='Verify and continue'; }
+  });
+  $('auth-code').addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g,'').slice(0,6); if(e.target.value.length === 6) $('auth-verify-code').focus(); });
+})();
 </script>
+</body>
+</html>
