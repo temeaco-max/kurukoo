@@ -1,0 +1,13 @@
+<%- include('_partials/head') %>
+<%- include('_partials/nav') %>
+<main>
+  <section class="section page-hero-about"><div class="container text-center"><p class="eyebrow">One Kurukoo relationship</p><h1 class="page-hero-title">Choose how you want to talk to Kurukoo.</h1><p class="page-hero-subtitle">Every connected channel leads to the same Kurukoo conversation and profile. Availability shown here is deployment-specific.</p><a class="btn btn-primary" href="/chat">Start chatting</a></div></section>
+  <section class="section container"><div class="grid grid-2">
+    <article class="card"><div class="card-icon">W</div><h2>Web Chat</h2><p><strong>Available now.</strong> The richest Kurukoo experience for conversation, requests, reminders, safety check-ins and contextual cards.</p><a class="btn btn-primary" href="/chat">Start chatting</a></article>
+    <article class="card" id="whatsapp"><div class="card-icon">WA</div><h2>WhatsApp</h2><p><strong>Not connected in this deployment.</strong> When enabled, WhatsApp will be another door into the same Kurukoo relationship rather than a separate product.</p><a class="btn btn-secondary" href="/chat">Start on Web</a></article>
+    <article class="card" id="ussd"><div class="card-icon">US</div><h2>USSD</h2><p><strong>Not connected in this deployment.</strong> Kurukoo can support a resilient feature-phone channel when the carrier integration is configured.</p><a class="btn btn-secondary" href="/chat">Start on Web</a></article>
+    <article class="card" id="sms"><div class="card-icon">SMS</div><h2>SMS & notifications</h2><p>Notification and fallback delivery is connector-dependent. Kurukoo will only show an active SMS path when the required adapter is configured.</p><a class="btn btn-secondary" href="/chat">Start on Web</a></article>
+  </div></section>
+  <section class="section container text-center"><div class="card"><h2>Want another channel?</h2><p>Tell Kurukoo what you need and we can explain the currently supported access path.</p><a class="btn btn-primary" href="/chat?prompt=Help%20me%20choose%20a%20way%20to%20use%20Kurukoo">Ask Kurukoo</a></div></section>
+</main>
+<%- include('_partials/footer') %>
