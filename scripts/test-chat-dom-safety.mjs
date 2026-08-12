@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const source = fs.readFileSync(path.join(__dirname, '../public/js/kurukoo-primary-chat.js'), 'utf8');
+const shell = fs.readFileSync(path.join(__dirname, '../public/chat/index.html'), 'utf8');
 const storefrontStart = source.indexOf('function renderAgenticStorefront');
 const storefrontEnd = source.indexOf('function renderCard', storefrontStart);
 assert.ok(storefrontStart >= 0 && storefrontEnd > storefrontStart, 'agentic storefront renderer must remain present');
@@ -18,5 +19,10 @@ assert.doesNotMatch(storefront, /innerHTML\s*=/, 'storefront renderer must not i
 assert.doesNotMatch(storefront, /style=["'][^"']*width/, 'storefront renderer must not emit inline progress styles');
 assert.match(source, /function renderMarkdown\(text\).*sanitizeHtml/s, 'sanitized Markdown rendering must remain available for genuine message content');
 assert.match(source, /output\.innerHTML\s*=\s*renderMarkdown\(full\)/, 'streaming Markdown must continue through its existing sanitization boundary');
+assert.match(shell, /aria-controls="chat-inspector"/, 'context inspector toggle must declare its controlled region');
+assert.match(shell, /id="inspector-feedback"[^>]*role="status"/, 'Native Assistance feedback must be announced to assistive technology');
+assert.match(source, /function setInspectorOpen\(/, 'context inspector must have a responsive open-state controller');
+assert.match(source, /async function nativeAction\(/, 'Native Assistance actions must use a shared error-aware request helper');
+assert.match(source, /\/api\/safety\/contacts\/.*\/revoke/, 'context inspector must expose owner-scoped safety contact revocation');
 
-console.log('Chat DOM-safety contract passed: storefront card data uses DOM APIs; sanitized Markdown remains intact.');
+console.log('Chat DOM-safety contract passed: storefront cards use DOM APIs, Markdown remains sanitized, and Native Assistance controls are accessible and error-aware.');

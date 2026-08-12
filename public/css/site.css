@@ -9,6 +9,15 @@
   --gray-200: #E2DED7;
   --gray-400: #A8A196;
   --gray-600: #5C574F;
+  --surface-warm: #F7F3EE;
+  --surface-soft: #F8ECE7;
+  --surface-dark: #1F1C1A;
+  --text-on-dark: #FFFFFF;
+  --text-on-primary: #FFFFFF;
+  --danger: #9A3F2B;
+  --success: #2E7D32;
+  --focus-ring: rgba(30, 136, 229, 0.42);
+  --focus-ring-offset: 3px;
   --border-radius-sm: 6px;
   --border-radius: 12px;
   --border-radius-lg: 20px;
@@ -51,6 +60,13 @@ h2, h3, h4 {
 }
 
 a { color: inherit; text-decoration: none; transition: var(--transition); }
+:where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex='-1'])):focus-visible { outline: 3px solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+button, input, select, textarea { font: inherit; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+button:disabled, input:disabled, select:disabled, textarea:disabled { cursor: not-allowed; opacity: .65; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
 
 /* Layout Components */
 .container {
@@ -655,6 +671,8 @@ a { color: inherit; text-decoration: none; transition: var(--transition); }
 .goal-chip-box:hover {
   border-color: rgba(217, 122, 92, 0.4);
 }
+
+.otp-resend-btn { margin-top: 12px; font-size: 13px; }
 
 /* Auth Submit Button */
 .auth-submit-btn {

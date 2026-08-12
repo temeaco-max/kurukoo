@@ -20,21 +20,21 @@ This document records the current homepage copy reference for `kurukoo.ai.studio
 
 ## Header / Navigation
 
-> **Updated to match live `nav.ejs`.** The previous version had an outdated 3-link nav. The live site uses a 7-item nav with a Platform mega-dropdown.
+> **Aligned with the live `nav.ejs` partial and `publicRoutes.ts`.** The public header uses six extensionless navigation links, a Web Chat CTA, and a phone-auth account entry. No unsupported WhatsApp, USSD, SMS, App Store, or platform-mega-dropdown claim belongs in this reference.
 
-| Item | Label | Notes |
+| Item | Label | Live destination |
 |---|---|---|
-| Logo | Kurukoo | Wordmark + icon |
-| Nav link 1 | Features ▼ | Public feature and service entry links |
-| Nav link 2 | How It Works ▼ | Public explanation and role-oriented journey links |
-| Nav link 3 | Discover ▼ | Nearby Pulse discovery surface |
-| Nav link 4 | Earn ▼ | Earning and skills entry links |
-| Nav link 5 | Resources ▼ | Educational content library, API docs, legal, and blog |
-| Nav link 6 | Blog | Public articles |
-| Right side | User account | Login entry point |
-| CTA button | Start Chatting | Primary action. Opens the existing channel/onboarding gateway. |
+| Logo | Kurukoo | `/` |
+| Nav link 1 | Discover | `/discover` |
+| Nav link 2 | How it works | `/how-it-works` |
+| Nav link 3 | Network | `/network` |
+| Nav link 4 | Channels | `/channels` |
+| Nav link 5 | Resources | `/resources` |
+| Nav link 6 | About | `/about` |
+| Right side | User account | `/login` |
+| CTA button | Start chatting | `/chat` |
 
-> **Developer note:** The public navigation and onboarding gateway use controller-bound event listeners, not inline click or submit handlers. Visual styling remains in shared stylesheets.
+> **Developer note:** The public navigation is route-backed and uses shared stylesheet classes. Web Chat is the active conversational channel in this deployment; other channels remain unavailable until their adapters are configured.
 
 ---
 
@@ -50,10 +50,10 @@ Meet Kurukoo — a conversational utility that helps you find trusted people, ge
 [Start chatting] (links to `/chat`)
 
 **Secondary CTA:**  
-[Dial *7000#]
+[How it works] (links to `/how-it-works`)
 
 **Trust line (small, under CTAs):**  
-⭐ Built for everyday coordination • No app download required • Privacy first
+⭐ Built for everyday coordination • Web Chat is available in this deployment • Privacy first
 
 ---
 
@@ -175,7 +175,7 @@ Illustrative, non-live map preview on the homepage; the full discovery experienc
 > The preview must be visibly labelled illustrative and must not present names, distances, availability, ratings, provider counts, transactions, or activity as live data without a real source.
 
 **CTA button below map:**  
-[Explore the full map →] (links to `/:country/discover`)
+[Explore the full map →] (links to `/discover`)
 
 **Privacy notice (small, below CTA):**  
 Illustrative preview. When active, exact locations remain private and you control when you go live.
@@ -254,9 +254,9 @@ One conversation can help coordinate the day without asking you to juggle apps o
 | 🌙 9:00 PM | Wind down | "Set up tomorrow’s request whenever you are ready." |
 
 **CTA below timeline:**  
-[Start your day with Kurukoo →]
+[Start your day with Kurukoo →] (links to `/chat`)
 
-> **Developer note:** This section replaces the previous pricing table on the homepage. The homepage's job is to sell the experience, not the price. The pricing page (`/:country/pricing`) remains accessible from the nav for users who want pricing details.
+> **Developer note:** This section replaces the previous pricing table on the homepage. The homepage's job is to sell the experience, not the price. The pricing page (`/pricing`) remains accessible from the nav for users who want pricing details.
 
 ---
 
@@ -270,7 +270,7 @@ Three simple steps. No downloads. No complicated setup.
 
 | Step | What happens | Visual |
 |---|---|---|
-| 1 | You send a message: "I need a plumber" | Phone → WhatsApp message |
+| 1 | You send a message: "I need a plumber" | Web Chat message |
 | 2 | Kurukoo finds a trusted provider nearby, coordinates payment and delivery | Kurukoo matches + escrow |
 | 3 | The job gets done. You confirm. Everyone gets paid. | Checkmark + payment release |
 
@@ -285,7 +285,7 @@ Three simple steps. No downloads. No complicated setup.
 Why Kurukoo?
 
 **Body:**  
-The world is moving to super apps — one app for everything. But in Africa, data is expensive, phones are basic, and downloading ten different apps is not an option. Kurukoo flips the model: one conversation replaces all of them. WhatsApp, USSD, or PWA — same conversation, same profile, same memory. Your payment is held in escrow until the job is done. 1 Point = ₦1. No expiry. Works on any phone.
+Kurukoo keeps everyday coordination in one conversation. In this deployment, Web Chat is the supported conversational channel; the same profile and memory remain attached to the account. Eligible requests can follow the documented payment and escrow lifecycle when the required payment boundary is available. Points and provider settlement remain subject to the supported product and deployment configuration.
 
 > **Developer note:** The previous 5-differentiator cards (One Conversation, One Profile, Kurukoo Guarantee, Points That Matter, Works on Any Phone) have been absorbed into the Living Profile, Nearby Pulse, "What Can You Do?", and "Your Day with Kurukoo" sections above. This brief paragraph serves as a transition into Social Proof. If individual differentiator cards are still wanted, they can be added as a compact accordion below this paragraph.
 
@@ -309,13 +309,13 @@ No testimonials, customer counts, city claims, earnings stories, response-time e
 Ready to get going?
 
 **Subhead:**  
-Open WhatsApp. Send a message. That's it.
+Open Web Chat and describe what you need.
 
 **Primary CTA:**  
-[Open WhatsApp Chat]
+[Start chatting] (links to `/chat`)
 
 **Secondary CTA:**  
-[Try on USSD *7000#]
+[How it works] (links to `/how-it-works`)
 
 **Small print:**  
 No download. No registration form. No credit card. Just start.
@@ -328,9 +328,9 @@ No download. No registration form. No credit card. Just start.
 |---|---|---|
 | **Kurukoo** | **Discover** | **Resources** |
 | Wake up. Get going. | Explore Categories | User Guides |
-| utilityapp.ai.studio | Discover Map | Provider Guides |
-| | For You | Business Guides |
-| | Nearby Pulse | API Docs |
+| kurukoo.ai.studio | Discover Map | Provider Guides |
+| | Web Chat | Business Guides |
+| | Network | API Docs |
 
 | Column 4 | Column 5 | Column 6 |
 |---|---|---|
@@ -343,9 +343,9 @@ No download. No registration form. No credit card. Just start.
 | Column 7 |
 |---|---|
 | **Channels** |
-| WhatsApp: 7000 |
-| USSD: *7000# |
-| PWA: kurukoo.com |
+| Web Chat: `/chat` |
+| Request Hub: `/web` |
+| Other channels: unavailable in this deployment |
 
 | Social | |
 |---|---|
@@ -365,7 +365,7 @@ No download. No registration form. No credit card. Just start.
 2. **Always use:** "Points" with capital P. "Kurukoo Guarantee." "One profile. Every hustle."
 3. **Tone:** Confident but not arrogant. Human but not slang-heavy. Clear but not dumbed-down.
 4. **Length:** Headlines max 8 words. Body copy max 2 sentences per paragraph. Mobile-first.
-5. **Accessibility:** All CTAs must work on feature phones (USSD) and smartphones (WhatsApp/PWA).
+5. **Accessibility:** All CTAs must work with keyboard and touch input, preserve visible focus, and remain truthful about the active Web Chat channel. Do not claim feature-phone, WhatsApp, USSD, SMS, or app-store support without a configured adapter and runtime evidence.
 6. **No inline styles:** All visual styling must use CSS classes from shared stylesheets. No `style="..."` attributes in production HTML. See FRONTEND_PAGES.md §Responsive Design Mandate.
 7. **Images:** All images must have `alt` text (auto-generated via §53.2.3 if missing), `loading="lazy"`, `width`/`height` attributes, and WebP/AVIF format with responsive `srcset`.
 8. **Responsive:** All sections must work at 360px viewport first. Test at 360px, 768px, and 1024px breakpoints.
@@ -374,7 +374,7 @@ No download. No registration form. No credit card. Just start.
 
 ## File Structure
 
-- `homepage_copy.md` — this document (v2.0)
+- `homepage_copy.md` — this document (v2.1, reconciled with the live route and channel boundary)
 - `how_it_works_copy.md` — detailed How It Works page content
 - `FRONTEND_PAGES.md` — complete page registry for the entire ecosystem (all public, PWA, and admin pages)
 - `pricing_copy.md` — pricing page content (to create)
