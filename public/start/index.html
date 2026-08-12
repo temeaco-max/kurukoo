@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Continue with Kurukoo</title>
+  <meta name="description" content="Continue a Kurukoo referral, network, offer or channel context.">
+  <style>
+    body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#fff8f0;color:#1f2024;font:16px/1.5 Inter,system-ui,sans-serif}main{width:min(560px,100%);padding:28px;border:1px solid #e7ddd3;border-radius:20px;background:#fff;box-shadow:0 18px 60px rgba(0,0,0,.08)}h1{font:600 30px/1.1 "Space Grotesk",system-ui,sans-serif;margin:0 0 12px}p{color:#62656b}button{min-height:48px;border:0;border-radius:12px;padding:12px 18px;background:#d97a5c;color:#fff;font-weight:600;cursor:pointer}.meta{margin:18px 0;padding:14px;border-radius:12px;background:#f7f3ef;font-size:14px}.muted{font-size:13px;color:#73767b}
+  </style>
+</head>
+<body>
+<main>
+  <div class="muted">KURUKOO</div>
+  <h1 id="title">Continue with Kurukoo</h1>
+  <p id="copy">This link carries context into your Kurukoo conversation. It does not sign you in or complete a transaction.</p>
+  <div class="meta" id="meta">Preparing your context…</div>
+  <button id="continue">Start chatting</button>
+  <p class="muted">Your guest conversation remains available. Kurukoo only asks for identity when a protected or durable action requires it.</p>
+</main>
+<script>
+(() => {
+  const p = new URLSearchParams(location.search);
+  const context = p.get('context') || 'public';
+  const labels = {referral:'Referral invitation',contributor:'Contributor invitation',network:'Kurukoo Network',offer:'Kurukoo offer',product:'Product or service',location:'Kurukoo location',channel:'Channel connection',continue:'Continue on another device',public:'Kurukoo'};
+  const label = labels[context] || labels.public;
+  document.getElementById('title').textContent = label;
+  const parts=[];
+  if(p.get('source')) parts.push('Source: '+p.get('source'));
+  if(p.get('entity')) parts.push('For: '+p.get('entity'));
+  if(p.get('capability')) parts.push('Capability: '+p.get('capability'));
+  if(p.get('channel')) parts.push('Channel: '+p.get('channel'));
+  if(p.get('ref')) parts.push('Referral context detected');
+  document.getElementById('meta').textContent = parts.length ? parts.join(' • ') : 'General Kurukoo entry';
+  const query = new URLSearchParams();
+  query.set('context', context);
+  ['ref','source','entity','capability','channel'].forEach(k => { const v=p.get(k); if(v) query.set(k,v.slice(0,128)); });
+  sessionStorage.setItem('kurukoo_qr_context', query.toString());
+  document.getElementById('continue').addEventListener('click', () => {
+    const channel = p.get('channel');
+    const prompt = context === 'referral' ? 'I joined Kurukoo through a referral. Help me get started.'
+      : context === 'contributor' ? 'I scanned a contributor invitation. Show me how I can contribute.'
+      : context === 'channel' ? `I want to connect my ${channel || 'chosen'} channel to Kurukoo.`
+      : context === 'network' ? 'I scanned a Kurukoo Network QR code. Help me explore this network context.'
+      : context === 'offer' || context === 'product' ? 'I scanned a Kurukoo offer. Help me understand and request it.'
+      : 'I scanned a Kurukoo QR code. Help me with what I found.';
+    sessionStorage.setItem('kurukoo_qr_prompt', prompt);
+    location.href='/chat/';
+  });
+})();
+</script>
+</body>
+</html>
