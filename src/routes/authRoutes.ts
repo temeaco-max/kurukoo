@@ -1,7 +1,8 @@
 /**
- * Auth routes — OTP-first phone login (security audit priority #2).
- * Legacy /api/auth/login remains for profile sync only when JWT already present,
- * or when OTP_LEGACY_LOGIN=true (dev).
+ * Auth routes — OTP-first phone identity for the conversation-first Kurukoo entry flow.
+ * The JWT remains the canonical signed identity token; browser sessions receive it
+ * through an HttpOnly cookie so protected conversation APIs work without exposing
+ * the token to application DOM code.
  */
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
@@ -11,6 +12,7 @@ import { authRateLimit } from '../middleware/rateLimit.js';
 import { authenticateUser, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
+const AUTH_COOKIE = 'kurukoo_auth';
 
 function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
@@ -20,6 +22,16 @@ function getJwtSecret(): string {
 
 function issueUserToken(phone: string): string {
   return jwt.sign({ phone, role: 'user' }, getJwtSecret(), { expiresIn: '30d', algorithm: 'HS256' });
+}
+
+function setAuthCookie(res: any, token: string): void {
+  res.cookie(AUTH_COOKIE, token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+  });
 }
 
 async function upsertProfile(phone: string, name?: string, email?: string, goal?: string): Promise<void> {
@@ -64,59 +76,51 @@ router.post('/verify-otp', authRateLimit, async (req, res) => {
 
     await upsertProfile(result.phone, req.body?.name, req.body?.email, req.body?.goal);
     const token = issueUserToken(result.phone);
-    res.json({
-      success: true,
-      phone: result.phone,
-      token,
-      message: 'Authenticated',
-    });
+    setAuthCookie(res, token);
+    res.json({ success: true, phone: result.phone, token, message: 'Authenticated' });
   } catch (e: any) {
     console.error('verify-otp error:', e);
     res.status(500).json({ success: false, message: e.message || 'Verification failed' });
   }
 });
 
-/**
- * Profile sync for already-authenticated sessions.
- * Does NOT issue a new JWT from a bare phone number unless OTP_LEGACY_LOGIN=true.
- */
+/** Profile sync for an already authenticated session. */
 router.post('/login', authRateLimit, async (req, res) => {
   try {
     const { phone, name, email, goal } = req.body || {};
-    if (!phone && !email) {
-      return res.status(400).json({ success: false, error: 'Phone number or email required' });
-    }
+    if (!phone && !email) return res.status(400).json({ success: false, error: 'Phone number or email required' });
 
-    // Prefer Authorization bearer if present
     const authHeader = req.headers.authorization;
     if (authHeader?.startsWith('Bearer ')) {
       try {
-        const decoded = jwt.verify(authHeader.slice(7), getJwtSecret(), { algorithms: ['HS256'] }) as any;
+        const suppliedToken = authHeader.slice(7).trim();
+        const decoded = jwt.verify(suppliedToken, getJwtSecret(), { algorithms: ['HS256'] }) as any;
         if (decoded?.phone) {
           await upsertProfile(decoded.phone, name, email, goal);
-          return res.json({ success: true, phone: decoded.phone, name: name || 'Kurukoo User', token: authHeader.slice(7) });
+          setAuthCookie(res, suppliedToken);
+          return res.json({ success: true, phone: decoded.phone, name: name || 'Kurukoo User', token: suppliedToken });
         }
-      } catch {
-        /* fall through */
-      }
+      } catch { /* fall through to OTP-only policy */ }
     }
 
     if (process.env.OTP_LEGACY_LOGIN === 'true') {
       const userPhone = String(phone);
       await upsertProfile(userPhone, name, email, goal);
       const token = issueUserToken(userPhone);
+      setAuthCookie(res, token);
       return res.json({ success: true, phone: userPhone, name: name || 'Kurukoo User', token, warning: 'Legacy login enabled — disable OTP_LEGACY_LOGIN in production' });
     }
 
-    return res.status(401).json({
-      success: false,
-      error: 'Phone login requires OTP. Call /api/auth/request-otp then /api/auth/verify-otp.',
-      require_otp: true,
-    });
+    return res.status(401).json({ success: false, error: 'Phone login requires OTP.', require_otp: true });
   } catch (e: any) {
     console.error('Auth login error:', e);
     return res.status(500).json({ success: false, error: e.message || 'Login failed' });
   }
+});
+
+router.post('/logout', authRateLimit, (_req, res) => {
+  res.clearCookie(AUTH_COOKIE, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/' });
+  res.json({ success: true, message: 'Signed out' });
 });
 
 router.get('/me', authenticateUser, async (req: AuthRequest, res) => {
