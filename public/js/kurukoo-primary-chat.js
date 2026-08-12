@@ -126,8 +126,8 @@
     item.classList.toggle('active', active);
   }
 
-  function createMessage(role, text = '', id = null, cardData = null) {
-    const wrap = document.createElement('article'); wrap.className = `message ${role}`; if (id) wrap.dataset.messageId = id;
+  function createMessage(role, text = '', id = null, cardData = null, animate = true) {
+    const wrap = document.createElement('article'); wrap.className = `message ${role}`; if (animate) wrap.classList.add('message-enter'); if (id) wrap.dataset.messageId = id;
     
     const avatarDiv = makeElement('div', 'avatar'); avatarDiv.setAttribute('aria-hidden', 'true');
     if (role === 'assistant') {
@@ -178,7 +178,7 @@
 
   function appendStreamBubble() {
     $('welcome')?.remove(); 
-    const wrap = document.createElement('article'); wrap.className = 'message assistant';
+    const wrap = document.createElement('article'); wrap.className = 'message assistant message-enter';
     
     const avatar = makeElement('div', 'avatar'); avatar.setAttribute('aria-hidden', 'true');
     const img = document.createElement('img'); img.src = '/assets/brand/logo-icon.svg'; img.alt = 'K'; img.width = 20;
@@ -809,7 +809,7 @@
     messages.forEach(m => {
       let cardData = null;
       if (m.card_data) try { cardData = JSON.parse(m.card_data); } catch {}
-      createMessage(m.sender === 'user' ? 'user' : 'assistant', m.content, m.id, cardData);
+      createMessage(m.sender === 'user' ? 'user' : 'assistant', m.content, m.id, cardData, false);
     });
   }
 
