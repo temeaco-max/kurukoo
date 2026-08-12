@@ -72,5 +72,5 @@ export async function deleteUserData(phone: string): Promise<void> {
     db.run(`DELETE FROM profile_access_log WHERE phone = ?`, [phone]);
     
     saveDb();
-    console.log(`[DATA RETENTION] Deleted user data for ${phone}.`);
+    console.log('[DATA RETENTION] Deleted user data for an authenticated account.');
 }

@@ -171,3 +171,12 @@ Migrate deliberately when the deployment needs more than one concurrent writer, 
 ### Final Launch-Hardening Matrix
 
 The detailed capability classification, evidence boundaries, launch profiles, external requirements, and deferred scaling triggers are maintained in [`LAUNCH_HARDENING_MATRIX.md`](./LAUNCH_HARDENING_MATRIX.md). It is the authoritative companion to this build status for the controlled pilot decision.
+
+
+## Controlled pilot certification
+
+The repository has undergone a controlled-real-world pilot certification pass. The evidence matrix is in `PILOT_CERTIFICATION_MATRIX.md`, the operator runbook is in `PILOT_OPERATING_GUIDE.md`, and the legal/compliance decision checklist is in `PILOT_COMPLIANCE_CHECKLIST.md`. The recommended classification is **CONTROLLED PILOT READY** only for an invited, supervised Web Chat Assisted Pilot with production payment, regulated escrow, external execution, outbound channels, emergency notification, and autonomous agents disabled unless their external and operational gates are separately approved.
+
+This pass added three safety boundaries: production startup fails closed when `JWT_SECRET` or `MEMORY_ENCRYPTION_KEY` is missing or shorter than 32 characters; `KURUKOO_EXTERNAL_EXECUTION_ENABLED=false` blocks connector authorization by default; and referral, OTP, safety-circle, money-circle, and deletion logs no longer emit phone numbers, peer lists, or transaction amounts. The execution and QR regression fixtures cover the new controls.
+
+No human-test results, real provider availability, real payment, escrow custody, fulfilment, emergency notification, or outbound channel delivery are claimed without external evidence. See `PILOT_CERTIFICATION_MATRIX.md` for the exact remaining activation requirements.

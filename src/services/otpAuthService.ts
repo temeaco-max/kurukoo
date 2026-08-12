@@ -56,7 +56,7 @@ export async function requestPhoneOtp(phoneInput: string): Promise<{ success: bo
   // Delivery: WhatsApp / SMS when configured; never log code in production.
   const deliveryConfigured = Boolean(process.env.WHATSAPP_TOKEN || process.env.AFRICASTALKING_API_KEY);
   if (deliveryConfigured) {
-    console.log(`[OTP] Code issued for ${phone} (channel delivery pending integration)`);
+    console.log('[OTP] Code issued; channel delivery pending integration');
   }
 
   const exposeDebug = process.env.NODE_ENV !== 'production' && process.env.OTP_DEBUG === 'true';

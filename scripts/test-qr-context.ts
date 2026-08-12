@@ -10,7 +10,7 @@ process.env.KURUKOO_DISABLE_LISTEN = 'true';
 const { app } = await import('../src/index.js');
 const { getDb } = await import('../src/database.js');
 const { upsertProfile } = await import('../src/routes/authRoutes.js');
-const { generateReferralCode } = await import('../src/services/referralService.js');
+const { generateReferralCode, trackReferral } = await import('../src/services/referralService.js');
 const { buildQrEntryUrl, describeQrContext, parseQrContext, signQrContext, verifyQrContext } = await import('../src/services/qrContextService.js');
 const { listChatConversations, listChatMessages } = await import('../src/services/chatConversationService.js');
 
@@ -105,6 +105,9 @@ try {
   const referrerPhone = `+234805${String(Date.now()).slice(-7)}`;
   await upsertProfile(referrerPhone, 'QR Referrer');
   const referralCode = await generateReferralCode(referrerPhone);
+  await trackReferral(referrerPhone, referrerPhone, referralCode);
+  const selfReferralRows = (await getDb()).exec(`SELECT status FROM referrals WHERE referrer_phone=? AND referred_phone=?`, [referrerPhone, referrerPhone]);
+  assert.equal(selfReferralRows[0]?.values?.length || 0, 0, 'Service-level self-referral must not create attribution');
   const migrationToken = signQrContext(parseQrContext({ context: 'referral', ref: referralCode, source: 'migration-test' })!);
   const migrationActivation = await fetch(`${baseUrl}/api/qr/activate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ qr: migrationToken }) });
   const migrationGuestCookie = cookieValue(migrationActivation.headers, 'kurukoo_guest_id');

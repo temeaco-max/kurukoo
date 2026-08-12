@@ -7,6 +7,7 @@ const dbPath = path.join(os.tmpdir(), `kurukoo-execution-${process.pid}-${Date.n
 process.env.DB_PATH = dbPath;
 process.env.NODE_ENV = 'production';
 process.env.KURUKOO_PAY_PROVIDER = 'sandbox';
+process.env.KURUKOO_EXTERNAL_EXECUTION_ENABLED = 'true';
 
 const { getDb, saveDb } = await import('../src/database.js');
 const { createEconomicRequest, getEconomicRequest } = await import('../src/services/skillFlows.js');
@@ -76,6 +77,17 @@ await addEconomicParticipant({
 const before = await getEconomicRequest(requestId);
 assert.equal(before?.status, 'requested', 'execution must not change the canonical Economic Request status');
 assert.equal(before?.providerPhone, null, 'delivery execution must not become the primary escrow provider');
+
+process.env.KURUKOO_EXTERNAL_EXECUTION_ENABLED = 'false';
+const deploymentDisabled = await authorizeProviderExecution({
+  requestId,
+  providerPhone: unconnectedPhone,
+  role: 'delivery_provider',
+  capability: 'delivery',
+  actionRequested: 'dispatch_delivery',
+});
+assert.deepEqual(deploymentDisabled, { authorized: false, reason: 'External execution is disabled by deployment policy' }, 'deployment kill switch must fail closed');
+process.env.KURUKOO_EXTERNAL_EXECUTION_ENABLED = 'true';
 
 const blocked = await authorizeProviderExecution({
   requestId,

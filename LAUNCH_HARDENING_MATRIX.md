@@ -66,3 +66,10 @@ Real Stripe collection requires Stripe server credentials and a registered HTTPS
 ## Deferred scaling triggers
 
 Do not add Redis, PostgreSQL, Kubernetes, queues, CDN, or microservices merely to claim production readiness. Introduce them when the pilot requires multiple concurrent writers, distributed rate limiting, durable work independent of the application process, high-volume asynchronous processing, large media storage, or multi-instance coordination. The current single-instance pilot is intentionally bounded and documented in `BUILD_STATUS.md`.
+
+
+## Controlled pilot certification update
+
+The certification pass classifies Kurukoo as **CONTROLLED PILOT READY** only for an invited, supervised Web Chat Assisted Pilot. The safe profile keeps production payment, regulated escrow, external execution, outbound channels, emergency notification, and autonomous agents disabled unless each external, commercial, legal, and human-operational gate is approved.
+
+New repository controls in this pass are production fail-closed validation for `JWT_SECRET` and `MEMORY_ENCRYPTION_KEY`, the default-disabled `KURUKOO_EXTERNAL_EXECUTION_ENABLED` kill switch, service-level self-referral rejection, and redaction of phone numbers, peer lists, and transaction amounts from standard logs. Detailed scenario evidence and remaining activation requirements are recorded in `PILOT_CERTIFICATION_MATRIX.md`; the operator procedure is in `PILOT_OPERATING_GUIDE.md`; compliance decisions are in `PILOT_COMPLIANCE_CHECKLIST.md`.

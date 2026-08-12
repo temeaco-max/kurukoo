@@ -64,7 +64,7 @@ export async function broadcastSafetyCircleAlert(circleId: number, alertPhone: s
         throw new Error('Circle not found');
     }
     const peersToNotify = details.members.filter((m: any) => m.phone !== alertPhone);
-    console.log(`Safety Circle alert [${alertType}] broadcast to:`, peersToNotify.map((m: any) => m.phone));
+    console.log(`[Safety Circle] Alert ${alertType} broadcast to ${peersToNotify.length} eligible members`);
     return {
         success: true,
         notifiedCount: peersToNotify.length
@@ -87,9 +87,9 @@ export async function joinMoneyCircle(circleId: number, phone: string): Promise<
 
 export async function recordContribution(circleId: number, phone: string, amount: number): Promise<boolean> {
     if (!MONEY_CIRCLE_LIVE) {
-        console.warn(`[GATED] MONEY_CIRCLE_LIVE is FALSE. Simulated contribution of ${amount} for ${phone} in circle ${circleId}. No actual funds moved.`);
+        console.warn(`[GATED] MONEY_CIRCLE_LIVE is FALSE. Simulated contribution recorded for circle ${circleId}; no actual funds moved.`);
     } else {
-        console.log(`[LIVE TRANSACT] Executing real P2P contribution ledger for ${phone}: ${amount}`);
+        console.log('[LIVE TRANSACT] Executing real P2P contribution ledger');
     }
 
     const db = await getDb();

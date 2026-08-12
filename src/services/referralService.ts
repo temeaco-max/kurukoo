@@ -37,6 +37,7 @@ export async function findReferrerByCode(code: string): Promise<string | null> {
 }
 
 export async function trackReferral(referrerPhone: string, referredPhone: string, referralCode: string): Promise<void> {
+    if (!referrerPhone || !referredPhone || referrerPhone === referredPhone) return;
     const db = await getDb();
     db.run(`INSERT OR IGNORE INTO referrals (referrer_phone, referred_phone, referral_code, status, created_at) VALUES (?, ?, ?, 'registered', CURRENT_TIMESTAMP)`, [referrerPhone, referredPhone, referralCode]);
     saveDb();
@@ -48,7 +49,7 @@ export async function claimReferral(referredPhone: string): Promise<boolean> {
     stmt.bind([referredPhone]);
     const referral = stmt.getAsObject();
     stmt.free();
-    if (referral && referral.referrer_phone) {
+    if (referral && referral.referrer_phone && String(referral.referrer_phone) !== referredPhone) {
         db.run(`UPDATE referrals SET status = 'subscribed' WHERE referred_phone = ?`, [referredPhone]);
         await addCredits(referral.referrer_phone as string, 200, `Referral reward for subscription of ${referredPhone}`);
         saveDb();

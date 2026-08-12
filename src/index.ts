@@ -3,7 +3,17 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const production = process.env.NODE_ENV === 'production';
-if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+const jwtSecret = String(process.env.JWT_SECRET || '');
+const memoryEncryptionKey = String(process.env.MEMORY_ENCRYPTION_KEY || '');
+if (production) {
+  const missingProductionSecrets = [
+    jwtSecret.length >= 32 ? null : 'JWT_SECRET (minimum 32 characters)',
+    memoryEncryptionKey.length >= 32 ? null : 'MEMORY_ENCRYPTION_KEY (minimum 32 characters)',
+  ].filter(Boolean) as string[];
+  if (missingProductionSecrets.length) {
+    throw new Error(`[Kurukoo Startup] Missing production secrets: ${missingProductionSecrets.join(', ')}`);
+  }
+} else if (jwtSecret.length < 32) {
   process.env.JWT_SECRET = 'super_secret_safe_and_long_jwt_key_32_chars_fallback';
 }
 

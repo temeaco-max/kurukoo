@@ -286,6 +286,9 @@ export async function authorizeProviderExecution(input: {
   capability: string;
   actionRequested: string;
 }): Promise<{ authorized: true; connectorId: string; externalProviderId: string | null } | { authorized: false; reason: string }> {
+  if (process.env.KURUKOO_EXTERNAL_EXECUTION_ENABLED !== 'true') {
+    return { authorized: false, reason: 'External execution is disabled by deployment policy' };
+  }
   const request = await getEconomicRequest(cleanText(input.requestId, 'Request id', 128));
   if (!request) return { authorized: false, reason: 'Economic Request not found' };
   const providerPhone = cleanText(input.providerPhone, 'Provider phone', 128);
