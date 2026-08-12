@@ -1,9 +1,9 @@
 {
   "app.name": "Kurukoo",
-  "app.tagline": "A modern utility platform for everyday hustle.",
-  "tagline": "A modern utility platform for everyday hustle.",
-  "hero_title": "Wake up. Get going.",
-  "hero_subtitle": "Nigeria's leading everyday utility platform. One conversation to request anything, offer any skill, grow business, hustle, gain employment and earn.",
+  "app.tagline": "Tell Kurukoo what you need. Kurukoo figures out who or what can fulfil it.",
+  "tagline": "Tell Kurukoo what you need. Kurukoo figures out who or what can fulfil it.",
+  "hero_title": "Tell Kurukoo what you need.",
+  "hero_subtitle": "Kurukoo figures out who or what can fulfil it — from personal help and reminders to trusted people, businesses and services.",
   "currency": "₦",
   "pricing": {
     "base": "500",
@@ -12,16 +12,19 @@
   },
   "shortcode": "*7000#",
   "welcome": "Welcome to Kurukoo",
-  "request_ride": "Request Ride",
-  "find_worker": "Find Worker",
+  "request_ride": "Find a ride",
+  "find_worker": "Find someone",
   "money_circle": "Kurukoo Circle",
-  "reload": "Kurukoo Pay & Topup",
+  "reload": "Points & payments",
   "feature_flags": {
     "ussd": true,
     "nimc_kyc": false,
     "mobile_money": true,
     "stripe_paypal": false,
     "points_enabled": true,
-    "email_required": false
+    "email_required": false,
+    "reminders": true,
+    "safety_checkins": true,
+    "execution_connectors": false
   }
 }
