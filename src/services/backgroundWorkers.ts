@@ -26,6 +26,7 @@ async function progressLinkedEconomicRequest(economicRequestId: string | null | 
     return 'quoted';
   } catch (e) { console.warn('[Worker:deferred] progressLinkedEconomicRequest failed:', e); return 'not_eligible'; }
 }
+<<<<<<< HEAD
 let deferredPassActive = false;
 
 export async function processDueDeferred(): Promise<{ checked: number; matched: number; notified: number; quoted: number }> {
@@ -49,6 +50,23 @@ export async function processDueDeferred(): Promise<{ checked: number; matched: 
   } finally {
     deferredPassActive = false;
   }
+=======
+export async function processDueDeferred(): Promise<{ checked: number; matched: number; notified: number; quoted: number }> {
+  const due = await getDueIntentions(50); let matched = 0; let notified = 0; let quoted = 0;
+  for (const intention of due) {
+    const phone = String(intention.phone || ''); const skill = String(intention.skill || intention.intent || '').trim();
+    if (!phone || !skill) { await incrementAttempt(phone || 'unknown', intention.id); continue; }
+    const match = await find_worker({ skill, location: intention.location ? String(intention.location) : undefined, max: 3 });
+    if (match.count > 0) {
+      matched += 1; const top = match.providers[0]; const note = `Matched ${top.name} (${Number(top.rating || 0).toFixed(1)}★) on deferred re-check`;
+      const progress = await progressLinkedEconomicRequest(intention.economic_request_id ? String(intention.economic_request_id) : null, top); if (progress === 'quoted') quoted += 1;
+      if (progress === 'matched_without_quote') await markPartiallyMatched(phone, intention.id, `${note}. A final provider quote is still required before any payment step.`);
+      else await resolveOpenIntention(phone, intention.id, 'provider_matched', note, `Open chat and continue with ${skill}`).catch(async () => { await markPartiallyMatched(phone, intention.id, note).catch(() => null); });
+      const pushed = await sendFcmPush(phone, 'Kurukoo found a match', `A provider is available for “${skill}”. Open the app and say “continue” to review the quote.`, undefined).catch(() => false); if (pushed) notified += 1;
+    } else await incrementAttempt(phone, intention.id);
+  }
+  return { checked: due.length, matched, notified, quoted };
+>>>>>>> origin/feat/kurukoo-conversation-workspace
 }
 export function startBackgroundWorkers(): void {
   if (started) return;

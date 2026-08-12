@@ -1,36 +1,21 @@
-<div id="mobile-nav-overlay" class="mobile-nav-overlay"></div>
-
-<header class="navbar">
-    <div class="container navbar-inner">
-        <!-- Logo -->
-        <a href="/" class="logo" id="nav-brand-logo">
-            <img src="/assets/brand/logo-icon.svg" alt="Kurukoo Logo" width="32" height="32" class="logo-icon">
-            <img src="/assets/brand/logo-text.svg?v=4" alt="Kurukoo" height="35" class="logo-text">
-        </a>
-        
-        <!-- Desktop Navigation -->
-        <nav id="main-nav-links" class="nav-links">
-            <a href="/discover" class="nav-link">Discover</a>
-            <a href="/how-it-works" class="nav-link">How it works</a>
-            <a href="/network" class="nav-link">Network</a>
-            <a href="/channels" class="nav-link">Channels</a>
-            <a href="/resources" class="nav-link">Resources</a>
-            <a href="/about" class="nav-link">About</a>
-        </nav>
-
-        <!-- Actions -->
-        <div class="nav-actions-right">
-            <a href="/chat" class="btn btn-primary nav-chat-btn">Start chatting</a>
-            
-            <a href="/login" id="nav-user-btn" class="nav-user-btn" aria-label="User Account" title="Sign In or Register">
-                <span class="nav-user-icon-wrap">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                </span>
-            </a>
-
-            <button id="nav-mobile-toggle" class="nav-mobile-toggle" aria-label="Toggle Menu">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-            </button>
-        </div>
+<div id="mobile-nav-overlay" class="mobile-nav-overlay" hidden></div>
+<header class="navbar" data-kurukoo-nav>
+  <div class="container navbar-inner">
+    <a href="/" class="logo" id="nav-brand-logo" aria-label="Kurukoo home"><img src="/assets/brand/logo-icon.svg" alt="" width="32" height="32" class="logo-icon"><img src="/assets/brand/logo-text.svg?v=5" alt="Kurukoo" height="35" class="logo-text"></a>
+    <nav id="main-nav-links" class="nav-links" aria-label="Main navigation">
+      <a href="/how-it-works" class="nav-link">How it works</a>
+      <a href="/explore" class="nav-link">What you can ask</a>
+      <a href="/discover" class="nav-link">Discover</a>
+      <div class="nav-dropdown-container"><a href="/explore" class="nav-link dropdown-toggle nav-link-dropdown-toggle"><span>Network</span><span class="dropdown-caret">▼</span></a><div class="simple-dropdown"><a href="/explore" class="dropdown-item">Providers &amp; businesses</a><a href="/partners" class="dropdown-item">Partners</a><a href="/explore/gigs" class="dropdown-item">Agents &amp; contributors</a></div></div>
+      <a href="/channels" class="nav-link">Channels</a>
+      <div class="nav-dropdown-container"><a href="/resources" class="nav-link dropdown-toggle nav-link-dropdown-toggle"><span>Resources</span><span class="dropdown-caret">▼</span></a><div class="simple-dropdown"><a href="/resources" class="dropdown-item">Resources</a><a href="/help" class="dropdown-item">Help</a><a href="/blog" class="dropdown-item">Blog &amp; Kuru Media</a><a href="/api-docs" class="dropdown-item">Developers</a><a href="/legal" class="dropdown-item">Safety, privacy &amp; legal</a></div></div>
+      <a href="/about" class="nav-link">About</a>
+    </nav>
+    <div class="nav-actions-right">
+      <a href="/login" id="nav-user-btn" class="nav-user-btn is-logged-out" aria-label="Account" title="Sign in or register"><span id="nav-user-icon-wrap" class="nav-user-icon-wrap">◎</span></a>
+      <a href="/chat" class="btn btn-primary nav-chat-btn">Start chatting</a>
+      <button type="button" id="mobile-toggle-btn" class="mobile-toggle" aria-label="Toggle navigation menu" aria-expanded="false"><span class="mobile-toggle-icon">☰</span></button>
     </div>
+  </div>
 </header>
+<script src="/js/site-navigation.js?v=1" defer></script>
