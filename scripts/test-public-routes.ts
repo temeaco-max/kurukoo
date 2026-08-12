@@ -17,6 +17,8 @@ const expected = [
     '/safety',
     '/call',
     '/admin/login',
+    '/referral-qr/',
+    '/start',
     '/chat',
     '/how-it-works',
     '/network',

@@ -120,3 +120,9 @@ Do not introduce infrastructure merely because the blueprint names it. Adopt Pos
 The current legacy-boundary removal and its dependent remediation work must pass the full repository CI suite before either is merged to `main`. The dependency audit may retain the documented upstream-only `sharp` advisory until a compatible upstream package releases a safe fix; all other validation must pass.
 
 **Rule for future implementation:** Before creating or changing a file, inspect the current repository implementation and confirm that the intended capability does not already exist. Never introduce a second architecture for a capability that already has a canonical implementation.
+
+## Current integration: Web Voice and QR contextual entry
+
+The current integration branch adds browser Web Voice to the canonical `/chat` relationship and QR/deep-link contextual entry through `QrContext`, `/start`, `/api/qr/activate`, `/api/qr/generate`, and `/referral-qr/`. Voice uses the normal conversation, guest-first identity flow, FastText/intent router, skills, Economic Request lifecycle, memory, reminders, Points, safety, and structured chat cards; it is not a phone, IVR, channel, or separate request product. QR opens the normal chat with a contextual greeting and may continue through text or voice; it is not authentication, payment, a Points award, a referral-reward engine, a channel adapter, or an economic action.
+
+A real browser Live session remains conditional on owner-managed provider configuration and applicable quota. When unavailable, the chat remains functional by text and reports a plain-language voice fallback. QR referral attribution is registered only after the existing OTP success and is still qualified and rewarded solely by the existing referral and Points services.

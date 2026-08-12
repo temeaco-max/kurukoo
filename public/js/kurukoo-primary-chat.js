@@ -828,6 +828,17 @@
     });
   };
 
+  document.addEventListener('kurukoo:qr', event => {
+    const detail = event.detail || {};
+    if (!detail.conversationId || !detail.intro) return;
+    state.conversationId = detail.conversationId;
+    localStorage.setItem('kurukoo_conversation_id', state.conversationId);
+    $('welcome')?.remove();
+    state.messages.push({ role: 'assistant', text: detail.intro, id: detail.messageId || null });
+    createMessage('assistant', detail.intro, detail.messageId || null);
+    refreshHistory();
+  });
+
   document.addEventListener('kurukoo:voice', event => {
     const detail = event.detail || {};
     if (detail.type === 'conversation' && detail.conversationId) {

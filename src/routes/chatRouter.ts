@@ -11,6 +11,7 @@ import { getAuthState, setAuthState, handleConversationalAuth } from '../service
 import { handleSafetyContactInput, setSafetyCaptureState } from '../services/safetyService.js';
 import { finalizeOrder } from '../services/orderFinalizer.js';
 import { migrateGuestSessionToAccount } from '../services/guestSessionMigration.js';
+import { applyQrReferralAttribution } from '../services/qrContextService.js';
 import { streamUnifiedAI } from '../services/unifiedAiEngine.js';
 import economicRequestRouter from './economicRequestRouter.js';
 
@@ -96,6 +97,7 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
         ]);
         
         await migrateGuestSessionToAccount(phone, userPhoneValue);
+        await applyQrReferralAttribution(phone, userPhoneValue).catch(() => undefined);
         
         sse(res, { type: 'auth_success', phone: userPhoneValue });
       }

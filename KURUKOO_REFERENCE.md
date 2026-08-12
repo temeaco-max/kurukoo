@@ -57,3 +57,10 @@ Artist/celebrity admin pages are operational tooling for verification, complianc
 - `npm run dev` → `tsx index.ts`
 - `npm run build` → `tsc && npm run copy:public` (copies `public/`, `views/`, `locales/` into `dist/`)
 - `npm run lint` → `tsc --noEmit` (passes with 0 errors under strict/NodeNext)
+
+## Web Voice and QR Contextual Entry
+
+- **Web Voice** is a browser realtime interface inside the canonical `/chat` conversation. It uses a short-lived server-provisioned Live token when the owner has enabled and configured the provider; it stores text transcripts in the normal `messages` table as `web_voice` and never stores raw audio or a permanent provider credential.
+- Voice uses the same guest-first identity progression, `intentRouter`, FastText classifier, skill metadata, Economic Request lifecycle, memory, reminders, Points, storefront cards, and safety boundaries as text. It is not a telephone, IVR, WhatsApp, Telegram, or separate voice product.
+- **QR** is a safe contextual entry bridge. `QrContext` and `/start` route physical signage, referrals, contributor/network invitations, offers, products, locations, and channel invitations into the same `/chat` conversation. QR is not authentication, payment, Points, referral reward, channel connectivity, or a separate request engine.
+- `POST /api/qr/activate` persists the contextual greeting in the existing conversation. `POST /api/qr/generate` requires the authenticated owner for personal referral QR generation. Scan alone never awards Points; qualified referral reward remains owned by the existing referral and Points services.

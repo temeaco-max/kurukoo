@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { buildQrEntryUrl, parseQrContext, signQrContext, verifyQrContext } from '../src/services/qrContextService.js';
+
+const referral = parseQrContext({ context: 'referral', ref: 'ABCD1234', source: 'poster' });
+assert.deepEqual(referral, { type: 'referral', ref: 'ABCD1234', source: 'poster' });
+assert.equal(parseQrContext({ context: 'payment', ref: 'ABCD' }), null);
+assert.equal(parseQrContext({ context: 'referral', ref: 'x'.repeat(33) }), null);
+assert.equal(parseQrContext({ context: 'channel', channel: 'whatsapp' })?.channel, 'whatsapp');
+assert.equal(parseQrContext({ context: 'channel', channel: 'malicious' }), null);
+const token = signQrContext(referral!);
+assert.deepEqual(verifyQrContext(token), referral);
+assert.equal(verifyQrContext(`${token}tampered`), null, 'tampered opaque context must not resolve');
+const url = buildQrEntryUrl('https://kurukoo.example', referral!);
+assert.equal(new URL(url).pathname, '/start');
+assert.equal(url.includes('token='), false); assert.equal(url.includes('password='), false); assert.equal(url.includes('otp='), false);
+const source = fs.readFileSync('src/routes/qrRouter.ts', 'utf8');
+assert.match(source, /router\.post\('\/activate', optionalAuthenticateUser/);
+assert.match(source, /router\.post\('\/generate', authenticateUser/);
+assert.match(source, /channel: 'web_qr'/);
+assert.doesNotMatch(source, /addPoints\(|addCredits\(/);
+const chat = fs.readFileSync('src/routes/chatRouter.ts', 'utf8');
+assert.match(chat, /applyQrReferralAttribution/);
+console.log('QR context contract passed: validated context, tamper rejection, credential-safe entry URL, no scan reward, canonical conversation activation, and post-auth referral attribution.');
