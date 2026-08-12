@@ -1,4 +1,5 @@
 import { getDb } from '../database.js';
+import { ensureProviderVerificationSchema } from './providerVerification.js';
 
 export interface SourcedProductCard {
     title: string;
@@ -19,24 +20,27 @@ export async function sourceProduct(query: string, country: string): Promise<Sou
     const cleanQuery = query.toLowerCase().trim();
     if (!cleanQuery || !normalizedCountry) return [];
 
+    await ensureProviderVerificationSchema();
     const db = await getDb();
     const cards: SourcedProductCard[] = [];
     try {
         const stmt = db.prepare(`
-            SELECT m.name, m.location, m.verified_provider,
-                   s.skill, s.hourly_rate, s.rating, s.verified_artist
+            SELECT m.name, m.location, v.state AS verification_state,
+                   s.skill, s.hourly_rate, s.rating
             FROM memory_profiles m
             JOIN skills s ON m.phone = s.phone
+            JOIN provider_verifications v ON v.phone=m.phone
             WHERE lower(m.country) = ?
               AND (lower(s.skill) LIKE ? OR lower(s.skill) = ?)
-              AND (COALESCE(m.verified_provider, 0) = 1 OR COALESCE(s.verified_artist, 0) = 1)
+              AND v.state='verified' AND v.evidence_ref IS NOT NULL AND trim(v.evidence_ref)<>''
+              AND (v.expires_at IS NULL OR datetime(v.expires_at)>datetime('now'))
             LIMIT 3
         `);
         stmt.bind([normalizedCountry, `%${cleanQuery}%`, cleanQuery]);
         while (stmt.step()) {
             const row = stmt.getAsObject() as Record<string, unknown>;
             const rate = Number(row.hourly_rate);
-            const verified = Boolean(Number(row.verified_provider ?? 0) || Number(row.verified_artist ?? 0));
+            const verified = String(row.verification_state || '') === 'verified';
             cards.push({
                 title: `${row.name || 'Provider'} (${row.skill})`,
                 price: Number.isFinite(rate) && rate > 0 ? `₦${rate.toLocaleString()}/hr` : 'Price on request',

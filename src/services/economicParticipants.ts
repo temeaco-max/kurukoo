@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { getDb, saveDb } from '../database.js';
 import { createEconomicRequest, getEconomicRequest, type EconomicRequest } from './skillFlows.js';
 import { find_worker, type FindWorkerResult } from './find-worker.js';
+import { ensureProviderVerificationSchema, providerMayBeDiscovered } from './providerVerification.js';
 
 export const ECONOMIC_PARTICIPANT_ROLES = [
   'seller',
@@ -163,12 +164,7 @@ async function requireRequestOwner(requestId: string, ownerPhone: string): Promi
 }
 
 async function requireVerifiedProvider(phone: string): Promise<void> {
-  const db = await getDb();
-  const stmt = db.prepare('SELECT verified_provider FROM memory_profiles WHERE phone=? LIMIT 1');
-  stmt.bind([phone]);
-  const verified = stmt.step() ? Number(stmt.getAsObject().verified_provider) === 1 : false;
-  stmt.free();
-  if (!verified) throw new Error('A verified provider is required for this participant role');
+  if (!await providerMayBeDiscovered(phone)) throw new Error('An evidence-verified provider is required for this participant role');
 }
 
 async function requireRegisteredAgent(agentId: string): Promise<void> {
@@ -290,7 +286,7 @@ function knownOfferFromRow(row: any): KnownEconomicOffer {
   return {
     ...offerFromRow(row),
     sellerName: String(row.seller_name || 'Verified seller'),
-    sellerVerified: Number(row.verified_provider || 0) === 1,
+    sellerVerified: String(row.verification_state || '') === 'verified',
   };
 }
 
@@ -306,14 +302,16 @@ function offerSearchTerms(query: string): string[] {
  * an inventory or external marketplace connector.
  */
 export async function searchKnownEconomicOffers(query: string, limit = 5): Promise<KnownEconomicOffer[]> {
+  await ensureProviderVerificationSchema();
   const terms = offerSearchTerms(query);
   if (!terms.length) return [];
   const db = await getDb();
   const stmt = db.prepare(`
-    SELECT e.*, m.name AS seller_name, m.verified_provider
+    SELECT e.*, m.name AS seller_name, v.state AS verification_state
     FROM economic_offers e
     JOIN memory_profiles m ON m.phone=e.seller_phone
-    WHERE e.status='available' AND COALESCE(m.verified_provider, 0)=1
+    JOIN provider_verifications v ON v.phone=e.seller_phone
+    WHERE e.status='available' AND v.state='verified' AND v.evidence_ref IS NOT NULL AND trim(v.evidence_ref)<>'' AND (v.expires_at IS NULL OR datetime(v.expires_at)>datetime('now'))
     ORDER BY e.updated_at DESC, e.created_at DESC
     LIMIT 50
   `);
@@ -333,12 +331,14 @@ export async function searchKnownEconomicOffers(query: string, limit = 5): Promi
 }
 
 async function getKnownEconomicOffer(id: string): Promise<KnownEconomicOffer | null> {
+  await ensureProviderVerificationSchema();
   const db = await getDb();
   const stmt = db.prepare(`
-    SELECT e.*, m.name AS seller_name, m.verified_provider
+    SELECT e.*, m.name AS seller_name, v.state AS verification_state
     FROM economic_offers e
     JOIN memory_profiles m ON m.phone=e.seller_phone
-    WHERE e.id=? AND e.status='available' AND COALESCE(m.verified_provider, 0)=1
+    JOIN provider_verifications v ON v.phone=e.seller_phone
+    WHERE e.id=? AND e.status='available' AND v.state='verified' AND v.evidence_ref IS NOT NULL AND trim(v.evidence_ref)<>'' AND (v.expires_at IS NULL OR datetime(v.expires_at)>datetime('now'))
     LIMIT 1
   `);
   stmt.bind([cleanText(id, 'Offer id', 128)]);

@@ -27,9 +27,9 @@ export function normalizeProviderEntityType(value: unknown): ProviderEntityType 
 }
 
 /**
- * Artist verification is a human-representation exception only. Every other
- * entity type, including future autonomous assets, must carry verified_provider=1
- * before canonical discovery may return it.
+ * Artist representation is a human-representation exception only. Every provider
+ * entity, including future autonomous assets, requires current evidence-backed
+ * verification lifecycle state before canonical discovery may return it.
  */
 export function mayUseArtistVerification(type: ProviderEntityType): boolean {
   return type === 'human';

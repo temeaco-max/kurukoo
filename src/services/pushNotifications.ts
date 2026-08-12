@@ -14,22 +14,28 @@ async function ensureNotificationTable() {
     return db;
 }
 
-export async function sendFcmPush(phone: string, title: string, body: string, link?: string): Promise<boolean> {
+/** Persist a durable in-app notification. This function never attempts external delivery. */
+export async function enqueueInternalNotification(phone: string, title: string, body: string, link?: string): Promise<boolean> {
     const db = await ensureNotificationTable();
-    const clickLink = link || null;
-
-    // Persist an internal inbox notification even when no external adapter is configured.
-    // This is a durable fallback, not evidence that an external delivery occurred.
     try {
         db.run(
             `INSERT INTO internal_notifications (phone, title, body, link, status) VALUES (?, ?, ?, ?, 'unread')`,
-            [phone, title, body, clickLink],
+            [phone, title, body, link || null],
         );
         saveDb();
+        return true;
     } catch (error) {
         console.error('[Push] Failed to store internal notification:', error);
+        return false;
     }
+}
 
+/**
+ * External FCM delivery boundary. It first records the in-app notification and
+ * returns false until an explicitly configured adapter produces delivery evidence.
+ */
+export async function sendFcmPush(phone: string, title: string, body: string, link?: string): Promise<boolean> {
+    await enqueueInternalNotification(phone, title, body, link);
     console.warn('[Push] FCM delivery adapter is not configured; notification stored in internal queue.');
     return false;
 }

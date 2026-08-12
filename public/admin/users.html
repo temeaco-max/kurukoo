@@ -796,7 +796,6 @@
             <select class="bulk-select" id="bulk-action-dropdown" onchange="handleBulkActionChange(this.value)">
                 <option value="">Choose Bulk Action...</option>
                 <option value="subscription_tier">Update Tier</option>
-                <option value="verified_provider">Update Verification</option>
                 <option value="is_available">Update Availability</option>
                 <option value="add_points">Grant Points</option>
                 <option value="delete">Batch Delete Account</option>
@@ -993,10 +992,10 @@
                 else if (user.subscription_tier === 'Contributor') tierBadgeClass = 'badge-contributor';
 
                 // Status badges
-                const isVerified = user.verified_provider === 1;
-                const statusBadge = isVerified 
-                    ? '<span class="badge badge-success">Verified Provider</span>' 
-                    : '<span class="badge badge-muted">Client User</span>';
+                const verificationState = user.verification_state || 'unverified';
+                const statusBadge = verificationState === 'verified'
+                    ? '<span class="badge badge-success">Evidence verified</span>'
+                    : `<span class="badge badge-muted">${verificationState.replace(/_/g, ' ')}</span>`;
 
                 const displayWallet = '₦' + ((user.wallet_balance_minor || 0) / 100).toFixed(2);
 
@@ -1057,7 +1056,7 @@
 
             if (action === 'subscription_tier') {
                 document.getElementById('bulk-value-tier').style.display = 'block';
-            } else if (action === 'verified_provider' || action === 'is_available') {
+            } else if (action === 'is_available') {
                 document.getElementById('bulk-value-boolean').style.display = 'block';
             } else if (action === 'add_points') {
                 document.getElementById('bulk-value-points').style.display = 'block';
@@ -1142,7 +1141,7 @@
             let finalValue = null;
             if (action === 'subscription_tier') {
                 finalValue = document.getElementById('bulk-value-tier').value;
-            } else if (action === 'verified_provider' || action === 'is_available') {
+            } else if (action === 'is_available') {
                 finalValue = document.getElementById('bulk-value-boolean').value;
             } else if (action === 'add_points') {
                 finalValue = parseInt(document.getElementById('bulk-value-points').value, 10) || 0;

@@ -71,6 +71,12 @@ try {
   assert.equal(responsesBody.responses.length, 1);
   assert.equal(responsesBody.responses[0].quoteMinor, 300000);
 
+  await setProviderVerification(providerPhone, 'suspended', { reason: 'pilot revalidation test' });
+  const blockedSelection = await fetch(`${baseUrl}/api/coordination/requests/${encodeURIComponent(requestId)}/select-provider`, { method: 'POST', headers: auth(customerToken), body: JSON.stringify({ invitationId }) });
+  assert.equal(blockedSelection.status, 409, 'customer cannot select a provider after the provider verification lifecycle becomes suspended');
+  assert.match(String((await blockedSelection.json()).error || ''), /evidence-verified provider/i);
+  await setProviderVerification(providerPhone, 'verified', { evidenceRef: 'pilot-fixture:evidence:provider-002', reviewedBy: 'test' });
+
   const selected = await fetch(`${baseUrl}/api/coordination/requests/${encodeURIComponent(requestId)}/select-provider`, { method: 'POST', headers: auth(customerToken), body: JSON.stringify({ invitationId }) });
   const selectedBody = await selected.json();
   assert.equal(selected.status, 200, `owner can select an accepted provider response: ${JSON.stringify(selectedBody)}`);

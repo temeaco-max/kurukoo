@@ -1,4 +1,5 @@
 import { getDb, saveDb } from '../database.js';
+import { providerMayBeDiscovered } from './providerVerification.js';
 
 /**
  * Trust Score calculation from Blueprint §15.1. The score is derived only from
@@ -61,7 +62,7 @@ export async function ensureTrustScoreSchema(): Promise<void> {
 async function calculateTrustScore(phone: string): Promise<TrustScoreBreakdown | null> {
   await ensureTrustScoreSchema();
   const db = await getDb();
-  const profileStatement = db.prepare('SELECT created_at, verified_provider FROM memory_profiles WHERE phone=? LIMIT 1');
+  const profileStatement = db.prepare('SELECT created_at FROM memory_profiles WHERE phone=? LIMIT 1');
   profileStatement.bind([phone]);
   if (!profileStatement.step()) {
     profileStatement.free();
@@ -84,7 +85,7 @@ async function calculateTrustScore(phone: string): Promise<TrustScoreBreakdown |
     phone,
     avgRating: Number(stats.avg_rating) > 0 ? clamp(Number(stats.avg_rating), 1, 5) : 3,
     completedJobs: Math.max(0, Number(stats.completed_jobs) || 0),
-    verifiedProvider: Number(profile.verified_provider) === 1,
+    verifiedProvider: await providerMayBeDiscovered(phone),
     disputesLost: Math.max(0, Number(disputes.count) || 0),
     accountAgeDays: accountAgeDays(profile.created_at),
     score: 5,

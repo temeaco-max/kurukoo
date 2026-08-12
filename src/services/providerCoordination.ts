@@ -3,7 +3,8 @@ import { getDb, saveDb } from '../database.js';
 import { find_worker } from './find-worker.js';
 import { addEconomicParticipant, getEconomicParticipants, updateEconomicParticipant } from './economicParticipants.js';
 import { getEconomicRequest, transitionEconomicRequest, type EconomicRequest } from './skillFlows.js';
-import { sendFcmPush } from './pushNotifications.js';
+import { enqueueInternalNotification } from './pushNotifications.js';
+import { providerMayBeDiscovered } from './providerVerification.js';
 
 export const PROVIDER_INVITATION_STATUSES = ['invited', 'accepted', 'declined', 'expired', 'withdrawn'] as const;
 export type ProviderInvitationStatus = typeof PROVIDER_INVITATION_STATUSES[number];
@@ -145,12 +146,7 @@ async function requireOwner(requestId: string, ownerPhone: string): Promise<Econ
 }
 
 async function requireVerifiedProvider(providerPhone: string): Promise<void> {
-  const db = await getDb();
-  const stmt = db.prepare('SELECT verified_provider, is_available FROM memory_profiles WHERE phone=? LIMIT 1');
-  stmt.bind([providerPhone]);
-  const row = stmt.step() ? stmt.getAsObject() : null;
-  stmt.free();
-  if (!row || Number(row.verified_provider) !== 1) throw new Error('A verified provider account is required');
+  if (!await providerMayBeDiscovered(providerPhone)) throw new Error('An evidence-verified provider account is required');
 }
 
 function isTerminal(status: string): boolean {
@@ -179,7 +175,7 @@ export async function inviteEligibleProviders(input: { requestId: string; ownerP
     invitations.push(invitation);
     await addEconomicParticipant({ requestId: request.id, ownerPhone: request.phone, role: 'service_provider', providerPhone: provider.phone, capability: request.skill, status: 'invited', evidence: { invitation_id: invitation.id, matching_source: 'verified_capability_match', external_delivery: 'not_claimed' } });
     await recordEvent({ requestId: request.id, invitationId: invitation.id, event: 'provider_invited', authority: 'customer', actorId: request.phone, idempotencyKey: `invite:${request.id}:${provider.phone}`, evidence: { capability: request.skill, delivery: 'internal_queue_only' } });
-    await sendFcmPush(provider.phone, 'New Kurukoo request available', 'A request matching your verified capability is available in your provider queue.', `/provider/coordination?invitation=${encodeURIComponent(invitation.id)}`);
+    await enqueueInternalNotification(provider.phone, 'New Kurukoo request available', 'A request matching your verified capability is available in your provider queue.', `/provider/coordination?invitation=${encodeURIComponent(invitation.id)}`);
   }
   saveDb();
   return { invitations, internalQueueOnly: true };
@@ -233,7 +229,7 @@ export async function respondToProviderInvitation(input: { invitationId: string;
   db.run(`UPDATE provider_coordination_invitations SET status=?, quote_minor=?, currency=?, note=?, response_idempotency_key=?, responded_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE id=?`, [response, quoteMinor, currency, note, idempotencyKey, invitation.id]);
   await updateEconomicParticipant({ requestId: request.id, actorPhone: providerPhone, role: 'service_provider', providerPhone, status: response === 'accepted' ? 'accepted' : 'declined', evidence: { invitation_id: invitation.id, response, quote_minor: quoteMinor, currency, provider_note: note, response_idempotency_key: idempotencyKey, external_delivery: 'not_claimed' } });
   await recordEvent({ requestId: request.id, invitationId: invitation.id, event: `provider_${response}`, authority: 'provider', actorId: providerPhone, idempotencyKey: `response:${invitation.id}:${idempotencyKey}`, evidence: { quote_submitted: response === 'accepted', currency: currency || undefined } });
-  await sendFcmPush(request.phone, 'Provider response received', response === 'accepted' ? 'A provider submitted a quote for your request. Review it in Kurukoo before confirming.' : 'A provider declined this request. Kurukoo can continue with other available responses.', `/chat?request=${encodeURIComponent(request.id)}`);
+  await enqueueInternalNotification(request.phone, 'Provider response received', response === 'accepted' ? 'A provider submitted a quote for your request. Review it in Kurukoo before confirming.' : 'A provider declined this request. Kurukoo can continue with other available responses.', `/chat?request=${encodeURIComponent(request.id)}`);
   saveDb();
   return (await getProviderInvitation(invitation.id))!;
 }
@@ -264,6 +260,7 @@ export async function selectProviderResponse(input: { requestId: string; ownerPh
   const request = await requireOwner(input.requestId, input.ownerPhone);
   const invitation = await getProviderInvitation(cleanText(input.invitationId, 'Invitation id', 128));
   if (!invitation || invitation.requestId !== request.id || invitation.status !== 'accepted' || !Number.isSafeInteger(invitation.quoteMinor) || !invitation.currency) throw new Error('An accepted provider quote is required');
+  await requireVerifiedProvider(invitation.providerPhone);
   await updateEconomicParticipant({ requestId: request.id, actorPhone: request.phone, role: 'service_provider', providerPhone: invitation.providerPhone, status: 'selected', evidence: { invitation_id: invitation.id, selected_by: 'customer', selected_at: new Date().toISOString() } });
   let current = await getEconomicRequest(request.id);
   if (!current) throw new Error('Economic request not found');
@@ -281,6 +278,7 @@ export async function acceptSelectedProviderQuote(input: { requestId: string; ow
   const participants = await getEconomicParticipants(request.id);
   const selected = participants.find((participant) => participant.role === 'service_provider' && participant.status === 'selected' && participant.providerPhone === request.providerPhone);
   if (!selected) throw new Error('A selected provider participant is required');
+  await requireVerifiedProvider(selected.providerPhone);
   await updateEconomicParticipant({ requestId: request.id, actorPhone: request.phone, role: 'service_provider', providerPhone: selected.providerPhone, status: 'confirmed', evidence: { customer_quote_acceptance: true, accepted_at: new Date().toISOString() } });
   const updated = await transitionEconomicRequest(request.id, 'awaiting_confirmation');
   await recordEvent({ requestId: request.id, event: 'provider_quote_accepted', authority: 'customer', actorId: request.phone, idempotencyKey: `quote-accept:${request.id}:${String(request.quote.provider_response_id || '')}`, evidence: { payment_not_claimed: true } });

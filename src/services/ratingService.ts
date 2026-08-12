@@ -1,5 +1,6 @@
 import { getDb, saveDb } from '../database.js';
 import { getProfile, updateProfile } from './memoryProfile.js';
+import { providerMayBeDiscovered } from './providerVerification.js';
 
 export async function submitRating(providerPhone: string, skill: string, rating: number): Promise<void> {
     const db = await getDb();
@@ -35,8 +36,8 @@ export async function checkAndAwardBadges(phone: string): Promise<void> {
 
     const awardedBadges: string[] = [];
 
-    // 1. Verified badge: KYC completed (verified_provider = 1) + 5+ jobs + rating >= 4.0
-    const kycCompleted = profile.verified_provider === 1 || !!profile.nin;
+    // 1. Verified badge: authoritative evidence-backed provider verification + 5+ jobs + rating >= 4.0
+    const kycCompleted = await providerMayBeDiscovered(phone);
     if (kycCompleted && totalJobs >= 5 && avgRating >= 4.0) {
         awardedBadges.push('Verified');
         db.run(`INSERT OR IGNORE INTO badges (phone, badge_type) VALUES (?, 'Verified')`, [phone]);

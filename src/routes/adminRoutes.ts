@@ -28,7 +28,7 @@ import { getAllPricing, updatePlan, createPlan, deletePlan } from '../services/p
 import { schedulePost } from '../services/socialScheduler.js';
 import { queryGroq } from '../services/groqService.js';
 import { isProviderEntityType } from '../services/providerEntity.js';
-import { setProviderVerification } from '../services/providerVerification.js';
+import { ensureProviderVerificationSchema, setProviderVerification } from '../services/providerVerification.js';
 import { getPilotDashboard, getPilotFeedbackSummary } from '../services/pilotObservability.js';
 
 const router = Router();
@@ -309,6 +309,7 @@ router.get('/analytics/sales', authenticateAdmin, async (_req: AuthRequest, res)
 
 router.get('/users', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
+    await ensureProviderVerificationSchema();
     const db = await getDb();
     const search = (req.query.search as string || '').trim();
     const tier = (req.query.tier as string || '').trim();
@@ -330,11 +331,12 @@ router.get('/users', authenticateAdmin, async (req: AuthRequest, res) => {
       params.push(tier);
     }
     if (verified) {
-      whereClause += ' AND verified_provider = ?';
-      params.push(parseInt(verified, 10));
+      const verificationState = verified === '1' ? 'verified' : verified === '0' ? 'unverified' : verified;
+      whereClause += " AND COALESCE(v.state, 'unverified') = ?";
+      params.push(verificationState);
     }
 
-    const countStmt = db.prepare(`SELECT COUNT(*) as count FROM memory_profiles ${whereClause}`);
+    const countStmt = db.prepare(`SELECT COUNT(*) as count FROM memory_profiles LEFT JOIN provider_verifications v ON v.phone=memory_profiles.phone ${whereClause}`);
     countStmt.bind(params);
     let totalCount = 0;
     if (countStmt.step()) totalCount = countStmt.getAsObject().count as number;
@@ -342,8 +344,9 @@ router.get('/users', authenticateAdmin, async (req: AuthRequest, res) => {
 
     const selectParams = [...params, limit, offset];
     const selectStmt = db.prepare(`
-            SELECT phone, name, location, country, subscription_tier, wallet_balance_minor, points_balance, verified_provider, provider_type, is_available, is_contributor, fcm_token
+            SELECT memory_profiles.phone, name, location, country, subscription_tier, wallet_balance_minor, points_balance, verified_provider, v.state AS verification_state, provider_type, is_available, is_contributor, fcm_token
             FROM memory_profiles
+            LEFT JOIN provider_verifications v ON v.phone=memory_profiles.phone
             ${whereClause}
             ORDER BY phone DESC
             LIMIT ? OFFSET ?
@@ -383,8 +386,7 @@ router.post('/users/bulk-update', authenticateAdmin, async (req: AuthRequest, re
     if (action === 'subscription_tier') {
       query = `UPDATE memory_profiles SET subscription_tier = ? WHERE phone IN (${placeholders})`;
     } else if (action === 'verified_provider') {
-      query = `UPDATE memory_profiles SET verified_provider = ? WHERE phone IN (${placeholders})`;
-      updateVal = parseInt(String(value), 10) ? 1 : 0;
+      return res.status(400).json({ error: 'Legacy verification projection cannot be changed directly. Use the evidence-backed provider verification action.' });
     } else if (action === 'is_available') {
       query = `UPDATE memory_profiles SET is_available = ? WHERE phone IN (${placeholders})`;
       updateVal = parseInt(String(value), 10) ? 1 : 0;

@@ -24,9 +24,9 @@ export interface FindWorkerResult {
 
 /**
  * Canonical provider discovery for Economic Requests.
- * A provider is only presented as verified when the provider's Memory Profile
- * explicitly carries verified_provider=1. Existing human artist providers may
- * also use the category-specific verified_artist=1 compatibility path. A supplied
+ * A provider is only presented as verified when the authoritative provider
+ * verification lifecycle has current evidence-backed `verified` state. The
+ * memory-profile boolean is a legacy presentation projection only. A supplied
  * location is a hard service-area constraint; this module deliberately does not
  * invent geocoded distance data, telemetry, availability, or quotes.
  */
