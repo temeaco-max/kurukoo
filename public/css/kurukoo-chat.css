@@ -248,3 +248,8 @@ body.dark .auth-gate-card {
   border-color: var(--chat-primary);
   background: rgba(217, 122, 92, 0.05);
 }
+
+/* Safety Contact Card Banner */
+.safety-contact-banner { text-align: center; padding: 10px; }
+.safety-contact-icon { font-size: 2rem; margin-bottom: 10px; }
+.safety-contact-desc { font-size: 0.9rem; color: var(--chat-muted); margin-bottom: 15px; }
