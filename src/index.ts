@@ -73,4 +73,3 @@ if (process.env.KURUKOO_DISABLE_LISTEN !== 'true') {
     const server = app.listen(port, host, () => console.log(`[Kurukoo] HTTP server listening on ${host}:${port}`));
     server.on('error', (error) => { console.error('[Kurukoo] HTTP server error:', error); process.exitCode = 1; });
 }
-}
