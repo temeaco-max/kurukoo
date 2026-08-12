@@ -65,6 +65,9 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
     const savedUser = await appendChatMessage({ phone, sender: 'user', content: message, channel, conversationId, metadata: attachment ? { attachment } : undefined });
     activeConversation = savedUser.conversationId;
     sse(res, { type: 'conversation', conversationId: activeConversation, messageId: savedUser.id });
+    // The web client consumes stream status events in the existing real-time response
+    // channel; no second conversation or transport is introduced for typing presence.
+    sse(res, { type: 'status', status: 'typing', label: 'Kurukoo is typing…' });
 
     // Handle conversational auth for guests
     const authState = isGuest ? await getAuthState(phone) : { state: 'none' };
@@ -159,6 +162,7 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
           await new Promise(r => setTimeout(r, 8));
         }
       } else {
+        sse(res, { type: 'status', status: 'thinking', label: 'Kurukoo is considering the best next step…' });
         for await (const chunk of streamUnifiedAI(message, { phone, threadId: activeConversation })) {
           if (chunk.type === 'metadata' || chunk.type === 'thought') sse(res, chunk);
           else if (chunk.type === 'text' && chunk.content) {
@@ -170,12 +174,14 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
     }
 
     const savedAssistant = await appendChatMessage({ phone, sender: 'assistant', content: fullReply.trim(), channel, conversationId: activeConversation, cardData, metadata: { ai: true } });
+    sse(res, { type: 'status', status: 'complete' });
     sse(res, { type: 'done', fullReply: fullReply.trim(), cardData, conversationId: activeConversation, messageId: savedAssistant.id });
     sse(res, '[DONE]');
     res.end();
   } catch (error: any) {
     console.error('[Chat] unified stream failed:', error);
     if (!res.writableEnded) {
+      sse(res, { type: 'status', status: 'error' });
       sse(res, { type: 'error', error: 'Unable to complete your request right now.' });
       sse(res, '[DONE]');
       res.end();

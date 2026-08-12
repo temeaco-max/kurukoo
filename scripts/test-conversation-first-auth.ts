@@ -42,7 +42,13 @@ try {
   const guestCookie = cookieValue(guestRequest.headers, 'kurukoo_guest_id');
   const guestEvents = sseEvents(await guestRequest.text());
   const conversation = guestEvents.find(event => event.type === 'conversation');
+  const typingIndex = guestEvents.findIndex(event => event.type === 'status' && event.status === 'typing');
+  const firstTextIndex = guestEvents.findIndex(event => event.type === 'text');
+  const completeIndex = guestEvents.findIndex(event => event.type === 'status' && event.status === 'complete');
   const done = guestEvents.find(event => event.type === 'done');
+  assert.ok(typingIndex >= 0, 'Chat streams must emit a typing status for the live chat indicator');
+  assert.ok(firstTextIndex > typingIndex, 'Typing status must arrive before assistant text begins');
+  assert.ok(completeIndex > firstTextIndex, 'Typing status must complete before the final stream payload');
   const conversationId = String(conversation?.conversationId || '');
   assert.ok(conversationId, 'Guest conversation should have a persistent ID');
   const guestCard = done?.cardData as { type?: string; message?: string; continuationCard?: { type?: string } } | undefined;

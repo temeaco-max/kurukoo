@@ -31,6 +31,32 @@
       el.classList.toggle('offline', !ok); 
     } 
   };
+
+  function setTypingStatus(status = 'complete', label = '') {
+    const active = status === 'typing' || status === 'thinking';
+    let indicator = chatContent?.querySelector('[data-kurukoo-typing]');
+    if (!active) { indicator?.remove(); return; }
+    if (!indicator) {
+      indicator = document.createElement('article');
+      indicator.className = 'typing-indicator message assistant';
+      indicator.dataset.kurukooTyping = 'true';
+      indicator.setAttribute('role', 'status');
+      indicator.setAttribute('aria-live', 'polite');
+      indicator.setAttribute('aria-atomic', 'true');
+      const avatar = makeElement('div', 'avatar'); avatar.setAttribute('aria-hidden', 'true');
+      const image = document.createElement('img'); image.src = '/assets/brand/logo-icon.svg'; image.alt = ''; image.width = 20;
+      avatar.appendChild(image);
+      const bubble = makeElement('div', 'bubble typing-indicator-bubble');
+      const text = makeElement('span', 'typing-indicator-label');
+      const dots = makeElement('span', 'typing-indicator-dots'); dots.setAttribute('aria-hidden', 'true');
+      dots.append(makeElement('i'), makeElement('i'), makeElement('i'));
+      bubble.append(text, dots); indicator.append(avatar, bubble); chatContent?.appendChild(indicator);
+    }
+    indicator.dataset.status = status;
+    const text = indicator.querySelector('.typing-indicator-label');
+    if (text) text.textContent = label || (status === 'thinking' ? 'Kurukoo is considering the best next step…' : 'Kurukoo is typing…');
+    if (scroll) scroll.scrollTop = scroll.scrollHeight;
+  }
   
   const applyTheme = () => { document.body.classList.toggle('dark', state.theme === 'dark'); localStorage.setItem('kurukoo_theme', state.theme); };
   
@@ -135,7 +161,7 @@
   }
 
   function createMessage(role, text = '', id = null, cardData = null, animate = true) {
-    const wrap = document.createElement('article'); wrap.className = `message ${role}`; if (animate) wrap.classList.add('message-enter'); if (id) wrap.dataset.messageId = id;
+    const wrap = document.createElement('article'); wrap.className = `message ${role}`; wrap.dataset.messageState = animate ? 'incoming' : 'history'; if (animate) wrap.classList.add('message-enter'); if (id) wrap.dataset.messageId = id;
     
     const avatarDiv = makeElement('div', 'avatar'); avatarDiv.setAttribute('aria-hidden', 'true');
     if (role === 'assistant') {
@@ -188,7 +214,7 @@
 
   function appendStreamBubble() {
     $('welcome')?.remove(); 
-    const wrap = document.createElement('article'); wrap.className = 'message assistant message-enter';
+    const wrap = document.createElement('article'); wrap.className = 'message assistant message-enter message-streaming'; wrap.dataset.messageState = 'incoming'; wrap.hidden = true;
     
     const avatar = makeElement('div', 'avatar'); avatar.setAttribute('aria-hidden', 'true');
     const img = document.createElement('img'); img.src = '/assets/brand/logo-icon.svg'; img.alt = 'K'; img.width = 20;
@@ -725,9 +751,16 @@
             if (data.phone) localStorage.setItem('kurukoo_user_phone', data.phone);
           }
           if (data.type === 'metadata') updateModelStatus(data);
+          if (data.type === 'status') setTypingStatus(data.status, data.label);
           if (data.type === 'thought' && thinking) thinking.hidden = false;
-          if (data.type === 'text') { full += data.content || ''; setMarkdown(output, full); enhanceCode(assistant); scroll.scrollTop = scroll.scrollHeight; }
+          if (data.type === 'text') {
+            if (assistant.hidden) { assistant.hidden = false; assistant.classList.remove('message-streaming'); assistant.classList.add('message-arrived'); }
+            setTypingStatus('complete'); full += data.content || ''; setMarkdown(output, full); enhanceCode(assistant); scroll.scrollTop = scroll.scrollHeight;
+          }
           if (data.type === 'done') {
+            setTypingStatus('complete');
+            if (assistant.hidden) { assistant.hidden = false; assistant.classList.remove('message-streaming'); assistant.classList.add('message-arrived'); }
+
             assistant.dataset.messageId = data.messageId || '';
             setDeferredStatus(data.cardData);
             if (data.cardData) renderCard(data.cardData, assistant);
@@ -740,10 +773,10 @@
       if (!full) output.textContent = 'I could not complete that request. Please try again.';
       await refreshHistory();
     } catch (error) { 
-      setConnection(false, 'Connection issue'); 
+      setConnection(false, 'Connection issue'); setTypingStatus('error'); assistant.hidden = false; assistant.classList.remove('message-streaming'); assistant.classList.add('message-arrived');
       const bubble = chatContent.querySelector('.message.assistant:last-child .markdown-body'); 
       if (bubble) setMarkdown(bubble, `I’m having trouble completing that right now. **Please try again.**\n\n_${escapeAttr(error.message)}_`); 
-    } finally { state.busy = false; send.disabled = false; input.placeholder = 'Message Kurukoo'; input.focus(); loadPoints(); loadReminders(); loadSafety(); }
+    } finally { setTypingStatus('complete'); state.busy = false; send.disabled = false; input.placeholder = 'Message Kurukoo'; input.focus(); loadPoints(); loadReminders(); loadSafety(); }
   }
 
   function updateModelStatus(data) { const label = $('model-badge'); if (label && data.model) label.textContent = data.model; }

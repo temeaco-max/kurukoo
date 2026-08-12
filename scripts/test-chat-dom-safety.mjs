@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const source = fs.readFileSync(path.join(__dirname, '../public/js/kurukoo-primary-chat.js'), 'utf8');
 const shell = fs.readFileSync(path.join(__dirname, '../public/chat/index.html'), 'utf8');
+const chatCss = fs.readFileSync(path.join(__dirname, '../public/css/kurukoo-chat.css'), 'utf8');
 const storefrontStart = source.indexOf('function renderAgenticStorefront');
 const storefrontEnd = source.indexOf('function renderCard', storefrontStart);
 assert.ok(storefrontStart >= 0 && storefrontEnd > storefrontStart, 'agentic storefront renderer must remain present');
@@ -28,5 +29,13 @@ assert.match(source, /async function nativeAction\(/, 'Native Assistance actions
 assert.match(source, /\/api\/safety\/contacts\/.*\/revoke/, 'context inspector must expose owner-scoped safety contact revocation');
 assert.match(source, /function updateNativeAssistanceStatus\(/, 'primary chat must derive proactive Native Assistance status from canonical state');
 assert.match(source, /no contact is notified automatically/, 'safety status must preserve the non-emergency delivery boundary');
+assert.match(source, /function setTypingStatus\(/, 'chat must own a reusable live typing-status renderer');
+assert.match(source, /data\.type === 'status'.*setTypingStatus/s, 'stream status events must drive the typing indicator');
+assert.match(source, /data-kurukoo-typing/, 'typing presence must remain transient rather than becoming a saved message');
+assert.match(source, /aria-live.*polite/, 'typing presence must be announced accessibly');
+assert.match(source, /message-arrived/, 'streamed assistant content must receive the enhanced arrival state');
+assert.match(chatCss, /\.typing-indicator/, 'typing indicator must have dedicated shared chat styles');
+assert.match(chatCss, /kurukoo-message-bubble-in/, 'new message bubbles must have a dedicated arrival animation');
+assert.match(chatCss, /prefers-reduced-motion:reduce/, 'typing and message arrival motion must honor user motion preferences');
 
-console.log('Chat DOM-safety contract passed: storefront cards use DOM APIs, Markdown remains sanitized, and Native Assistance controls are accessible and error-aware.');
+console.log('Chat DOM-safety contract passed: storefront cards use DOM APIs, Markdown remains sanitized, and live typing/message-arrival controls are accessible and error-aware.');
