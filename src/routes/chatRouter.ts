@@ -84,7 +84,9 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
             returnUrl: `/chat?conversationId=${activeConversation}`,
             continuationCard,
           };
-        } else if (cardData?.type === 'agentic_storefront') {
+        } else if (cardData?.type === 'agentic_storefront' || routing.skill === 'reminder') {
+          // Native assistance remains in the shared conversation but must not
+          // create an Economic Request, lead charge, or order.
           fullReply = routing.reply;
         } else {
           let orderMessage = '';

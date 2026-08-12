@@ -253,3 +253,18 @@ Before changing or creating anything:
 253	- **Pricing & Points**: The pricing page must truthfully state that no payment provider is configured for the current deployment.
 254	- **Contact Guidance**: The contact page directs all operational support through Web Chat and provides only conditional guidance for other channels.
 255	- **Partnership Scope**: Partnership claims are framed as "scoped roles" and "discussions" rather than pre-existing deployment promises.
+
+
+## 14. Phase 6: Native Assistance Within the Conversation
+
+Native assistance is a first-class part of the conversation-first product, but it is not an Economic Request by default.
+
+- **Reminders** are persisted against the authenticated phone-based Memory Profile, written back to the shared `messages` conversation, and processed by the existing single-instance background worker. They use `src/services/reminderService.ts` and the owner-scoped `/api/reminders` boundary.
+- A guest may express a reminder intent, but persistence is gated until the user has an authenticated profile. The auth gate preserves the conversational intent without creating an anonymous reminder record.
+- A reminder must never create a lead, provider request, payment action, escrow record, or Points charge. `chatRouter` explicitly excludes the `reminder` skill from generic order finalisation.
+- **Personal safety contacts and check-ins** use the owner-scoped `/api/safety/*` boundary. A missed check-in becomes `escalation_pending` until an authorised delivery adapter produces evidence. The application must not claim a contact or emergency service has been notified without that evidence.
+- Reminder and safety routers attach `authenticateUser` to their declared endpoints. They must not use a router-wide authentication middleware when mounted at `/api`, because that would intercept unrelated API routes and violate canonical route ownership.
+
+These capabilities reuse the single profile, conversation, and background-worker boundaries. They do not introduce a second user model, notification system, safety-dispatch system, or economic lifecycle.
+
+**Validation:** `scripts/test-native-assistance.ts` covers owner isolation, guest gating, route authentication, scheduled-message idempotency, fail-closed escalation, and the prohibition on reminder-created economic lead orders.
