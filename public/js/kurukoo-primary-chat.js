@@ -440,27 +440,58 @@
     if (card.requestId) state.activeStorefrontId = card.requestId;
   }
 
-  function renderSuggestions(options, messageEl) {
-    if (!Array.isArray(options) || !options.length) return;
+  function renderSuggestions(options, messageEl, sponsored = []) {
+    if ((!Array.isArray(options) || !options.length) && (!Array.isArray(sponsored) || !sponsored.length)) return;
     const holder = document.createElement('div');
     holder.className = 'suggestions-list';
-    options.forEach(opt => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'suggestion-btn';
-      btn.textContent = opt;
-      btn.addEventListener('click', () => sendMessage(opt));
-      holder.appendChild(btn);
-    });
+    
+    if (Array.isArray(options)) {
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'suggestion-btn';
+        btn.textContent = opt;
+        btn.addEventListener('click', () => sendMessage(opt));
+        holder.appendChild(btn);
+      });
+    }
+
+    if (Array.isArray(sponsored)) {
+      sponsored.forEach(ad => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'suggestion-btn sponsored';
+        btn.innerHTML = `<span>Sponsored</span><strong>${escapeText(ad.title)}</strong>`;
+        btn.addEventListener('click', () => sendMessage(ad.keyword || ad.title));
+        holder.appendChild(btn);
+      });
+    }
+    
     messageEl.querySelector('.bubble').appendChild(holder);
   }
 
   function renderCard(card, messageEl) {
     if (!card || !messageEl) return;
-    if (card.suggestions) renderSuggestions(card.suggestions, messageEl);
-    if (card.type === 'suggestions') { renderSuggestions(card.options, messageEl); return; }
+    if (card.suggestions) renderSuggestions(card.suggestions, messageEl, card.sponsored);
+    if (card.type === 'suggestions') { renderSuggestions(card.options, messageEl, card.sponsored); return; }
     if (card.type === 'agentic_storefront') { renderAgenticStorefront(card, messageEl); return; }
     
+    if (card.type === 'safety_contact_added') {
+      const holder = document.createElement('div');
+      holder.className = 'provider-card';
+      holder.innerHTML = `
+        <div style="text-align:center; padding:10px;">
+          <div style="font-size:2rem; margin-bottom:10px;">🛡️</div>
+          <strong style="display:block; margin-bottom:5px;">Contact Saved</strong>
+          <p style="font-size:0.9rem; color:var(--chat-muted); margin-bottom:15px;">${escapeText(card.name)} has been added to your safety contacts.</p>
+          <button type="button" class="sf-btn sf-secondary" data-action="view-safety">View Contacts</button>
+        </div>`;
+      holder.querySelector('[data-action="view-safety"]')?.addEventListener('click', () => setInspectorOpen(true, 'safety-card'));
+      messageEl.querySelector('.bubble').appendChild(holder);
+      loadSafety();
+      return;
+    }
+
     if (card.type === 'auth_gate' || card.type === 'auth_in_chat_start') {
       const gate = document.createElement('div');
       gate.className = 'auth-gate-card';

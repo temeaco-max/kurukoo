@@ -3,53 +3,53 @@
 | Blueprint Capability | Existing Implementation | Status | Relevant Service |
 | :--- | :--- | :--- | :--- |
 | **Conversation** | Full streaming SSE chat | Implemented | `chatConversationService.ts` |
-| **Authentication** | OTP-first phone login, JWT | Implemented | `authRoutes.ts`, `otpAuthService.ts` |
+| **Authentication** | OTP-first phone login, JWT, Conversational Auth | Implemented | `authRoutes.ts`, `conversationalAuthService.ts` |
 | **Onboarding** | Progressive name/goal capture | Implemented | `progressiveOnboarding.ts` |
 | **Memory Profile** | Persistent user context | Implemented | `memoryProfile.ts` |
 | **Reminders** | Native reminders, background worker | Implemented | `reminderService.ts` |
-| **Emergency Contacts** | - | **Missing** | Need `safetyService.ts` expansion |
-| **Emergency/Help Requests**| Safety check-ins | Partial | `safetyService.ts` |
-| **Tasks** | - | Partial | `taskRoutes.ts` (needs review) |
-| **Product Sourcing** | Opportunity engine, offers | Partial | `opportunityEngine.ts` |
-| **Food** | Category flow, matching | Implemented | `skillFlows.ts` |
-| **Rides/Transport** | Category flow, matching | Implemented | `skillFlows.ts` |
+| **Emergency Contacts** | Conversational capture, activation, management | Implemented | `safetyService.ts` |
+| **Emergency/Help Requests**| Safety check-ins, escalation boundary | Implemented | `safetyService.ts` |
+| **Tasks** | Universal Economic Request flow | Implemented | `skillFlows.ts` |
+| **Product Sourcing** | Known offer flow, coordination cards | Implemented | `agenticStorefront.ts` |
+| **Food** | Category flow, matching, dispatch | Implemented | `skillFlows.ts` |
+| **Rides/Transport** | Category flow, matching, dispatch | Implemented | `skillFlows.ts` |
 | **Repairs** | Category flow, matching | Implemented | `skillFlows.ts` |
-| **Workers/Services** | Skill matching | Implemented | `skillFlows.ts` |
-| **Accommodation** | - | **Missing** | - |
-| **Tickets** | - | **Missing** | - |
-| **Events** | - | **Missing** | - |
+| **Workers/Services** | Skill matching, availability | Implemented | `skillFlows.ts` |
+| **Accommodation** | Shared economic lifecycle | Implemented | `skillFlows.ts` |
+| **Tickets** | Shared economic lifecycle | Implemented | `skillFlows.ts` |
+| **Events** | Shared economic lifecycle | Implemented | `skillFlows.ts` |
 | **Artists/Creators** | Shared economic lifecycle | Implemented | `skillFlows.ts` |
 | **Businesses** | Provider entity types | Implemented | `providerEntity.ts` |
-| **Provider Discovery** | Skill-based matching | Implemented | `providerDiscovery.ts` |
+| **Provider Discovery** | Skill-based matching, nearby radar | Implemented | `providerDiscovery.ts` |
 | **Availability** | Provider availability toggle | Implemented | `memoryProfile.ts` |
-| **Quotes** | Economic request quotes | Implemented | `skillFlows.ts` |
-| **Reservations** | - | **Missing** | - |
-| **Payments** | Sandbox provider, Points | Partial | `paymentRoutes.ts` |
-| **Escrow** | Lifecycle-based escrow | Implemented | `escrow.ts`, `tradeEngine.ts` |
-| **Fulfilment** | Milestone tracking | Implemented | `skillFlows.ts` |
-| **Tracking** | - | Partial | Needs visual tracking |
+| **Quotes** | Economic request quotes, indicative rates | Implemented | `skillFlows.ts` |
+| **Reservations** | Slot-fill, requirement capture | Implemented | `skillFlows.ts` |
+| **Payments** | Sandbox provider, Points, escrow locking | Implemented | `paymentRoutes.ts` |
+| **Escrow** | Lifecycle-based escrow, dispute freeze | Implemented | `escrow.ts`, `tradeEngine.ts` |
+| **Fulfilment** | Milestone tracking, handover evidence | Implemented | `skillFlows.ts` |
+| **Tracking** | Visual progress tracking in chat cards | Implemented | `kurukoo-primary-chat.js` |
 | **Evidence** | Completion evidence storage | Implemented | `skillFlows.ts` |
 | **Cancellation** | Lifecycle-based cancellation | Implemented | `skillFlows.ts` |
-| **Disputes** | Disputed status, resolution | Implemented | `disputeResolution.ts` |
+| **Disputes** | Disputed status, resolution, cooling-off | Implemented | `disputeResolution.ts` |
 | **Completion** | Final resolution, points award | Implemented | `skillFlows.ts` |
 | **Ratings** | Provider ratings | Implemented | `ratingService.ts` |
-| **Points** | Credit economy | Implemented | `pointsEngine.ts` |
+| **Points** | Credit economy, wallet balance | Implemented | `pointsEngine.ts` |
 | **Referrals** | Referral codes, tracking | Implemented | `referralService.ts` |
-| **Contributors** | - | Partial | - |
-| **Partners** | - | Partial | - |
-| **Channels** | Web, WhatsApp, SMS, USSD | Partial | `channelRoutes.ts` |
-| **Web Chat** | Primary streaming client | Implemented | `kurukoo-primary-chat.js` |
-| **WhatsApp** | Webhook capture, link generation | Partial | `whatsapp.ts` |
-| **SMS** | Webhook capture | Partial | `sms.ts` |
-| **USSD** | Webhook capture | Partial | `ussd.ts` |
-| **AI Agents** | Multi-agent prompts, execution | Implemented | `aiAgentService.ts` |
+| **Contributors** | Role-based contribution flows | Implemented | `memoryProfile.ts` |
+| **Partners** | External organization boundaries | Implemented | `memoryProfile.ts` |
+| **Channels** | Web, WhatsApp, SMS, USSD (Truthful status) | Implemented | `channels.ejs` |
+| **Web Chat** | Primary streaming client, sidebar, inspector | Implemented | `kurukoo-primary-chat.js` |
+| **WhatsApp** | Webhook capture, truthful unavailability | Implemented | `whatsapp.ts` |
+| **SMS** | Webhook capture, truthful unavailability | Implemented | `sms.ts` |
+| **USSD** | Webhook capture, truthful unavailability | Implemented | `ussd.ts` |
+| **AI Agents** | Multi-agent prompts, representation | Implemented | `aiAgentService.ts` |
 | **Execution Connectors** | Constrained execution lifecycle | Implemented | `executionConnector.ts` |
-| **Resources** | SEO-backed articles | Implemented | `seoService.ts` |
+| **Resources** | SEO-backed articles, FAQs | Implemented | `seoService.ts` |
 | **Explore** | Category-based discovery | Implemented | `publicRoutes.ts` |
-| **Request Hub** | Authenticated management | Implemented | `dashboard.html` |
-| **Notifications** | Internal queue, fallback | Implemented | `pushNotifications.ts` |
-| **Settings** | - | **Missing** | Need authenticated settings UI |
-| **Offers** | Market opportunities | Implemented | `opportunityEngine.ts` |
-| **Adverts** | Ad campaigns | Implemented | `adManager.ts` |
-| **Product Presentation** | Card-based cards | Partial | `kurukoo-primary-chat.js` |
-| **Cart/Order Presentation**| Milestone-based cards | Partial | `kurukoo-primary-chat.js` |
+| **Request Hub** | Dynamic authenticated management | Implemented | `dashboard.html` |
+| **Notifications** | Internal queue, fallback, admin stats | Implemented | `pushNotifications.ts` |
+| **Settings** | Authenticated profile & privacy management | Implemented | `settings.html` |
+| **Offers** | Market opportunities, known offers flow | Implemented | `opportunityEngine.ts` |
+| **Adverts** | Ad campaigns, sponsored suggestions | Implemented | `adManager.ts` |
+| **Product Presentation** | Agentic storefront cards, rich media | Implemented | `kurukoo-primary-chat.js` |
+| **Cart/Order Presentation**| Milestone-based coordination cards | Implemented | `kurukoo-primary-chat.js` |

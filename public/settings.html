@@ -41,20 +41,38 @@
             <div class="settings-container">
                 <section class="settings-group">
                     <h3>Profile & Identity</h3>
-                    <div class="settings-row">
-                        <div class="settings-info">
-                            <span class="settings-label">Name</span>
-                            <span class="settings-value" id="val-name">Loading...</span>
+                    <div id="profile-view">
+                        <div class="settings-row">
+                            <div class="settings-info">
+                                <span class="settings-label">Name</span>
+                                <span class="settings-value" id="val-name">Loading...</span>
+                            </div>
+                            <button class="btn btn-outline btn-sm" onclick="toggleProfileEdit(true)">Edit</button>
                         </div>
-                        <button class="btn btn-outline btn-sm">Edit</button>
-                    </div>
-                    <div class="settings-row">
-                        <div class="settings-info">
-                            <span class="settings-label">Phone Number</span>
-                            <span class="settings-value" id="val-phone">Loading...</span>
+                        <div class="settings-row">
+                            <div class="settings-info">
+                                <span class="settings-label">Phone Number</span>
+                                <span class="settings-value" id="val-phone">Loading...</span>
+                            </div>
+                            <span class="item-badge active">Verified</span>
                         </div>
-                        <span class="item-badge active">Verified</span>
                     </div>
+                    <form id="profile-edit-form" style="display: none; margin-top: 10px;">
+                        <div style="display: grid; gap: 12px; margin-bottom: 20px;">
+                            <div class="settings-info">
+                                <label class="settings-label" for="edit-name">Display Name</label>
+                                <input type="text" id="edit-name" class="btn-block" style="padding: 10px; border: 1px solid var(--gray-200); border-radius: 8px;" required>
+                            </div>
+                            <div class="settings-info">
+                                <label class="settings-label" for="edit-email">Email Address</label>
+                                <input type="email" id="edit-email" class="btn-block" style="padding: 10px; border: 1px solid var(--gray-200); border-radius: 8px;">
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="toggleProfileEdit(false)">Cancel</button>
+                        </div>
+                    </form>
                 </section>
 
                 <section class="settings-group">
@@ -108,6 +126,11 @@
     </div>
 
     <script>
+        function toggleProfileEdit(show) {
+            document.getElementById('profile-view').style.display = show ? 'none' : 'block';
+            document.getElementById('profile-edit-form').style.display = show ? 'block' : 'none';
+        }
+
         async function loadSettings() {
             try {
                 const [profileRes, safetyRes] = await Promise.all([
@@ -120,6 +143,8 @@
                     const p = data.profile || {};
                     document.getElementById('val-name').textContent = p.name || 'Not set';
                     document.getElementById('val-phone').textContent = p.phone || 'Not set';
+                    document.getElementById('edit-name').value = p.name || '';
+                    document.getElementById('edit-email').value = p.email || '';
                 }
 
                 if (safetyRes.ok) {
@@ -131,6 +156,26 @@
                 console.error('Failed to load settings:', error);
             }
         }
+
+        document.getElementById('profile-edit-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('edit-name').value;
+            const email = document.getElementById('edit-email').value;
+            
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email })
+                });
+                if (res.ok) {
+                    toggleProfileEdit(false);
+                    await loadSettings();
+                }
+            } catch (err) {
+                console.error('Update failed:', err);
+            }
+        });
 
         document.getElementById('logout-button')?.addEventListener('click', async () => {
             try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); } catch (_) {}
