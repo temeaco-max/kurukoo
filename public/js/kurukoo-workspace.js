@@ -1,22 +1,52 @@
 (() => {
-  const $ = (selector) => document.querySelector(selector);
+  const qs = (selector) => document.querySelector(selector);
   const input = document.getElementById('message-input');
-  const sidebar = document.getElementById('chat-sidebar');
+  const chatSidebar = document.getElementById('chat-sidebar');
+  const workspaceSidebar = document.getElementById('workspace-sidebar');
 
-  function seedPrompt(prompt) {
+  const seedPrompt = (prompt) => {
     if (!input || !prompt) return;
     input.value = prompt;
     input.focus();
     input.dispatchEvent(new Event('input', { bubbles: true }));
-    sidebar?.classList.remove('open');
-  }
+    chatSidebar?.classList.remove('open');
+  };
+
+  const toggleChatSidebar = (open) => {
+    if (!chatSidebar) return;
+    chatSidebar.classList.toggle('open', open);
+    qs('#open-sidebar')?.setAttribute('aria-expanded', String(open));
+  };
+
+  qs('#open-sidebar')?.addEventListener('click', () => toggleChatSidebar(true));
+  qs('#close-sidebar')?.addEventListener('click', () => toggleChatSidebar(false));
+
+  qs('#sidebar-collapse')?.addEventListener('click', () => {
+    const collapsed = document.body.classList.toggle('chat-sidebar-collapsed');
+    localStorage.setItem('kurukoo_chat_sidebar_collapsed', collapsed ? '1' : '0');
+  });
+  if (localStorage.getItem('kurukoo_chat_sidebar_collapsed') === '1') document.body.classList.add('chat-sidebar-collapsed');
+
+  qs('#workspace-collapse')?.addEventListener('click', () => {
+    const collapsed = workspaceSidebar?.classList.toggle('is-collapsed');
+    localStorage.setItem('kurukoo_workspace_collapsed', collapsed ? '1' : '0');
+  });
+  if (workspaceSidebar && localStorage.getItem('kurukoo_workspace_collapsed') === '1') workspaceSidebar.classList.add('is-collapsed');
+
+  qs('#workspace-open')?.addEventListener('click', () => workspaceSidebar?.classList.add('open'));
+  workspaceSidebar?.addEventListener('click', (event) => {
+    if (event.target.closest('a')) workspaceSidebar.classList.remove('open');
+  });
 
   document.addEventListener('click', async (event) => {
     const promptTarget = event.target.closest('[data-prompt]');
-    if (promptTarget && promptTarget.closest('.workspace-nav')) {
-      event.preventDefault();
-      seedPrompt(promptTarget.dataset.prompt || '');
-      return;
+    if (promptTarget) {
+      const prompt = promptTarget.dataset.prompt || '';
+      if (input && (promptTarget.closest('.workspace-nav') || promptTarget.closest('.quick-actions') || promptTarget.closest('.composer-quick-actions'))) {
+        event.preventDefault();
+        seedPrompt(prompt);
+        return;
+      }
     }
 
     const logout = event.target.closest('#workspace-logout');
@@ -26,7 +56,10 @@
       try {
         const response = await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
         if (!response.ok) throw new Error('Logout failed');
-        window.location.assign('/');
+        localStorage.removeItem('kurukoo_auth_token');
+        localStorage.removeItem('kurukoo_user_phone');
+        localStorage.removeItem('kurukoo_user_name');
+        window.location.assign('/chat');
       } catch (_) {
         logout.disabled = false;
         window.location.assign('/login?return=%2Fchat');
@@ -36,10 +69,5 @@
 
   const params = new URLSearchParams(window.location.search);
   const prompt = params.get('prompt');
-  if (prompt && input) {
-    window.requestAnimationFrame(() => seedPrompt(prompt));
-  }
-
-  // Keep the workspace shell useful even when the main chat script is loaded later.
-  $('#chat-sidebar')?.setAttribute('aria-expanded', 'true');
+  if (prompt && input) window.requestAnimationFrame(() => seedPrompt(prompt));
 })();
