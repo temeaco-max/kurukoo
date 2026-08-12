@@ -1,7 +1,7 @@
 <%- include('_partials/head') %>
 <%- include('_partials/nav') %>
 
-<main class="container programmatic-main">
+<main class="container page-container">
     <!-- Breadcrumb -->
     <div class="breadcrumb-bar">
         <a href="/" class="breadcrumb-link">Home</a> /
@@ -10,16 +10,10 @@
     </div>
 
     <!-- Hero -->
-    <section class="programmatic-hero">
-        <div class="category-badge-pill">
-            <%= category.icon %> <%= category.name %> &middot; <%= city.name %>
-        </div>
-        <h1 class="programmatic-title">
-            <%= category.name %> in <%= city.name %>
-        </h1>
-        <p class="programmatic-desc">
-            <%= category.description %> Start a request in Web Chat for <%= city.name %>; provider availability and any next action are confirmed in the request flow.
-        </p>
+    <section class="page-header-center">
+        <span class="badge-pill"><%= category.icon %> <%= category.name %> &middot; <%= city.name %></span>
+        <h1 class="page-title"><%= category.name %> in <%= city.name %></h1>
+        <p class="page-desc"><%= category.description %> Start a request in Web Chat for <%= city.name %>; provider availability and any next action are confirmed in the request flow.</p>
     </section>
 
     <!-- CTA -->

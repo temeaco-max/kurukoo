@@ -2,10 +2,10 @@
 <%- include('_partials/nav') %>
 
 <main class="container page-container">
-    <section class="section-heading public-page-header">
-        <span class="eyebrow">The Kurukoo Ecosystem</span>
-        <h1>The Orchestration Network</h1>
-        <p class="lead">Kurukoo is powered by a diverse network of capable participants, from local providers to automated agents.</p>
+    <section class="page-header-center">
+        <span class="badge-pill">The Kurukoo Ecosystem</span>
+        <h1 class="page-title">The Orchestration Network</h1>
+        <p class="page-desc">Kurukoo is powered by a diverse network of capable participants, from local providers to automated agents.</p>
     </section>
 
     <div class="network-grid">
@@ -58,34 +58,5 @@
     </section>
 </main>
 
-<style>
-.network-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 24px;
-    margin: 60px 0;
-}
-.network-card {
-    padding: 32px;
-    background: var(--white);
-    border: 1px solid var(--gray-200);
-    border-radius: var(--border-radius);
-    text-align: center;
-}
-.network-icon {
-    font-size: 2.5rem;
-    margin-bottom: 20px;
-}
-.network-vision {
-    background: var(--charcoal);
-    color: var(--white);
-    padding: 80px 40px;
-    border-radius: var(--border-radius-lg);
-    text-align: center;
-}
-.network-vision h2 { color: var(--white); margin-bottom: 16px; }
-.network-vision p { color: var(--gray-400); margin-bottom: 32px; max-width: 600px; margin-left: auto; margin-right: auto; }
-.vision-actions { display: flex; gap: 16px; justify-content: center; }
-</style>
 
 <%- include('_partials/footer') %>
