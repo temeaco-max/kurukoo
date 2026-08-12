@@ -1,0 +1,60 @@
+<%- include('../_partials/head', { pageStyles: ['/css/admin-auth.css'] }) %>
+
+<main class="admin-auth-container">
+  <div class="admin-auth-card">
+    <div class="admin-auth-header">
+      <img src="/assets/brand/logo-icon.svg" alt="Kurukoo" width="48">
+      <h1>Admin Console</h1>
+      <p>Sign in to manage the Kurukoo network</p>
+    </div>
+    
+    <form id="login-form" class="admin-auth-form">
+      <div class="form-group">
+        <label for="admin-username">Username</label>
+        <input type="text" id="admin-username" name="username" required autocomplete="username">
+      </div>
+      
+      <div class="form-group">
+        <label for="admin-password">Password</label>
+        <input type="password" id="admin-password" name="password" required autocomplete="current-password">
+      </div>
+      
+      <button type="submit" class="primary-btn">Sign In to Console</button>
+      
+      <div id="auth-feedback" class="auth-feedback" hidden></div>
+    </form>
+    
+    <div class="admin-auth-footer">
+      <a href="/">← Back to Kurukoo Public</a>
+    </div>
+  </div>
+</main>
+
+<script>
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const feedback = document.getElementById('auth-feedback');
+    feedback.hidden = true;
+    
+    const username = document.getElementById('admin-username').value;
+    const password = document.getElementById('admin-password').value;
+    
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (data.success) {
+        window.location.href = '/admin';
+      } else {
+        feedback.textContent = data.error || 'Invalid credentials';
+        feedback.hidden = false;
+      }
+    } catch (err) {
+      feedback.textContent = 'Connection error';
+      feedback.hidden = false;
+    }
+  });
+</script>

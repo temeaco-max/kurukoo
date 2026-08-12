@@ -8,32 +8,67 @@
   };
   const $ = id => document.getElementById(id);
   const chatContent = $('chat-content'), scroll = $('chat-scroll'), input = $('message-input'), send = $('send-message');
-  const isEmbed = (() => {
-    try {
-      const params = new URLSearchParams(location.search);
-      if (params.get('embed') === '1' || params.get('embed') === 'true') return true;
-      if (window.self !== window.top) return true;
-    } catch (_) { return true; }
-    return false;
-  })();
-  const setConnection = (ok, text = ok ? 'Connected' : 'Offline') => { const el = $('connection-status'); if (el) { el.innerHTML = `<span class="status-dot"></span> ${text}`; el.classList.toggle('offline', !ok); } };
+  
+  const makeElement = (tag, className = '', text = '') => {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (text) el.textContent = text;
+    return el;
+  };
+
+  const setConnection = (ok, text = ok ? 'Connected' : 'Offline') => { 
+    const el = $('connection-status'); 
+    if (el) { 
+      el.replaceChildren(makeElement('span', 'status-dot'), document.createTextNode(` ${text}`)); 
+      el.classList.toggle('offline', !ok); 
+    } 
+  };
+  
   const applyTheme = () => { document.body.classList.toggle('dark', state.theme === 'dark'); localStorage.setItem('kurukoo_theme', state.theme); };
-  function sanitizeHtml(html) { const doc = new DOMParser().parseFromString(html, 'text/html'); doc.querySelectorAll('script,iframe,object,embed,style,link,form').forEach(n => n.remove()); doc.querySelectorAll('*').forEach(n => [...n.attributes].forEach(a => { if (/^on/i.test(a.name) || /^(javascript|data):/i.test(a.value)) n.removeAttribute(a.name); })); return doc.body.innerHTML; }
-  function renderMarkdown(text) { if (!window.marked) return String(text || '').replace(/[&<>]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[c])).replace(/\n/g, '<br>'); marked.setOptions({ breaks: true, gfm: true }); return sanitizeHtml(marked.parse(text || '')); }
+  
+  function sanitizeHtml(html) { 
+    const doc = new DOMParser().parseFromString(html, 'text/html'); 
+    doc.querySelectorAll('script,iframe,object,embed,style,link,form').forEach(n => n.remove()); 
+    doc.querySelectorAll('*').forEach(n => [...n.attributes].forEach(a => { if (/^on/i.test(a.name) || /^(javascript|data):/i.test(a.value)) n.removeAttribute(a.name); })); 
+    return doc.body.innerHTML; 
+  }
+  
+  function renderMarkdown(text) { 
+    if (!window.marked) return String(text || '').replace(/[&<>]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[c])).replace(/\n/g, '<br>'); 
+    marked.setOptions({ breaks: true, gfm: true }); 
+    return sanitizeHtml(marked.parse(text || '')); 
+  }
+
+  function setMarkdown(el, text) { 
+    const html = renderMarkdown(text); 
+    el.replaceChildren(document.createRange().createContextualFragment(html)); 
+  }
+
   function enhanceCode(root) { root.querySelectorAll('pre code').forEach(block => { if (window.hljs && !block.dataset.highlighted) hljs.highlightElement(block); }); }
   function escapeAttr(value) { return String(value || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function escapeText(value) { return String(value || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
   function updateNativeAssistanceStatus() {
     const banner = $('native-assistance-status'); if (!banner) return;
-    const now = Date.now(); const reminders = Array.isArray(state.nativeAssistance?.reminders) ? state.nativeAssistance.reminders : []; const checkIns = Array.isArray(state.nativeAssistance?.checkIns) ? state.nativeAssistance.checkIns : [];
+    const now = Date.now(); 
+    const reminders = Array.isArray(state.nativeAssistance?.reminders) ? state.nativeAssistance.reminders : []; 
+    const checkIns = Array.isArray(state.nativeAssistance?.checkIns) ? state.nativeAssistance.checkIns : [];
+    
     const activeCheckIns = checkIns.filter(item => item?.status === 'active' && item?.expires_at).map(item => ({ ...item, expiresAt: new Date(item.expires_at).getTime() })).filter(item => Number.isFinite(item.expiresAt)).sort((a, b) => a.expiresAt - b.expiresAt);
     const expiringCheckIn = activeCheckIns.find(item => item.expiresAt <= now + (2 * 60 * 60 * 1000));
     if (expiringCheckIn) {
       const when = expiringCheckIn.expiresAt <= now ? 'has reached its scheduled end' : `ends at ${new Date(expiringCheckIn.expiresAt).toLocaleString()}`;
-      banner.textContent = `Personal safety check-in ${when}. Review it in the context inspector; no contact is notified automatically.`; banner.dataset.kind = 'safety'; banner.hidden = false; return;
+      banner.textContent = `Personal safety check-in ${when}. Review it in the context inspector; no contact is notified automatically.`; 
+      banner.dataset.kind = 'safety'; banner.hidden = false; return;
     }
+    
     const upcomingReminder = reminders.filter(item => item?.status === 'active' && item?.due_at).map(item => ({ ...item, dueAt: new Date(item.due_at).getTime() })).filter(item => Number.isFinite(item.dueAt) && item.dueAt <= now + (24 * 60 * 60 * 1000)).sort((a, b) => a.dueAt - b.dueAt)[0];
-    if (upcomingReminder) { const title = String(upcomingReminder.title || 'Reminder'); const due = upcomingReminder.dueAt <= now ? 'needs your attention now' : `is scheduled for ${new Date(upcomingReminder.dueAt).toLocaleString()}`; banner.textContent = `Reminder: ${title} ${due}. Review it in the context inspector.`; banner.dataset.kind = 'reminder'; banner.hidden = false; return; }
+    if (upcomingReminder) { 
+      const title = String(upcomingReminder.title || 'Reminder'); 
+      const due = upcomingReminder.dueAt <= now ? 'needs your attention now' : `is scheduled for ${new Date(upcomingReminder.dueAt).toLocaleString()}`; 
+      banner.textContent = `Reminder: ${title} ${due}. Review it in the context inspector.`; 
+      banner.dataset.kind = 'reminder'; banner.hidden = false; return; 
+    }
     banner.hidden = true; banner.textContent = '';
   }
 
@@ -42,18 +77,22 @@
     const gate = document.createElement('div');
     gate.dataset.embedSigninGate = '1';
     gate.className = 'message assistant';
-    gate.innerHTML = `
-      <div class="avatar" aria-hidden="true">K</div>
-      <div class="message-body">
-        <div class="bubble">
-          <div class="markdown-body">
-            <p><strong>Sign in to chat with Kurukoo</strong></p>
-            <p>Your Memory Profile and conversation history stay private until you sign in. Open the full chat to continue.</p>
-            <p><a class="primary-btn" href="/login?return=${encodeURIComponent('/chat')}" target="_top" rel="noopener">Sign in</a>
-            <a class="secondary-btn" href="/chat" target="_top" rel="noopener" class="embed-open-chat">Open full chat</a></p>
-          </div>
-        </div>
-      </div>`;
+    
+    const avatar = makeElement('div', 'avatar', 'K'); avatar.setAttribute('aria-hidden', 'true');
+    const body = makeElement('div', 'message-body');
+    const bubble = makeElement('div', 'bubble');
+    const md = makeElement('div', 'markdown-body');
+    const p1 = document.createElement('p'); p1.appendChild(makeElement('strong', '', 'Sign in to chat with Kurukoo'));
+    const p2 = document.createElement('p'); p2.textContent = 'Your Memory Profile and conversation history stay private until you sign in. Open the full chat to continue.';
+    const p3 = document.createElement('p');
+    const a1 = makeElement('a', 'primary-btn', 'Sign in'); a1.href = `/login?return=${encodeURIComponent('/chat')}`; a1.target = '_top'; a1.rel = 'noopener';
+    const a2 = makeElement('a', 'secondary-btn', 'Open full chat'); a2.href = '/chat'; a2.target = '_top'; a2.rel = 'noopener'; a2.className = 'secondary-btn embed-open-chat';
+    p3.append(a1, ' ', a2);
+    md.append(p1, p2, p3);
+    bubble.appendChild(md);
+    body.appendChild(bubble);
+    gate.append(avatar, body);
+
     chatContent.appendChild(gate);
     if (scroll) scroll.scrollTop = scroll.scrollHeight;
   }
@@ -67,7 +106,6 @@
     }
 
     if (sessionCheck?.status === 401) {
-      // Allow Conversation First for visitors without an authenticated session.
       state.isGuest = true;
       setConnection(true, 'Guest Mode');
       return true;
@@ -80,45 +118,93 @@
   function addHistoryItem(conversation, active = false) {
     const list = $('history-list'); if (!list || !conversation?.id) return;
     let item = list.querySelector(`[data-conversation-id="${CSS.escape(conversation.id)}"]`);
-    if (!item) { item = document.createElement('button'); item.type = 'button'; item.className = 'history-item'; item.dataset.conversationId = conversation.id; item.textContent = conversation.title || 'New conversation'; item.addEventListener('click', () => loadConversation(conversation.id)); list.appendChild(item); }
+    if (!item) { 
+      item = document.createElement('button'); item.type = 'button'; item.className = 'history-item'; 
+      item.dataset.conversationId = conversation.id; item.textContent = conversation.title || 'New conversation'; 
+      item.addEventListener('click', () => loadConversation(conversation.id)); 
+      list.appendChild(item); 
+    }
     item.classList.toggle('active', active);
   }
 
   function createMessage(role, text = '', id = null, cardData = null) {
     const wrap = document.createElement('article'); wrap.className = `message ${role}`; if (id) wrap.dataset.messageId = id;
-    const avatar = role === 'assistant' ? '<div class="avatar" aria-hidden="true"><img src="/assets/brand/logo-icon.svg" alt="K" width="20"></div>' : '';
-    wrap.innerHTML = `${avatar}<div class="message-body"><div class="bubble"><div class="markdown-body"></div></div><div class="message-actions"></div></div>`;
-    const bubble = wrap.querySelector('.markdown-body'); bubble.innerHTML = renderMarkdown(text); enhanceCode(wrap);
-    const actions = wrap.querySelector('.message-actions');
-    actions.innerHTML = role === 'assistant' ? '<button data-action="copy">Copy</button><button data-action="regenerate">Regenerate</button><button data-action="delete">Delete</button>' : '<button data-action="copy">Copy</button><button data-action="edit">Edit</button><button data-action="delete">Delete</button>';
+    
+    const avatarDiv = makeElement('div', 'avatar'); avatarDiv.setAttribute('aria-hidden', 'true');
+    if (role === 'assistant') {
+      const img = document.createElement('img'); img.src = '/assets/brand/logo-icon.svg'; img.alt = 'K'; img.width = 20;
+      avatarDiv.appendChild(img);
+    }
+    
+    const body = makeElement('div', 'message-body');
+    const bubble = makeElement('div', 'bubble');
+    const md = makeElement('div', 'markdown-body');
+    setMarkdown(md, text);
+    bubble.appendChild(md);
+    
+    const actions = makeElement('div', 'message-actions');
+    const buttons = role === 'assistant' ? [['copy', 'Copy'], ['regenerate', 'Regenerate'], ['delete', 'Delete']] : [['copy', 'Copy'], ['edit', 'Edit'], ['delete', 'Delete']];
+    buttons.forEach(([act, lab]) => {
+      const btn = makeElement('button', '', lab);
+      btn.dataset.action = act;
+      actions.appendChild(btn);
+    });
+    
+    body.append(bubble, actions);
+    if (role === 'assistant') wrap.appendChild(avatarDiv);
+    wrap.appendChild(body);
+    
     actions.addEventListener('click', async event => {
       const button = event.target.closest('button'); if (!button) return; const action = button.dataset.action;
       if (action === 'copy') await navigator.clipboard?.writeText(wrap.querySelector('.bubble').innerText);
       if (action === 'edit') { input.value = text; input.focus(); input.dispatchEvent(new Event('input')); }
       if (action === 'delete') { 
-        if (state.isGuest) {
-          alert('Please sign in to delete messages.');
-          return;
-        }
+        if (state.isGuest) { alert('Please sign in to delete messages.'); return; }
         if (wrap.dataset.messageId) await deleteMessage(Number(wrap.dataset.messageId)); 
         wrap.remove(); 
       }
       if (action === 'regenerate') { 
-        if (state.isGuest) {
-          alert('Please sign in to regenerate messages.');
-          return;
-        }
+        if (state.isGuest) { alert('Please sign in to regenerate messages.'); return; }
         const lastUser = [...state.messages].reverse().find(m => m.role === 'user'); 
         if (lastUser) await sendMessage(lastUser.text); 
       }
     });
-    chatContent.appendChild(wrap); if (cardData) renderCard(cardData, wrap); scroll.scrollTop = scroll.scrollHeight; return wrap;
+    
+    chatContent.appendChild(wrap); 
+    if (cardData) renderCard(cardData, wrap); 
+    scroll.scrollTop = scroll.scrollHeight; 
+    enhanceCode(wrap);
+    return wrap;
   }
 
   function appendStreamBubble() {
-    $('welcome')?.remove(); const wrap = document.createElement('article'); wrap.className = 'message assistant';
-    wrap.innerHTML = '<div class="avatar" aria-hidden="true"><img src="/assets/brand/logo-icon.svg" alt="K" width="20"></div><div class="message-body"><div class="bubble"><div class="markdown-body"></div><div class="thinking" hidden><details><summary>Reasoning completed</summary><div>Kurukoo selected the appropriate response path. Private model reasoning is not exposed.</div></details></div></div><div class="message-actions"><button data-action="copy">Copy</button><button data-action="regenerate">Regenerate</button><button data-action="delete">Delete</button></div></div>';
-    chatContent.appendChild(wrap); return wrap;
+    $('welcome')?.remove(); 
+    const wrap = document.createElement('article'); wrap.className = 'message assistant';
+    
+    const avatar = makeElement('div', 'avatar'); avatar.setAttribute('aria-hidden', 'true');
+    const img = document.createElement('img'); img.src = '/assets/brand/logo-icon.svg'; img.alt = 'K'; img.width = 20;
+    avatar.appendChild(img);
+    
+    const body = makeElement('div', 'message-body');
+    const bubble = makeElement('div', 'bubble');
+    bubble.appendChild(makeElement('div', 'markdown-body'));
+    
+    const thinking = makeElement('div', 'thinking'); thinking.hidden = true;
+    const details = document.createElement('details');
+    details.appendChild(makeElement('summary', '', 'Reasoning completed'));
+    details.appendChild(makeElement('div', '', 'Kurukoo selected the appropriate response path. Private model reasoning is not exposed.'));
+    thinking.appendChild(details);
+    bubble.appendChild(thinking);
+    
+    const actions = makeElement('div', 'message-actions');
+    [['copy', 'Copy'], ['regenerate', 'Regenerate'], ['delete', 'Delete']].forEach(([act, lab]) => {
+      const btn = makeElement('button', '', lab); btn.dataset.action = act; actions.appendChild(btn);
+    });
+    
+    body.append(bubble, actions);
+    wrap.append(avatar, body);
+    chatContent.appendChild(wrap); 
+    return wrap;
   }
 
   function addUserMessage(text, id = null) { $('welcome')?.remove(); state.messages.push({ role: 'user', text, id }); return createMessage('user', text, id); }
@@ -177,7 +263,7 @@
       if (card?.requestId) state.activeStorefrontId = card.requestId;
       const wrap = appendStreamBubble();
       const output = wrap.querySelector('.markdown-body');
-      output.innerHTML = renderMarkdown(card.message || 'Updated.');
+      setMarkdown(output, card.message || 'Updated.');
       renderCard(card, wrap);
       state.messages.push({ role: 'assistant', text: card.message || '', id: null });
       scroll.scrollTop = scroll.scrollHeight;
@@ -185,7 +271,7 @@
     } catch (error) {
       setConnection(false, 'Connection issue');
       const wrap = appendStreamBubble();
-      wrap.querySelector('.markdown-body').innerHTML = renderMarkdown(`Could not continue that request. **${escapeText(error.message)}**`);
+      setMarkdown(wrap.querySelector('.markdown-body'), `Could not continue that request. **${escapeText(error.message)}**`);
     } finally {
       state.busy = false;
       if (send) send.disabled = false;
@@ -207,14 +293,14 @@
       setDeferredStatus(card);
       if (card?.requestId) state.activeStorefrontId = card.requestId;
       const wrap = appendStreamBubble();
-      wrap.querySelector('.markdown-body').innerHTML = renderMarkdown(card.message || 'Offer selected.');
+      setMarkdown(wrap.querySelector('.markdown-body'), card.message || 'Offer selected.');
       renderCard(card, wrap);
       state.messages.push({ role: 'assistant', text: card.message || '', id: null });
       scroll.scrollTop = scroll.scrollHeight;
       await loadPoints();
     } catch (error) {
       const wrap = appendStreamBubble();
-      wrap.querySelector('.markdown-body').innerHTML = renderMarkdown(`Could not select that offer. **${escapeText(error.message)}**`);
+      setMarkdown(wrap.querySelector('.markdown-body'), `Could not select that offer. **${escapeText(error.message)}**`);
     } finally { state.busy = false; if (send) send.disabled = false; }
   }
 
@@ -232,21 +318,14 @@
       const card = data.card;
       setDeferredStatus(card);
       const wrap = appendStreamBubble();
-      wrap.querySelector('.markdown-body').innerHTML = renderMarkdown(card.message || 'Delivery provider selected.');
+      setMarkdown(wrap.querySelector('.markdown-body'), card.message || 'Delivery provider selected.');
       renderCard(card, wrap);
       state.messages.push({ role: 'assistant', text: card.message || '', id: null });
       scroll.scrollTop = scroll.scrollHeight;
     } catch (error) {
       const wrap = appendStreamBubble();
-      wrap.querySelector('.markdown-body').innerHTML = renderMarkdown(`Could not select that delivery provider. **${escapeText(error.message)}**`);
+      setMarkdown(wrap.querySelector('.markdown-body'), `Could not select that delivery provider. **${escapeText(error.message)}**`);
     } finally { state.busy = false; if (send) send.disabled = false; }
-  }
-
-  function makeElement(tag, className = '', text = '') {
-    const element = document.createElement(tag);
-    if (className) element.className = className;
-    if (text) element.textContent = String(text);
-    return element;
   }
 
   function renderAgenticStorefront(card, messageEl) {
@@ -461,43 +540,41 @@
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'suggestion-btn sponsored';
-        btn.innerHTML = `<span>Sponsored</span><strong>${escapeText(ad.title)}</strong>`;
+        btn.appendChild(makeElement('span', '', 'Sponsored'));
+        btn.appendChild(makeElement('strong', '', ad.title));
         btn.addEventListener('click', () => sendMessage(ad.keyword || ad.title));
         holder.appendChild(btn);
       });
     }
-    
-    messageEl.querySelector('.bubble').appendChild(holder);
+
+    messageEl.appendChild(holder);
   }
 
   function renderCard(card, messageEl) {
     if (!card || !messageEl) return;
-    if (card.suggestions) renderSuggestions(card.suggestions, messageEl, card.sponsored);
-    if (card.type === 'suggestions') { renderSuggestions(card.options, messageEl, card.sponsored); return; }
-    if (card.type === 'agentic_storefront') { renderAgenticStorefront(card, messageEl); return; }
-    
-    if (card.type === 'safety_contact_added') {
-      const holder = document.createElement('div');
-      holder.className = 'provider-card';
-      
-      const inner = document.createElement('div');
-      inner.className = 'safety-contact-banner';
-      
-      const icon = document.createElement('div');
-      icon.className = 'safety-contact-icon';
-      icon.textContent = '🛡️';
-      
-      const title = document.createElement('strong');
-      title.textContent = 'Contact Saved';
-      
-      const desc = document.createElement('p');
-      desc.className = 'safety-contact-desc';
-      desc.textContent = `${card.name || 'Contact'} has been added to your safety contacts.`;
-      
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'sf-btn sf-secondary';
-      btn.textContent = 'View Contacts';
+    if (card.type === 'agentic_storefront') return renderAgenticStorefront(card, messageEl);
+    if (card.type === 'suggestions') return renderSuggestions(card.options, messageEl, card.sponsored);
+    if (card.type === 'ai_metadata') return updateModelStatus(card);
+
+    if (card.type === 'auth_otp_input') {
+      const holder = makeElement('div', 'auth-otp-card');
+      holder.appendChild(makeElement('strong', '', 'Verification code'));
+      const input = document.createElement('input');
+      input.type = 'text'; input.inputMode = 'numeric'; input.pattern = '[0-9]*'; input.maxLength = 6; input.placeholder = '123456';
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(input.value); });
+      holder.appendChild(input);
+      messageEl.querySelector('.bubble').appendChild(holder);
+      input.focus();
+      return;
+    }
+
+    if (card.type === 'safety_contact_capture') {
+      const holder = makeElement('div', 'safety-capture-card');
+      const inner = makeElement('div', 'safety-capture-inner');
+      const icon = makeElement('div', 'safety-capture-icon', '🛡️');
+      const title = makeElement('strong', '', 'Add emergency contact');
+      const desc = makeElement('p', '', `You're adding ${card.name} as a contact. Share their phone number in the chat to continue.`);
+      const btn = makeElement('button', 'primary-btn', 'Manage contacts');
       btn.addEventListener('click', () => setInspectorOpen(true, 'safety-card'));
       
       inner.append(icon, title, desc, btn);
@@ -517,25 +594,36 @@
       if (signedIn) {
         gate.classList.add('auth-gate-card--resolved');
         const continuationCard = card.continuationCard;
-        gate.innerHTML = `
-          <div class="auth-gate-header"><h4>You're signed in</h4></div>
-          <div class="auth-gate-body">
-            <p>${continuationCard ? 'Your request is ready to continue.' : 'Your request is preserved. Share the remaining details above so Kurukoo can continue matching it.'}</p>
-            ${continuationCard ? '' : '<button type="button" class="primary-btn">Continue this request</button>'}
-          </div>`;
+        const header = makeElement('div', 'auth-gate-header'); header.appendChild(makeElement('h4', '', "You're signed in"));
+        const body = makeElement('div', 'auth-gate-body');
+        const p = document.createElement('p'); p.textContent = continuationCard ? 'Your request is ready to continue.' : 'Your request is preserved. Share the remaining details above so Kurukoo can continue matching it.';
+        body.appendChild(p);
+        if (!continuationCard) {
+          const btn = makeElement('button', 'primary-btn', 'Continue this request');
+          btn.type = 'button';
+          body.appendChild(btn);
+        }
+        gate.append(header, body);
         gate.querySelector('button')?.addEventListener('click', () => input?.focus());
         messageEl.querySelector('.bubble').appendChild(gate);
         if (continuationCard) renderCard(continuationCard, messageEl);
         return;
       } else {
-        gate.innerHTML = `
-          <div class="auth-gate-header">
-            <h4>${escapeText(card.title || 'Sign in to Continue')}</h4>
-          </div>
-          <div class="auth-gate-body">
-            <p>${escapeText(card.message || 'Please sign in to proceed with your request.')}</p>
-            ${card.type === 'auth_in_chat_start' ? '<button type="button" class="primary-btn" data-action="focus-input">Tell Kurukoo your name</button>' : `<a href="/login?return=${encodeURIComponent(returnUrl)}${guestId ? `&guest_id=${guestId}` : ''}" class="primary-btn">Sign in to Kurukoo</a>`}
-          </div>`;
+        const header = makeElement('div', 'auth-gate-header'); header.appendChild(makeElement('h4', '', card.title || 'Sign in to Continue'));
+        const body = makeElement('div', 'auth-gate-body');
+        const p = document.createElement('p'); p.textContent = card.message || 'Please sign in to proceed with your request.';
+        body.appendChild(p);
+        if (card.type === 'auth_in_chat_start') {
+          const btn = makeElement('button', 'primary-btn', 'Tell Kurukoo your name');
+          btn.type = 'button';
+          btn.dataset.action = 'focus-input';
+          body.appendChild(btn);
+        } else {
+          const a = makeElement('a', 'primary-btn', 'Sign in to Kurukoo');
+          a.href = `/login?return=${encodeURIComponent(returnUrl)}${guestId ? `&guest_id=${guestId}` : ''}`;
+          body.appendChild(a);
+        }
+        gate.append(header, body);
         gate.querySelector('[data-action="focus-input"]')?.addEventListener('click', () => input?.focus());
       }
       messageEl.querySelector('.bubble').appendChild(gate);
@@ -545,18 +633,27 @@
     const holder = document.createElement('div');
     holder.className = 'provider-card';
     if (card.type === 'ride_picker') {
-      holder.innerHTML = '<strong>Describe a ride request</strong><div class="quick-actions"><button type="button">🚗 Okada</button><button type="button">🛺 Keke</button><button type="button">🚕 Taxi</button></div><span class="escrow-badge">Availability is confirmed in the request flow.</span>';
+      holder.appendChild(makeElement('strong', '', 'Describe a ride request'));
+      const qa = makeElement('div', 'quick-actions');
+      ['🚗 Okada', '🛺 Keke', '🚕 Taxi'].forEach(t => { const b = makeElement('button', '', t); b.type = 'button'; qa.appendChild(b); });
+      holder.append(qa, makeElement('span', 'escrow-badge', 'Availability is confirmed in the request flow.'));
       holder.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => sendMessage(`${btn.textContent.trim()} ride`)));
     } else if (card.type === 'worker_match' || card.type === 'service_search') {
-      holder.innerHTML = `<strong>${card.category === 'food' ? 'Food request' : 'Service request'}</strong><div class="deferred">Kurukoo is assessing the request context for a supported path.</div><span class="escrow-badge">Availability is confirmed before a next action is presented.</span>`;
+      holder.appendChild(makeElement('strong', '', card.category === 'food' ? 'Food request' : 'Service request'));
+      holder.appendChild(makeElement('div', 'deferred', 'Kurukoo is assessing the request context for a supported path.'));
+      holder.appendChild(makeElement('span', 'escrow-badge', 'Availability is confirmed before a next action is presented.'));
     } else if (card.type === 'nearby_radar') {
-      holder.innerHTML = '<strong>Nearby context</strong><div class="deferred">Location-based information is shown only when relevant data is available.</div>';
+      holder.appendChild(makeElement('strong', '', 'Nearby context'));
+      holder.appendChild(makeElement('div', 'deferred', 'Location-based information is shown only when relevant data is available.'));
     } else if (card.type === 'sports_search') {
-      holder.innerHTML = '<strong>Sports network</strong><div class="deferred">Searching leagues, teams, matches and nearby play.</div>';
+      holder.appendChild(makeElement('strong', '', 'Sports network'));
+      holder.appendChild(makeElement('div', 'deferred', 'Searching leagues, teams, matches and nearby play.'));
     } else if (card.type === 'event_coverage') {
-      holder.innerHTML = '<strong>Event coverage request</strong><div class="deferred">Contributor participation and any resulting payment step require separate confirmation.</div>';
+      holder.appendChild(makeElement('strong', '', 'Event coverage request'));
+      holder.appendChild(makeElement('div', 'deferred', 'Contributor participation and any resulting payment step require separate confirmation.'));
     } else if (card.type === 'security_booking') {
-      holder.innerHTML = '<strong>Security-related request</strong><span class="escrow-badge">Provider suitability and availability require confirmation.</span>';
+      holder.appendChild(makeElement('strong', '', 'Security-related request'));
+      holder.appendChild(makeElement('span', 'escrow-badge', 'Provider suitability and availability require confirmation.'));
     } else if (card.type === 'reminder') {
       const reminder = card.reminder || {};
       const heading = document.createElement('strong');
@@ -571,9 +668,11 @@
       boundary.textContent = 'This personal reminder does not create a provider request or payment step.';
       holder.append(heading, detail, boundary);
     } else if (card.type === 'artist_booking') {
-      holder.innerHTML = '<strong>Creator request</strong><div class="deferred">Availability and representation details require confirmation before a request can proceed.</div><span class="escrow-badge">Payment availability is assessed separately.</span>';
+      holder.appendChild(makeElement('strong', '', 'Creator request'));
+      holder.appendChild(makeElement('div', 'deferred', 'Availability and representation details require confirmation before a request can proceed.'));
+      holder.appendChild(makeElement('span', 'escrow-badge', 'Payment availability is assessed separately.'));
     } else {
-      holder.innerHTML = `<strong>${escapeAttr(card.category || card.type || 'Kurukoo action')}</strong>`;
+      holder.appendChild(makeElement('strong', '', card.category || card.type || 'Kurukoo action'));
     }
     messageEl.querySelector('.bubble').appendChild(holder);
   }
@@ -582,7 +681,8 @@
     const allowed = /^(image\/(png|jpeg|webp|gif)|application\/pdf|video\/mp4|video\/webm)$/i.test(file.type || '');
     if (!allowed) throw new Error('Unsupported attachment type. Use an image, PDF or supported video.');
     if (file.size > 25 * 1024 * 1024) throw new Error('Attachment is larger than the 25 MB chat limit.');
-    const reader = new FileReader(); const data = await new Promise((resolve, reject) => { reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); });
+    const reader = new FileReader(); 
+    const data = await new Promise((resolve, reject) => { reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); });
     const response = await fetch('/api/chat/attachments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ name: file.name, type: file.type || 'application/octet-stream', data }) });
     if (!response.ok) { const err = await response.json().catch(() => ({})); throw new Error(err.error || 'Attachment upload failed'); }
     return (await response.json()).attachment;
@@ -611,12 +711,11 @@
             state.isGuest = false; 
             setConnection(true); 
             $('logout-sidebar-btn').hidden = false;
-            // Browser auth remains in HttpOnly cookies
             if (data.phone) localStorage.setItem('kurukoo_user_phone', data.phone);
           }
           if (data.type === 'metadata') updateModelStatus(data);
           if (data.type === 'thought' && thinking) thinking.hidden = false;
-          if (data.type === 'text') { full += data.content || ''; output.innerHTML = renderMarkdown(full); enhanceCode(assistant); scroll.scrollTop = scroll.scrollHeight; }
+          if (data.type === 'text') { full += data.content || ''; setMarkdown(output, full); enhanceCode(assistant); scroll.scrollTop = scroll.scrollHeight; }
           if (data.type === 'done') {
             assistant.dataset.messageId = data.messageId || '';
             setDeferredStatus(data.cardData);
@@ -629,20 +728,24 @@
       state.messages.push({ role: 'user', text: finalText, id: Number(user.dataset.messageId) || null }); state.messages.push({ role: 'assistant', text: full, id: Number(assistant.dataset.messageId) || null });
       if (!full) output.textContent = 'I could not complete that request. Please try again.';
       await refreshHistory();
-    } catch (error) { setConnection(false, 'Connection issue'); const bubble = chatContent.querySelector('.message.assistant:last-child .markdown-body'); if (bubble) bubble.innerHTML = renderMarkdown(`I’m having trouble completing that right now. **Please try again.**\n\n_${escapeAttr(error.message)}_`); }
-    finally { state.busy = false; send.disabled = false; input.placeholder = 'Message Kurukoo'; input.focus(); loadPoints(); loadReminders(); loadSafety(); }
+    } catch (error) { 
+      setConnection(false, 'Connection issue'); 
+      const bubble = chatContent.querySelector('.message.assistant:last-child .markdown-body'); 
+      if (bubble) setMarkdown(bubble, `I’m having trouble completing that right now. **Please try again.**\n\n_${escapeAttr(error.message)}_`); 
+    } finally { state.busy = false; send.disabled = false; input.placeholder = 'Message Kurukoo'; input.focus(); loadPoints(); loadReminders(); loadSafety(); }
   }
 
   function updateModelStatus(data) { const label = $('model-badge'); if (label && data.model) label.textContent = data.model; }
   async function loadPoints() { try { const res = await fetch('/api/points/balance', { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const points = Number(data.points || 0); const balance = $('points-balance')?.querySelector('span'); if (balance) balance.textContent = points; const ip = $('inspector-points'); if (ip) ip.textContent = points; } catch {} }
   async function loadMemory() { try { const res = await fetch('/api/profile', { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const profile = data.profile || {}; const text = `Kurukoo remembers ${profile.location || 'your area'}${profile.primary_lga ? `, ${profile.primary_lga}` : ''}. Your Memory Profile remains attached to your account.`; const mc = $('memory-context'); if (mc) mc.textContent = text; const im = $('inspector-memory'); if (im) im.textContent = text; } catch {} }
+  
   async function loadReminders() {
     try {
       const res = await fetch('/api/reminders', { credentials: 'same-origin' });
       const card = $('reminders-card'); const list = $('reminder-list');
       if (!res.ok || !card || !list) return;
       const data = await res.json(); const reminders = Array.isArray(data.reminders) ? data.reminders : []; state.nativeAssistance.reminders = reminders; updateNativeAssistanceStatus();
-      card.hidden = false; list.innerHTML = '';
+      card.hidden = false; list.replaceChildren();
       if (!reminders.length) { list.textContent = 'No active reminders.'; return; }
       reminders.forEach(reminder => {
         const row = document.createElement('div'); row.className = 'reminder-list-item';
@@ -658,6 +761,7 @@
 
   function setInspectorFeedback(message, kind = 'info') { const feedback = $('inspector-feedback'); if (!feedback) return; feedback.hidden = !message; feedback.textContent = message || ''; feedback.dataset.kind = kind; }
   async function nativeAction(url, options = {}) { const response = await fetch(url, { credentials: 'same-origin', ...options }); let data = {}; try { data = await response.json(); } catch {} if (!response.ok) throw new Error(data.error || 'Action could not be completed.'); return data; }
+  
   async function loadSafety() {
     try {
       const [contactsResponse, checkInsResponse] = await Promise.all([
@@ -668,31 +772,20 @@
       if (!contactsResponse.ok || !checkInsResponse.ok || !card || !contactsList || !checkInsList) return;
       const contactsData = await contactsResponse.json(); const checkInsData = await checkInsResponse.json();
       const contacts = Array.isArray(contactsData.contacts) ? contactsData.contacts : [];
-      const checkIns = Array.isArray(checkInsData.checkIns) ? checkInsData.checkIns : []; state.nativeAssistance.checkIns = checkIns; updateNativeAssistanceStatus();
-      card.hidden = false; contactsList.innerHTML = ''; checkInsList.innerHTML = '';
+      const checkIns = Array.isArray(checkInsData.checkIns) ? checkInsData.checkIns : []; 
+      state.nativeAssistance.checkIns = checkIns; updateNativeAssistanceStatus();
+      card.hidden = false; contactsList.replaceChildren(); checkInsList.replaceChildren();
+      
       const contactHeading = document.createElement('strong'); contactHeading.textContent = contacts.length ? 'Contacts' : 'No safety contacts yet.'; contactsList.appendChild(contactHeading);
       contacts.forEach(contact => {
         const row = document.createElement('div'); row.className = 'safety-list-item';
         const label = document.createElement('span'); label.textContent = `${contact.name} · ${contact.status}`; row.appendChild(label);
         if (contact.status === 'pending') {
-          const activate = document.createElement('button'); activate.className = 'text-btn'; activate.type = 'button'; activate.textContent = 'Confirm consent';
-          activate.addEventListener('click', async () => { activate.disabled = true; try { await nativeAction(`/api/safety/contacts/${encodeURIComponent(contact.id)}/activate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ consentConfirmed: true }) }); setInspectorFeedback('Contact activated by your explicit consent. No notification was sent.'); await loadSafety(); } catch (error) { setInspectorFeedback(error.message, 'error'); } finally { activate.disabled = false; } });
+          const activate = document.createElement('button'); activate.type = 'button'; activate.className = 'text-btn'; activate.textContent = 'Activate';
+          activate.addEventListener('click', async () => { activate.disabled = true; try { await nativeAction(`/api/safety/contacts/${encodeURIComponent(contact.id)}/activate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ consentConfirmed: true }) }); await loadSafety(); } catch (e) { setInspectorFeedback(e.message, 'error'); } });
           row.appendChild(activate);
-        } else if (contact.status === 'active') {
-          const start = document.createElement('button'); start.className = 'text-btn'; start.type = 'button'; start.textContent = 'Start 60-minute check-in';
-          start.addEventListener('click', async () => { start.disabled = true; try { await nativeAction('/api/safety/check-ins', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contactId: contact.id, durationMinutes: 60 }) }); setInspectorFeedback('60-minute check-in started. This remains a personal instruction and does not contact emergency services.'); await loadSafety(); } catch (error) { setInspectorFeedback(error.message, 'error'); } finally { start.disabled = false; } });
-          row.appendChild(start);
         }
-        const revoke = document.createElement('button'); revoke.className = 'text-btn text-btn-danger'; revoke.type = 'button'; revoke.textContent = 'Revoke'; revoke.addEventListener('click', async () => { revoke.disabled = true; try { await nativeAction(`/api/safety/contacts/${encodeURIComponent(contact.id)}/revoke`, { method: 'POST' }); setInspectorFeedback('Safety contact revoked.'); await loadSafety(); } catch (error) { setInspectorFeedback(error.message, 'error'); } finally { revoke.disabled = false; } }); row.appendChild(revoke);
         contactsList.appendChild(row);
-      });
-      const checkInHeading = document.createElement('strong'); checkInHeading.textContent = 'Check-ins'; checkInsList.appendChild(checkInHeading);
-      if (!checkIns.length) { const empty = document.createElement('span'); empty.textContent = 'No check-ins yet.'; checkInsList.appendChild(empty); }
-      checkIns.forEach(checkIn => {
-        const row = document.createElement('div'); row.className = 'safety-list-item';
-        const status = document.createElement('span'); const expires = checkIn.expires_at ? new Date(checkIn.expires_at) : null; const when = expires && !Number.isNaN(expires.getTime()) ? ` · ${expires.toLocaleString()}` : ''; status.textContent = `${checkIn.status}${when}`; row.appendChild(status);
-        if (checkIn.status === 'active') { const complete = document.createElement('button'); complete.className = 'text-btn'; complete.type = 'button'; complete.textContent = 'Complete'; complete.addEventListener('click', async () => { complete.disabled = true; try { await nativeAction(`/api/safety/check-ins/${encodeURIComponent(checkIn.id)}/complete`, { method: 'POST' }); setInspectorFeedback('Check-in completed.'); await loadSafety(); } catch (error) { setInspectorFeedback(error.message, 'error'); } finally { complete.disabled = false; } }); row.appendChild(complete); }
-        checkInsList.appendChild(row);
       });
     } catch {}
   }
@@ -700,68 +793,80 @@
   async function refreshHistory() {
     try {
       const url = new URL('/api/chat/history', location.origin); if (state.conversationId) url.searchParams.set('conversationId', state.conversationId); url.searchParams.set('limit', '60');
-      const res = await fetch(url, { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const list = $('history-list'); if (!list) return; list.innerHTML = '';
+      const res = await fetch(url, { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const list = $('history-list'); if (!list) return; list.replaceChildren();
       data.conversations.forEach(c => addHistoryItem(c, c.id === state.conversationId));
       if (data.messages?.length && chatContent.querySelectorAll('.message').length === 0) renderMessages(data.messages);
     } catch { setConnection(false, 'Offline'); }
   }
-  function renderMessages(messages) { $('welcome')?.remove(); chatContent.querySelectorAll('.message').forEach(n => n.remove()); state.messages = []; messages.forEach(m => { state.messages.push({ role: m.sender, text: m.content, id: m.id }); createMessage(m.sender === 'user' ? 'user' : 'assistant', m.content || '', m.id, m.card_data ? safeJson(m.card_data) : null); }); scroll.scrollTop = scroll.scrollHeight; }
-  function safeJson(value) { try { return typeof value === 'string' ? JSON.parse(value) : value; } catch { return null; } }
-  async function loadConversation(id) { state.conversationId = id; localStorage.setItem('kurukoo_conversation_id', id); const url = new URL('/api/chat/history', location.origin); url.searchParams.set('conversationId', id); url.searchParams.set('limit', '100'); const res = await fetch(url, { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); renderMessages(data.messages || []); await refreshHistory(); $('chat-sidebar')?.classList.remove('open'); }
-  async function deleteMessage(id) { if (!id) return; try { await fetch(`/api/chat/message/${id}`, { method: 'DELETE', credentials: 'same-origin' }); } catch {} }
 
-  function wireQuickActions(root) { if (!root || root.dataset.wired) return; root.dataset.wired = 'true'; root.addEventListener('click', e => { const button = e.target.closest('button[data-prompt]'); if (button) sendMessage(button.dataset.prompt); }); }
-  wireQuickActions($('quick-actions')); wireQuickActions($('composer-quick-actions'));
-  send?.addEventListener('click', () => sendMessage());
-  input?.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
-  $('attach-file')?.addEventListener('click', () => $('file-input')?.click());
-  $('file-input')?.addEventListener('change', e => { const file = e.target.files?.[0] || null; state.attached = file; const preview = $('attachment-preview'); if (file && preview) { preview.hidden = false; preview.textContent = `📎 ${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB`; } });
-  $('theme-toggle')?.addEventListener('click', () => { state.theme = state.theme === 'dark' ? 'light' : 'dark'; applyTheme(); });
-  function setSidebarOpen(open) { const sidebar = $('chat-sidebar'); const toggle = $('open-sidebar'); sidebar?.classList.toggle('open', open); toggle?.setAttribute('aria-expanded', String(open)); if (!open) toggle?.focus(); }
-  function setInspectorOpen(open, sectionId = null) {
-    const inspector = $('chat-inspector');
-    const toggle = $('memory-toggle');
-    const collapsible = window.matchMedia('(max-width: 1100px)').matches;
-    if (collapsible) inspector?.classList.toggle('open', open);
-    toggle?.setAttribute('aria-expanded', String(collapsible ? open : true));
-    if (open && sectionId) {
-      const section = $(sectionId);
-      if (section) {
-        section.hidden = false;
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }
-    if (open && collapsible) inspector?.querySelector('button, input, textarea')?.focus();
+  function renderMessages(messages) {
+    chatContent.replaceChildren();
+    messages.forEach(m => {
+      let cardData = null;
+      if (m.card_data) try { cardData = JSON.parse(m.card_data); } catch {}
+      createMessage(m.sender === 'user' ? 'user' : 'assistant', m.content, m.id, cardData);
+    });
   }
-  $('open-sidebar')?.addEventListener('click', () => setSidebarOpen(true));
-  $('close-sidebar')?.addEventListener('click', () => setSidebarOpen(false));
-  $('memory-toggle')?.addEventListener('click', () => setInspectorOpen(!$('chat-inspector')?.classList.contains('open')));
-  $('close-inspector')?.addEventListener('click', () => setInspectorOpen(false));
+
+  function setInspectorOpen(open, target = null) {
+    const inspector = $('chat-inspector'); if (!inspector) return;
+    inspector.classList.toggle('open', open);
+    if (target) {
+      inspector.querySelectorAll('.inspector-card').forEach(card => card.hidden = true);
+      const targetCard = $(target); if (targetCard) targetCard.hidden = false;
+    }
+  }
+
+  const wireQuickActions = (root) => {
+    root.querySelectorAll('button[data-prompt]').forEach(btn => {
+      btn.addEventListener('click', () => sendMessage(btn.dataset.prompt));
+    });
+  };
+
+  input?.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+  send?.addEventListener('click', () => sendMessage());
+  $('new-chat')?.addEventListener('click', async () => { 
+    if (!await ensureIdentity()) return; 
+    try { 
+      const res = await fetch('/api/chat/conversation', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ channel: 'web', title: 'New conversation' }) }); 
+      const data = await res.json(); 
+      if (data.conversationId) { state.conversationId = data.conversationId; localStorage.setItem('kurukoo_conversation_id', data.conversationId); } 
+    } catch {} 
+    state.messages = []; state.activeStorefrontId = null; chatContent.replaceChildren(); 
+    const ds = $('deferred-status'); if (ds) ds.hidden = true; 
+    renderWelcome(); refreshHistory(); 
+  });
   
-  // Sidebar wiring
-  $('sidebar-reminders')?.addEventListener('click', () => { setInspectorOpen(true, 'reminders-card'); setSidebarOpen(false); });
-  $('sidebar-safety')?.addEventListener('click', () => { setInspectorOpen(true, 'safety-card'); setSidebarOpen(false); });
-  $('sidebar-points')?.addEventListener('click', () => { setInspectorOpen(true, 'inspector-points'); setSidebarOpen(false); });
-  $('logout-sidebar-btn')?.addEventListener('click', async () => {
+  $('logout-button')?.addEventListener('click', async () => {
     try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); } catch (_) {}
-    // Browser auth remains in HttpOnly cookies
     localStorage.removeItem('kurukoo_user_phone');
     localStorage.removeItem('kurukoo_user_name');
     window.location.assign('/');
   });
 
-  setInspectorOpen(false);
-  $('new-chat')?.addEventListener('click', async () => { if (!await ensureIdentity()) return; try { const res = await fetch('/api/chat/conversation', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ channel: 'web', title: 'New conversation' }) }); const data = await res.json(); if (data.conversationId) { state.conversationId = data.conversationId; localStorage.setItem('kurukoo_conversation_id', data.conversationId); } } catch {} state.messages = []; state.activeStorefrontId = null; chatContent.innerHTML = ''; const ds = $('deferred-status'); if (ds) ds.hidden = true; renderWelcome(); refreshHistory(); });
-  $('topup-points')?.addEventListener('click', () => sendMessage('I have a question about Points'));
-  $('safety-contact-form')?.addEventListener('submit', async event => { event.preventDefault(); const name = $('safety-contact-name')?.value.trim(); const phone = $('safety-contact-phone')?.value.trim(); const relationship = $('safety-contact-relationship')?.value.trim(); if (!name || !phone) return; const submit = event.target.querySelector('button[type="submit"]'); if (submit) submit.disabled = true; try { await nativeAction('/api/safety/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, phone, relationship }) }); event.target.reset(); setInspectorFeedback('Pending contact saved. Review the explicit consent action before activation.'); await loadSafety(); } catch (error) { setInspectorFeedback(error.message, 'error'); } finally { if (submit) submit.disabled = false; } });
-  $('points-balance')?.addEventListener('click', () => sendMessage('Show my Points balance and the actions available to me'));
-  $('voice-input')?.addEventListener('click', () => { const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!Recognition) return input?.focus(); const recognition = new Recognition(); recognition.lang = 'en-NG'; recognition.onresult = e => { if (input) { input.value = e.results[0][0].transcript; input.dispatchEvent(new Event('input')); } }; recognition.start(); });
-  function renderWelcome() { chatContent.innerHTML = '<div class="welcome" id="welcome"><div class="welcome-mark"><img src="/assets/brand/logo-icon.svg" alt="K" width="32"></div><h1>What can I help you get done?</h1><p>Describe a service, work, coordination, or everyday information need. Kurukoo will show the supported request path.</p><div class="quick-actions" id="quick-actions"><button data-prompt="I need a ride request">🚗 Ride</button><button data-prompt="I have a food request">🍔 Food</button><button data-prompt="I need repair help">🔧 Repair</button><button data-prompt="I have an urgent non-emergency service request">🏥 Urgent request</button><button data-prompt="I want to discuss a work request">⚡ Work</button></div></div>'; wireQuickActions($('quick-actions')); }
+  function renderWelcome() {
+    const welcome = makeElement('div', 'welcome'); welcome.id = 'welcome';
+    const mark = makeElement('div', 'welcome-mark');
+    const img = document.createElement('img'); img.src = '/assets/brand/logo-icon.svg'; img.alt = 'K'; img.width = 32;
+    mark.appendChild(img);
+    welcome.appendChild(mark);
+    welcome.appendChild(makeElement('h1', '', 'What can I help you get done?'));
+    welcome.appendChild(makeElement('p', '', 'Describe a service, work, coordination, or everyday information need. Kurukoo will show the supported request path.'));
+    const qa = makeElement('div', 'quick-actions'); qa.id = 'quick-actions';
+    [['I need a ride request', '🚗 Ride'], ['I have a food request', '🍔 Food'], ['I need repair help', '🔧 Repair'], ['I have an urgent non-emergency service request', '🏥 Urgent request'], ['I want to discuss a work request', '⚡ Work']].forEach(([p, l]) => {
+      const b = makeElement('button', '', l); b.dataset.prompt = p; qa.appendChild(b);
+    });
+    welcome.appendChild(qa);
+    chatContent.replaceChildren(welcome);
+    wireQuickActions($('quick-actions'));
+  }
+
   applyTheme();
   ensureIdentity().then(ok => { 
     if (ok) {
       Promise.all([loadPoints(), loadMemory(), loadReminders(), loadSafety(), refreshHistory()]);
-      if (!state.isGuest) $('logout-sidebar-btn').hidden = false;
+      if (!state.conversationId) renderWelcome();
     }
   });
+
 })();

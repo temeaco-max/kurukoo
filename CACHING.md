@@ -11,7 +11,7 @@ The service worker maintains three distinct cache storage instances:
 | Cache Name | Target Scope | Strategy | Expiry / Invalidation |
 | :--- | :--- | :--- | :--- |
 | `kurukoo-pwa-shell-v1` | `/dashboard.html`, `/sw.js`, `/manifest.json`, `/offline.html`, `/assets/icons/*` | Network-First with Offline Shell Fallback | Pre-cached on `install`. Invalidated on deploy version change. |
-| `kurukoo-static-v1` | `/css/site.css`, `/js/app.js`, `/js/referral.js`, `/js/deviceCommands.js`, Fonts, Leaflet CDN | Cache-First (Network Fallback) | Served instantly from cache, updated on version query parameter change (`?v=1.0.0`). |
+| `kurukoo-static-v1` | `/css/site.css`, `/js/kurukoo-primary-chat.js`, `/js/kurukoo-workspace.js`, `/js/site-navigation.js`, Fonts, Leaflet CDN | Cache-First (Network Fallback) | Served instantly from cache, updated on version query parameter change (`?v=1.0.0`). |
 | `kurukoo-pages-v1` | HTML Pages (`/`, `/ng/`, `/gh/`, `/gb/`, `/pricing`, `/about`, `/help`, `/blog`) & Public APIs | Stale-While-Revalidate | Serves cached page instantly, fetches background update, updates cache for next visit. |
 
 ---

@@ -13,6 +13,7 @@ const expected = [
     '/channels',
     '/pricing',
     '/events',
+    '/earn/rides',
     '/earn/:topic',
     '/about',
     '/contact',

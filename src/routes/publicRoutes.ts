@@ -169,6 +169,36 @@ export function createPublicRouter(): Router {
   });
 
   router.get('/chat', async (_req, res) => res.sendFile(path.join(process.cwd(), 'public', 'chat', 'index.html')));
+
+  router.get('/admin/login', async (req, res, next) => {
+    try {
+      await renderPage(req, res, 'admin/login', '/admin/login', { pageStyles: ['/css/admin-auth.css?v=1.0.0'] });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get('/pricing', async (req, res, next) => {
+    try {
+      await renderPage(req, res, 'pricing', '/pricing');
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get('/events', (req, res) => res.redirect(302, '/explore/events'));
+
+  router.get('/earn/rides', (req, res) => res.redirect(302, '/explore/transport'));
+
+  router.get('/earn/:topic', async (req, res, next) => {
+    try {
+      const topic = req.params.topic;
+      const category = EARN_CATEGORY[topic] || 'gigs';
+      await renderPage(req, res, 'earn', `/earn/${topic}`, { topic, category });
+    } catch (error) {
+      next(error);
+    }
+  });
   
   router.get('/how-it-works', async (req, res, next) => {
     try {

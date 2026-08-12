@@ -1,18 +1,18 @@
-const STATIC_CACHE = 'kurukoo-static-v4';
-const PAGES_CACHE = 'kurukoo-pages-v4';
-const PWA_SHELL_CACHE = 'kurukoo-pwa-shell-v4';
+const STATIC_CACHE = 'kurukoo-static-v5';
+const PAGES_CACHE = 'kurukoo-pages-v5';
+const PWA_SHELL_CACHE = 'kurukoo-pwa-shell-v5';
 const ALLOWED_CACHES = [STATIC_CACHE, PAGES_CACHE, PWA_SHELL_CACHE];
 
 const SHELL_ASSETS = [
     '/dashboard.html',
     '/chat/',
-    '/discover/',
-    '/for-you/',
-    '/call/',
     '/css/site.css',
     '/css/kurukoo-platform.css',
-    '/js/kurukoo-pwa.js',
-    '/js/kurukoo-discover-map.js',
+    '/css/kurukoo-chat.css',
+    '/css/kurukoo-hub.css',
+    '/js/kurukoo-primary-chat.js',
+    '/js/kurukoo-workspace.js',
+    '/js/site-navigation.js',
     '/manifest.json',
     '/sw.js',
     '/offline.html',
@@ -22,7 +22,7 @@ const SHELL_ASSETS = [
 
 const PAGES_TO_CACHE = [
     '/', '/ng/', '/gh/', '/gb/', '/pricing', '/about', '/contact', '/help', '/blog',
-    '/discover/', '/for-you/', '/resources/', '/partners/', '/advertise/',
+    '/resources/', '/partners/', '/advertise/',
     '/api/hero-taglines'
 ];
 

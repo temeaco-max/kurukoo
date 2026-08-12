@@ -3,7 +3,7 @@
 ## Architecture Overview
 - **Backend:** Node.js, Express 4, TypeScript (`src/index.ts`, `src/database.ts` → `kurukoo.sqlite` via `sql.js`).
 - **Entry:** root `index.ts` validates env then bootstraps `src/index.js` (the Express app).
-- **Frontend PWA:** Vanilla HTML/CSS/JS (`public/dashboard.html`, `public/js/kurukoo-chat.js`, `public/js/app.js`).
+- **Frontend PWA:** Vanilla HTML/CSS/JS (`public/dashboard.html`, `public/js/kurukoo-primary-chat.js`, `public/js/kurukoo-workspace.js`).
 - **Public Website:** EJS templates (`views/index.ejs`, `views/pricing.ejs`, `views/explore/index.ejs`, `views/explore/category.ejs`, …) with shared partials (`views/_partials/*`).
 - **AI Intent Pipeline:** Regex → FastText (`models/kurukoo_intent.bin`, `src/services/fastTextService.ts`) → Groq (`src/services/groqService.ts`, Llama-3.1-8B-Instant) → Template fallback (`src/services/intentRouter.ts`).
 - **Environment Variables:** `KURUKOO_PAY_PROVIDER`, `CREDIT_ECONOMY_ENABLED`, `DB_PATH`, `GROQ_API_KEY`, `WHATSAPP_TOKEN`, etc. (see `.env.example`).
@@ -49,7 +49,7 @@
 | Work Toggle | `memory_profiles.is_available` |
 
 ## Admin Console (`public/admin/*`)
-17 pages: `ai-agents`, `artists`, `celebrity`, `commissions`, `content`, `dashboard`, `future`, `login`, `marketing`, `partnerships`, `pricing`, `referrals`, `revenue`, `scam`, `social`, `users`, `analytics` — backed by `/api/admin/*` routes.
+13 pages: `ai-agents`, `commissions`, `content`, `dashboard`, `login`, `marketing`, `partnerships`, `pricing`, `referrals`, `revenue`, `social`, `users`, `analytics` — backed by `/api/admin/*` routes.
 
 Artist/celebrity admin pages are operational tooling for verification, compliance and provider management. They do not define a separate consumer economic architecture.
 
