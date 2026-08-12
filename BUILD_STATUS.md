@@ -145,3 +145,11 @@ The current `integration/main-convergence-audit` branch adds **one** feature-fla
 | Multi-instance worker coordination | Backend dependent | A shared queue/lease is required before horizontally scaled workers can process due goals. |
 
 The feature remains inactive unless `KURUKOO_AGENT_ENABLED=true`. Limits are controlled by `KURUKOO_AGENT_MAX_ACTIONS_PER_CYCLE`, `KURUKOO_AGENT_MAX_RETRIES`, `KURUKOO_AGENT_MAX_CONCURRENT_GOALS`, `KURUKOO_AGENT_COOLDOWN_SECONDS`, and `KURUKOO_AGENT_AUTONOMOUS_LOW_RISK`. With the flag disabled, Kurukoo continues operating as the normal conversational assistant.
+
+### Stripe UK Collection Adapter — Blueprint §52.2 / PA-5
+
+The Blueprint-designated diaspora collection rail is now implemented as a **fail-closed Stripe adapter**. An authenticated owner may begin a PaymentIntent only for an owned, currently quoted canonical Economic Request. The adapter uses a stable request-and-amount idempotency key, sends only a non-sensitive Economic Request reference as provider metadata, and returns only the PaymentIntent client secret to that authenticated user. A client-side success assertion never changes Kurukoo state.
+
+Stripe webhook processing uses the raw request body, a timestamped `Stripe-Signature` HMAC check, a five-minute replay window, provider event de-duplication, and amount/currency/request-reference parity before it records `payment_verified` and advances the existing Economic Request. The internal escrow ledger is created only after that verified transition. Reconciliation failures remove the event marker and return a retryable server failure rather than losing an authoritative payment event.
+
+This adapter is **not activated** until `KURUKOO_PAY_PROVIDER=stripe`, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET` are deployed as server secrets and a public HTTPS webhook endpoint is registered. The Blueprint’s OPay/Moniepoint Nigerian settlement rail, FX-locking, regulated escrow custody, payout/KYC onboarding, and cross-border compliance remain separate production certifications; no code path claims that Stripe collection alone creates live payout, regulated escrow, or fulfilment.
