@@ -7,19 +7,19 @@
       <div class="home-hero__copy">
         <span class="eyebrow">The Conversational Fulfillment Network</span>
         <h1>Tell Kurukoo what you need. Kurukoo figures out who or what can fulfil it.</h1>
-        <p class="home-hero__lead">Kurukoo is a conversational utility that orchestrates fulfillment. Find trusted providers, coordinate services, and get things done through one conversation.</p>
+        <p class="home-hero__lead">Kurukoo is a conversational utility that keeps a request in context and checks for the next supported path through one conversation.</p>
         <div class="home-hero__actions">
           <a class="btn btn-primary home-cta" href="/chat">Start chatting</a>
           <a class="btn btn-outline home-cta" href="/how-it-works">How it works</a>
         </div>
-        <p class="home-trust"><span>★</span> One network <span>•</span> Multiple access points <span>•</span> Verified fulfillment</p>
+        <p class="home-trust"><span>★</span> One conversation <span>•</span> Web Chat access <span>•</span> Supported request paths</p>
       </div>
       <div class="home-chat-card" aria-label="Illustrative Kurukoo conversation">
         <div class="home-chat-card__top"><span class="home-avatar">K</span><div><strong>Kurukoo</strong><small>Conversational Fulfillment</small></div><span class="home-online">●</span></div>
         <div class="home-chat-card__body">
           <div class="chat-bubble chat-bubble--user">I need a ride to the airport at 5am tomorrow.</div>
-          <div class="chat-bubble chat-bubble--assistant">I can help with that ride request. I'll search for a verified driver available at that time.</div>
-          <div class="chat-result"><div><span class="result-icon">🚗</span><div><strong>Ride orchestration</strong><small>Finding verified drivers · Secure escrow</small></div></div><span class="result-arrow">→</span></div>
+          <div class="chat-bubble chat-bubble--assistant">I can help scope that ride request and check whether a supported path is available.</div>
+          <div class="chat-result"><div><span class="result-icon">🚗</span><div><strong>Ride request</strong><small>Requirements captured · availability confirmed before the next step</small></div></div><span class="result-arrow">→</span></div>
         </div>
         <div class="home-chat-card__footer">Start a conversation. Kurukoo handles the rest.</div>
       </div>
@@ -37,12 +37,12 @@
         <div class="network-mini-card">
           <span class="icon">👤</span>
           <strong>Providers</strong>
-          <p>Verified specialists for every service.</p>
+          <p>Specialists can participate through validated request flows.</p>
         </div>
         <div class="network-mini-card">
           <span class="icon">🏪</span>
           <strong>Businesses</strong>
-          <p>Local shops and product catalogs.</p>
+          <p>Businesses can participate where their catalogue data is available.</p>
         </div>
         <div class="network-mini-card">
           <span class="icon">🤖</span>
@@ -52,7 +52,7 @@
         <div class="network-mini-card">
           <span class="icon">📦</span>
           <strong>Logistics</strong>
-          <p>Coordinated delivery and dispatch.</p>
+          <p>Delivery coordination is presented only when a supported path is available.</p>
         </div>
       </div>
       <div class="center-cta">
@@ -86,29 +86,29 @@
     <div class="container home-split">
       <div class="section-heading section-heading--left">
         <span class="eyebrow">Access Points</span>
-        <h2>One network. Multiple ways to connect.</h2>
-        <p>Your conversation follows you across the channels you use every day.</p>
+        <h2>Start in Web Chat</h2>
+        <p>Web Chat is the active access point in this deployment. Other channels are shown only when their adapters are connected.</p>
       </div>
       <div class="channel-list">
         <div class="channel-item">
-            <div class="channel-item__icon">🌐</div>
+            <div class="channel-item__icon" aria-hidden="true">⌘</div>
             <div>
                 <h3>Web Chat</h3>
-                <p>The primary, interactive Kurukoo experience.</p>
+                <p>Describe a request, review the next step, and continue a saved conversation.</p>
             </div>
         </div>
-        <div class="channel-item">
-            <div class="channel-item__icon">💬</div>
+        <div class="channel-item channel-item--unavailable">
+            <div class="channel-item__icon" aria-hidden="true">◌</div>
             <div>
                 <h3>WhatsApp</h3>
-                <p>Access the network through your favorite messenger.</p>
+                <p>Unavailable in this deployment. Use Web Chat instead.</p>
             </div>
         </div>
-        <div class="channel-item">
-            <div class="channel-item__icon">📞</div>
+        <div class="channel-item channel-item--unavailable">
+            <div class="channel-item__icon" aria-hidden="true">⌁</div>
             <div>
                 <h3>USSD</h3>
-                <p>Dial *7000# for access without data.</p>
+                <p>Unavailable in this deployment. Use Web Chat instead.</p>
             </div>
         </div>
       </div>
@@ -135,6 +135,9 @@
 .channel-list { display: flex; flex-direction: column; gap: 24px; }
 .channel-item { display: flex; gap: 20px; align-items: flex-start; }
 .channel-item__icon { font-size: 2rem; flex-shrink: 0; }
+.channel-item--unavailable { opacity: 0.58; }
+.channel-item--unavailable .channel-item__icon { color: var(--gray-500); }
+.channel-item--unavailable h3::after { content: 'Unavailable'; display: inline-block; margin-left: 8px; padding: 2px 7px; border: 1px solid var(--gray-300); border-radius: 999px; color: var(--gray-600); font-size: 0.68rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; vertical-align: middle; }
 </style>
 
 <%- include('_partials/footer') %>

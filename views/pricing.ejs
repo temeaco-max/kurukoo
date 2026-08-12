@@ -3,106 +3,49 @@
 
 <main class="container page-container">
     <section class="section-heading">
-        <span class="eyebrow">The Economic Model</span>
-        <h1>Points & Fulfillment</h1>
-        <p class="lead">
-            Kurukoo uses a transparent Points system to power the orchestration network and ensure secure fulfillment.
-        </p>
+        <span class="eyebrow">Access &amp; Economic Requests</span>
+        <h1>Start with a conversation</h1>
+        <p class="lead">Web Chat is the active entry point. Kurukoo records a request and presents only the next action supported by the relevant provider, identity, and payment boundary.</p>
     </section>
 
-    <div class="points-grid">
-        <div class="points-card">
-            <h3>What are Points?</h3>
-            <p>Points are Kurukoo's internal utility tokens. They power the interaction between you and the network.</p>
-            <ul class="points-usage">
-                <li><strong>Request Services</strong>: Use Points to start conversations and coordinate tasks.</li>
-                <li><strong>Unlock Leads</strong>: Providers use Points to access verified request details.</li>
-                <li><strong>Boost Visibility</strong>: Highlight your skills or business in the network.</li>
-            </ul>
-        </div>
+    <section class="access-grid" aria-label="Current access and economic boundaries">
+        <article class="access-card">
+            <h2>Web Chat access</h2>
+            <p>There is no published paid subscription or self-service upgrade in this deployment. You can begin a request in Web Chat without choosing a plan.</p>
+            <a href="/chat" class="btn btn-primary">Start in Web Chat</a>
+        </article>
 
-        <div class="points-card">
-            <h3>Earning Points</h3>
-            <p>The Kurukoo economy is circular. You can earn Points in several ways:</p>
-            <ul class="points-usage">
-                <li><strong>Daily Engagement</strong>: Active users receive daily Point allowances.</li>
-                <li><strong>Completed Jobs</strong>: Earn Points by successfully fulfilling requests.</li>
-                <li><strong>Referrals</strong>: Invite others to join the orchestration network.</li>
-                <li><strong>Contributions</strong>: Complete micro-tasks to keep the network accurate.</li>
-            </ul>
-        </div>
-    </div>
+        <article class="access-card">
+            <h2>Points</h2>
+            <p>Points are an internal application concept. Where a request flow uses them, the applicable balance and action are shown in the product rather than promised on this public page.</p>
+        </article>
 
-    <section class="fulfillment-section">
-        <h2>How Fulfillment Works</h2>
-        <div class="fulfillment-steps">
-            <div class="fulfillment-step">
-                <div class="f-icon">🔒</div>
-                <h4>Secure Escrow</h4>
-                <p>When you agree on a price, Kurukoo holds the funds in secure escrow. The provider is only paid once fulfillment is verified.</p>
-            </div>
-            <div class="fulfillment-step">
-                <div class="f-icon">📝</div>
-                <h4>Evidence & Tracking</h4>
-                <p>Providers and delivery partners record evidence of progress directly in the conversation. You see the status in real-time.</p>
-            </div>
-            <div class="fulfillment-step">
-                <div class="f-icon">🛡️</div>
-                <h4>Dispute Protection</h4>
-                <p>If something goes wrong, Kurukoo's dispute policy protects both parties. Funds remain in escrow until the issue is resolved.</p>
-            </div>
-        </div>
+        <article class="access-card">
+            <h2>Payment &amp; escrow</h2>
+            <p>Economic Requests can model a payment and escrow lifecycle, but a payment service provider is not configured for this deployment. No public page should imply that a charge, payout, or escrow release can be completed here.</p>
+        </article>
+
+        <article class="access-card">
+            <h2>Providers &amp; businesses</h2>
+            <p>Provider and business participation is assessed through the request and onboarding flows. Verification, matching, lead access, and catalogue availability are not granted by selecting a public plan.</p>
+        </article>
     </section>
 
-    <section class="subscription-tiers">
-        <h2 class="text-center">Subscription Tiers</h2>
-        <div class="tier-grid">
-            <div class="tier-card">
-                <h3>Base</h3>
-                <div class="tier-price">Free</div>
-                <p>30 Daily Points included. Standard access to the network.</p>
-                <a href="/chat" class="btn btn-outline btn-block">Start Chatting</a>
-            </div>
-            <div class="tier-card featured">
-                <span class="badge">Recommended</span>
-                <h3>Plus</h3>
-                <div class="tier-price">₦2,500/mo</div>
-                <p>60 Daily Points. Priority matching and proactive nudges.</p>
-                <a href="/chat?prompt=I%20want%20to%20upgrade%20to%20Plus" class="btn btn-primary btn-block">Upgrade to Plus</a>
-            </div>
-            <div class="tier-card">
-                <h3>Business</h3>
-                <div class="tier-price">₦10,000/mo</div>
-                <p>120 Daily Points. Verified storefront and bulk catalog tools.</p>
-                <a href="/chat?prompt=I%20want%20to%20register%20a%20business" class="btn btn-outline btn-block">Register Business</a>
-            </div>
-        </div>
+    <section class="access-note">
+        <h2>How an eligible request proceeds</h2>
+        <p>Describe the need in Web Chat. Kurukoo evaluates the request, preserves the conversation through any required sign-in step, and presents a provider, quote, payment, or fulfilment action only when the necessary integration and data are available.</p>
     </section>
 </main>
 
 <style>
-.points-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin: 60px 0; }
-.points-card { padding: 32px; background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--border-radius); }
-.points-usage { list-style: none; margin-top: 20px; }
-.points-usage li { margin-bottom: 12px; padding-left: 24px; position: relative; font-size: 0.95rem; }
-.points-usage li::before { content: '•'; position: absolute; left: 0; color: var(--terracotta); font-weight: bold; }
-
-.fulfillment-section { background: var(--gray-50); padding: 60px 40px; border-radius: var(--border-radius-lg); margin-bottom: 60px; }
-.fulfillment-section h2 { text-align: center; margin-bottom: 40px; }
-.fulfillment-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 32px; }
-.fulfillment-step { text-align: center; }
-.f-icon { font-size: 2.5rem; margin-bottom: 16px; }
-
-.tier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 40px; }
-.tier-card { padding: 40px 32px; background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--border-radius); text-align: center; position: relative; }
-.tier-card.featured { border-color: var(--terracotta); box-shadow: 0 10px 30px rgba(217,122,92,0.1); transform: scale(1.05); z-index: 2; }
-.tier-price { font-size: 2rem; font-weight: 800; margin: 16px 0; color: var(--terracotta); }
-.tier-card .badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--terracotta); color: white; padding: 4px 12px; border-radius: 100px; font-size: 0.75rem; font-weight: 700; }
-
-@media (max-width: 768px) {
-    .points-grid { grid-template-columns: 1fr; }
-    .tier-card.featured { transform: none; margin: 20px 0; }
-}
+.access-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin: 48px 0; }
+.access-card { padding: 28px; background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--border-radius); }
+.access-card h2 { margin-bottom: 12px; font-size: 1.25rem; }
+.access-card p { color: var(--gray-600); margin-bottom: 20px; }
+.access-note { padding: 36px; background: var(--gray-50); border-radius: var(--border-radius-lg); margin-bottom: 48px; }
+.access-note h2 { margin-bottom: 12px; }
+.access-note p { max-width: 760px; color: var(--gray-600); }
+@media (max-width: 720px) { .access-grid { grid-template-columns: 1fr; } .access-card, .access-note { padding: 24px; } }
 </style>
 
 <%- include('_partials/footer') %>

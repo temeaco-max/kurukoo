@@ -4,54 +4,31 @@
 <main>
     <section class="section contact-hero">
         <div class="container text-center">
-            <h1 class="contact-title">Get in Touch</h1>
-            <p class="contact-subtitle">
-                Have a question or need a custom solution? Our team is here to help.
-            </p>
+            <h1 class="contact-title">Contact Kurukoo</h1>
+            <p class="contact-subtitle">Use Web Chat to describe a request, report an issue, or begin a discussion about a scoped partnership.</p>
         </div>
     </section>
 
-    <section class="section container">
-        <div class="grid grid-2">
-            <div class="card">
-                <h2 class="mb-24">Message Us</h2>
-                <form class="contact-form flex-column gap-20">
-                    <div>
-                        <label class="form-label">Name</label>
-                        <input type="text" class="form-input">
-                    </div>
-                    <div>
-                        <label class="form-label">Email</label>
-                        <input type="email" class="form-input">
-                    </div>
-                    <div>
-                        <label class="form-label">Message</label>
-                        <textarea class="form-textarea"></textarea>
-                    </div>
-                    <button class="btn btn-primary">Send Message</button>
-                </form>
-            </div>
-            
-            <div class="contact-info-panel">
-                <h3 class="contact-info-title">Other ways to connect</h3>
-                
-                <div class="mb-40">
-                    <h4 class="mb-8">WhatsApp</h4>
-                    <p class="text-gray">Fastest response time. Start a chat at <strong>7000</strong></p>
-                </div>
-                
-                <div class="mb-40">
-                    <h4 class="mb-8">Email</h4>
-                    <p class="text-gray">For partnerships and press: <strong>hello@kurukoo.com</strong></p>
-                </div>
-                
-                <div class="mb-40">
-                    <h4 class="mb-8">Office</h4>
-                    <p class="text-gray">Ikeja, Lagos, Nigeria<br>London, United Kingdom</p>
-                </div>
-            </div>
-        </div>
+    <section class="section container contact-grid">
+        <article class="card contact-card">
+            <h2 class="mb-16">Start in Web Chat</h2>
+            <p class="text-gray mb-24">Web Chat is the active support and request channel in this deployment. Your account can keep the resulting conversation together when identity is needed.</p>
+            <a href="/chat?prompt=I%20need%20help%20with%20Kurukoo" class="btn btn-primary">Open Web Chat</a>
+        </article>
+
+        <article class="card contact-card contact-card--muted">
+            <h2 class="mb-16">Other contact channels</h2>
+            <p class="text-gray">WhatsApp, USSD, SMS, and direct email support are not listed as active channels in this deployment because their delivery or support adapters are not configured.</p>
+            <p class="text-gray">If your request requires a provider, payment, or integration discussion, explain that context in Web Chat and Kurukoo will present only the next supported action.</p>
+        </article>
     </section>
 </main>
+
+<style>
+.contact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.contact-card { padding: 32px; }
+.contact-card--muted { background: var(--gray-50); }
+@media (max-width: 720px) { .contact-grid { grid-template-columns: 1fr; } }
+</style>
 
 <%- include('_partials/footer') %>

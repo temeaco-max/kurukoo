@@ -10,24 +10,9 @@ import { routeIntent } from '../services/intentRouter.js';
 import { finalizeOrder } from '../services/orderFinalizer.js';
 import { streamUnifiedAI } from '../services/unifiedAiEngine.js';
 import economicRequestRouter from './economicRequestRouter.js';
-import jwt from 'jsonwebtoken';
 
 const router = Router();
-const OTP_TTL_MS = 5 * 60 * 1000;
-const OTP_RESEND_MS = 60 * 1000;
-const OTP_MAX_ATTEMPTS = 5;
-const otpRate = new Map<string, number>();
-function normalizePhone(value: unknown): string | null { const raw = String(value || '').trim().replace(/[\s().-]/g, ''); if (!/^\+?[1-9]\d{7,14}$/.test(raw)) return null; return raw.startsWith('+') ? raw : `+${raw}`; }
-function getJwtSecret(): string { const secret = process.env.JWT_SECRET; if (!secret || secret.length < 32) throw new Error('JWT_SECRET is not configured'); return secret; }
-function hashOtp(phone: string, code: string): string { return crypto.createHmac('sha256', getJwtSecret()).update(`${phone}:${code}`).digest('hex'); }
-function setAuthCookie(res: any, token: string): void { const secure = process.env.NODE_ENV === 'production' ? '; Secure' : ''; res.setHeader('Set-Cookie', `kurukoo_auth=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secure}`); }
-async function ensureOtpTable(): Promise<void> { const db = await getDb(); db.run(`CREATE TABLE IF NOT EXISTS auth_otps (phone TEXT PRIMARY KEY, code_hash TEXT NOT NULL, expires_at INTEGER NOT NULL, attempts INTEGER DEFAULT 0, last_sent_at INTEGER NOT NULL)`); saveDb(); }
-async function deliverOtp(phone: string, code: string): Promise<boolean> { const username = process.env.AFRICASTALKING_USERNAME; const apiKey = process.env.AFRICASTALKING_API_KEY; if (!username || !apiKey) return false; try { const response = await fetch('https://api.africastalking.com/version1/messaging', { method: 'POST', headers: { apiKey, 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' }, body: new URLSearchParams({ username, to: phone, message: `Your Kurukoo verification code is ${code}. It expires in 5 minutes.` }) }); return response.ok; } catch (error) { console.error('[Auth] OTP delivery failed:', error); return false; } }
 
-router.post('/auth/request-otp', async (req, res) => { const phone = normalizePhone(req.body?.phone); if (!phone) return res.status(400).json({ error: 'Enter a valid international phone number.' }); const now = Date.now(); const lastSent = otpRate.get(phone) || 0; if (now - lastSent < OTP_RESEND_MS) return res.status(429).json({ error: 'Please wait before requesting another code.', retryAfter: Math.ceil((OTP_RESEND_MS - (now - lastSent)) / 1000) }); await ensureOtpTable(); const code = String(crypto.randomInt(100000, 1000000)); const db = await getDb(); db.run('INSERT OR REPLACE INTO auth_otps (phone, code_hash, expires_at, attempts, last_sent_at) VALUES (?, ?, ?, 0, ?)', [phone, hashOtp(phone, code), now + OTP_TTL_MS, now]); saveDb(); otpRate.set(phone, now); const delivered = await deliverOtp(phone, code); if (!delivered && process.env.NODE_ENV === 'production') return res.status(503).json({ error: 'Verification delivery is temporarily unavailable. Please try again later.' }); const response: any = { success: true, expiresIn: 300 }; if (process.env.NODE_ENV !== 'production' && process.env.AUTH_OTP_DEV_CODE) response.devCode = process.env.AUTH_OTP_DEV_CODE; res.json(response); });
-
-router.post('/auth/verify-otp', async (req, res) => { const phone = normalizePhone(req.body?.phone); const code = String(req.body?.code || '').trim(); if (!phone || !/^\d{6}$/.test(code)) return res.status(400).json({ error: 'Phone and six-digit verification code are required.' }); await ensureOtpTable(); const db = await getDb(); const result = db.exec('SELECT code_hash, expires_at, attempts FROM auth_otps WHERE phone = ?', [phone]); if (!result.length || !result[0].values.length) return res.status(400).json({ error: 'Verification code expired or not requested.' }); const [storedHash, expiresAt, attempts] = result[0].values[0]; if (Number(expiresAt) < Date.now()) { db.run('DELETE FROM auth_otps WHERE phone = ?', [phone]); saveDb(); return res.status(400).json({ error: 'Verification code expired. Request a new one.' }); } if (Number(attempts) >= OTP_MAX_ATTEMPTS) return res.status(429).json({ error: 'Too many verification attempts. Request a new code.' }); const expectedHash = hashOtp(phone, code); const supplied = Buffer.from(expectedHash); const stored = Buffer.from(String(storedHash)); if (process.env.NODE_ENV !== 'production' && process.env.AUTH_OTP_DEV_CODE && code === process.env.AUTH_OTP_DEV_CODE) { /* development-only test path */ } else if (stored.length !== supplied.length || !crypto.timingSafeEqual(stored, supplied)) { db.run('UPDATE auth_otps SET attempts = attempts + 1 WHERE phone = ?', [phone]); saveDb(); return res.status(401).json({ error: 'Invalid verification code.' }); } db.run('DELETE FROM auth_otps WHERE phone = ?', [phone]); db.run(`INSERT INTO memory_profiles (phone, country, points_balance, wallet_balance_minor, created_at, updated_at) VALUES (?, CASE WHEN substr(?,1,4) = '+234' THEN 'ng' WHEN substr(?,1,3) = '+44' THEN 'gb' ELSE 'ng' END, 30, 30, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT(phone) DO UPDATE SET updated_at = CURRENT_TIMESTAMP`, [phone, phone, phone]); saveDb(); const token = jwt.sign({ phone, role: 'user' }, getJwtSecret(), { algorithm: 'HS256', expiresIn: '7d' }); setAuthCookie(res, token); res.json({ success: true, phone }); });
-router.post('/auth/logout', (_req, res) => { res.setHeader('Set-Cookie', 'kurukoo_auth=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0'); res.json({ success: true }); });
 function getGuestPhone(req: any, res: any): string {
   const cookie = String(req.headers.cookie || '');
   const pair = cookie.split(';').map(v => v.trim()).find(v => v.startsWith('kurukoo_guest_id='));
@@ -88,13 +73,16 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
 
       if (routing.skill && routing.skill !== 'general_question' && routing.skill !== 'autonomous_agent') {
         if (isGuest) {
-          // Intercept all economic actions for guests
-          fullReply = `${routing.reply}\n\nTo continue with this request and connect with providers, please sign in to your Kurukoo account.`;
+          // Intercept all economic actions for guests while retaining the safe,
+          // read-only storefront projection for resumption after authentication.
+          const continuationCard = cardData;
+          fullReply = `${routing.reply}\n\nTo continue with this request and review the next supported action, please sign in to your Kurukoo account.`;
           cardData = {
             type: 'auth_gate',
             title: 'Sign in to Continue',
-            message: `We've captured your request for ${routing.skill.replace(/_/g, ' ')}. Sign in to see quotes and book a provider.`,
-            returnUrl: `/chat?conversationId=${activeConversation}`
+            message: `We've captured your request for ${routing.skill.replace(/_/g, ' ')}. Sign in to continue it and review any supported next step.`,
+            returnUrl: `/chat?conversationId=${activeConversation}`,
+            continuationCard,
           };
         } else if (cardData?.type === 'agentic_storefront') {
           fullReply = routing.reply;

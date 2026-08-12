@@ -75,6 +75,20 @@ router.post('/verify-otp', authRateLimit, async (req, res) => {
         db.run('UPDATE messages SET phone = ? WHERE phone = ?', [userPhone, guestPhone]);
         db.run('UPDATE economic_requests SET phone = ? WHERE phone = ?', [userPhone, guestPhone]);
         db.run('UPDATE orders SET phone = ? WHERE phone = ?', [userPhone, guestPhone]);
+
+        // A user who has already articulated a request must resume that request,
+        // rather than being diverted into profile setup after authenticating.
+        const profileStmt = db.prepare('SELECT preferences FROM memory_profiles WHERE phone = ?');
+        profileStmt.bind([userPhone]);
+        let preferences: Record<string, unknown> = {};
+        if (profileStmt.step()) {
+          const profile = profileStmt.getAsObject() as { preferences?: string };
+          try { preferences = profile.preferences ? JSON.parse(profile.preferences) : {}; } catch { preferences = {}; }
+        }
+        profileStmt.free();
+        preferences.onboarding_complete = true;
+        preferences.onboarding_step = 'done';
+        db.run('UPDATE memory_profiles SET preferences = ? WHERE phone = ?', [JSON.stringify(preferences), userPhone]);
         saveDb();
       } catch (migrationError) {
         console.error('Guest migration failed during verify-otp:', migrationError);
@@ -83,7 +97,11 @@ router.post('/verify-otp', authRateLimit, async (req, res) => {
 
     const token = issueUserToken(userPhone);
     const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-    res.setHeader('Set-Cookie', `kurukoo_auth=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secure}`);
+    const sessionCookies = [`kurukoo_auth=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secure}`];
+    if (guestPhone.startsWith('anon_')) {
+      sessionCookies.push(`kurukoo_guest_id=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`);
+    }
+    res.setHeader('Set-Cookie', sessionCookies);
     
     res.json({
       success: true,
@@ -138,6 +156,12 @@ router.post('/login', authRateLimit, async (req, res) => {
     console.error('Auth login error:', e);
     return res.status(500).json({ success: false, error: e.message || 'Login failed' });
   }
+});
+
+router.post('/logout', (_req, res) => {
+  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  res.setHeader('Set-Cookie', `kurukoo_auth=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`);
+  res.json({ success: true });
 });
 
 router.get('/me', authenticateUser, async (req: AuthRequest, res) => {

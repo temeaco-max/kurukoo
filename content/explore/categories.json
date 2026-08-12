@@ -4,7 +4,7 @@
     "name": "Food",
     "slug": "food",
     "icon": "🍲",
-    "description": "Order local delicacies, homemade soups, swallow, and fresh meals delivered hot to your doorstep.",
+    "description": "Discuss a food request for local delicacies, soups, swallow, fresh meals, or related delivery needs.",
     "mockConversation": [
       { "sender": "assistant", "content": "Ku Kurukoo! Welcome to Food. Are you craving local soups, rice dishes, or snacks today?" },
       { "sender": "user", "content": "I want hot amala and egusi soup with beef." },
@@ -19,7 +19,7 @@
     "name": "Drinks",
     "slug": "drinks",
     "icon": "🥤",
-    "description": "Ice-cold beverages, palm wine, zobo, juices, and party drinks delivered instantly.",
+    "description": "Discuss a drinks request for beverages, palm wine, zobo, juices, or party supplies.",
     "mockConversation": [
       { "sender": "assistant", "content": "Welcome to Drinks. Looking for chilled zobo, malt, soft drinks, or palm wine?" },
       { "sender": "user", "content": "I need 2 bottles of chilled palm wine and 4 malt drinks." },
@@ -34,7 +34,7 @@
     "name": "Transport",
     "slug": "transport",
     "icon": "🛺",
-    "description": "Book reliable Okada, Keke, and city taxis for fast, safe commutes across town.",
+    "description": "Discuss a transport request for Okada, Keke, or city taxi travel. Availability and pricing are confirmed in the request flow.",
     "mockConversation": [
       { "sender": "assistant", "content": "Need a ride? I can match you with verified Okada or Keke drivers nearby." },
       { "sender": "user", "content": "I need a Keke from Bodija to UI gate." },
@@ -64,7 +64,7 @@
     "name": "Workers",
     "slug": "workers",
     "icon": "👷",
-    "description": "Hire vetted artisans, bricklayers, painters, cleaners, and labourers for any project.",
+    "description": "Discuss a request for artisans, bricklayers, painters, cleaners, or labourers. Provider details are shown only after validation.",
     "mockConversation": [
       { "sender": "assistant", "content": "Looking for skilled workers or general labor for your site or home?" },
       { "sender": "user", "content": "I need 2 reliable painters for a 3-bedroom apartment." },
@@ -79,7 +79,7 @@
     "name": "Repairs",
     "slug": "repairs",
     "icon": "🔧",
-    "description": "Expert plumbers, electricians, generator mechanics, and appliance repair technicians.",
+    "description": "Discuss a repair need involving plumbing, electrical work, generators, appliances, or related technicians.",
     "mockConversation": [
       { "sender": "assistant", "content": "Got a leaking pipe, electrical fault, or faulty generator?" },
       { "sender": "user", "content": "My 2.5kva generator won't start. Need a mechanic." },
@@ -94,7 +94,7 @@
     "name": "Emergency",
     "slug": "emergency",
     "icon": "🚨",
-    "description": "Instant SOS dispatch, roadside medical assistance, and emergency response coordination.",
+    "description": "Discuss a non-emergency roadside or coordination request. Kurukoo is not an emergency-response service.",
     "mockConversation": [
       { "sender": "assistant", "content": "Emergency dispatch active. What is your urgent situation?" },
       { "sender": "user", "content": "Car broke down on the expressway at night." },
@@ -109,7 +109,7 @@
     "name": "Safety & Security",
     "slug": "safety-security",
     "icon": "🛡️",
-    "description": "Neighbourhood watch alerts, private guards, and secure escorted transit services.",
+    "description": "Discuss a request involving security-related providers where the applicable requirements can be confirmed.",
     "mockConversation": [
       { "sender": "assistant", "content": "Welcome to Safety & Security. Need estate guards or security escorts?" },
       { "sender": "user", "content": "I need night guards for an event venue in Ring Road." },
@@ -124,7 +124,7 @@
     "name": "Health",
     "slug": "health",
     "icon": "🏥",
-    "description": "Find chemists, home nurse visits, prescription delivery, and medical consultation.",
+    "description": "Discuss non-emergency needs involving pharmacies, nursing services, prescription delivery, or consultations. For urgent medical help, contact local emergency services.",
     "mockConversation": [
       { "sender": "assistant", "content": "Need medical supplies, chemist delivery, or home nursing?" },
       { "sender": "user", "content": "I need malaria medication and pain relievers delivered." },
@@ -244,7 +244,7 @@
     "name": "Property & Real Estate",
     "slug": "property-real-estate",
     "icon": "🏠",
-    "description": "Buy, rent, or lease land, apartments, commercial shops, and office spaces.",
+    "description": "Discuss property-search, rental, purchase, or lease requirements. Listings and parties are not represented as available until confirmed.",
     "mockConversation": [
       { "sender": "assistant", "content": "Looking to rent or buy a property in prime locations?" },
       { "sender": "user", "content": "I need a 3-bedroom flat in Ring Road." },
@@ -259,7 +259,7 @@
     "name": "Agriculture",
     "slug": "agriculture",
     "icon": "🌾",
-    "description": "Farm produce bulk supply, fertilizers, tractor hire, and agro-allied logistics.",
+    "description": "Discuss agriculture supply, equipment, or logistics needs. Availability depends on a confirmed provider.",
     "mockConversation": [
       { "sender": "assistant", "content": "Welcome to Agriculture marketplace. Buying produce or hiring farm equipment?" },
       { "sender": "user", "content": "I need 50 bags of dry maize delivered in bulk." },
@@ -334,7 +334,7 @@
     "name": "Gigs",
     "slug": "gigs",
     "icon": "🎯",
-    "description": "Find quick micro-tasks, short-term assignments, and flexible daily earning gigs.",
+    "description": "Discuss a micro-task, short-term assignment, or work request. No earnings or placement outcome is guaranteed.",
     "mockConversation": [
       { "sender": "assistant", "content": "Looking for quick micro-gigs or task assignments to earn credits?" },
       { "sender": "user", "content": "What gigs are available for me today?" },
@@ -364,7 +364,7 @@
     "name": "Classifieds",
     "slug": "classifieds",
     "icon": "🏷️",
-    "description": "Buy and sell used electronics, phones, furniture, generators, and household items.",
+    "description": "Discuss a classified listing or local sale request. Items and sellers are not represented as available until confirmed.",
     "mockConversation": [
       { "sender": "assistant", "content": "Looking to buy or sell pre-owned items locally?" },
       { "sender": "user", "content": "I want to sell my fairly used generator." },
@@ -379,7 +379,7 @@
     "name": "Price Checker",
     "slug": "price-checker",
     "icon": "📊",
-    "description": "Compare real-time market prices for foodstuff, fuel, cooking gas, and building materials.",
+    "description": "Discuss a price-check request. Current prices require a supported data source or provider confirmation.",
     "mockConversation": [
       { "sender": "assistant", "content": "Want to check current market prices before you buy?" },
       { "sender": "user", "content": "What is the current price of a 12.5kg cooking gas cylinder?" },
@@ -409,7 +409,7 @@
     "name": "Communication",
     "slug": "communication",
     "icon": "📡",
-    "description": "Airtime top-up, data bundles, international calling cards, and internet subscription.",
+    "description": "Discuss mobile connectivity or subscription needs. Top-ups and payments require a verified integration.",
     "mockConversation": [
       { "sender": "assistant", "content": "Need airtime, data bundle, or Wi-Fi subscription?" },
       { "sender": "user", "content": "I need 5GB MTN data bundle." },
@@ -499,7 +499,7 @@
     "name": "Childcare",
     "slug": "childcare",
     "icon": "👶",
-    "description": "Verified babysitters, nannies, day-care centres, and after-school childcare.",
+    "description": "Discuss a childcare need. Provider verification, safeguarding, and availability require separate confirmation.",
     "mockConversation": [
       { "sender": "assistant", "content": "Need a trustworthy babysitter or nanny for your kids?" },
       { "sender": "user", "content": "I need a live-in nanny with verified references." },
@@ -529,7 +529,7 @@
     "name": "Automotive Care",
     "slug": "automotive-care",
     "icon": "🚗",
-    "description": "Car wash, interior detailing, mechanic diagnostics, and spare parts delivery.",
+    "description": "Discuss vehicle-care needs such as washing, detailing, diagnostics, or parts. Availability is confirmed in the request flow.",
     "mockConversation": [
       { "sender": "assistant", "content": "Need car wash, interior detailing, or mechanic diagnostics?" },
       { "sender": "user", "content": "I need full mobile car wash and interior vacuuming." },
@@ -544,7 +544,7 @@
     "name": "Driving",
     "slug": "driving",
     "icon": "🚙",
-    "description": "Hire personal drivers for daily commutes, long-distance trips, or special events.",
+    "description": "Discuss a personal-driver request for commutes, long-distance trips, or special events. Availability requires confirmation.",
     "mockConversation": [
       { "sender": "assistant", "content": "Need a professional driver for your personal car?" },
       { "sender": "user", "content": "I need a driver for an interstate trip to Lagos and back." },
@@ -604,7 +604,7 @@
     "name": "Tyre & Vulcanizer",
     "slug": "tyre-vulcanizer",
     "icon": "🛑",
-    "description": "Emergency roadside tyre patch, wheel balancing, alignment, and valve replacement.",
+    "description": "Discuss a tyre or vehicle-care request, including patching, balancing, alignment, or valve work. Kurukoo does not provide emergency dispatch.",
     "mockConversation": [
       { "sender": "assistant", "content": "Got a flat tyre or need roadside vulcanizing assistance?" },
       { "sender": "user", "content": "My front tyre punctured on Ring Road. Need a mobile vulcanizer." },
@@ -634,7 +634,7 @@
     "name": "Betting",
     "slug": "betting",
     "icon": "🎲",
-    "description": "Sports betting funding, odds analysis tips, and verified gaming wallet top-ups.",
+    "description": "Discuss gaming-related information needs. Kurukoo does not process betting funding or wallet top-ups in this deployment.",
     "mockConversation": [
       { "sender": "assistant", "content": "Need instant funding for your gaming or betting wallet?" },
       { "sender": "user", "content": "I want to fund my Bet9ja account with ₦2,000." },

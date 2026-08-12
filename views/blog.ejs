@@ -5,80 +5,67 @@
     <section class="section blog-hero">
         <div class="container">
             <span class="badge blog-badge">The Kurukoo Blog</span>
-            <h1 class="blog-hero-title">Ideas, Updates & Stories</h1>
-            <p class="blog-hero-desc">Exploring the intersection of technology, community, and everyday life in Nigeria.</p>
+            <h1 class="blog-hero-title">Ideas, Updates &amp; Stories</h1>
+            <p class="blog-hero-desc">Notes about conversation-first requests, product boundaries, and the network model.</p>
         </div>
     </section>
 
     <section class="section container">
         <div class="pattern-bg"></div>
-        <!-- Featured Post -->
-        <div class="article-card featured-article">
+        <article class="article-card featured-article">
             <div class="article-img featured-article-img">📱</div>
             <div class="article-content featured-article-content">
                 <span class="category-tag">Engineering</span>
-                <h2 class="featured-article-h2">How we built a super-app that runs on any phone.</h2>
-                <p class="featured-article-p">A deep dive into our channel-agnostic architecture, from USSD to high-performance Apps.</p>
+                <h2 class="featured-article-h2">How a conversation-first request stays in context.</h2>
+                <p class="featured-article-p">A practical look at the Web Chat request flow, identity gates, and the boundaries between supported and planned access channels.</p>
                 <div class="author-row">
-                    <div class="author-avatar">ST</div>
+                    <div class="author-avatar">K</div>
                     <div class="author-info">
-                        <div class="author-name">Segun T.</div>
-                        <div class="author-meta">CTO • 8 min read</div>
+                        <div class="author-name">Kurukoo product note</div>
+                        <div class="author-meta">Publication preview</div>
                     </div>
                 </div>
             </div>
-        </div>
+        </article>
 
-        <!-- Article Grid -->
         <div class="grid grid-3">
-            <div class="article-card">
+            <article class="article-card">
                 <div class="article-img article-icon-center">🤝</div>
                 <div class="article-content">
                     <span class="category-tag">Community</span>
-                    <h3 class="article-h3">The power of Money Circles in digital economy.</h3>
-                    <p class="article-desc">Why Money Circles and community savings are the backbone of our financial features.</p>
-                    <a href="#" class="article-read-more">Read More →</a>
+                    <h3 class="article-h3">Participation and economic requests</h3>
+                    <p class="article-desc">A forthcoming note on how participants, providers, and contributors remain distinct within the request lifecycle.</p>
+                    <span class="article-read-more" aria-label="Publication preview">Publication preview</span>
                 </div>
-            </div>
-            <div class="article-card">
+            </article>
+            <article class="article-card">
                 <div class="article-img article-icon-center">⚡</div>
                 <div class="article-content">
                     <span class="category-tag">Product</span>
-                    <h3 class="article-h3">Introducing Nearby Pulse for local hawkers.</h3>
-                    <p class="article-desc">Revolutionizing real-time visibility for mobile service providers.</p>
-                    <a href="#" class="article-read-more">Read More →</a>
+                    <h3 class="article-h3">Location-aware request context</h3>
+                    <p class="article-desc">Location-related information is presented only when the applicable data and request path are available.</p>
+                    <span class="article-read-more" aria-label="Publication preview">Publication preview</span>
                 </div>
-            </div>
-            <div class="article-card">
+            </article>
+            <article class="article-card">
                 <div class="article-img article-icon-center">🏙️</div>
                 <div class="article-content">
-                    <span class="category-tag">News</span>
-                    <h3 class="article-h3">Kurukoo expands to 5 new cities this month.</h3>
-                    <p class="article-desc">Our journey towards 100% coverage across Nigeria continues.</p>
-                    <a href="#" class="article-read-more">Read More →</a>
+                    <span class="category-tag">Deployment</span>
+                    <h3 class="article-h3">Availability by deployment</h3>
+                    <p class="article-desc">Kurukoo publishes channels, integrations, and coverage only after they are configured and verified for a deployment.</p>
+                    <span class="article-read-more" aria-label="Publication preview">Publication preview</span>
                 </div>
-            </div>
+            </article>
         </div>
     </section>
 
-    <!-- Newsletter -->
     <section class="section newsletter-section">
         <div class="container text-center">
-            <h2>Stay in the loop.</h2>
-            <p class="newsletter-desc">Get the latest stories and product updates delivered to your inbox.</p>
-            <form id="newsletter-form" class="input-group newsletter-form">
-                <input type="email" placeholder="Your email address" required>
-                <button type="submit" class="btn btn-primary">Subscribe</button>
-            </form>
+            <h2>Follow product updates</h2>
+            <p class="newsletter-desc">Email subscriptions are not configured in this deployment. Use Web Chat if you need to discuss a request or product boundary.</p>
+            <a href="/chat?prompt=I%20want%20to%20discuss%20a%20Kurukoo%20product%20update" class="btn btn-primary">Open Web Chat</a>
         </div>
     </section>
 </main>
-
-<script>
-  document.getElementById('newsletter-form')?.addEventListener('submit', (event) => {
-    event.preventDefault();
-    window.alert('Subscribed!');
-  });
-</script>
 
 <%- include('_partials/footer') %>

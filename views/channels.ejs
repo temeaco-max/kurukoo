@@ -3,89 +3,60 @@
 
 <main class="container page-container">
     <section class="section-heading">
-        <span class="eyebrow">Multiple Access Points</span>
-        <h1>Choose how you access Kurukoo</h1>
-        <p class="lead">One orchestration network, one conversation model, accessible through the channels you already use.</p>
+        <span class="eyebrow">Access</span>
+        <h1>Start where Kurukoo is available</h1>
+        <p class="lead">Web Chat is the active Kurukoo access point in this deployment. Your conversation and Economic Request stay attached to your Kurukoo profile as additional channels are connected.</p>
     </section>
 
-    <div class="channels-grid">
-        <!-- Available Now -->
-        <div class="channel-group">
-            <h2 class="channel-group-title">Available Now</h2>
-            <div class="channel-cards">
-                <div class="channel-card">
-                    <div class="channel-icon">🌐</div>
-                    <h3>Web Chat</h3>
-                    <p>Access the full Kurukoo experience directly in your browser with real-time streaming and interactive cards.</p>
-                    <a href="/chat" class="btn btn-primary btn-sm">Open Web Chat</a>
-                </div>
-
-                <div class="channel-card">
-                    <div class="channel-icon">💬</div>
-                    <h3>WhatsApp</h3>
-                    <p>Message Kurukoo on WhatsApp. Perfect for quick requests and coordination on the go.</p>
-                    <a href="https://wa.me/2347000" class="btn btn-outline btn-sm">Chat on WhatsApp</a>
-                </div>
-
-                <div class="channel-card">
-                    <div class="channel-icon">📞</div>
-                    <h3>USSD</h3>
-                    <p>Dial *7000# to access Kurukoo services without an internet connection. Available on supported mobile networks.</p>
-                    <a href="tel:*7000%23" class="btn btn-outline btn-sm">Dial *7000#</a>
-                </div>
-            </div>
+    <div class="channel-group">
+        <h2 class="channel-group-title">Available</h2>
+        <div class="channel-cards">
+            <article class="channel-card channel-card--available">
+                <div class="channel-icon" aria-hidden="true">⌘</div>
+                <h3>Web Chat</h3>
+                <p>Use the full conversation experience in your browser to describe a need, review matching details, and take protected actions when identity is required.</p>
+                <a href="/chat" class="btn btn-primary btn-sm">Open Web Chat</a>
+            </article>
         </div>
+    </div>
 
-        <!-- Coming Soon -->
-        <div class="channel-group">
-            <h2 class="channel-group-title">Coming Soon</h2>
-            <div class="channel-cards">
-                <div class="channel-card muted">
-                    <div class="channel-icon">📱</div>
-                    <h3>SMS</h3>
-                    <p>Request services and receive updates via standard text messages. No data plan required.</p>
-                    <span class="badge">Coming Soon</span>
-                </div>
-
-                <div class="channel-card muted">
-                    <div class="channel-icon">🤖</div>
-                    <h3>AI Integrations</h3>
-                    <p>Bring Kurukoo into the AI tools you already use like ChatGPT, Claude, and Gemini.</p>
-                    <span class="badge">Planned</span>
-                </div>
-
-                <div class="channel-card muted">
-                    <div class="channel-icon">🎙️</div>
-                    <h3>Voice Assistants</h3>
-                    <p>Coordinate your day using voice commands through supported smart speakers and mobile assistants.</p>
-                    <span class="badge">Future</span>
-                </div>
-            </div>
+    <div class="channel-group">
+        <h2 class="channel-group-title">Not connected in this deployment</h2>
+        <p class="channel-note">These routes are intentionally unavailable here because no corresponding messaging or carrier adapter is configured. Use Web Chat instead; it is the source of truth for your conversation.</p>
+        <div class="channel-cards">
+            <article class="channel-card channel-card--unavailable">
+                <div class="channel-icon" aria-hidden="true">◌</div>
+                <h3>WhatsApp</h3>
+                <p>WhatsApp messaging is not connected for this deployment. No WhatsApp link is shown so a request cannot be sent to an unconfigured service.</p>
+                <a href="/chat" class="btn btn-outline btn-sm">Use Web Chat</a>
+            </article>
+            <article class="channel-card channel-card--unavailable">
+                <div class="channel-icon" aria-hidden="true">⌁</div>
+                <h3>USSD</h3>
+                <p>USSD is not connected for this deployment. Use Web Chat while a verified carrier integration is unavailable.</p>
+                <a href="/chat" class="btn btn-outline btn-sm">Use Web Chat</a>
+            </article>
+            <article class="channel-card channel-card--unavailable">
+                <div class="channel-icon" aria-hidden="true">□</div>
+                <h3>SMS</h3>
+                <p>SMS is not connected for this deployment. Use Web Chat for request updates and account access.</p>
+                <a href="/chat" class="btn btn-outline btn-sm">Use Web Chat</a>
+            </article>
         </div>
     </div>
 </main>
 
 <style>
 .channel-group { margin-bottom: 60px; }
-.channel-group-title { margin-bottom: 32px; font-size: 1.5rem; border-bottom: 2px solid var(--terracotta); display: inline-block; padding-bottom: 8px; }
-.channel-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 24px;
-}
-.channel-card {
-    padding: 32px;
-    background: var(--white);
-    border: 1px solid var(--gray-200);
-    border-radius: var(--border-radius);
-    display: flex;
-    flex-direction: column;
-}
-.channel-card.muted { opacity: 0.7; background: var(--gray-50); }
-.channel-icon { font-size: 2.5rem; margin-bottom: 20px; }
+.channel-group-title { margin-bottom: 20px; font-size: 1.5rem; border-bottom: 2px solid var(--terracotta); display: inline-block; padding-bottom: 8px; }
+.channel-note { max-width: 760px; margin: 0 0 24px; color: var(--gray-600); line-height: 1.6; }
+.channel-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; }
+.channel-card { padding: 30px; background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--border-radius); display: flex; flex-direction: column; }
+.channel-card--available { border-top: 3px solid var(--terracotta); }
+.channel-card--unavailable { background: var(--gray-50); }
+.channel-icon { font: 700 2rem/1 var(--font-heading, system-ui); margin-bottom: 18px; color: var(--terracotta); }
 .channel-card h3 { margin-bottom: 12px; }
-.channel-card p { margin-bottom: 24px; color: var(--gray-600); flex: 1; }
-.badge { align-self: flex-start; background: var(--gray-200); color: var(--gray-600); padding: 4px 12px; border-radius: 100px; font-size: 0.75rem; font-weight: 700; }
+.channel-card p { margin-bottom: 24px; color: var(--gray-600); flex: 1; line-height: 1.6; }
 </style>
 
 <%- include('_partials/footer') %>
