@@ -22,7 +22,8 @@
 
 .home-chat-card { width: 100%; max-width: 480px; justify-self: end; border: 1px solid rgba(26,25,24,.1); border-radius: 26px; background: var(--white); box-shadow: 0 30px 90px rgba(73,48,35,.12), 0 8px 25px rgba(73,48,35,.07); overflow: hidden; transform: rotate(1deg); }
 .home-chat-card__top { display: flex; align-items: center; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--gray-100); }
-.home-avatar { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: var(--terracotta); color: #fff; font: 800 1rem/1 var(--font-heading); }
+.home-chat-card__top img { width: 32px; height: 32px; border-radius: 50%; background:#f0e7e1;}
+.home-avatar { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 12px; background: var(--terracotta); color: #fff; font: 800 1rem/1 var(--font-heading); }
 .home-chat-card__top strong, .home-chat-card__top small { display: block; }
 .home-chat-card__top strong { font: 700 .98rem/1.2 var(--font-heading); }
 .home-chat-card__top small { margin-top: 3px; color: var(--gray-400); font-size: .74rem; }
@@ -113,7 +114,7 @@
 .home-final { padding: 90px 0 !important; background: var(--terracotta); }
 .home-final__inner { max-width: 850px; margin: 0 auto; text-align: center; color: #fff; }
 .home-final .eyebrow { color: #ffe8df; }
-.home-final h2 { margin: 0 0 14px; color: #fff; font-size: clamp(2.4rem, 5vw, 4.5rem); }
+.home-final h2 { margin: 0 0 14px; color: #fff; font-size: clamp(2rem, 4vw, 3.55rem); }
 .home-final p { max-width: 650px; margin: 0 auto 28px; color: rgba(255,255,255,.88); font-size: 1.05rem; line-height: 1.7; }
 .btn-light { background: var(--white); color: var(--charcoal); border-color: #fff; }
 .btn-terracotta { background: #a94f36; color: #fff; border-color: #a94f36; }
