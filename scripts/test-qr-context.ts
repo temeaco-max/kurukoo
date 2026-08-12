@@ -28,6 +28,15 @@ function cookieValue(headers: Headers, name: string): string {
   return `${name}=${match[1]}`;
 }
 
+function economicRequestCount(db: any, phone?: string): number {
+  const exists = db.exec(`SELECT name FROM sqlite_master WHERE type='table' AND name='economic_requests'`);
+  if (!exists[0]?.values?.length) return 0;
+  const result = phone
+    ? db.exec(`SELECT COUNT(*) FROM economic_requests WHERE phone=?`, [phone])
+    : db.exec(`SELECT COUNT(*) FROM economic_requests`);
+  return Number(result[0]?.values?.[0]?.[0] || 0);
+}
+
 try {
   const contexts = [
     { type: 'referral', ref: 'ABCD1234', source: 'poster' },
@@ -71,7 +80,7 @@ try {
   assert.equal(badStart.headers.get('location'), '/chat?qr_error=invalid', '/start must reject malformed or tampered QR contexts');
 
   const beforeDb = await getDb();
-  const beforeRequests = Number(beforeDb.exec(`SELECT COUNT(*) FROM economic_requests`)[0]?.values?.[0]?.[0] || 0);
+  const beforeRequests = economicRequestCount(beforeDb);
   const firstActivation = await fetch(`${baseUrl}/api/qr/activate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ qr: entry.searchParams.get('qr') }) });
   assert.equal(firstActivation.status, 200, 'Signed QR must activate for a guest');
   const guestCookie = cookieValue(firstActivation.headers, 'kurukoo_guest_id');
@@ -85,7 +94,7 @@ try {
   assert.equal(repeated.conversationId, first.conversationId, 'QR activation must reuse the existing conversation');
   assert.equal(repeated.messageId, first.messageId, 'The contextual greeting must persist once rather than duplicate');
   assert.equal(repeated.activated, false, 'Repeated activation must be idempotent');
-  const afterRequests = Number((await getDb()).exec(`SELECT COUNT(*) FROM economic_requests`)[0]?.values?.[0]?.[0] || 0);
+  const afterRequests = economicRequestCount(await getDb());
   assert.equal(afterRequests, beforeRequests, 'QR scanning and activation must never create an Economic Request');
   const messages = await listChatMessages(guestPhone, { conversationId: first.conversationId, limit: 20 });
   assert.equal(messages.filter(message => String(message.channel) === 'web_qr').length, 1, 'QR greeting must live in the existing conversation message store only once');
@@ -120,8 +129,8 @@ try {
   });
   assert.equal(qrToIntent.status, 200, 'A QR-originated authenticated conversation must continue through canonical chat');
   await qrToIntent.text();
-  const qrRequests = (await getDb()).exec(`SELECT COUNT(*) FROM economic_requests WHERE phone=?`, [userPhone]);
-  assert.ok(Number(qrRequests[0]?.values?.[0]?.[0] || 0) >= 1, 'Only the user’s subsequent intent may enter the existing Economic Request lifecycle');
+  const qrRequests = economicRequestCount(await getDb(), userPhone);
+  assert.ok(qrRequests >= 1, 'Only the user’s subsequent intent may enter the existing Economic Request lifecycle');
 
   const voice = fs.readFileSync('public/js/kurukoo-voice.js', 'utf8');
   assert.match(voice, /localStorage\.getItem\('kurukoo_conversation_id'\)/, 'Voice must reuse the QR-originated canonical conversation ID');
