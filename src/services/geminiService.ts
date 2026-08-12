@@ -2,13 +2,15 @@ import { GoogleGenAI } from '@google/genai';
 
 let genAIInstance: GoogleGenAI | null = null;
 
-function getGenAI(): GoogleGenAI {
+export function getGenAIClient(): GoogleGenAI {
     if (!genAIInstance) {
         const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || '';
         genAIInstance = new GoogleGenAI({ apiKey });
     }
     return genAIInstance;
 }
+
+function getGenAI(): GoogleGenAI { return getGenAIClient(); }
 
 export interface GeminiChatOptions {
     systemInstruction?: string;

@@ -26,6 +26,7 @@ import trustRoutes from './routes/trustRoutes.js';
 import webrtcRoutes from './routes/webrtcRoutes.js';
 import systemRoutes from './routes/systemRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
+import voiceRouter from './routes/voiceRouter.js';
 
 if (process.env.NODE_ENV !== 'production' && !process.env.KURUKOO_PAY_PROVIDER) process.env.KURUKOO_PAY_PROVIDER = 'sandbox';
 if (!process.env.CREDIT_ECONOMY_ENABLED) process.env.CREDIT_ECONOMY_ENABLED = 'true';
@@ -49,6 +50,7 @@ app.use('/api', paymentRoutes);
 app.use('/api', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRouter);
+app.use('/api/voice', voiceRouter);
 app.use('/api', orderRoutes);
 app.use('/api', reminderRoutes);
 app.use('/api', notificationRoutes);

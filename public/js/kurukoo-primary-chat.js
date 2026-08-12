@@ -828,6 +828,26 @@
     });
   };
 
+  document.addEventListener('kurukoo:voice', event => {
+    const detail = event.detail || {};
+    if (detail.type === 'conversation' && detail.conversationId) {
+      state.conversationId = detail.conversationId;
+      localStorage.setItem('kurukoo_conversation_id', state.conversationId);
+      return;
+    }
+    if (detail.type === 'transcript' && detail.text) {
+      $('welcome')?.remove();
+      const role = detail.role === 'assistant' ? 'assistant' : 'user';
+      state.messages.push({ role, text: detail.text, id: detail.messageId || null });
+      createMessage(role, detail.text, detail.messageId || null);
+      return;
+    }
+    if (detail.type === 'card' && detail.cardData) {
+      const target = chatContent.querySelector('.message.assistant:last-child');
+      if (target) renderCard(detail.cardData, target);
+    }
+  });
+
   input?.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
   send?.addEventListener('click', () => sendMessage());
   $('new-chat')?.addEventListener('click', async () => { 
