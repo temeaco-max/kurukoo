@@ -18,7 +18,8 @@ assert.match(storefront, /\.setAttribute\(/, 'storefront renderer must set progr
 assert.doesNotMatch(storefront, /innerHTML\s*=/, 'storefront renderer must not interpolate card data into innerHTML');
 assert.doesNotMatch(storefront, /style=["'][^"']*width/, 'storefront renderer must not emit inline progress styles');
 assert.match(source, /function renderMarkdown\(text\).*sanitizeHtml/s, 'sanitized Markdown rendering must remain available for genuine message content');
-assert.match(source, /output\.innerHTML\s*=\s*renderMarkdown\(full\)/, 'streaming Markdown must continue through its existing sanitization boundary');
+assert.match(source, /setMarkdown\(output, full\)/, 'streaming Markdown must continue through its sanitizer-backed DOM helper');
+assert.match(source, /function setMarkdown\(el, text\)[\s\S]*renderMarkdown\(text\)[\s\S]*replaceChildren/, 'Markdown helper must sanitize before replacing rendered DOM content');
 assert.match(shell, /aria-controls="chat-inspector"/, 'context inspector toggle must declare its controlled region');
 assert.match(shell, /id="inspector-feedback"[^>]*role="status"/, 'Native Assistance feedback must be announced to assistive technology');
 assert.match(shell, /id="native-assistance-status"[^>]*role="status"/, 'primary chat must announce proactive Native Assistance status');
