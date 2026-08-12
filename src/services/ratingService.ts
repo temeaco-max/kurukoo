@@ -1,17 +1,22 @@
 import { getDb, saveDb } from '../database.js';
 import { getProfile, updateProfile } from './memoryProfile.js';
+import { recalculateTrustScore } from './trustScore.js';
 
 export async function submitRating(providerPhone: string, skill: string, rating: number): Promise<void> {
     const db = await getDb();
-    
+
     // 1. Update skill rating and jobs completed
-    db.run(`UPDATE skills SET 
+    db.run(`UPDATE skills SET
         rating = ((rating * jobs_completed) + ?) / (jobs_completed + 1),
         jobs_completed = jobs_completed + 1
-        WHERE phone = ? AND skill = ?`, 
+        WHERE phone = ? AND skill = ?`,
         [rating, providerPhone, skill]);
-    
-    // 2. Add badge check
+
+    // 2. Recalculate the backend-only composite Trust Score immediately after
+    // the completion/rating event. The public UI should use human signals only.
+    await recalculateTrustScore(providerPhone);
+
+    // 3. Add badge check
     await checkAndAwardBadges(providerPhone);
 
     saveDb();
@@ -19,7 +24,7 @@ export async function submitRating(providerPhone: string, skill: string, rating:
 
 export async function checkAndAwardBadges(phone: string): Promise<void> {
     const db = await getDb();
-    
+
     // Fetch profile and details
     const profile = await getProfile(phone);
     if (!profile) return;
@@ -70,7 +75,7 @@ export async function checkAndAwardBadges(phone: string): Promise<void> {
     if (primarySkill) {
         // Fetch all providers in the same location with this skill
         const stmtLga = db.prepare(`
-            SELECT s.phone, s.rating 
+            SELECT s.phone, s.rating
             FROM skills s
             JOIN memory_profiles p ON s.phone = p.phone
             WHERE s.skill = ? AND p.location = ?
@@ -88,7 +93,7 @@ export async function checkAndAwardBadges(phone: string): Promise<void> {
             const sorted = peerRatings.sort((a, b) => b - a);
             const topTenIndex = Math.max(0, Math.ceil(sorted.length * 0.1) - 1);
             const threshold = sorted[topTenIndex];
-            
+
             if (primaryRating >= threshold && primaryRating >= 4.0) {
                 awardedBadges.push('Top Rated');
                 db.run(`INSERT OR IGNORE INTO badges (phone, badge_type) VALUES (?, 'Top Rated')`, [phone]);
