@@ -14,7 +14,8 @@ Kurukoo is not certified for unrestricted public launch. The repository now beha
 | Branch | `integration/main-convergence-audit` |
 | PR | [#31](https://github.com/temeaco-max/kurukoo/pull/31) remains the integration vehicle. |
 | Baseline PR state | Clean, mergeable, with build, FastText, and secret-scan checks successful. |
-| Final commit | Pending final publication of this certification pass. |
+| Final certification commit | `02c165c` — `certify: harden controlled pilot boundaries` |
+| Report update | This report is included in the certification commit; subsequent documentation-only hash changes do not alter the certified code state. |
 | Working tree at report authoring | Contains only the certification hardening and documentation changes described below. |
 
 ## Certification evidence
