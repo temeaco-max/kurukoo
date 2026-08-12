@@ -14,6 +14,7 @@ import { migrateGuestSessionToAccount } from '../services/guestSessionMigration.
 import { applyQrReferralAttribution } from '../services/qrContextService.js';
 import { streamUnifiedAI } from '../services/unifiedAiEngine.js';
 import economicRequestRouter from './economicRequestRouter.js';
+import { createConversationGoal } from '../services/agentRuntime.js';
 
 const router = Router();
 
@@ -128,6 +129,15 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
     } else {
       const routing = await routeIntent(message, phone);
       cardData = routing.cardData;
+      const agentGoal = !isGuest ? await createConversationGoal({
+        phone,
+        conversationId: activeConversation,
+        skill: routing.skill,
+        objective: message,
+        economicRequestId: typeof cardData?.requestId === 'string' ? cardData.requestId : undefined,
+        source: channel === 'web_qr' ? 'qr' : 'conversation',
+      }) : null;
+      if (agentGoal) sse(res, { type: 'agent_goal', goal: { id: agentGoal.id, status: agentGoal.status, objective: agentGoal.objective, summary: agentGoal.summary, autonomy: agentGoal.autonomy, economicRequestId: agentGoal.economicRequestId || null } });
 
       if (routing.skill && routing.skill !== 'general_question' && routing.skill !== 'autonomous_agent') {
         if (isGuest) {

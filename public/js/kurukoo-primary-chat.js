@@ -752,6 +752,7 @@
           }
           if (data.type === 'metadata') updateModelStatus(data);
           if (data.type === 'status') setTypingStatus(data.status, data.label);
+          if (data.type === 'agent_goal') renderAgentGoal(data.goal, []);
           if (data.type === 'thought' && thinking) thinking.hidden = false;
           if (data.type === 'text') {
             if (assistant.hidden) { assistant.hidden = false; assistant.classList.remove('message-streaming'); assistant.classList.add('message-arrived'); }
@@ -776,12 +777,44 @@
       setConnection(false, 'Connection issue'); setTypingStatus('error'); assistant.hidden = false; assistant.classList.remove('message-streaming'); assistant.classList.add('message-arrived');
       const bubble = chatContent.querySelector('.message.assistant:last-child .markdown-body'); 
       if (bubble) setMarkdown(bubble, `I’m having trouble completing that right now. **Please try again.**\n\n_${escapeAttr(error.message)}_`); 
-    } finally { setTypingStatus('complete'); state.busy = false; send.disabled = false; input.placeholder = 'Message Kurukoo'; input.focus(); loadPoints(); loadReminders(); loadSafety(); }
+    } finally { setTypingStatus('complete'); state.busy = false; send.disabled = false; input.placeholder = 'Message Kurukoo'; input.focus(); loadPoints(); loadReminders(); loadSafety(); loadAgentGoal(); }
   }
 
   function updateModelStatus(data) { const label = $('model-badge'); if (label && data.model) label.textContent = data.model; }
   async function loadPoints() { try { const res = await fetch('/api/points/balance', { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const points = Number(data.points || 0); const balance = $('points-balance')?.querySelector('span'); if (balance) balance.textContent = points; const ip = $('inspector-points'); if (ip) ip.textContent = points; } catch {} }
   async function loadMemory() { try { const res = await fetch('/api/profile', { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const profile = data.profile || {}; const text = `Kurukoo remembers ${profile.location || 'your area'}${profile.primary_lga ? `, ${profile.primary_lga}` : ''}. Your Memory Profile remains attached to your account.`; const mc = $('memory-context'); if (mc) mc.textContent = text; const im = $('inspector-memory'); if (im) im.textContent = text; } catch {} }
+
+  function renderAgentGoal(goal, events = []) {
+    const card = $('agent-goal-card'); const status = $('agent-goal-status'); const summary = $('agent-goal-summary'); const list = $('agent-goal-events'); const cancel = $('agent-goal-cancel');
+    if (!card || !status || !summary || !list || !cancel) return;
+    if (!goal) { card.hidden = true; return; }
+    card.hidden = false; card.dataset.goalId = String(goal.id || '');
+    status.textContent = String(goal.status || 'checking').replace(/_/g, ' ');
+    summary.textContent = String(goal.summary || goal.objective || 'Kurukoo is checking the current objective.');
+    list.replaceChildren();
+    (Array.isArray(events) ? events.slice(-4) : []).forEach(event => {
+      const row = makeElement('div', 'agent-goal-event');
+      row.textContent = `${String(event.result || 'update').replace(/_/g, ' ')} · ${String(event.detail || event.action || '').slice(0, 180)}`;
+      list.appendChild(row);
+    });
+    if (!list.childElementCount) list.appendChild(makeElement('div', 'empty-state', 'Kurukoo will show confirmed activity here.'));
+    const stoppable = ['active', 'waiting', 'needs_user', 'blocked'].includes(String(goal.status || ''));
+    cancel.hidden = !stoppable;
+    cancel.onclick = async () => {
+      if (!goal.id) return; cancel.disabled = true;
+      try { const response = await fetch(`/api/agent/goals/${encodeURIComponent(goal.id)}/cancel`, { method: 'POST', credentials: 'same-origin' }); const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || 'Could not stop follow-up.'); renderAgentGoal(data.goal, events); }
+      catch (error) { setInspectorFeedback(error.message || 'Could not stop follow-up.', 'error'); }
+      finally { cancel.disabled = false; }
+    };
+  }
+
+  async function loadAgentGoal() {
+    try {
+      const url = new URL('/api/agent/timeline', location.origin); if (state.conversationId) url.searchParams.set('conversationId', state.conversationId);
+      const response = await fetch(url, { credentials: 'same-origin' }); if (!response.ok) { renderAgentGoal(null); return; }
+      const data = await response.json(); renderAgentGoal(data.goal, data.events);
+    } catch { renderAgentGoal(null); }
+  }
   
   async function loadReminders() {
     try {
@@ -847,6 +880,7 @@
       data.conversations.forEach(c => addHistoryItem(c, c.id === state.conversationId));
       if (data.messages?.length && chatContent.querySelectorAll('.message').length === 0) renderMessages(data.messages);
     } catch { setConnection(false, 'Offline'); }
+    loadAgentGoal();
   }
 
   function renderMessages(messages) {
@@ -946,7 +980,7 @@
   applyTheme();
   ensureIdentity().then(ok => { 
     if (ok) {
-      Promise.all([loadPoints(), loadMemory(), loadReminders(), loadSafety(), refreshHistory()]);
+      Promise.all([loadPoints(), loadMemory(), loadReminders(), loadSafety(), loadAgentGoal(), refreshHistory()]);
       if (!state.conversationId) renderWelcome();
     }
   });

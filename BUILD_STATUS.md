@@ -126,3 +126,21 @@ The current legacy-boundary removal and its dependent remediation work must pass
 The current integration branch adds browser Web Voice to the canonical `/chat` relationship and QR/deep-link contextual entry through `QrContext`, `/start`, `/api/qr/activate`, `/api/qr/generate`, and `/referral-qr/`. Voice uses the normal conversation, guest-first identity flow, FastText/intent router, skills, Economic Request lifecycle, memory, reminders, Points, safety, and structured chat cards; it is not a phone, IVR, channel, or separate request product. QR opens the normal chat with a contextual greeting and may continue through text or voice; it is not authentication, payment, a Points award, a referral-reward engine, a channel adapter, or an economic action.
 
 A real browser Live session remains conditional on owner-managed provider configuration and applicable quota. When unavailable, the chat remains functional by text and reports a plain-language voice fallback. QR referral attribution is registered only after the existing OTP success and is still qualified and rewarded solely by the existing referral and Points services.
+
+
+## Current integration: Bounded Autonomous Agent Runtime
+
+The current `integration/main-convergence-audit` branch adds **one** feature-flagged Kurukoo Autonomous Agent Runtime. It persists owner-scoped goals and concise operational events, creates goals only after the canonical conversation/intent/storefront path, evaluates owned Economic Request state through a restricted tool registry, and re-enters due goals and existing deferred intentions through the established background-service lifecycle. It does not introduce a second AI, memory, task, provider, workflow, payment, referral, voice, QR, or Economic Request system.
+
+| Surface | Current status | Truthful boundary |
+|---|---|---|
+| `agent_goals` and timeline events | Implemented | SQLite persistence is suitable for the current single-instance deployment; every goal is phone-owned and events carry only action, result, evidence, and state metadata. |
+| Chat and inspector | Implemented | An eligible authenticated conversation can create one idempotent goal; the inspector shows a concise objective/timeline and allows cancellation. |
+| Memory and request observation | Implemented | Existing bounded Living Memory and owned canonical request reads are used through the tool registry. |
+| Waiting and deferred re-entry | Implemented | Existing background services process due goals and existing open intentions when the runtime flag is enabled. |
+| Autonomous re-check | Implemented but disabled by default | Only existing eligible unresolved requests may be rechecked, and only when the low-risk flag is explicitly enabled. |
+| Payment, escrow, dispatch, emergency, deletion, arbitrary tools | Intentionally unavailable | Existing confirmation, authorization, connector, and safety boundaries remain mandatory. |
+| Reminder/proactive/provider/contributor/QR/channel event adapters | Backend dependent | Existing systems remain authoritative; each source needs a reviewed adapter, ownership check, evidence policy, and user-preference policy before it may wake a goal. |
+| Multi-instance worker coordination | Backend dependent | A shared queue/lease is required before horizontally scaled workers can process due goals. |
+
+The feature remains inactive unless `KURUKOO_AGENT_ENABLED=true`. Limits are controlled by `KURUKOO_AGENT_MAX_ACTIONS_PER_CYCLE`, `KURUKOO_AGENT_MAX_RETRIES`, `KURUKOO_AGENT_MAX_CONCURRENT_GOALS`, `KURUKOO_AGENT_COOLDOWN_SECONDS`, and `KURUKOO_AGENT_AUTONOMOUS_LOW_RISK`. With the flag disabled, Kurukoo continues operating as the normal conversational assistant.

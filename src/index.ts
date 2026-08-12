@@ -28,6 +28,8 @@ import systemRoutes from './routes/systemRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
 import voiceRouter from './routes/voiceRouter.js';
 import qrRouter from './routes/qrRouter.js';
+import agentRouter from './routes/agentRouter.js';
+import { startBackgroundServices } from './startup/backgroundServices.js';
 
 if (process.env.NODE_ENV !== 'production' && !process.env.KURUKOO_PAY_PROVIDER) process.env.KURUKOO_PAY_PROVIDER = 'sandbox';
 if (!process.env.CREDIT_ECONOMY_ENABLED) process.env.CREDIT_ECONOMY_ENABLED = 'true';
@@ -53,6 +55,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRouter);
 app.use('/api/voice', voiceRouter);
 app.use('/api/qr', qrRouter);
+app.use('/api/agent', agentRouter);
 app.use('/api', orderRoutes);
 app.use('/api', reminderRoutes);
 app.use('/api', notificationRoutes);
@@ -74,6 +77,9 @@ const host = process.env.HOST || '0.0.0.0';
 export { app };
 
 if (process.env.KURUKOO_DISABLE_LISTEN !== 'true') {
-    const server = app.listen(port, host, () => console.log(`[Kurukoo] HTTP server listening on ${host}:${port}`));
+    const server = app.listen(port, host, () => {
+        console.log(`[Kurukoo] HTTP server listening on ${host}:${port}`);
+        if (process.env.KURUKOO_WORKERS !== '0') void startBackgroundServices();
+    });
     server.on('error', (error) => { console.error('[Kurukoo] HTTP server error:', error); process.exitCode = 1; });
 }

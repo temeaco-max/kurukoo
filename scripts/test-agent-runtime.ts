@@ -1,0 +1,50 @@
+import assert from 'node:assert/strict';
+
+process.env.KURUKOO_AGENT_ENABLED = 'true';
+process.env.KURUKOO_AGENT_AUTONOMOUS_LOW_RISK = 'true';
+process.env.KURUKOO_AGENT_MAX_ACTIONS_PER_CYCLE = '2';
+process.env.KURUKOO_AGENT_MAX_CONCURRENT_GOALS = '2';
+
+const { upsertProfile } = await import('../src/routes/authRoutes.js');
+const { createEconomicRequest } = await import('../src/services/skillFlows.js');
+const { executeAgentTool } = await import('../src/services/agentToolRegistry.js');
+const { cancelAgentGoal, createConversationGoal, getAgentGoal, goalTimeline, listAgentGoals, runAgentGoal, runDueAgentGoals } = await import('../src/services/agentRuntime.js');
+const { getDb } = await import('../src/database.js');
+
+const owner = `+234807${String(Date.now()).slice(-7)}`;
+const other = `+234808${String(Date.now()).slice(-7)}`;
+await upsertProfile(owner, 'Goal Owner');
+await upsertProfile(other, 'Other User');
+const request = await createEconomicRequest({ id: `agent-request-${Date.now()}`, phone: owner, skill: 'find_worker', requirements: { location: 'Ikeja', description: 'Car repair' } });
+
+const goal = await createConversationGoal({ phone: owner, conversationId: 'conversation-agent-test', skill: 'find_worker', objective: 'Find a mechanic tomorrow.', economicRequestId: request.id });
+assert.ok(goal, 'Enabled runtime must create one bounded owned goal for a canonical request');
+assert.equal((await createConversationGoal({ phone: owner, conversationId: 'conversation-agent-test', skill: 'find_worker', objective: 'Duplicate', economicRequestId: request.id }))?.id, goal.id, 'Duplicate conversation goals must be idempotent');
+assert.equal(await getAgentGoal(other, goal.id), null, 'A user cannot read another user’s goal');
+assert.equal((await listAgentGoals(owner)).filter(item => item.id === goal.id).length, 1, 'Only one active goal must exist for the same conversation and skill');
+
+const inspected = await runAgentGoal(goal.id, owner);
+assert.equal(inspected?.status, 'waiting', 'An unresolved canonical request must enter a truthful waiting state');
+assert.match(String(inspected?.summary), /waiting/i, 'Waiting status must describe only the existing request state');
+const timeline = await goalTimeline(owner, 'conversation-agent-test');
+assert.equal(timeline.goal?.id, goal.id, 'Conversation timeline must resolve only the owner’s goal');
+assert.ok(timeline.events.some(event => event.tool === 'get_request_state'), 'Runtime evaluation must record concise tool evidence');
+
+const ownRequest = await executeAgentTool('get_request_state', { requestId: request.id }, { phone: owner, conversationId: 'conversation-agent-test', goalId: goal.id });
+assert.equal(ownRequest.ok, true, 'Owned request state may be read through the controlled registry');
+const foreignRequest = await executeAgentTool('get_request_state', { requestId: request.id }, { phone: other, goalId: 'forged' });
+assert.equal(foreignRequest.ok, false, 'Forged or foreign tool arguments must fail ownership checks');
+const unsafeTool = await executeAgentTool('payment' as any, {}, { phone: owner, goalId: goal.id });
+assert.equal(unsafeTool.ok, false, 'High-risk payment or arbitrary tool names are unavailable to the runtime');
+
+const db = await getDb();
+db.run(`UPDATE agent_goals SET next_action_at=datetime('now','-1 minute') WHERE id=?`, [goal.id]);
+const due = await runDueAgentGoals();
+assert.ok(due.some(item => item.id === goal.id), 'Due goals must re-enter only through the bounded worker pass');
+const cancelled = await cancelAgentGoal(owner, goal.id);
+assert.equal(cancelled?.status, 'cancelled', 'The user can stop autonomous follow-up');
+assert.equal((await runAgentGoal(goal.id, owner))?.status, 'cancelled', 'Cancelled goals must not resume automatically');
+
+process.env.KURUKOO_AGENT_ENABLED = 'false';
+assert.equal(await createConversationGoal({ phone: owner, skill: 'find_worker', objective: 'Disabled runtime', economicRequestId: request.id }), null, 'Disabled runtime must preserve normal chat behaviour without creating goals');
+console.log('Agent runtime regression passed: persistent owned goals, idempotency, bounded tools, waiting and worker re-entry, cancellation, disabled mode, and high-risk denial.');

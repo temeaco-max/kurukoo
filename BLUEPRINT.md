@@ -11,6 +11,7 @@
 ## Version History (Consolidated & Deduplicated)
 
 | Version | Date | Summary |
+| **v5.63** | 2026-08-12 | **Bounded Autonomous Agent Runtime (§21b).** Implemented one persistent goal runtime that orchestrates existing conversation, bounded Living Memory, canonical Economic Requests, deferred intentions, reminders, notifications, and the established background-service lifecycle. It uses a restricted, ownership-checked tool registry; explicit autonomy levels; concise operational evidence; idempotent goal events; retries, cooldowns, concurrency/action limits; a user-controlled inspector timeline; and deployment flags. It does not create a second AI, memory, task, request, provider, workflow, voice, QR, referral, payment, or dispatch engine. High-risk actions remain outside autonomous execution and continue through their existing confirmation/authorization boundaries. |
 | :--- | :--- | :--- |
 | **v5.62** | 2026-08-05 | **Agentic Storefront & Interactive UI/UX Transformation (§55.6).** Benchmarked against next-gen agentic commerce platforms (e.g. Swap Commerce agentic storefront model). Added §55.6 codifying the "Show, Don't Tell" interactive agentic UI/UX paradigm across the entire public web surface (Homepage, Explore Categories, For You, Discover). Details interactive Agent Action Simulators, step-by-step agentic execution teardowns (Intent Extraction → Living Memory Lookup → Catalog & Worker Match → Escrow Lock → Multi-Leg Dispatch), interactive traditional vs. agentic comparison matrices, domain-specific category simulators, and live anonymized agentic pulse tickers. Fully compliant with single memory profile, multi-channel mirrors (WhatsApp 7000, USSD *7000#, PWA), and Points economy. Created `AGENTIC_STOREFRONT_TRANSFORMATION_PLAN.md`. |
 | **v5.61** | 2026-08-02 | **Deferred Request Protocol — Handling Unavailable Requests (§4.1.3).** Added §4.1.3 — a 5-state protocol (`requested` → `awaiting_match` → `partially_matched` → `fulfilled`/`abandoned`) that keeps users engaged when no provider is immediately available. States table, lifecycle transition table (trigger → from→to → action), and technical implementation (Open Intentions storage in `memory_profiles.open_intentions` with 7-day TTL, 2-hour re-evaluation cron, nightly expiration cron, proactive FCM+WA nudges, user controls: "Check again in X", "Expand to nearby LGAs", "Cancel", "Find alternative skill", fallback pathways after 3 days). Integrates with memory profile (readable by AI, feeds behavior_patterns, surfaces to Opportunity Engine §33, increments `deferred_attempts` for trust-score adjustment). Mandate-compliant (Rules 1, 3, 4, 5). |
@@ -85,7 +86,7 @@
 ### GROUP 6 — SKILLS TAXONOMY
 §16. Service Verticals · §45. Provider Operation Modes & Skill Dimensions · §55. Specialized Verticals & Agentic Storefront Showcase (§55.6)
 ### GROUP 7 — INTELLIGENCE
-§19. Competitive Precedent · §20. Diaspora Positioning · §21. AI & Intelligence Layer · AI Agents as First-Class Users
+§19. Competitive Precedent · §20. Diaspora Positioning · §21. AI & Intelligence Layer · §21b. Autonomous Agent Runtime · AI Agents as First-Class Users
 ### GROUP 8 — GROWTH
 §22. Referral Programme · §36. Badges & Reputation · §39. Explore Hub · §43. Verified Artist Booking
 ### GROUP 9 — PLATFORM FEATURES
@@ -5334,3 +5335,42 @@ The architecture is deliberately designed so that variable cost per interaction 
 ---
 
 *End of Kurukoo Final Consolidated Blueprint v5.62*
+
+
+## 21b. Autonomous Agent Runtime
+
+> **Principle.** Kurukoo's intelligence is persistent and goal-directed. Conversation is one way to interact with the agent; it is not the boundary of the agent's existence. Kurukoo may continue authorised work across time and events while remaining bounded by user authority, policy, evidence, permissions, and the canonical Economic Request lifecycle.
+
+### 21b.1 Definition and current implementation status
+
+| Capability | Status | Boundary |
+|---|---|---|
+| Persistent `agent_goals` and concise `agent_goal_events` | **IMPLEMENTED** | Goals are owned by one phone/profile, optionally linked to one conversation and one canonical Economic Request. |
+| Goal sources | **IMPLEMENTED / PARTIAL** | Conversation and deferred-request event re-entry are implemented. Reminder, proactive, provider, contributor, QR, and configured external events remain future event adapters that must call the same runtime. |
+| Bounded planning and state evaluation | **IMPLEMENTED** | The runtime observes current canonical request state and selects a safe outcome: waiting, needs-user, completed, cancelled, or blocked. It does not expose hidden reasoning. |
+| Tool registry and permission model | **IMPLEMENTED** | Read-only request, bounded memory, and reminders tools plus a guarded low-risk request re-check are allowed. Arbitrary SQL, files, shell, HTTP, credentials, admin access, payment, escrow release, dispatch, account deletion, and emergency notification are unavailable. |
+| Memory integration | **IMPLEMENTED** | Tools use existing Living Memory bounded working context; no second memory store is introduced. |
+| Economic Request and storefront | **IMPLEMENTED** | A goal observes or safely re-checks the canonical request/storefront only. Quote, payment, escrow, dispatch, fulfilment, rating, and dispute boundaries remain authoritative. |
+| Waiting and worker re-entry | **IMPLEMENTED** | Due goals and due deferred intentions are processed by the existing background-service composition when `KURUKOO_AGENT_ENABLED=true`. |
+| Proactive, reminder, provider, contributor, QR, channel event adapters | **BACKEND DEPENDENT** | Existing systems remain authoritative; each event source needs a deliberate adapter and preference/evidence review before it may wake a goal. |
+| Autonomous network coordination | **FUTURE** | Any future agent-to-agent message must preserve identity, capability, request context, authorization, timestamp, and evidence, and must never enable arbitrary execution. |
+
+### 21b.2 Goal, autonomy, and user authority
+
+The runtime uses a minimal lifecycle: `active`, `waiting`, `needs_user`, `blocked`, `completed`, `cancelled`, `failed`, and `expired`. It derives request truth from the canonical Economic Request rather than duplicating payment, provider, or fulfilment state. A user may stop follow-up from the conversation inspector.
+
+Autonomy levels are explicit: `observe`, `suggest`, `assist`, `act_with_confirmation`, and `act_within_permission`. Natural-language requests do not grant unlimited authority. A request to find a provider or taxi may create an objective, but it cannot authorize a charge, escrow release, dispatch, emergency contact notification, security change, or account deletion.
+
+### 21b.3 Operational loop and evidence
+
+The runtime follows: **observe owned state → retrieve bounded context → select an authorised tool → execute a domain service → record concise evidence → update goal state → wait, ask, or complete**. Events record an action, result, tool, evidence reference, and state transition; they do not store chain-of-thought, secrets, OTPs, payment credentials, raw audio, or unnecessary private memory.
+
+A goal can wait when matching, quote, provider, fulfilment, or user-confirmation evidence is outstanding. Re-entry is cooldown-limited and action-limited. Retries are bounded and duplicate goal events use idempotency keys. Configurable safeguards are `KURUKOO_AGENT_ENABLED`, `KURUKOO_AGENT_MAX_ACTIONS_PER_CYCLE`, `KURUKOO_AGENT_MAX_RETRIES`, `KURUKOO_AGENT_MAX_CONCURRENT_GOALS`, `KURUKOO_AGENT_COOLDOWN_SECONDS`, and `KURUKOO_AGENT_AUTONOMOUS_LOW_RISK`.
+
+### 21b.4 Convergence and user experience
+
+Text, Web Voice, QR contextual entry, and future configured channels converge on the same conversation and request identity. They do not create separate voice, QR, WhatsApp, Telegram, provider, referral, payment, or marketplace agents. The existing inspector presents a compact **Current objective** card with only evidence-backed activity and a **Stop follow-up** control; Kurukoo never pretends an activity completed unless the underlying service reports it.
+
+### 21b.5 Production requirements
+
+The runtime is feature-flagged off by default. Production activation requires an always-running Kurukoo application worker, policy-reviewed event adapters for each external source, notification preference checks, provider/connector evidence, and configured channel or push adapters before any external delivery claim. The default server worker is suitable for the present SQLite deployment; horizontally scaled production deployment requires a shared queue/lease before multiple worker replicas process the same due goal.
