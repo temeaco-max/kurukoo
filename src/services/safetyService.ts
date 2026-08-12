@@ -82,6 +82,18 @@ export async function revokeSafetyContact(ownerPhone: string, contactId: string)
   return Boolean(result[0]?.values?.length);
 }
 
+export async function activateSafetyContact(ownerPhone: string, contactId: string, consentConfirmed: boolean): Promise<SafetyContact | null> {
+  await ensureSafetySchema();
+  if (!consentConfirmed) throw new Error('Explicit owner consent is required to activate a safety contact');
+  const db = await getDb();
+  db.run("UPDATE user_safety_contacts SET status='active' WHERE id=? AND owner_phone=? AND status='pending'", [contactId, ownerPhone]);
+  saveDb();
+  const result = db.exec("SELECT * FROM user_safety_contacts WHERE id=? AND owner_phone=? AND status='active'", [contactId, ownerPhone]);
+  const row = result[0]?.values?.[0];
+  if (!row) return null;
+  return Object.fromEntries((result[0].columns || []).map((c: string, i: number) => [c, row[i]])) as SafetyContact;
+}
+
 export async function startCheckIn(ownerPhone: string, input: { contactId: string; durationMinutes: number; routeNote?: string }): Promise<CheckIn> {
   await ensureSafetySchema();
   const duration = Math.max(5, Math.min(24 * 60, Math.floor(Number(input.durationMinutes))));
@@ -107,6 +119,13 @@ export async function completeCheckIn(ownerPhone: string, id: string): Promise<b
   saveDb();
   const result = db.exec("SELECT id FROM safety_checkins WHERE id=? AND owner_phone=? AND status='completed'", [id, ownerPhone]);
   return Boolean(result[0]?.values?.length);
+}
+
+export async function listCheckIns(ownerPhone: string): Promise<CheckIn[]> {
+  await ensureSafetySchema();
+  const db = await getDb();
+  const result = db.exec("SELECT * FROM safety_checkins WHERE owner_phone = ? ORDER BY check_in_at DESC", [ownerPhone]);
+  return (result[0]?.values || []).map((row: any[]) => Object.fromEntries((result[0].columns || []).map((c: string, i: number) => [c, row[i]])) as CheckIn);
 }
 
 /**

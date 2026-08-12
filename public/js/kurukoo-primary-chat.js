@@ -545,12 +545,69 @@
       if (!full) output.textContent = 'I could not complete that request. Please try again.';
       await refreshHistory();
     } catch (error) { setConnection(false, 'Connection issue'); const bubble = chatContent.querySelector('.message.assistant:last-child .markdown-body'); if (bubble) bubble.innerHTML = renderMarkdown(`I’m having trouble completing that right now. **Please try again.**\n\n_${escapeAttr(error.message)}_`); }
-    finally { state.busy = false; send.disabled = false; input.placeholder = 'Message Kurukoo'; input.focus(); loadPoints(); }
+    finally { state.busy = false; send.disabled = false; input.placeholder = 'Message Kurukoo'; input.focus(); loadPoints(); loadReminders(); loadSafety(); }
   }
 
   function updateModelStatus(data) { const label = $('model-badge'); if (label && data.model) label.textContent = data.model; }
   async function loadPoints() { try { const res = await fetch('/api/points/balance', { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const points = Number(data.points || 0); const balance = $('points-balance')?.querySelector('span'); if (balance) balance.textContent = points; const ip = $('inspector-points'); if (ip) ip.textContent = points; } catch {} }
   async function loadMemory() { try { const res = await fetch('/api/profile', { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const profile = data.profile || {}; const text = `Kurukoo remembers ${profile.location || 'your area'}${profile.primary_lga ? `, ${profile.primary_lga}` : ''}. Your Memory Profile remains attached to your account.`; const mc = $('memory-context'); if (mc) mc.textContent = text; const im = $('inspector-memory'); if (im) im.textContent = text; } catch {} }
+  async function loadReminders() {
+    try {
+      const res = await fetch('/api/reminders', { credentials: 'same-origin' });
+      const card = $('reminders-card'); const list = $('reminder-list');
+      if (!res.ok || !card || !list) return;
+      const data = await res.json(); const reminders = Array.isArray(data.reminders) ? data.reminders : [];
+      card.hidden = false; list.innerHTML = '';
+      if (!reminders.length) { list.textContent = 'No active reminders.'; return; }
+      reminders.forEach(reminder => {
+        const row = document.createElement('div'); row.className = 'reminder-list-item';
+        const title = document.createElement('strong'); title.textContent = String(reminder.title || 'Reminder');
+        const due = document.createElement('span'); const parsed = reminder.due_at ? new Date(reminder.due_at) : null;
+        due.textContent = parsed && !Number.isNaN(parsed.getTime()) ? parsed.toLocaleString() : 'Scheduled time unavailable';
+        const cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'text-btn'; cancel.textContent = 'Cancel';
+        cancel.addEventListener('click', async () => { cancel.disabled = true; await fetch(`/api/reminders/${encodeURIComponent(reminder.id)}/cancel`, { method: 'POST', credentials: 'same-origin' }); loadReminders(); });
+        row.append(title, due, cancel); list.appendChild(row);
+      });
+    } catch {}
+  }
+
+  async function loadSafety() {
+    try {
+      const [contactsResponse, checkInsResponse] = await Promise.all([
+        fetch('/api/safety/contacts', { credentials: 'same-origin' }),
+        fetch('/api/safety/check-ins', { credentials: 'same-origin' }),
+      ]);
+      const card = $('safety-card'); const contactsList = $('safety-contact-list'); const checkInsList = $('safety-checkin-list');
+      if (!contactsResponse.ok || !checkInsResponse.ok || !card || !contactsList || !checkInsList) return;
+      const contactsData = await contactsResponse.json(); const checkInsData = await checkInsResponse.json();
+      const contacts = Array.isArray(contactsData.contacts) ? contactsData.contacts : [];
+      const checkIns = Array.isArray(checkInsData.checkIns) ? checkInsData.checkIns : [];
+      card.hidden = false; contactsList.innerHTML = ''; checkInsList.innerHTML = '';
+      const contactHeading = document.createElement('strong'); contactHeading.textContent = contacts.length ? 'Contacts' : 'No safety contacts yet.'; contactsList.appendChild(contactHeading);
+      contacts.forEach(contact => {
+        const row = document.createElement('div'); row.className = 'safety-list-item';
+        const label = document.createElement('span'); label.textContent = `${contact.name} · ${contact.status}`; row.appendChild(label);
+        if (contact.status === 'pending') {
+          const activate = document.createElement('button'); activate.className = 'text-btn'; activate.type = 'button'; activate.textContent = 'Confirm consent';
+          activate.addEventListener('click', async () => { activate.disabled = true; await fetch(`/api/safety/contacts/${encodeURIComponent(contact.id)}/activate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ consentConfirmed: true }) }); loadSafety(); });
+          row.appendChild(activate);
+        } else if (contact.status === 'active') {
+          const start = document.createElement('button'); start.className = 'text-btn'; start.type = 'button'; start.textContent = 'Start 60-minute check-in';
+          start.addEventListener('click', async () => { start.disabled = true; await fetch('/api/safety/check-ins', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ contactId: contact.id, durationMinutes: 60 }) }); loadSafety(); });
+          row.appendChild(start);
+        }
+        contactsList.appendChild(row);
+      });
+      const checkInHeading = document.createElement('strong'); checkInHeading.textContent = 'Check-ins'; checkInsList.appendChild(checkInHeading);
+      if (!checkIns.length) { const empty = document.createElement('span'); empty.textContent = 'No check-ins yet.'; checkInsList.appendChild(empty); }
+      checkIns.forEach(checkIn => {
+        const row = document.createElement('div'); row.className = 'safety-list-item';
+        const status = document.createElement('span'); const expires = checkIn.expires_at ? new Date(checkIn.expires_at) : null; const when = expires && !Number.isNaN(expires.getTime()) ? ` · ${expires.toLocaleString()}` : ''; status.textContent = `${checkIn.status}${when}`; row.appendChild(status);
+        if (checkIn.status === 'active') { const complete = document.createElement('button'); complete.className = 'text-btn'; complete.type = 'button'; complete.textContent = 'Complete'; complete.addEventListener('click', async () => { complete.disabled = true; await fetch(`/api/safety/check-ins/${encodeURIComponent(checkIn.id)}/complete`, { method: 'POST', credentials: 'same-origin' }); loadSafety(); }); row.appendChild(complete); }
+        checkInsList.appendChild(row);
+      });
+    } catch {}
+  }
 
   async function refreshHistory() {
     try {
@@ -578,9 +635,10 @@
   $('close-inspector')?.addEventListener('click', () => $('chat-inspector')?.classList.remove('open'));
   $('new-chat')?.addEventListener('click', async () => { if (!await ensureIdentity()) return; try { const res = await fetch('/api/chat/conversation', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ channel: 'web', title: 'New conversation' }) }); const data = await res.json(); if (data.conversationId) { state.conversationId = data.conversationId; localStorage.setItem('kurukoo_conversation_id', data.conversationId); } } catch {} state.messages = []; state.activeStorefrontId = null; chatContent.innerHTML = ''; const ds = $('deferred-status'); if (ds) ds.hidden = true; renderWelcome(); refreshHistory(); });
   $('topup-points')?.addEventListener('click', () => sendMessage('I have a question about Points'));
+  $('safety-contact-form')?.addEventListener('submit', async event => { event.preventDefault(); const name = $('safety-contact-name')?.value.trim(); const phone = $('safety-contact-phone')?.value.trim(); const relationship = $('safety-contact-relationship')?.value.trim(); if (!name || !phone) return; const response = await fetch('/api/safety/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ name, phone, relationship }) }); if (response.ok) { event.target.reset(); loadSafety(); } });
   $('points-balance')?.addEventListener('click', () => sendMessage('Show my Points balance and the actions available to me'));
   $('voice-input')?.addEventListener('click', () => { const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!Recognition) return input?.focus(); const recognition = new Recognition(); recognition.lang = 'en-NG'; recognition.onresult = e => { if (input) { input.value = e.results[0][0].transcript; input.dispatchEvent(new Event('input')); } }; recognition.start(); });
   function renderWelcome() { chatContent.innerHTML = '<div class="welcome" id="welcome"><div class="welcome-mark">K</div><h1>What can I help you get done?</h1><p>Describe a service, work, coordination, or everyday information need. Kurukoo will show the supported request path.</p><div class="quick-actions" id="quick-actions"><button data-prompt="I need a ride request">🚗 Ride</button><button data-prompt="I have a food request">🍔 Food</button><button data-prompt="I need repair help">🔧 Repair</button><button data-prompt="I have an urgent non-emergency service request">🏥 Urgent request</button><button data-prompt="I want to discuss a work request">⚡ Work</button></div></div>'; wireQuickActions($('quick-actions')); }
   applyTheme();
-  ensureIdentity().then(ok => { if (ok) Promise.all([loadPoints(), loadMemory(), refreshHistory()]); });
+  ensureIdentity().then(ok => { if (ok) Promise.all([loadPoints(), loadMemory(), loadReminders(), loadSafety(), refreshHistory()]); });
 })();
