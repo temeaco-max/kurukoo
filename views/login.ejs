@@ -1,351 +1,71 @@
 <%- include('_partials/head') %>
-<%- include('_partials/nav') %>
+<link rel="stylesheet" href="/css/kurukoo-auth.css?v=1.0.0">
 
-<main class="container page-container login-page-container">
-    <div class="login-split-grid">
-        <!-- Left Side: Informational / Value Proposition -->
-        <section class="login-info-side">
-            <div class="badge-pill login-badge">
-                ✦ Living Economic Profile
-            </div>
-            <h1 class="login-title">
-                One account. One memory. All your economic life in one conversation.
-            </h1>
-            <p class="login-desc">
-                Kurukoo is your conversational utility. It learns who you are as you use it — remembering your skills, orders, and trusted connections without repetitive sign-up forms.
-            </p>
+<main class="auth-page">
+  <div class="auth-shell">
+    <section class="auth-story" aria-labelledby="auth-story-title">
+      <a class="auth-brand" href="/" aria-label="Kurukoo home"><span class="auth-brand-mark">K</span><span>Kurukoo</span></a>
+      <div>
+        <div class="auth-kicker">Your conversation comes first</div>
+        <h1 class="auth-title" id="auth-story-title">Tell Kurukoo what you need. Kurukoo figures out who or what can fulfil it.</h1>
+        <p class="auth-copy">You do not need to learn a marketplace, choose a category, or know who can help. Start with what you need. Your Kurukoo identity lets you save the conversation, continue later, communicate with people involved, and securely complete protected actions.</p>
+        <div class="auth-points">
+          <div class="auth-point"><span class="auth-point-mark">✓</span><span>One identity for your Kurukoo conversations and requests.</span></div>
+          <div class="auth-point"><span class="auth-point-mark">✓</span><span>Resume a request when you leave and come back.</span></div>
+          <div class="auth-point"><span class="auth-point-mark">✓</span><span>Identity is requested when a protected action actually needs it.</span></div>
+        </div>
+      </div>
+      <p class="auth-note">Kurukoo uses phone verification for this entry flow. Other sign-in providers will only appear when a real, configured integration is available.</p>
+    </section>
 
-            <div class="login-benefits-list">
-                <div class="login-benefit-item">
-                    <div class="login-benefit-icon">💬</div>
-                    <div class="login-benefit-text">
-                        <strong class="login-benefit-title">Channel-Agnostic Access</strong>
-                        <p class="login-benefit-sub">Use available web, messaging, and USSD channels from one profile as those channels are configured for your account.</p>
-                    </div>
-                </div>
+    <section class="auth-card" aria-labelledby="auth-card-title">
+      <div class="auth-step" data-auth-step="phone">
+        <h2 id="auth-card-title">Continue with Kurukoo</h2>
+        <p class="auth-card-intro">Enter your phone number. We will send a verification code. New here? You are registering as you continue.</p>
+        <form id="auth-phone-form" novalidate>
+          <label class="auth-label" for="auth-phone">Phone number</label>
+          <div class="auth-phone-row">
+            <select id="auth-prefix" class="auth-input auth-select" aria-label="Country code"><option value="+234" <%= country === 'ng' ? 'selected' : '' %>>🇳🇬 +234</option><option value="+233" <%= country === 'gh' ? 'selected' : '' %>>🇬🇭 +233</option><option value="+44" <%= country === 'gb' ? 'selected' : '' %>>🇬🇧 +44</option></select>
+            <input id="auth-phone" class="auth-input" type="tel" inputmode="numeric" autocomplete="tel" placeholder="803 000 0000" required>
+          </div>
+          <p class="auth-helper">Your number becomes the verified identity Kurukoo uses across supported access points.</p>
+          <div class="auth-actions"><button class="auth-button" type="submit">Send verification code</button></div>
+        </form>
+        <div class="auth-links"><a href="/">Back to Kurukoo</a><a href="/legal/privacy">Privacy</a></div>
+      </div>
 
-                <div class="login-benefit-item">
-                    <div class="login-benefit-icon">🛡️</div>
-                    <div class="login-benefit-text">
-                        <strong class="login-benefit-title">Protected transaction lifecycle</strong>
-                        <p class="login-benefit-sub">Eligible requests can follow a documented payment and escrow lifecycle after verified payment is available.</p>
-                    </div>
-                </div>
+      <div class="auth-step" data-auth-step="otp" hidden>
+        <h2>Verify your number</h2>
+        <p class="auth-card-intro">Enter the code sent to <strong id="auth-requested-phone"></strong>.</p>
+        <form id="auth-otp-form" novalidate>
+          <label class="auth-label" for="auth-otp">Verification code</label>
+          <input id="auth-otp" class="auth-input auth-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="••••••" required>
+          <p class="auth-helper">If you did not receive a code, go back and check the number.</p>
+          <div class="auth-actions"><button class="auth-button" type="submit">Verify and continue</button><button class="auth-button auth-secondary" type="button" data-auth-back>Change number</button></div>
+        </form>
+      </div>
 
-                <div class="login-benefit-item">
-                    <div class="login-benefit-icon">📍</div>
-                    <div class="login-benefit-text">
-                        <strong class="login-benefit-title">Nearby Pulse &amp; Opportunities</strong>
-                        <p class="login-benefit-sub">Use Discover and chat to look for relevant requests, services, and opportunities when available.</p>
-                    </div>
-                </div>
+      <div class="auth-step" data-auth-step="profile" hidden>
+        <h2>Make Kurukoo yours</h2>
+        <p class="auth-card-intro">You are verified. These details are optional and can be changed later.</p>
+        <form id="auth-profile-form" novalidate>
+          <input id="auth-return" type="hidden" value="/chat">
+          <div class="auth-profile-grid">
+            <div><label class="auth-label" for="auth-name">Name <span class="auth-helper">(optional)</span></label><input id="auth-name" class="auth-input" type="text" autocomplete="name" placeholder="What should Kurukoo call you?"></div>
+            <div><label class="auth-label" for="auth-email">Email <span class="auth-helper">(optional)</span></label><input id="auth-email" class="auth-input" type="email" autocomplete="email" placeholder="For account communication when configured"></div>
+            <div><label class="auth-label" for="auth-goal">What are you mainly here to do?</label><select id="auth-goal" class="auth-input"><option value="buyer">Get something done / buy</option><option value="provider">Offer skills or services</option><option value="business">Run or grow a business</option></select></div>
+          </div>
+          <label class="auth-consent"><input type="checkbox" required> <span>I understand that Kurukoo may use my account information to maintain my requests, conversations and protected actions.</span></label>
+          <div class="auth-actions"><button class="auth-button" type="submit">Continue to my conversation</button><button class="auth-button auth-secondary" type="button" data-auth-skip-profile>Skip optional details</button></div>
+        </form>
+      </div>
 
-                <div class="login-benefit-item">
-                    <div class="login-benefit-icon">⚡</div>
-                    <div class="login-benefit-text">
-                        <strong class="login-benefit-title">Phone-first access</strong>
-                        <p class="login-benefit-sub">Start with your phone number, or choose an available sign-in provider when one is configured.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="login-trust-footer">
-                <div class="login-trust-badge">
-                    <span class="trust-icon">🔒</span>
-                    <span class="trust-text">Review how Kurukoo handles account information in the Privacy Policy before continuing.</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- Right Side: Fields + SSO Login -->
-        <section class="login-form-side">
-            <div class="card auth-card">
-                <div class="auth-card-header">
-                    <h2 class="auth-card-title">Sign In or Register</h2>
-                    <p class="auth-card-subtitle">Enter your phone number, or choose an available sign-in provider to continue.</p>
-                </div>
-
-                <!-- Existing User Session Banner (shown if already logged in) -->
-                <div id="auth-active-session-banner" class="auth-session-banner" hidden>
-                    <div class="session-avatar" id="auth-session-avatar">U</div>
-                    <div class="session-info">
-                        <span class="session-label">Currently signed in as</span>
-                        <strong class="session-user" id="auth-session-user-name">User</strong>
-                        <span class="session-phone" id="auth-session-user-phone"></span>
-                    </div>
-                    <div class="session-actions">
-                        <a href="/dashboard.html" class="btn btn-primary btn-sm session-btn">Dashboard →</a>
-                        <button type="button" class="btn btn-sm btn-outline session-switch-btn" id="auth-switch-account-btn">Switch</button>
-                    </div>
-                </div>
-
-                <!-- SSO Login Buttons -->
-                <div class="sso-section">
-                    <div class="sso-buttons-stack">
-                        <button type="button" class="sso-btn sso-google" id="sso-google-btn">
-                            <svg class="sso-icon" width="18" height="18" viewBox="0 0 24 24">
-                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-                            </svg>
-                            <span>Continue with Google</span>
-                        </button>
-
-                        <button type="button" class="sso-btn sso-telegram" id="sso-telegram-btn">
-                            <svg class="sso-icon" width="18" height="18" viewBox="0 0 24 24" fill="#0088cc">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
-                            </svg>
-                            <span>Continue with Telegram</span>
-                        </button>
-
-                        <button type="button" class="sso-btn sso-apple" id="sso-apple-btn">
-                            <svg class="sso-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.38c.62-.75 1.04-1.8 0.93-2.85-.9.04-1.99.6-2.63 1.35-.57.65-1.06 1.71-.93 2.72 1.01.08 2.03-.51 2.63-1.22z"/>
-                            </svg>
-                            <span>Continue with Apple</span>
-                        </button>
-                    </div>
-
-                    <div class="auth-divider">
-                        <span class="auth-divider-text">or continue with phone / email</span>
-                    </div>
-                </div>
-
-                <!-- Standard Credentials Form -->
-                <form id="kurukoo-login-form" class="auth-form">
-                    <div class="form-group">
-                        <label for="login-name" class="form-label">Full Name <span class="label-optional">(optional)</span></label>
-                        <input type="text" id="login-name" class="form-input" placeholder="e.g. Chinedu Okafor" autocomplete="name">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="login-phone" class="form-label">Phone Number <span class="label-required">*</span></label>
-                        <div class="phone-input-group">
-                            <select id="login-prefix" class="phone-prefix-select" aria-label="Country Dial Code">
-                                <option value="+234" <%= country === 'ng' ? 'selected' : '' %>>🇳🇬 +234</option>
-                                <option value="+233" <%= country === 'gh' ? 'selected' : '' %>>🇬🇭 +233</option>
-                                <option value="+44" <%= country === 'gb' ? 'selected' : '' %>>🇬🇧 +44</option>
-                            </select>
-                            <input type="tel" id="login-phone" class="form-input phone-number-input" placeholder="803 000 0000" required autocomplete="tel">
-                        </div>
-                        <span class="field-hint">Your unified ID across Web, WhatsApp (7000) and USSD (*7000#).</span>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="login-email" class="form-label">Email Address <span class="label-optional">(optional)</span></label>
-                        <input type="email" id="login-email" class="form-input" placeholder="name@example.com" autocomplete="email">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Primary Goal Today</label>
-                        <div class="goal-chip-group">
-                            <label class="goal-chip-label">
-                                <input type="radio" name="auth_goal" value="buyer" checked class="goal-chip-radio">
-                                <span class="goal-chip-box">
-                                    <span class="goal-chip-icon">🛒</span>
-                                    <span>Request &amp; Buy</span>
-                                </span>
-                            </label>
-                            <label class="goal-chip-label">
-                                <input type="radio" name="auth_goal" value="seller" class="goal-chip-radio">
-                                <span class="goal-chip-box">
-                                    <span class="goal-chip-icon">🛠️</span>
-                                    <span>Offer Skills &amp; Work</span>
-                                </span>
-                            </label>
-                            <label class="goal-chip-label">
-                                <input type="radio" name="auth_goal" value="business" class="goal-chip-radio">
-                                <span class="goal-chip-box">
-                                    <span class="goal-chip-icon">🏪</span>
-                                    <span>Business Storefront</span>
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div id="auth-feedback" class="auth-feedback" hidden></div>
-
-                    <button type="submit" class="btn btn-primary btn-block auth-submit-btn" id="login-submit-btn">
-                        <span id="login-submit-text">Continue to Dashboard</span>
-                        <span class="btn-arrow">→</span>
-                    </button>
-                </form>
-
-                <div class="auth-alternative-links">
-                    <span class="alt-text">Prefer conversational access?</span>
-                    <div class="alt-buttons-row">
-                        <a href="https://wa.me/2347000" target="_blank" class="alt-link alt-whatsapp">
-                            <span>💬 WhatsApp 7000</span>
-                        </a>
-                        <a href="tel:*7000%23" class="alt-link alt-ussd">
-                            <span>📞 Dial *7000#</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </div>
+      <div id="auth-feedback" class="auth-feedback" hidden role="status" aria-live="polite"></div>
+      <div class="auth-footer">You remain in control of your account. <a href="/legal/privacy">Read the privacy policy</a>.</div>
+    </section>
+  </div>
 </main>
 
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // Pre-fill existing credentials from localStorage if available
-        const savedPhone = localStorage.getItem('kurukoo_user_phone');
-        const savedName = localStorage.getItem('kurukoo_user_name');
-        const savedEmail = localStorage.getItem('kurukoo_user_email');
-        const savedGoal = localStorage.getItem('kurukoo_user_goal');
-
-        if (savedPhone) {
-            const phoneInput = document.getElementById('login-phone');
-            if (phoneInput) {
-                // Strip prefix if already stored with prefix
-                let cleanPhone = savedPhone;
-                if (cleanPhone.startsWith('+234')) cleanPhone = cleanPhone.substring(4);
-                else if (cleanPhone.startsWith('+233')) cleanPhone = cleanPhone.substring(4);
-                else if (cleanPhone.startsWith('+44')) cleanPhone = cleanPhone.substring(3);
-                phoneInput.value = cleanPhone.trim();
-            }
-
-            // Show active session banner
-            const sessionBanner = document.getElementById('auth-active-session-banner');
-            const sessionName = document.getElementById('auth-session-user-name');
-            const sessionPhone = document.getElementById('auth-session-user-phone');
-            const sessionAvatar = document.getElementById('auth-session-avatar');
-            if (sessionBanner) {
-                sessionBanner.hidden = false;
-                if (sessionName) sessionName.textContent = savedName || 'Kurukoo User';
-                if (sessionPhone) sessionPhone.textContent = savedPhone;
-                if (sessionAvatar) sessionAvatar.textContent = (savedName ? savedName.charAt(0).toUpperCase() : 'U');
-            }
-        }
-
-        if (savedName) {
-            const nameInput = document.getElementById('login-name');
-            if (nameInput && !nameInput.value) nameInput.value = savedName;
-        }
-
-        if (savedEmail) {
-            const emailInput = document.getElementById('login-email');
-            if (emailInput && !emailInput.value) emailInput.value = savedEmail;
-        }
-
-        if (savedGoal) {
-            const radio = document.querySelector(`input[name="auth_goal"][value="${savedGoal}"]`);
-            if (radio) radio.checked = true;
-        }
-
-        document.getElementById('sso-google-btn')?.addEventListener('click', () => handleSSOLogin('Google'));
-        document.getElementById('sso-telegram-btn')?.addEventListener('click', () => handleSSOLogin('Telegram'));
-        document.getElementById('sso-apple-btn')?.addEventListener('click', () => handleSSOLogin('Apple'));
-        document.getElementById('kurukoo-login-form')?.addEventListener('submit', handleAuthSubmit);
-
-        // Switch account button handler
-        const switchBtn = document.getElementById('auth-switch-account-btn');
-        if (switchBtn) {
-            switchBtn.addEventListener('click', () => {
-                const sessionBanner = document.getElementById('auth-active-session-banner');
-                if (sessionBanner) sessionBanner.hidden = true;
-                const phoneInput = document.getElementById('login-phone');
-                if (phoneInput) {
-                    phoneInput.value = '';
-                    phoneInput.focus();
-                }
-            });
-        }
-    });
-
-    async function handleAuthSubmit(e) {
-        e.preventDefault();
-        const submitBtn = document.getElementById('login-submit-btn');
-        const submitText = document.getElementById('login-submit-text');
-        const feedback = document.getElementById('auth-feedback');
-
-        const prefix = document.getElementById('login-prefix')?.value || '+234';
-        const rawPhone = document.getElementById('login-phone')?.value.trim();
-        const name = document.getElementById('login-name')?.value.trim();
-        const email = document.getElementById('login-email')?.value.trim();
-        const goalEl = document.querySelector('input[name="auth_goal"]:checked');
-        const goal = goalEl ? goalEl.value : 'buyer';
-
-        if (!rawPhone) {
-            showFeedback('Please enter your phone number to continue.', 'error');
-            return;
-        }
-
-        // Format clean phone number
-        const cleanDigits = rawPhone.replace(/\D/g, '');
-        const fullPhone = prefix + cleanDigits;
-
-        if (submitBtn) submitBtn.disabled = true;
-        if (submitText) submitText.textContent = 'Connecting Profile...';
-
-        try {
-            // Save locally
-            localStorage.setItem('kurukoo_user_phone', fullPhone);
-            if (name) localStorage.setItem('kurukoo_user_name', name);
-            if (email) localStorage.setItem('kurukoo_user_email', email);
-            localStorage.setItem('kurukoo_user_goal', goal);
-
-            // Sync with backend API
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    phone: fullPhone,
-                    name: name || 'Kurukoo User',
-                    email: email || '',
-                    goal: goal
-                })
-            }).catch(() => null);
-
-            showFeedback('Success! Loading your Living Economic Profile...', 'success');
-
-            setTimeout(() => {
-                const targetCountry = 'ng';
-                window.location.href = `/${targetCountry}/dashboard.html`;
-            }, 700);
-
-        } catch (err) {
-            console.error('Auth submit error:', err);
-            // Fallback: still navigate
-            window.location.href = `/dashboard.html`;
-        }
-    }
-
-    function handleSSOLogin(provider) {
-        const feedback = document.getElementById('auth-feedback');
-        showFeedback(`Connecting to ${provider} Single Sign-On...`, 'info');
-
-        setTimeout(() => {
-            const simulatedUser = {
-                name: provider + ' User',
-                phone: '+234803' + Math.floor(1000000 + Math.random() * 9000000),
-                email: 'user.' + provider.toLowerCase() + '@kurukoo.auth',
-                provider: provider
-            };
-
-            localStorage.setItem('kurukoo_user_name', simulatedUser.name);
-            localStorage.setItem('kurukoo_user_phone', simulatedUser.phone);
-            localStorage.setItem('kurukoo_user_email', simulatedUser.email);
-            localStorage.setItem('kurukoo_sso_provider', provider);
-
-            showFeedback(`Authenticated via ${provider}! Redirecting to Dashboard...`, 'success');
-
-            setTimeout(() => {
-                const targetCountry = 'ng';
-                window.location.href = `/${targetCountry}/dashboard.html`;
-            }, 600);
-        }, 800);
-    }
-
-    function showFeedback(msg, type) {
-        const feedback = document.getElementById('auth-feedback');
-        if (!feedback) return;
-        feedback.textContent = msg;
-        feedback.className = `auth-feedback auth-feedback-${type}`;
-        feedback.hidden = false;
-    }
-</script>
-
-<%- include('_partials/footer') %>
+<script src="/js/kurukoo-auth.js?v=1.0.0" defer></script>
+</body>
+</html>
