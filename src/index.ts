@@ -13,6 +13,7 @@ import authRoutes from './routes/authRoutes.js';
 import chatRouter from './routes/chatRouter.js';
 import orderRoutes from './routes/orderRoutes.js';
 import reminderRoutes from './routes/reminderRoutes.js';
+import safetyRoutes from './routes/safetyRoutes.js';
 import presenceRoutes from './routes/presenceRoutes.js';
 import discoveryRoutes from './routes/discoveryRoutes.js';
 import contentRoutes from './routes/contentRoutes.js';
@@ -25,7 +26,6 @@ import webrtcRoutes from './routes/webrtcRoutes.js';
 import systemRoutes from './routes/systemRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
 
-// Development/test defaults only. Production must not silently select sandbox.
 if (process.env.NODE_ENV !== 'production' && !process.env.KURUKOO_PAY_PROVIDER) process.env.KURUKOO_PAY_PROVIDER = 'sandbox';
 if (!process.env.CREDIT_ECONOMY_ENABLED) process.env.CREDIT_ECONOMY_ENABLED = 'true';
 if (process.env.NODE_ENV === 'production' && process.env.KURUKOO_PAY_PROVIDER === 'sandbox') delete process.env.KURUKOO_PAY_PROVIDER;
@@ -46,6 +46,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRouter);
 app.use('/api', orderRoutes);
 app.use('/api', reminderRoutes);
+app.use('/api', safetyRoutes);
 app.use('/api', taskRoutes);
 app.use('/api', trustRoutes);
 app.use('/api/webrtc', webrtcRoutes);
@@ -64,11 +65,6 @@ const host = process.env.HOST || '0.0.0.0';
 export { app };
 
 if (process.env.KURUKOO_DISABLE_LISTEN !== 'true') {
-    const server = app.listen(port, host, () => {
-        console.log(`[Kurukoo] HTTP server listening on ${host}:${port}`);
-    });
-    server.on('error', (error) => {
-        console.error('[Kurukoo] HTTP server error:', error);
-        process.exitCode = 1;
-    });
+    const server = app.listen(port, host, () => console.log(`[Kurukoo] HTTP server listening on ${host}:${port}`));
+    server.on('error', (error) => { console.error('[Kurukoo] HTTP server error:', error); process.exitCode = 1; });
 }
