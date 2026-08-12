@@ -69,14 +69,49 @@
                     <div class="points-summary">
                         <h3>Your Points</h3>
                         <div class="points-value" id="points-display">--</div>
-                        <p style="color: var(--gray-400); font-size: 0.85rem;">Daily allowance included. Use points to request services and unlock leads.</p>
-                        <a href="/pricing" class="btn btn-outline btn-block" style="margin-top: 20px; color: white; border-color: white;">Top up</a>
+                        <p class="points-desc">Daily allowance included. Use points to request services and unlock leads.</p>
+                        <a href="/pricing" class="btn btn-outline btn-block points-topup-btn">Top up</a>
                     </div>
                 </aside>
             </div>
         </main>
     </div>
     <script>
+        function createItemCard(badgeText, badgeClass, titleText, subtitleText, actionText, actionHref) {
+            const card = document.createElement('div');
+            card.className = 'hub-item-card';
+
+            const info = document.createElement('div');
+            info.className = 'item-info';
+
+            const badge = document.createElement('span');
+            badge.className = `item-badge ${badgeClass}`;
+            badge.textContent = badgeText;
+
+            const title = document.createElement('div');
+            title.className = 'item-title';
+            title.textContent = titleText;
+
+            const subtitle = document.createElement('div');
+            subtitle.className = 'item-subtitle';
+            subtitle.textContent = subtitleText;
+
+            info.appendChild(badge);
+            info.appendChild(title);
+            info.appendChild(subtitle);
+            card.appendChild(info);
+
+            if (actionText && actionHref) {
+                const btn = document.createElement('a');
+                btn.className = 'btn btn-outline btn-sm';
+                btn.textContent = actionText;
+                btn.href = actionHref;
+                card.appendChild(btn);
+            }
+
+            return card;
+        }
+
         async function loadHubData() {
             try {
                 const [profileRes, requestsRes, remindersRes, safetyRes] = await Promise.all([
@@ -102,16 +137,13 @@
                     if (requests.length === 0) {
                         activeContainer.innerHTML = '<div class="muted-info-text">No active requests. Start a conversation to get going.</div>';
                     } else {
-                        activeContainer.innerHTML = requests.slice(0, 5).map(r => `
-                            <div class="hub-item-card">
-                                <div class="item-info">
-                                    <span class="item-badge ${r.status === 'requested' ? 'pending' : 'active'}">${r.status.replace(/_/g, ' ')}</span>
-                                    <div class="item-title">${r.skill.replace(/_/g, ' ')}</div>
-                                    <div class="item-subtitle">Started ${new Date(r.created_at).toLocaleDateString()}</div>
-                                </div>
-                                <a href="/chat" class="btn btn-outline btn-sm">View</a>
-                            </div>
-                        `).join('');
+                        activeContainer.replaceChildren(...requests.slice(0, 5).map(r => {
+                            const statusText = String(r.status || 'requested').replace(/_/g, ' ');
+                            const badgeClass = r.status === 'requested' ? 'pending' : 'active';
+                            const skillText = String(r.skill || 'request').replace(/_/g, ' ');
+                            const dateText = `Started ${new Date(r.created_at).toLocaleDateString()}`;
+                            return createItemCard(statusText, badgeClass, skillText, dateText, 'View', '/chat');
+                        }));
                     }
                 }
 
@@ -123,15 +155,11 @@
                     if (reminders.length === 0) {
                         upcomingContainer.innerHTML = '<div class="muted-info-text">No active reminders.</div>';
                     } else {
-                        upcomingContainer.innerHTML = reminders.slice(0, 5).map(rem => `
-                            <div class="hub-item-card">
-                                <div class="item-info">
-                                    <span class="item-badge active">Reminder</span>
-                                    <div class="item-title">${rem.title || 'Untitled Reminder'}</div>
-                                    <div class="item-subtitle">Due ${new Date(rem.due_at).toLocaleString()}</div>
-                                </div>
-                            </div>
-                        `).join('');
+                        upcomingContainer.replaceChildren(...reminders.slice(0, 5).map(rem => {
+                            const titleText = rem.title || 'Untitled Reminder';
+                            const dueText = `Due ${new Date(rem.due_at).toLocaleString()}`;
+                            return createItemCard('Reminder', 'active', titleText, dueText, null, null);
+                        }));
                     }
                 }
 
@@ -143,15 +171,12 @@
                     if (contacts.length === 0) {
                         safetyContainer.innerHTML = '<div class="muted-info-text">No safety contacts added.</div>';
                     } else {
-                        safetyContainer.innerHTML = contacts.map(c => `
-                            <div class="hub-item-card">
-                                <div class="item-info">
-                                    <span class="item-badge ${c.status === 'active' ? 'active' : 'pending'}">${c.status}</span>
-                                    <div class="item-title">${c.name}</div>
-                                    <div class="item-subtitle">${c.relationship || 'Contact'} · ${c.phone}</div>
-                                </div>
-                            </div>
-                        `).join('');
+                        safetyContainer.replaceChildren(...contacts.map(c => {
+                            const status = c.status || 'pending';
+                            const badgeClass = status === 'active' ? 'active' : 'pending';
+                            const subText = `${c.relationship || 'Contact'} · ${c.phone}`;
+                            return createItemCard(status, badgeClass, c.name, subText, null, null);
+                        }));
                     }
                 }
 
@@ -162,7 +187,6 @@
 
         document.getElementById('logout-button')?.addEventListener('click', async () => {
             try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); } catch (_) {}
-            localStorage.removeItem('kurukoo_auth_token');
             localStorage.removeItem('kurukoo_user_phone');
             localStorage.removeItem('kurukoo_user_name');
             window.location.assign('/');
