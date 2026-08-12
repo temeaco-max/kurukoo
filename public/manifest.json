@@ -2,7 +2,7 @@
   "id": "/dashboard.html",
   "name": "Kurukoo Platform",
   "short_name": "Kurukoo",
-  "description": "A multi-channel Economic OS for everyday economic coordination.",
+  "description": "Kurukoo coordinates everyday requests, fulfilment, reminders and trusted local capability.",
   "start_url": "/dashboard.html",
   "scope": "/",
   "display": "standalone",
