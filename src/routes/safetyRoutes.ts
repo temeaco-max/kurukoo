@@ -11,15 +11,16 @@ import {
 } from '../services/safetyService.js';
 
 const router = Router();
+router.use(authenticateUser);
 
 function owner(req: AuthRequest): string { return String(req.user?.phone || ''); }
 
-router.get('/safety/contacts', authenticateUser, async (req: AuthRequest, res) => {
+router.get('/safety/contacts', async (req: AuthRequest, res) => {
   try { res.json({ success: true, contacts: await listSafetyContacts(owner(req)) }); }
   catch (e: any) { res.status(500).json({ success: false, error: e.message || 'Unable to load safety contacts' }); }
 });
 
-router.post('/safety/contacts', authenticateUser, async (req: AuthRequest, res) => {
+router.post('/safety/contacts', async (req: AuthRequest, res) => {
   try {
     const contact = await addSafetyContact(owner(req), {
       name: String(req.body?.name || ''),
@@ -31,7 +32,7 @@ router.post('/safety/contacts', authenticateUser, async (req: AuthRequest, res) 
   } catch (e: any) { res.status(400).json({ success: false, error: e.message || 'Unable to save safety contact' }); }
 });
 
-router.post('/safety/contacts/:id/activate', authenticateUser, async (req: AuthRequest, res) => {
+router.post('/safety/contacts/:id/activate', async (req: AuthRequest, res) => {
   try {
     const contact = await activateSafetyContact(owner(req), String(req.params.id), req.body?.consentConfirmed === true);
     if (!contact) return res.status(404).json({ success: false, error: 'Pending safety contact not found' });
@@ -39,7 +40,7 @@ router.post('/safety/contacts/:id/activate', authenticateUser, async (req: AuthR
   } catch (e: any) { res.status(400).json({ success: false, error: e.message || 'Unable to activate safety contact' }); }
 });
 
-router.post('/safety/contacts/:id/revoke', authenticateUser, async (req: AuthRequest, res) => {
+router.post('/safety/contacts/:id/revoke', async (req: AuthRequest, res) => {
   try {
     const revoked = await revokeSafetyContact(owner(req), String(req.params.id));
     if (!revoked) return res.status(404).json({ success: false, error: 'Safety contact not found' });
@@ -47,12 +48,12 @@ router.post('/safety/contacts/:id/revoke', authenticateUser, async (req: AuthReq
   } catch (e: any) { res.status(500).json({ success: false, error: e.message || 'Unable to revoke safety contact' }); }
 });
 
-router.get('/safety/check-ins', authenticateUser, async (req: AuthRequest, res) => {
+router.get('/safety/check-ins', async (req: AuthRequest, res) => {
   try { res.json({ success: true, checkIns: await listCheckIns(owner(req)) }); }
   catch (e: any) { res.status(500).json({ success: false, error: e.message || 'Unable to load check-ins' }); }
 });
 
-router.post('/safety/check-ins', authenticateUser, async (req: AuthRequest, res) => {
+router.post('/safety/check-ins', async (req: AuthRequest, res) => {
   try {
     const checkIn = await startCheckIn(owner(req), {
       contactId: String(req.body?.contactId || ''),
@@ -63,7 +64,7 @@ router.post('/safety/check-ins', authenticateUser, async (req: AuthRequest, res)
   } catch (e: any) { res.status(400).json({ success: false, error: e.message || 'Unable to start check-in' }); }
 });
 
-router.post('/safety/check-ins/:id/complete', authenticateUser, async (req: AuthRequest, res) => {
+router.post('/safety/check-ins/:id/complete', async (req: AuthRequest, res) => {
   try {
     const completed = await completeCheckIn(owner(req), String(req.params.id));
     if (!completed) return res.status(404).json({ success: false, error: 'Active check-in not found' });
