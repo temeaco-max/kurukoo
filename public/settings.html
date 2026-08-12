@@ -6,16 +6,6 @@
     <title>Settings — Kurukoo</title>
     <link rel="stylesheet" href="/css/site.css">
     <link rel="stylesheet" href="/css/kurukoo-hub.css">
-    <style>
-        .settings-container { max-width: 800px; margin: 0 auto; }
-        .settings-group { background: var(--white); border: 1px solid var(--gray-100); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
-        .settings-group h3 { margin: 0 0 20px; font-size: 1.1rem; border-bottom: 1px solid var(--gray-50); padding-bottom: 12px; }
-        .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--gray-50); }
-        .settings-row:last-child { border-bottom: 0; }
-        .settings-info { display: grid; gap: 4px; }
-        .settings-label { font-weight: 600; font-size: 0.95rem; }
-        .settings-value { font-size: 0.85rem; color: var(--gray-600); }
-    </style>
 </head>
 <body>
     <div class="hub-layout">
@@ -47,7 +37,7 @@
                                 <span class="settings-label">Name</span>
                                 <span class="settings-value" id="val-name">Loading...</span>
                             </div>
-                            <button class="btn btn-outline btn-sm" onclick="toggleProfileEdit(true)">Edit</button>
+                            <button type="button" class="btn btn-outline btn-sm" id="edit-profile-btn">Edit</button>
                         </div>
                         <div class="settings-row">
                             <div class="settings-info">
@@ -57,20 +47,20 @@
                             <span class="item-badge active">Verified</span>
                         </div>
                     </div>
-                    <form id="profile-edit-form" style="display: none; margin-top: 10px;">
-                        <div style="display: grid; gap: 12px; margin-bottom: 20px;">
+                    <form id="profile-edit-form" class="settings-form-hidden">
+                        <div class="settings-form-grid">
                             <div class="settings-info">
                                 <label class="settings-label" for="edit-name">Display Name</label>
-                                <input type="text" id="edit-name" class="btn-block" style="padding: 10px; border: 1px solid var(--gray-200); border-radius: 8px;" required>
+                                <input type="text" id="edit-name" class="settings-input" required>
                             </div>
                             <div class="settings-info">
                                 <label class="settings-label" for="edit-email">Email Address</label>
-                                <input type="email" id="edit-email" class="btn-block" style="padding: 10px; border: 1px solid var(--gray-200); border-radius: 8px;">
+                                <input type="email" id="edit-email" class="settings-input">
                             </div>
                         </div>
-                        <div style="display: flex; gap: 10px;">
+                        <div class="settings-actions">
                             <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
-                            <button type="button" class="btn btn-outline btn-sm" onclick="toggleProfileEdit(false)">Cancel</button>
+                            <button type="button" class="btn btn-outline btn-sm" id="cancel-edit-btn">Cancel</button>
                         </div>
                     </form>
                 </section>
@@ -82,14 +72,14 @@
                             <span class="settings-label">Notifications</span>
                             <span class="settings-value">Internal queue enabled. FCM/SMS disabled.</span>
                         </div>
-                        <button class="btn btn-outline btn-sm">Manage</button>
+                        <button type="button" class="btn btn-outline btn-sm">Manage</button>
                     </div>
                     <div class="settings-row">
                         <div class="settings-info">
                             <span class="settings-label">Appearance</span>
                             <span class="settings-value">System default</span>
                         </div>
-                        <button class="btn btn-outline btn-sm" id="theme-toggle">Toggle</button>
+                        <button type="button" class="btn btn-outline btn-sm" id="theme-toggle">Toggle</button>
                     </div>
                 </section>
 
@@ -107,18 +97,18 @@
                             <span class="settings-label">Data & Privacy</span>
                             <span class="settings-value">Manage your Memory Profile and conversation history.</span>
                         </div>
-                        <button class="btn btn-outline btn-sm">Review</button>
+                        <button type="button" class="btn btn-outline btn-sm">Review</button>
                     </div>
                 </section>
 
-                <section class="settings-group" style="border-color: rgba(198, 40, 40, 0.2);">
-                    <h3 style="color: var(--danger);">Danger Zone</h3>
+                <section class="settings-group settings-group--danger">
+                    <h3 class="danger-title">Danger Zone</h3>
                     <div class="settings-row">
                         <div class="settings-info">
                             <span class="settings-label">Delete Account</span>
                             <span class="settings-value">Permanently remove your profile and all associated data.</span>
                         </div>
-                        <button class="btn btn-outline btn-sm" style="color: var(--danger); border-color: var(--danger);">Delete</button>
+                        <button type="button" class="btn btn-outline btn-sm danger-btn">Delete</button>
                     </div>
                 </section>
             </div>
@@ -130,6 +120,9 @@
             document.getElementById('profile-view').style.display = show ? 'none' : 'block';
             document.getElementById('profile-edit-form').style.display = show ? 'block' : 'none';
         }
+
+        document.getElementById('edit-profile-btn')?.addEventListener('click', () => toggleProfileEdit(true));
+        document.getElementById('cancel-edit-btn')?.addEventListener('click', () => toggleProfileEdit(false));
 
         async function loadSettings() {
             try {
@@ -163,9 +156,10 @@
             const email = document.getElementById('edit-email').value;
             
             try {
-                const res = await fetch('/api/auth/login', {
+                const res = await fetch('/api/profile/update', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
                     body: JSON.stringify({ name, email })
                 });
                 if (res.ok) {
@@ -179,7 +173,6 @@
 
         document.getElementById('logout-button')?.addEventListener('click', async () => {
             try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); } catch (_) {}
-            localStorage.removeItem('kurukoo_auth_token');
             localStorage.removeItem('kurukoo_user_phone');
             localStorage.removeItem('kurukoo_user_name');
             window.location.assign('/');
