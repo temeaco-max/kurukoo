@@ -8,6 +8,9 @@ import { executeAgentTool, type AgentToolName, type AgentToolResult } from './ag
 export type AgentGoalStatus = 'active' | 'waiting' | 'needs_user' | 'blocked' | 'completed' | 'cancelled' | 'failed' | 'expired';
 export type AgentGoalSource = 'conversation' | 'request' | 'reminder' | 'proactive' | 'network' | 'contributor' | 'qr' | 'event';
 export type AgentAutonomyLevel = 'observe' | 'suggest' | 'assist' | 'act_with_confirmation' | 'act_within_permission';
+export type AgentRiskLevel = 'read_only' | 'reversible' | 'user_confirmation_required' | 'high_risk';
+export interface AgentPlanStep { id: string; action: string; tool: AgentToolName; risk: AgentRiskLevel; status: 'pending' | 'running' | 'waiting' | 'completed' | 'blocked' | 'failed'; authorization: string; idempotencyKey: string; evidence?: string; result?: string; }
+export interface AgentPlan { objective: string; currentStep: number; status: AgentGoalStatus; requiredInputs: string[]; dependencies: string[]; confirmationRequired: boolean; riskLevel: AgentRiskLevel; expiresAt: string; steps: AgentPlanStep[]; }
 
 export interface AgentGoal {
   id: string;
@@ -20,6 +23,7 @@ export interface AgentGoal {
   status: AgentGoalStatus;
   priority: number;
   autonomy: AgentAutonomyLevel;
+  plan: AgentPlan;
   nextActionAt?: string;
   completedAt?: string;
   failureReason?: string;
@@ -67,9 +71,15 @@ export async function ensureAgentRuntimeSchema(): Promise<void> {
     completed_at TEXT,
     failure_reason TEXT,
     summary TEXT,
+    plan_json TEXT,
+    risk_level TEXT DEFAULT 'read_only',
+    confirmation_required INTEGER DEFAULT 0,
+    expires_at TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
   )`);
+  const goalColumns = db.exec(`PRAGMA table_info(agent_goals)`)[0]?.values?.map((row: any[]) => String(row[1])) || [];
+  for (const [name, declaration] of Object.entries({ plan_json: 'TEXT', risk_level: "TEXT DEFAULT 'read_only'", confirmation_required: 'INTEGER DEFAULT 0', expires_at: 'TEXT' })) if (!goalColumns.includes(name)) db.run(`ALTER TABLE agent_goals ADD COLUMN ${name} ${declaration}`);
   db.run(`CREATE TABLE IF NOT EXISTS agent_goal_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     goal_id TEXT NOT NULL,
@@ -95,6 +105,7 @@ function rowToGoal(row: any): AgentGoal {
     status: String(row.status) as AgentGoalStatus, priority: Number(row.priority || 50), autonomy: String(row.autonomy) as AgentAutonomyLevel,
     nextActionAt: row.next_action_at ? String(row.next_action_at) : undefined, completedAt: row.completed_at ? String(row.completed_at) : undefined,
     failureReason: row.failure_reason ? String(row.failure_reason) : undefined, summary: row.summary ? String(row.summary) : undefined,
+    plan: row.plan_json ? JSON.parse(String(row.plan_json)) : buildGoalPlan(String(row.objective || ''), String(row.goal_type || ''), row.economic_request_id ? String(row.economic_request_id) : undefined),
     createdAt: String(row.created_at || ''), updatedAt: String(row.updated_at || ''),
   };
 }
@@ -162,6 +173,12 @@ async function updateGoal(goal: AgentGoal, patch: Partial<Pick<AgentGoal, 'statu
 }
 
 function nextTime(): string { return new Date(Date.now() + cooldownMs()).toISOString(); }
+function buildGoalPlan(objective: string, skill: string, requestId?: string): AgentPlan {
+  const confirmationRequired = Boolean(requestId);
+  const steps: AgentPlanStep[] = [{ id: 'inspect_request', action: 'Check the current request state', tool: 'get_request_state', risk: 'read_only', status: requestId ? 'pending' : 'blocked', authorization: 'owned_request_read', idempotencyKey: `inspect:${requestId || skill}` }];
+  if (requestId) steps.push({ id: 'await_confirmation', action: 'Wait for your approval before any consequential action', tool: 'get_request_state', risk: 'user_confirmation_required', status: 'pending', authorization: 'existing_request_confirmation', idempotencyKey: `confirm:${requestId}` });
+  return { objective: objective.slice(0, 1000), currentStep: 0, status: requestId ? 'active' : 'needs_user', requiredInputs: requestId ? [] : ['request details'], dependencies: requestId ? [`economic_request:${requestId}`] : [], confirmationRequired, riskLevel: confirmationRequired ? 'user_confirmation_required' : 'reversible', expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), steps };
+}
 
 export async function createConversationGoal(input: { phone: string; conversationId?: string; skill: string; objective: string; economicRequestId?: string; source?: AgentGoalSource }): Promise<AgentGoal | null> {
   if (!enabled() || !input.phone || input.phone.startsWith('anon_') || (!ECONOMIC_SKILLS.has(input.skill) && input.skill !== 'reminder')) return null;
@@ -178,8 +195,9 @@ export async function createConversationGoal(input: { phone: string; conversatio
   existing.free();
   if (prior) return prior;
   const autonomy: AgentAutonomyLevel = input.economicRequestId ? 'act_with_confirmation' : 'assist';
-  const goal: AgentGoal = { id: crypto.randomUUID(), phone: input.phone, conversationId: input.conversationId, economicRequestId: input.economicRequestId, source: input.source || 'conversation', goalType: input.skill, objective: input.objective.slice(0, 1000), status: input.economicRequestId ? 'active' : 'needs_user', priority: 50, autonomy, nextActionAt: input.economicRequestId ? nextTime() : undefined, summary: input.economicRequestId ? 'Kurukoo is checking the existing request state.' : 'Kurukoo needs a few details before it can continue.', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-  db.run(`INSERT INTO agent_goals (id, phone, conversation_id, economic_request_id, source, goal_type, objective, status, priority, autonomy, next_action_at, summary) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [goal.id, goal.phone, goal.conversationId || null, goal.economicRequestId || null, goal.source, goal.goalType, goal.objective, goal.status, goal.priority, goal.autonomy, goal.nextActionAt || null, goal.summary || null]);
+  const plan = buildGoalPlan(input.objective, input.skill, input.economicRequestId);
+  const goal: AgentGoal = { id: crypto.randomUUID(), phone: input.phone, conversationId: input.conversationId, economicRequestId: input.economicRequestId, source: input.source || 'conversation', goalType: input.skill, objective: input.objective.slice(0, 1000), status: input.economicRequestId ? 'active' : 'needs_user', priority: 50, autonomy, plan, nextActionAt: input.economicRequestId ? nextTime() : undefined, summary: input.economicRequestId ? 'Kurukoo is checking the existing request state.' : 'Kurukoo needs a few details before it can continue.', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+  db.run(`INSERT INTO agent_goals (id, phone, conversation_id, economic_request_id, source, goal_type, objective, status, priority, autonomy, next_action_at, summary, plan_json, risk_level, confirmation_required, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [goal.id, goal.phone, goal.conversationId || null, goal.economicRequestId || null, goal.source, goal.goalType, goal.objective, goal.status, goal.priority, goal.autonomy, goal.nextActionAt || null, goal.summary || null, JSON.stringify(plan), plan.riskLevel, plan.confirmationRequired ? 1 : 0, plan.expiresAt]);
   saveDb();
   await recordEvent(goal, 'goal_created', goal.status === 'needs_user' ? 'needs_user' : 'success', goal.summary || 'Goal created.', { idempotencyKey: `goal:create:${goal.phone}:${goal.conversationId || 'none'}:${goal.goalType}` });
   return goal;

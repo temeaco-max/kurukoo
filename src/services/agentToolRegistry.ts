@@ -4,6 +4,7 @@ import { listReminders } from './reminderService.js';
 import { advanceStorefront } from './agenticStorefront.js';
 
 export type AgentToolPermission = 'read' | 'low_risk_write' | 'coordination' | 'high_risk';
+export type AgentToolRisk = 'read_only' | 'reversible' | 'user_confirmation_required' | 'high_risk';
 export type AgentToolName = 'get_request_state' | 'get_memory_context' | 'get_reminders' | 'recheck_economic_request';
 
 export interface AgentToolContext {
@@ -21,14 +22,15 @@ export interface AgentToolResult {
   message?: string;
 }
 
-const definitions: Record<AgentToolName, { permission: AgentToolPermission; autonomous: boolean }> = {
-  get_request_state: { permission: 'read', autonomous: true },
-  get_memory_context: { permission: 'read', autonomous: true },
-  get_reminders: { permission: 'read', autonomous: true },
-  recheck_economic_request: { permission: 'coordination', autonomous: true },
+export interface AgentToolDefinition { description: string; inputSchema: Record<string, string>; permission: AgentToolPermission; risk: AgentToolRisk; supportedContexts: Array<'text' | 'voice' | 'qr' | 'event'>; authorization: string; idempotency: 'none' | 'service_owned'; audit: 'goal_event'; autonomous: boolean; }
+const definitions: Record<AgentToolName, AgentToolDefinition> = {
+  get_request_state: { description: 'Read the current state of an Economic Request owned by the user.', inputSchema: { requestId: 'string' }, permission: 'read', risk: 'read_only', supportedContexts: ['text', 'voice', 'qr', 'event'], authorization: 'owned_request_read', idempotency: 'none', audit: 'goal_event', autonomous: true },
+  get_memory_context: { description: 'Retrieve the minimum relevant bounded Living Memory context for an owned goal.', inputSchema: { query: 'string' }, permission: 'read', risk: 'read_only', supportedContexts: ['text', 'voice', 'qr', 'event'], authorization: 'owned_memory_read', idempotency: 'none', audit: 'goal_event', autonomous: true },
+  get_reminders: { description: 'Read scheduled reminders owned by the current user.', inputSchema: {}, permission: 'read', risk: 'read_only', supportedContexts: ['text', 'voice', 'event'], authorization: 'owned_reminder_read', idempotency: 'none', audit: 'goal_event', autonomous: true },
+  recheck_economic_request: { description: 'Safely re-evaluate an unresolved request through the canonical storefront only when explicitly enabled.', inputSchema: { requestId: 'string' }, permission: 'coordination', risk: 'reversible', supportedContexts: ['text', 'voice', 'event'], authorization: 'owned_unresolved_request_and_deployment_flag', idempotency: 'service_owned', audit: 'goal_event', autonomous: true },
 };
 
-export function listAgentTools(): Array<{ name: AgentToolName; permission: AgentToolPermission; autonomous: boolean }> {
+export function listAgentTools(): Array<{ name: AgentToolName } & AgentToolDefinition> {
   return Object.entries(definitions).map(([name, definition]) => ({ name: name as AgentToolName, ...definition }));
 }
 

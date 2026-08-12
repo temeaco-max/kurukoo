@@ -7,7 +7,7 @@ process.env.KURUKOO_AGENT_MAX_CONCURRENT_GOALS = '2';
 
 const { upsertProfile } = await import('../src/routes/authRoutes.js');
 const { createEconomicRequest } = await import('../src/services/skillFlows.js');
-const { executeAgentTool } = await import('../src/services/agentToolRegistry.js');
+const { executeAgentTool, listAgentTools } = await import('../src/services/agentToolRegistry.js');
 const { cancelAgentGoal, createConversationGoal, getAgentGoal, goalTimeline, listAgentGoals, runAgentGoal, runDueAgentGoals } = await import('../src/services/agentRuntime.js');
 const { getDb } = await import('../src/database.js');
 
@@ -19,6 +19,11 @@ const request = await createEconomicRequest({ id: `agent-request-${Date.now()}`,
 
 const goal = await createConversationGoal({ phone: owner, conversationId: 'conversation-agent-test', skill: 'find_worker', objective: 'Find a mechanic tomorrow.', economicRequestId: request.id });
 assert.ok(goal, 'Enabled runtime must create one bounded owned goal for a canonical request');
+assert.equal(goal.plan.riskLevel, 'user_confirmation_required', 'A request-linked plan must declare confirmation-required risk rather than grant autonomous commitment authority');
+assert.equal(goal.plan.confirmationRequired, true, 'A request-linked plan must preserve a reusable confirmation gate');
+assert.ok(goal.plan.steps.some(step => step.risk === 'read_only') && goal.plan.steps.some(step => step.risk === 'user_confirmation_required'), 'Persistent plans must retain bounded operational steps without hidden reasoning');
+const declaredTools = listAgentTools();
+assert.ok(declaredTools.every(tool => tool.description && tool.authorization && tool.risk && tool.idempotency && tool.audit === 'goal_event'), 'Every exposed tool must declare its contract, risk, authorization, idempotency and audit behaviour');
 assert.equal((await createConversationGoal({ phone: owner, conversationId: 'conversation-agent-test', skill: 'find_worker', objective: 'Duplicate', economicRequestId: request.id }))?.id, goal.id, 'Duplicate conversation goals must be idempotent');
 assert.equal(await getAgentGoal(other, goal.id), null, 'A user cannot read another user’s goal');
 assert.equal((await listAgentGoals(owner)).filter(item => item.id === goal.id).length, 1, 'Only one active goal must exist for the same conversation and skill');
@@ -36,6 +41,7 @@ const foreignRequest = await executeAgentTool('get_request_state', { requestId: 
 assert.equal(foreignRequest.ok, false, 'Forged or foreign tool arguments must fail ownership checks');
 const unsafeTool = await executeAgentTool('payment' as any, {}, { phone: owner, goalId: goal.id });
 assert.equal(unsafeTool.ok, false, 'High-risk payment or arbitrary tool names are unavailable to the runtime');
+assert.equal(goal.plan.steps.some(step => step.tool === ('payment' as any)), false, 'Plans must not contain undeclared high-risk payment actions');
 
 const db = await getDb();
 db.run(`UPDATE agent_goals SET next_action_at=datetime('now','-1 minute') WHERE id=?`, [goal.id]);
