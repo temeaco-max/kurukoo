@@ -16,12 +16,57 @@
 <body class="kurukoo-chat-page">
   <div class="chat-shell">
     <aside class="chat-sidebar" id="chat-sidebar">
-      <div class="sidebar-top"><a class="brand" href="/" aria-label="Kurukoo home"><span class="brand-mark">K</span><span>Kurukoo</span></a><button class="icon-btn mobile-only" id="close-sidebar" aria-label="Close sidebar">×</button></div>
-      <button class="new-chat" id="new-chat"><span>＋</span> New chat</button>
-      <div class="history-heading">Recent chats</div>
-      <div class="history-list" id="history-list"></div>
-      <div class="sidebar-context"><div class="context-title">Memory Profile</div><div class="context-copy" id="memory-context">Kurukoo remembers your context here.</div></div>
-      <div class="sidebar-bottom"><div class="channel-status"><span class="status-dot"></span> Web Chat <span>•</span> Other channels unavailable</div><button class="sidebar-link" id="theme-toggle">◐ Appearance</button></div>
+      <div class="sidebar-top">
+        <a class="brand" href="/" aria-label="Kurukoo home">
+          <img src="/assets/brand/logo-icon.svg" alt="K" class="brand-logo">
+          <span>Kurukoo</span>
+        </a>
+        <button class="icon-btn mobile-only" id="close-sidebar" aria-label="Close sidebar">×</button>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <button class="new-chat" id="new-chat"><span>＋</span> New chat</button>
+        
+        <div class="sidebar-section">
+          <div class="section-title">Recent chats</div>
+          <div class="history-list" id="history-list"></div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="section-title">Your Activity</div>
+          <a href="/web" class="sidebar-link"><span>📋</span> Requests</a>
+          <button class="sidebar-link" id="sidebar-reminders"><span>⏰</span> Reminders</button>
+          <button class="sidebar-link" id="sidebar-safety"><span>🛡️</span> Safety Contacts</button>
+          <button class="sidebar-link" id="sidebar-points"><span>🪙</span> Points</button>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="section-title">Use Kurukoo on</div>
+          <div class="channels-panel">
+            <div class="channel-item active" title="Web Chat is connected">
+              <span class="channel-icon">🌐</span>
+              <span class="channel-name">Web</span>
+              <span class="channel-status-dot"></span>
+            </div>
+            <div class="channel-item disabled" title="WhatsApp is coming soon">
+              <span class="channel-icon">💬</span>
+              <span class="channel-name">WhatsApp</span>
+              <span class="channel-tag">Soon</span>
+            </div>
+            <div class="channel-item disabled" title="SMS is coming soon">
+              <span class="channel-icon">📱</span>
+              <span class="channel-name">SMS</span>
+              <span class="channel-tag">Soon</span>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <a href="/resources" class="sidebar-link"><span>❓</span> Help & Resources</a>
+        <button class="sidebar-link" id="theme-toggle"><span>◐</span> Appearance</button>
+        <button class="sidebar-link" id="logout-sidebar-btn" hidden><span>↪</span> Log out</button>
+      </div>
     </aside>
     <main class="chat-main">
       <header class="chat-header"><div class="header-left"><button class="icon-btn mobile-only" id="open-sidebar" aria-label="Open sidebar" aria-controls="chat-sidebar" aria-expanded="false">☰</button><div class="model-name">Kurukoo <span class="model-badge" id="model-badge">Fulfilment chat</span></div></div><div class="header-right"><span class="connection-status" id="connection-status"><span class="status-dot"></span> Connected</span><button class="points-balance" id="points-balance" title="Kurukoo Points">🪙 <span>0</span> Points</button><button class="icon-btn" id="memory-toggle" aria-label="Show context inspector" aria-controls="chat-inspector" aria-expanded="false">◎</button></div></header>

@@ -40,6 +40,7 @@ export function createPublicRouter():Router{const router=express.Router();
  router.get('/web',optionalAuthenticateUser,(req:AuthRequest,res)=>{if(!req.user?.phone)return res.redirect(302,'/login?return=%2Fweb');res.sendFile(path.join(process.cwd(),'public','dashboard.html'));});
  router.get('/admin/login',async(_req,res)=>res.sendFile(path.join(process.cwd(),'public','admin','login.html')));
  router.get('/chat',async(_req,res)=>res.sendFile(path.join(process.cwd(),'public','chat','index.html')));
+router.get('/settings',optionalAuthenticateUser,(req:AuthRequest,res)=>{if(!req.user?.phone)return res.redirect(302,'/login?return=%2Fsettings');res.sendFile(path.join(process.cwd(),'public','settings.html'));});
  router.get('/how-it-works',async(req,res,next)=>{try{await renderPage(req,res,'how-it-works','/how-it-works');}catch(error){next(error);}});
  router.get('/network',async(req,res,next)=>{try{await renderPage(req,res,'network','/network');}catch(error){next(error);}});
  router.get('/channels',async(req,res,next)=>{try{await renderPage(req,res,'channels','/channels');}catch(error){next(error);}});

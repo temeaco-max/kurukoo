@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Settings — Kurukoo</title>
+    <link rel="stylesheet" href="/css/site.css">
+    <link rel="stylesheet" href="/css/kurukoo-hub.css">
+    <style>
+        .settings-container { max-width: 800px; margin: 0 auto; }
+        .settings-group { background: var(--white); border: 1px solid var(--gray-100); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+        .settings-group h3 { margin: 0 0 20px; font-size: 1.1rem; border-bottom: 1px solid var(--gray-50); padding-bottom: 12px; }
+        .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--gray-50); }
+        .settings-row:last-child { border-bottom: 0; }
+        .settings-info { display: grid; gap: 4px; }
+        .settings-label { font-weight: 600; font-size: 0.95rem; }
+        .settings-value { font-size: 0.85rem; color: var(--gray-600); }
+    </style>
+</head>
+<body>
+    <div class="hub-layout">
+        <aside class="hub-sidebar">
+            <a href="/" class="logo"><img src="/assets/brand/logo-icon.svg" alt="K" width="32"><span>Kurukoo</span></a>
+            <ul class="hub-nav">
+                <li><a href="/web">📋 Requests</a></li>
+                <li><a href="/chat">💬 Conversations</a></li>
+                <li><a href="/settings" class="active">⚙️ Settings</a></li>
+                <li><a href="/resources">❓ Resources</a></li>
+                <li><button type="button" id="logout-button">↪ Log out</button></li>
+            </ul>
+        </aside>
+
+        <main class="hub-main">
+            <header class="hub-header">
+                <div>
+                    <span class="eyebrow">Account & Privacy</span>
+                    <h1>Settings</h1>
+                </div>
+            </header>
+
+            <div class="settings-container">
+                <section class="settings-group">
+                    <h3>Profile & Identity</h3>
+                    <div class="settings-row">
+                        <div class="settings-info">
+                            <span class="settings-label">Name</span>
+                            <span class="settings-value" id="val-name">Loading...</span>
+                        </div>
+                        <button class="btn btn-outline btn-sm">Edit</button>
+                    </div>
+                    <div class="settings-row">
+                        <div class="settings-info">
+                            <span class="settings-label">Phone Number</span>
+                            <span class="settings-value" id="val-phone">Loading...</span>
+                        </div>
+                        <span class="item-badge active">Verified</span>
+                    </div>
+                </section>
+
+                <section class="settings-group">
+                    <h3>Preferences</h3>
+                    <div class="settings-row">
+                        <div class="settings-info">
+                            <span class="settings-label">Notifications</span>
+                            <span class="settings-value">Internal queue enabled. FCM/SMS disabled.</span>
+                        </div>
+                        <button class="btn btn-outline btn-sm">Manage</button>
+                    </div>
+                    <div class="settings-row">
+                        <div class="settings-info">
+                            <span class="settings-label">Appearance</span>
+                            <span class="settings-value">System default</span>
+                        </div>
+                        <button class="btn btn-outline btn-sm" id="theme-toggle">Toggle</button>
+                    </div>
+                </section>
+
+                <section class="settings-group">
+                    <h3>Safety & Security</h3>
+                    <div class="settings-row">
+                        <div class="settings-info">
+                            <span class="settings-label">Emergency Contacts</span>
+                            <span class="settings-value" id="val-contacts">Loading...</span>
+                        </div>
+                        <a href="/web" class="btn btn-outline btn-sm">View in Hub</a>
+                    </div>
+                    <div class="settings-row">
+                        <div class="settings-info">
+                            <span class="settings-label">Data & Privacy</span>
+                            <span class="settings-value">Manage your Memory Profile and conversation history.</span>
+                        </div>
+                        <button class="btn btn-outline btn-sm">Review</button>
+                    </div>
+                </section>
+
+                <section class="settings-group" style="border-color: rgba(198, 40, 40, 0.2);">
+                    <h3 style="color: var(--danger);">Danger Zone</h3>
+                    <div class="settings-row">
+                        <div class="settings-info">
+                            <span class="settings-label">Delete Account</span>
+                            <span class="settings-value">Permanently remove your profile and all associated data.</span>
+                        </div>
+                        <button class="btn btn-outline btn-sm" style="color: var(--danger); border-color: var(--danger);">Delete</button>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        async function loadSettings() {
+            try {
+                const [profileRes, safetyRes] = await Promise.all([
+                    fetch('/api/profile', { credentials: 'same-origin' }),
+                    fetch('/api/safety/contacts', { credentials: 'same-origin' })
+                ]);
+
+                if (profileRes.ok) {
+                    const data = await profileRes.json();
+                    const p = data.profile || {};
+                    document.getElementById('val-name').textContent = p.name || 'Not set';
+                    document.getElementById('val-phone').textContent = p.phone || 'Not set';
+                }
+
+                if (safetyRes.ok) {
+                    const data = await safetyRes.json();
+                    const count = (data.contacts || []).length;
+                    document.getElementById('val-contacts').textContent = `${count} contact${count === 1 ? '' : 's'} added`;
+                }
+            } catch (error) {
+                console.error('Failed to load settings:', error);
+            }
+        }
+
+        document.getElementById('logout-button')?.addEventListener('click', async () => {
+            try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); } catch (_) {}
+            localStorage.removeItem('kurukoo_auth_token');
+            localStorage.removeItem('kurukoo_user_phone');
+            localStorage.removeItem('kurukoo_user_name');
+            window.location.assign('/');
+        });
+
+        window.addEventListener('DOMContentLoaded', loadSettings);
+    </script>
+</body>
+</html>
