@@ -21,6 +21,8 @@ const {
   updateExecutionStatus,
   recordExecutionEvidence,
 } = await import('../src/services/executionConnector.js');
+const { ensureProviderVerificationSchema, setProviderVerification } = await import('../src/services/providerVerification.js');
+await ensureProviderVerificationSchema();
 
 const db = await getDb();
 const buyerPhone = '+2347000020101';
@@ -37,6 +39,12 @@ for (const [phone, name, verified] of [
     "INSERT INTO memory_profiles (phone,name,location,country,is_available,verified_provider,provider_type) VALUES (?,?,'Ikeja','ng',1,?,?)",
     [phone, name, verified, 'human'],
   );
+  if (verified) {
+    await setProviderVerification(phone, 'verified', {
+      evidenceRef: `fixture:execution-boundary:${phone}`,
+      reviewedBy: 'execution_boundary_fixture',
+    });
+  }
 }
 db.run('INSERT INTO skills (phone,skill,is_available,hourly_rate,rating) VALUES (?,\'delivery\',1,1200,4.8)', [deliveryPhone]);
 db.run('INSERT INTO skills (phone,skill,is_available,hourly_rate,rating) VALUES (?,\'delivery\',1,1300,4.7)', [unconnectedPhone]);

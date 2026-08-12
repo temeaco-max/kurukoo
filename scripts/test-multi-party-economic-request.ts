@@ -17,6 +17,8 @@ const { resumeStorefrontFromRequest } = await import('../src/services/agenticSto
 const { createAIAgent } = await import('../src/services/aiAgentService.js');
 const { createOpenIntention } = await import('../src/services/deferredRequestService.js');
 const { routeIntent } = await import('../src/services/intentRouter.js');
+const { ensureProviderVerificationSchema, setProviderVerification } = await import('../src/services/providerVerification.js');
+await ensureProviderVerificationSchema();
 
 const db = await getDb();
 const buyerPhone = '+2347000010101';
@@ -43,6 +45,12 @@ for (const [phone, name, providerType, verified] of [
     'INSERT INTO memory_profiles (phone,name,location,country,provider_type,verified_provider) VALUES (?,?,\'Ikeja\',\'ng\',?,?)',
     [phone, name, providerType, verified],
   );
+  if (verified) {
+    await setProviderVerification(phone, 'verified', {
+      evidenceRef: `fixture:multi-party:${phone}`,
+      reviewedBy: 'multi_party_fixture',
+    });
+  }
 }
 db.run('INSERT INTO skills (phone,skill,is_available,hourly_rate,rating,jobs_completed) VALUES (?,\'product_sourcing\',1,8000,4.9,11)', [primaryProviderPhone]);
 db.run('INSERT INTO skills (phone,skill,is_available,hourly_rate,rating,jobs_completed) VALUES (?,\'delivery\',1,1200,4.8,7)', [deliveryPhone]);

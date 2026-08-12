@@ -167,3 +167,7 @@ Kurukoo is **repository ready / external integrations required**. The canonical 
 For a cost-conscious pilot, one application instance with the existing SQL.js/SQLite store and existing in-process worker is appropriate only while that instance owns all writes and scheduled follow-up. Voice, Stripe, email, messaging channels, external KYC, inventory, dispatch, and provider availability remain disabled until their specific credentials and contracts are configured. Voice provider usage, Stripe payment processing, email delivery, and channel messages can incur provider usage charges; no free tier is assumed permanent.
 
 Migrate deliberately when the deployment needs more than one concurrent writer, distributed rate limiting, durable work across independent worker instances, high-volume message processing, or large media storage. Those are the triggers for PostgreSQL, Redis/distributed limiting, a durable queue, and object storage/CDN respectively; they are not prerequisites for the current single-instance launch model.
+
+### Final Launch-Hardening Matrix
+
+The detailed capability classification, evidence boundaries, launch profiles, external requirements, and deferred scaling triggers are maintained in [`LAUNCH_HARDENING_MATRIX.md`](./LAUNCH_HARDENING_MATRIX.md). It is the authoritative companion to this build status for the controlled pilot decision.

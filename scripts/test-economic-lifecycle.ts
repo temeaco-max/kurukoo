@@ -16,6 +16,8 @@ const { createEscrow } = await import('../src/services/escrow.js');
 const { runEscrowPass } = await import('../src/services/tradeEngine.js');
 const { sendFcmPush } = await import('../src/services/pushNotifications.js');
 const { handleSmsWebhook } = await import('../src/channels/sms.js');
+const { ensureProviderVerificationSchema, setProviderVerification } = await import('../src/services/providerVerification.js');
+await ensureProviderVerificationSchema();
 
 const db = await getDb();
 const customerPhone = '+2347000000101';
@@ -29,6 +31,12 @@ for (const [phone, name, verified] of [
     `INSERT OR REPLACE INTO memory_profiles (phone, name, location, country, verified_provider, points_balance) VALUES (?, ?, 'Ikeja', 'ng', ?, 30)`,
     [phone, name, verified]
   );
+  if (verified) {
+    await setProviderVerification(phone, 'verified', {
+      evidenceRef: `fixture:economic-lifecycle:${phone}`,
+      reviewedBy: 'economic_lifecycle_fixture',
+    });
+  }
 }
 
 db.run(

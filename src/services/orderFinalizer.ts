@@ -3,6 +3,7 @@ import { addPoints } from './pointsEngine.js';
 import { getCommission } from './commissionService.js';
 import { processDirectPayment } from './directWallet.js';
 import { createEconomicRequest, getEconomicCategory } from './skillFlows.js';
+import { providerMayBeDiscovered } from './providerVerification.js';
 
 export async function getLeadCharge(orderType: string): Promise<number> {
     const ot = orderType.toLowerCase();
@@ -86,19 +87,21 @@ export async function finalizeOrder(buyerPhone: string, arg2: string = '', arg3:
             existing.free();
         }
 
-        const stmt = db.prepare(`SELECT s.phone, ps.status, ps.leads_this_month, ps.tier FROM skills s JOIN memory_profiles m ON s.phone = m.phone LEFT JOIN provider_subscriptions ps ON s.phone = ps.phone WHERE s.skill = ? AND s.is_available = 1 AND ps.status = 'active' LIMIT 1`);
+        const stmt = db.prepare(`SELECT s.phone, ps.status, ps.leads_this_month, ps.tier FROM skills s JOIN memory_profiles m ON s.phone = m.phone LEFT JOIN provider_subscriptions ps ON s.phone = ps.phone WHERE s.skill = ? AND s.is_available = 1 AND ps.status = 'active' ORDER BY s.phone LIMIT 25`);
         stmt.bind([orderType]);
-        let found = false;
-        if (stmt.step()) {
+        const candidates: Array<{ phone: string; leads: number; tier: unknown }> = [];
+        while (stmt.step()) {
             const row = stmt.getAsObject();
-            const limit = row.tier === 'Plus' ? 100 : (row.tier === 'Business' ? 1000 : 30);
-            if ((row.leads_this_month as number) < limit) { providerPhone = row.phone as string; found = true; }
+            candidates.push({ phone: String(row.phone), leads: Number(row.leads_this_month || 0), tier: row.tier });
         }
         stmt.free();
-        if (!found) {
-            const fallbackStmt = db.prepare(`SELECT s.phone FROM skills s LEFT JOIN provider_subscriptions ps ON s.phone = ps.phone WHERE s.is_available = 1 AND ps.status = 'active' LIMIT 1`);
-            if (fallbackStmt.step()) providerPhone = fallbackStmt.getAsObject().phone as string;
-            fallbackStmt.free();
+        for (const candidate of candidates) {
+            const limit = candidate.tier === 'Plus' ? 100 : (candidate.tier === 'Business' ? 1000 : 30);
+            if (candidate.leads >= limit) continue;
+            if (await providerMayBeDiscovered(candidate.phone)) {
+                providerPhone = candidate.phone;
+                break;
+            }
         }
     }
 
@@ -159,8 +162,10 @@ export async function finalizeOrder(buyerPhone: string, arg2: string = '', arg3:
         return { success: false, message: 'Payment reference verification must complete through the Economic Request flow before escrow can be created.' };
     }
 
-    db.run(`INSERT INTO orders (id, phone, order_type, provider_phone, amount, status, idempotency_key) VALUES (?, ?, ?, ?, ?, ?, ?)`, [orderId, buyerPhone, orderType, providerPhone, jobAmount, isInstant ? 'completed' : 'escrow_held', idempotencyKey]);
-    db.run(`INSERT INTO audit_logs (action, details) VALUES (?, ?)`, ['order_finalized', JSON.stringify({ orderId, buyerPhone, providerPhone, orderType, isInstant, clientTier })]);
+    // This compatibility route can record a verified provider option, but it cannot
+    // bypass the canonical payment, escrow, fulfilment, or completion transitions.
+    db.run(`INSERT INTO orders (id, phone, order_type, provider_phone, amount, status, idempotency_key) VALUES (?, ?, ?, ?, ?, ?, ?)`, [orderId, buyerPhone, orderType, providerPhone, jobAmount, 'awaiting_confirmation', idempotencyKey]);
+    db.run(`INSERT INTO audit_logs (action, details) VALUES (?, ?)`, ['order_provider_option_recorded', JSON.stringify({ orderId, buyerPhone, providerPhone, orderType, clientTier, next: 'canonical_quote_payment_fulfilment' })]);
     saveDb();
-    return { success: true, message: `Matched successfully with verified provider.${isInstant ? ' Match complete.' : ' Escrow payment secured.'}`, orderId };
+    return { success: true, message: 'A verified provider option is available for review. Confirm the quote and terms through the Economic Request flow; payment, escrow, and fulfilment remain pending.', orderId };
 }

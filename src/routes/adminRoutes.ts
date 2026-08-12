@@ -28,6 +28,7 @@ import { getAllPricing, updatePlan, createPlan, deletePlan } from '../services/p
 import { schedulePost } from '../services/socialScheduler.js';
 import { queryGroq } from '../services/groqService.js';
 import { isProviderEntityType } from '../services/providerEntity.js';
+import { setProviderVerification } from '../services/providerVerification.js';
 
 const router = Router();
 
@@ -407,7 +408,7 @@ router.post('/users/bulk-update', authenticateAdmin, async (req: AuthRequest, re
 
 router.post('/verify_provider', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
-    const { phone } = req.body || {};
+    const { phone, evidenceRef, expiresAt } = req.body || {};
     if (!phone) return res.status(400).json({ error: 'phone required' });
     const db = await getDb();
     const stmt = db.prepare('SELECT nin FROM memory_profiles WHERE phone = ?');
@@ -429,14 +430,17 @@ router.post('/verify_provider', authenticateAdmin, async (req: AuthRequest, res)
     }
     stmt2.free();
 
-    if (nin && jobsDone >= 5 && avgRating >= 4.0) {
-      db.run('UPDATE memory_profiles SET verified_provider = 1 WHERE phone = ?', [phone]);
-      saveDb();
-      res.json({ success: true, message: 'Provider verified successfully.' });
+    if (nin && jobsDone >= 5 && avgRating >= 4.0 && typeof evidenceRef === 'string' && evidenceRef.trim()) {
+      const verification = await setProviderVerification(String(phone), 'verified', {
+        evidenceRef: evidenceRef.trim(),
+        reviewedBy: String(req.user?.phone || 'admin'),
+        expiresAt: typeof expiresAt === 'string' && expiresAt.trim() ? expiresAt.trim() : undefined,
+      });
+      res.json({ success: true, message: 'Provider verification recorded with authoritative evidence.', verification });
     } else {
       res.json({
         success: false,
-        message: 'Does not meet criteria (Needs NIN, 5+ jobs, 4.0+ rating)',
+        message: 'Verification requires NIN, 5+ jobs, a 4.0+ rating, and an authoritative evidenceRef.',
       });
     }
   } catch (e) {

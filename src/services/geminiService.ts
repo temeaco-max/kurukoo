@@ -30,7 +30,7 @@ export async function queryGemini(prompt: string, options?: GeminiChatOptions): 
             model: 'gemini-3.6-flash',
             contents: prompt,
             config: {
-                systemInstruction: options?.systemInstruction || 'You are Kurukoo, an ultra-smart, helpful everyday hustle assistant for transport, marketplace pricing, trade deals, and life-admin reminders across Africa and the UK. Keep answers concise, actionable, and friendly.',
+                systemInstruction: options?.systemInstruction || 'You are Kurukoo, a conversational fulfilment assistant. Help clarify what the user needs and route it through Kurukoo\'s canonical request flow. Never claim that a provider is verified or available, a price is current, a reminder is saved, a payment is complete, money is held, a message was delivered, or an emergency contact was notified unless the server has supplied authoritative evidence. If an external integration is unavailable, say so plainly and offer the text-based next step.',
                 temperature: options?.temperature ?? 0.7,
                 maxOutputTokens: options?.maxOutputTokens ?? 512,
                 responseMimeType: options?.responseMimeType,
@@ -62,7 +62,7 @@ function getGeminiFallback(prompt: string, isJson: boolean = false): string {
             else if (q.includes('taxi') || q.includes('car') || q.includes('cab')) selectedType = 'Taxi';
             
             if (selectedType) {
-                reply = `Ku Kurukoo! I can arrange a vetted ${selectedType} ride for you immediately. Let's get you moving!`;
+                reply = `I can help you request a ${selectedType} ride. I still need the route and timing, then Kurukoo will show only options supported by current provider data.`;
             } else {
                 reply = `Ku Kurukoo! Which do you prefer for your transit today? Okada, Keke, or Taxi?`;
             }
@@ -73,7 +73,7 @@ function getGeminiFallback(prompt: string, isJson: boolean = false): string {
             else if (q.includes('caterer')) selectedType = 'Local Caterer Platter';
             
             if (selectedType) {
-                reply = `Ku Kurukoo! I'll get that ${selectedType} meal bundle prepared and delivered right away.`;
+                reply = `I can help you request ${selectedType}. Tell me the delivery area and timing; availability, price, and fulfilment will be confirmed only after a real option is found.`;
             } else {
                 reply = `Ku Kurukoo! What are you craving today? Suya & Masa, Rice & Yam Bundle, or a Caterer Platter?`;
             }
@@ -84,7 +84,7 @@ function getGeminiFallback(prompt: string, isJson: boolean = false): string {
             else if (q.includes('bill') || q.includes('electricity') || q.includes('meter')) selectedType = 'Electricity Bill';
             
             if (selectedType) {
-                reply = `Ku Kurukoo! I will dispatch a verified provider for your ${selectedType} request.`;
+                reply = `I can help you request ${selectedType}. Share the location and urgency; Kurukoo will distinguish a real provider match from a request that still needs searching.`;
             } else {
                 reply = `Ku Kurukoo! I can connect you with local artisans or clear utilities. Which do you need? Mobile Mechanic, Event Security, or Electricity Bill?`;
             }
@@ -100,13 +100,13 @@ function getGeminiFallback(prompt: string, isJson: boolean = false): string {
     }
 
     if (q.includes('ride') || q.includes('okada') || q.includes('keke') || q.includes('taxi')) {
-        return '🚕 *Kurukoo Live Dispatch:* Searching nearby active riders in your area. Standard rates: Okada ₦500, Keke ₦800, Car/Bolt ₦2,000.';
+        return 'I can help you request transport. Tell me your pickup, destination, and timing; Kurukoo will look for a real option and will not invent availability or a price.';
     }
     if (q.includes('price') || q.includes('market') || q.includes('cost')) {
-        return '📊 *Kurukoo Price Radar:* Checking today\'s local market rates across Lagos and Abuja. Prices are updated live every morning.';
+        return 'I can help clarify what price information you need. Any price or availability shown must come from a configured, current source; no live market feed is connected in this fallback.';
     }
     if (q.includes('mot') || q.includes('bin') || q.includes('reminder') || q.includes('council')) {
-        return '📅 *Kurukoo Life-Admin:* Reminder logged! We track your local council schedule and vehicle MOT dates automatically.';
+        return 'I can help you create or review a reminder. It is not saved until the reminder service confirms persistence and the relevant date and timezone are clear.';
     }
-    return `⚡ *Kurukoo AI Assistant:* I've processed your request: "${prompt}". Let me know if you need to dispatch a service, check prices, or send a liveCast signal!`;
+    return `I can help clarify that request: "${prompt}". Tell me what outcome you want, and I will route it through Kurukoo\'s canonical conversation flow without assuming a provider, price, payment, or connected channel.`;
 }

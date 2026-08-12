@@ -21,6 +21,9 @@ async function main() {
     fs.promises.readFile(new URL('../src/routes/adminRoutes.ts', import.meta.url), 'utf8')
   );
   assert.match(src, /authenticateAdmin/, 'adminRoutes must use authenticateAdmin');
+  assert.match(src, /setProviderVerification/, 'provider verification must use the shared evidence-gated lifecycle');
+  assert.match(src, /evidenceRef/, 'admin verification must require an authoritative evidence reference');
+  assert.doesNotMatch(src, /UPDATE memory_profiles SET verified_provider = 1/, 'admin route must not mint verification through the legacy profile flag');
   assert.doesNotMatch(src, /\\+2348030000000/, 'no demo phone in admin routes');
   for (const p of paths) {
     assert.ok(src.includes(p.replace('/api/admin', '')) || src.includes(p), `path reference for ${p}`);

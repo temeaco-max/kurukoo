@@ -1,6 +1,7 @@
 import { deductPoints, addPoints } from './pointsEngine.js';
 import { getDb, saveDb } from '../database.js';
 import { querySmolLM2 } from './smolLm2Service.js';
+import { ensureProviderVerificationSchema } from './providerVerification.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -54,6 +55,11 @@ function mirrorAgentToMemoryProfile(db: any, agent: AIAgent) {
         );
     }
 
+    db.run(`INSERT INTO provider_verifications(phone, state, evidence_ref, reviewed_by, reason, updated_at)
+             VALUES (?, ?, ?, 'kurukoo_agent_registry', 'platform_registered_agent', CURRENT_TIMESTAMP)
+             ON CONFLICT(phone) DO UPDATE SET state=excluded.state, evidence_ref=excluded.evidence_ref, reviewed_by=excluded.reviewed_by, reason=excluded.reason, updated_at=CURRENT_TIMESTAMP`,
+        [agent.id, agent.status === 'active' ? 'verified' : 'suspended', `internal:ai-agent:${agent.id}`]);
+
     // Sync skills
     db.run("DELETE FROM skills WHERE phone = ?", [agent.id]);
     if (agent.skills && agent.skills.length > 0) {
@@ -67,6 +73,7 @@ function mirrorAgentToMemoryProfile(db: any, agent: AIAgent) {
 }
 
 export async function seedDefaultAIAgents(): Promise<void> {
+    await ensureProviderVerificationSchema();
     const db = await getDb();
     
     const defaultAgents: AIAgent[] = [
@@ -344,6 +351,7 @@ export async function getAIAgentById(id: string): Promise<AIAgent | null> {
 }
 
 export async function createAIAgent(agent: AIAgent): Promise<void> {
+    await ensureProviderVerificationSchema();
     const db = await getDb();
     db.run(
         `INSERT INTO ai_agents (id, name, system_prompt, skills, tools, status, lga, concurrency_limit, token_quota_daily, cost_threshold_usd, temperature)
@@ -367,6 +375,7 @@ export async function createAIAgent(agent: AIAgent): Promise<void> {
 }
 
 export async function updateAIAgent(id: string, updates: Partial<AIAgent>): Promise<boolean> {
+    await ensureProviderVerificationSchema();
     const db = await getDb();
     const existing = await getAIAgentById(id);
     if (!existing) return false;
@@ -399,6 +408,7 @@ export async function deleteAIAgent(id: string): Promise<boolean> {
     const db = await getDb();
     db.run(`DELETE FROM ai_agents WHERE id = ?`, [id]);
     db.run(`DELETE FROM memory_profiles WHERE phone = ?`, [id]);
+    db.run(`DELETE FROM provider_verifications WHERE phone = ?`, [id]);
     db.run(`DELETE FROM skills WHERE phone = ?`, [id]);
     saveDb();
     return true;

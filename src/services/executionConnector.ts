@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { getDb, saveDb } from '../database.js';
 import { getEconomicRequest } from './skillFlows.js';
+import { providerMayBeDiscovered } from './providerVerification.js';
 import { getEconomicParticipants, type EconomicParticipantRole } from './economicParticipants.js';
 
 export const EXECUTION_STATUSES = [
@@ -296,12 +297,12 @@ export async function authorizeProviderExecution(input: {
   if (['declined', 'withdrawn'].includes(participant.status)) return { authorized: false, reason: 'Participant is not eligible for execution' };
 
   const db = await getExecutionTable();
-  const profileStmt = db.prepare('SELECT verified_provider, is_available FROM memory_profiles WHERE phone=? LIMIT 1');
+  const profileStmt = db.prepare('SELECT is_available FROM memory_profiles WHERE phone=? LIMIT 1');
   profileStmt.bind([providerPhone]);
   const profile = profileStmt.step() ? profileStmt.getAsObject() : null;
   profileStmt.free();
   if (!profile) return { authorized: false, reason: 'Provider profile not found' };
-  if (Number(profile.verified_provider) !== 1) return { authorized: false, reason: 'Provider is not verified' };
+  if (!(await providerMayBeDiscovered(providerPhone))) return { authorized: false, reason: 'Provider is not evidence-verified' };
   if (Number(profile.is_available) !== 1) return { authorized: false, reason: 'Provider is unavailable' };
 
   const skillStmt = db.prepare('SELECT 1 FROM skills WHERE phone=? AND lower(skill)=lower(?) AND is_available=1 LIMIT 1');

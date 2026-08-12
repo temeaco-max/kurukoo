@@ -14,6 +14,8 @@ const { createEconomicRequest, getEconomicRequest, transitionEconomicRequest } =
 const { runOrchestrationPass, lockEscrowForEconomicRequest } = await import('../src/services/tradeEngine.js');
 const { createAIAgent } = await import('../src/services/aiAgentService.js');
 const { isProviderEntityType, normalizeProviderEntityType } = await import('../src/services/providerEntity.js');
+const { ensureProviderVerificationSchema, setProviderVerification } = await import('../src/services/providerVerification.js');
+await ensureProviderVerificationSchema();
 
 const db = await getDb();
 const customerPhone = '+2347000000301';
@@ -32,12 +34,18 @@ for (const [phone, name, providerType, verified] of [
   [authorizedDronePhone, 'Authorized Delivery Asset', 'drone', 1],
   [unauthorizedDronePhone, 'Unverified Delivery Asset', 'drone', 0],
   [externalPlatformPhone, 'External Platform Test Provider', 'external_platform', 1],
-] as const) {
+  ] as const) {
   db.run(
     `INSERT INTO memory_profiles (phone, name, location, country, provider_type, verified_provider)
      VALUES (?, ?, 'Ikeja', 'ng', ?, ?)`,
     [phone, name, providerType, verified]
   );
+  if (verified) {
+    await setProviderVerification(phone, 'verified', {
+      evidenceRef: `fixture:provider-entity:${phone}`,
+      reviewedBy: 'provider_entity_fixture',
+    });
+  }
 }
 
 db.run(`INSERT INTO skills (phone, skill, is_available, hourly_rate, rating, jobs_completed, operation_mode) VALUES (?, 'plumber', 1, 3000, 4.8, 10, 'stationary')`, [humanPhone]);
