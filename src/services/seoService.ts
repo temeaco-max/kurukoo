@@ -395,7 +395,7 @@ export async function getFaqForPage(urlPath: string) {
     if (faqs.length === 0) {
         return [
             { question: 'What is Kurukoo?', answer: 'Kurukoo is an AI-powered everyday utility platform that lets you request services, offer your skills, and earn inside your chat.' },
-            { question: 'How do I get started?', answer: 'Simply send a message on WhatsApp or through our web app to state what you need.' }
+            { question: 'How do I get started?', answer: 'Open Web Chat and describe what you need. Kurukoo will show the supported next step when the relevant data and service boundary are available.' }
         ];
     }
     return faqs;
@@ -980,10 +980,10 @@ export async function generateFaqsForPageWithAI(urlPath: string, topicName?: str
 
     if (faqs.length === 0) {
         faqs = [
-            { question: `How do I request ${topic} on Kurukoo?`, answer: `Simply message Kurukoo on WhatsApp or via our web app, specify what you need, and you will be connected with verified local providers.` },
-            { question: `Are ${topic} providers verified on Kurukoo?`, answer: `Yes, all providers pass identity checks and build trust scores based on successful completed jobs.` },
+            { question: `How do I request ${topic} on Kurukoo?`, answer: `Open Web Chat, specify what you need, and Kurukoo will show the supported request path when eligible provider data is available.` },
+            { question: `Are ${topic} providers verified on Kurukoo?`, answer: `Provider identity and authorization are evaluated through the platform's verification and capability boundaries; provider type alone does not grant authorization.` },
             { question: `How much does ${topic} cost?`, answer: `Prices are transparent with funds held safely in escrow until you confirm satisfaction.` },
-            { question: `Where is ${topic} available?`, answer: `Kurukoo covers major cities and LGAs across Nigeria, Ghana, and the UK.` }
+            { question: `Where is ${topic} available?`, answer: `Availability depends on the configured service area and verified provider data returned for the request.` }
         ];
     }
 

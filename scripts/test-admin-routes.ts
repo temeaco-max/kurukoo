@@ -11,7 +11,7 @@ const paths = [
   '/api/admin/ai-agents',
   '/api/admin/analytics',
   '/api/admin/content',
-  '/api/admin/keep-alive',
+  '/api/admin/stats',
 ];
 
 async function main() {

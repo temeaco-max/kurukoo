@@ -129,9 +129,9 @@ export async function generateProactiveOpportunities(phone: string): Promise<Opp
             phone,
             type: 'market_intel',
             title: 'Lagos Rice Supply Alert',
-            subtitle: '50kg Bag of Premium Rice is now ₦30,000 at Lagos central market (vs ₦35,000 average). Connect with direct wholesale suppliers?',
-            ctaText: 'Connect Supplier',
-            ctaLink: 'https://wa.me/2347000',
+            subtitle: 'Ask Web Chat about verified market information and available wholesale providers in your area.',
+            ctaText: 'Ask in Web Chat',
+            ctaLink: '/chat?prompt=Show%20verified%20wholesale%20options%20near%20me',
             urgency: 0.5,
             businessValue: 0.7
         });
@@ -158,8 +158,8 @@ export async function generateProactiveOpportunities(phone: string): Promise<Opp
             type: 'daily_pick',
             title: ad.title as string,
             subtitle: ad.desc as string,
-            ctaText: 'Order Direct',
-            ctaLink: `https://wa.me/2347000?text=I%20am%20interested%20in%20${encodeURIComponent(ad.title as string)}`,
+            ctaText: 'Ask in Web Chat',
+            ctaLink: `/chat?prompt=${encodeURIComponent(`I am interested in ${String(ad.title || 'this offer')}`)}`,
             urgency: 0.5,
             businessValue: 1.0 // High revenue sponsored ad
         });
@@ -172,10 +172,10 @@ export async function generateProactiveOpportunities(phone: string): Promise<Opp
         rawOpportunities.push({
             phone,
             type: 'daily_pick',
-            title: 'Premium Jasmine Rice (50kg)',
-            subtitle: 'Buy at wholesale direct price from verified local warehouses. Guaranteed fast dispatch.',
-            ctaText: 'Order Direct',
-            ctaLink: 'https://wa.me/2347000?text=Order%20Premium%20Jasmine%20Rice',
+            title: 'Ask about local essentials',
+            subtitle: 'Use Web Chat to ask about verified products and fulfilment options when supporting data is available.',
+            ctaText: 'Ask in Web Chat',
+            ctaLink: '/chat?prompt=Help%20me%20find%20verified%20local%20essentials',
             urgency: 0.5,
             businessValue: 1.0
         });

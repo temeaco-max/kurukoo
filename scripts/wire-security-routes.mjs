@@ -197,7 +197,6 @@ const pulseRenames = [
   ["app.post('/api/admin/disputes/resolve'", "app.post('/api/admin/disputes/resolve-legacy'"],
   ["app.post('/api/admin/disputes/escalate'", "app.post('/api/admin/disputes/escalate-legacy'"],
   ["app.get('/api/admin/stats'", "app.get('/api/admin/stats-legacy'"],
-  ["app.get('/api/admin/keep-alive-analytics'", "app.get('/api/admin/keep-alive-analytics-legacy'"],
   ["app.get('/api/admin/analytics/trends'", "app.get('/api/admin/analytics/trends-legacy'"],
   ["app.get('/api/admin/analytics/sales'", "app.get('/api/admin/analytics/sales-legacy'"],
   ["app.get('/api/admin/users'", "app.get('/api/admin/users-legacy'"],

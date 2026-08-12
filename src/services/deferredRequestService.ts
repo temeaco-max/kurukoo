@@ -103,7 +103,8 @@ export async function markAwaitingMatch(phone: string, intentionId: string | num
 }
 
 export async function markPartiallyMatched(phone: string, intentionId: string | number, note?: string) {
-    return transition(phone, intentionId, 'partially_matched', note);
+    await transition(phone, intentionId, 'partially_matched', note);
+    return incrementAttempt(phone, intentionId);
 }
 
 export async function resolveOpenIntention(phone: string, intentionId: string | number, resolution: string, note?: string, workaround?: string) {

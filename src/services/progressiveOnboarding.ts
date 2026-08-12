@@ -111,12 +111,12 @@ export async function onboardNewUser(phone: string): Promise<string> {
 export function getDailyPersonalizedQuestion(day: number): { q: string, options: string[] } {
     const questions: Record<number, { q: string, options: string[] }> = {
         1: { q: 'Do you usually work from a stationary shop or move around as a mobile provider?', options: ['Stationary Shop', 'Mobile / Delivery', 'Both'] },
-        2: { q: 'Would you ever want client notifications sent directly to you via SMS when you are offline?', options: ['Yes, SMS Fallback', 'No, App Only'] },
+        2: { q: 'Would you like reminders to appear in Web Chat and your private notification inbox?', options: ['Yes, remind me', 'No reminders'] },
         3: { q: 'Do you have your own transport (motorcycle, bicycle, car) for dispatch work?', options: ['Yes, Motorbike/Car', 'Yes, Bicycle', 'No vehicle'] },
         4: { q: 'Do you save money in group circles with family or friends?', options: ['Yes, actively', 'Sometimes', 'No, never'] },
-        5: { q: 'Would you use a voice-activated remote to control smart TVs or appliances?', options: ['Yes, daily', 'Maybe occasionally', 'No'] },
+        5: { q: 'Would you like to use personal safety check-ins for selected journeys or routines?', options: ['Yes, explain check-ins', 'Maybe later', 'No'] },
         6: { q: 'Do you want to receive daily news and market price intelligence updates?', options: ['Yes, please', 'No, thanks'] },
-        7: { q: 'Would you buy a 50kg bag of rice if we negotiated a bulk discount near you?', options: ['Yes, definitely', 'No'] }
+        7: { q: 'Would you like verified product information when you ask what is available nearby?', options: ['Yes, show verified options', 'No, thanks'] }
     };
     return questions[day] || { q: 'How is your experience with Kurukoo so far?', options: ['Excellent', 'Good', 'Could be better'] };
 }

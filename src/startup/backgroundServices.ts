@@ -1,12 +1,10 @@
 import { purgeExpiredData } from '../services/dataRetention.js';
 import { seedDemoAdCampaigns } from '../services/adManager.js';
-import { startSessionManagerScheduler } from '../services/sessionManager.js';
 import { startContactSyncService } from '../services/contactSyncService.js';
 import { startDeliveryStatusService } from '../services/deliveryService.js';
 import { runEscrowPass } from '../services/tradeEngine.js';
 
 export async function startBackgroundServices(): Promise<void> {
-    try { startSessionManagerScheduler(); } catch (error) { console.error('Failed to start keep-alive scheduler:', error); }
     try { await seedDemoAdCampaigns(); } catch (error) { console.error('Error seeding demo ad campaigns:', error); }
     try { await startContactSyncService(); } catch (error) { console.error('Failed to start contact sync service:', error); }
     try { await startDeliveryStatusService(); } catch (error) { console.error('Failed to start delivery status service:', error); }
