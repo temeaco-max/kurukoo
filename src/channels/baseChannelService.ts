@@ -36,6 +36,10 @@ export abstract class BaseChannelHandler {
                 channel: this.channelName,
                 metadata: { channel: this.channelName, inbound: true, ...meta }
             });
+
+            const routing = await routeIntent(text, phone);
+            const reply = `${routing.reply}`;
+
             await recordChannelUsage({
                 phone,
                 channel: this.channelName,
@@ -44,9 +48,6 @@ export abstract class BaseChannelHandler {
                 conversationId: userMessage.conversationId,
                 metadata: { source: 'shared-channel-handler' }
             });
-
-            const routing = await routeIntent(text, phone);
-            const reply = `${routing.reply}`;
 
             await appendChatMessage({
                 phone,
@@ -57,16 +58,16 @@ export abstract class BaseChannelHandler {
                 cardData: routing.cardData,
                 metadata: { channel: this.channelName, outbound: true }
             });
+
+            await this.sendReply(phone, reply, meta);
             await recordChannelUsage({
                 phone,
                 channel: this.channelName,
                 direction: 'outbound',
                 units: 1,
                 conversationId: userMessage.conversationId,
-                metadata: { source: 'shared-channel-handler' }
+                metadata: { source: 'shared-channel-handler', delivery: 'completed' }
             });
-
-            await this.sendReply(phone, reply, meta);
             await this.onComplete(meta);
 
             return { status: 'success', response: reply, conversationId: userMessage.conversationId };
