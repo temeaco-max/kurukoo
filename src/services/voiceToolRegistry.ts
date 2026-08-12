@@ -5,6 +5,7 @@ import { getPointsBalance } from './pointsEngine.js';
 import { listReminders } from './reminderService.js';
 import { routeIntent } from './intentRouter.js';
 import { setAuthState } from './conversationalAuthService.js';
+import { createConversationGoal } from './agentRuntime.js';
 
 export interface VoiceToolContext {
   phone: string;
@@ -100,7 +101,8 @@ export async function executeVoiceTool(name: string, rawArgs: unknown, context: 
       reply = `${routing.reply}\n\nBefore I save this for you, what is your name?`;
       cardData = { type: 'auth_in_chat_start', title: 'Create your profile', message: 'Your request is captured. Tell Kurukoo your name to continue.', continuationCard: routing.cardData };
     }
-    return { ok: true, conversationId: context.conversationId, skill: routing.skill, reply, cardData, requiresIdentity: context.isGuest && cardData?.type === 'auth_in_chat_start' };
+    const agentGoal = !context.isGuest ? await createConversationGoal({ phone: context.phone, conversationId: context.conversationId, skill: routing.skill, objective: text, economicRequestId: typeof cardData?.requestId === 'string' ? cardData.requestId : undefined, source: 'conversation' }) : null;
+    return { ok: true, conversationId: context.conversationId, skill: routing.skill, reply, cardData, agentGoal: agentGoal ? { id: agentGoal.id, status: agentGoal.status, summary: agentGoal.summary } : null, requiresIdentity: context.isGuest && cardData?.type === 'auth_in_chat_start' };
   }
   return { ok: false, message: 'That voice action is not available.' };
 }

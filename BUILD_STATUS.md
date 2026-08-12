@@ -136,6 +136,7 @@ The current `integration/main-convergence-audit` branch adds **one** feature-fla
 |---|---|---|
 | `agent_goals` and timeline events | Implemented | SQLite persistence is suitable for the current single-instance deployment; every goal is phone-owned and events carry only action, result, evidence, and state metadata. |
 | Chat and inspector | Implemented | An eligible authenticated conversation can create one idempotent goal; the inspector shows a concise objective/timeline and allows cancellation. |
+| Web Voice continuity | Implemented | The existing `route_user_intent` voice tool now creates the same bounded conversation goal after canonical intent routing; it does not create a voice-specific request, memory, or workflow. |
 | Memory and request observation | Implemented | Existing bounded Living Memory and owned canonical request reads are used through the tool registry. |
 | Waiting and deferred re-entry | Implemented | Existing background services process due goals and existing open intentions when the runtime flag is enabled. |
 | Autonomous re-check | Implemented but disabled by default | Only existing eligible unresolved requests may be rechecked, and only when the low-risk flag is explicitly enabled. |

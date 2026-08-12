@@ -10,6 +10,7 @@ const { createEconomicRequest } = await import('../src/services/skillFlows.js');
 const { executeAgentTool, listAgentTools } = await import('../src/services/agentToolRegistry.js');
 const { cancelAgentGoal, createConversationGoal, getAgentGoal, goalTimeline, listAgentGoals, runAgentGoal, runDueAgentGoals } = await import('../src/services/agentRuntime.js');
 const { getDb } = await import('../src/database.js');
+const { executeVoiceTool } = await import('../src/services/voiceToolRegistry.js');
 
 const owner = `+234807${String(Date.now()).slice(-7)}`;
 const other = `+234808${String(Date.now()).slice(-7)}`;
@@ -39,6 +40,8 @@ const ownRequest = await executeAgentTool('get_request_state', { requestId: requ
 assert.equal(ownRequest.ok, true, 'Owned request state may be read through the controlled registry');
 const foreignRequest = await executeAgentTool('get_request_state', { requestId: request.id }, { phone: other, goalId: 'forged' });
 assert.equal(foreignRequest.ok, false, 'Forged or foreign tool arguments must fail ownership checks');
+const voiceRouted = await executeVoiceTool('route_user_intent', { text: 'I need repair help in Ikeja' }, { phone: owner, conversationId: 'conversation-voice-agent-test', isGuest: false, sessionId: 'voice-agent-test' });
+assert.ok(voiceRouted.agentGoal || voiceRouted.cardData?.type === 'agentic_storefront', 'Voice routing must remain on the canonical intent/storefront path and expose a shared bounded goal when enabled');
 const unsafeTool = await executeAgentTool('payment' as any, {}, { phone: owner, goalId: goal.id });
 assert.equal(unsafeTool.ok, false, 'High-risk payment or arbitrary tool names are unavailable to the runtime');
 assert.equal(goal.plan.steps.some(step => step.tool === ('payment' as any)), false, 'Plans must not contain undeclared high-risk payment actions');
