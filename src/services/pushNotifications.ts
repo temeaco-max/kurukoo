@@ -1,30 +1,62 @@
-import { getDb } from '../database.js';
+import { getDb, saveDb } from '../database.js';
 import { generateWhatsAppDeepLink } from '../utils/whatsappLinks.js';
 
 export { generateWhatsAppDeepLink };
 
-export async function sendFcmPush(phone: string, title: string, body: string, link?: string): Promise<boolean> {
+async function ensureNotificationTable() {
     const db = await getDb();
-    const stmt = db.prepare(`SELECT fcm_token FROM memory_profiles WHERE phone = ?`);
-    stmt.bind([phone]);
-    if (!stmt.step()) {
-        stmt.free();
+    db.run(`CREATE TABLE IF NOT EXISTS internal_notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        phone TEXT NOT NULL,
+        title TEXT NOT NULL,
+        body TEXT NOT NULL,
+        link TEXT,
+        status TEXT NOT NULL DEFAULT 'unread',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_internal_notifications_phone_status ON internal_notifications(phone, status)`);
+    return db;
+}
+
+export async function sendFcmPush(phone: string, title: string, body: string, link?: string): Promise<boolean> {
+    const db = await ensureNotificationTable();
+    const clickLink = link || generateWhatsAppDeepLink();
+
+    // Persist an internal inbox notification even when no external adapter is configured.
+    // This is a durable fallback, not evidence that an FCM/SMS/WhatsApp delivery occurred.
+    try {
+        db.run(
+            `INSERT INTO internal_notifications (phone, title, body, link, status) VALUES (?, ?, ?, ?, 'unread')`,
+            [phone, title, body, clickLink],
+        );
+        saveDb();
+    } catch (error) {
+        console.error('[Push] Failed to store internal notification:', error);
+    }
+
+    console.warn('[Push] FCM delivery adapter is not configured; notification stored in internal queue.');
+    return false;
+}
+
+export async function getInternalNotifications(phone: string, limit = 20): Promise<Array<{ id: number; title: string; body: string; link: string; status: string; created_at: string }>> {
+    const db = await ensureNotificationTable();
+    const safeLimit = Math.max(1, Math.min(100, Math.floor(Number(limit) || 20)));
+    const stmt = db.prepare(`SELECT id, title, body, link, status, created_at FROM internal_notifications WHERE phone = ? ORDER BY id DESC LIMIT ?`);
+    stmt.bind([phone, safeLimit]);
+    const results: Array<{ id: number; title: string; body: string; link: string; status: string; created_at: string }> = [];
+    while (stmt.step()) results.push(stmt.getAsObject() as any);
+    stmt.free();
+    return results;
+}
+
+export async function markNotificationRead(notificationId: number, phone: string): Promise<boolean> {
+    const db = await ensureNotificationTable();
+    try {
+        db.run(`UPDATE internal_notifications SET status = 'read' WHERE id = ? AND phone = ?`, [notificationId, phone]);
+        const updated = db.getRowsModified() > 0;
+        if (updated) saveDb();
+        return updated;
+    } catch {
         return false;
     }
-    const token = stmt.getAsObject().fcm_token;
-    stmt.free();
-
-    if (!token) return false;
-    
-    const clickLink = link || generateWhatsAppDeepLink();
-    void clickLink;
-    void title;
-    void body;
-    void token;
-
-    // A stored device token is not evidence of delivery. Until a real FCM adapter
-    // is configured, callers must treat this as an unsent notification and use
-    // their documented fallback path instead of recording a simulated success.
-    console.warn('[Push] FCM delivery adapter is not configured; notification was not sent.');
-    return false;
 }

@@ -26,9 +26,10 @@ const canonicalSkills = categoryMatch
   ? [...categoryMatch[1].matchAll(/(?:^|,)([A-Za-z0-9_]+):'/g)].map(match => match[1])
   : [];
 
-const seedBlock = database.match(/function seedSkillFlows\([\s\S]*?\n\}/)?.[0] || '';
-const explicitFlows = [...seedBlock.matchAll(/\[\s*'([^']+)'\s*,/g)].map(match => match[1]);
-const explicitFlowSet = new Set(explicitFlows);
+const seedBlock = database.match(/function seedSkillFlows[\s\S]*?function seedDemoProviders/)?.[0] || '';
+const runtimeSeedBlock = skillFlows.match(/function seedCanonicalSkillFlows[\s\S]*?\}\nexport async function getSkillFlow/)?.[0] || '';
+const explicitFlows = [...`${seedBlock}\n${runtimeSeedBlock}`.matchAll(/\[\s*'([^']+)'\s*,/g)].map(match => match[1]);
+const explicitFlowSet = new Set(explicitFlows.filter(skill => canonicalSkills.includes(skill)));
 const missingExplicitFlows = canonicalSkills.filter(skill => !explicitFlowSet.has(skill));
 
 const alignment = {

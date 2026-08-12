@@ -53,6 +53,55 @@ router.post('/auth', (req, res) => {
   return res.status(401).json({ success: false, error: 'Invalid credentials' });
 });
 
+// ── Platform Stats / Observability ──────────────────────────────────────
+
+router.get('/stats', authenticateAdmin, async (_req: AuthRequest, res) => {
+  try {
+    const db = await getDb();
+    let economicRequests = {};
+    let reminders = {};
+    let checkIns = {};
+    let notificationsCount = 0;
+    try {
+      const reqRes = db.exec("SELECT status, COUNT(*) as cnt FROM economic_requests GROUP BY status");
+      const reqRows = reqRes[0]?.values || [];
+      const reqObj: Record<string, number> = {};
+      for (const row of reqRows) reqObj[String(row[0])] = Number(row[1]);
+      economicRequests = reqObj;
+    } catch {}
+    try {
+      const remRes = db.exec("SELECT status, COUNT(*) as cnt FROM reminders GROUP BY status");
+      const remRows = remRes[0]?.values || [];
+      const remObj: Record<string, number> = {};
+      for (const row of remRows) remObj[String(row[0])] = Number(row[1]);
+      reminders = remObj;
+    } catch {}
+    try {
+      const safeRes = db.exec("SELECT status, COUNT(*) as cnt FROM user_check_ins GROUP BY status");
+      const safeRows = safeRes[0]?.values || [];
+      const safeObj: Record<string, number> = {};
+      for (const row of safeRows) safeObj[String(row[0])] = Number(row[1]);
+      checkIns = safeObj;
+    } catch {}
+    try {
+      const notifRes = db.exec("SELECT COUNT(*) FROM internal_notifications WHERE status = 'unread'");
+      notificationsCount = Number(notifRes[0]?.values[0]?.[0] || 0);
+    } catch {}
+
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      economic_requests: economicRequests,
+      reminders,
+      check_ins: checkIns,
+      unread_internal_notifications: notificationsCount,
+    });
+  } catch (error) {
+    console.error('[AdminStats] failed:', error);
+    res.status(500).json({ success: false, error: 'Failed to retrieve platform stats' });
+  }
+});
+
 // ── Tickets / disputes ──────────────────────────────────────────────────
 
 router.get('/tickets', authenticateAdmin, async (req: AuthRequest, res) => {
