@@ -479,14 +479,29 @@
     if (card.type === 'safety_contact_added') {
       const holder = document.createElement('div');
       holder.className = 'provider-card';
-      holder.innerHTML = `
-        <div style="text-align:center; padding:10px;">
-          <div style="font-size:2rem; margin-bottom:10px;">🛡️</div>
-          <strong style="display:block; margin-bottom:5px;">Contact Saved</strong>
-          <p style="font-size:0.9rem; color:var(--chat-muted); margin-bottom:15px;">${escapeText(card.name)} has been added to your safety contacts.</p>
-          <button type="button" class="sf-btn sf-secondary" data-action="view-safety">View Contacts</button>
-        </div>`;
-      holder.querySelector('[data-action="view-safety"]')?.addEventListener('click', () => setInspectorOpen(true, 'safety-card'));
+      
+      const inner = document.createElement('div');
+      inner.className = 'safety-contact-banner';
+      
+      const icon = document.createElement('div');
+      icon.className = 'safety-contact-icon';
+      icon.textContent = '🛡️';
+      
+      const title = document.createElement('strong');
+      title.textContent = 'Contact Saved';
+      
+      const desc = document.createElement('p');
+      desc.className = 'safety-contact-desc';
+      desc.textContent = `${card.name || 'Contact'} has been added to your safety contacts.`;
+      
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'sf-btn sf-secondary';
+      btn.textContent = 'View Contacts';
+      btn.addEventListener('click', () => setInspectorOpen(true, 'safety-card'));
+      
+      inner.append(icon, title, desc, btn);
+      holder.appendChild(inner);
       messageEl.querySelector('.bubble').appendChild(holder);
       loadSafety();
       return;
