@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/site.css">
   <link rel="stylesheet" href="/css/admin-console.css">
-    <link rel="stylesheet" href="/css/admin-control-room.css?v=1">
+  <link rel="stylesheet" href="/css/admin-control-room.css?v=3">
 </head>
 <body class="admin-shell admin-workbench">
   <a class="admin-skip-link" href="#content-main">Skip to main content</a>
@@ -22,11 +22,11 @@
 
   <main class="admin-workbench-main" id="content-main">
     <header class="admin-workbench-intro">
-      <div><p class="admin-eyebrow">Canonical publishing</p><h1>Content studio</h1><p>Create useful help, policy, page, and blog records in the same CMS that powers public resources. Saving a record does not invent search rank, a live service, or an external operational outcome.</p></div>
+      <div><p class="admin-eyebrow">Canonical publishing</p><h1>Content studio</h1><p>Create useful help, policy, page, and blog records in the CMS that powers public resources. Use the SEO handoff to review page metadata before publication; saving content never invents a search rank, a live service, or an external outcome.</p></div>
       <a class="admin-button admin-button--secondary" href="/admin/seo.html">Open SEO studio</a>
     </header>
 
-    <p class="admin-workbench-status" id="content-status" role="status">Loading content repository…</p>
+    <p class="admin-workbench-status" id="content-status" role="status" aria-live="polite">Loading content repository…</p>
     <div class="admin-workbench-grid">
       <section class="admin-panel admin-content-editor" aria-labelledby="content-editor-title">
         <div class="admin-panel__header"><div><p class="admin-eyebrow">Draft and publish</p><h2 id="content-editor-title">Content record</h2></div><span class="admin-panel__meta" id="content-mode">New record</span></div>
@@ -36,9 +36,18 @@
             <label><span>Slug</span><input id="content-slug" name="slug" maxlength="120" pattern="[a-z0-9-]+" required placeholder="for-example-a-guide"><small>Lowercase letters, numbers, and hyphens only.</small></label>
             <label><span>Content type</span><select id="content-type" name="type"><option value="help">Help guide</option><option value="page">Resource page</option><option value="legal">Policy / legal</option><option value="blog">Blog article</option></select></label>
           </div>
-          <label><span>Author</span><input id="content-author" name="author" maxlength="120" required value="Kurukoo Team"></label>
+          <div class="admin-form-grid">
+            <label><span>Author</span><input id="content-author" name="author" maxlength="120" required value="Kurukoo Team"></label>
+            <label><span>Primary SEO keyword</span><input id="content-seo-keyword" name="seo_keyword" maxlength="160" placeholder="Optional search intent input"><small>Passed to the SEO record; it is not a ranking claim.</small></label>
+          </div>
           <label><span>Body</span><textarea id="content-body" name="body" rows="16" maxlength="50000" required placeholder="Write plain Markdown. Keep operational claims evidence-based."></textarea><small>Use plain Markdown. The public resource reader renders text safely.</small></label>
-          <div class="admin-form-actions"><button class="admin-button" id="content-save" type="submit">Save content</button><button class="admin-button admin-button--secondary" id="content-generate" type="button">Generate draft</button><button class="admin-button admin-button--secondary" id="content-reset" type="button">New record</button></div>
+          <div class="admin-form-actions">
+            <button class="admin-button" id="content-save" type="submit">Save content</button>
+            <button class="admin-button admin-button--secondary" id="content-save-seo" type="button">Save &amp; review SEO</button>
+            <button class="admin-button admin-button--secondary" id="content-preview-public" type="button" disabled>Open public preview</button>
+            <button class="admin-button admin-button--secondary" id="content-generate" type="button">Generate draft</button>
+            <button class="admin-button admin-button--secondary" id="content-reset" type="button">New record</button>
+          </div>
         </form>
       </section>
 
@@ -46,6 +55,7 @@
         <div class="admin-panel__header"><div><p class="admin-eyebrow">Review before publishing</p><h2 id="content-preview-title">Safe preview</h2></div></div>
         <article id="content-preview" class="admin-markdown-preview"><p class="admin-empty-state">Your draft preview will appear here.</p></article>
         <div class="admin-content-note"><strong>Public route</strong><span id="content-public-route">Save a help, page, or legal record to make it available through Resources.</span></div>
+        <div class="admin-content-note"><strong>SEO handoff</strong><span id="content-seo-route">Save &amp; review SEO creates or updates metadata on the corresponding public route.</span></div>
       </aside>
     </div>
 
@@ -55,6 +65,6 @@
     </section>
   </main>
   <script src="/admin/content.js" defer></script>
-    <script src="/js/admin-shell.js?v=1"></script>
+  <script src="/js/admin-shell.js?v=3"></script>
 </body>
 </html>

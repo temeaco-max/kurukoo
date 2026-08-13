@@ -7,6 +7,8 @@ const debugPort = 9222;
 const viewports = [360, 390, 414, 768, 900, 1024, 1280, 1440];
 const routes = [
   '/',
+  '/resources',
+  '/chat',
   '/admin/login',
   '/admin/index.html',
   '/admin/dashboard.html',

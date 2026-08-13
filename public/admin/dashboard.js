@@ -185,6 +185,18 @@
       .join(', ');
   }
 
+  function renderPublishingSignals(contentRecords, seo) {
+    const records = Array.isArray(contentRecords) ? contentRecords : [];
+    const publicResources = records.filter((record) => ['help', 'page', 'legal'].includes(String(record?.type || ''))).length;
+    const score = seo?.health_score;
+    setText('publishing-content-count', formatNumber(records.length));
+    setText('publishing-resource-count', formatNumber(publicResources));
+    setText('publishing-seo-pages', formatNumber(seo?.total_pages_indexed));
+    setText('publishing-seo-health', Number.isFinite(Number(score)) ? `${Number(score)}/100${seo?.grade ? ` · ${seo.grade}` : ''}` : 'Not recorded');
+    const note = byId('publishing-seo-note');
+    if (note) note.textContent = Number.isFinite(Number(score)) ? `Last recorded internal audit: ${seo?.health_recorded_at ? new Date(seo.health_recorded_at).toLocaleString() : 'time unavailable'}. Search ranking data is not inferred.` : 'No internal SEO audit has been recorded. Run one in SEO studio; saved records are not ranking, crawler, or publication guarantees.';
+  }
+
   function renderCommercialEvidence(metrics) {
     const commercial = metrics && typeof metrics === 'object' ? metrics : {};
     const advertising = commercial.advertising && typeof commercial.advertising === 'object' ? commercial.advertising : {};
@@ -235,9 +247,11 @@
       adminFetch('/api/admin/revenue'),
       adminFetch('/api/admin/skill-flows'),
       adminFetch('/api/admin/pulse-sessions'),
+      adminFetch('/api/admin/content'),
+      adminFetch('/api/admin/seo/dashboard'),
     ]);
 
-    const [stats, revenue, flows, presence] = outcomes;
+    const [stats, revenue, flows, presence, content, seo] = outcomes;
     let errorCount = 0;
     if (stats.status === 'fulfilled') updateStats(stats.value);
     else {
@@ -260,6 +274,15 @@
     else {
       errorCount += 1;
       renderEmpty(byId('presence-list'), 'Provider presence could not be loaded. Refresh to retry.');
+    }
+    if (content.status === 'fulfilled' && seo.status === 'fulfilled') renderPublishingSignals(content.value, seo.value);
+    else {
+      errorCount += 1;
+      setText('publishing-content-count', 'Unavailable');
+      setText('publishing-resource-count', 'Unavailable');
+      setText('publishing-seo-health', 'Unavailable');
+      setText('publishing-seo-pages', 'Unavailable');
+      setText('publishing-seo-note', 'Publishing signals could not be loaded. Refresh to retry.');
     }
 
     if (refresh) refresh.disabled = false;

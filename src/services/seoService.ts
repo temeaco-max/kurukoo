@@ -12,7 +12,7 @@ async function initSeoTables() {
             robots_txt TEXT,
             llms_txt TEXT,
             default_og_image_ng TEXT DEFAULT '/assets/brand/og-image-ng.png',
-            health_score INTEGER DEFAULT 95,
+            health_score INTEGER,
             updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
 
@@ -353,8 +353,15 @@ export async function updateSeoSettings(data: any) {
     const db = await getDb();
     const now = new Date().toISOString();
     db.run(`
-        INSERT OR REPLACE INTO seo_settings (id, site_name, default_title, default_description, robots_txt, llms_txt, updated_at)
+        INSERT INTO seo_settings (id, site_name, default_title, default_description, robots_txt, llms_txt, updated_at)
         VALUES (1, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          site_name = excluded.site_name,
+          default_title = excluded.default_title,
+          default_description = excluded.default_description,
+          robots_txt = excluded.robots_txt,
+          llms_txt = excluded.llms_txt,
+          updated_at = excluded.updated_at
     `, [
         data.site_name || 'Kurukoo',
         data.default_title || 'Kurukoo — Everyday Utility Platform',
@@ -951,7 +958,11 @@ export async function runSeoAudit(urlPath = '/') {
     const finalScore = Math.round((totalPoints / 30) * 100);
     const grade = finalScore >= 90 ? 'A' : finalScore >= 80 ? 'B' : finalScore >= 70 ? 'C' : finalScore >= 60 ? 'D' : 'F';
 
-    db.run('UPDATE seo_settings SET health_score = ?, updated_at = ? WHERE id = 1', [finalScore, now]);
+    db.run(`
+        INSERT INTO seo_settings (id, health_score, updated_at)
+        VALUES (1, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET health_score = excluded.health_score, updated_at = excluded.updated_at
+    `, [finalScore, now]);
     saveDb();
 
     return {
@@ -989,18 +1000,27 @@ export async function getSeoDashboard() {
     const keywords = await getKeywords();
 
     return {
-        health_score: typeof health === 'number' ? health : health.score,
-        grade: typeof health === 'object' ? health.grade : 'A',
-        total_pages_indexed: pages.length || 45,
-        total_keywords_tracked: keywords.length || 120,
+        health_score: health.score,
+        grade: health.grade,
+        health_recorded_at: health.recordedAt,
+        total_pages_indexed: pages.length,
+        total_keywords_tracked: keywords.length,
         unresolved_404_count: logs404.length,
-        average_ranking: 2.4
+        average_ranking: null,
     };
 }
 
-export async function getHealthScore() {
-    const audit = await runSeoAudit('/');
-    return audit;
+export async function getHealthScore(): Promise<{ score: number | null; grade: string | null; recordedAt: string | null }> {
+    await initSeoTables();
+    const db = await getDb();
+    const stmt = db.prepare('SELECT health_score, updated_at FROM seo_settings WHERE id = 1');
+    let row: Record<string, unknown> | null = null;
+    if (stmt.step()) row = stmt.getAsObject() as Record<string, unknown>;
+    stmt.free();
+    const score = row?.health_score === null || row?.health_score === undefined ? null : Number(row.health_score);
+    const validScore = Number.isFinite(score) ? score : null;
+    const grade = validScore === null ? null : validScore >= 90 ? 'A' : validScore >= 80 ? 'B' : validScore >= 70 ? 'C' : validScore >= 60 ? 'D' : 'F';
+    return { score: validScore, grade, recordedAt: row?.updated_at ? String(row.updated_at) : null };
 }
 
 export async function runFullAudit() {
