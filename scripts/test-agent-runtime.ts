@@ -24,17 +24,17 @@ assert.equal(goal.plan.riskLevel, 'user_confirmation_required', 'A request-linke
 assert.equal(goal.plan.confirmationRequired, true, 'A request-linked plan must preserve a reusable confirmation gate');
 assert.ok(goal.plan.steps.some(step => step.risk === 'read_only') && goal.plan.steps.some(step => step.risk === 'user_confirmation_required'), 'Persistent plans must retain bounded operational steps without hidden reasoning');
 
-const implicitChatGoal = await createConversationGoal({ phone: owner, conversationId: 'ordinary-chat-turn', skill: 'find_worker', objective: 'I need a mechanic.' , source: 'conversation' });
+const implicitChatGoal = await createConversationGoal({ phone: owner, conversationId: 'ordinary-chat-turn', skill: 'find_worker', objective: 'I need a mechanic.', source: 'conversation' });
 assert.equal(implicitChatGoal, null, 'Ordinary conversation intent must not create a persistent autonomous goal before a canonical request exists');
-
-const explicitAutonomousGoal = await createConversationGoal({ phone: owner, conversationId: 'explicit-agent-turn', skill: 'autonomous_agent', objective: 'Keep watching my existing task for changes.', source: 'conversation' });
-assert.ok(explicitAutonomousGoal, 'Explicit autonomous-agent intent may create a bounded conversational goal');
 
 const declaredTools = listAgentTools();
 assert.ok(declaredTools.every(tool => tool.description && tool.authorization && tool.risk && tool.idempotency && tool.audit === 'goal_event'), 'Every exposed tool must declare its contract, risk, authorization, idempotency and audit behaviour');
 assert.equal((await createConversationGoal({ phone: owner, conversationId: 'conversation-agent-test', skill: 'find_worker', objective: 'Duplicate', economicRequestId: request.id }))?.id, goal.id, 'Duplicate conversation goals must be idempotent');
 assert.equal(await getAgentGoal(other, goal.id), null, 'A user cannot read another user’s goal');
 assert.equal((await listAgentGoals(owner)).filter(item => item.id === goal.id).length, 1, 'Only one active goal must exist for the same conversation and skill');
+
+const explicitAutonomousGoal = await createConversationGoal({ phone: owner, conversationId: 'explicit-agent-turn', skill: 'autonomous_agent', objective: 'Keep watching my existing task for changes.', source: 'conversation' });
+assert.ok(explicitAutonomousGoal, 'Explicit autonomous-agent intent may create a bounded conversational goal');
 
 const inspected = await runAgentGoal(goal.id, owner);
 assert.equal(inspected?.status, 'waiting', 'An unresolved canonical request must enter a truthful waiting state');
