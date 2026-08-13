@@ -39,6 +39,7 @@ import publicRoutes from './routes/publicRoutes.js';
 import pricingRoutes from './routes/pricingRoutes.js';
 import subscriptionRoutes from './routes/subscriptionRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
+import topicRoutes from './routes/topicRoutes.js';
 import trustRoutes from './routes/trustRoutes.js';
 import webrtcRoutes from './routes/webrtcRoutes.js';
 import systemRoutes from './routes/systemRoutes.js';
@@ -95,6 +96,7 @@ app.use('/api/admin/seo', seoAdminRoutes);
 app.use('/api', paymentRoutes);
 // Task moderation includes authenticated admin controls and must not be intercepted by user-scoped API middleware.
 app.use('/api', taskRoutes);
+app.use('/api', topicRoutes);
 // Public CMS content must be reachable before user-scoped API middleware.
 app.use('/', contentRoutes);
 app.use('/api', userRoutes);

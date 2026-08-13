@@ -21,6 +21,7 @@
     ]],
     ['Content and discovery', [
       ['Content CMS', '/admin/content.html', 'content'],
+      ['Topic moderation', '/admin/topics.html', 'topics'],
       ['SEO console', '/admin/seo.html', 'seo'],
       ['Social scheduler', '/admin/social.html', 'social'],
       ['Marketing', '/admin/marketing.html', 'marketing'],
@@ -38,7 +39,7 @@
     ]],
   ];
   const active = (href) => path === href || (href === '/admin/dashboard.html' && /\/admin\/?$/.test(path));
-  const icon = (name) => ({ overview: '◌', operations: '◍', settings: '⚙', pilot: '◈', users: '◎', supply: '◇', agents: '✦', flows: '↳', safety: '△', content: '▤', seo: '⌕', social: '◷', marketing: '◫', artists: '♢', celebrity: '☆', pricing: '₦', revenue: '▥', commissions: '%', referrals: '↗', partners: '◫', analytics: '⌁', roadmap: '→' }[name] || '•');
+  const icon = (name) => ({ overview: '◌', operations: '◍', settings: '⚙', pilot: '◈', users: '◎', supply: '◇', agents: '✦', flows: '↳', safety: '△', content: '▤', seo: '⌕', topics: '◌', social: '◷', marketing: '◫', artists: '♢', celebrity: '☆', pricing: '₦', revenue: '▥', commissions: '%', referrals: '↗', partners: '◫', analytics: '⌁', roadmap: '→' }[name] || '•');
 
   const sidebar = document.createElement('aside');
   sidebar.className = 'admin-shell-sidebar';

@@ -1,0 +1,20 @@
+<%- include('../_partials/head') %>
+<%- include('../_partials/nav') %>
+
+<main class="container page-container topics-page" data-topics-page="detail" data-topic-slug="<%= slug %>">
+  <nav class="topics-breadcrumb" aria-label="Breadcrumb"><a href="/topics">Topics</a><span aria-hidden="true">/</span><span id="topic-breadcrumb-title">Topic</span></nav>
+  <article id="topic-detail" class="topic-detail" aria-live="polite">
+    <div class="topics-loading">Loading Topic…</div>
+  </article>
+  <section id="topic-replies" class="topic-replies" aria-labelledby="topic-replies-heading" hidden>
+    <div class="topics-section-heading"><div><span class="eyebrow">Moderated responses</span><h2 id="topic-replies-heading">Replies</h2></div><p>Replies are community context, not verified records.</p></div>
+    <div id="topic-replies-list" class="topic-replies-list"></div>
+    <form id="topic-reply-form" class="topics-form topic-reply-form" hidden>
+      <label>Add a reply<textarea name="body" required minlength="2" maxlength="4000" placeholder="Add helpful context. Do not share private details or assert unverified claims as facts."></textarea></label>
+      <div class="topics-form-actions"><button class="btn btn-primary" type="submit">Submit reply for review</button><p id="topic-reply-status" class="topics-status" role="status" aria-live="polite"></p></div>
+    </form>
+  </section>
+</main>
+
+<script src="/js/kurukoo-topics.js" defer></script>
+<%- include('../_partials/footer') %>

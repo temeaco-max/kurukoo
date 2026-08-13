@@ -38,6 +38,8 @@ const expected = [
     '/blog',
     '/careers',
     '/discover',
+    '/topics',
+    '/topics/:slug',
     '/login',
     '/settings',
     '/resources',

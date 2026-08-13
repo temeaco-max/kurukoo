@@ -8,6 +8,8 @@ const viewports = [360, 390, 414, 768, 900, 1024, 1280, 1440];
 const routes = [
   '/',
   '/resources',
+  '/topics',
+  '/topics/example-topic',
   '/chat',
   '/admin/login',
   '/admin/index.html',
@@ -17,6 +19,7 @@ const routes = [
   '/admin/ai-agents.html',
   '/admin/skill-flows.html',
   '/admin/content.html',
+  '/admin/topics.html',
   '/admin/seo.html',
   '/admin/settings.html',
   '/admin/pilot',

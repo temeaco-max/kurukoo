@@ -1,0 +1,55 @@
+<%- include('../_partials/head') %>
+<%- include('../_partials/nav') %>
+
+<main class="container page-container topics-page" data-topics-page="index">
+  <section class="page-header-center topics-hero">
+    <span class="badge-pill">Community context</span>
+    <h1 class="page-title">Useful local questions, reports, and experiences</h1>
+    <p class="page-desc">Topics are community-shared context. They do not confirm a provider, price, stock, event, availability, booking, payment, or delivery.</p>
+    <div class="topics-hero-actions">
+      <a class="btn btn-primary" href="/chat?topic_action=ask-community">Ask Kurukoo first</a>
+      <a class="btn btn-secondary" href="/login?return=%2Ftopics%23create-topic">Share a Topic</a>
+    </div>
+  </section>
+
+  <section class="topics-safety-note" aria-label="Topic publishing safeguards">
+    <strong>Share carefully.</strong> Do not post precise addresses, private contact details, payment information, or claims you cannot support. Community reports may be reviewed before publication.
+  </section>
+
+  <section class="topics-filter-bar" aria-label="Filter public Topics">
+    <label class="topics-filter-label" for="topics-category">Category
+      <select id="topics-category" class="topics-select"><option value="">All categories</option></select>
+    </label>
+    <label class="topics-filter-label" for="topics-type">Type
+      <select id="topics-type" class="topics-select"><option value="">All types</option></select>
+    </label>
+    <button id="topics-clear-filters" class="btn btn-ghost" type="button">Clear filters</button>
+  </section>
+
+  <section id="create-topic" class="topics-compose" hidden aria-label="Create a Topic">
+    <div class="topics-section-heading">
+      <div><span class="eyebrow">Authenticated contribution</span><h2>Share a Topic for review</h2></div>
+      <p>It stays submitted until an operator makes it public. Kurukoo will never publish chat content automatically.</p>
+    </div>
+    <form id="topics-create-form" class="topics-form">
+      <label>Title<input name="title" required minlength="12" maxlength="160" autocomplete="off" placeholder="What would help the community understand this?" /></label>
+      <label>Topic type<select name="type" id="topics-create-type"></select></label>
+      <label>Category<select name="category" id="topics-create-category"><option value="">No category</option></select></label>
+      <label>Context<select name="skills" id="topics-create-skills" multiple aria-describedby="topics-skill-help"></select><small id="topics-skill-help">Optional. Choose up to three existing Kurukoo skills from the selected category.</small></label>
+      <div class="topics-form-grid">
+        <label>City (optional, broad)<input name="city" maxlength="80" autocomplete="address-level2" placeholder="e.g. Ibadan" /></label>
+        <label>LGA (optional, broad)<input name="lga" maxlength="80" autocomplete="off" placeholder="e.g. Ibadan North" /></label>
+      </div>
+      <label>Topic text<textarea name="body" required minlength="30" maxlength="8000" placeholder="Describe what you know, what you are asking, or what you experienced. Do not include private details or treat unverified information as a fact."></textarea></label>
+      <div class="topics-form-actions"><button class="btn btn-primary" type="submit">Submit for review</button><p id="topics-create-status" class="topics-status" role="status" aria-live="polite"></p></div>
+    </form>
+  </section>
+
+  <section class="topics-list-section" aria-labelledby="topics-list-heading">
+    <div class="topics-section-heading"><div><span class="eyebrow">Shared context</span><h2 id="topics-list-heading">Public Topics</h2></div><p id="topics-list-summary" class="topics-status" role="status" aria-live="polite">Loading public Topics…</p></div>
+    <div id="topics-list" class="topics-list" aria-live="polite"></div>
+  </section>
+</main>
+
+<script src="/js/kurukoo-topics.js" defer></script>
+<%- include('../_partials/footer') %>

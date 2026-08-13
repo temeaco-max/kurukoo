@@ -5434,3 +5434,32 @@ Controlled Nigerian supply acquisition follows this sequence:
 > **Approved source policy → bounded operator import → provenance and field minimization → Nigerian geography normalization → duplicate candidate review → freshness/review decision → public listing projection → authenticated claim → claim evidence review → existing provider verification → capability and availability → provider activation → internal coordination.**
 
 The system does not crawl arbitrary domains, bypass robots.txt or access controls, send automatic WhatsApp/SMS/email invitations, create accounts for imported businesses, invent coordinates or opening hours, or expose public listings as verified providers. The public projection uses explicit labels such as **“Publicly listed business,” “availability unknown,” and “price unknown.”**
+
+
+---
+
+## Implementation Addendum — Small Canonical Topic Authority (2026-08-13)
+
+Kurukoo now has a deliberately small **Topic** authority for durable, authenticated, shared text context. Topic is not a top-level product and must not become a forum, social graph, provider directory, recommendation engine, execution engine, payment boundary, identity store, second content-management system, or alternate conversation surface.
+
+> **A Topic is community-shared context. It is never proof of provider verification, price, stock, event attendance, availability, booking, payment, delivery, fulfilment, or a trusted outcome.**
+
+| Concern | Canonical owner | Topic responsibility |
+|---|---|---|
+| User identity and private profile | `memory_profiles` and authenticated session | Stores only the existing authenticated author reference; public projection shows the neutral label **Community member**. |
+| Private request, coordination, economic lifecycle, payment, and execution | Conversation, skills, Economic Request, provider, payment, and execution boundaries | A Topic may hand a user into chat with context. It never creates an economic request, quote, payment, escrow, dispatch, or provider record. |
+| Taxonomy and classification | Existing skills/categories and FastText-first router | Validates Topic category and skill references against the canonical catalogue. It never defines a parallel hierarchy. |
+| Public shared records | `topicService`, `topics`, `topic_replies`, and `topic_reports` | Owns narrow lifecycle states, ownership, review, public projection, replies, and reports. The obsolete `community_posts` schema remains unused legacy residue. |
+| Editorial resources | CMS `contentManager` and `content` table | Remains the authority for help, policy, and editorial pages; Topic UGC is not written to the CMS. |
+| Contributor evidence and Points | Existing `microTasks` and `pointsEngine` | No Topic or reply earns Points for raw activity. Any future factual verification must reuse contributor evidence, moderation, and the existing ledger. |
+| SEO, Discover, Daily Picks, opportunities, and advertising | Existing SEO, discovery, Daily Picks, opportunity, and advertising owners | No automatic projection is implied. Each future projection requires its own truth, quality, privacy, disclosure, and regression gate. |
+
+The initial lifecycle is `submitted → public | restricted | removed`. Public pages expose only moderated Topics and moderated replies. Authors can see their own submitted records; reporters and their details remain within the private moderation queue. Text-only public UGC is intentional: chat uploads are not a public-media governance system. Broad city/LGA context may be supplied, but precise addresses and coordinate-like values are rejected.
+
+The author must explicitly submit a Topic or reply. Kurukoo must never convert a private conversation, memory, request, attachment, location, economic record, provider relationship, or agent output into public community activity automatically. AI may suggest private copy only through the approved FastText → deterministic rules/cache → bounded configured-assistance order; it must not fabricate users, community replies, providers, availability, prices, local observations, or engagement.
+
+Before any Phase 2 or Phase 3 Topic integration is accepted, it must answer one implementation question: **does this make the existing Kurukoo network more useful and discoverable without creating another network beside it?** A negative or unclear answer blocks the change.
+
+The implementation is protected by `test:topics-convergence`, which proves owner-scoped Topic control, moderation-before-publication, private identity fields, report handling, taxonomy validation, public routes, explicit chat handoff, and the absence of automatic Points or economic-request side effects.
+
+---

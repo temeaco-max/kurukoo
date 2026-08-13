@@ -221,7 +221,54 @@ function initTables(database: any) {
     CREATE TABLE IF NOT EXISTS unknown_intents (id INTEGER PRIMARY KEY AUTOINCREMENT, query TEXT);
     CREATE TABLE IF NOT EXISTS sent_questions (id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT, question TEXT);
     CREATE TABLE IF NOT EXISTS compliance_events (id INTEGER PRIMARY KEY AUTOINCREMENT, event TEXT);
+    -- Legacy schema residue retained for migration safety only; Topics are owned by topicService.
     CREATE TABLE IF NOT EXISTS community_posts (id INTEGER PRIMARY KEY AUTOINCREMENT, author TEXT, content TEXT);
+    CREATE TABLE IF NOT EXISTS topics (
+      id TEXT PRIMARY KEY,
+      slug TEXT NOT NULL UNIQUE,
+      author_phone TEXT NOT NULL,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      type TEXT NOT NULL,
+      category TEXT,
+      skills_json TEXT NOT NULL DEFAULT '[]',
+      city TEXT,
+      lga TEXT,
+      status TEXT NOT NULL DEFAULT 'submitted' CHECK(status IN ('draft','submitted','public','restricted','removed')),
+      moderation_note TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      published_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_topics_publication ON topics(status, published_at, updated_at);
+    CREATE INDEX IF NOT EXISTS idx_topics_author_updated ON topics(author_phone, updated_at);
+    CREATE INDEX IF NOT EXISTS idx_topics_category_publication ON topics(category, status, published_at);
+    CREATE TABLE IF NOT EXISTS topic_replies (
+      id TEXT PRIMARY KEY,
+      topic_id TEXT NOT NULL,
+      author_phone TEXT NOT NULL,
+      body TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'submitted' CHECK(status IN ('submitted','public','restricted','removed')),
+      moderation_note TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(topic_id) REFERENCES topics(id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_topic_replies_topic_status_created ON topic_replies(topic_id, status, created_at);
+    CREATE INDEX IF NOT EXISTS idx_topic_replies_author_updated ON topic_replies(author_phone, updated_at);
+    CREATE TABLE IF NOT EXISTS topic_reports (
+      id TEXT PRIMARY KEY,
+      target_type TEXT NOT NULL CHECK(target_type IN ('topic','reply')),
+      target_id TEXT NOT NULL,
+      reporter_phone TEXT NOT NULL,
+      reason TEXT NOT NULL,
+      detail TEXT,
+      status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','closed')),
+      moderation_note TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      reviewed_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_topic_reports_status_created ON topic_reports(status, created_at);
     CREATE TABLE IF NOT EXISTS price_checks (id INTEGER PRIMARY KEY AUTOINCREMENT, item TEXT, price REAL);
     CREATE TABLE IF NOT EXISTS classifieds (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, price REAL);
     CREATE TABLE IF NOT EXISTS appointment_slots (id INTEGER PRIMARY KEY AUTOINCREMENT, client_phone TEXT, provider_phone TEXT, slot_time TEXT, status TEXT);
