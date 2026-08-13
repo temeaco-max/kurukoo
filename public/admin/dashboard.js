@@ -1,8 +1,7 @@
 (() => {
   'use strict';
 
-  const TOKEN_KEY = 'kurukoo_admin';
-  const RAIL_KEY = 'admin_rail_collapsed';
+  const TOKEN_KEYS = ['kurukoo_admin', 'kurukoo_admin_token'];
   const REFRESH_MS = 30_000;
   const OPEN_REQUEST_STATUSES = new Set([
     'requested', 'awaiting_match', 'quoting', 'quoted', 'partially_matched', 'matched', 'in_progress', 'in_fulfillment', 'disputed',
@@ -25,6 +24,7 @@
   };
 
   const byId = (id) => document.getElementById(id);
+  const adminToken = () => TOKEN_KEYS.map((key) => window.localStorage.getItem(key)).find(Boolean) || null;
   const asNumber = (value) => (Number.isFinite(Number(value)) ? Number(value) : 0);
   const formatNumber = (value) => new Intl.NumberFormat('en').format(asNumber(value));
   const safeText = (value, fallback = 'Not recorded') => {
@@ -56,7 +56,7 @@
 
   function handleAuthFailure(response) {
     if (response.status === 401 || response.status === 403) {
-      window.localStorage.removeItem(TOKEN_KEY);
+      TOKEN_KEYS.forEach((key) => window.localStorage.removeItem(key));
       window.location.replace('/admin/login');
       return true;
     }
@@ -64,7 +64,7 @@
   }
 
   async function adminFetch(path) {
-    const token = window.localStorage.getItem(TOKEN_KEY);
+    const token = adminToken();
     if (!token) {
       window.location.replace('/admin/login');
       throw new Error('Admin authentication is required');
@@ -76,27 +76,6 @@
     if (handleAuthFailure(response)) throw new Error('Admin session expired');
     if (!response.ok) throw new Error(`Request failed (${response.status})`);
     return response.json();
-  }
-
-  function setRailCollapsed(collapsed) {
-    const rail = byId('admin-rail');
-    const reopen = byId('admin-rail-reopen');
-    const toggle = byId('admin-rail-toggle');
-    if (!rail || !reopen || !toggle) return;
-    rail.classList.toggle('is-collapsed', collapsed);
-    document.body.classList.toggle('is-rail-collapsed', collapsed);
-    reopen.classList.toggle('is-visible', collapsed);
-    toggle.setAttribute('aria-expanded', String(!collapsed));
-    window.localStorage.setItem(RAIL_KEY, String(collapsed));
-  }
-
-  function initializeRail() {
-    setRailCollapsed(window.localStorage.getItem(RAIL_KEY) === 'true');
-    byId('admin-rail-toggle')?.addEventListener('click', () => {
-      const rail = byId('admin-rail');
-      setRailCollapsed(!rail?.classList.contains('is-collapsed'));
-    });
-    byId('admin-rail-reopen')?.addEventListener('click', () => setRailCollapsed(false));
   }
 
   function renderRequestState(requests) {
@@ -189,12 +168,27 @@
     const records = Array.isArray(contentRecords) ? contentRecords : [];
     const publicResources = records.filter((record) => ['help', 'page', 'legal'].includes(String(record?.type || ''))).length;
     const score = seo?.health_score;
+    const hasRecordedScore = score !== null && score !== undefined && score !== '' && Number.isFinite(Number(score));
     setText('publishing-content-count', formatNumber(records.length));
     setText('publishing-resource-count', formatNumber(publicResources));
     setText('publishing-seo-pages', formatNumber(seo?.total_pages_indexed));
-    setText('publishing-seo-health', Number.isFinite(Number(score)) ? `${Number(score)}/100${seo?.grade ? ` · ${seo.grade}` : ''}` : 'Not recorded');
+    setText('publishing-seo-health', hasRecordedScore ? `${Number(score)}/100${seo?.grade ? ` · ${seo.grade}` : ''}` : 'Not recorded');
     const note = byId('publishing-seo-note');
-    if (note) note.textContent = Number.isFinite(Number(score)) ? `Last recorded internal audit: ${seo?.health_recorded_at ? new Date(seo.health_recorded_at).toLocaleString() : 'time unavailable'}. Search ranking data is not inferred.` : 'No internal SEO audit has been recorded. Run one in SEO studio; saved records are not ranking, crawler, or publication guarantees.';
+    if (note) note.textContent = hasRecordedScore ? `Last recorded internal audit: ${seo?.health_recorded_at ? new Date(seo.health_recorded_at).toLocaleString() : 'time unavailable'}. Search ranking data is not inferred.` : 'No internal SEO audit has been recorded. Run one in SEO studio; saved records are not ranking, crawler, or publication guarantees.';
+  }
+
+  function renderStatsUnavailable() {
+    ['metric-profiles', 'metric-providers', 'metric-open-requests', 'metric-notifications', 'queue-profiles', 'queue-messages', 'queue-points'].forEach((id) => setText(id, 'Unavailable'));
+    setText('queue-summary', 'Platform summary is unavailable. Refresh to retry.');
+    renderEmpty(byId('request-state-list'), 'Economic Request state is unavailable. Refresh to retry.');
+  }
+
+  function renderPublishingUnavailable() {
+    setText('publishing-content-count', 'Unavailable');
+    setText('publishing-resource-count', 'Unavailable');
+    setText('publishing-seo-health', 'Unavailable');
+    setText('publishing-seo-pages', 'Unavailable');
+    setText('publishing-seo-note', 'Publishing signals are unavailable. Refresh to retry.');
   }
 
   function renderCommercialEvidence(metrics) {
@@ -239,68 +233,36 @@
 
   async function loadDashboard() {
     const refresh = byId('admin-refresh');
-    if (refresh) refresh.disabled = true;
+    if (refresh) { refresh.disabled = true; refresh.textContent = 'Refreshing…'; }
     setRuntimeStatus('Refreshing authenticated records…');
-
-    const outcomes = await Promise.allSettled([
-      adminFetch('/api/admin/stats'),
-      adminFetch('/api/admin/revenue'),
-      adminFetch('/api/admin/skill-flows'),
-      adminFetch('/api/admin/pulse-sessions'),
-      adminFetch('/api/admin/content'),
-      adminFetch('/api/admin/seo/dashboard'),
-    ]);
-
-    const [stats, revenue, flows, presence, content, seo] = outcomes;
-    let errorCount = 0;
-    if (stats.status === 'fulfilled') updateStats(stats.value);
-    else {
-      errorCount += 1;
-      renderEmpty(byId('request-state-list'), 'Economic Request state could not be loaded. Refresh to retry.');
-    }
-    if (revenue.status === 'fulfilled') renderCommercialEvidence(revenue.value?.metrics);
-    else {
-      errorCount += 1;
+    try {
+      const snapshot = await adminFetch('/api/admin/dashboard');
+      updateStats(snapshot?.stats);
+      renderCommercialEvidence(snapshot?.revenue?.metrics);
+      renderSkillFlows(snapshot?.skillFlows);
+      renderPresence(snapshot?.presence);
+      renderPublishingSignals(snapshot?.content, snapshot?.seo);
+      const refreshedAt = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      setRuntimeStatus(`Authenticated records refreshed ${refreshedAt}`);
+    } catch {
+      renderStatsUnavailable();
       setText('commercial-collections', 'Commercial evidence is unavailable');
       setText('commercial-campaigns', 'Commercial evidence is unavailable');
       setText('commercial-affiliate', 'Commercial evidence is unavailable');
+      replaceChildren(byId('skill-flow-list'), [createEmptyRow(3, 'Skill flows are unavailable. Refresh to retry.')]);
+      renderEmpty(byId('presence-list'), 'Provider presence is unavailable. Refresh to retry.');
+      renderPublishingUnavailable();
+      setRuntimeStatus('Dashboard snapshot is unavailable. Refresh to retry.', true);
+    } finally {
+      if (refresh) { refresh.disabled = false; refresh.textContent = 'Refresh records'; }
     }
-    if (flows.status === 'fulfilled') renderSkillFlows(flows.value);
-    else {
-      errorCount += 1;
-      replaceChildren(byId('skill-flow-list'), [createEmptyRow(3, 'Skill flows could not be loaded. Refresh to retry.')]);
-    }
-    if (presence.status === 'fulfilled') renderPresence(presence.value);
-    else {
-      errorCount += 1;
-      renderEmpty(byId('presence-list'), 'Provider presence could not be loaded. Refresh to retry.');
-    }
-    if (content.status === 'fulfilled' && seo.status === 'fulfilled') renderPublishingSignals(content.value, seo.value);
-    else {
-      errorCount += 1;
-      setText('publishing-content-count', 'Unavailable');
-      setText('publishing-resource-count', 'Unavailable');
-      setText('publishing-seo-health', 'Unavailable');
-      setText('publishing-seo-pages', 'Unavailable');
-      setText('publishing-seo-note', 'Publishing signals could not be loaded. Refresh to retry.');
-    }
-
-    if (refresh) refresh.disabled = false;
-    const refreshedAt = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setRuntimeStatus(errorCount ? `Some records are unavailable · checked ${refreshedAt}` : `Authenticated records refreshed ${refreshedAt}`, errorCount > 0);
   }
 
   function initialize() {
-    if (!window.localStorage.getItem(TOKEN_KEY)) {
+    if (!adminToken()) {
       window.location.replace('/admin/login');
       return;
     }
-    initializeRail();
-    byId('admin-sign-out')?.addEventListener('click', () => {
-      window.localStorage.removeItem(TOKEN_KEY);
-      window.localStorage.removeItem(RAIL_KEY);
-      window.location.replace('/admin/login');
-    });
     byId('admin-refresh')?.addEventListener('click', () => { void loadDashboard(); });
     void loadDashboard();
     window.setInterval(() => { void loadDashboard(); }, REFRESH_MS);

@@ -33,6 +33,7 @@ import { getPilotDashboard } from '../services/pilotObservability.js';
 import { getCommercialMetrics, getMarketingMetrics } from '../services/commercialMetrics.js';
 import { getAllContent, getContentBySlug, saveContent, deleteContentBySlug, type ContentItem } from '../services/contentManager.js';
 import { getAdminControlPlaneStatus, listAdminFeatureFlags, updateAdminFeatureFlag, updateAdminRuntimeControl } from '../services/adminControlPlane.js';
+import { getSeoDashboard } from '../services/seoService.js';
 
 const router = Router();
 
@@ -120,6 +121,62 @@ router.get('/stats', authenticateAdmin, async (_req: AuthRequest, res) => {
   } catch (error) {
     console.error('[AdminStats] failed:', error);
     res.status(500).json({ success: false, error: 'Failed to retrieve platform stats' });
+  }
+});
+
+router.get('/dashboard', authenticateAdmin, async (_req: AuthRequest, res) => {
+  try {
+    const db = await getDb();
+    const countRows = (table: string, where = ''): number => {
+      try {
+        const result = db.exec(`SELECT COUNT(*) AS count FROM ${table}${where}`);
+        return Number(result[0]?.values[0]?.[0] || 0);
+      } catch { return 0; }
+    };
+    const groupedCounts = (table: string, column: string): Record<string, number> => {
+      try {
+        const result = db.exec(`SELECT ${column}, COUNT(*) AS count FROM ${table} GROUP BY ${column}`);
+        return Object.fromEntries((result[0]?.values || []).map((row: any[]) => [String(row[0]), Number(row[1])])) as Record<string, number>;
+      } catch { return {}; }
+    };
+    const unreadNotifications = countRows('internal_notifications', " WHERE status = 'unread'");
+    const skillFlows: any[] = [];
+    try {
+      const stmt = db.prepare('SELECT * FROM skill_flows');
+      while (stmt.step()) skillFlows.push(stmt.getAsObject());
+      stmt.free();
+    } catch {}
+    const presence: any[] = [];
+    try {
+      const stmt = db.prepare(`SELECT ps.*, mp.name, mp.location FROM pulse_sessions ps JOIN memory_profiles mp ON ps.phone = mp.phone WHERE ps.active = 1 AND ps.expires_at > datetime('now')`);
+      while (stmt.step()) presence.push(stmt.getAsObject());
+      stmt.free();
+    } catch {}
+    const [commercial, content, seo] = await Promise.all([getCommercialMetrics(), getAllContent(), getSeoDashboard()]);
+    res.json({
+      stats: {
+        success: true,
+        timestamp: new Date().toISOString(),
+        summary: {
+          profiles: countRows('memory_profiles'),
+          availableProviders: countRows('memory_profiles', ' WHERE is_available = 1'),
+          messages: countRows('messages'),
+          pointsLedgerEntries: countRows('credit_transactions'),
+        },
+        economic_requests: groupedCounts('economic_requests', 'status'),
+        reminders: groupedCounts('reminders', 'status'),
+        check_ins: groupedCounts('safety_checkins', 'status'),
+        unread_internal_notifications: unreadNotifications,
+      },
+      revenue: { metrics: commercial },
+      skillFlows,
+      presence,
+      content: content.map(({ slug, title, type, author, updatedAt, createdAt }) => ({ slug, title, type, author, updated_at: updatedAt || createdAt || null })),
+      seo,
+    });
+  } catch (error) {
+    console.error('[AdminDashboard] failed:', error instanceof Error ? error.name : 'unknown');
+    res.status(500).json({ error: 'Failed to retrieve dashboard snapshot' });
   }
 });
 

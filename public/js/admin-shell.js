@@ -1,7 +1,10 @@
 (() => {
+  'use strict';
   const path = window.location.pathname;
   if (/\/admin\/(?:login(?:\.html)?)?$/.test(path)) return;
 
+  const TOKEN_KEYS = ['kurukoo_admin', 'kurukoo_admin_token'];
+  const NAV_STATE_KEY = 'kurukoo_admin_nav_collapsed';
   const groups = [
     ['Operate', [
       ['Control room', '/admin/dashboard.html', 'overview'],
@@ -34,38 +37,60 @@
       ['Roadmap', '/admin/future.html', 'roadmap'],
     ]],
   ];
+  const active = (href) => path === href || (href === '/admin/dashboard.html' && /\/admin\/?$/.test(path));
+  const icon = (name) => ({ overview: '◌', operations: '◍', settings: '⚙', pilot: '◈', users: '◎', supply: '◇', agents: '✦', flows: '↳', safety: '△', content: '▤', seo: '⌕', social: '◷', marketing: '◫', artists: '♢', celebrity: '☆', pricing: '₦', revenue: '▥', commissions: '%', referrals: '↗', partners: '◫', analytics: '⌁', roadmap: '→' }[name] || '•');
 
-  const active = href => path === href || (href === '/admin/dashboard.html' && /\/admin\/?$/.test(path));
-  const icon = name => ({ overview:'◌', operations:'◍', settings:'⚙', pilot:'◈', users:'◎', supply:'◇', agents:'✦', flows:'↳', safety:'△', content:'▤', seo:'⌕', social:'◷', marketing:'◫', artists:'♢', celebrity:'☆', pricing:'₦', revenue:'▥', commissions:'%', referrals:'↗', partners:'◫', analytics:'⌁', roadmap:'→' }[name] || '•');
   const sidebar = document.createElement('aside');
   sidebar.className = 'admin-shell-sidebar';
   sidebar.id = 'admin-shell-nav';
   sidebar.setAttribute('aria-label', 'Admin navigation');
   const navigation = groups.map(([group, links]) => `<p class="admin-shell-group">${group}</p>${links.map(([label, href, name]) => `<a class="admin-shell-link${active(href) ? ' is-active' : ''}" href="${href}"><span aria-hidden="true">${icon(name)}</span><span>${label}</span></a>`).join('')}`).join('');
-  sidebar.innerHTML = `<a class="admin-shell-brand" href="/admin/dashboard.html" aria-label="Kurukoo Control Room"><span class="admin-shell-mark" aria-hidden="true">◒</span><span><strong>Kurukoo</strong><small>Control room</small></span></a><nav>${navigation}</nav><div class="admin-shell-foot"><a href="/" target="_blank" rel="noopener">View live app ↗</a></div>`;
+  sidebar.innerHTML = `<a class="admin-shell-brand" href="/admin/dashboard.html" aria-label="Kurukoo Control Room"><span class="admin-shell-mark" aria-hidden="true">◒</span><span><strong>Kurukoo</strong><small>Control room</small></span></a><nav>${navigation}</nav><div class="admin-shell-foot"><a href="/" target="_blank" rel="noopener">View live app ↗</a><button class="admin-shell-sign-out" type="button">Sign out</button></div>`;
 
   const topbar = document.createElement('header');
   topbar.className = 'admin-shell-topbar';
-  topbar.innerHTML = `<button class="admin-shell-menu" type="button" aria-expanded="false" aria-controls="admin-shell-nav">Menu</button><div class="admin-shell-title"><span>Kurukoo operating system</span><strong>Control room</strong></div><div class="admin-shell-actions"><button class="admin-shell-drawer-toggle" type="button" aria-expanded="false" aria-controls="admin-stats-drawer">Signals</button></div>`;
+  topbar.innerHTML = `<div class="admin-shell-topbar-start"><button class="admin-shell-nav-toggle" type="button" aria-expanded="true" aria-controls="admin-shell-nav"><span aria-hidden="true">‹</span><span>Collapse navigation</span></button><button class="admin-shell-menu" type="button" aria-expanded="false" aria-controls="admin-shell-nav">Menu</button><div class="admin-shell-title"><span>Kurukoo operating system</span><strong>Control room</strong></div></div><div class="admin-shell-actions"><button class="admin-shell-drawer-toggle" type="button" aria-expanded="false" aria-controls="admin-stats-drawer">Signals</button></div>`;
+
   const drawer = document.createElement('aside');
   drawer.id = 'admin-stats-drawer';
   drawer.className = 'admin-stats-drawer';
   drawer.hidden = true;
-  drawer.innerHTML = `<div class="admin-drawer-header"><div><p class="admin-kicker">Live operating summary</p><h2>Signals</h2></div><button type="button" class="admin-drawer-close" aria-label="Close signals">×</button></div><div class="admin-drawer-grid"><div><span>Requests</span><strong id="admin-drawer-requests">—</strong></div><div><span>Unread notifications</span><strong id="admin-drawer-notifications">—</strong></div><div><span>Agent runtime</span><strong id="admin-drawer-agent">—</strong></div><div><span>Voice</span><strong id="admin-drawer-voice">—</strong></div></div><p class="admin-drawer-note">These are operational signals, not payment, fulfilment, or external-delivery proof.</p>`;
+  drawer.innerHTML = `<div class="admin-drawer-header"><div><p class="admin-kicker">Live operating summary</p><h2>Signals</h2></div><button type="button" class="admin-drawer-close" aria-label="Close signals">×</button></div><div class="admin-drawer-grid"><div><span>Requests</span><strong id="admin-drawer-requests">—</strong></div><div><span>Unread notifications</span><strong id="admin-drawer-notifications">—</strong></div><div><span>Agent runtime</span><strong id="admin-drawer-agent">—</strong></div><div><span>Voice</span><strong id="admin-drawer-voice">—</strong></div></div><p class="admin-drawer-note">These are operating signals, not payment, fulfilment, or external-delivery proof.</p>`;
+
   document.body.prepend(drawer); document.body.prepend(topbar); document.body.prepend(sidebar);
   document.body.classList.add('admin-shell-enabled');
-  document.body.classList.add(`admin-page-${(path.split('/').pop() || 'dashboard').replace(/\.html$/,'').replace(/[^a-z0-9_-]/gi,'') || 'dashboard'}`);
+  document.body.classList.add(`admin-page-${(path.split('/').pop() || 'dashboard').replace(/\.html$/, '').replace(/[^a-z0-9_-]/gi, '') || 'dashboard'}`);
 
-  const toggle = topbar.querySelector('.admin-shell-menu');
-  const setNav = open => { document.body.classList.toggle('admin-nav-open', open); toggle.setAttribute('aria-expanded', String(open)); };
-  toggle.addEventListener('click', () => setNav(!document.body.classList.contains('admin-nav-open')));
+  const menuToggle = topbar.querySelector('.admin-shell-menu');
+  const navToggle = topbar.querySelector('.admin-shell-nav-toggle');
+  const navToggleText = navToggle.querySelector('span:last-child');
+  const navToggleIcon = navToggle.querySelector('span:first-child');
+  const setMobileNav = (open) => { document.body.classList.toggle('admin-nav-open', open); menuToggle.setAttribute('aria-expanded', String(open)); };
+  const setCollapsedNav = (collapsed, persist = true) => {
+    document.body.classList.toggle('admin-nav-collapsed', collapsed);
+    navToggle.setAttribute('aria-expanded', String(!collapsed));
+    navToggle.setAttribute('aria-label', collapsed ? 'Show navigation' : 'Collapse navigation');
+    navToggleText.textContent = collapsed ? 'Show navigation' : 'Collapse navigation';
+    navToggleIcon.textContent = collapsed ? '›' : '‹';
+    if (persist) window.localStorage.setItem(NAV_STATE_KEY, String(collapsed));
+  };
+  setCollapsedNav(window.localStorage.getItem(NAV_STATE_KEY) === 'true', false);
+  navToggle.addEventListener('click', () => setCollapsedNav(!document.body.classList.contains('admin-nav-collapsed')));
+  menuToggle.addEventListener('click', () => setMobileNav(!document.body.classList.contains('admin-nav-open')));
+  window.matchMedia('(max-width: 900px)').addEventListener('change', (event) => { if (!event.matches) setMobileNav(false); });
+
   const drawerToggle = topbar.querySelector('.admin-shell-drawer-toggle');
   const closeDrawer = drawer.querySelector('.admin-drawer-close');
-  const setDrawer = open => { drawer.hidden = !open; drawerToggle.setAttribute('aria-expanded', String(open)); };
+  const setDrawer = (open) => { drawer.hidden = !open; drawerToggle.setAttribute('aria-expanded', String(open)); };
   drawerToggle.addEventListener('click', () => setDrawer(drawer.hidden));
   closeDrawer.addEventListener('click', () => setDrawer(false));
 
-  const token = localStorage.getItem('kurukoo_admin') || localStorage.getItem('kurukoo_admin_token');
+  sidebar.querySelector('.admin-shell-sign-out').addEventListener('click', () => {
+    TOKEN_KEYS.forEach((key) => localStorage.removeItem(key));
+    window.location.replace('/admin/login');
+  });
+
+  const token = TOKEN_KEYS.map((key) => localStorage.getItem(key)).find(Boolean);
   if (!token) return;
   const nativeFetch = window.fetch.bind(window);
   window.fetch = (input, init = {}) => {
@@ -77,16 +102,17 @@
     if (!headers.has('Accept')) headers.set('Accept', 'application/json');
     return nativeFetch(input, { ...init, headers, credentials: 'same-origin' });
   };
+
   Promise.all([
-    fetch('/api/admin/stats').then(response => response.ok ? response.json() : null),
-    fetch('/api/admin/control-plane').then(response => response.ok ? response.json() : null),
-    fetch('/api/voice/status').then(response => response.ok ? response.json() : null),
+    fetch('/api/admin/stats').then((response) => response.ok ? response.json() : null),
+    fetch('/api/admin/control-plane').then((response) => response.ok ? response.json() : null),
+    fetch('/api/voice/status').then((response) => response.ok ? response.json() : null),
   ]).then(([stats, controls, voice]) => {
     const requestTotal = Object.values(stats?.economic_requests || {}).reduce((sum, value) => sum + Number(value || 0), 0);
     document.querySelector('#admin-drawer-requests').textContent = String(requestTotal || 0);
     document.querySelector('#admin-drawer-notifications').textContent = String(stats?.unread_internal_notifications ?? 0);
-    const agent = controls?.controlPlane?.controls?.find(item => item.key === 'agent_enabled');
-    document.querySelector('#admin-drawer-agent').textContent = agent?.value === 'true' ? 'Enabled' : 'Disabled';
+    const agent = controls?.controlPlane?.controls?.find((item) => item.key === 'agent_enabled');
+    document.querySelector('#admin-drawer-agent').textContent = String(agent?.value) === 'true' ? 'Enabled' : 'Disabled';
     document.querySelector('#admin-drawer-voice').textContent = voice?.voice?.available ? 'Available' : 'Unavailable';
   }).catch(() => {});
 })();

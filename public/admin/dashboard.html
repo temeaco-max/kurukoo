@@ -14,50 +14,8 @@
 </head>
 <body class="admin-shell admin-dashboard">
   <a class="admin-skip-link" href="#admin-main">Skip to main content</a>
-  <aside class="admin-rail" id="admin-rail" aria-label="Admin navigation">
-    <div class="admin-rail__brand">
-      <a class="admin-rail__brand-link" href="/" aria-label="Kurukoo public site">
-        <img src="/assets/brand/logo-icon.svg" alt="" width="30" height="30">
-        <span>Kurukoo <strong>Admin</strong></span>
-      </a>
-      <button class="admin-rail__toggle" id="admin-rail-toggle" type="button" aria-expanded="true" aria-controls="admin-rail">
-        <span class="admin-rail__toggle-icon" aria-hidden="true">‹</span>
-        <span class="admin-rail__toggle-label">Collapse navigation</span>
-      </button>
-    </div>
-
-    <nav class="admin-rail__nav" aria-label="Primary">
-      <p class="admin-rail__group">Control room</p>
-      <a class="admin-nav-link is-current" href="/admin/dashboard.html" aria-current="page"><span aria-hidden="true">▦</span><span>Overview</span></a>
-      <a class="admin-nav-link" href="/admin/analytics.html"><span aria-hidden="true">↗</span><span>Evidence & analytics</span></a>
-      <a class="admin-nav-link" href="/admin/users.html"><span aria-hidden="true">◎</span><span>Profiles & providers</span></a>
-      <a class="admin-nav-link" href="/admin/ai-agents.html"><span aria-hidden="true">◌</span><span>Bounded agents</span></a>
-
-      <p class="admin-rail__group">Operations</p>
-      <a class="admin-nav-link" href="/admin/operations.html"><span aria-hidden="true">◫</span><span>Network & trust</span></a>
-      <a class="admin-nav-link" href="/admin/content.html"><span aria-hidden="true">▤</span><span>Content</span></a>
-      <a class="admin-nav-link" href="/admin/scam.html"><span aria-hidden="true">⚑</span><span>Safety & reports</span></a>
-      <a class="admin-nav-link" href="/admin/revenue.html"><span aria-hidden="true">₦</span><span>Collections & escrow</span></a>
-      <a class="admin-nav-link" href="/admin/referrals.html"><span aria-hidden="true">↗</span><span>Referrals</span></a>
-
-      <p class="admin-rail__group">Configuration</p>
-      <a class="admin-nav-link" href="/admin/pricing.html"><span aria-hidden="true">◇</span><span>Pricing</span></a>
-      <a class="admin-nav-link" href="/admin/commissions.html"><span aria-hidden="true">%</span><span>Commissions</span></a>
-      <a class="admin-nav-link" href="/admin/seo.html"><span aria-hidden="true">⌕</span><span>Search & SEO</span></a>
-    </nav>
-
-    <div class="admin-rail__footer">
-      <a class="admin-nav-link" href="/" target="_blank" rel="noopener"><span aria-hidden="true">↗</span><span>View public app</span></a>
-      <button class="admin-nav-link admin-nav-link--button" id="admin-sign-out" type="button"><span aria-hidden="true">↩</span><span>Sign out</span></button>
-    </div>
-  </aside>
-
-  <button class="admin-rail-reopen" id="admin-rail-reopen" type="button" aria-controls="admin-rail" aria-label="Show navigation">
-    <span aria-hidden="true">›</span><span>Navigation</span>
-  </button>
-
   <main class="admin-main" id="admin-main">
-    <header class="admin-topbar">
+    <header class="admin-topbar admin-dashboard-hero">
       <div>
         <p class="admin-eyebrow">Kurukoo operating system</p>
         <h1>Control room</h1>
@@ -143,7 +101,7 @@
       </article>
     </section>
   </main>
-  <script src="/admin/dashboard.js" defer></script>
-    <script src="/js/admin-shell.js?v=1"></script>
+  <script src="/admin/dashboard.js?v=2" defer></script>
+  <script src="/js/admin-shell.js?v=2"></script>
 </body>
 </html>
