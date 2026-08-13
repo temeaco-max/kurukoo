@@ -8,7 +8,7 @@ import { executeVoiceTool, isVoiceToolAllowed } from '../services/voiceToolRegis
 import { emitPilotEvent } from '../services/pilotObservability.js';
 
 const router = Router();
-const sessionRateLimit = createRateLimiter({ windowMs: 60_000, max: Math.max(1, Math.min(20, Number(process.env.KURUKOO_VOICE_SESSION_RATE_LIMIT) || 5)), keyPrefix: 'voice-session', message: 'Voice session limit reached — try again shortly' });
+const sessionRateLimit = createRateLimiter({ windowMs: 60_000, max: () => Math.max(1, Math.min(20, Number(process.env.KURUKOO_VOICE_SESSION_RATE_LIMIT) || 5)), keyPrefix: 'voice-session', message: 'Voice session limit reached — try again shortly' });
 
 function guestIdentity(req: any, res: any): string {
   const cookie = String(req.headers.cookie || '');

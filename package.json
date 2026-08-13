@@ -67,6 +67,7 @@
     "test:circle": "tsx scripts/test-circle-routes.ts",
     "test:order": "tsx scripts/test-order-routes.ts",
     "test:admin": "tsx scripts/test-admin-routes.ts",
+    "test:admin-control-plane": "tsx scripts/test-admin-control-plane.ts",
     "test:seo-admin": "tsx scripts/test-seo-admin-routes.ts",
     "test:composition": "tsx scripts/test-composition-routes.ts",
     "test:task": "node scripts/test-task-routes.mjs",

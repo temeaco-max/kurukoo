@@ -191,6 +191,7 @@ async function completeOutboxAttempt(item: { deliveryId: string; attempts: numbe
 
 export async function dispatchDueCommunicationOutbox(limit = 20): Promise<Record<OutboxDispatchState, number>> {
   const totals: Record<OutboxDispatchState, number> = { queued: 0, leased: 0, retry_scheduled: 0, completed: 0, failed: 0, suppressed: 0, not_configured: 0 };
+  if (process.env.KURUKOO_COMMUNICATION_OUTBOX_ENABLED === 'false') return totals;
   const rows = await claimDueOutboxRows(limit);
   for (const row of rows) totals[await completeOutboxAttempt(row)] += 1;
   return totals;

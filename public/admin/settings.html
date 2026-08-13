@@ -1,8 +1,109 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Control plane | Kurukoo Admin</title><link rel="stylesheet" href="/css/site.css"><link rel="stylesheet" href="/css/admin-control-room.css?v=1"></head><body><main class="admin-container control-plane-page"><section class="admin-page-intro"><h1>Runtime control plane</h1><p>Manage approved non-secret operating controls and country feature overrides. Secret values never enter this page, the application database, browser storage, logs, or exports.</p></section><div id="status" class="admin-notice">Loading the control plane…</div><section class="admin-section"><div class="admin-section-heading"><div><p class="admin-kicker">Guarded runtime controls</p><h2>Operating limits and activation gates</h2></div><span class="admin-badge" id="control-enabled">—</span></div><div id="controls" class="control-grid"></div></section><section class="admin-section"><div class="admin-section-heading"><div><p class="admin-kicker">Feature flags</p><h2>Country override records</h2></div></div><form id="feature-form" class="inline-form"><label>Country <input name="country" value="ng" maxlength="3" required></label><label>Flag name <input name="name" placeholder="example_feature" pattern="[a-z][a-z0-9_]{1,63}" required></label><label class="toggle-field"><input name="value" type="checkbox"> Enabled</label><button type="submit">Save override</button></form><div id="flags" class="table-container"></div></section><section class="admin-section"><div class="admin-section-heading"><div><p class="admin-kicker">Secret rotation boundary</p><h2>Configured status only</h2></div></div><p class="admin-help">Rotation happens through the deployment secret manager and requires a process restart or rolling deployment. This console deliberately shows configuration status only.</p><div id="secrets" class="secret-grid"></div></section></main><script>
-const token=localStorage.getItem('kurukoo_admin')||localStorage.getItem('kurukoo_admin_token');const api=(url,options={})=>fetch(url,{...options,headers:{'Content-Type':'application/json',Authorization:`Bearer ${token||''}`,...(options.headers||{})}});const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-function controlField(control){let field;if(control.kind==='boolean')field=`<label class="toggle-field"><input data-control="${esc(control.key)}" type="checkbox" ${control.value==='true'?'checked':''} ${!control.mutable?'disabled':''}> ${control.value==='true'?'Enabled':'Disabled'}</label>`;else field=`<label>Value <input data-control="${esc(control.key)}" type="number" min="${control.minimum}" max="${control.maximum}" value="${esc(control.value)}" ${!control.mutable?'disabled':''}></label>`;return `<article class="control-card"><div><span class="admin-badge admin-badge-${esc(control.safety)}">${esc(control.safety.replace('_',' '))}</span><h3>${esc(control.label)}</h3><p>${esc(control.description)}</p><small>Source: ${esc(control.source)}${control.restartRequired?' · restart required':''}</small></div><div class="control-card-action">${field}<button data-save-control="${esc(control.key)}" ${!control.mutable?'disabled':''}>Save</button></div></article>`}
-async function load(){const response=await api('/api/admin/control-plane');if(!response.ok){document.querySelector('#status').textContent='Admin authentication is required. Open /admin/login first.';return}const data=await response.json(),cp=data.controlPlane;document.querySelector('#status').textContent=cp.enabled?'Changes are persisted, auditable, and effective in this process unless a deployment lock is active.':'The deployment has disabled administrator runtime overrides.';document.querySelector('#control-enabled').textContent=cp.enabled?'Controls enabled':'Deployment locked';document.querySelector('#controls').innerHTML=cp.controls.map(controlField).join('');document.querySelector('#secrets').innerHTML=cp.secretStatus.map(secret=>`<article class="secret-card"><strong>${esc(secret.label)}</strong><span class="status-dot ${secret.configured?'is-ready':'is-missing'}">${secret.configured?'Configured':'Not configured'}</span><small>${esc(secret.rotation.replaceAll('_',' '))}</small></article>`).join('');document.querySelectorAll('[data-save-control]').forEach(button=>button.addEventListener('click',async()=>{const key=button.dataset.saveControl,input=document.querySelector(`[data-control="${key}"]`),value=input.type==='checkbox'?input.checked:input.value;button.disabled=true;const saved=await api(`/api/admin/control-plane/controls/${encodeURIComponent(key)}`,{method:'PUT',body:JSON.stringify({value})});button.disabled=false;if(!saved.ok){document.querySelector('#status').textContent=(await saved.json()).error||'Control update failed.';return}load()}));loadFlags();}
-async function loadFlags(){const country=document.querySelector('#feature-form [name=country]').value||'ng',response=await api(`/api/admin/control-plane/feature-flags?country=${encodeURIComponent(country)}`);if(!response.ok)return;const data=await response.json();document.querySelector('#flags').innerHTML=`<table><thead><tr><th>Flag</th><th>Country</th><th>Value</th><th>Source</th></tr></thead><tbody>${data.flags.length?data.flags.map(flag=>`<tr><td>${esc(flag.name)}</td><td>${esc(data.country)}</td><td>${flag.value?'Enabled':'Disabled'}</td><td>${esc(flag.source)}</td></tr>`).join(''):'<tr><td colspan="4">No persisted overrides. Absent flags remain fail-closed unless a deployment or locale rule defines them.</td></tr>'}</tbody></table>`}
-document.querySelector('#feature-form').addEventListener('submit',async event=>{event.preventDefault();const form=new FormData(event.currentTarget),response=await api(`/api/admin/control-plane/feature-flags/${encodeURIComponent(form.get('name'))}`,{method:'PUT',body:JSON.stringify({country:form.get('country'),value:form.get('value')==='on'})});document.querySelector('#status').textContent=response.ok?'Feature override saved.':((await response.json()).error||'Feature override failed.');if(response.ok)loadFlags()});load();
-</script><script src="/js/admin-shell.js?v=1"></script></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Control plane | Kurukoo Admin</title>
+  <link rel="stylesheet" href="/css/site.css">
+  <link rel="stylesheet" href="/css/admin-control-room.css?v=2">
+</head>
+<body>
+  <main class="admin-container control-plane-page">
+    <section class="admin-page-intro">
+      <h1>Runtime control plane</h1>
+      <p>Manage approved non-secret operating controls, country feature overrides, and the readiness record for every integrated platform capability. Credentials, provider contracts, payment adapters, deployment topology, and irreversible execution remain outside this console.</p>
+    </section>
+    <div id="status" class="admin-notice" role="status" aria-live="polite">Loading the control plane…</div>
+
+    <section class="admin-section">
+      <div class="admin-section-heading"><div><p class="admin-kicker">Guarded runtime controls</p><h2>Operating limits and activation gates</h2></div><span class="admin-badge" id="control-enabled">—</span></div>
+      <p class="admin-help">Each setting is allowlisted, audited, subject to deployment locks, and limited to its existing canonical service. A setting marked <strong>restart required</strong> is saved for the next managed process start.</p>
+      <div id="controls" class="control-grid"></div>
+    </section>
+
+    <section class="admin-section">
+      <div class="admin-section-heading"><div><p class="admin-kicker">Integrated system registry</p><h2>What this control room can operate</h2></div></div>
+      <p class="admin-help">This registry shows the actual readiness state and points to the surface that owns each integration. A status is not a claim that a payment, delivery, verification, or fulfilment action has occurred.</p>
+      <div id="integrations" class="integration-grid"></div>
+    </section>
+
+    <section class="admin-section">
+      <div class="admin-section-heading"><div><p class="admin-kicker">Feature flags</p><h2>Country override records</h2></div></div>
+      <form id="feature-form" class="inline-form">
+        <label>Country <input name="country" value="ng" maxlength="3" required></label>
+        <label>Flag name <input name="name" placeholder="example_feature" pattern="[a-z][a-z0-9_]{1,63}" required></label>
+        <label class="toggle-field"><input name="value" type="checkbox"> Enabled</label>
+        <button type="submit">Save override</button>
+      </form>
+      <div id="flags" class="table-container"></div>
+    </section>
+
+    <section class="admin-section">
+      <div class="admin-section-heading"><div><p class="admin-kicker">Secret rotation boundary</p><h2>Configured status only</h2></div></div>
+      <p class="admin-help">Rotation happens through the deployment secret manager and requires a process restart or rolling deployment. This console deliberately shows configuration status only; it never displays, stores, exports, or accepts secret values.</p>
+      <div id="secrets" class="secret-grid"></div>
+    </section>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('kurukoo_admin') || localStorage.getItem('kurukoo_admin_token');
+    const api = (url, options = {}) => fetch(url, { ...options, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, ...(options.headers || {}) } });
+    const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
+
+    function controlField(control) {
+      let field;
+      if (control.kind === 'boolean') field = `<label class="toggle-field"><input data-control="${esc(control.key)}" type="checkbox" ${control.value === 'true' ? 'checked' : ''} ${!control.mutable ? 'disabled' : ''}> ${control.value === 'true' ? 'Enabled' : 'Disabled'}</label>`;
+      else if (control.kind === 'enum') field = `<label>Value <select data-control="${esc(control.key)}" ${!control.mutable ? 'disabled' : ''}>${(control.options || []).map(option => `<option value="${esc(option)}" ${control.value === option ? 'selected' : ''}>${esc(option)}</option>`).join('')}</select></label>`;
+      else field = `<label>Value <input data-control="${esc(control.key)}" type="number" min="${control.minimum}" max="${control.maximum}" value="${esc(control.value)}" ${!control.mutable ? 'disabled' : ''}></label>`;
+      return `<article class="control-card"><div><span class="admin-badge admin-badge-${esc(control.safety)}">${esc(control.safety.replace('_',' '))}</span><h3>${esc(control.label)}</h3><p>${esc(control.description)}</p><small>Source: ${esc(control.source)}${control.restartRequired ? ' · restart required' : ''}</small></div><div class="control-card-action">${field}<button data-save-control="${esc(control.key)}" ${!control.mutable ? 'disabled' : ''}>Save</button></div></article>`;
+    }
+
+    function integrationCard(item) {
+      const label = item.state === 'ready' || item.state === 'enabled' ? 'Ready' : item.state === 'disabled' ? 'Disabled' : 'Not ready';
+      return `<article class="integration-card"><div><span class="status-dot ${item.state === 'ready' || item.state === 'enabled' ? 'is-ready' : 'is-missing'}">${esc(label)}</span><h3>${esc(item.label)}</h3><p>${esc(item.detail)}</p></div><a class="integration-link" href="${esc(item.href)}">Open ${esc(item.surface)} <span aria-hidden="true">→</span></a></article>`;
+    }
+
+    async function load() {
+      const response = await api('/api/admin/control-plane');
+      if (!response.ok) { document.querySelector('#status').textContent = 'Admin authentication is required. Open /admin/login first.'; return; }
+      const data = await response.json();
+      const cp = data.controlPlane;
+      document.querySelector('#status').textContent = cp.enabled ? 'Changes are persisted and audited. Deployment locks, provider contracts, and secrets remain outside administrator control.' : 'The deployment has disabled administrator runtime overrides.';
+      document.querySelector('#control-enabled').textContent = cp.enabled ? 'Controls enabled' : 'Deployment locked';
+      document.querySelector('#controls').innerHTML = cp.controls.map(controlField).join('');
+      document.querySelector('#integrations').innerHTML = (cp.integrationStatus || []).map(integrationCard).join('') || '<p class="admin-help">No integration registry entries are available.</p>';
+      document.querySelector('#secrets').innerHTML = cp.secretStatus.map(secret => `<article class="secret-card"><strong>${esc(secret.label)}</strong><span class="status-dot ${secret.configured ? 'is-ready' : 'is-missing'}">${secret.configured ? 'Configured' : 'Not configured'}</span><small>${esc(secret.rotation.replaceAll('_',' '))}</small></article>`).join('');
+      document.querySelectorAll('[data-save-control]').forEach(button => button.addEventListener('click', async () => {
+        const key = button.dataset.saveControl;
+        const input = document.querySelector(`[data-control="${key}"]`);
+        const value = input.type === 'checkbox' ? input.checked : input.value;
+        button.disabled = true;
+        const saved = await api(`/api/admin/control-plane/controls/${encodeURIComponent(key)}`, { method: 'PUT', body: JSON.stringify({ value }) });
+        button.disabled = false;
+        if (!saved.ok) { document.querySelector('#status').textContent = (await saved.json()).error || 'Control update failed.'; return; }
+        load();
+      }));
+      loadFlags();
+    }
+
+    async function loadFlags() {
+      const country = document.querySelector('#feature-form [name=country]').value || 'ng';
+      const response = await api(`/api/admin/control-plane/feature-flags?country=${encodeURIComponent(country)}`);
+      if (!response.ok) return;
+      const data = await response.json();
+      document.querySelector('#flags').innerHTML = `<table><thead><tr><th>Flag</th><th>Country</th><th>Value</th><th>Source</th></tr></thead><tbody>${data.flags.length ? data.flags.map(flag => `<tr><td>${esc(flag.name)}</td><td>${esc(data.country)}</td><td>${flag.value ? 'Enabled' : 'Disabled'}</td><td>${esc(flag.source)}</td></tr>`).join('') : '<tr><td colspan="4">No persisted overrides. Absent flags remain fail-closed unless a deployment or locale rule defines them.</td></tr>'}</tbody></table>`;
+    }
+
+    document.querySelector('#feature-form').addEventListener('submit', async event => {
+      event.preventDefault();
+      const form = new FormData(event.currentTarget);
+      const response = await api(`/api/admin/control-plane/feature-flags/${encodeURIComponent(form.get('name'))}`, { method: 'PUT', body: JSON.stringify({ country: form.get('country'), value: form.get('value') === 'on' }) });
+      document.querySelector('#status').textContent = response.ok ? 'Feature override saved.' : ((await response.json()).error || 'Feature override failed.');
+      if (response.ok) loadFlags();
+    });
+    load();
+  </script>
+  <script src="/js/admin-shell.js?v=2"></script>
+</body>
+</html>

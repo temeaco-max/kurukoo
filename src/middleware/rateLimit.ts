@@ -9,7 +9,7 @@ const buckets = new Map<string, Bucket>();
 
 export interface RateLimitOptions {
   windowMs?: number;
-  max?: number;
+  max?: number | (() => number);
   keyPrefix?: string;
   message?: string;
 }
@@ -23,12 +23,13 @@ function clientKey(req: Request, prefix: string): string {
 
 export function createRateLimiter(options: RateLimitOptions = {}) {
   const windowMs = options.windowMs ?? 60_000;
-  const max = options.max ?? 60;
+  const max = typeof options.max === 'function' ? options.max : () => options.max ?? 60;
   const keyPrefix = options.keyPrefix ?? 'rl';
   const message = options.message ?? 'Too many requests';
 
   return function rateLimitMiddleware(req: Request, res: Response, next: NextFunction): void {
     const key = clientKey(req, keyPrefix);
+    const limit = Math.max(1, Math.floor(Number(max()) || 1));
     const now = Date.now();
     let state = buckets.get(key);
     if (!state || state.resetAt <= now) {
@@ -36,10 +37,10 @@ export function createRateLimiter(options: RateLimitOptions = {}) {
       buckets.set(key, state);
     }
     state.count += 1;
-    res.setHeader('X-RateLimit-Limit', String(max));
-    res.setHeader('X-RateLimit-Remaining', String(Math.max(0, max - state.count)));
+    res.setHeader('X-RateLimit-Limit', String(limit));
+    res.setHeader('X-RateLimit-Remaining', String(Math.max(0, limit - state.count)));
     res.setHeader('X-RateLimit-Reset', String(Math.ceil(state.resetAt / 1000)));
-    if (state.count > max) {
+    if (state.count > limit) {
       res.setHeader('Retry-After', String(Math.ceil((state.resetAt - now) / 1000)));
       res.status(429).json({ error: message });
       return;
