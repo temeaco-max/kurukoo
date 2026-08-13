@@ -46,12 +46,12 @@ export async function getCommercialMetrics(): Promise<{
   const verifiedCollections = new Map<string, CurrencyAmount>();
   let verifiedRequestCount = 0;
   if (tableExists(db, 'economic_requests')) {
-    const requestStmt = db.prepare(`SELECT quote, fulfillment FROM economic_requests WHERE status IN ('paid','in_progress','completed','disputed')`);
+    const requestStmt = db.prepare(`SELECT quote_json, fulfillment_json FROM economic_requests WHERE status IN ('paid','in_fulfillment','fulfilled','completed','disputed')`);
     while (requestStmt.step()) {
       const row = requestStmt.getAsObject() as Record<string, unknown>;
-      const fulfillment = parseJson(row.fulfillment);
+      const fulfillment = parseJson(row.fulfillment_json);
       if (fulfillment.payment_verified !== true) continue;
-      const quote = parseJson(row.quote);
+      const quote = parseJson(row.quote_json);
       addCurrencyAmount(verifiedCollections, quote.currency, quote.amount_minor);
       verifiedRequestCount += 1;
     }
