@@ -100,7 +100,6 @@ The application does **not** simulate unavailable real-world infrastructure. In 
 - Finish deleting any genuinely dead legacy route bodies after extraction coverage proves they are unused.
 - Complete universal catalogue/inventory matching for catalogue-bearing skills using the existing provider/product data model rather than creating per-skill ordering systems.
 - Expand economic integration tests so each canonical category proves the same lifecycle with category-specific requirements.
-- Implement the Blueprint §15.1 multi-factor trust-score recalculation and `trust_ledger` audit record on provider completion, dispute resolution, and the documented daily pass; the current profile field alone is not evidence that the formula runs.
 - Strengthen attachment storage/access controls before production-scale media uploads.
 - Keep CSS, messaging, services, skills, security and economic audits behavioural rather than presence-only where practical.
 - Keep documentation aligned with the implementation; stale historical claims must not be treated as current architecture.
@@ -228,3 +227,10 @@ Every campaign and placement retains a source/disclosure label. Category targeti
 The existing `/p/:providerSlug` route now depends on the canonical `providerVerification` lifecycle rather than treating a profile slug, provider record, or legacy `verified_provider` field as public proof. Unverified profiles return no public provider identity, location, skills, rating, or account phone. Only a current evidence-backed verification state may render the existing public profile, and public rendering continues to omit the private account phone.
 
 This gate does not assert live availability, a quote, price, booking, payment, delivery, or fulfilment. Topic detail pages continue to route users through the labelled Topic-to-Chat context rather than rendering provider cards: the current supply registry correctly distinguishes public listings, claimed supply, linked provider accounts, and verified provider evidence, but does not yet provide a truthful availability-qualified Topic-provider projection.
+
+
+## 2026-08-13 workspace projection truthfulness
+
+The conversation workspace remains a shell over canonical services rather than a new data owner. Requests, reminders, Points, tasks, Memory, Daily Picks, and safety surfaces retain their existing authenticated API boundaries. The Points activity view is owner-scoped, bounded, and backed by the canonical Points ledger; External Offers reads only active evidence-backed affiliate records and keeps their disclosure.
+
+The audit found no persisted Cart, saved-item, or saved-provider owner. Rather than manufacture one in the workspace, the sidebar no longer advertises Cart, the compatibility `/cart` route clearly reports **Cart unavailable**, and its only next step is the existing conversation-to-Economic-Request flow. It neither adds items nor claims inventory, a subtotal, a quote, reservation, payment, delivery, or fulfilment. The `/saved` surface is now truthfully named **External offers** and explicitly states that no saved-items list exists. The strengthened workspace regression protects these negative boundaries.

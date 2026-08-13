@@ -5505,3 +5505,12 @@ The existing `/p/:providerSlug` public profile projection is now gated by the ca
 Topic detail pages deliberately do **not** render provider cards at this stage. The public supply registry distinguishes reviewed public business listings from claimed, linked, and evidence-verified provider accounts; neither an unclaimed listing nor a verified account establishes current availability, a quote, price, booking, delivery, or fulfilment. Users continue through the existing labelled Topic-to-Chat handoff when they want Kurukoo to evaluate a request through the canonical intent and provider flow.
 
 ---
+### Workspace Projection Truthfulness Addendum (2026-08-13)
+
+The existing conversation workspace remains a **projection surface**, not a separate data or transaction authority. Requests mirror the canonical Economic Request lifecycle; Points use the owner-scoped Points balance and ledger; Memory reads the profile context selected by its owner; and External Offers reads only active, evidence-backed affiliate merchant records through the existing affiliate service.
+
+Kurukoo does **not** currently operate a persisted Cart, saved-item, or saved-provider authority. The sidebar therefore does not advertise a Cart, the retained `/cart` compatibility route explicitly states that it is unavailable, and it offers the canonical conversation-to-Economic-Request handoff only. It neither adds items nor represents inventory, a subtotal, provider availability, a quote, reservation, payment, delivery, or fulfilment. The former Saved & offers language is now **External offers**: it carries disclosed merchant referrals only and does not imply that the user saved an item or that the merchant is a verified Kurukoo provider.
+
+The strengthened workspace regression preserves this boundary alongside the existing owner-scoped Points and affiliate lifecycle tests. Any future persistent cart or save capability must first be implemented by the appropriate existing catalogue/request owner, with ownership, price, availability, consent, idempotency, payment, and fulfilment contracts; it must not originate as a workspace-only store.
+
+---
