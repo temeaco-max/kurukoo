@@ -5,6 +5,8 @@ import { addEconomicParticipant, getEconomicParticipants, updateEconomicParticip
 import { getEconomicRequest, transitionEconomicRequest, type EconomicRequest } from './skillFlows.js';
 import { enqueueInternalNotification } from './pushNotifications.js';
 import { providerMayBeDiscovered } from './providerVerification.js';
+import { createCommunicationDelivery } from './communicationDelivery.js';
+import { enqueueCommunicationOutbox } from './communicationOutbox.js';
 
 export const PROVIDER_INVITATION_STATUSES = ['invited', 'accepted', 'declined', 'expired', 'withdrawn'] as const;
 export type ProviderInvitationStatus = typeof PROVIDER_INVITATION_STATUSES[number];
@@ -300,6 +302,25 @@ export async function inviteEligibleProviders(input: { requestId: string; ownerP
         metadata: { request_id: request.id, external_delivery: 'not_claimed' },
       },
     );
+    // The invitation remains authoritative in the in-app queue. An external notice is
+    // only a consent-gated attention signal and deliberately contains no customer,
+    // address, payment, dispatch, or selection detail.
+    const externalNotice = await createCommunicationDelivery({
+      phone: provider.phone,
+      channel: 'sms',
+      direction: 'outbound',
+      purpose: 'provider_invitation',
+      aggregateType: 'provider_invitation',
+      aggregateId: invitation.id,
+      idempotencyKey: `external-notice:provider-invitation:${invitation.id}:sms`,
+      state: 'queued',
+      metadata: { request_id: request.id, privacy_minimised: true, external_delivery: 'not_claimed' },
+    });
+    await enqueueCommunicationOutbox({
+      deliveryId: externalNotice.id,
+      text: 'A request matching your verified capability is ready to review in your authenticated Kurukoo provider workspace.',
+      metadata: { source: 'provider_invitation', invitationId: invitation.id, requestId: request.id },
+    });
   }
   saveDb();
   return { invitations, internalQueueOnly: true };
