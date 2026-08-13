@@ -18,6 +18,7 @@ process.env.KURUKOO_WORKERS = '0';
 process.env.JWT_SECRET = 'chat_attachment_test_secret_at_least_32_chars';
 
 const { app } = await import('../src/index.js');
+const { getDb, purgeExpiredData } = await import('../src/database.js');
 const { appendChatMessage, clearChatConversation, deleteChatMessage, listChatMessages } = await import('../src/services/chatConversationService.js');
 const server = app.listen(0, '127.0.0.1');
 await new Promise<void>((resolve, reject) => { server.once('listening', resolve); server.once('error', reject); });
@@ -88,6 +89,17 @@ try {
   assert.equal(await clearChatConversation(owner, foreignMessage.conversationId), 0, 'an owner cannot clear another user’s conversation metadata or messages');
   assert.equal((await listChatMessages(otherOwner, { conversationId: foreignMessage.conversationId })).length, 1, 'cross-owner clear attempts must preserve the other owner’s conversation state');
 
+  const expiredUpload = await fetch(`${baseUrl}/api/chat/attachments`, { method: 'POST', headers: headers(owner), body: JSON.stringify({ name: 'expired-message.png', type: 'image/png', data: pngData }) });
+  const expiredPayload = await expiredUpload.json() as { attachment?: { url?: string } };
+  assert.equal(expiredUpload.status, 201, JSON.stringify(expiredPayload));
+  const expiredMessage = await appendChatMessage({ phone: owner, sender: 'user', content: 'Expired attachment reference', metadata: { attachment: expiredPayload.attachment } });
+  const db = await getDb();
+  db.run(`UPDATE messages SET created_at='2000-01-01T00:00:00.000Z' WHERE id=? AND phone=?`, [expiredMessage.id, owner]);
+  const retention = await purgeExpiredData();
+  assert.ok(retention.messagesDeleted >= 1, 'scheduled retention must report the expired canonical chat message cleanup');
+  assert.equal((await fetch(`${baseUrl}${expiredPayload.attachment!.url}`, { headers: headers(owner) })).status, 404, 'scheduled retention must remove the final attachment reference, metadata, and private bytes');
+  assert.ok(!(await listChatMessages(owner)).some((message) => message.content === 'Expired attachment reference'), 'scheduled retention must remove the expired owner chat message');
+
   const retainedForAccountDeletion = await fetch(`${baseUrl}/api/chat/attachments`, { method: 'POST', headers: headers(owner), body: JSON.stringify({ name: 'account-deletion.png', type: 'image/png', data: pngData }) });
   const retainedPayload = await retainedForAccountDeletion.json() as { attachment?: { url?: string } };
   assert.equal(retainedForAccountDeletion.status, 201, JSON.stringify(retainedPayload));
@@ -114,7 +126,7 @@ try {
   assert.equal(afterAccountDeletion.status, 404, 'account deletion must remove attachment metadata as well as bytes');
 
   console.log('Chat attachment regression passed');
-  console.log('Verified: authenticated upload, strict base64/signature validation, private storage, owner-only download/delete, bounded owner export without bytes or storage paths, message/conversation/account-deletion cleanup, cross-owner conversation isolation, forced download headers, no public static URL, and stream-level owner validation.');
+  console.log('Verified: authenticated upload, strict base64/signature validation, private storage, owner-only download/delete, bounded owner export without bytes or storage paths, scheduled retention plus message/conversation/account-deletion cleanup, cross-owner conversation isolation, forced download headers, no public static URL, and stream-level owner validation.');
 } finally {
   await new Promise<void>((resolve) => server.close(() => resolve()));
   await fs.rm(storagePath, { recursive: true, force: true });

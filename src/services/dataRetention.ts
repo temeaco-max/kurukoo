@@ -1,14 +1,13 @@
 import { getDb, saveDb } from '../database.js';
 import { deleteChatAttachmentsForOwner, listChatAttachmentMetadataForOwner } from './chatAttachmentService.js';
-import { deleteAllChatHistoryForOwner, exportChatHistory } from './chatConversationService.js';
+import { deleteAllChatHistoryForOwner, exportChatHistory, purgeExpiredChatMessages } from './chatConversationService.js';
 
 export async function purgeExpiredData(): Promise<{ messagesDeleted: number; tempSessionsDeleted: number; pulseLocationsDeleted: number }> {
     const db = await getDb();
     
-    // 1. Messages older than 12 months (365 days)
+    // 1. Messages older than 12 months (365 days), including their metadata and final attachment references.
     const twelveMonthsAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
-    db.run(`DELETE FROM messages WHERE created_at < ?`, [twelveMonthsAgo]);
-    const messagesDeleted = db.getRowsModified();
+    const messagesDeleted = await purgeExpiredChatMessages(twelveMonthsAgo, 1000);
 
     // 2. Temp sessions older than 7 days
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();

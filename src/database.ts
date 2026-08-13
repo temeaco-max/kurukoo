@@ -567,8 +567,9 @@ export async function searchMessagesByKeyword(phone: string, keyword: string): P
 export async function purgeExpiredData(): Promise<{ messagesDeleted: number; tempSessionsDeleted: number; pulseLocationsDeleted: number }> {
   const database = await getDb();
   const a = new Date(Date.now() - 365 * 86400000).toISOString();
-  database.run(`DELETE FROM messages WHERE created_at<?`, [a]);
-  const messagesDeleted = database.getRowsModified();
+  // The conversation owner removes expired messages so their metadata and final attachment references follow the same lifecycle.
+  const { purgeExpiredChatMessages } = await import('./services/chatConversationService.js');
+  const messagesDeleted = await purgeExpiredChatMessages(a, 1000);
   const b = new Date(Date.now() - 7 * 86400000).toISOString();
   database.run(`DELETE FROM temp_sessions WHERE created_at<?`, [b]);
   const tempSessionsDeleted = database.getRowsModified();

@@ -209,6 +209,22 @@ export async function exportChatHistory(phone: string, limit = 250): Promise<any
   return rows;
 }
 
+/** Scheduled retention uses the same per-message lifecycle so expired metadata and final attachment references cannot orphan. */
+export async function purgeExpiredChatMessages(before: string, limit = 1000): Promise<number> {
+  const db = await dbReady();
+  const statement = db.prepare('SELECT id, phone FROM messages WHERE created_at < ? ORDER BY id ASC LIMIT ?');
+  statement.bind([String(before || ''), Math.min(Math.max(Number(limit) || 1, 1), 1000)]);
+  const messages: Array<{ id: number; phone: string }> = [];
+  while (statement.step()) {
+    const row = statement.getAsObject() as Record<string, unknown>;
+    messages.push({ id: Number(row.id), phone: String(row.phone || '') });
+  }
+  statement.free();
+  let deleted = 0;
+  for (const message of messages) if (message.phone && await deleteChatMessage(message.phone, message.id)) deleted += 1;
+  return deleted;
+}
+
 /** Protected account deletion uses the existing conversation owner to remove all owner-scoped messages and their final attachment references. */
 export async function deleteAllChatHistoryForOwner(phone: string): Promise<number> {
   const owner = String(phone || '').trim();
