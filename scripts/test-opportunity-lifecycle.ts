@@ -15,6 +15,8 @@ const { getDb } = await import('../src/database.js');
 const { createOpenIntention } = await import('../src/services/deferredRequestService.js');
 const { getDailyPick } = await import('../src/services/dailyPicks.js');
 const { createAdCampaign, setAdCampaignStatus } = await import('../src/services/adManager.js');
+const { processProactiveOpportunities } = await import('../src/services/backgroundWorkers.js');
+const { getInternalNotifications } = await import('../src/services/pushNotifications.js');
 
 const token = (phone: string) => jwt.sign({ phone, role: 'user' }, process.env.JWT_SECRET!, { algorithm: 'HS256', expiresIn: '10m' });
 const headers = (phone: string) => ({ Authorization: `Bearer ${token(phone)}`, 'Content-Type': 'application/json' });
@@ -48,6 +50,19 @@ try {
   assert.equal(String(opportunity.sourceId), String(intention.id));
   assert.match(opportunity.ctaLink, /^\/chat\?prompt=/, 'opportunity continuation must return to canonical Web Chat');
   assert.doesNotMatch(`${opportunity.title} ${opportunity.subtitle}`, /daily engagement|claim bonus|\+1 point|multiple people|₦|nearby verified providers/i, 'the feed must not fabricate rewards, demand, monetary price, or provider availability');
+
+  const workerFirst = await processProactiveOpportunities(10);
+  assert.equal(workerFirst.checked, 2, 'the proactive worker should inspect authenticated owners already in the profile store');
+  assert.equal(workerFirst.notified, 1, 'the worker should turn the canonical deferred opportunity into an in-app notification');
+  const workerNotifications = await getInternalNotifications(owner, 10);
+  assert.equal(workerNotifications.length, 1, 'the proactive opportunity should appear in the existing notification inbox');
+  assert.equal(workerNotifications[0].delivery_state, 'queued', 'in-app notification remains truthfully queued until read');
+  assert.match(workerNotifications[0].link, /^\/chat\?prompt=/, 'proactive notification should deep-link to canonical Chat');
+
+  const workerRepeat = await processProactiveOpportunities(10);
+  assert.equal(workerRepeat.checked, 2);
+  assert.equal(workerRepeat.notified, 1, 'replaying the worker must remain idempotent at the notification layer');
+  assert.equal((await getInternalNotifications(owner, 10)).length, 1, 'replaying the worker must not duplicate notifications');
 
   const repeat = await request('/api/opportunities', { headers: headers(owner) });
   assert.equal(repeat.response.status, 200);
@@ -118,7 +133,7 @@ try {
   assert.equal(expiredFeed.body.opportunities.length, 0, 'expired deferred requests must not produce a suggestion');
 
   console.log('Opportunity lifecycle regression passed');
-  console.log('Verified: authenticated owner isolation, canonical deferred, active-campaign, and public Topic evidence, duplicate suppression, paused campaign exclusion, labelled community-context handoff, no fabricated supply/demand/price/reward, dismissal, and expiry.');
+  console.log('Verified: authenticated owner isolation, canonical deferred, proactive notification worker integration, active-campaign and public Topic evidence, duplicate suppression, paused campaign exclusion, labelled community-context handoff, no fabricated supply/demand/price/reward, dismissal, and expiry.');
 } finally {
   await new Promise<void>((resolve) => server.close(() => resolve()));
 }
