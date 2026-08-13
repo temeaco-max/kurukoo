@@ -434,6 +434,36 @@
     }
   };
 
+  const renderSponsoredPick = (opportunities) => {
+    const list = qs('[data-sponsored-pick]');
+    const status = qs('[data-sponsored-pick-status]');
+    const copy = qs('[data-sponsored-pick-copy]');
+    if (!list) return;
+    clear(list);
+    const campaign = opportunities[0];
+    if (!campaign) {
+      list.hidden = true;
+      if (status) status.textContent = 'No eligible promotion';
+      if (copy) copy.textContent = 'No active disclosed campaign is eligible for your current context.';
+      return;
+    }
+    list.hidden = false;
+    if (status) status.textContent = campaign.disclosure || 'Sponsored';
+    if (copy) copy.textContent = 'This is a disclosed campaign. It is not a provider recommendation, inventory, price, quote, availability, booking, payment, delivery, or fulfilment confirmation.';
+    const action = document.createElement('a');
+    action.className = 'workspace-text-action';
+    action.href = String(campaign.ctaLink || '/chat');
+    action.textContent = String(campaign.ctaText || 'Review in Web Chat');
+    action.addEventListener('click', () => { void api(`/api/opportunities/${encodeURIComponent(campaign.id)}/act`, { method: 'POST' }).catch(() => null); });
+    list.appendChild(makeDataCard({
+      eyebrow: campaign.disclosure || 'Sponsored',
+      title: String(campaign.title || 'Sponsored suggestion'),
+      detail: String(campaign.subtitle || 'A disclosed sponsored placement.'),
+      state: 'Advertisement',
+      action,
+    }));
+  };
+
   const loadDailyPicks = async () => {
     const list = qs('[data-daily-picks]');
     if (!list) return;
@@ -441,8 +471,11 @@
       loadRequests(), loadReminders(), api('/api/opportunities').catch(() => ({ opportunities: [] })),
     ]);
     const opportunities = Array.isArray(opportunityPayload.opportunities) ? opportunityPayload.opportunities : [];
+    const sponsored = opportunities.filter((opportunity) => opportunity.sourceType === 'ad_campaign');
+    const personalized = opportunities.filter((opportunity) => opportunity.sourceType !== 'ad_campaign');
+    renderSponsoredPick(sponsored);
     clear(list);
-    opportunities.forEach((opportunity) => {
+    personalized.forEach((opportunity) => {
       const action = document.createElement('a');
       action.className = 'workspace-text-action';
       action.href = String(opportunity.ctaLink || '/chat');
@@ -456,22 +489,22 @@
         catch (_) { dismiss.disabled = false; }
       });
       const actions = document.createElement('span'); actions.append(action, document.createTextNode(' · '), dismiss);
-      const source = opportunity.sourceType === 'ad_campaign' ? (opportunity.disclosure || 'Sponsored placement') : opportunity.sourceType === 'topic' ? 'Community-shared context' : 'Request follow-up';
+      const source = opportunity.sourceType === 'topic' ? 'Community-shared context' : 'Request follow-up';
       list.appendChild(makeDataCard({ eyebrow: source, title: String(opportunity.title || 'Suggested next step'), detail: String(opportunity.subtitle || 'Review this evidence-backed suggestion in Kurukoo.'), state: opportunity.sourceType === 'topic' ? 'Not a verified fact, provider, price, or fulfilment confirmation' : 'Not a provider, price, or fulfilment confirmation', action: actions }));
     });
     const nextReminder = reminders[0];
     const recentRequest = requests[0];
-    if (!opportunities.length && nextReminder) {
+    if (!personalized.length && nextReminder) {
       const row = document.createElement('div');
       row.append(Object.assign(document.createElement('strong'), { textContent: nextReminder.title || 'Review an upcoming reminder' }), Object.assign(document.createElement('small'), { textContent: `Due ${formatDate(nextReminder.dueAt || nextReminder.due_at)}.` }));
       list.appendChild(row);
     }
-    if (!opportunities.length && recentRequest) {
+    if (!personalized.length && recentRequest) {
       const row = document.createElement('div');
       row.append(Object.assign(document.createElement('strong'), { textContent: `Continue ${humanize(recentRequest.skill || 'your request')}` }), Object.assign(document.createElement('small'), { textContent: `Current state: ${humanize(recentRequest.status)}.` }));
       list.appendChild(row);
     }
-    if (!opportunities.length && !nextReminder && !recentRequest) {
+    if (!personalized.length && !nextReminder && !recentRequest) {
       const row = document.createElement('div');
       row.append(Object.assign(document.createElement('strong'), { textContent: 'No connected picks yet' }), Object.assign(document.createElement('small'), { textContent: 'Start a conversation to create a request or reminder.' }));
       list.appendChild(row);
@@ -519,11 +552,6 @@
     }
   });
 
-  qsa('[data-proactive-dismiss], [data-proactive-response]').forEach((button) => button.addEventListener('click', () => {
-    qs('[data-proactive-card]')?.setAttribute('hidden', '');
-    localStorage.setItem('kurukoo_proactive_dismissed', '1');
-  }));
-  if (localStorage.getItem('kurukoo_proactive_dismissed') === '1') qs('[data-proactive-card]')?.setAttribute('hidden', '');
 
   const params = new URLSearchParams(window.location.search);
   const prompt = params.get('prompt');

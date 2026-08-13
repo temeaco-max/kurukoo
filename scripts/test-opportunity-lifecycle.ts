@@ -14,6 +14,7 @@ const { app } = await import('../src/index.js');
 const { getDb } = await import('../src/database.js');
 const { createOpenIntention } = await import('../src/services/deferredRequestService.js');
 const { getDailyPick } = await import('../src/services/dailyPicks.js');
+const { createAdCampaign, setAdCampaignStatus } = await import('../src/services/adManager.js');
 
 const token = (phone: string) => jwt.sign({ phone, role: 'user' }, process.env.JWT_SECRET!, { algorithm: 'HS256', expiresIn: '10m' });
 const headers = (phone: string) => ({ Authorization: `Bearer ${token(phone)}`, 'Content-Type': 'application/json' });
@@ -53,6 +54,24 @@ try {
   assert.equal(repeat.body.opportunities.length, 1, 'repeated feed reads must be idempotent rather than create duplicates');
   const stored = db.exec('SELECT COUNT(*) FROM proactive_opportunities WHERE phone=?', [owner])[0]?.values?.[0]?.[0];
   assert.equal(Number(stored), 1, 'one canonical source signal must persist one owner-scoped opportunity record');
+
+  const campaign = await createAdCampaign({
+    title: 'Disclosed plumber campaign',
+    desc: 'A disclosed placement for a plumbing request. It is not a provider, price, or availability claim.',
+    imageUrl: '',
+    targetKeyword: 'plumber',
+    creditsBudget: 10,
+    placementSource: 'external_inventory',
+    disclosure: 'External advertisement',
+  });
+  const sponsoredFeed = await request('/api/opportunities', { headers: headers(owner) });
+  const sponsoredOpportunity = (sponsoredFeed.body.opportunities || []).find((item: any) => item.sourceType === 'ad_campaign' && String(item.sourceId) === String(campaign.campaign.id));
+  assert.ok(sponsoredOpportunity, 'an active disclosed campaign may project through the canonical owner-scoped opportunity feed');
+  assert.equal(sponsoredOpportunity.disclosure, 'External advertisement');
+  assert.match(sponsoredOpportunity.subtitle, /not a provider, price, or availability claim/i);
+  await setAdCampaignStatus(campaign.campaign.id, 'paused');
+  const afterCampaignPause = await request('/api/opportunities', { headers: headers(owner) });
+  assert.ok(!(afterCampaignPause.body.opportunities || []).some((item: any) => item.sourceType === 'ad_campaign' && String(item.sourceId) === String(campaign.campaign.id)), 'a stored campaign opportunity must stop projecting when its canonical campaign is paused');
 
   const isolated = await request('/api/opportunities', { headers: headers(otherOwner) });
   assert.equal(isolated.response.status, 200);
@@ -97,7 +116,7 @@ try {
   assert.equal(expiredFeed.body.opportunities.length, 0, 'expired deferred requests must not produce a suggestion');
 
   console.log('Opportunity lifecycle regression passed');
-  console.log('Verified: authenticated owner isolation, canonical deferred and public Topic evidence, duplicate suppression, labelled community-context handoff, no fabricated supply/demand/price/reward, dismissal, and expiry.');
+  console.log('Verified: authenticated owner isolation, canonical deferred, active-campaign, and public Topic evidence, duplicate suppression, paused campaign exclusion, labelled community-context handoff, no fabricated supply/demand/price/reward, dismissal, and expiry.');
 } finally {
   await new Promise<void>((resolve) => server.close(() => resolve()));
 }

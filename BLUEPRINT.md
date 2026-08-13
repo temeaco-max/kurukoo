@@ -5513,4 +5513,6 @@ Kurukoo does **not** currently operate a persisted Cart, saved-item, or saved-pr
 
 The strengthened workspace regression preserves this boundary alongside the existing owner-scoped Points and affiliate lifecycle tests. Any future persistent cart or save capability must first be implemented by the appropriate existing catalogue/request owner, with ownership, price, availability, consent, idempotency, payment, and fulfilment contracts; it must not originate as a workspace-only store.
 
+Daily Picks now separates personal context from sponsorship. Its dedicated sponsored panel reads only a disclosed `ad_campaign` opportunity emitted by the existing owner-scoped opportunity engine; the generic workspace advertisement preview and the unsupported static proactive question were removed. A stored campaign opportunity is suppressed immediately when the canonical campaign becomes paused, completed, or inactive, and no sponsor appears if no current disclosed campaign is eligible. Campaigns never enter the personal-suggestion list, and their panel repeats the boundary that sponsorship is not provider verification, inventory, availability, price, a quote, booking, payment, delivery, or fulfilment.
+
 ---

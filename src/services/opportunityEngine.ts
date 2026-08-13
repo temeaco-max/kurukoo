@@ -238,8 +238,13 @@ export async function getOpportunitiesForFeed(phone: string): Promise<Opportunit
     WHERE phone=? AND status != 'dismissed' AND (expires_at IS NULL OR datetime(expires_at) > datetime('now'))
     ORDER BY CASE status WHEN 'sent' THEN 0 WHEN 'viewed' THEN 1 ELSE 2 END, created_at DESC LIMIT 15`);
   stmt.bind([owner]);
+  const activeCampaignIds = new Set((await getAdCampaigns()).filter((campaign) => campaign.status === 'active').map((campaign) => String(campaign.id)));
   const results: Opportunity[] = [];
-  while (stmt.step()) results.push(rowToOpportunity(stmt.getAsObject() as Record<string, unknown>));
+  while (stmt.step()) {
+    const opportunity = rowToOpportunity(stmt.getAsObject() as Record<string, unknown>);
+    if (opportunity.sourceType === 'ad_campaign' && !activeCampaignIds.has(opportunity.sourceId)) continue;
+    results.push(opportunity);
+  }
   stmt.free();
   return results;
 }
