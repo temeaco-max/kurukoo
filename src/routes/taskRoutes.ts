@@ -6,7 +6,7 @@
 import { Router } from 'express';
 import { authenticateAdmin, authenticateUser, AuthRequest } from '../middleware/auth.js';
 import { bookAppointment } from '../services/appointmentService.js';
-import { getAvailableTasks, getContributorTasks, getSubmittedTasks, acceptTask, completeTask, submitTaskEvidence, moderateTask } from '../services/microTasks.js';
+import { getAvailableTasks, getContributorTasks, getSubmittedTasks, acceptTask, completeTask, submitTaskEvidence, moderateTask, createTopicVerificationTask } from '../services/microTasks.js';
 
 const router = Router();
 
@@ -106,6 +106,13 @@ router.post('/tasks/complete', authenticateUser, async (req: AuthRequest, res) =
   } catch (error) {
     res.status(409).json({ error: error instanceof Error ? error.message : 'Failed to submit task evidence' });
   }
+});
+
+router.post('/admin/tasks/topic-verification', authenticateAdmin, async (req: AuthRequest, res) => {
+  const topicId = typeof req.body?.topicId === 'string' && /^[a-f0-9-]{20,64}$/i.test(req.body.topicId) ? req.body.topicId : null;
+  if (!topicId) return res.status(400).json({ error: 'A valid Topic id is required' });
+  try { return res.status(201).json(await createTopicVerificationTask({ topicId, verificationKind: req.body?.verificationKind, creditsReward: req.body?.creditsReward })); }
+  catch (error) { return res.status(400).json({ error: error instanceof Error ? error.message : 'Unable to create Topic verification task' }); }
 });
 
 router.get('/admin/tasks/submitted', authenticateAdmin, async (_req: AuthRequest, res) => {

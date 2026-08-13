@@ -42,10 +42,10 @@
     target.replaceChildren(node);
   }
 
-  function button(label, handler, style = 'admin-button admin-button--secondary') {
+  function button(label, handler, className = 'admin-button admin-button--secondary') {
     const node = document.createElement('button');
     node.type = 'button';
-    node.className = style;
+    node.className = className;
     node.textContent = label;
     node.addEventListener('click', handler);
     return node;

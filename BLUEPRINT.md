@@ -5463,3 +5463,22 @@ Before any Phase 2 or Phase 3 Topic integration is accepted, it must answer one 
 The implementation is protected by `test:topics-convergence`, which proves owner-scoped Topic control, moderation-before-publication, private identity fields, report handling, taxonomy validation, public routes, explicit chat handoff, and the absence of automatic Points or economic-request side effects.
 
 ---
+
+### Topic Convergence Completion Addendum (2026-08-13)
+
+The Topic authority remains intentionally small, but the approved **projections** are now implemented through their existing owners. Topic persistence owns only durable shared text, replies, reports, author ownership, moderation states, local idempotency keys, and curated Topic-to-resource relationship records. It still does not own a feed ranker, social graph, notification system, recommendation model, provider/business relation, economic lifecycle, advertising system, task system, or agent system.
+
+| Projection or safeguard | Canonical owner | Implemented boundary |
+|---|---|---|
+| Conversation → Topic | Existing chat client plus `topicRoutes`/`topicService` | A signed-in user opens an explicit draft dialog, writes the exact public payload, reviews it, confirms submission, and remains in the same conversation. Nothing from private messages, memory, attachments, requests, payment, location, participants, or agent output is copied automatically. |
+| Topic → Conversation | Existing chat stream and intent routing | A public Topic passes a capped, labelled `community_statement` context into an existing conversation only after the user opens chat. The user’s own explicit chat message remains the action input; opening or carrying Topic context never itself creates a request, payment, provider, dispatch, or fulfilment action. |
+| Taxonomy and low-cost assistance | Existing category/skill catalogue and FastText-first intent chain | Topic type configuration is exposed through the compact Topic taxonomy projection; categories and skills remain canonical. Topic has no LLM-first classifier and no duplicate hierarchy. |
+| Contributor verification | `microTasks`, `taskRoutes`, `pointsEngine` | An administrator may optionally create one bounded verification task for a **public** Topic. The contributor workflow is unchanged: accept, submit evidence, administrator review, then the existing idempotent Points reward. Evidence remains an observation and never upgrades a Topic to verified provider, availability, price, booking, payment, delivery, or fulfilment status. |
+| SEO and sitemap | `seoService`, `systemRoutes`, shared public head | Only meaningful, taxonomised public Topics are indexable: a permitted durable type, a reviewed publication state, at least 20 title characters, at least 240 body characters, an existing category, and at least one existing skill. Eligible Topics receive canonical metadata and truthful `DiscussionForumPosting` JSON-LD; all other Topic detail pages are `noindex,follow`. `sitemap-topics.xml` contains only eligible records. |
+| Discover | `discoveryRoutes` and existing Discover UI | Discover gains a separate, non-map shared-community-context card projection. It carries no coordinates or provider/presence inference and is visibly distinguished from Nearby Radar’s evidence-verified provider presence. |
+| Editorial Resources | CMS `contentManager`/`content` plus a curated relationship | A moderator may link an existing CMS resource to a **public** Topic. The Topic detail page projects that relation with an editorial disclosure; UGC is never copied into CMS and a resource link does not verify the Topic statement. |
+| Abuse and lifecycle hardening | Existing middleware, Topic service, global JSON parser boundary | Topic mutations and reports use the shared rate limiter. Topic creation accepts a bounded idempotency key, repeated open reports are idempotent, title changes use the canonical SEO redirect store, malformed JSON has a structured API error, and status gates continue to keep submitted/restricted/removed content non-public. |
+
+The implementation intentionally leaves **Daily Picks**, opportunity generation, category sponsorship, provider/business references, public-media uploads, notification fan-out, and autonomous agents **deferred**. Their existing owners must first gain their own truthful source, consent, privacy, disclosure, and regression contracts. No future Topic feature may bypass this addendum’s single-network test.
+
+---

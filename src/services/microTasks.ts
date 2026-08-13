@@ -47,6 +47,9 @@ export async function ensureMicroTaskSchema(): Promise<void> {
     review_note: 'TEXT',
     reviewed_at: 'TEXT',
     rewarded_at: 'TEXT',
+    source_type: 'TEXT',
+    source_id: 'TEXT',
+    verification_kind: 'TEXT',
   };
   for (const [column, declaration] of Object.entries(additions)) if (!columns.includes(column)) db.run(`ALTER TABLE micro_tasks ADD COLUMN ${column} ${declaration}`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_micro_tasks_status_assignee ON micro_tasks(status, assigned_to)`);
@@ -68,7 +71,42 @@ function taskFromRow(row: any) {
     reviewNote: row.review_note ? String(row.review_note) : null,
     reviewedAt: row.reviewed_at ? String(row.reviewed_at) : null,
     rewardedAt: row.rewarded_at ? String(row.rewarded_at) : null,
+    sourceType: row.source_type ? String(row.source_type) : null,
+    sourceId: row.source_id ? String(row.source_id) : null,
+    verificationKind: row.verification_kind ? String(row.verification_kind) : null,
   };
+}
+
+export type TopicVerificationKind = 'broad_locality' | 'factual_observation' | 'price_observation' | 'public_place_reference' | 'staleness_review';
+const TOPIC_VERIFICATION_KINDS: Record<TopicVerificationKind, string> = {
+  broad_locality: 'Verify the broad city or LGA context only; do not collect or publish a precise address or coordinates.',
+  factual_observation: 'Verify a specific public factual observation using a cited, lawful source. Do not convert evidence into provider verification.',
+  price_observation: 'Verify a dated public price observation with source context. This does not establish current availability, a quote, or a transaction price.',
+  public_place_reference: 'Verify a public place or business reference from a cited source. This does not verify a provider relationship or current availability.',
+  staleness_review: 'Review whether the shared public information appears stale and cite the basis for the review.',
+};
+
+export async function createTopicVerificationTask(input: { topicId: string; verificationKind: unknown; creditsReward?: unknown }): Promise<{ task: ReturnType<typeof taskFromRow>; idempotent: boolean }> {
+  await ensureMicroTaskSchema();
+  const kind = typeof input.verificationKind === 'string' && input.verificationKind in TOPIC_VERIFICATION_KINDS ? input.verificationKind as TopicVerificationKind : null;
+  if (!kind) throw new Error('A supported Topic verification kind is required');
+  const reward = Math.max(0, Math.min(30, Number.isFinite(Number(input.creditsReward)) ? Math.floor(Number(input.creditsReward)) : 10));
+  const db = await getDb();
+  const topicStmt = db.prepare(`SELECT title,category,status FROM topics WHERE id=? LIMIT 1`);
+  topicStmt.bind([input.topicId]); const topic = topicStmt.step() ? topicStmt.getAsObject() as any : null; topicStmt.free();
+  if (!topic || String(topic.status) !== 'public') throw new Error('Only public Topics can receive a contributor verification task');
+  const existing = db.prepare(`SELECT * FROM micro_tasks WHERE source_type='topic' AND source_id=? AND verification_kind=? AND status IN ('available','in_progress','submitted') ORDER BY id DESC LIMIT 1`);
+  existing.bind([input.topicId, kind]); const existingRow = existing.step() ? existing.getAsObject() : null; existing.free();
+  if (existingRow) return { task: taskFromRow(existingRow), idempotent: true };
+  db.run(`INSERT INTO micro_tasks(title,description,skill_tag,credits_reward,status,source_type,source_id,verification_kind) VALUES(?,?,?,?, 'available','topic',?,?)`, [
+    `Review shared Topic: ${String(topic.title).slice(0, 100)}`,
+    `${TOPIC_VERIFICATION_KINDS[kind]} Topic category: ${String(topic.category || 'not selected')}. Evidence is an observation only and never changes the Topic into a verified provider, price, availability, booking, or fulfilment record.`,
+    'topic_verification', reward, input.topicId, kind,
+  ]);
+  const result = db.exec('SELECT * FROM micro_tasks WHERE id=last_insert_rowid()');
+  const columns = result[0]?.columns || []; const values = result[0]?.values?.[0] || []; const row = Object.fromEntries(columns.map((column: string, index: number) => [column, values[index]]));
+  saveDb();
+  return { task: taskFromRow(row), idempotent: false };
 }
 
 export async function getAvailableTasks(_phone: string) {

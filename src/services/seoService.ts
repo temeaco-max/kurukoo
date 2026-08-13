@@ -244,6 +244,7 @@ Sitemap: https://kurukoo.com/sitemap.xml
 Sitemap: https://kurukoo.com/sitemap-pages.xml
 Sitemap: https://kurukoo.com/sitemap-categories.xml
 Sitemap: https://kurukoo.com/sitemap-blog.xml
+Sitemap: https://kurukoo.com/sitemap-topics.xml
 `;
     }
     return txt;
@@ -277,6 +278,9 @@ export async function getSitemapIndex(): Promise<string> {
    <sitemap>
       <loc>https://kurukoo.com/sitemap-blog.xml</loc>
    </sitemap>
+   <sitemap>
+      <loc>https://kurukoo.com/sitemap-topics.xml</loc>
+   </sitemap>
 </sitemapindex>`;
 }
 
@@ -290,6 +294,9 @@ export async function getChildSitemap(type: string): Promise<string> {
         urls = ['/explore/transport-mobility', '/explore/food-drink', '/explore/repairs-maintenance', '/explore/health-medical', '/explore/digital-services'];
     } else if (type === 'blog') {
         urls = ['/blog'];
+    } else if (type === 'topics') {
+        const topics = await listIndexableTopicRows();
+        urls = topics.map(topic => `/topics/${topic.slug}`);
     } else {
         urls = ['/'];
     }
@@ -299,6 +306,42 @@ export async function getChildSitemap(type: string): Promise<string> {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urlElements}
 </urlset>`;
+}
+
+type IndexableTopicRow = { id: string; slug: string; title: string; body: string; type: string; category: string | null; skills_json: string; city: string | null; lga: string | null; created_at: string; updated_at: string; published_at: string | null; };
+const INDEXABLE_TOPIC_TYPES = new Set(['question', 'guide', 'review', 'local_report', 'price_report', 'recommendation', 'experience']);
+
+function isIndexableTopic(row: IndexableTopicRow): boolean {
+    if (!row.published_at || !INDEXABLE_TOPIC_TYPES.has(String(row.type))) return false;
+    const body = String(row.body || '').trim();
+    const title = String(row.title || '').trim();
+    let skills: unknown[] = [];
+    try { skills = JSON.parse(String(row.skills_json || '[]')); } catch { return false; }
+    // A public record becomes indexable only once it has meaningful, taxonomised shared context.
+    return title.length >= 20 && body.length >= 240 && Boolean(row.category) && Array.isArray(skills) && skills.length > 0;
+}
+
+async function listIndexableTopicRows(slug?: string): Promise<IndexableTopicRow[]> {
+    const db = await getDb();
+    const statement = db.prepare(`SELECT id,slug,title,body,type,category,skills_json,city,lga,created_at,updated_at,published_at FROM topics WHERE status='public'${slug ? ' AND slug=?' : ''} ORDER BY published_at DESC LIMIT 500`);
+    if (slug) statement.bind([slug]);
+    const rows: IndexableTopicRow[] = [];
+    while (statement.step()) rows.push(statement.getAsObject() as unknown as IndexableTopicRow);
+    statement.free();
+    return rows.filter(isIndexableTopic);
+}
+
+export async function getTopicSeoProjection(slug: string) {
+    const [topic] = await listIndexableTopicRows(slug);
+    if (!topic) return null;
+    const canonicalUrl = `https://kurukoo.com/topics/${topic.slug}`;
+    const locality = [topic.city, topic.lga].filter(Boolean).join(', ');
+    const description = `${String(topic.body).replace(/\s+/g, ' ').trim().slice(0, 150)}${String(topic.body).trim().length > 150 ? '…' : ''} Community-shared context; not verified availability, pricing, or fulfilment.`;
+    const keywords = [topic.category, ...(() => { try { return JSON.parse(String(topic.skills_json || '[]')); } catch { return []; } })()].filter(Boolean).join(', ');
+    return {
+        seo: { title: `${topic.title} | Kurukoo Topics`, meta_description: description.slice(0, 320), keywords, canonical_url: canonicalUrl, og_title: topic.title, og_description: description.slice(0, 320), og_image: 'https://kurukoo.com/assets/icon-512.png', robots: 'index,follow' },
+        schemas: [{ '@context': 'https://schema.org', '@type': 'DiscussionForumPosting', headline: topic.title, articleBody: topic.body, datePublished: topic.published_at, dateModified: topic.updated_at, url: canonicalUrl, author: { '@type': 'Person', name: 'Community member' }, ...(topic.category ? { about: { '@type': 'Thing', name: topic.category } } : {}), ...(locality ? { contentLocation: { '@type': 'AdministrativeArea', name: locality } } : {}) }],
+    };
 }
 
 export async function getSeoPage(urlPath: string) {

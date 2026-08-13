@@ -13,13 +13,15 @@
     %>
     <title><%= seoTitle %></title>
     <meta name="description" content="<%= seoDesc %>">
+    <% if (typeof seo !== 'undefined' && seo.robots) { %><meta name="robots" content="<%= seo.robots %>"><% } %>
     <link rel="canonical" href="<%= seoCanonical %>">
     <% if (typeof seo !== 'undefined' && seo.keywords) { %><meta name="keywords" content="<%= seo.keywords %>"><% } %>
     <meta property="og:title" content="<%= seoOgTitle %>">
     <meta property="og:description" content="<%= seoOgDesc %>">
     <meta property="og:url" content="<%= seoCanonical %>">
     <meta property="og:image" content="<%= seoOgImage %>">
-    <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:card" content="summary_large_image">
+    <% if (typeof schemas !== 'undefined' && Array.isArray(schemas)) { schemas.forEach((schema) => { const jsonLd = JSON.stringify(schema).replace(/</g, '\\u003c'); %><script type="application/ld+json"><%- jsonLd %></script><% }); } %>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

@@ -5,7 +5,8 @@
     theme: localStorage.getItem('kurukoo_theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
     activeStorefrontId: null,
     nativeAssistance: { reminders: [], checkIns: [] },
-    pinnedMessages: []
+    pinnedMessages: [],
+    topicContext: null
   };
   const $ = id => document.getElementById(id);
   const chatContent = $('chat-content'), scroll = $('chat-scroll'), input = $('message-input'), send = $('send-message');
@@ -820,6 +821,78 @@
     return (await response.json()).attachment;
   }
 
+  function renderTopicContext() {
+    const banner = $('topic-context-banner');
+    if (!banner) return;
+    banner.replaceChildren();
+    if (!state.topicContext) { banner.hidden = true; return; }
+    const label = makeElement('span', '', `Discussing public Topic: ${state.topicContext.title}. Community context is not verified availability, price, provider, or fulfilment.`);
+    const remove = makeElement('button', 'text-btn', 'Remove Topic context');
+    remove.type = 'button';
+    remove.addEventListener('click', () => {
+      state.topicContext = null;
+      const url = new URL(location.href); url.searchParams.delete('topic'); history.replaceState({}, '', `${url.pathname}${url.search}`);
+      renderTopicContext();
+    });
+    banner.append(label, remove);
+    banner.hidden = false;
+  }
+
+  async function initializeTopicContext() {
+    const slug = new URLSearchParams(location.search).get('topic');
+    if (!slug || !/^[a-z0-9][a-z0-9-]{0,100}$/i.test(slug)) return;
+    try {
+      const response = await fetch(`/api/topics/${encodeURIComponent(slug)}/chat-context`, { credentials: 'same-origin' });
+      if (!response.ok) return;
+      const data = await response.json();
+      if (!data?.topic?.slug || !data?.topic?.title) return;
+      state.topicContext = data.topic;
+      renderTopicContext();
+      if (!input.value) input.placeholder = 'Tell Kurukoo what you want to discuss about this Topic…';
+    } catch { /* Topic context is optional and must never block the existing chat. */ }
+  }
+
+  async function openTopicDraftDialog() {
+    if (!(await ensureIdentity())) return;
+    let taxonomy;
+    try { const response = await fetch('/api/topics/taxonomy', { credentials: 'same-origin' }); taxonomy = response.ok ? await response.json() : null; } catch { taxonomy = null; }
+    const dialog = document.createElement('dialog'); dialog.className = 'topic-draft-dialog';
+    const form = document.createElement('form'); form.method = 'dialog';
+    const title = makeElement('h2', '', 'Share a Topic from this conversation');
+    const disclosure = makeElement('p', 'inspector-note', 'Nothing from this conversation is copied automatically. Write or paste only the text you want to make public. Private messages, Memory Profile details, attachments, exact locations, participants, requests, payment details, and reports remain private.');
+    const titleInput = document.createElement('input'); titleInput.required = true; titleInput.maxLength = 160; titleInput.placeholder = 'Public Topic title'; titleInput.setAttribute('aria-label', 'Public Topic title');
+    const bodyInput = document.createElement('textarea'); bodyInput.required = true; bodyInput.maxLength = 8000; bodyInput.rows = 7; bodyInput.placeholder = 'Write the public context in your own words'; bodyInput.setAttribute('aria-label', 'Public Topic body');
+    const type = document.createElement('select'); type.setAttribute('aria-label', 'Topic type');
+    (Array.isArray(taxonomy?.types) ? taxonomy.types : ['question', 'opinion', 'guide', 'review', 'local_report', 'price_report', 'recommendation', 'meme', 'poll', 'event', 'alert', 'opportunity', 'experience']).forEach(value => { const option = document.createElement('option'); option.value = value; option.textContent = String(value).replace(/_/g, ' '); type.appendChild(option); });
+    const category = document.createElement('select'); category.setAttribute('aria-label', 'Existing Kurukoo category'); const blank = document.createElement('option'); blank.value = ''; blank.textContent = 'No category selected'; category.appendChild(blank);
+    (Array.isArray(taxonomy?.categories) ? taxonomy.categories : []).forEach(value => { const option = document.createElement('option'); option.value = value; option.textContent = String(value).replace(/-/g, ' '); category.appendChild(option); });
+    const preview = makeElement('pre', 'topic-draft-preview', 'Your exact public payload will appear here before submission.');
+    const status = makeElement('p', 'inspector-note');
+    const cancel = makeElement('button', 'text-btn', 'Cancel'); cancel.type = 'button'; cancel.addEventListener('click', () => dialog.close());
+    const submit = makeElement('button', 'primary-btn', 'Review public payload'); submit.type = 'submit';
+    const updatePreview = () => { preview.textContent = JSON.stringify({ title: titleInput.value.trim(), body: bodyInput.value.trim(), type: type.value, category: category.value || null }, null, 2); };
+    [titleInput, bodyInput, type, category].forEach(field => field.addEventListener('input', updatePreview));
+    form.append(title, disclosure, titleInput, bodyInput, type, category, preview, status, cancel, submit); dialog.appendChild(form); document.body.appendChild(dialog); dialog.showModal();
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const payload = { title: titleInput.value.trim(), body: bodyInput.value.trim(), type: type.value, category: category.value || undefined, skills: [] };
+      if (payload.title.length < 12 || payload.body.length < 30) { status.textContent = 'Use at least 12 characters for the title and 30 for the public body.'; return; }
+      updatePreview();
+      if (!window.confirm('This exact payload will be submitted for moderation. It will not publish automatically. Continue?')) return;
+      submit.disabled = true; status.textContent = 'Saving draft and submitting for moderation…';
+      try {
+        const draftResponse = await fetch('/api/topics/drafts', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const draftData = await draftResponse.json().catch(() => ({})); if (!draftResponse.ok || !draftData?.topic?.id) throw new Error(draftData.error || 'Unable to save Topic draft');
+        const key = crypto.randomUUID().replace(/-/g, '');
+        const submitResponse = await fetch(`/api/topics/${encodeURIComponent(draftData.topic.id)}`, { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key }, body: JSON.stringify(payload) });
+        const submitData = await submitResponse.json().catch(() => ({})); if (!submitResponse.ok) throw new Error(submitData.error || 'Unable to submit Topic');
+        status.textContent = 'Topic submitted for moderation. You remain in this conversation.'; submit.disabled = false;
+        setTimeout(() => dialog.close(), 900);
+      } catch (error) { status.textContent = error instanceof Error ? error.message : 'Unable to submit Topic'; submit.disabled = false; }
+    });
+    dialog.addEventListener('close', () => dialog.remove());
+  }
+
   async function sendMessage(raw) {
     const text = String(raw || input.value || '').trim(); if (!text || state.busy || !(await ensureIdentity())) return;
     state.busy = true; send.disabled = true; setConnection(true); input.value = '';
@@ -829,7 +902,7 @@
       state.attached = null; $('attachment-preview').hidden = true; $('attachment-preview').textContent = '';
       const finalText = attachment ? `${text}\n\n[Attachment: ${attachment.name} — ${attachment.type} — ${attachment.url}]` : text;
       const user = addUserMessage(finalText); const assistant = appendStreamBubble(); const output = assistant.querySelector('.markdown-body'); const thinking = assistant.querySelector('.thinking'); let full = '';
-      const response = await fetch('/api/chat/stream', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ message: finalText, channel: 'web', conversationId: state.conversationId || undefined, attachment: attachment || undefined }) });
+      const response = await fetch('/api/chat/stream', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ message: finalText, channel: 'web', conversationId: state.conversationId || undefined, attachment: attachment || undefined, topicSlug: state.topicContext?.slug || undefined }) });
       if (response.status === 401) { await ensureIdentity(); throw new Error('Your session has expired.'); }
       if (!response.ok || !response.body) throw new Error(`Chat request failed (${response.status})`);
       const reader = response.body.getReader(), decoder = new TextDecoder(); let buffer = '';
@@ -1174,6 +1247,8 @@
 
   input?.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
   send?.addEventListener('click', () => sendMessage());
+  $('topic-share-conversation')?.addEventListener('click', () => { void openTopicDraftDialog(); });
+
   $('new-chat')?.addEventListener('click', async () => { 
     if (!await ensureIdentity()) return; 
     try { 
@@ -1220,6 +1295,7 @@
   }
 
   applyTheme();
+  void initializeTopicContext();
   ensureIdentity().then(ok => { 
     if (ok) {
       Promise.all([loadPoints(), loadPresence(), loadMemory(), loadReminders(), loadNotificationDeliveries(), loadSafety(), loadAgentGoal(), loadRequestContext(), refreshHistory()]);

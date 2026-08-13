@@ -1,5 +1,6 @@
 import express, { Router } from 'express';
 import { getActivePulseProviders } from '../services/nearbyPulse.js';
+import { listPublicTopics } from '../services/topicService.js';
 
 type RadarLayer = 'mobile' | 'stationary' | 'agents' | 'emergency' | 'deals' | 'events';
 
@@ -41,6 +42,17 @@ function parseLayers(raw: unknown): RadarLayer[] {
  */
 export function createDiscoveryRouter(): Router {
   const router = express.Router();
+
+  router.get('/api/discover/community-context', async (req, res, next) => {
+    try {
+      const topics = await listPublicTopics({ category: req.query.category, city: req.query.city, limit: req.query.limit });
+      res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+      return res.json({
+        items: topics.map((topic) => ({ id: topic.id, slug: topic.slug, title: topic.title, excerpt: topic.body.slice(0, 220), type: topic.type, category: topic.category, city: topic.city, publishedAt: topic.publishedAt, provenance: 'community_statement' })),
+        disclosure: 'Community statements are shared context, not provider presence, availability, price, booking, payment, delivery, or fulfilment records.',
+      });
+    } catch (error) { return next(error); }
+  });
 
   router.get('/api/discover/map', async (req, res, next) => {
     try {

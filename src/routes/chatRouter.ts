@@ -16,6 +16,7 @@ import { streamUnifiedAI } from '../services/unifiedAiEngine.js';
 import economicRequestRouter from './economicRequestRouter.js';
 import { createConversationGoal } from '../services/agentRuntime.js';
 import { emitPilotEvent } from '../services/pilotObservability.js';
+import { getTopicChatContext } from '../services/topicService.js';
 
 const router = Router();
 
@@ -49,8 +50,11 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
   const channel = typeof req.body?.channel === 'string' ? req.body.channel.slice(0, 30) : 'web';
   const conversationId = typeof req.body?.conversationId === 'string' ? req.body.conversationId : undefined;
   const attachment = req.body?.attachment;
+  const suppliedTopicSlug = typeof req.body?.topicSlug === 'string' && /^[a-z0-9][a-z0-9-]{0,100}$/i.test(req.body.topicSlug) ? req.body.topicSlug : null;
+  const topicContext = suppliedTopicSlug ? await getTopicChatContext(suppliedTopicSlug) : null;
 
   if (!phone || !message) return res.status(400).json({ error: 'Message is required' });
+  if (suppliedTopicSlug && !topicContext) return res.status(404).json({ error: 'Public Topic context not found' });
 
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
@@ -64,9 +68,10 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
   const isGuest = phone.startsWith('anon_');
 
   try {
-    await emitPilotEvent({ event: conversationId ? 'conversation_resumed' : 'conversation_started', ownerId: req.user?.phone, sessionId: phone, conversationId, context: { channel, surface: 'chat' } });
-    await emitPilotEvent({ event: 'request_started', ownerId: req.user?.phone, sessionId: phone, conversationId, context: { channel, intent: 'conversation_message' } });
-    const savedUser = await appendChatMessage({ phone, sender: 'user', content: message, channel, conversationId, metadata: attachment ? { attachment } : undefined });
+    await emitPilotEvent({ event: conversationId ? 'conversation_resumed' : 'conversation_started', ownerId: req.user?.phone, sessionId: phone, conversationId, context: { channel, surface: 'chat', topicSlug: topicContext?.slug || null } });
+    await emitPilotEvent({ event: 'request_started', ownerId: req.user?.phone, sessionId: phone, conversationId, context: { channel, intent: 'conversation_message', topicSlug: topicContext?.slug || null } });
+    const messageMetadata = { ...(attachment ? { attachment } : {}), ...(topicContext ? { topicContext } : {}) };
+    const savedUser = await appendChatMessage({ phone, sender: 'user', content: message, channel, conversationId, metadata: Object.keys(messageMetadata).length ? messageMetadata : undefined });
     activeConversation = savedUser.conversationId;
     sse(res, { type: 'conversation', conversationId: activeConversation, messageId: savedUser.id });
     // The web client consumes stream status events in the existing real-time response
@@ -132,13 +137,16 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
         await new Promise(r => setTimeout(r, 8));
       }
     } else {
-      const routing = await routeIntent(message, phone);
+      const routingMessage = topicContext
+        ? `${message}\n\nPublic community context (not verified availability, price, provider, or fulfilment): ${topicContext.title}${topicContext.category ? ` [${topicContext.category}]` : ''}. ${topicContext.body}`
+        : message;
+      const routing = await routeIntent(routingMessage, phone);
       cardData = routing.cardData;
       const agentGoal = !isGuest ? await createConversationGoal({
         phone,
         conversationId: activeConversation,
         skill: routing.skill,
-        objective: message,
+          objective: message,
         economicRequestId: typeof cardData?.requestId === 'string' ? cardData.requestId : undefined,
         source: channel === 'web_qr' ? 'qr' : 'conversation',
       }) : null;
@@ -181,7 +189,7 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
         }
       } else {
         sse(res, { type: 'status', status: 'thinking', label: 'Kurukoo is considering the best next step…' });
-        for await (const chunk of streamUnifiedAI(message, { phone, threadId: activeConversation })) {
+        for await (const chunk of streamUnifiedAI(routingMessage, { phone, threadId: activeConversation })) {
           if (chunk.type === 'metadata' || chunk.type === 'thought') sse(res, chunk);
           else if (chunk.type === 'text' && chunk.content) {
             fullReply += chunk.content;

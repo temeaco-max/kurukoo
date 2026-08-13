@@ -3,6 +3,7 @@
   const list = document.getElementById('discover-list');
   const status = document.getElementById('discover-status');
   const locationButton = document.getElementById('use-my-location');
+  const communityContext = document.getElementById('discover-community-context');
   if (!mapElement || !list || !status || !locationButton || typeof L === 'undefined') return;
 
   const map = L.map('discover-map').setView([6.5244, 3.3792], 12);
@@ -31,6 +32,28 @@
     const amount = Number(metres);
     if (!Number.isFinite(amount)) return '';
     return amount >= 1000 ? `${(amount / 1000).toFixed(1)} km away` : `${Math.round(amount)} m away`;
+  }
+
+  async function loadCommunityContext() {
+    if (!communityContext) return;
+    try {
+      const response = await fetch('/api/discover/community-context?limit=6', { credentials: 'same-origin' });
+      if (!response.ok) throw new Error('Community context unavailable');
+      const data = await response.json(); const items = Array.isArray(data?.items) ? data.items : [];
+      communityContext.replaceChildren();
+      if (!items.length) { const empty = document.createElement('div'); empty.className = 'muted-info-text'; empty.textContent = 'No moderated shared Topics are available yet. Kurukoo does not fabricate community activity.'; communityContext.appendChild(empty); return; }
+      items.forEach((item) => {
+        const card = document.createElement('article'); card.className = 'topic-card';
+        const link = document.createElement('a'); link.href = `/topics/${encodeURIComponent(item.slug)}`;
+        const meta = document.createElement('div'); meta.className = 'topic-meta'; meta.textContent = `Community statement · ${String(item.type || '').replace(/_/g, ' ')}${item.category ? ` · ${String(item.category).replace(/-/g, ' ')}` : ''}${item.city ? ` · ${item.city}` : ''}`;
+        const heading = document.createElement('h3'); heading.textContent = String(item.title || 'Shared Topic');
+        const excerpt = document.createElement('p'); excerpt.textContent = String(item.excerpt || '');
+        const chat = document.createElement('a'); chat.className = 'text-link'; chat.href = `/chat?topic=${encodeURIComponent(item.slug)}`; chat.textContent = 'Discuss with Kurukoo';
+        link.append(meta, heading, excerpt); card.append(link, chat); communityContext.appendChild(card);
+      });
+    } catch {
+      communityContext.replaceChildren(); const empty = document.createElement('div'); empty.className = 'muted-info-text'; empty.textContent = 'Shared community context is unavailable right now.'; communityContext.appendChild(empty);
+    }
   }
 
   function addUnavailableNote(reason) {
@@ -152,4 +175,5 @@
 
   map.on('moveend', () => { if (locationSelected) loadDiscover(); });
   setStatus('Choose “Use my location” to view nearby verified providers.');
+  void loadCommunityContext();
 })();

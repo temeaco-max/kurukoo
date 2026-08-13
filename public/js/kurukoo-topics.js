@@ -3,8 +3,7 @@
   const root = document.querySelector('[data-topics-page]');
   if (!root) return;
 
-  const TYPES = ['question', 'opinion', 'guide', 'review', 'local_report', 'price_report', 'recommendation', 'meme', 'poll', 'event', 'alert', 'opportunity', 'experience'];
-  let taxonomy = { categories: [], skillsByCategory: {} };
+  let taxonomy = { types: [], categories: [], skillsByCategory: {} };
 
   const byId = (id) => document.getElementById(id);
   const node = (tag, className, text) => { const item = document.createElement(tag); if (className) item.className = className; if (text != null) item.textContent = String(text); return item; };
@@ -15,12 +14,12 @@
 
   function option(select, value, label) { const item = document.createElement('option'); item.value = value; item.textContent = label; select.append(item); }
   async function populateSelects() {
-    try { taxonomy = await api('/api/topics/taxonomy'); } catch { taxonomy = { categories: [], skillsByCategory: {} }; }
+    try { taxonomy = await api('/api/topics/taxonomy'); } catch { taxonomy = { types: [], categories: [], skillsByCategory: {} }; }
     const categoryFilters = byId('topics-category'); const categoryCreate = byId('topics-create-category'); const typeFilter = byId('topics-type'); const typeCreate = byId('topics-create-type');
     if (categoryFilters) taxonomy.categories.forEach((value) => option(categoryFilters, value, pretty(value)));
     if (categoryCreate) taxonomy.categories.forEach((value) => option(categoryCreate, value, pretty(value)));
-    if (typeFilter) TYPES.forEach((value) => option(typeFilter, value, pretty(value)));
-    if (typeCreate) TYPES.forEach((value) => option(typeCreate, value, pretty(value)));
+    if (typeFilter) taxonomy.types.forEach((value) => option(typeFilter, value, pretty(value)));
+    if (typeCreate) taxonomy.types.forEach((value) => option(typeCreate, value, pretty(value)));
   }
 
   function renderSkills() {
@@ -73,7 +72,7 @@
       if (!window.confirm(message)) return;
       status.textContent = 'Submitting for review…'; submit.disabled = true;
       try {
-        const { topic } = await api('/api/topics', { method:'POST', body: JSON.stringify({ title:data.get('title'), body:data.get('body'), type:data.get('type'), category:data.get('category'), skills:selectedSkills, city:data.get('city'), lga:data.get('lga') }) });
+        const { topic } = await api('/api/topics', { method:'POST', headers: { 'Idempotency-Key': crypto.randomUUID().replace(/-/g, '') }, body: JSON.stringify({ title:data.get('title'), body:data.get('body'), type:data.get('type'), category:data.get('category'), skills:selectedSkills, city:data.get('city'), lga:data.get('lga') }) });
         form.reset(); renderSkills(); status.textContent = `Submitted for review. Your Topic is private until it is made public.`; form.dataset.topicId = topic.id;
       } catch (error) { status.textContent = error instanceof Error ? error.message : 'Unable to submit Topic'; } finally { submit.disabled = false; }
     });
@@ -93,8 +92,13 @@
     try {
       const { topic } = await api(`/api/topics/${encodeURIComponent(slug)}`); detail.replaceChildren(); byId('topic-breadcrumb-title').textContent = topic.title;
       const meta = node('div', 'topic-meta'); meta.append(node('span', 'topic-tag', pretty(topic.type))); if (topic.category) meta.append(node('span', null, pretty(topic.category))); if (topic.city) meta.append(node('span', null, topic.city)); meta.append(node('span', null, `Published ${date(topic.publishedAt || topic.createdAt)}`));
-      const actionRow = node('div', 'topic-detail-actions'); const prompt = `I saw the Topic “${topic.title}”. ${topic.category ? `I need help related to ${pretty(topic.category)}. ` : ''}Please help me work out the next safe step.`; const chat = node('a', 'btn btn-primary', 'Ask Kurukoo about this'); chat.href = `/chat?prompt=${encodeURIComponent(escapePrompt(prompt))}`; actionRow.append(chat, reportButton(topic));
+      const actionRow = node('div', 'topic-detail-actions'); const chat = node('a', 'btn btn-primary', 'Discuss with Kurukoo'); chat.href = `/chat?topic=${encodeURIComponent(topic.slug)}`; actionRow.append(chat, reportButton(topic));
       detail.append(meta, node('h1', null, topic.title), node('p', 'topic-detail-body', topic.body), actionRow);
+      if (Array.isArray(topic.relatedResources) && topic.relatedResources.length) {
+        const resources = node('section', 'topic-related-resources'); resources.append(node('h2', null, 'Related Kurukoo resources'));
+        const list = node('ul'); topic.relatedResources.forEach((resource) => { const item = node('li'); const link = node('a', null, resource.title); link.href = `/resources/${encodeURIComponent(resource.slug)}`; item.append(link); list.append(item); });
+        resources.append(node('p', 'topic-resource-disclosure', 'These editorial guides are linked by a Kurukoo moderator. They do not verify the Topic statement.'), list); detail.append(resources);
+      }
       renderReplies(topic);
     } catch (error) { detail.replaceChildren(node('div', 'topics-empty', error instanceof Error ? error.message : 'This Topic is unavailable.')); }
   }

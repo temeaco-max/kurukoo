@@ -243,6 +243,15 @@ function initTables(database: any) {
     CREATE INDEX IF NOT EXISTS idx_topics_publication ON topics(status, published_at, updated_at);
     CREATE INDEX IF NOT EXISTS idx_topics_author_updated ON topics(author_phone, updated_at);
     CREATE INDEX IF NOT EXISTS idx_topics_category_publication ON topics(category, status, published_at);
+    -- Idempotency is local to the existing Topic authoring boundary; it is not a request, payment, or workflow ledger.
+    CREATE TABLE IF NOT EXISTS topic_idempotency_keys (
+      author_phone TEXT NOT NULL,
+      idempotency_key TEXT NOT NULL,
+      topic_id TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY(author_phone, idempotency_key),
+      FOREIGN KEY(topic_id) REFERENCES topics(id)
+    );
     CREATE TABLE IF NOT EXISTS topic_replies (
       id TEXT PRIMARY KEY,
       topic_id TEXT NOT NULL,
@@ -269,6 +278,19 @@ function initTables(database: any) {
       reviewed_at TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_topic_reports_status_created ON topic_reports(status, created_at);
+    -- A person can keep one open report per public-content target. Closing it permits a later report if new review is needed.
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_topic_reports_open_reporter_target
+      ON topic_reports(reporter_phone, target_type, target_id) WHERE status='open';
+    -- Curated editorial relationship only: Topic UGC remains outside the CMS content authority.
+    CREATE TABLE IF NOT EXISTS topic_resource_links (
+      topic_id TEXT NOT NULL,
+      resource_slug TEXT NOT NULL,
+      created_by TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY(topic_id, resource_slug),
+      FOREIGN KEY(topic_id) REFERENCES topics(id),
+      FOREIGN KEY(resource_slug) REFERENCES content(slug)
+    );
     CREATE TABLE IF NOT EXISTS price_checks (id INTEGER PRIMARY KEY AUTOINCREMENT, item TEXT, price REAL);
     CREATE TABLE IF NOT EXISTS classifieds (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, price REAL);
     CREATE TABLE IF NOT EXISTS appointment_slots (id INTEGER PRIMARY KEY AUTOINCREMENT, client_phone TEXT, provider_phone TEXT, slot_time TEXT, status TEXT);
@@ -359,7 +381,7 @@ function initTables(database: any) {
     CREATE TABLE IF NOT EXISTS scam_reports (id INTEGER PRIMARY KEY AUTOINCREMENT, reporter_phone TEXT, reported_phone TEXT, description TEXT, status TEXT DEFAULT 'pending', created_at TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS social_posts (id INTEGER PRIMARY KEY AUTOINCREMENT, platform TEXT, content TEXT, scheduled_time TEXT, status TEXT DEFAULT 'pending');
     CREATE TABLE IF NOT EXISTS partnerships (id INTEGER PRIMARY KEY AUTOINCREMENT, company TEXT, contact TEXT, status TEXT, next_action TEXT, due_date TEXT, notes TEXT);
-    CREATE TABLE IF NOT EXISTS micro_tasks (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, description TEXT, skill_tag TEXT, credits_reward INTEGER, status TEXT DEFAULT 'available', assigned_to TEXT);
+    CREATE TABLE IF NOT EXISTS micro_tasks (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, description TEXT, skill_tag TEXT, credits_reward INTEGER, status TEXT DEFAULT 'available', assigned_to TEXT, source_type TEXT, source_id TEXT, verification_kind TEXT);
     CREATE TABLE IF NOT EXISTS service_categories (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, options TEXT);
     CREATE TABLE IF NOT EXISTS success_stories (id INTEGER PRIMARY KEY AUTOINCREMENT, story_text TEXT, category TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, used INTEGER DEFAULT 0);
     CREATE TABLE IF NOT EXISTS badges (phone TEXT, badge_type TEXT, awarded_at DATETIME DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(phone, badge_type));

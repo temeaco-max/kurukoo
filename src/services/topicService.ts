@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { getDb, saveDb } from '../database.js';
 import { ECONOMIC_CATEGORIES, getEconomicCategory, getKnownSkills } from './skillFlows.js';
+import { addRedirect } from './seoService.js';
 
 /**
  * Topics are a deliberately small durable-content authority. They are not a
@@ -23,6 +24,7 @@ export interface TopicInput {
   skills?: unknown;
   city?: unknown;
   lga?: unknown;
+  idempotencyKey?: unknown;
 }
 
 export interface TopicReplyInput { body: unknown; }
@@ -83,19 +85,20 @@ function toSlug(title: string): string {
   return candidate || 'topic';
 }
 
-async function uniqueSlug(title: string): Promise<string> {
+async function uniqueSlug(title: string, excludeId?: string): Promise<string> {
   const db = await getDb();
   const stem = toSlug(title);
   let slug = stem;
   let attempt = 2;
-  while (true) {
-    const statement = db.prepare('SELECT 1 FROM topics WHERE slug=? LIMIT 1');
-    statement.bind([slug]);
+  while (attempt < 10_000) {
+    const statement = db.prepare(excludeId ? 'SELECT 1 FROM topics WHERE slug=? AND id<>? LIMIT 1' : 'SELECT 1 FROM topics WHERE slug=? LIMIT 1');
+    statement.bind(excludeId ? [slug, excludeId] : [slug]);
     const exists = statement.step();
     statement.free();
     if (!exists) return slug;
     slug = `${stem}-${attempt++}`;
   }
+  throw new Error('Unable to allocate a Topic URL');
 }
 
 function parseTopic(row: any, includeOwner = false) {
@@ -124,6 +127,16 @@ function existingTopicById(db: any, id: string): any | null {
   return row;
 }
 
+function validIdempotencyKey(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const key = value.trim();
+  return /^[A-Za-z0-9_-]{16,160}$/.test(key) ? key : null;
+}
+
+function isUniqueConstraint(error: unknown): boolean {
+  return /unique|constraint/i.test(error instanceof Error ? error.message : String(error || ''));
+}
+
 function existingTopicBySlug(db: any, slug: string): any | null {
   const statement = db.prepare(`${TOPIC_SELECT} WHERE t.slug=? LIMIT 1`);
   statement.bind([slug]);
@@ -132,15 +145,81 @@ function existingTopicBySlug(db: any, slug: string): any | null {
   return row;
 }
 
-export async function createTopic(authorPhone: string, input: TopicInput) {
+export async function createTopic(authorPhone: string, input: TopicInput, suppliedIdempotencyKey?: unknown) {
+  const clean = normalizeInput(input);
+  const idempotencyKey = validIdempotencyKey(suppliedIdempotencyKey ?? input.idempotencyKey);
+  const db = await getDb();
+  if (idempotencyKey) {
+    const existing = db.prepare('SELECT topic_id FROM topic_idempotency_keys WHERE author_phone=? AND idempotency_key=? LIMIT 1');
+    existing.bind([authorPhone, idempotencyKey]);
+    const row = existing.step() ? existing.getAsObject() : null;
+    existing.free();
+    if (row?.topic_id) {
+      const prior = await getTopicForOwner(String(row.topic_id), authorPhone);
+      if (prior) return { ...prior, idempotent: true };
+    }
+  }
+
+  const id = randomUUID();
+  let created = false;
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < 5 && !created; attempt += 1) {
+    const slug = await uniqueSlug(clean.title);
+    try {
+      const statement = db.prepare(`INSERT INTO topics(id, slug, author_phone, title, body, type, category, skills_json, city, lga, status) VALUES(?,?,?,?,?,?,?,?,?,?,'submitted')`);
+      statement.bind([id, slug, authorPhone, clean.title, clean.body, clean.type, clean.category, JSON.stringify(clean.skills), clean.city, clean.lga]);
+      statement.step();
+      statement.free();
+      created = true;
+    } catch (error) {
+      lastError = error;
+      if (!isUniqueConstraint(error)) throw error;
+    }
+  }
+  if (!created) throw new Error(lastError instanceof Error ? lastError.message : 'Unable to create Topic');
+
+  if (idempotencyKey) {
+    try {
+      db.run('INSERT INTO topic_idempotency_keys(author_phone,idempotency_key,topic_id) VALUES(?,?,?)', [authorPhone, idempotencyKey, id]);
+    } catch (error) {
+      if (!isUniqueConstraint(error)) throw error;
+      const existing = db.prepare('SELECT topic_id FROM topic_idempotency_keys WHERE author_phone=? AND idempotency_key=? LIMIT 1');
+      existing.bind([authorPhone, idempotencyKey]);
+      const row = existing.step() ? existing.getAsObject() : null;
+      existing.free();
+      if (row?.topic_id && String(row.topic_id) !== id) {
+        db.run('DELETE FROM topics WHERE id=?', [id]);
+        saveDb();
+        const prior = await getTopicForOwner(String(row.topic_id), authorPhone);
+        if (prior) return { ...prior, idempotent: true };
+      }
+    }
+  }
+  saveDb();
+  const topic = await getTopicForOwner(id, authorPhone);
+  return topic ? { ...topic, idempotent: false } : topic;
+}
+
+export async function createTopicDraft(authorPhone: string, input: TopicInput) {
   const clean = normalizeInput(input);
   const db = await getDb();
-  const slug = await uniqueSlug(clean.title);
   const id = randomUUID();
-  const statement = db.prepare(`INSERT INTO topics(id, slug, author_phone, title, body, type, category, skills_json, city, lga, status) VALUES(?,?,?,?,?,?,?,?,?,?,'submitted')`);
-  statement.bind([id, slug, authorPhone, clean.title, clean.body, clean.type, clean.category, JSON.stringify(clean.skills), clean.city, clean.lga]);
-  statement.step();
-  statement.free();
+  let created = false;
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < 5 && !created; attempt += 1) {
+    try {
+      const slug = await uniqueSlug(clean.title);
+      const statement = db.prepare(`INSERT INTO topics(id, slug, author_phone, title, body, type, category, skills_json, city, lga, status) VALUES(?,?,?,?,?,?,?,?,?,?,'draft')`);
+      statement.bind([id, slug, authorPhone, clean.title, clean.body, clean.type, clean.category, JSON.stringify(clean.skills), clean.city, clean.lga]);
+      statement.step();
+      statement.free();
+      created = true;
+    } catch (error) {
+      lastError = error;
+      if (!isUniqueConstraint(error)) throw error;
+    }
+  }
+  if (!created) throw new Error(lastError instanceof Error ? lastError.message : 'Unable to save Topic draft');
   saveDb();
   return getTopicForOwner(id, authorPhone);
 }
@@ -152,10 +231,13 @@ export async function updateTopic(authorPhone: string, id: string, input: TopicI
   if (!current) throw new Error('Topic not found');
   if (String(current.author_phone) !== authorPhone) throw new Error('Topic ownership is required');
   if (!['draft', 'submitted', 'restricted'].includes(String(current.status))) throw new Error('Only non-public Topics may be edited; create a new Topic to correct published context');
+  const priorSlug = String(current.slug);
+  const nextSlug = clean.title === String(current.title) ? priorSlug : await uniqueSlug(clean.title, id);
   const statement = db.prepare(`UPDATE topics SET title=?, body=?, type=?, category=?, skills_json=?, city=?, lga=?, slug=?, status='submitted', moderation_note=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?`);
-  statement.bind([clean.title, clean.body, clean.type, clean.category, JSON.stringify(clean.skills), clean.city, clean.lga, await uniqueSlug(clean.title), id]);
+  statement.bind([clean.title, clean.body, clean.type, clean.category, JSON.stringify(clean.skills), clean.city, clean.lga, nextSlug, id]);
   statement.step();
   statement.free();
+  if (nextSlug !== priorSlug) await addRedirect(`/topics/${priorSlug}`, `/topics/${nextSlug}`);
   saveDb();
   return getTopicForOwner(id, authorPhone);
 }
@@ -187,6 +269,46 @@ export async function listTopicsForOwner(authorPhone: string, limit = 50) {
   return topics;
 }
 
+function linkedResources(db: any, topicId: string) {
+  const statement = db.prepare(`SELECT c.slug,c.title,c.type FROM topic_resource_links l JOIN content c ON c.slug=l.resource_slug WHERE l.topic_id=? ORDER BY l.created_at ASC LIMIT 6`);
+  statement.bind([topicId]);
+  const resources: Array<{ slug: string; title: string; type: string }> = [];
+  while (statement.step()) { const row = statement.getAsObject(); resources.push({ slug: String(row.slug), title: String(row.title), type: String(row.type) }); }
+  statement.free();
+  return resources;
+}
+
+export async function linkTopicResource(topicId: string, resourceSlug: unknown, adminIdentity: string) {
+  const slug = typeof resourceSlug === 'string' ? resourceSlug.trim().toLowerCase() : '';
+  if (!/^[a-z0-9][a-z0-9-]{0,119}$/.test(slug)) throw new Error('A valid existing resource slug is required');
+  const db = await getDb();
+  const topic = existingTopicById(db, topicId);
+  if (!topic || String(topic.status) !== 'public') throw new Error('Only public Topics can be linked to editorial resources');
+  const resource = db.prepare('SELECT slug,title,type FROM content WHERE slug=? LIMIT 1'); resource.bind([slug]); const row = resource.step() ? resource.getAsObject() : null; resource.free();
+  if (!row) throw new Error('Editorial resource not found');
+  db.run('INSERT OR IGNORE INTO topic_resource_links(topic_id,resource_slug,created_by) VALUES(?,?,?)', [topicId, slug, adminIdentity.slice(0, 128)]);
+  saveDb();
+  return { slug: String(row.slug), title: String(row.title), type: String(row.type) };
+}
+
+export async function getTopicChatContext(slug: string) {
+  const topic = await getPublicTopic(slug);
+  if (!topic) return null;
+  return {
+    id: topic.id,
+    slug: topic.slug,
+    title: topic.title,
+    type: topic.type,
+    category: topic.category,
+    skills: topic.skills,
+    city: topic.city,
+    lga: topic.lga,
+    // Public text is deliberately capped before it enters the existing conversation boundary.
+    body: topic.body.slice(0, 1200),
+    provenance: 'community_statement' as const,
+  };
+}
+
 export async function getPublicTopic(slug: string) {
   const db = await getDb();
   const row = existingTopicBySlug(db, slug);
@@ -196,7 +318,7 @@ export async function getPublicTopic(slug: string) {
   const replies: any[] = [];
   while (replyStatement.step()) replies.push(parseReply(replyStatement.getAsObject()));
   replyStatement.free();
-  return { ...parseTopic(row), replies };
+  return { ...parseTopic(row), replies, relatedResources: linkedResources(db, String(row.id)) };
 }
 
 export async function listPublicTopics(filters: { category?: unknown; skill?: unknown; type?: unknown; city?: unknown; limit?: unknown } = {}) {
@@ -218,6 +340,23 @@ export async function listPublicTopics(filters: { category?: unknown; skill?: un
   while (statement.step()) topics.push(parseTopic(statement.getAsObject()));
   statement.free();
   return topics;
+}
+
+export async function findTopicDuplicateCandidates(input: Pick<TopicInput, 'title' | 'category'>) {
+  const title = typeof input.title === 'string' ? cleanText(input.title, 'title', 12, 160) : '';
+  const category = typeof input.category === 'string' ? input.category.trim().toLowerCase() : '';
+  const terms = [...new Set(title.toLowerCase().match(/[a-z0-9]{4,}/g) || [])].slice(0, 3);
+  if (!terms.length) return [];
+  const conditions = ["t.status='public'", `(${terms.map(() => 'lower(t.title) LIKE ?').join(' OR ')})`];
+  const params: unknown[] = terms.map((term) => `%${term.replace(/[%_]/g, '')}%`);
+  if (category && (ECONOMIC_CATEGORIES as readonly string[]).includes(category)) { conditions.push('t.category=?'); params.push(category); }
+  const db = await getDb();
+  const statement = db.prepare(`${TOPIC_SELECT} WHERE ${conditions.join(' AND ')} ORDER BY t.published_at DESC LIMIT 5`);
+  statement.bind(params);
+  const candidates: any[] = [];
+  while (statement.step()) candidates.push(parseTopic(statement.getAsObject()));
+  statement.free();
+  return candidates;
 }
 
 export async function createReply(authorPhone: string, topicId: string, input: TopicReplyInput) {
@@ -249,10 +388,25 @@ export async function createTopicReport(reporterPhone: string, targetType: unkno
   const existsStatement = db.prepare(type === 'topic' ? 'SELECT 1 FROM topics WHERE id=? LIMIT 1' : 'SELECT 1 FROM topic_replies WHERE id=? LIMIT 1');
   existsStatement.bind([id]); const exists = existsStatement.step(); existsStatement.free();
   if (!exists) throw new Error('Report target not found');
+  const open = db.prepare(`SELECT id FROM topic_reports WHERE reporter_phone=? AND target_type=? AND target_id=? AND status='open' LIMIT 1`);
+  open.bind([reporterPhone, type, id]);
+  const existing = open.step() ? open.getAsObject() : null;
+  open.free();
+  if (existing?.id) return { id: String(existing.id), status: 'open', idempotent: true };
   const reportId = randomUUID();
-  const statement = db.prepare(`INSERT INTO topic_reports(id, target_type, target_id, reporter_phone, reason, detail) VALUES(?,?,?,?,?,?)`);
-  statement.bind([reportId, type, id, reporterPhone, cleanReason, cleanDetail]); statement.step(); statement.free(); saveDb();
-  return { id: reportId, status: 'open' };
+  try {
+    const statement = db.prepare(`INSERT INTO topic_reports(id, target_type, target_id, reporter_phone, reason, detail) VALUES(?,?,?,?,?,?)`);
+    statement.bind([reportId, type, id, reporterPhone, cleanReason, cleanDetail]); statement.step(); statement.free(); saveDb();
+    return { id: reportId, status: 'open', idempotent: false };
+  } catch (error) {
+    if (!isUniqueConstraint(error)) throw error;
+    const duplicate = db.prepare(`SELECT id FROM topic_reports WHERE reporter_phone=? AND target_type=? AND target_id=? AND status='open' LIMIT 1`);
+    duplicate.bind([reporterPhone, type, id]);
+    const row = duplicate.step() ? duplicate.getAsObject() : null;
+    duplicate.free();
+    if (row?.id) return { id: String(row.id), status: 'open', idempotent: true };
+    throw error;
+  }
 }
 
 export async function listSubmittedTopics(limit = 100) {
@@ -321,7 +475,7 @@ export function getTopicTaxonomy() {
     (skillsByCategory[category] ||= []).push(skill);
   }
   for (const skills of Object.values(skillsByCategory)) skills.sort();
-  return { categories: [...ECONOMIC_CATEGORIES], skillsByCategory };
+  return { types: [...TOPIC_TYPES], categories: [...ECONOMIC_CATEGORIES], skillsByCategory };
 }
 
 export async function getTopicStats() {

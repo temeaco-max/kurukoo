@@ -12,6 +12,12 @@
     const note = window.prompt(`Optional moderation note for this ${kind}:`) || '';
     const endpoint = kind === 'Topic' ? `/api/admin/topics/${encodeURIComponent(item.id)}/moderate` : `/api/admin/topics/replies/${encodeURIComponent(item.id)}/moderate`;
     await request(endpoint, { method:'POST', body:JSON.stringify({ decision, note }) });
+    if (kind === 'Topic' && decision === 'public') {
+      const verificationKind = window.prompt('Optional: create a contributor verification task? Enter one of: broad_locality, factual_observation, price_observation, public_place_reference, staleness_review. Leave blank to skip.');
+      if (verificationKind) await request('/api/admin/tasks/topic-verification', { method:'POST', body:JSON.stringify({ topicId:item.id, verificationKind }) });
+      const resourceSlug = window.prompt('Optional: link an existing CMS resource slug to this public Topic. Leave blank to skip.');
+      if (resourceSlug) await request(`/api/admin/topics/${encodeURIComponent(item.id)}/resources`, { method:'POST', body:JSON.stringify({ resourceSlug }) });
+    }
     status.textContent = `${kind} ${decision}.`;
     await load();
   }

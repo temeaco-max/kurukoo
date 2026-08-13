@@ -73,6 +73,22 @@ export const webhookRateLimit = createRateLimiter({
   message: 'Webhook rate limit exceeded',
 });
 
+/** Authenticated public-content mutations; Topic uses this shared in-process limiter. */
+export const topicMutationRateLimit = createRateLimiter({
+  windowMs: 60_000,
+  max: 18,
+  keyPrefix: 'topic-mutation',
+  message: 'Too many Topic changes — try again shortly',
+});
+
+/** Topic reports are intentionally stricter to protect the private moderation queue. */
+export const topicReportRateLimit = createRateLimiter({
+  windowMs: 60_000,
+  max: 6,
+  keyPrefix: 'topic-report',
+  message: 'Too many Topic reports — try again shortly',
+});
+
 /** Payments / escrow mutations */
 export const paymentRateLimit = createRateLimiter({
   windowMs: 60_000,

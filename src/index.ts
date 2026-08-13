@@ -84,6 +84,11 @@ app.use((req, res, next) => {
 });
 app.use(express.static(path.join(process.cwd(), 'public'), { index: false, fallthrough: true, redirect: false }));
 app.use(express.json({ limit: process.env.CHAT_ATTACHMENT_BODY_LIMIT || '35mb', verify: (req, _res, buf) => { (req as any).rawBody = Buffer.from(buf); } }));
+// Keep malformed JSON on the normal API error contract. Individual features should not need bespoke parser middleware.
+app.use((error: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (error instanceof SyntaxError && 'body' in error) return res.status(400).json({ error: 'Malformed JSON request body' });
+  return next(error);
+});
 
 // Public system documentation must remain reachable before authenticated /api route boundaries.
 app.use('/', systemRoutes);
