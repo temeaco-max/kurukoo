@@ -45,15 +45,39 @@ export const channelRegistry = {
 
 export type ChannelName = keyof typeof channelRegistry;
 
-/** Whether an adapter has the credentials required to make a truthful public availability claim. */
+/**
+ * Public channel availability requires more than send credentials. It must have
+ * the callback/receipt prerequisites needed for Kurukoo to state the channel is
+ * operational without claiming a delivery that cannot be observed.
+ */
 export function isChannelConfigured(channel: string | undefined): boolean {
     switch (String(channel || '').toLowerCase()) {
-        case 'web': return true;
-        case 'whatsapp': return Boolean(process.env.WHATSAPP_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID);
-        case 'telegram': return Boolean(process.env.TELEGRAM_BOT_TOKEN);
-        case 'sms': return Boolean(process.env.AFRICASTALKING_API_KEY && process.env.AFRICASTALKING_USERNAME);
-        case 'ussd': return Boolean(process.env.AFRICASTALKING_API_KEY && process.env.AFRICASTALKING_USERNAME);
-        default: return false;
+        case 'web':
+            return true;
+        case 'whatsapp':
+            return Boolean(
+                process.env.WHATSAPP_TOKEN
+                && process.env.WHATSAPP_PHONE_NUMBER_ID
+                && process.env.WHATSAPP_APP_SECRET
+                && process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN,
+            );
+        case 'telegram':
+            return Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_WEBHOOK_SECRET);
+        case 'sms':
+            return Boolean(
+                process.env.AFRICASTALKING_API_KEY
+                && process.env.AFRICASTALKING_USERNAME
+                && process.env.AFRICASTALKING_SMS_DELIVERY_REPORTS_ENABLED === 'true',
+            );
+        case 'ussd':
+            return Boolean(
+                process.env.AFRICASTALKING_API_KEY
+                && process.env.AFRICASTALKING_USERNAME
+                && process.env.AFRICASTALKING_USSD_SERVICE_CODE
+                && process.env.KURUKOO_USSD_ENABLED === 'true',
+            );
+        default:
+            return false;
     }
 }
 

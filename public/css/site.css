@@ -1774,6 +1774,17 @@ button:disabled, input:disabled, select:disabled, textarea:disabled { cursor: no
   color: var(--terracotta);
 }
 
+.card-price--arbitrage {
+  color: var(--electric-blue);
+}
+
+.card-disclosure {
+  margin-top: 0.25rem;
+  color: var(--gray-600);
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
 /* Quick Replies Scrollbar Styles */
 #quick-replies-bar {
   display: flex;

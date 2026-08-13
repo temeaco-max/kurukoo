@@ -48,6 +48,7 @@ import agentRouter from './routes/agentRouter.js';
 import pilotRouter from './routes/pilotRouter.js';
 import providerCoordinationRouter from './routes/providerCoordinationRouter.js';
 import providerSupplyRegistryRouter from './routes/providerSupplyRegistryRouter.js';
+import affiliateRoutes from './routes/affiliateRoutes.js';
 import { startBackgroundServices } from './startup/backgroundServices.js';
 
 if (process.env.NODE_ENV !== 'production' && !process.env.KURUKOO_PAY_PROVIDER) process.env.KURUKOO_PAY_PROVIDER = 'sandbox';
@@ -97,6 +98,7 @@ app.use('/api/agent', agentRouter);
 app.use('/api', pilotRouter);
 app.use('/api/coordination', providerCoordinationRouter);
 app.use('/api/supply-registry', providerSupplyRegistryRouter);
+app.use('/api', affiliateRoutes);
 app.use('/api', orderRoutes);
 // Public Radar reads and explicitly authenticated presence writes must be mounted
 // before unrelated routers that apply authentication to their whole boundary.

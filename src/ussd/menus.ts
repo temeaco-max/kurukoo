@@ -1,51 +1,55 @@
 import { getDb } from '../database.js';
 import { appendChatMessage } from '../services/chatConversationService.js';
 
+/**
+ * USSD is a short, deterministic menu adapter. It never represents provider
+ * dispatch, payment, emergency delivery, or external notification as complete.
+ */
 export async function handleUssdRequest(phoneNumber: string, text: string): Promise<string> {
     const phone = String(phoneNumber || '').trim();
     if (!phone) return 'END Unable to identify your Kurukoo account. Please try again.';
 
     const db = await getDb();
-    let response = '';
     const parts = text ? text.split('*') : [];
     const level = parts.length;
 
     const stmt = db.prepare(`SELECT id, title, options FROM service_categories ORDER BY id ASC`);
     const categories: any[] = [];
     while (stmt.step()) {
-        const obj = stmt.getAsObject();
-        try { obj.options = JSON.parse(obj.options as string); } catch { obj.options = []; }
-        categories.push(obj);
+        const category = stmt.getAsObject();
+        try { category.options = JSON.parse(category.options as string); } catch { category.options = []; }
+        categories.push(category);
     }
     stmt.free();
 
+    let response = '';
     if (!text) {
-        let menuStr = `CON Welcome to Kurukoo (*7000#)\n`;
-        categories.forEach((cat, index) => { menuStr += `${index + 1}. ${cat.title}\n`; });
-        menuStr += `${categories.length + 1}. Check Balance / Reload\n${categories.length + 2}. Emergency SOS`;
-        response = menuStr;
+        let menu = 'CON Welcome to Kurukoo\n';
+        categories.forEach((category, index) => { menu += `${index + 1}. ${category.title}\n`; });
+        menu += `${categories.length + 1}. Check Points\n${categories.length + 2}. Emergency information`;
+        response = menu;
     } else {
-        const mainSelection = parseInt(parts[0], 10);
+        const mainSelection = Number.parseInt(parts[0], 10);
         if (mainSelection > 0 && mainSelection <= categories.length) {
-            const cat = categories[mainSelection - 1];
+            const category = categories[mainSelection - 1];
             if (level === 1) {
-                let submenuStr = `CON Select Option for ${cat.title}:\n`;
-                (cat.options as string[]).forEach((opt, index) => { submenuStr += `${index + 1}. ${opt}\n`; });
-                response = submenuStr;
+                let submenu = `CON Select an option for ${category.title}:\n`;
+                (category.options as string[]).forEach((option, index) => { submenu += `${index + 1}. ${option}\n`; });
+                response = submenu.trim();
             } else {
-                response = `END Your request for ${cat.title} has been received and dispatched to nearby providers.`;
+                response = `END Your ${category.title} selection has been saved in this Kurukoo conversation. Continue in Kurukoo chat to describe your need and review any available options.`;
             }
         } else if (mainSelection === categories.length + 1) {
-            const stmt2 = db.prepare(`SELECT COALESCE(points_balance, 0) as points FROM memory_profiles WHERE phone = ?`);
-            stmt2.bind([phone]);
-            let bal = 0;
-            if (stmt2.step()) bal = Number(stmt2.getAsObject().points || 0);
-            stmt2.free();
-            response = `END Your Kurukoo balance is ${bal} Points. Dial *7000*1# to top up.`;
+            const pointsStmt = db.prepare(`SELECT COALESCE(points_balance, 0) as points FROM memory_profiles WHERE phone = ?`);
+            pointsStmt.bind([phone]);
+            let balance = 0;
+            if (pointsStmt.step()) balance = Number(pointsStmt.getAsObject().points || 0);
+            pointsStmt.free();
+            response = `END Your Kurukoo balance is ${balance} Points. Points are not cash or a payment confirmation.`;
         } else if (mainSelection === categories.length + 2) {
-            response = `END Emergency SOS triggered. Local emergency services and trusted contacts alerted with your location.`;
+            response = 'END Kurukoo does not contact emergency services or trusted contacts through this menu. Contact local emergency services directly using the number appropriate to your location.';
         } else {
-            response = `END Invalid selection. Thank you for using Kurukoo.`;
+            response = 'END Invalid selection. Please try again.';
         }
     }
 
@@ -54,7 +58,7 @@ export async function handleUssdRequest(phoneNumber: string, text: string): Prom
         sender: 'user',
         content: text || 'HOME',
         channel: 'ussd',
-        metadata: { channel: 'ussd', inbound: true }
+        metadata: { channel: 'ussd', inbound: true, external_dispatch: 'not_claimed' },
     });
     await appendChatMessage({
         phone,
@@ -62,7 +66,7 @@ export async function handleUssdRequest(phoneNumber: string, text: string): Prom
         content: response,
         channel: 'ussd',
         conversationId: conversation.conversationId,
-        metadata: { channel: 'ussd', outbound: true }
+        metadata: { channel: 'ussd', outbound: true, external_delivery: 'not_claimed' },
     });
 
     return response;

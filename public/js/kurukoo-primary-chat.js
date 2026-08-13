@@ -872,7 +872,7 @@
       setConnection(false, 'Connection issue'); setTypingStatus('error'); assistant.hidden = false; assistant.classList.remove('message-streaming'); assistant.classList.add('message-arrived');
       const bubble = chatContent.querySelector('.message.assistant:last-child .markdown-body'); 
       if (bubble) setMarkdown(bubble, `I’m having trouble completing that right now. **Please try again.**\n\n_${escapeAttr(error.message)}_`); 
-    } finally { setTypingStatus('complete'); state.busy = false; send.disabled = false; input.placeholder = 'Tell Kurukoo what you need…'; input.focus(); loadPoints(); loadPresence(); loadReminders(); loadSafety(); loadAgentGoal(); loadRequestContext(); }
+    } finally { setTypingStatus('complete'); state.busy = false; send.disabled = false; input.placeholder = 'Tell Kurukoo what you need…'; input.focus(); loadPoints(); loadPresence(); loadReminders(); loadNotificationDeliveries(); loadSafety(); loadAgentGoal(); loadRequestContext(); }
   }
 
   function updateModelStatus(data) { const label = $('model-badge'); if (label && data.model) label.textContent = data.model; }
@@ -967,6 +967,53 @@
   }
 
   async function loadMemory() { try { const res = await fetch('/api/profile', { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const profile = data.profile || {}; const text = `Kurukoo remembers ${profile.location || 'your area'}${profile.primary_lga ? `, ${profile.primary_lga}` : ''}. Your Memory Profile remains attached to your account.`; const mc = $('memory-context'); if (mc) mc.textContent = text; const im = $('inspector-memory'); if (im) im.textContent = text; } catch {} }
+
+  function notificationDeliveryCopy(value) {
+    const state = String(value || 'queued').toLowerCase();
+    const copy = {
+      queued: 'Stored in Kurukoo’s internal queue. No external delivery is claimed.',
+      accepted: 'A configured provider accepted the message. This is not a delivery receipt.',
+      submitted: 'Submitted to a configured provider. Delivery has not been confirmed.',
+      sent: 'The provider reports sending it. Delivery has not been confirmed.',
+      delivered: 'A provider delivery receipt was recorded.',
+      read: 'Read in Kurukoo or confirmed as read where a provider receipt supports it.',
+      failed: 'The recorded delivery attempt failed. No delivery is claimed.',
+      undeliverable: 'The recorded destination was undeliverable. No delivery is claimed.',
+      not_configured: 'External transport is not configured. The notice remains internal only.',
+      suppressed: 'Delivery was deliberately suppressed by policy or consent. No delivery is claimed.',
+    };
+    return copy[state] || 'Delivery state is unavailable. No external delivery is claimed.';
+  }
+
+  async function loadNotificationDeliveries() {
+    const card = $('notification-deliveries-card');
+    const list = $('notification-deliveries-list');
+    if (!card || !list) return;
+    try {
+      const response = await fetch('/api/notifications?limit=8', { credentials: 'same-origin' });
+      if (response.status === 401) { card.hidden = true; return; }
+      if (!response.ok) throw new Error('Notification delivery status unavailable');
+      const data = await response.json();
+      const notifications = Array.isArray(data.notifications) ? data.notifications : [];
+      card.hidden = false;
+      list.replaceChildren();
+      if (!notifications.length) {
+        list.appendChild(makeElement('div', 'empty-state', 'No internal notification delivery records are available.'));
+        return;
+      }
+      notifications.forEach(notification => {
+        const row = makeElement('div', 'reminder-list-item notification-delivery-item');
+        const title = makeElement('strong', '', String(notification.title || 'Notification'));
+        const detail = makeElement('span', '', notificationDeliveryCopy(notification.delivery_state));
+        const state = makeElement('span', 'status-pill', String(notification.delivery_state || 'queued').replace(/_/g, ' '));
+        row.append(title, detail, state);
+        list.appendChild(row);
+      });
+    } catch {
+      card.hidden = false;
+      list.replaceChildren(makeElement('div', 'empty-state', 'Notification delivery status is unavailable. No status change is implied.'));
+    }
+  }
 
   function renderAgentGoal(goal, events = []) {
     const card = $('agent-goal-card'); const status = $('agent-goal-status'); const summary = $('agent-goal-summary'); const list = $('agent-goal-events'); const cancel = $('agent-goal-cancel');
@@ -1175,7 +1222,7 @@
   applyTheme();
   ensureIdentity().then(ok => { 
     if (ok) {
-      Promise.all([loadPoints(), loadPresence(), loadMemory(), loadReminders(), loadSafety(), loadAgentGoal(), loadRequestContext(), refreshHistory()]);
+      Promise.all([loadPoints(), loadPresence(), loadMemory(), loadReminders(), loadNotificationDeliveries(), loadSafety(), loadAgentGoal(), loadRequestContext(), refreshHistory()]);
       if (!state.conversationId) renderWelcome();
     }
   });

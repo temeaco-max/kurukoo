@@ -121,6 +121,39 @@ function initTables(database: any) {
     );
     CREATE TABLE IF NOT EXISTS skill_flows (skill TEXT PRIMARY KEY, question_set TEXT, post_match_action TEXT, payment_model TEXT, fulfillment_instructions TEXT, available_locales TEXT DEFAULT '["en"]', booking_mode TEXT DEFAULT 'instant');
     CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT, sender TEXT, content TEXT, channel TEXT DEFAULT 'pwa', card_data TEXT, status TEXT DEFAULT 'sent', whatsapp_msg_id TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+    CREATE TABLE IF NOT EXISTS communication_deliveries (
+      id TEXT PRIMARY KEY,
+      phone TEXT NOT NULL,
+      channel TEXT NOT NULL,
+      direction TEXT NOT NULL CHECK(direction IN ('inbound', 'outbound')),
+      purpose TEXT NOT NULL DEFAULT 'conversation_reply',
+      aggregate_type TEXT,
+      aggregate_id TEXT,
+      message_id INTEGER,
+      idempotency_key TEXT UNIQUE,
+      provider_reference TEXT,
+      state TEXT NOT NULL CHECK(state IN ('queued', 'accepted', 'submitted', 'sent', 'delivered', 'read', 'failed', 'undeliverable', 'not_configured', 'suppressed')),
+      error_code TEXT,
+      metadata_json TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      accepted_at TEXT,
+      delivered_at TEXT,
+      read_at TEXT,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS channel_inbound_events (
+      channel TEXT NOT NULL,
+      provider_event_id TEXT NOT NULL,
+      payload_digest TEXT NOT NULL,
+      verification_state TEXT NOT NULL DEFAULT 'not_verified',
+      communication_delivery_id TEXT,
+      received_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      processed_at TEXT,
+      PRIMARY KEY(channel, provider_event_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_communication_deliveries_phone_created ON communication_deliveries(phone, created_at);
+    CREATE INDEX IF NOT EXISTS idx_communication_deliveries_state_created ON communication_deliveries(state, created_at);
+    CREATE INDEX IF NOT EXISTS idx_communication_deliveries_provider_reference ON communication_deliveries(channel, provider_reference);
     CREATE TABLE IF NOT EXISTS credit_transactions (id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT, amount INTEGER, type TEXT, description TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS pulse_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT, skill TEXT, lat REAL, lng REAL, expires_at TEXT, active INTEGER DEFAULT 1);
     CREATE TABLE IF NOT EXISTS provider_presence (phone TEXT PRIMARY KEY, is_live INTEGER DEFAULT 0, operation_mode TEXT DEFAULT 'stationary', last_lat REAL, last_lng REAL, fuzzed_lat REAL, fuzzed_lng REAL, fuzzed_radius_m INTEGER DEFAULT 100, live_until TEXT, last_confirmed TEXT, updated_at TEXT DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(phone) REFERENCES memory_profiles(phone));
@@ -145,6 +178,57 @@ function initTables(database: any) {
     CREATE TABLE IF NOT EXISTS classifieds (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, price REAL);
     CREATE TABLE IF NOT EXISTS appointment_slots (id INTEGER PRIMARY KEY AUTOINCREMENT, client_phone TEXT, provider_phone TEXT, slot_time TEXT, status TEXT);
     CREATE TABLE IF NOT EXISTS affiliate_clicks (id INTEGER PRIMARY KEY AUTOINCREMENT, product TEXT);
+    CREATE TABLE IF NOT EXISTS affiliate_merchants (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      website_url TEXT NOT NULL,
+      disclosure TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'inactive' CHECK(status IN ('inactive', 'active', 'suspended')),
+      countries_json TEXT NOT NULL DEFAULT '[]',
+      evidence_ref TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS affiliate_offers (
+      id TEXT PRIMARY KEY,
+      merchant_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL,
+      external_url TEXT NOT NULL,
+      country TEXT,
+      status TEXT NOT NULL DEFAULT 'inactive' CHECK(status IN ('inactive', 'active', 'expired', 'suspended')),
+      disclosure TEXT NOT NULL,
+      evidence_ref TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(merchant_id) REFERENCES affiliate_merchants(id)
+    );
+    CREATE TABLE IF NOT EXISTS affiliate_click_events (
+      id TEXT PRIMARY KEY,
+      offer_id TEXT NOT NULL,
+      owner_hash TEXT NOT NULL,
+      destination_url TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(offer_id) REFERENCES affiliate_offers(id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_affiliate_click_events_offer_created ON affiliate_click_events(offer_id, created_at);
+    CREATE TABLE IF NOT EXISTS affiliate_conversion_events (
+      id TEXT PRIMARY KEY,
+      merchant_id TEXT NOT NULL,
+      offer_id TEXT NOT NULL,
+      click_id TEXT,
+      external_conversion_ref TEXT NOT NULL UNIQUE,
+      status TEXT NOT NULL CHECK(status IN ('confirmed', 'reversed')),
+      commission_minor INTEGER,
+      currency TEXT,
+      evidence_ref TEXT NOT NULL,
+      occurred_at TEXT,
+      recorded_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(merchant_id) REFERENCES affiliate_merchants(id),
+      FOREIGN KEY(offer_id) REFERENCES affiliate_offers(id),
+      FOREIGN KEY(click_id) REFERENCES affiliate_click_events(id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_affiliate_conversion_events_offer_status ON affiliate_conversion_events(offer_id, status, recorded_at);
     CREATE TABLE IF NOT EXISTS audit_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT, details TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS pilot_events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

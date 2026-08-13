@@ -1,0 +1,30 @@
+# Kurukoo Master-Pass Reconciliation
+
+**Purpose.** This map reconciles the attached product-completion master pass with the canonical Blueprint, current implementation, `BUILD_STATUS.md`, and the evidence-based completion matrix. It distinguishes completed product work from genuine remaining implementation and external operating dependencies. It does not treat a route, table or static page as complete merely because it exists.
+
+## Status map
+
+| Area | Status | Current evidence | Decision and next action |
+|---|---|---|---|
+| Canonical Economic Request and provider coordination | **Built** | One request, participant, quote, payment/escrow, fulfilment and dispute architecture; evidence-gated provider invitation and internal queue. | Preserve as the sole authority. Surface it through existing channel and operator projections only. |
+| Nearby Radar, Pulse and Trick Bridge | **Built for the current bounded model** | Authenticated Go Live/update/end, verified active provider filtering, persisted fuzzed coordinates, mobile/stationary layers and a canonical Discover client. | Retain Trick Bridge as the privacy-preserving public-projection adapter; do not add unsupported layers or another Radar engine. |
+| Conversation-first interface | **Partially built** | One conversation and authenticated inspector project requests, Points, reminders, memory, safety, tasks, goals and presence. | Complete only missing canonical actions/cards and truthful unavailable states; do not make chat a second workflow or request system. |
+| Provider/public supply | **Built for controlled supply** | Provenance-first registry, claim, verification, capability, availability and coordination distinctions exist. | Expand only through approved sources, operator review and existing claim/verification gates. No fabricated or indiscriminate imported supply. |
+| Contributors | **Built for the bounded task loop** | Available → accepted → evidence → administrator review → idempotent Points. | Add future task types only through this lifecycle. Points remain non-cash; no fabricated contributor earning or withdrawal. |
+| Agent network and runtime | **Built for bounded, feature-gated operation** | Software-service agent type, skills/locality candidate projection, participant-only assignment, goals, limits, evidence, cancellation and high-risk denial. | Keep agent assignment and autonomous execution separate. Do not represent selection as dispatch or completed work. |
+| Canada | **Built as an inactive-market foundation** | `/ca`, CAD context, English/French locale basis and truthful SEO. | Add provinces/cities and Canadian supply only after provenance and operating evidence exist. Do not imply a launch. |
+| Pricing and sponsored advertising | **Partially built** | Truthful free consumer core, conditional provider/business model, persistent placement source/disclosure and active-only public inventory. | Complete commercial metrics and operator control; keep ads distinct from providers, quotes and availability. |
+| SEO and content | **Partially built** | Country URLs, canonical SEO service and Canada-specific inactive-market metadata are present. | Build only data-backed country/geography/service pages, CMS review and internal linking. Avoid thin or fabricated local pages. |
+| Admin/CMS | **Partially built** | Existing administration, supply, coordination, pricing, agent and SEO boundaries exist. Some static dashboards and API summaries still rely on inferred or placeholder commercial values. | Replace inferred revenue/activity with evidence-only metrics and explicit `not_available`/`not_configured` states. |
+| Affiliate commerce | **Missing as an operating loop** | An `affiliate_derived` offer provenance exists, but no canonical merchant, click, conversion-evidence, commission, disclosure or contributor-attribution loop exists. | Build a narrow canonical affiliate authority on the existing offer/request architecture; do not fabricate merchant inventory, clicks, conversions or commissions. |
+| External provider messaging | **Partially built; not ready to claim live delivery** | In-app provider queue is truthful; email is receipt-aware. WhatsApp and SMS adapters exist, but lack a durable outbox/receipt model; USSD makes unsupported dispatch/emergency claims. | Correct truthfulness first, then add one communications-outbox authority and channel adapters that yield explicit, receipt-backed states. |
+| Business/commercial dashboard | **Placeholder/incorrect in part** | Current revenue route infers subscriptions and reports points/ad spend as revenue; marketing endpoint has static advertising counts. | Replace with a canonical evidence-backed metric projection that displays unavailable values rather than estimates. |
+| Hardware, external dispatch and emergency action | **Architecturally obsolete as live UI claims** | Legacy hardware controls are already retired to an inactive reference view; emergency UI is directory-only. USSD still contains unsupported emergency/dispatch language. | Remove remaining unsupported claims. Do not create a device or emergency dispatch subsystem. |
+
+## Immediate implementation order
+
+The next implementation work is deliberately narrow and canonical: first correct external-channel semantics and USSD wording; then establish communications delivery records and provider-notification intent; then replace commercial/dashboard placeholders; then implement an affiliate evidence loop and its operator projections. Page, chat, admin and SEO work must consume these authorities rather than recreate them.
+
+## External prerequisites, not repository gaps
+
+A WhatsApp Business account, approved templates, production webhook endpoint, sender/shortcode or USSD service code, delivery-report subscription, consent policy, PSP settlement, regulated escrow custody, KYC/business-verification provider, actual supply sources, external affiliate merchant contracts, advertising billing, mapping/geocoding provider, and human operations remain external dependencies. Their absence must be represented as configuration or operating states, never simulated as live product evidence.

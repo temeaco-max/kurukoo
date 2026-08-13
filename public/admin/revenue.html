@@ -1,56 +1,66 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Kurukoo Admin - Revenue</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/site.css">
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kurukoo Admin - Commercial evidence</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/site.css">
   <link rel="stylesheet" href="/css/legacy-inline-migration.css?v=1">
 </head>
 <body>
-    <div class="header-bar">
-        <div class="logo"><span>Kurukoo</span> Admin</div>
-        <nav>
-            <a href="/admin/dashboard.html">Console</a>
-            <a href="/admin/revenue.html" class="active">Revenue Streams</a>
-        </nav>
-    </div>
-    <div class="container">
-        <h2>Monetisation Streams</h2>
-        <div class="card-grid" id="revenue-grid">
-            <div class="stat-card">Loading...</div>
-        </div>
-    </div>
-    <script>
-        fetch('/api/admin/revenue').then(r => r.json()).then(data => {
-            document.getElementById('revenue-grid').innerHTML = `
-                <div class="stat-card">
-                    <div class="stat-value">₦${data.subscriptions.toLocaleString()}</div>
-                    <div class="stat-label">Subscription Revenue</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">₦${data.lead_fees.toLocaleString()}</div>
-                    <div class="stat-label">Lead Fees</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">₦${data.ad_revenue.toLocaleString()}</div>
-                    <div class="stat-label">Ad Revenue</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">${data.affiliate_clicks.toLocaleString()} Clicks</div>
-                    <div class="stat-label">Affiliate Traffic</div>
-                </div>
-                <div class="stat-card legacy-inline-1hddrid">
-                    <div class="stat-value">Phase 2</div>
-                    <div class="stat-label">Data Sales</div>
-                </div>
-                <div class="stat-card legacy-inline-1hddrid">
-                    <div class="stat-value">Phase 2</div>
-                    <div class="stat-label">Telco Promotions</div>
-                </div>
-            `;
+  <div class="header-bar">
+    <div class="logo"><span>Kurukoo</span> Admin</div>
+    <nav>
+      <a href="/admin/dashboard.html">Console</a>
+      <a href="/admin/revenue.html" class="active">Commercial evidence</a>
+    </nav>
+  </div>
+  <main class="container">
+    <h1>Commercial evidence</h1>
+    <p id="commercial-boundary">Loading recorded commercial evidence. This page does not estimate revenue.</p>
+    <div class="card-grid" id="revenue-grid" aria-live="polite"><div class="stat-card">Loading…</div></div>
+  </main>
+  <script>
+    (() => {
+      const grid = document.getElementById('revenue-grid');
+      const boundary = document.getElementById('commercial-boundary');
+      const formatAmounts = (entries) => (Array.isArray(entries) && entries.length
+        ? entries.map((entry) => `${entry.amountMinor.toLocaleString()} ${entry.currency} across ${entry.count} record${entry.count === 1 ? '' : 's'}`).join(' · ')
+        : 'No recorded evidence');
+      const card = (value, label, detail) => {
+        const article = document.createElement('article'); article.className = 'stat-card';
+        const primary = document.createElement('div'); primary.className = 'stat-value'; primary.textContent = value;
+        const heading = document.createElement('div'); heading.className = 'stat-label'; heading.textContent = label;
+        const note = document.createElement('small'); note.textContent = detail;
+        article.append(primary, heading, note); return article;
+      };
+      fetch('/api/admin/revenue', { credentials: 'same-origin' })
+        .then((response) => { if (!response.ok) throw new Error('Commercial metrics unavailable'); return response.json(); })
+        .then((data) => {
+          const metrics = data.metrics || {};
+          const collections = metrics.verifiedCustomerCollections || {};
+          const subscriptions = metrics.subscriptions || {};
+          const leadActivity = metrics.pointsLeadActivity || {};
+          const advertising = metrics.advertising || {};
+          const affiliate = metrics.affiliate || {};
+          const escrow = metrics.escrow || {};
+          grid.replaceChildren(
+            card(formatAmounts(collections.byCurrency), 'Verified customer collections', collections.boundary || 'No verified customer collection evidence is recorded.'),
+            card(`${Number(subscriptions.activeRecords || 0).toLocaleString()} active records`, 'Provider subscriptions', subscriptions.boundary || 'Subscription collection evidence is unavailable.'),
+            card(`${Number(leadActivity.pointsDebited || 0).toLocaleString()} Points`, 'Lead-related activity', leadActivity.boundary || 'Points are not fiat revenue.'),
+            card(`${Number(advertising.activeCampaigns || 0).toLocaleString()} active campaigns`, 'Advertising configuration', advertising.boundary || 'Advertising billing is unavailable.'),
+            card(`${Number(affiliate.clicks || 0).toLocaleString()} clicks`, 'Affiliate referral activity', 'Attributed visits are recorded separately from providers and do not establish a payout.'),
+            card(`${Number(affiliate.confirmedCommissionMinor || 0).toLocaleString()} ${affiliate.currency || 'commission units'}`, 'Confirmed affiliate commission evidence', 'Only externally evidenced conversions contribute; it is not a settled payout.'),
+            card(`${Array.isArray(escrow.byStatus) ? escrow.byStatus.reduce((total, row) => total + Number(row.count || 0), 0) : 0} ledger records`, 'Escrow state records', escrow.boundary || 'Ledger state is not proof of regulated custody or settlement.')
+          );
+          boundary.textContent = 'These are evidence-backed operating metrics. Kurukoo does not infer fiat revenue from plan labels, Points, advertising budgets, clicks, or internal escrow state.';
+        })
+        .catch(() => {
+          grid.replaceChildren(card('Unavailable', 'Commercial evidence', 'Metrics could not be loaded. No commercial status change is implied.'));
+          boundary.textContent = 'Commercial evidence is currently unavailable.';
         });
-    </script>
+    })();
+  </script>
 </body>
 </html>

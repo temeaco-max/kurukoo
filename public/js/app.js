@@ -924,7 +924,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Check for product image
-        if (card.image || card.type === 'product_card' || card.type === 'affiliate_card') {
+        if (card.image || card.type === 'product_card') {
             const img = document.createElement('img');
             img.className = 'card-thumbnail';
             img.src = card.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=400';
@@ -963,20 +963,23 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (card.type === 'affiliate_card') {
             const src = document.createElement('div');
             src.className = 'card-source';
-            src.textContent = `via ${card.platformName || 'Jumia'}`;
+            src.textContent = `External merchant offer${card.platformName ? ` · ${card.platformName}` : ''}`;
             cardDiv.appendChild(src);
 
-            const prc = document.createElement('div');
-            prc.className = 'card-price';
-            let pText = card.price || (cur === '£' ? '£20.00' : cur === 'GH₵' ? 'GH₵200' : '₦25,000');
-            if (cur === '£') pText = pText.replace('₦', '£').replace('GH₵', '£');
-            else if (cur === 'GH₵') pText = pText.replace('₦', 'GH₵').replace('£', 'GH₵');
-            prc.textContent = pText;
-            cardDiv.appendChild(prc);
+            const disclosure = document.createElement('div');
+            disclosure.className = 'card-disclosure';
+            disclosure.textContent = card.disclosure || 'Affiliate link. This external merchant is not a verified Kurukoo provider.';
+            cardDiv.appendChild(disclosure);
+
+            if (card.price) {
+                const prc = document.createElement('div');
+                prc.className = 'card-price';
+                prc.textContent = String(card.price);
+                cardDiv.appendChild(prc);
+            }
         } else if (card.type === 'arbitrage_deal') {
             const prc = document.createElement('div');
-            prc.className = 'card-price';
-            prc.style.color = 'var(--electric-blue)';
+            prc.className = 'card-price card-price--arbitrage';
             let bPrice = card.buyPrice || (cur === '£' ? '£10.00' : cur === 'GH₵' ? 'GH₵100' : '₦10,000');
             let sPrice = card.sellPrice || (cur === '£' ? '£15.00' : cur === 'GH₵' ? 'GH₵150' : '₦15,000');
             let profit = card.profit || (cur === '£' ? '£5.00' : cur === 'GH₵' ? 'GH₵50' : '₦5,000');
@@ -1135,11 +1138,12 @@ document.addEventListener('DOMContentLoaded', () => {
             actionsDiv.appendChild(btnOrder);
         } else if (card.type === 'affiliate_card') {
             const btnBuy = document.createElement('button');
+            const visitUrl = typeof card.visitUrl === 'string' ? card.visitUrl : '';
             btnBuy.className = 'btn-card primary';
-            btnBuy.textContent = `Buy on ${card.platformName || 'Jumia'}`;
+            btnBuy.textContent = visitUrl ? 'Continue to external merchant' : 'Affiliate destination unavailable';
+            btnBuy.disabled = !visitUrl;
             btnBuy.onclick = () => {
-                window.open(card.url || 'https://jumia.com.ng', '_blank');
-                submitInlineMessage(`Opened affiliate link for ${card.title}`);
+                if (visitUrl) window.location.assign(visitUrl);
             };
             actionsDiv.appendChild(btnBuy);
         } else if (card.actions) {

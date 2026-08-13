@@ -1,55 +1,53 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Kurukoo Admin - Marketing</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/site.css">
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kurukoo Admin - Marketing evidence</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/site.css">
   <link rel="stylesheet" href="/css/legacy-inline-migration.css?v=1">
 </head>
 <body>
-    <div class="header-bar">
-        <div class="logo"><span>Kurukoo</span> Admin</div>
-        <nav>
-            <a href="/admin/dashboard.html">Console</a>
-            <a href="/admin/marketing.html" class="active">Marketing & Affiliates</a>
-        </nav>
-    </div>
-    <div class="container">
-        <h2>Marketing Performance</h2>
-        <div class="card-grid" id="mkt-grid">
-            <div class="stat-card">Loading...</div>
-        </div>
-        <div class="legacy-inline-1pt2xnd">
-            <h3>Create Promotion</h3>
-            <p>Generate an internal campaign reference for configured promotion channels. External messaging links are not generated in this deployment.</p>
-            <button class="btn" id="generate-campaign-code" type="button">Generate Campaign Reference</button>
-            <div id="link-result" class="legacy-inline-1rgbxyg"></div>
-        </div>
-    </div>
-    <script>
-        fetch('/api/admin/marketing').then(r => r.json()).then(data => {
-            document.getElementById('mkt-grid').innerHTML = `
-                <div class="stat-card">
-                    <div class="stat-value">${data.total_referrals}</div>
-                    <div class="stat-label">Total Referrals</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">${data.ad_impressions || 5024}</div>
-                    <div class="stat-label">Daily Picks Impressions</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">${data.ad_clicks || 342}</div>
-                    <div class="stat-label">Daily Picks Clicks</div>
-                </div>
-            `;
+  <div class="header-bar">
+    <div class="logo"><span>Kurukoo</span> Admin</div>
+    <nav>
+      <a href="/admin/dashboard.html">Console</a>
+      <a href="/admin/marketing.html" class="active">Marketing evidence</a>
+    </nav>
+  </div>
+  <main class="container">
+    <h1>Marketing evidence</h1>
+    <p id="marketing-boundary">Loading recorded marketing activity. Engagement figures are unavailable until measurement is configured.</p>
+    <div class="card-grid" id="mkt-grid" aria-live="polite"><div class="stat-card">Loading…</div></div>
+  </main>
+  <script>
+    (() => {
+      const grid = document.getElementById('mkt-grid');
+      const boundary = document.getElementById('marketing-boundary');
+      const card = (value, label, detail) => {
+        const article = document.createElement('article'); article.className = 'stat-card';
+        const primary = document.createElement('div'); primary.className = 'stat-value'; primary.textContent = value;
+        const heading = document.createElement('div'); heading.className = 'stat-label'; heading.textContent = label;
+        const note = document.createElement('small'); note.textContent = detail;
+        article.append(primary, heading, note); return article;
+      };
+      fetch('/api/admin/marketing', { credentials: 'same-origin' })
+        .then((response) => { if (!response.ok) throw new Error('Marketing metrics unavailable'); return response.json(); })
+        .then((data) => {
+          grid.replaceChildren(
+            card(Number(data.referrals || 0).toLocaleString(), 'Recorded referrals', 'Counts are based on recorded referral records.'),
+            card(Number(data.activeCampaigns || 0).toLocaleString(), 'Active campaign records', 'A campaign record is not evidence of charged advertising or an external broadcast.'),
+            card(data.measuredAdImpressions === null ? 'Not measured' : Number(data.measuredAdImpressions || 0).toLocaleString(), 'Advertising impressions', 'No impression tracker is configured, so this value is intentionally unavailable.'),
+            card(data.measuredAdClicks === null ? 'Not measured' : Number(data.measuredAdClicks || 0).toLocaleString(), 'Advertising clicks', 'No click tracker is configured, so this value is intentionally unavailable.')
+          );
+          boundary.textContent = data.boundary || 'Only measured marketing activity is shown.';
+        })
+        .catch(() => {
+          grid.replaceChildren(card('Unavailable', 'Marketing evidence', 'Metrics could not be loaded. No marketing status change is implied.'));
+          boundary.textContent = 'Marketing evidence is currently unavailable.';
         });
-        function generateCampaignReference() {
-            const tracking = 'PROMO_' + Math.random().toString(36).substr(2, 6).toUpperCase();
-            document.getElementById('link-result').innerText = `Campaign reference: ${tracking}. Configure an approved delivery adapter before publishing externally.`;
-        }
-        document.getElementById('generate-campaign-code')?.addEventListener('click', generateCampaignReference);
-    </script>
+    })();
+  </script>
 </body>
 </html>

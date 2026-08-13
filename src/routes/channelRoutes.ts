@@ -8,6 +8,19 @@ import { webhookRateLimit } from '../middleware/rateLimit.js';
 
 const router = Router();
 
+// Meta verifies the callback endpoint before sending WhatsApp events. A token is
+// required so arbitrary public endpoints cannot be registered as Kurukoo's channel.
+router.get('/webhook/whatsapp', (req, res) => {
+  const verifyToken = String(process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || '');
+  const mode = String(req.query['hub.mode'] || '');
+  const supplied = String(req.query['hub.verify_token'] || '');
+  const challenge = String(req.query['hub.challenge'] || '');
+  if (!verifyToken || mode !== 'subscribe' || !challenge || supplied !== verifyToken) {
+    return res.status(403).send('Webhook verification failed');
+  }
+  return res.status(200).type('text/plain').send(challenge);
+});
+
 router.post('/webhook/whatsapp', webhookRateLimit, async (req, res) => {
   const rawBody = (req as any).rawBody;
   const result = await dispatchWebhook('whatsapp', req.body, req.headers as Record<string, any>, rawBody);

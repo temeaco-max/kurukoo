@@ -287,7 +287,19 @@ export async function inviteEligibleProviders(input: { requestId: string; ownerP
     invitations.push(invitation);
     await addEconomicParticipant({ requestId: request.id, ownerPhone: request.phone, role: 'service_provider', providerPhone: provider.phone, capability: request.skill, status: 'invited', evidence: { invitation_id: invitation.id, matching_source: 'verified_capability_match', external_delivery: 'not_claimed' } });
     await recordEvent({ requestId: request.id, invitationId: invitation.id, event: 'provider_invited', authority: 'customer', actorId: request.phone, idempotencyKey: `invite:${request.id}:${provider.phone}`, evidence: { capability: request.skill, delivery: 'internal_queue_only' } });
-    await enqueueInternalNotification(provider.phone, 'New Kurukoo request available', 'A request matching your verified capability is available in your provider queue.', `/provider/coordination?invitation=${encodeURIComponent(invitation.id)}`);
+    await enqueueInternalNotification(
+      provider.phone,
+      'New Kurukoo request available',
+      'A request matching your verified capability is available in your provider queue.',
+      `/provider/coordination?invitation=${encodeURIComponent(invitation.id)}`,
+      {
+        purpose: 'provider_invitation',
+        aggregateType: 'provider_invitation',
+        aggregateId: invitation.id,
+        idempotencyKey: `notification:provider-invitation:${invitation.id}`,
+        metadata: { request_id: request.id, external_delivery: 'not_claimed' },
+      },
+    );
   }
   saveDb();
   return { invitations, internalQueueOnly: true };
@@ -345,7 +357,19 @@ export async function respondToProviderInvitation(input: { invitationId: string;
   db.run(`UPDATE provider_coordination_invitations SET status=?, quote_minor=?, currency=?, note=?, response_idempotency_key=?, responded_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE id=?`, [response, quoteMinor, currency, note, idempotencyKey, invitation.id]);
   await updateEconomicParticipant({ requestId: request.id, actorPhone: providerPhone, role: 'service_provider', providerPhone, status: response === 'accepted' ? 'accepted' : 'declined', evidence: { invitation_id: invitation.id, response, quote_minor: quoteMinor, currency, provider_note: note, response_idempotency_key: idempotencyKey, external_delivery: 'not_claimed' } });
   await recordEvent({ requestId: request.id, invitationId: invitation.id, event: `provider_${response}`, authority: 'provider', actorId: providerPhone, idempotencyKey: `response:${invitation.id}:${idempotencyKey}`, evidence: { quote_submitted: response === 'accepted', currency: currency || undefined } });
-  await enqueueInternalNotification(request.phone, 'Provider response received', response === 'accepted' ? 'A provider submitted a quote for your request. Review it in Kurukoo before confirming.' : 'A provider declined this request. Kurukoo can continue with other available responses.', `/chat?request=${encodeURIComponent(request.id)}`);
+  await enqueueInternalNotification(
+    request.phone,
+    'Provider response received',
+    response === 'accepted' ? 'A provider submitted a quote for your request. Review it in Kurukoo before confirming.' : 'A provider declined this request. Kurukoo can continue with other available responses.',
+    `/chat?request=${encodeURIComponent(request.id)}`,
+    {
+      purpose: 'provider_response',
+      aggregateType: 'provider_invitation',
+      aggregateId: invitation.id,
+      idempotencyKey: `notification:provider-response:${invitation.id}:${idempotencyKey}`,
+      metadata: { request_id: request.id, provider_response: response, external_delivery: 'not_claimed' },
+    },
+  );
   saveDb();
   return (await getProviderInvitation(invitation.id))!;
 }

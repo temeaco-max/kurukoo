@@ -86,6 +86,45 @@
     }
   };
 
+  const loadAffiliateOffers = async () => {
+    const list = qs('[data-affiliate-offers]');
+    const status = qs('[data-affiliate-offers-status]');
+    const error = qs('[data-affiliate-offers-error]');
+    if (!list) return [];
+    clear(list);
+    if (status) status.textContent = 'Loading offers';
+    if (error) { error.hidden = true; error.textContent = ''; }
+    try {
+      const payload = await api('/api/affiliate/offers');
+      const offers = Array.isArray(payload.offers) ? payload.offers : [];
+      offers.forEach((offer) => {
+        const action = document.createElement('a');
+        action.className = 'workspace-text-action';
+        action.href = String(offer.visitUrl || '#');
+        action.textContent = offer.visitUrl ? 'Continue to external merchant' : 'Destination unavailable';
+        if (!offer.visitUrl) action.setAttribute('aria-disabled', 'true');
+        const country = offer.country ? ` · ${String(offer.country).toUpperCase()}` : '';
+        const disclosure = String(offer.disclosure || 'Affiliate link. This external merchant is not a verified Kurukoo provider.');
+        const description = String(offer.description || 'A disclosed external merchant referral.');
+        list.appendChild(makeDataCard({
+          eyebrow: `Affiliate link${country}`,
+          title: String(offer.title || 'External merchant offer'),
+          detail: `${description} ${disclosure}`,
+          state: 'Not a verified provider',
+          action,
+        }));
+      });
+      setEmpty('[data-affiliate-offers-empty]', offers.length === 0);
+      if (status) status.textContent = offers.length ? 'Evidence-backed offers' : 'No offers available';
+      return offers;
+    } catch (_) {
+      setEmpty('[data-affiliate-offers-empty]', false);
+      if (status) status.textContent = 'Offers unavailable';
+      if (error) { error.textContent = 'Affiliate offers could not be loaded. No external merchant action has been taken.'; error.hidden = false; }
+      return [];
+    }
+  };
+
   const cancelReminder = async (id, button) => {
     button.disabled = true;
     try { await api(`/api/reminders/${encodeURIComponent(id)}/cancel`, { method: 'POST' }); await loadReminders(); }
@@ -472,6 +511,7 @@
 
   if (section === 'requests') loadRequests();
   if (section === 'reminders') loadReminders();
+  if (section === 'saved') loadAffiliateOffers();
   qs('[data-profile-form]')?.addEventListener('submit', event => { event.preventDefault(); void saveProfile(event.currentTarget); });
   qs('[data-profile-export]')?.addEventListener('click', () => void exportProfileData());
   qs('[data-profile-delete]')?.addEventListener('click', () => void deleteProfile());

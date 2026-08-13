@@ -30,6 +30,7 @@ import { queryGroq } from '../services/groqService.js';
 import { isProviderEntityType } from '../services/providerEntity.js';
 import { ensureProviderVerificationSchema, setProviderVerification } from '../services/providerVerification.js';
 import { getPilotDashboard } from '../services/pilotObservability.js';
+import { getCommercialMetrics, getMarketingMetrics } from '../services/commercialMetrics.js';
 
 const router = Router();
 
@@ -594,60 +595,17 @@ router.get('/referrals', authenticateAdmin, async (_req: AuthRequest, res) => {
 
 router.get('/revenue', authenticateAdmin, async (_req: AuthRequest, res) => {
   try {
-    const db = await getDb();
-    let subRev = 0;
-    let leadFees = 0;
-    let adRev = 0;
-    let affClicks = 0;
-
-    const stmtSubs = db.prepare(
-      `SELECT subscription_tier, COUNT(*) as count FROM memory_profiles GROUP BY subscription_tier`
-    );
-    while (stmtSubs.step()) {
-      const row = stmtSubs.getAsObject();
-      const count = row.count as number;
-      const tier = String(row.subscription_tier || '').toLowerCase();
-      if (tier === 'base') subRev += count * 500;
-      if (tier === 'plus') subRev += count * 1500;
-      if (tier === 'business') subRev += count * 5000;
-    }
-    stmtSubs.free();
-
-    const stmtLeads = db.prepare(
-      `SELECT SUM(amount) as total FROM credit_transactions WHERE type = 'lead_fee'`
-    );
-    if (stmtLeads.step()) leadFees = (stmtLeads.getAsObject().total as number) || 0;
-    stmtLeads.free();
-
-    const stmtAds = db.prepare(`SELECT SUM(credits_spent) as total FROM ad_campaigns`);
-    if (stmtAds.step()) adRev = (stmtAds.getAsObject().total as number) || 0;
-    stmtAds.free();
-
-    const stmtAff = db.prepare(`SELECT COUNT(*) as total FROM affiliate_clicks`);
-    if (stmtAff.step()) affClicks = (stmtAff.getAsObject().total as number) || 0;
-    stmtAff.free();
-
-    res.json({
-      subscriptions: subRev,
-      lead_fees: leadFees,
-      ad_revenue: adRev,
-      affiliate_clicks: affClicks,
-    });
-  } catch (e) {
-    res.status(500).json({ error: 'Failed to fetch revenue stats' });
+    res.json({ metrics: await getCommercialMetrics() });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to fetch commercial metrics' });
   }
 });
 
 router.get('/marketing', authenticateAdmin, async (_req: AuthRequest, res) => {
   try {
-    const db = await getDb();
-    const stmt = db.prepare('SELECT COUNT(*) as count FROM referrals');
-    let total = 0;
-    if (stmt.step()) total = stmt.getAsObject().count as number;
-    stmt.free();
-    res.json({ total_referrals: total, ad_impressions: 5024, ad_clicks: 342 });
-  } catch (e) {
-    res.status(500).json({ error: 'Failed to fetch marketing stats' });
+    res.json(await getMarketingMetrics());
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to fetch marketing metrics' });
   }
 });
 
