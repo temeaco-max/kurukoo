@@ -10,7 +10,7 @@ assert.match(worker, /kurukoo-static-v7/);
 assert.match(worker, /kurukoo-pages-v7/);
 assert.match(worker, /kurukoo-pwa-shell-v7/);
 assert.match(worker, /const CACHEABLE_PAGE_PATHS = new Set\(PAGES_TO_CACHE\)/);
-assert.match(worker, /const CACHEABLE_PUBLIC_APIS = new Set\(\['\/api\/hero-taglines', '\/api\/pricing', '\/api\/blog'\]\)/);
+assert.match(worker, /const CACHEABLE_PUBLIC_APIS = new Set\(\);/);
 assert.match(worker, /isExplicitlyCacheablePublicRequest/);
 assert.match(worker, /url\.origin === self\.location\.origin/);
 assert.match(worker, /pathname\.startsWith\('\/api\/chat'\)/, 'private attachments and chat data must be excluded from caching');

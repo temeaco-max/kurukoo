@@ -20,6 +20,12 @@ The final clean-build verification completed `npm ci --ignore-scripts`, `npm run
 
 Known non-blocking validation debt is documented rather than hidden: the non-strict CSS audit reports 217 legacy inline-style occurrences across 13 files; the production dependency audit reports two high-severity `sharp`/`@huggingface/transformers` advisories with no currently safe npm fix. These require follow-up but did not invalidate the assembled route, lifecycle, or public-runtime contracts.
 
+## 2026-08-13 HTTP delivery and PWA cache hardening
+
+The application composition root now supplies one browser-security floor before static or routed responses are delivered: framework disclosure is disabled, every response has `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, and a narrow same-origin microphone/geolocation permissions policy; production additionally emits HSTS. This works with, rather than replaces, attachment authorization, forced-download, `private, no-store`, and dynamic route cache protections. `test:http-security-headers` starts the real application and verifies the contract across public, static, administrative, dynamic API, voice, and protected attachment responses.
+
+The PWA service worker continues to cache only a versioned explicit public page-and-asset shell. Its former public API cache entries named endpoints that do not exist; those entries were removed rather than keeping a deceptive or failed cache path. No dynamic API response is now eligible for persistence, and the offline scope remains limited to the verified public shell and fallback.
+
 ## Current architecture
 
 ```text
@@ -239,7 +245,7 @@ Daily Picks now keeps personal context and sponsorship separate. Its sponsored p
 
 ## 2026-08-13 PWA offline cache boundary
 
-The existing service worker now uses versioned cache migration and an explicit same-origin public allow-list: the public shell, selected public marketing/help pages, and three public metadata APIs. It does not cache unknown navigations or any authenticated/admin/chat/attachment/voice/account/profile/points/reminder/safety/task/order/Pulse/webhook response. An uncached navigation can receive only the existing offline fallback if its network request fails; it is not persisted. The new PWA contract regression proves cache eligibility, private dynamic exclusions, registration, migration, and truthful offline copy. Offline chat, Economic Requests, payments, profiles, private media, and dynamic provider data remain intentionally unavailable.
+The existing service worker now uses versioned cache migration and an explicit same-origin public allow-list: the public shell and selected public marketing/help pages. No dynamic API response is eligible for persistence. It does not cache unknown navigations or any authenticated/admin/chat/attachment/voice/account/profile/points/reminder/safety/task/order/Pulse/webhook response. An uncached navigation can receive only the existing offline fallback if its network request fails; it is not persisted. The new PWA contract regression proves cache eligibility, private dynamic exclusions, registration, migration, and truthful offline copy. Offline chat, Economic Requests, payments, profiles, private media, and dynamic provider data remain intentionally unavailable.
 
 ## 2026-08-13 public provider projection parity
 

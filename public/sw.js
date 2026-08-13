@@ -24,7 +24,7 @@ const PAGES_TO_CACHE = [
     '/resources/', '/partners/', '/advertise/'
 ];
 const CACHEABLE_PAGE_PATHS = new Set(PAGES_TO_CACHE);
-const CACHEABLE_PUBLIC_APIS = new Set(['/api/hero-taglines', '/api/pricing', '/api/blog']);
+const CACHEABLE_PUBLIC_APIS = new Set();
 
 const isProtectedDynamicPath = pathname => pathname.startsWith('/admin')
     || pathname.startsWith('/api/messages')

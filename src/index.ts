@@ -61,6 +61,16 @@ console.log(`[Kurukoo Startup] Environment initialized. PORT=${process.env.PORT 
 await hydrateAdminControlPlane();
 
 const app = express();
+app.disable('x-powered-by');
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  // Voice and nearby presence remain explicit user-initiated browser permissions.
+  res.setHeader('Permissions-Policy', 'geolocation=(self), microphone=(self), camera=(), payment=()');
+  if (production) res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  next();
+});
 app.set('view engine', 'ejs');
 app.set('views', path.join(process.cwd(), 'views'));
 
