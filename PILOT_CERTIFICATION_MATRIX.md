@@ -97,8 +97,21 @@ No real human cohort was available in this environment. The exact protocol is do
 | Registry lifecycle authority | PASS | Generic admin transition is disabled; review, claim review, readiness, freshness, duplicate, and activation actions are separate. | Continue regression coverage whenever lifecycle states change. | P0 |
 | Pilot dashboard privacy | PASS | Ordinary `/api/admin/pilot-dashboard` returns aggregate event counts and feedback distribution only; raw notes are omitted and handoff labels are pseudonymous. | Separate stronger-access incident review would require an explicit operator policy if ever added. | P1 |
 
+### Reconciled provider-coordination controls
+
+| Control | Repository evidence after reconciliation | Operating boundary |
+|---|---|---|
+| Controlled admission | `KURUKOO_CONTROLLED_PILOT=true` requires an operator-enrolled active customer or provider account at direct request, storefront, provider queue, quote, and legacy-finalizer boundaries. | The operator must enrol only the 5–10 invited customers and 5–20 reviewed providers; the feature flag must remain disabled outside the pilot deployment. |
+| Fresh provider availability | Provider-owned skill-and-service-area availability is bounded to 5 minutes–24 hours, records an IANA timezone, and is rechecked before invitation, response, selection, and acceptance. | Availability is a current declaration, not opening hours, a booking, arrival, dispatch, or fulfilment evidence. |
+| Authoritative quote | A provider response requires a positive integer amount, uses NGN in controlled Nigerian pilot mode, expires with the invitation, and is revalidated with provider verification and availability at customer selection and acceptance. | Acceptance moves the shared Economic Request only to `awaiting_confirmation`; it is explicitly **accepted—not paid, booked, dispatched, or fulfilled**. |
+| Customer privacy | The provider queue receives a filtered request projection rather than arbitrary customer-supplied requirements; free-form provider notes redact phone-like, email, OTP, and token values. | Operators must still minimise the facts entered into requests and handle any incident outside ordinary audit/event views. |
+| Legacy containment | The legacy order finalizer fails closed in controlled-pilot mode, leaving the shared storefront and provider-coordination flow as the only permitted pilot request path. | Payment, escrow, dispatch, fulfilment, external messages, and autonomous execution stay disabled. |
+| Audit privacy | Economic Request transition audit records now use a one-way customer hash instead of a raw phone field. | Existing audit-log retention and privileged access policies still require deployment-owner review. |
+
 ### Current classification
 
-> **CONTROLLED PILOT READY — PROVENANCE-FIRST NIGERIAN SUPPLY**, subject to approved real sources, operator review, no automatic external outreach, and the existing no-payment/no-dispatch/no-fulfilment boundaries.
+> **REPOSITORY READY FOR A CONTROLLED NIGERIAN PILOT — GO WITH CONDITIONS.** The code now has a provenance-first supply registry, claim and evidence verification lifecycle, operator-controlled admission, fresh scoped availability, provider-owned quote authority, customer-owned acceptance, minimised request projection, auditable human handoff, and fail-closed legacy path. This is **not** public-production readiness and it does not authorise money movement, dispatch, fulfilment, external provider outreach, emergency notification, or autonomous execution.
 
-This matrix does not certify any real Nigerian business record because none has been imported into the production database during this pass.
+The controlled pilot may begin only after the deployment and human-operation gates in [`LAUNCH_HARDENING_MATRIX.md`](./LAUNCH_HARDENING_MATRIX.md) and [`PILOT_OPERATING_GUIDE.md`](./PILOT_OPERATING_GUIDE.md) are completed: HTTPS and backups; a production secret manager; WAF/rate limits; named pilot operator and escalation rota; approved sources and terms; adult tester consent; manual provider verification evidence; a restricted Nigerian locality; and a tested stop/rollback procedure.
+
+This matrix does not certify any real Nigerian business record, provider, or customer outcome because no real record has been imported or contacted during this pass.

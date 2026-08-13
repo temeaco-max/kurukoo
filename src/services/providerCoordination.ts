@@ -39,6 +39,20 @@ export interface CoordinationHandoff {
 
 const invitationStatusSet = new Set<string>(PROVIDER_INVITATION_STATUSES);
 const handoffStatusSet = new Set<string>(HANDOFF_STATUSES);
+const PILOT_ROLES = new Set(['customer', 'provider']);
+const PILOT_ACCOUNT_STATES = new Set(['active', 'suspended', 'revoked']);
+const AVAILABILITY_STATES = new Set(['available', 'unavailable', 'temporarily_unavailable']);
+
+export function isControlledPilotEnabled(): boolean { return process.env.KURUKOO_CONTROLLED_PILOT === 'true'; }
+
+function currentIso(): string { return new Date().toISOString(); }
+
+function providerRequestProjection(request: EconomicRequest): Pick<EconomicRequest, 'id' | 'skill' | 'category' | 'requirements' | 'status'> {
+  const allowed = new Set(['location', 'origin', 'destination', 'service', 'device', 'device_or_asset', 'issue', 'items', 'quantity', 'time', 'date_time', 'deadline', 'event_date', 'venue', 'budget', 'urgency', 'duration']);
+  const requirements: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(request.requirements || {})) if (allowed.has(key)) requirements[key] = value;
+  return { id: request.id, skill: request.skill, category: request.category, requirements, status: request.status };
+}
 
 function actorHash(value: string): string {
   const salt = process.env.KURUKOO_COORDINATION_SALT || process.env.KURUKOO_PILOT_EVENT_SALT || process.env.JWT_SECRET || 'development-coordination-salt';
@@ -125,7 +139,26 @@ async function ensureCoordinationSchema(): Promise<void> {
     evidence_json TEXT NOT NULL DEFAULT '{}',
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
-  CREATE UNIQUE INDEX IF NOT EXISTS idx_coordination_events_idempotency ON coordination_events(request_id, idempotency_key) WHERE idempotency_key IS NOT NULL;`);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_coordination_events_idempotency ON coordination_events(request_id, idempotency_key) WHERE idempotency_key IS NOT NULL;
+  CREATE TABLE IF NOT EXISTS controlled_pilot_accounts (
+    phone TEXT PRIMARY KEY,
+    role TEXT NOT NULL CHECK(role IN ('customer','provider')),
+    state TEXT NOT NULL DEFAULT 'active' CHECK(state IN ('active','suspended','revoked')),
+    enrolled_by_hash TEXT NOT NULL,
+    enrolled_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS provider_coordination_availability (
+    phone TEXT NOT NULL,
+    skill TEXT NOT NULL,
+    service_area TEXT,
+    timezone TEXT NOT NULL,
+    state TEXT NOT NULL CHECK(state IN ('available','unavailable','temporarily_unavailable')),
+    available_until TEXT,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(phone, skill, service_area)
+  );
+  CREATE INDEX IF NOT EXISTS idx_provider_coordination_availability_current ON provider_coordination_availability(phone,skill,state,available_until);`);
 }
 
 async function recordEvent(input: { requestId: string; invitationId?: string; handoffId?: string; event: string; authority: 'customer' | 'provider' | 'operator' | 'system'; actorId: string; idempotencyKey?: string; evidence?: Record<string, unknown> }): Promise<void> {
@@ -139,13 +172,73 @@ async function recordEvent(input: { requestId: string; invitationId?: string; ha
   saveDb();
 }
 
+export async function assertControlledPilotAccount(phone: string, role: 'customer' | 'provider'): Promise<void> {
+  if (!isControlledPilotEnabled()) return;
+  await ensureCoordinationSchema();
+  const db = await getDb();
+  const stmt = db.prepare('SELECT role,state FROM controlled_pilot_accounts WHERE phone=? LIMIT 1');
+  stmt.bind([cleanText(phone, 'Authenticated identity', 128)]);
+  const row = stmt.step() ? stmt.getAsObject() as Record<string, unknown> : null;
+  stmt.free();
+  if (!row || row.role !== role || row.state !== 'active') throw new Error('This account is not enrolled for the controlled pilot');
+}
+
+export async function setControlledPilotAccount(input: { phone: unknown; role: unknown; state?: unknown; operatorId: string }): Promise<void> {
+  const phone = cleanText(input.phone, 'Pilot account phone', 128);
+  const role = cleanText(input.role, 'Pilot account role', 32);
+  const state = cleanText(input.state || 'active', 'Pilot account state', 32);
+  if (!PILOT_ROLES.has(role) || !PILOT_ACCOUNT_STATES.has(state)) throw new Error('Unsupported pilot account role or state');
+  await ensureCoordinationSchema();
+  const db = await getDb();
+  db.run(`INSERT INTO controlled_pilot_accounts(phone,role,state,enrolled_by_hash,updated_at) VALUES(?,?,?,?,CURRENT_TIMESTAMP)
+    ON CONFLICT(phone) DO UPDATE SET role=excluded.role,state=excluded.state,enrolled_by_hash=excluded.enrolled_by_hash,updated_at=CURRENT_TIMESTAMP`, [phone, role, state, actorHash(cleanText(input.operatorId, 'Operator identity', 128))]);
+  saveDb();
+}
+
+export async function setProviderCoordinationAvailability(input: { phone: string; skill: unknown; serviceArea?: unknown; timezone?: unknown; state: unknown; availableForMinutes?: unknown }): Promise<void> {
+  const phone = cleanText(input.phone, 'Provider identity', 128);
+  await assertControlledPilotAccount(phone, 'provider');
+  const skill = cleanText(input.skill, 'Skill', 128).toLowerCase();
+  const serviceArea = input.serviceArea === undefined || input.serviceArea === null || input.serviceArea === '' ? null : cleanText(input.serviceArea, 'Service area', 160);
+  const state = cleanText(input.state, 'Availability state', 64);
+  if (!AVAILABILITY_STATES.has(state)) throw new Error('Unsupported availability state');
+  const timezone = cleanText(input.timezone || 'Africa/Lagos', 'Timezone', 64);
+  try { Intl.DateTimeFormat(undefined, { timeZone: timezone }); } catch { throw new Error('Timezone is invalid'); }
+  const minutes = input.availableForMinutes === undefined ? 60 : Number(input.availableForMinutes);
+  if (state === 'available' && (!Number.isInteger(minutes) || minutes < 5 || minutes > 1440)) throw new Error('Available duration must be between 5 minutes and 24 hours');
+  await ensureCoordinationSchema();
+  const db = await getDb();
+  const availableUntil = state === 'available' ? new Date(Date.now() + minutes * 60_000).toISOString() : null;
+  db.run(`INSERT INTO provider_coordination_availability(phone,skill,service_area,timezone,state,available_until,updated_at) VALUES(?,?,?,?,?,?,CURRENT_TIMESTAMP)
+    ON CONFLICT(phone,skill,service_area) DO UPDATE SET timezone=excluded.timezone,state=excluded.state,available_until=excluded.available_until,updated_at=CURRENT_TIMESTAMP`, [phone, skill, serviceArea, timezone, state, availableUntil]);
+  saveDb();
+}
+
+export async function isCurrentProviderAvailability(phone: string, skill: string, location?: string): Promise<boolean> {
+  if (!isControlledPilotEnabled()) return true;
+  await ensureCoordinationSchema();
+  const db = await getDb();
+  const stmt = db.prepare("SELECT service_area FROM provider_coordination_availability WHERE phone=? AND lower(skill)=lower(?) AND state='available' AND available_until>? ORDER BY updated_at DESC");
+  stmt.bind([cleanText(phone, 'Provider identity', 128), cleanText(skill, 'Skill', 128), currentIso()]);
+  const requestedLocation = String(location || '').trim().toLowerCase();
+  let eligible = false;
+  while (stmt.step()) {
+    const area = String((stmt.getAsObject() as Record<string, unknown>).service_area || '').trim().toLowerCase();
+    if (!requestedLocation || !area || requestedLocation.includes(area) || area.includes(requestedLocation)) { eligible = true; break; }
+  }
+  stmt.free();
+  return eligible;
+}
+
 async function requireOwner(requestId: string, ownerPhone: string): Promise<EconomicRequest> {
+  await assertControlledPilotAccount(ownerPhone, 'customer');
   const request = await getEconomicRequest(cleanText(requestId, 'Request id', 128));
   if (!request || request.phone !== cleanText(ownerPhone, 'Authenticated owner', 128)) throw new Error('Economic request ownership is required');
   return request;
 }
 
 async function requireVerifiedProvider(providerPhone: string): Promise<void> {
+  await assertControlledPilotAccount(providerPhone, 'provider');
   if (!await providerMayBeDiscovered(providerPhone)) throw new Error('An evidence-verified provider account is required');
 }
 
@@ -163,6 +256,7 @@ export async function inviteEligibleProviders(input: { requestId: string; ownerP
   const invitations: ProviderInvitation[] = [];
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
   for (const provider of matches.providers) {
+    if (!await isCurrentProviderAvailability(provider.phone, request.skill, typeof location === 'string' ? location : undefined)) continue;
     const id = crypto.randomUUID();
     db.run(`INSERT OR IGNORE INTO provider_coordination_invitations(id,request_id,provider_phone,capability,status,expires_at)
       VALUES (?,?,?,?, 'invited', ?)`, [id, request.id, provider.phone, request.skill, expiresAt]);
@@ -194,7 +288,7 @@ export async function listProviderInvitations(providerPhone: string, limit = 30)
   const output: Array<ProviderInvitation & { request: Pick<EconomicRequest, 'id' | 'skill' | 'category' | 'requirements' | 'status'> }> = [];
   for (const invitation of rows) {
     const request = await getEconomicRequest(invitation.requestId);
-    if (request) output.push({ ...invitation, request: { id: request.id, skill: request.skill, category: request.category, requirements: request.requirements, status: request.status } });
+    if (request) output.push({ ...invitation, request: providerRequestProjection(request) });
   }
   saveDb();
   return output;
@@ -219,12 +313,16 @@ export async function respondToProviderInvitation(input: { invitationId: string;
     if (invitation.responseIdempotencyKey === idempotencyKey) return invitation;
     throw new Error('This provider invitation has already been answered');
   }
+  if (invitation.expiresAt && new Date(invitation.expiresAt).getTime() <= Date.now()) throw new Error('This provider invitation has expired');
   const request = await getEconomicRequest(invitation.requestId);
   if (!request || isTerminal(request.status)) throw new Error('The related request is no longer active');
+  const requestLocation = typeof request.requirements.location === 'string' ? request.requirements.location : typeof request.requirements.origin === 'string' ? request.requirements.origin : undefined;
+  if (!await isCurrentProviderAvailability(providerPhone, request.skill, requestLocation)) throw new Error('Provider availability is unknown or stale');
   const submittedQuote = response === 'accepted' ? Number(input.quoteMinor) : null;
   if (response === 'accepted' && (submittedQuote === null || !Number.isSafeInteger(submittedQuote) || submittedQuote <= 0)) throw new Error('An accepted response requires a positive whole-number quote in minor units');
   const quoteMinor = response === 'accepted' ? submittedQuote as number : null;
   const currency = response === 'accepted' ? cleanText(typeof input.currency === 'string' ? input.currency : 'NGN', 'Currency', 8).toUpperCase() : null;
+  if (isControlledPilotEnabled() && currency && currency !== 'NGN') throw new Error('Controlled pilot quotes must use NGN');
   const note = cleanOptionalNote(input.note);
   db.run(`UPDATE provider_coordination_invitations SET status=?, quote_minor=?, currency=?, note=?, response_idempotency_key=?, responded_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE id=?`, [response, quoteMinor, currency, note, idempotencyKey, invitation.id]);
   await updateEconomicParticipant({ requestId: request.id, actorPhone: providerPhone, role: 'service_provider', providerPhone, status: response === 'accepted' ? 'accepted' : 'declined', evidence: { invitation_id: invitation.id, response, quote_minor: quoteMinor, currency, provider_note: note, response_idempotency_key: idempotencyKey, external_delivery: 'not_claimed' } });
@@ -261,6 +359,9 @@ export async function selectProviderResponse(input: { requestId: string; ownerPh
   const invitation = await getProviderInvitation(cleanText(input.invitationId, 'Invitation id', 128));
   if (!invitation || invitation.requestId !== request.id || invitation.status !== 'accepted' || !Number.isSafeInteger(invitation.quoteMinor) || !invitation.currency) throw new Error('An accepted provider quote is required');
   await requireVerifiedProvider(invitation.providerPhone);
+  if (invitation.expiresAt && new Date(invitation.expiresAt).getTime() <= Date.now()) throw new Error('Provider quote has expired');
+  const requestLocation = typeof request.requirements.location === 'string' ? request.requirements.location : typeof request.requirements.origin === 'string' ? request.requirements.origin : undefined;
+  if (!await isCurrentProviderAvailability(invitation.providerPhone, request.skill, requestLocation)) throw new Error('Provider availability is unknown or stale');
   await updateEconomicParticipant({ requestId: request.id, actorPhone: request.phone, role: 'service_provider', providerPhone: invitation.providerPhone, status: 'selected', evidence: { invitation_id: invitation.id, selected_by: 'customer', selected_at: new Date().toISOString() } });
   let current = await getEconomicRequest(request.id);
   if (!current) throw new Error('Economic request not found');
@@ -279,7 +380,9 @@ export async function acceptSelectedProviderQuote(input: { requestId: string; ow
   const selected = participants.find((participant) => participant.role === 'service_provider' && participant.status === 'selected' && participant.providerPhone === request.providerPhone);
   if (!selected) throw new Error('A selected provider participant is required');
   await requireVerifiedProvider(selected.providerPhone);
-  await updateEconomicParticipant({ requestId: request.id, actorPhone: request.phone, role: 'service_provider', providerPhone: selected.providerPhone, status: 'confirmed', evidence: { customer_quote_acceptance: true, accepted_at: new Date().toISOString() } });
+  const requestLocation = typeof request.requirements.location === 'string' ? request.requirements.location : typeof request.requirements.origin === 'string' ? request.requirements.origin : undefined;
+  if (!await isCurrentProviderAvailability(selected.providerPhone, request.skill, requestLocation)) throw new Error('Provider availability is unknown or stale');
+  await updateEconomicParticipant({ requestId: request.id, actorPhone: request.phone, role: 'service_provider', providerPhone: selected.providerPhone, status: 'confirmed', evidence: { customer_quote_acceptance: true, accepted_at: new Date().toISOString(), accepted_not_paid: true } });
   const updated = await transitionEconomicRequest(request.id, 'awaiting_confirmation');
   await recordEvent({ requestId: request.id, event: 'provider_quote_accepted', authority: 'customer', actorId: request.phone, idempotencyKey: `quote-accept:${request.id}:${String(request.quote.provider_response_id || '')}`, evidence: { payment_not_claimed: true } });
   return updated;

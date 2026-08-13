@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { getDb, saveDb } from '../database.js';
 
 export type EconomicCapability = 'discovery'|'availability'|'quote'|'verification'|'reservation'|'payment'|'escrow'|'contract'|'fulfillment'|'tracking'|'evidence'|'cancellation'|'dispute'|'completion';
@@ -44,7 +45,8 @@ export function getAllowedEconomicTransitions(status:EconomicRequestStatus):Econ
 export async function transitionEconomicRequest(id:string,status:EconomicRequestStatus,patch:{providerPhone?:string;quote?:Record<string,unknown>;fulfillment?:Record<string,unknown>}={}):Promise<EconomicRequest>{const current=await getEconomicRequest(id);if(!current)throw new Error('Economic request not found');if(status!==current.status&&!getAllowedEconomicTransitions(current.status).includes(status))throw new Error(`Invalid economic request transition: ${current.status} -> ${status}`);const db=await ensureEconomicRequestsTable();const s=db.prepare(`UPDATE economic_requests SET status=?,provider_phone=COALESCE(?,provider_phone),quote_json=COALESCE(?,quote_json),fulfillment_json=COALESCE(?,fulfillment_json),updated_at=CURRENT_TIMESTAMP WHERE id=?`);s.bind([status,patch.providerPhone??null,patch.quote?JSON.stringify(patch.quote):null,patch.fulfillment?JSON.stringify(patch.fulfillment):null,id]);s.step();s.free();
   try {
     const logStmt = db.prepare(`INSERT INTO audit_logs(action, details) VALUES(?, ?)`);
-    logStmt.bind(['economic_request_transition', JSON.stringify({ requestId: id, phone: current.phone, skill: current.skill, fromStatus: current.status, toStatus: status })]);
+    const customerHash = crypto.createHash('sha256').update(current.phone).digest('hex').slice(0, 16);
+    logStmt.bind(['economic_request_transition', JSON.stringify({ requestId: id, customerHash, skill: current.skill, fromStatus: current.status, toStatus: status })]);
     logStmt.step();
     logStmt.free();
     saveDb();

@@ -11,6 +11,8 @@ import {
   requestOperatorHandoff,
   respondToProviderInvitation,
   selectProviderResponse,
+  setControlledPilotAccount,
+  setProviderCoordinationAvailability,
   updateOperatorHandoff,
 } from '../services/providerCoordination.js';
 
@@ -53,6 +55,18 @@ router.post('/provider/invitations/:id/respond', authenticateUser, async (req: A
     const message = error instanceof Error ? error.message : 'Unable to record provider response';
     const status = /verified provider/.test(message) ? 403 : /not found/.test(message) ? 404 : /already|no longer|positive/.test(message) ? 409 : 422;
     res.status(status).json({ success: false, error: message });
+  }
+});
+
+router.post('/provider/availability', authenticateUser, async (req: AuthRequest, res) => {
+  const providerPhone = phone(req);
+  if (!providerPhone) return res.status(401).json({ success: false, error: 'Authenticated provider identity is required' });
+  try {
+    await setProviderCoordinationAvailability({ phone: providerPhone, skill: req.body?.skill, serviceArea: req.body?.serviceArea, timezone: req.body?.timezone, state: req.body?.state, availableForMinutes: req.body?.availableForMinutes });
+    res.json({ success: true, message: 'Availability recorded with a bounded freshness window. It is not a booking, dispatch, or fulfilment claim.' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to update provider availability';
+    res.status(/not enrolled|verified provider/.test(message) ? 403 : 422).json({ success: false, error: message });
   }
 });
 
@@ -135,6 +149,16 @@ router.get('/requests/:id/events', authenticateUser, async (req: AuthRequest, re
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to load coordination events';
     res.status(/ownership/.test(message) ? 404 : 422).json({ success: false, error: message });
+  }
+});
+
+router.post('/admin/pilot-accounts', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    await setControlledPilotAccount({ phone: req.body?.phone, role: req.body?.role, state: req.body?.state, operatorId: operatorId(req) });
+    res.status(201).json({ success: true, message: 'Controlled-pilot account state recorded. No external invitation was sent.' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to update controlled-pilot account';
+    res.status(422).json({ success: false, error: message });
   }
 });
 

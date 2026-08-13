@@ -45,6 +45,7 @@ import {
   dispatchExecutionRequest,
   getExecutionRequestsForRequest,
 } from '../services/executionConnector.js';
+import { assertControlledPilotAccount } from '../services/providerCoordination.js';
 
 const router = Router();
 
@@ -154,6 +155,7 @@ router.post('/', authenticateUser, async (req: AuthRequest, res) => {
   const missing = validateRequirements(skill, requirements, req.body?.allowPartial === true);
   if (missing.length) return res.status(422).json({ success: false, error: 'More information is required', missing });
   try {
+    await assertControlledPilotAccount(phone, 'customer');
     const request = await createEconomicRequest({
       id: crypto.randomUUID(),
       phone,

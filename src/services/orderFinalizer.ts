@@ -4,6 +4,7 @@ import { getCommission } from './commissionService.js';
 import { processDirectPayment } from './directWallet.js';
 import { createEconomicRequest, getEconomicCategory } from './skillFlows.js';
 import { providerMayBeDiscovered } from './providerVerification.js';
+import { assertControlledPilotAccount, isControlledPilotEnabled } from './providerCoordination.js';
 
 export async function getLeadCharge(orderType: string): Promise<number> {
     const ot = orderType.toLowerCase();
@@ -22,6 +23,8 @@ export async function getLeadCharge(orderType: string): Promise<number> {
  * an intent message.
  */
 export async function finalizeOrder(buyerPhone: string, arg2: string = '', arg3: any = {}, arg4?: any): Promise<{ success: boolean; message: string; orderId?: string }> {
+    await assertControlledPilotAccount(buyerPhone, 'customer');
+    if (isControlledPilotEnabled()) throw new Error('Controlled pilot requests must use the canonical storefront and provider-coordination workflow');
     let providerPhone = '';
     let orderType = '';
     let details: { skill?: string; amount?: number; bookingMode?: string; idempotencyKey?: string } = {};

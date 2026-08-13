@@ -10,10 +10,12 @@ process.env.KURUKOO_DISABLE_LISTEN = 'true';
 process.env.KURUKOO_WORKERS = '0';
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'provider_coordination_test_secret_with_32_characters';
+process.env.KURUKOO_CONTROLLED_PILOT = 'true';
 
 const { app } = await import('../src/index.js');
 const { getDb, saveDb } = await import('../src/database.js');
 const { ensureProviderVerificationSchema, setProviderVerification } = await import('../src/services/providerVerification.js');
+const { setControlledPilotAccount, setProviderCoordinationAvailability } = await import('../src/services/providerCoordination.js');
 const db = await getDb();
 await ensureProviderVerificationSchema();
 const customerPhone = '+2348010001001';
@@ -24,6 +26,9 @@ db.run(`INSERT OR REPLACE INTO memory_profiles(phone,name,location,country,verif
 db.run(`INSERT OR REPLACE INTO skills(phone,skill,is_available,hourly_rate,rating,jobs_completed,operation_mode,service_radius_km) VALUES(?,?,?,?,?,?,?,?)`, [providerPhone, 'phone_repairer', 1, 250000, 4.9, 12, 'mobile', 8]);
 saveDb();
 await setProviderVerification(providerPhone, 'verified', { evidenceRef: 'pilot-fixture:evidence:provider-001', reviewedBy: 'test' });
+await setControlledPilotAccount({ phone: customerPhone, role: 'customer', operatorId: 'test-admin' });
+await setControlledPilotAccount({ phone: providerPhone, role: 'provider', operatorId: 'test-admin' });
+await setProviderCoordinationAvailability({ phone: providerPhone, skill: 'phone_repairer', serviceArea: 'Ikeja', state: 'available', availableForMinutes: 60 });
 
 const sign = (payload: object) => jwt.sign(payload, process.env.JWT_SECRET!, { algorithm: 'HS256', expiresIn: '10m' });
 const customerToken = sign({ phone: customerPhone, role: 'user' });
@@ -37,7 +42,7 @@ assert.ok(address && typeof address === 'object');
 const baseUrl = `http://127.0.0.1:${address.port}`;
 
 try {
-  const created = await fetch(`${baseUrl}/api/chat/economic-requests`, { method: 'POST', headers: auth(customerToken), body: JSON.stringify({ skill: 'phone_repairer', requirements: { device: 'iPhone 12', issue: 'Cracked screen', location: 'Ikeja' } }) });
+  const created = await fetch(`${baseUrl}/api/chat/economic-requests`, { method: 'POST', headers: auth(customerToken), body: JSON.stringify({ skill: 'phone_repairer', requirements: { device: 'iPhone 12', issue: 'Cracked screen', location: 'Ikeja', private_note: '+2348019999999' } }) });
   assert.equal(created.status, 201, 'customer should create canonical request');
   const createBody = await created.json();
   const requestId = createBody.request.id as string;
@@ -54,9 +59,13 @@ try {
   const providerQueueBody = await providerQueue.json();
   assert.equal(providerQueueBody.invitations[0].id, invitationId);
   assert.equal(providerQueueBody.invitations[0].request.requirements.device, 'iPhone 12');
+  assert.equal(providerQueueBody.invitations[0].request.requirements.private_note, undefined, 'provider invitation projection must omit unrelated customer-supplied fields');
 
   const badQuote = await fetch(`${baseUrl}/api/coordination/provider/invitations/${encodeURIComponent(invitationId)}/respond`, { method: 'POST', headers: auth(providerToken), body: JSON.stringify({ response: 'accepted', quoteMinor: 0, currency: 'NGN', idempotencyKey: 'bad-quote' }) });
   assert.equal(badQuote.status, 409, 'provider acceptance must include a positive whole-number quote');
+
+  const unsupportedCurrency = await fetch(`${baseUrl}/api/coordination/provider/invitations/${encodeURIComponent(invitationId)}/respond`, { method: 'POST', headers: auth(providerToken), body: JSON.stringify({ response: 'accepted', quoteMinor: 300000, currency: 'USD', idempotencyKey: 'pilot-usd-rejected' }) });
+  assert.equal(unsupportedCurrency.status, 422, 'controlled-pilot provider quotes must use NGN');
 
   const accepted = await fetch(`${baseUrl}/api/coordination/provider/invitations/${encodeURIComponent(invitationId)}/respond`, { method: 'POST', headers: auth(providerToken), body: JSON.stringify({ response: 'accepted', quoteMinor: 300000, currency: 'NGN', note: 'Screen replacement available. Call +2348019999999.', idempotencyKey: 'provider-accept-1' }) });
   assert.equal(accepted.status, 200, 'provider can submit an explicit quote');
@@ -76,6 +85,10 @@ try {
   assert.equal(blockedSelection.status, 409, 'customer cannot select a provider after the provider verification lifecycle becomes suspended');
   assert.match(String((await blockedSelection.json()).error || ''), /evidence-verified provider/i);
   await setProviderVerification(providerPhone, 'verified', { evidenceRef: 'pilot-fixture:evidence:provider-002', reviewedBy: 'test' });
+  await setProviderCoordinationAvailability({ phone: providerPhone, skill: 'phone_repairer', serviceArea: 'Ikeja', state: 'unavailable' });
+  const staleAvailabilitySelection = await fetch(`${baseUrl}/api/coordination/requests/${encodeURIComponent(requestId)}/select-provider`, { method: 'POST', headers: auth(customerToken), body: JSON.stringify({ invitationId }) });
+  assert.equal(staleAvailabilitySelection.status, 409, 'customer cannot select a provider with unavailable or stale pilot availability');
+  await setProviderCoordinationAvailability({ phone: providerPhone, skill: 'phone_repairer', serviceArea: 'Ikeja', state: 'available', availableForMinutes: 60 });
 
   const selected = await fetch(`${baseUrl}/api/coordination/requests/${encodeURIComponent(requestId)}/select-provider`, { method: 'POST', headers: auth(customerToken), body: JSON.stringify({ invitationId }) });
   const selectedBody = await selected.json();
