@@ -18,9 +18,11 @@ process.env.CREDIT_ECONOMY_ENABLED = 'true';
 const { app } = await import('../src/index.js');
 const { upsertProfile } = await import('../src/routes/authRoutes.js');
 const { getDb } = await import('../src/database.js');
+const { ensureAgentRuntimeSchema } = await import('../src/services/agentRuntime.js');
 
 const phone = '+2348090000011';
 await upsertProfile(phone, 'Chat Correctness User');
+await ensureAgentRuntimeSchema();
 
 const token = jwt.sign({ phone, role: 'user' }, process.env.JWT_SECRET!, { algorithm: 'HS256' });
 const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
