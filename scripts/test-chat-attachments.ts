@@ -91,15 +91,30 @@ try {
   const retainedForAccountDeletion = await fetch(`${baseUrl}/api/chat/attachments`, { method: 'POST', headers: headers(owner), body: JSON.stringify({ name: 'account-deletion.png', type: 'image/png', data: pngData }) });
   const retainedPayload = await retainedForAccountDeletion.json() as { attachment?: { url?: string } };
   assert.equal(retainedForAccountDeletion.status, 201, JSON.stringify(retainedPayload));
+  const accountMessage = await appendChatMessage({ phone: owner, sender: 'user', content: 'Export attachment reference', metadata: { attachment: retainedPayload.attachment } });
+  assert.ok(accountMessage.id > 0, 'the export test requires an owner-scoped chat message');
+  const forbiddenExport = await fetch(`${baseUrl}/api/user/export?phone=${encodeURIComponent(otherOwner)}`, { headers: headers(owner) });
+  assert.equal(forbiddenExport.status, 403, 'protected export must reject a requested foreign owner identity');
+  const exported = await fetch(`${baseUrl}/api/user/export`, { headers: headers(owner) });
+  const exportPayload = await exported.json() as { data?: { chat?: { messages?: Array<{ content?: string }> }; attachments?: Array<{ id?: string }>; export_scope?: { attachment_metadata?: { bytes_included?: boolean; storage_paths_included?: boolean } } } };
+  assert.equal(exported.status, 200, JSON.stringify(exportPayload));
+  assert.ok(exportPayload.data?.chat?.messages?.some((message) => message.content === 'Export attachment reference'), 'owner export must include the bounded canonical chat message projection');
+  assert.ok(exportPayload.data?.attachments?.some((item) => item.id === retainedPayload.attachment?.id), 'owner export must include active attachment metadata through the canonical attachment owner');
+  assert.equal(exportPayload.data?.export_scope?.attachment_metadata?.bytes_included, false);
+  assert.equal(exportPayload.data?.export_scope?.attachment_metadata?.storage_paths_included, false);
+  const serializedExport = JSON.stringify(exportPayload);
+  assert.doesNotMatch(serializedExport, new RegExp(storagePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), 'protected export must not expose a private attachment storage path');
+  assert.doesNotMatch(serializedExport, /data:image\/png;base64/i, 'protected export must not expose private attachment bytes');
   assert.equal((await fs.readdir(storagePath)).length, 1, 'the account-deletion test requires a remaining private attachment');
   const accountDeleted = await fetch(`${baseUrl}/api/user/delete`, { method: 'POST', headers: headers(owner) });
   assert.equal(accountDeleted.status, 200, 'the protected account-deletion lifecycle must complete for the attachment owner');
   assert.deepEqual(await fs.readdir(storagePath), [], 'account deletion must remove private attachment bytes through the canonical attachment owner');
+  assert.equal((await listChatMessages(owner)).length, 0, 'account deletion must remove the owner’s canonical chat history');
   const afterAccountDeletion = await fetch(`${baseUrl}${retainedPayload.attachment!.url}`, { headers: headers(owner) });
   assert.equal(afterAccountDeletion.status, 404, 'account deletion must remove attachment metadata as well as bytes');
 
   console.log('Chat attachment regression passed');
-  console.log('Verified: authenticated upload, strict base64/signature validation, private storage, owner-only download/delete, message/conversation/account-deletion cleanup, cross-owner conversation isolation, forced download headers, no public static URL, and stream-level owner validation.');
+  console.log('Verified: authenticated upload, strict base64/signature validation, private storage, owner-only download/delete, bounded owner export without bytes or storage paths, message/conversation/account-deletion cleanup, cross-owner conversation isolation, forced download headers, no public static URL, and stream-level owner validation.');
 } finally {
   await new Promise<void>((resolve) => server.close(() => resolve()));
   await fs.rm(storagePath, { recursive: true, force: true });

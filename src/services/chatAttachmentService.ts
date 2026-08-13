@@ -129,6 +129,22 @@ export async function createChatAttachment(input: { ownerPhone: string; name: un
   return { id, name, type: input.type, size: bytes.length, url: `/api/chat/attachments/${encodeURIComponent(id)}` };
 }
 
+export async function listChatAttachmentMetadataForOwner(ownerPhone: string, limit = 250): Promise<Array<Pick<ChatAttachment, 'id' | 'name' | 'type' | 'size'> & { createdAt: string }>> {
+  const owner = String(ownerPhone || '').trim();
+  if (!owner) return [];
+  const db = await ensureSchema();
+  const statement = db.prepare(`SELECT id, original_name, content_type, byte_size, created_at FROM chat_attachments WHERE owner_phone=? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?`);
+  statement.bind([owner, Math.min(Math.max(Number(limit) || 1, 1), 500)]);
+  const rows: Array<Pick<ChatAttachment, 'id' | 'name' | 'type' | 'size'> & { createdAt: string }> = [];
+  while (statement.step()) {
+    const row = statement.getAsObject() as Record<string, unknown>;
+    if (!isAttachmentType(row.content_type)) continue;
+    rows.push({ id: String(row.id), name: String(row.original_name), type: row.content_type, size: Number(row.byte_size || 0), createdAt: String(row.created_at || '') });
+  }
+  statement.free();
+  return rows;
+}
+
 export async function getChatAttachment(id: string, ownerPhone: string): Promise<StoredAttachment | null> {
   const db = await ensureSchema();
   const statement = db.prepare('SELECT * FROM chat_attachments WHERE id=? AND owner_phone=? AND deleted_at IS NULL LIMIT 1');

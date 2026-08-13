@@ -1,5 +1,6 @@
 import { getDb, saveDb } from '../database.js';
-import { deleteChatAttachmentsForOwner } from './chatAttachmentService.js';
+import { deleteChatAttachmentsForOwner, listChatAttachmentMetadataForOwner } from './chatAttachmentService.js';
+import { deleteAllChatHistoryForOwner, exportChatHistory } from './chatConversationService.js';
 
 export async function purgeExpiredData(): Promise<{ messagesDeleted: number; tempSessionsDeleted: number; pulseLocationsDeleted: number }> {
     const db = await getDb();
@@ -56,14 +57,31 @@ export async function exportUserData(phone: string): Promise<any> {
     }
     ordersStmt.free();
 
+    // Account export is a bounded owner-scoped snapshot. Chat and attachment owners
+    // decide their own projection; private attachment bytes and storage paths remain unavailable here.
+    const [messages, attachments] = await Promise.all([
+        exportChatHistory(phone, 250),
+        listChatAttachmentMetadataForOwner(phone, 250),
+    ]);
+    result.export_scope = {
+        chat_messages: { included: messages.length, maximum: 250 },
+        attachment_metadata: { included: attachments.length, maximum: 250, bytes_included: false, storage_paths_included: false },
+    };
+    result.chat = { messages };
+    result.attachments = attachments;
+
     return result;
 }
 
 export async function deleteUserData(phone: string): Promise<void> {
     const db = await getDb();
     
-    // Attachment records and private bytes are owned by the chat attachment service.
-    // Remove them before profile deletion so a failed file operation leaves the account intact for retry.
+    // Conversation history owns message metadata and final-reference attachment cleanup.
+    // Remove it first so an attachment still referenced by chat cannot outlive account deletion.
+    await deleteAllChatHistoryForOwner(phone);
+
+    // The attachment owner removes any uploaded-but-unreferenced records and private bytes.
+    // Both operations run before profile deletion so a failed file operation leaves the account intact for retry.
     await deleteChatAttachmentsForOwner(phone);
 
     // Hard delete personal data

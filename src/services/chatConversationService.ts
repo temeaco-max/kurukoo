@@ -198,6 +198,34 @@ async function removeUnreferencedAttachments(phone: string, candidateIds: Set<st
   for (const id of candidateIds) if (!referenced.has(id)) await deleteChatAttachment(id, phone);
 }
 
+/** A bounded owner-scoped account-export projection; attachment bytes remain in the private attachment owner. */
+export async function exportChatHistory(phone: string, limit = 250): Promise<any[]> {
+  const db = await dbReady();
+  const statement = db.prepare(`SELECT m.id, m.sender, m.content, m.channel, m.created_at, cm.conversation_id, cm.metadata FROM messages m LEFT JOIN chat_message_meta cm ON cm.message_id = m.id WHERE m.phone=? ORDER BY m.id ASC LIMIT ?`);
+  statement.bind([String(phone || '').trim(), Math.min(Math.max(Number(limit) || 1, 1), 500)]);
+  const rows: any[] = [];
+  while (statement.step()) rows.push(statement.getAsObject());
+  statement.free();
+  return rows;
+}
+
+/** Protected account deletion uses the existing conversation owner to remove all owner-scoped messages and their final attachment references. */
+export async function deleteAllChatHistoryForOwner(phone: string): Promise<number> {
+  const owner = String(phone || '').trim();
+  if (!owner) return 0;
+  const db = await dbReady();
+  const statement = db.prepare('SELECT id FROM messages WHERE phone=? ORDER BY id ASC');
+  statement.bind([owner]);
+  const messageIds: number[] = [];
+  while (statement.step()) messageIds.push(Number(statement.getAsObject().id));
+  statement.free();
+  let deleted = 0;
+  for (const messageId of messageIds) if (await deleteChatMessage(owner, messageId)) deleted += 1;
+  db.run('DELETE FROM chat_conversations WHERE phone=?', [owner]);
+  saveDb();
+  return deleted;
+}
+
 export async function deleteChatMessage(phone: string, messageId: number): Promise<boolean> {
   const db = await dbReady();
   const stmt = db.prepare(`SELECT m.id, cm.metadata FROM messages m LEFT JOIN chat_message_meta cm ON cm.message_id = m.id WHERE m.id = ? AND m.phone = ? LIMIT 1`);
