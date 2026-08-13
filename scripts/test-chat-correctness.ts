@@ -22,6 +22,8 @@ const { ensureAgentRuntimeSchema } = await import('../src/services/agentRuntime.
 
 const phone = '+2348090000011';
 await upsertProfile(phone, 'Chat Correctness User');
+const seedDb = await getDb();
+seedDb.run('UPDATE memory_profiles SET preferences = ? WHERE phone = ?', [JSON.stringify({ onboarding_complete: true, onboarding_step: 'done' }), phone]);
 await ensureAgentRuntimeSchema();
 
 const token = jwt.sign({ phone, role: 'user' }, process.env.JWT_SECRET!, { algorithm: 'HS256' });
