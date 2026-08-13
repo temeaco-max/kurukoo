@@ -18,6 +18,7 @@ process.env.KURUKOO_WORKERS = '0';
 process.env.JWT_SECRET = 'chat_attachment_test_secret_at_least_32_chars';
 
 const { app } = await import('../src/index.js');
+const { appendChatMessage, clearChatConversation, deleteChatMessage, listChatMessages } = await import('../src/services/chatConversationService.js');
 const server = app.listen(0, '127.0.0.1');
 await new Promise<void>((resolve, reject) => { server.once('listening', resolve); server.once('error', reject); });
 const baseUrl = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
@@ -66,6 +67,27 @@ try {
   assert.equal(afterDelete.status, 404, 'deleted attachment metadata and bytes must no longer be retrievable');
   assert.deepEqual(await fs.readdir(storagePath), [], 'owner deletion must remove the private attachment bytes');
 
+  const sharedUpload = await fetch(`${baseUrl}/api/chat/attachments`, { method: 'POST', headers: headers(owner), body: JSON.stringify({ name: 'shared-message.png', type: 'image/png', data: pngData }) });
+  const sharedPayload = await sharedUpload.json() as { attachment?: { id?: string; url?: string; name?: string; type?: string; size?: number } };
+  assert.equal(sharedUpload.status, 201, JSON.stringify(sharedPayload));
+  const firstMessage = await appendChatMessage({ phone: owner, sender: 'user', content: 'First attachment reference', metadata: { attachment: sharedPayload.attachment } });
+  const secondMessage = await appendChatMessage({ phone: owner, sender: 'user', content: 'Second attachment reference', conversationId: firstMessage.conversationId, metadata: { attachment: sharedPayload.attachment } });
+  assert.equal(await deleteChatMessage(owner, firstMessage.id), true, 'the owner may delete an attached message');
+  assert.equal((await fetch(`${baseUrl}${sharedPayload.attachment!.url}`, { headers: headers(owner) })).status, 200, 'deleting one of multiple references must retain the still-referenced private bytes');
+  assert.equal(await deleteChatMessage(owner, secondMessage.id), true, 'the owner may delete the final attached message');
+  assert.equal((await fetch(`${baseUrl}${sharedPayload.attachment!.url}`, { headers: headers(owner) })).status, 404, 'deleting the final attachment reference must remove the private bytes and metadata');
+
+  const conversationUpload = await fetch(`${baseUrl}/api/chat/attachments`, { method: 'POST', headers: headers(owner), body: JSON.stringify({ name: 'conversation-delete.png', type: 'image/png', data: pngData }) });
+  const conversationPayload = await conversationUpload.json() as { attachment?: { url?: string } };
+  assert.equal(conversationUpload.status, 201, JSON.stringify(conversationPayload));
+  const attachedConversationMessage = await appendChatMessage({ phone: owner, sender: 'user', content: 'Conversation attachment reference', metadata: { attachment: conversationPayload.attachment } });
+  assert.equal(await clearChatConversation(owner, attachedConversationMessage.conversationId), 1, 'the owner may clear their attached conversation');
+  assert.equal((await fetch(`${baseUrl}${conversationPayload.attachment!.url}`, { headers: headers(owner) })).status, 404, 'conversation deletion must remove its final attachment reference');
+
+  const foreignMessage = await appendChatMessage({ phone: otherOwner, sender: 'user', content: 'Other owner conversation' });
+  assert.equal(await clearChatConversation(owner, foreignMessage.conversationId), 0, 'an owner cannot clear another user’s conversation metadata or messages');
+  assert.equal((await listChatMessages(otherOwner, { conversationId: foreignMessage.conversationId })).length, 1, 'cross-owner clear attempts must preserve the other owner’s conversation state');
+
   const retainedForAccountDeletion = await fetch(`${baseUrl}/api/chat/attachments`, { method: 'POST', headers: headers(owner), body: JSON.stringify({ name: 'account-deletion.png', type: 'image/png', data: pngData }) });
   const retainedPayload = await retainedForAccountDeletion.json() as { attachment?: { url?: string } };
   assert.equal(retainedForAccountDeletion.status, 201, JSON.stringify(retainedPayload));
@@ -77,7 +99,7 @@ try {
   assert.equal(afterAccountDeletion.status, 404, 'account deletion must remove attachment metadata as well as bytes');
 
   console.log('Chat attachment regression passed');
-  console.log('Verified: authenticated upload, strict base64/signature validation, private storage, owner-only download/delete, account-deletion cleanup, forced download headers, no public static URL, and stream-level owner validation.');
+  console.log('Verified: authenticated upload, strict base64/signature validation, private storage, owner-only download/delete, message/conversation/account-deletion cleanup, cross-owner conversation isolation, forced download headers, no public static URL, and stream-level owner validation.');
 } finally {
   await new Promise<void>((resolve) => server.close(() => resolve()));
   await fs.rm(storagePath, { recursive: true, force: true });

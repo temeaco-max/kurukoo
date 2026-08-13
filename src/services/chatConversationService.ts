@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { getDb, saveDb } from '../database.js';
 import { classifyMessageTier, ensureLivingMemorySchema } from './livingMemoryEngine.js';
 import { getProfile } from './memoryProfile.js';
+import { deleteChatAttachment } from './chatAttachmentService.js';
 
 export interface ChatMessageInput {
   phone: string;
@@ -176,29 +177,63 @@ export async function listChatMessages(phone: string, options: ChatHistoryOption
   return rows.reverse();
 }
 
+function attachmentIdsFromMetadata(value: unknown): Set<string> {
+  const ids = new Set<string>();
+  const parsed = typeof value === 'string' ? (() => { try { return JSON.parse(value); } catch { return null; } })() : value;
+  const id = parsed && typeof parsed === 'object' && typeof (parsed as { attachment?: { id?: unknown } }).attachment?.id === 'string'
+    ? String((parsed as { attachment: { id: string } }).attachment.id).trim()
+    : '';
+  if (/^[0-9a-f-]{36}$/i.test(id)) ids.add(id);
+  return ids;
+}
+
+async function removeUnreferencedAttachments(phone: string, candidateIds: Set<string>): Promise<void> {
+  if (!candidateIds.size) return;
+  const db = await dbReady();
+  const statement = db.prepare(`SELECT cm.metadata FROM chat_message_meta cm JOIN messages m ON m.id = cm.message_id WHERE m.phone = ? AND cm.metadata IS NOT NULL`);
+  statement.bind([phone]);
+  const referenced = new Set<string>();
+  while (statement.step()) for (const id of attachmentIdsFromMetadata(statement.getAsObject().metadata)) referenced.add(id);
+  statement.free();
+  for (const id of candidateIds) if (!referenced.has(id)) await deleteChatAttachment(id, phone);
+}
+
 export async function deleteChatMessage(phone: string, messageId: number): Promise<boolean> {
   const db = await dbReady();
-  const stmt = db.prepare(`SELECT id FROM messages WHERE id = ? AND phone = ?`);
+  const stmt = db.prepare(`SELECT m.id, cm.metadata FROM messages m LEFT JOIN chat_message_meta cm ON cm.message_id = m.id WHERE m.id = ? AND m.phone = ? LIMIT 1`);
   stmt.bind([messageId, phone]);
-  const exists = stmt.step();
+  const row = stmt.step() ? stmt.getAsObject() as Record<string, unknown> : null;
   stmt.free();
-  if (!exists) return false;
+  if (!row) return false;
+  const attachmentIds = attachmentIdsFromMetadata(row.metadata);
   db.run(`DELETE FROM chat_message_meta WHERE message_id = ?`, [messageId]);
   db.run(`DELETE FROM messages WHERE id = ? AND phone = ?`, [messageId, phone]);
   saveDb();
+  await removeUnreferencedAttachments(phone, attachmentIds);
   return true;
 }
 
 export async function clearChatConversation(phone: string, conversationId: string): Promise<number> {
   const db = await dbReady();
-  const idsStmt = db.prepare(`SELECT message_id FROM chat_message_meta WHERE conversation_id = ?`);
-  idsStmt.bind([conversationId]);
+  const conversation = db.prepare(`SELECT id FROM chat_conversations WHERE id = ? AND phone = ? LIMIT 1`);
+  conversation.bind([conversationId, phone]);
+  const owned = conversation.step();
+  conversation.free();
+  if (!owned) return 0;
+  const idsStmt = db.prepare(`SELECT cm.message_id, cm.metadata FROM chat_message_meta cm JOIN messages m ON m.id = cm.message_id WHERE cm.conversation_id = ? AND m.phone = ?`);
+  idsStmt.bind([conversationId, phone]);
   const ids: number[] = [];
-  while (idsStmt.step()) ids.push(Number(idsStmt.getAsObject().message_id));
+  const attachmentIds = new Set<string>();
+  while (idsStmt.step()) {
+    const row = idsStmt.getAsObject() as Record<string, unknown>;
+    ids.push(Number(row.message_id));
+    for (const id of attachmentIdsFromMetadata(row.metadata)) attachmentIds.add(id);
+  }
   idsStmt.free();
   for (const id of ids) db.run(`DELETE FROM messages WHERE id = ? AND phone = ?`, [id, phone]);
   db.run(`DELETE FROM chat_message_meta WHERE conversation_id = ?`, [conversationId]);
   db.run(`DELETE FROM chat_conversations WHERE id = ? AND phone = ?`, [conversationId, phone]);
   saveDb();
+  await removeUnreferencedAttachments(phone, attachmentIds);
   return ids.length;
 }
