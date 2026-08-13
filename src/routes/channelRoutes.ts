@@ -3,10 +3,20 @@
  * Single dispatch via channelRegistry; no parallel channel identity stores.
  */
 import { Router } from 'express';
+import crypto from 'node:crypto';
 import { dispatchWebhook } from '../channels/channelRegistry.js';
 import { webhookRateLimit } from '../middleware/rateLimit.js';
+import { handleSmsDeliveryReport, handleSmsOptOut } from '../channels/smsReceipts.js';
+import { recordUssdSessionOutcome } from '../ussd/menus.js';
 
 const router = Router();
+
+function hasValidAfricasTalkingCallbackToken(req: any): boolean {
+  const configured = String(process.env.AFRICASTALKING_WEBHOOK_TOKEN || '');
+  if (!configured) return process.env.NODE_ENV !== 'production';
+  const supplied = String(req.header('x-kurukoo-webhook-token') || req.query?.token || '');
+  return supplied.length === configured.length && crypto.timingSafeEqual(Buffer.from(supplied), Buffer.from(configured));
+}
 
 // Meta verifies the callback endpoint before sending WhatsApp events. A token is
 // required so arbitrary public endpoints cannot be registered as Kurukoo's channel.
@@ -33,8 +43,19 @@ router.post('/webhook/telegram', webhookRateLimit, async (req, res) => {
 });
 
 router.post('/webhook/sms', webhookRateLimit, async (req, res) => {
+  if (!hasValidAfricasTalkingCallbackToken(req)) return res.status(403).json({ error: 'Invalid SMS callback token' });
   const result = await dispatchWebhook('sms', req.body, req.headers as Record<string, any>);
   res.status(200).json(result);
+});
+
+router.post('/webhook/sms/delivery-report', webhookRateLimit, async (req, res) => {
+  if (!hasValidAfricasTalkingCallbackToken(req)) return res.status(403).json({ error: 'Invalid SMS callback token' });
+  res.status(200).json(await handleSmsDeliveryReport(req.body));
+});
+
+router.post('/webhook/sms/opt-out', webhookRateLimit, async (req, res) => {
+  if (!hasValidAfricasTalkingCallbackToken(req)) return res.status(403).json({ error: 'Invalid SMS callback token' });
+  res.status(200).json(await handleSmsOptOut(req.body));
 });
 
 router.post('/webhook/email', webhookRateLimit, async (req, res) => {
@@ -49,9 +70,15 @@ router.post('/webhook/email', webhookRateLimit, async (req, res) => {
 });
 
 router.post('/ussd', webhookRateLimit, async (req, res) => {
+  if (!hasValidAfricasTalkingCallbackToken(req)) return res.status(403).type('text/plain').send('END USSD callback verification failed.');
   const result = await dispatchWebhook('ussd', req.body, req.headers as Record<string, any>);
   res.set('Content-Type', 'text/plain');
   res.send(result.response || '');
+});
+
+router.post('/webhook/ussd/session-outcome', webhookRateLimit, async (req, res) => {
+  if (!hasValidAfricasTalkingCallbackToken(req)) return res.status(403).json({ error: 'Invalid USSD callback token' });
+  res.status(200).json(await recordUssdSessionOutcome(req.body));
 });
 
 export default router;

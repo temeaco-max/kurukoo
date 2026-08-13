@@ -154,6 +154,54 @@ function initTables(database: any) {
     CREATE INDEX IF NOT EXISTS idx_communication_deliveries_phone_created ON communication_deliveries(phone, created_at);
     CREATE INDEX IF NOT EXISTS idx_communication_deliveries_state_created ON communication_deliveries(state, created_at);
     CREATE INDEX IF NOT EXISTS idx_communication_deliveries_provider_reference ON communication_deliveries(channel, provider_reference);
+    CREATE TABLE IF NOT EXISTS communication_preferences (
+      phone TEXT NOT NULL,
+      channel TEXT NOT NULL,
+      purpose TEXT NOT NULL,
+      consent_state TEXT NOT NULL CHECK(consent_state IN ('granted', 'denied')),
+      source TEXT NOT NULL,
+      expires_at TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY(phone, channel, purpose)
+    );
+    CREATE INDEX IF NOT EXISTS idx_communication_preferences_phone_channel ON communication_preferences(phone, channel);
+    CREATE TABLE IF NOT EXISTS communication_outbox (
+      delivery_id TEXT PRIMARY KEY,
+      payload_json TEXT NOT NULL,
+      dispatch_state TEXT NOT NULL CHECK(dispatch_state IN ('queued', 'leased', 'retry_scheduled', 'completed', 'failed', 'suppressed', 'not_configured')) DEFAULT 'queued',
+      attempts INTEGER NOT NULL DEFAULT 0,
+      max_attempts INTEGER NOT NULL DEFAULT 3,
+      next_attempt_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      lease_expires_at TEXT,
+      last_error TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(delivery_id) REFERENCES communication_deliveries(id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_communication_outbox_due ON communication_outbox(dispatch_state, next_attempt_at);
+    CREATE TABLE IF NOT EXISTS ussd_interactions (
+      session_id TEXT NOT NULL,
+      input_text TEXT NOT NULL,
+      phone TEXT NOT NULL,
+      service_code TEXT,
+      response_text TEXT NOT NULL,
+      communication_delivery_id TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY(session_id, input_text)
+    );
+    CREATE TABLE IF NOT EXISTS ussd_session_outcomes (
+      session_id TEXT PRIMARY KEY,
+      phone TEXT,
+      service_code TEXT,
+      provider_status TEXT NOT NULL,
+      network_code TEXT,
+      duration_ms INTEGER,
+      hops_count INTEGER,
+      error_message TEXT,
+      metadata_json TEXT NOT NULL DEFAULT '{}',
+      received_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
     CREATE TABLE IF NOT EXISTS credit_transactions (id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT, amount INTEGER, type TEXT, description TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS pulse_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT, skill TEXT, lat REAL, lng REAL, expires_at TEXT, active INTEGER DEFAULT 1);
     CREATE TABLE IF NOT EXISTS provider_presence (phone TEXT PRIMARY KEY, is_live INTEGER DEFAULT 0, operation_mode TEXT DEFAULT 'stationary', last_lat REAL, last_lng REAL, fuzzed_lat REAL, fuzzed_lng REAL, fuzzed_radius_m INTEGER DEFAULT 100, live_until TEXT, last_confirmed TEXT, updated_at TEXT DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(phone) REFERENCES memory_profiles(phone));

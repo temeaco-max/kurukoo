@@ -21,6 +21,7 @@ const {
   updateCommunicationDelivery,
   updateDeliveryByProviderReference,
 } = await import('../src/services/communicationDelivery.js');
+const { dispatchDueCommunicationOutbox } = await import('../src/services/communicationOutbox.js');
 const { handleSmsWebhook } = await import('../src/channels/sms.js');
 const { isChannelConfigured } = await import('../src/channels/channelRegistry.js');
 
@@ -43,10 +44,12 @@ try {
   process.env.AFRICASTALKING_API_KEY = 'test-key';
   process.env.AFRICASTALKING_USERNAME = 'test-user';
   process.env.AFRICASTALKING_SMS_DELIVERY_REPORTS_ENABLED = 'true';
-  assert.equal(isChannelConfigured('sms'), true, 'SMS readiness requires a configured delivery-report boundary');
+  process.env.AFRICASTALKING_WEBHOOK_TOKEN = 'communications-sms-callback-token';
+  assert.equal(isChannelConfigured('sms'), true, 'SMS readiness requires delivery-report and protected callback prerequisites');
   delete process.env.AFRICASTALKING_API_KEY;
   delete process.env.AFRICASTALKING_USERNAME;
   delete process.env.AFRICASTALKING_SMS_DELIVERY_REPORTS_ENABLED;
+  delete process.env.AFRICASTALKING_WEBHOOK_TOKEN;
 
   const first = await createCommunicationDelivery({
     phone: '+2347000000888',
@@ -98,7 +101,9 @@ try {
 
   const sms = await handleSmsWebhook({ from: '+2347000000890', text: 'check balance', id: 'sms-unconfigured-inbound-1' });
   assert.equal(sms.status, 'success', 'the canonical conversation may persist an inbound SMS even without outbound transport');
-  assert.equal(sms.deliveryState, 'not_configured', 'an unconfigured SMS adapter must never be reported as external delivery');
+  assert.equal(sms.deliveryState, 'queued', 'inbound processing must persist an outbound intent before any external transport attempt');
+  const dispatch = await dispatchDueCommunicationOutbox();
+  assert.equal(dispatch.not_configured, 1, 'the durable outbox must explicitly record an unconfigured SMS adapter without claiming delivery');
   const repeatedSms = await handleSmsWebhook({ from: '+2347000000890', text: 'check balance', id: 'sms-unconfigured-inbound-1' });
   assert.equal(repeatedSms.status, 'duplicate', 'a repeated inbound SMS event must not create a second conversation turn');
 
@@ -122,7 +127,7 @@ try {
   assert.doesNotMatch(ussdText, /alerted with your location|triggered/i, 'USSD must not fabricate emergency dispatch or notification');
 
   console.log('Communications boundary regression passed');
-  console.log('Verified: idempotent delivery records, receipt-driven states, unconfigured SMS truthfulness, WhatsApp handshake, and USSD non-dispatch language.');
+  console.log('Verified: idempotent delivery records, durable outbox dispatch, receipt-driven states, protected channel readiness, unconfigured SMS truthfulness, WhatsApp handshake, and USSD non-dispatch language.');
 } finally {
   await new Promise<void>((resolve) => server.close(() => resolve()));
   saveDb(true);

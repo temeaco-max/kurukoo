@@ -7,6 +7,7 @@ import {
     DeliveryState,
     updateCommunicationDelivery,
 } from '../services/communicationDelivery.js';
+import { enqueueCommunicationOutbox } from '../services/communicationOutbox.js';
 
 export interface ChannelWebhookResult {
     status: string;
@@ -97,7 +98,7 @@ export abstract class BaseChannelHandler {
                 direction: 'outbound',
                 purpose: 'conversation_reply',
                 state: 'queued',
-                metadata: { source: 'shared-channel-handler' },
+                metadata: { source: 'shared-channel-handler', reply_to_inbound: true },
             });
             const assistantMessage = await appendChatMessage({
                 phone,
@@ -114,34 +115,16 @@ export abstract class BaseChannelHandler {
                 },
             });
 
-            let adapterResult: ChannelReplyResult;
-            try {
-                adapterResult = await this.sendReply(phone, reply, meta);
-            } catch (error) {
-                adapterResult = {
-                    state: 'failed',
-                    errorCode: error instanceof Error ? error.message.slice(0, 160) : 'adapter_error',
-                };
-            }
-            const delivery = await updateCommunicationDelivery({
-                id: outboundDelivery.id,
-                state: adapterResult.state,
-                messageId: assistantMessage.id,
-                providerReference: adapterResult.providerReference,
-                errorCode: adapterResult.errorCode,
-                metadata: adapterResult.metadata,
-            });
-            await recordChannelUsage({
-                phone,
-                channel: this.channelName,
-                direction: 'outbound',
-                units: 1,
-                providerReference: adapterResult.providerReference,
-                conversationId: userMessage.conversationId,
+            await updateCommunicationDelivery({ id: outboundDelivery.id, state: 'queued', messageId: assistantMessage.id });
+            const outboxState = await enqueueCommunicationOutbox({
+                deliveryId: outboundDelivery.id,
+                text: reply,
                 metadata: {
                     source: 'shared-channel-handler',
-                    delivery: delivery?.state || adapterResult.state,
-                    external_delivery_confirmed: false,
+                    conversationId: userMessage.conversationId,
+                    messageId: assistantMessage.id,
+                    reply_to_inbound: true,
+                    ...(typeof meta.chatId === 'string' || typeof meta.chatId === 'number' ? { chatId: meta.chatId } : {}),
                 },
             });
             await this.onComplete(meta);
@@ -150,7 +133,7 @@ export abstract class BaseChannelHandler {
                 status: 'success',
                 response: reply,
                 conversationId: userMessage.conversationId,
-                deliveryState: delivery?.state || adapterResult.state,
+                deliveryState: outboxState === 'suppressed' ? 'suppressed' : 'queued',
             };
         } catch (error) {
             console.error(`[${this.channelName} Webhook] Error:`, error);

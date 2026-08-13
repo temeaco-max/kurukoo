@@ -36,9 +36,9 @@ export const channelRegistry = {
         return await handleIvrWebhook(body, headers);
     },
     ussd: async (body: any, _headers: Record<string, any>): Promise<ChannelHandlerResult> => {
-        const { phoneNumber, text } = body || {};
+        const { phoneNumber, text, sessionId, serviceCode } = body || {};
         if (!phoneNumber || typeof phoneNumber !== 'string') return { status: 'ignored' };
-        const response = await handleUssdRequest(phoneNumber, typeof text === 'string' ? text : '');
+        const response = await handleUssdRequest(phoneNumber, typeof text === 'string' ? text : '', typeof sessionId === 'string' ? sessionId : undefined, typeof serviceCode === 'string' ? serviceCode : undefined);
         return { status: 'success', response };
     }
 };
@@ -67,13 +67,15 @@ export function isChannelConfigured(channel: string | undefined): boolean {
             return Boolean(
                 process.env.AFRICASTALKING_API_KEY
                 && process.env.AFRICASTALKING_USERNAME
-                && process.env.AFRICASTALKING_SMS_DELIVERY_REPORTS_ENABLED === 'true',
+                && process.env.AFRICASTALKING_SMS_DELIVERY_REPORTS_ENABLED === 'true'
+                && process.env.AFRICASTALKING_WEBHOOK_TOKEN,
             );
         case 'ussd':
             return Boolean(
                 process.env.AFRICASTALKING_API_KEY
                 && process.env.AFRICASTALKING_USERNAME
                 && process.env.AFRICASTALKING_USSD_SERVICE_CODE
+                && process.env.AFRICASTALKING_WEBHOOK_TOKEN
                 && process.env.KURUKOO_USSD_ENABLED === 'true',
             );
         default:

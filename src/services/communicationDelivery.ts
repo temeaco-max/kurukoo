@@ -69,6 +69,26 @@ function normalizeState(value: string): DeliveryState {
   throw new Error(`Unsupported communication delivery state: ${value}`);
 }
 
+const STATE_ORDER: Record<DeliveryState, number> = {
+  queued: 0,
+  accepted: 1,
+  submitted: 2,
+  sent: 3,
+  delivered: 4,
+  read: 5,
+  failed: 6,
+  undeliverable: 6,
+  not_configured: 6,
+  suppressed: 6,
+};
+
+function canAdvanceDeliveryState(current: DeliveryState, next: DeliveryState): boolean {
+  if (current === next) return true;
+  if (['failed', 'undeliverable', 'not_configured', 'suppressed', 'read'].includes(current)) return false;
+  if (next === 'failed' || next === 'undeliverable' || next === 'not_configured' || next === 'suppressed') return true;
+  return STATE_ORDER[next] >= STATE_ORDER[current];
+}
+
 function rowToDelivery(row: Record<string, unknown>): CommunicationDelivery {
   return {
     id: String(row.id),
@@ -194,6 +214,7 @@ export async function updateCommunicationDelivery(input: {
   const existing = await getCommunicationDelivery(input.id);
   if (!existing) return undefined;
   const state = normalizeState(input.state);
+  if (!canAdvanceDeliveryState(existing.state, state)) return existing;
   const metadata = { ...(existing.metadata || {}), ...(input.metadata || {}) };
   db.run(`UPDATE communication_deliveries
     SET state = ?, provider_reference = COALESCE(?, provider_reference), message_id = COALESCE(?, message_id), error_code = ?, metadata_json = ?,
@@ -212,6 +233,8 @@ export async function updateCommunicationDelivery(input: {
     state,
     input.id,
   ]);
+  const messageId = Number.isInteger(input.messageId) ? input.messageId : existing.messageId;
+  if (Number.isInteger(messageId)) db.run(`UPDATE messages SET status = ? WHERE id = ?`, [state, messageId]);
   saveDb();
   return getCommunicationDelivery(input.id);
 }
@@ -268,6 +291,24 @@ export async function claimInboundChannelEvent(input: {
     VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`, [channel, providerEventId, payloadDigest, input.verificationState, delivery?.id || null]);
   saveDb();
   return { duplicate: false, delivery };
+}
+
+export async function claimProviderCallbackEvent(input: {
+  channel: string;
+  callbackType: string;
+  providerEventId?: string;
+  payload: unknown;
+  verificationState: 'verified' | 'not_verified' | 'not_supported';
+}): Promise<{ duplicate: boolean }> {
+  const providerEventId = String(input.providerEventId || '').trim();
+  if (!providerEventId) return { duplicate: false };
+  const result = await claimInboundChannelEvent({
+    channel: `${String(input.channel || '').trim().toLowerCase()}:${String(input.callbackType || '').trim().toLowerCase()}`,
+    providerEventId,
+    payload: input.payload,
+    verificationState: input.verificationState,
+  });
+  return { duplicate: result.duplicate };
 }
 
 export async function listCommunicationDeliveries(phone: string, limit = 50): Promise<CommunicationDelivery[]> {

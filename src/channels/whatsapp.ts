@@ -6,11 +6,14 @@ import { updateSessionInteraction } from '../services/sessionManager.js';
 import { recordChannelUsage } from '../services/channelUsageService.js';
 import {
     claimInboundChannelEvent,
+    claimProviderCallbackEvent,
     createCommunicationDelivery,
     DeliveryState,
     updateCommunicationDelivery,
     updateDeliveryByProviderReference,
 } from '../services/communicationDelivery.js';
+import { sendWhatsAppTransport } from './outboundTransports.js';
+import { enqueueCommunicationOutbox } from '../services/communicationOutbox.js';
 
 /** Verify Meta X-Hub-Signature-256 against the unmodified request bytes. */
 export function verifyWhatsAppSignature(rawBody: string | Buffer, signatureHeader: string): boolean {
@@ -53,30 +56,7 @@ async function sendWhatsAppTypingIndicator(phone: string, status: 'typing' | 'st
 }
 
 async function sendWhatsAppMessage(phone: string, text: string, phoneNumberId?: string): Promise<WhatsAppSendResult> {
-    const token = process.env.WHATSAPP_TOKEN;
-    const phoneId = phoneNumberId || process.env.WHATSAPP_PHONE_NUMBER_ID;
-    if (!token || !phoneId) return { state: 'not_configured', errorCode: 'whatsapp_adapter_not_configured' };
-    try {
-        const recipient = phone.replace(/^\+/, '');
-        const response = await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to: recipient, type: 'text', text: { body: text } }),
-        });
-        const payload = await response.json().catch(() => ({})) as any;
-        const providerReference = payload?.messages?.[0]?.id ? String(payload.messages[0].id) : undefined;
-        if (!response.ok || !providerReference) {
-            return {
-                state: 'failed',
-                errorCode: String(payload?.error?.message || `http_${response.status}`).slice(0, 160),
-                providerReference,
-            };
-        }
-        // Meta has accepted the request. Delivery and read evidence arrives by webhook later.
-        return { state: 'accepted', providerReference };
-    } catch (error) {
-        return { state: 'failed', errorCode: error instanceof Error ? error.message.slice(0, 160) : 'whatsapp_network_error' };
-    }
+    return sendWhatsAppTransport(phone, text, phoneNumberId ? { phoneNumberId } : {});
 }
 
 function normalizeReceiptState(value: unknown): DeliveryState | undefined {
@@ -92,6 +72,14 @@ async function processStatusWebhook(statusEvent: any): Promise<void> {
     const providerReference = String(statusEvent?.id || '').trim();
     const state = normalizeReceiptState(statusEvent?.status);
     if (!providerReference || !state) return;
+    const callback = await claimProviderCallbackEvent({
+        channel: 'whatsapp',
+        callbackType: 'status',
+        providerEventId: `${providerReference}:${String(statusEvent?.status || '')}:${String(statusEvent?.timestamp || '')}`,
+        payload: statusEvent,
+        verificationState: 'verified',
+    });
+    if (callback.duplicate) return;
     await updateDeliveryByProviderReference({
         channel: 'whatsapp',
         providerReference,
@@ -120,7 +108,6 @@ async function processInboundWhatsAppMessage(message: any, phoneNumberId?: strin
     });
     if (inboundEvent.duplicate) return { processed: false, deliveryState: inboundEvent.delivery?.state };
 
-    await sendWhatsAppTypingIndicator(phone, 'typing', phoneNumberId);
     await updateSessionInteraction(phone);
     const userMessage = await appendChatMessage({
         phone,
@@ -148,7 +135,7 @@ async function processInboundWhatsAppMessage(message: any, phoneNumberId?: strin
         direction: 'outbound',
         purpose: 'conversation_reply',
         state: 'queued',
-        metadata: { source: 'whatsapp_webhook' },
+        metadata: { source: 'whatsapp_webhook', reply_to_inbound: true },
     });
     const assistantMessage = await appendChatMessage({
         phone,
@@ -164,33 +151,23 @@ async function processInboundWhatsAppMessage(message: any, phoneNumberId?: strin
             delivery_state: 'queued',
         },
     });
-    const result = await sendWhatsAppMessage(phone, reply, phoneNumberId);
-    const delivery = await updateCommunicationDelivery({
-        id: outbound.id,
-        state: result.state,
-        messageId: assistantMessage.id,
-        providerReference: result.providerReference,
-        errorCode: result.errorCode,
+    await updateCommunicationDelivery({ id: outbound.id, state: 'queued', messageId: assistantMessage.id });
+    const outboxState = await enqueueCommunicationOutbox({
+        deliveryId: outbound.id,
+        text: reply,
+        metadata: {
+            source: 'whatsapp_webhook',
+            conversationId: userMessage.conversationId,
+            messageId: assistantMessage.id,
+            reply_to_inbound: true,
+            ...(phoneNumberId ? { phoneNumberId } : {}),
+        },
     });
-    if (result.providerReference) {
-        const db = await getDb();
-        db.run(`UPDATE messages SET whatsapp_msg_id = ?, status = ? WHERE id = ?`, [result.providerReference, delivery?.state || result.state, assistantMessage.id]);
-        saveDb();
-    } else {
-        const db = await getDb();
-        db.run(`UPDATE messages SET status = ? WHERE id = ?`, [delivery?.state || result.state, assistantMessage.id]);
-        saveDb();
-    }
-    await recordChannelUsage({
-        phone,
-        channel: 'whatsapp',
-        direction: 'outbound',
-        providerReference: result.providerReference,
-        conversationId: userMessage.conversationId,
-        metadata: { source: 'whatsapp_webhook', delivery: delivery?.state || result.state, external_delivery_confirmed: false },
-    });
-    await sendWhatsAppTypingIndicator(phone, 'stopped', phoneNumberId);
-    return { processed: true, conversationId: userMessage.conversationId, deliveryState: delivery?.state || result.state };
+    const deliveryState = outboxState === 'suppressed' ? 'suppressed' : 'queued';
+    const db = await getDb();
+    db.run(`UPDATE messages SET status = ? WHERE id = ?`, [deliveryState, assistantMessage.id]);
+    saveDb();
+    return { processed: true, conversationId: userMessage.conversationId, deliveryState };
 }
 
 export async function handleWhatsAppWebhook(body: any, signature: string, rawBody?: string | Buffer): Promise<{ status: string; [key: string]: any }> {
