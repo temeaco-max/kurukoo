@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Operations console · Kurukoo Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/site.css">
+  <link rel="stylesheet" href="/css/admin-console.css">
+</head>
+<body class="admin-workbench-page">
+  <a class="admin-skip-link" href="#operations-main">Skip to main content</a>
+  <header class="admin-workbench-header">
+    <a class="admin-workbench-brand" href="/admin/dashboard.html" aria-label="Kurukoo Admin control room"><img src="/assets/brand/logo-icon.svg" alt="" width="28" height="28"><span>Kurukoo <strong>Admin</strong></span></a>
+    <nav class="admin-workbench-nav" aria-label="Admin navigation">
+      <a href="/admin/dashboard.html">Control room</a>
+      <a class="is-current" href="/admin/operations.html">Operations</a>
+      <a href="/admin/content.html">Content studio</a>
+      <a href="/admin/seo.html">SEO studio</a>
+      <a href="/admin/users.html">People</a>
+      <a href="/admin/ai-agents.html">Agents</a>
+      <a href="/admin/revenue.html">Commercial</a>
+      <a href="/">View public site</a>
+    </nav>
+    <button class="admin-button admin-button--secondary" type="button" id="operations-sign-out">Sign out</button>
+  </header>
+
+  <main id="operations-main" class="admin-workbench-main">
+    <section class="admin-workbench-intro">
+      <div>
+        <p class="admin-eyebrow">Controlled operations</p>
+        <h1>Network and trust operations</h1>
+        <p>Review recorded provider-supply evidence, task submissions, disputes, and communications state through the platform’s existing authorities. This console does not send messages, verify providers, release funds, or activate supply outside the applicable evidence-gated lifecycle.</p>
+      </div>
+      <button class="admin-button" type="button" id="operations-refresh">Refresh controls</button>
+    </section>
+
+    <p id="operations-feedback" class="admin-runtime-status" role="status" aria-live="polite">Loading recorded operational state…</p>
+
+    <section class="admin-operations-grid" aria-label="Operations controls">
+      <article class="admin-panel admin-panel--wide">
+        <div class="admin-panel__header"><div><p class="admin-eyebrow">Supply registry</p><h2>Record a discoverable supply entity</h2></div><p class="admin-panel__meta">A listing is not a verified provider or a dispatch promise.</p></div>
+        <form class="admin-form-grid" id="supply-entity-form">
+          <label>Public business name<input name="businessName" required maxlength="300" autocomplete="organization"></label>
+          <label>Entity type<input name="entityType" value="business" maxlength="64"></label>
+          <label>Country code<input name="country" required value="ng" maxlength="3" pattern="[A-Za-z]{2,3}"></label>
+          <label>State / region<input name="state" maxlength="120"></label>
+          <label>Local government area<input name="lga" maxlength="120"></label>
+          <label>Public phone<input name="publicPhone" maxlength="64" inputmode="tel"></label>
+          <label>Public website<input name="website" type="url" maxlength="1500" placeholder="https://example.com"></label>
+          <label>Services, comma separated<input name="services" maxlength="1000" placeholder="repairs, delivery"></label>
+          <label>Evidence source type<select name="sourceType" required><option value="manual_operator">Manual operator record</option><option value="public_website">Public website</option><option value="public_directory">Public directory</option><option value="provider_claim">Provider claim</option><option value="other">Other approved source</option></select></label>
+          <label>Evidence source label<input name="source" maxlength="300" placeholder="Source name or operator note"></label>
+          <label>Source URL<input name="sourceUrl" type="url" maxlength="1500" placeholder="https://source.example"></label>
+          <label>Retrieved at<input name="sourceRetrievedAt" type="datetime-local"></label>
+          <label>Source confidence (0–1)<input name="sourceConfidence" type="number" min="0" max="1" step="0.01"></label>
+          <div class="admin-form-actions"><button class="admin-button" type="submit">Record entity</button></div>
+        </form>
+      </article>
+
+      <article class="admin-panel">
+        <div class="admin-panel__header"><div><p class="admin-eyebrow">Supply review</p><h2>Review recorded evidence</h2></div></div>
+        <form class="admin-stacked-form" id="supply-review-form">
+          <label>Entity ID<input name="entityId" required maxlength="128"></label>
+          <label>Evidence reference<input name="evidenceRef" required maxlength="500" placeholder="Case ID, review note, or evidence URI"></label>
+          <label>Decision<select name="decision" required><option value="still_current">Still current</option><option value="changed">Changed</option><option value="closed">Closed</option><option value="unreachable">Unreachable</option><option value="source_removed">Source removed</option><option value="duplicate">Possible duplicate</option><option value="needs_review">Needs review</option></select></label>
+          <label>Source retrieved at<input name="sourceRetrievedAt" type="datetime-local"></label>
+          <button class="admin-button" type="submit">Record review</button>
+        </form>
+        <p class="admin-boundary-note">Readiness and activation stay separate; this action only records the selected supply-review outcome.</p>
+      </article>
+
+      <article class="admin-panel">
+        <div class="admin-panel__header"><div><p class="admin-eyebrow">Provider lifecycle</p><h2>Controlled next action</h2></div></div>
+        <form class="admin-stacked-form" id="supply-lifecycle-form">
+          <label>Entity ID<input name="entityId" required maxlength="128"></label>
+          <label>Action<select name="action" required><option value="invite">Issue claim invitation</option><option value="start-readiness">Start readiness review</option><option value="approve-readiness">Approve readiness</option><option value="activate">Activate verified supply entity</option></select></label>
+          <label>Evidence reference <input name="evidenceRef" maxlength="500" placeholder="Required for readiness approval"></label>
+          <label>Invitation expiry in days <input name="expiresInDays" type="number" min="1" max="90" value="14"></label>
+          <button class="admin-button" type="submit">Apply lifecycle action</button>
+        </form>
+        <p class="admin-boundary-note">Each action remains subject to the canonical claim, evidence, capability, and verification gates.</p>
+      </article>
+
+      <article class="admin-panel">
+        <div class="admin-panel__header"><div><p class="admin-eyebrow">Freshness</p><h2>Registry safeguards</h2></div></div>
+        <p class="admin-panel__meta">Mark due records stale from recorded review dates. No external fetch is performed.</p>
+        <button class="admin-button admin-button--secondary" type="button" id="supply-revalidate">Mark overdue records stale</button>
+        <div id="supply-summary" class="admin-state-list"><p class="admin-empty-state">Loading registry state…</p></div>
+      </article>
+
+      <article class="admin-panel admin-panel--wide">
+        <div class="admin-panel__header"><div><p class="admin-eyebrow">Registered supply</p><h2>Provider-supply evidence queue</h2></div><p class="admin-panel__meta">Supply entities do not imply network membership.</p></div>
+        <div class="admin-table-wrap"><table class="admin-data-table"><thead><tr><th>Entity</th><th>Location</th><th>Registry state</th><th>Evidence / freshness</th><th>Actions</th></tr></thead><tbody id="supply-entity-list"><tr><td colspan="5" class="admin-empty-state">Loading entities…</td></tr></tbody></table></div>
+      </article>
+
+      <article class="admin-panel">
+        <div class="admin-panel__header"><div><p class="admin-eyebrow">Claims</p><h2>Claim review queue</h2></div></div>
+        <div id="supply-claim-list" class="admin-state-list"><p class="admin-empty-state">Loading recorded claims…</p></div>
+      </article>
+
+      <article class="admin-panel">
+        <div class="admin-panel__header"><div><p class="admin-eyebrow">Contributor work</p><h2>Submitted task evidence</h2></div></div>
+        <div id="task-submission-list" class="admin-state-list"><p class="admin-empty-state">Loading submitted tasks…</p></div>
+      </article>
+
+      <article class="admin-panel">
+        <div class="admin-panel__header"><div><p class="admin-eyebrow">Disputes</p><h2>Escrow-bound decisions</h2></div></div>
+        <p class="admin-panel__meta">Release and refund controls use the existing dispute lifecycle; eligibility is enforced server-side.</p>
+        <div id="dispute-list" class="admin-state-list"><p class="admin-empty-state">Loading disputes…</p></div>
+      </article>
+
+      <article class="admin-panel">
+        <div class="admin-panel__header"><div><p class="admin-eyebrow">Communications</p><h2>Delivery boundary</h2></div></div>
+        <p id="communications-boundary" class="admin-panel__meta">Loading delivery-state boundary…</p>
+        <div id="communications-list" class="admin-state-list"><p class="admin-empty-state">Loading durable communication records…</p></div>
+      </article>
+
+      <article class="admin-panel admin-panel--wide">
+        <div class="admin-panel__header"><div><p class="admin-eyebrow">Connected administration</p><h2>Specialist control surfaces</h2></div><p class="admin-panel__meta">These existing pages own their respective records; this is a connected navigation index, not a replacement subsystem.</p></div>
+        <div class="admin-control-link-grid">
+          <a href="/admin/users.html"><strong>People and providers</strong><span>Profiles, availability, provider type, and evidence-gated verification.</span></a>
+          <a href="/admin/ai-agents.html"><strong>AI agents</strong><span>Identity, prompts, tools, skills, quotas, execution, and status.</span></a>
+          <a href="/admin/content.html"><strong>Content CMS</strong><span>Guides, pages, policies, draft generation, publishing, and public resources.</span></a>
+          <a href="/admin/seo.html"><strong>SEO studio</strong><span>Metadata, redirects, structured content, links, briefs, image context, and recorded diagnostics.</span></a>
+          <a href="/admin/revenue.html"><strong>Commercial evidence</strong><span>Verified collections, escrow records, campaign configuration, and affiliate evidence.</span></a>
+          <a href="/admin/pricing.html"><strong>Pricing</strong><span>Country plans, credits, currencies, active state, and feature descriptions.</span></a>
+          <a href="/admin/referrals.html"><strong>Referrals and affiliates</strong><span>Recorded invitations, referrals, merchant offers, conversions, and commission evidence.</span></a>
+          <a href="/admin/scam.html"><strong>Trust and reports</strong><span>Recorded scam reports, reviews, safety data, and controlled resolution paths.</span></a>
+          <a href="/admin/analytics.html"><strong>Analytics</strong><span>Observed platform state and trend data; not unverified demand or market claims.</span></a>
+          <a href="/admin/social.html"><strong>Marketing workspace</strong><span>Recorded social and campaign controls, without representing unverified external publication.</span></a>
+        </div>
+      </article>
+    </section>
+  </main>
+  <script src="/admin/operations.js" defer></script>
+</body>
+</html>

@@ -300,3 +300,47 @@ body.admin-shell {
 @media (max-width: 920px) { .admin-workbench-grid, .admin-seo-grid { grid-template-columns: 1fr; } .admin-seo-panel--wide { grid-column: auto; } .admin-seo-overview { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media (max-width: 700px) { .admin-workbench-header, .admin-workbench-intro { align-items: flex-start; flex-direction: column; } .admin-workbench-header { gap: 10px; } .admin-workbench-nav { width: 100%; justify-content: flex-start; overflow-x: auto; } .admin-workbench-header > .admin-button { align-self: flex-end; } .admin-form-grid, .admin-seo-form-grid { grid-template-columns: 1fr; } .admin-panel__header { flex-direction: column; gap: 10px; } .admin-table-controls { justify-content: flex-start; } }
 @media (max-width: 460px) { .admin-seo-overview { grid-template-columns: 1fr; } }
+
+/* Branded connected operations console */
+.admin-workbench-page { min-height: 100vh; margin: 0; background: var(--admin-bg); color: var(--admin-text); font-family: "DM Sans", var(--font-body, system-ui, sans-serif); }
+.admin-workbench-header { position: sticky; top: 0; z-index: 40; display: flex; min-height: 4.5rem; align-items: center; gap: 1.25rem; border-bottom: 1px solid var(--admin-border); background: color-mix(in srgb, var(--admin-surface) 92%, transparent); padding: .75rem clamp(1rem,3vw,3rem); backdrop-filter: blur(16px); }
+.admin-workbench-brand { display: inline-flex; flex: 0 0 auto; align-items: center; gap: .6rem; color: var(--admin-text); font-family: "Fraunces", Georgia, serif; font-size: 1.05rem; text-decoration: none; }
+.admin-workbench-brand strong { color: var(--admin-accent); }
+.admin-workbench-brand img { width: 1.75rem; height: 1.75rem; }
+.admin-workbench-nav { display: flex; flex: 1; align-items: center; gap: .25rem; overflow-x: auto; scrollbar-width: thin; }
+.admin-workbench-nav a { border-radius: .45rem; color: var(--admin-muted); font-size: .87rem; font-weight: 700; padding: .5rem .65rem; text-decoration: none; white-space: nowrap; }
+.admin-workbench-nav a:hover, .admin-workbench-nav a:focus-visible, .admin-workbench-nav a.is-current { background: #f8e6df; color: var(--admin-text); outline: none; }
+.admin-workbench-main { width: min(1440px,calc(100% - 2rem)); margin: 0 auto; padding: clamp(1.5rem,4vw,3.5rem) 0 4rem; }
+.admin-workbench-intro { display: flex; align-items: end; justify-content: space-between; gap: 2rem; margin-bottom: 1.25rem; }
+.admin-workbench-intro > div { max-width: 62rem; }
+.admin-workbench-intro h1 { margin: .15rem 0 .65rem; font-family: "Fraunces",Georgia,serif; font-size: clamp(2rem,4vw,3.5rem); letter-spacing: -.045em; }
+.admin-workbench-intro p:not(.admin-eyebrow) { max-width: 58rem; color: var(--admin-muted); line-height: 1.65; }
+.admin-operations-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; }
+.admin-operations-grid .admin-panel { min-width: 0; }
+.admin-form-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: .85rem; }
+.admin-form-grid label, .admin-stacked-form label { display: grid; gap: .35rem; color: var(--admin-muted); font-size: .8rem; font-weight: 700; }
+.admin-form-grid input, .admin-form-grid select, .admin-stacked-form input, .admin-stacked-form select, .admin-stacked-form textarea, .admin-state-card input { box-sizing: border-box; width: 100%; min-height: 2.6rem; border: 1px solid var(--admin-border); border-radius: .5rem; background: var(--admin-surface); color: var(--admin-text); font: inherit; padding: .6rem .7rem; }
+.admin-form-grid input:focus, .admin-form-grid select:focus, .admin-stacked-form input:focus, .admin-stacked-form select:focus, .admin-stacked-form textarea:focus, .admin-state-card input:focus { border-color: var(--admin-accent); box-shadow: 0 0 0 3px var(--admin-focus-ring); outline: none; }
+.admin-stacked-form { display: grid; gap: .8rem; }
+.admin-form-actions { display: flex; align-items: end; }
+.admin-form-actions .admin-button { min-height: 2.6rem; }
+.admin-boundary-note { margin: 1rem 0 0; color: var(--admin-muted); font-size: .83rem; line-height: 1.5; }
+.admin-state-list { display: grid; gap: .7rem; }
+.admin-state-card { border: 1px solid var(--admin-border); border-radius: .65rem; background: var(--admin-surface-muted); padding: .85rem; }
+.admin-state-card p { margin: .25rem 0; color: var(--admin-muted); font-size: .84rem; line-height: 1.45; }
+.admin-state-card strong { color: var(--admin-text); }
+.admin-inline-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .65rem; }
+.admin-inline-actions .admin-button, .admin-state-card .admin-text-link { min-height: 2rem; font-size: .78rem; }
+.admin-control-link-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .75rem; }
+.admin-control-link-grid a { display: grid; min-height: 5rem; gap: .25rem; border: 1px solid var(--admin-border); border-radius: .7rem; color: var(--admin-text); padding: .9rem; text-decoration: none; transition: transform 160ms ease,border-color 160ms ease,box-shadow 160ms ease; }
+.admin-control-link-grid a:hover, .admin-control-link-grid a:focus-visible { border-color: var(--admin-accent); box-shadow: 0 8px 24px rgba(217,122,92,.12); outline: none; transform: translateY(-1px); }
+.admin-control-link-grid strong { font-family: "Fraunces",Georgia,serif; font-size: 1rem; }
+.admin-control-link-grid span { color: var(--admin-muted); font-size: .83rem; line-height: 1.45; }
+.admin-runtime-status[data-state="error"] { color: var(--admin-danger); }
+.admin-runtime-status[data-state="success"] { color: #316d52; }
+@media (max-width:920px) { .admin-workbench-header { align-items: flex-start; flex-wrap: wrap; } .admin-workbench-header > .admin-button { margin-left: auto; } .admin-workbench-nav { order: 3; flex-basis: 100%; } .admin-workbench-intro { align-items: flex-start; flex-direction: column; } .admin-operations-grid { grid-template-columns: 1fr; } .admin-form-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width:620px) { .admin-workbench-main { width: min(100% - 1rem,1440px); } .admin-workbench-header { padding: .65rem .75rem; } .admin-workbench-brand { font-size: .95rem; } .admin-form-grid, .admin-control-link-grid { grid-template-columns: 1fr; } .admin-workbench-intro .admin-button { width: 100%; } }
+
+/* Legacy pages retain their specialist controls but inherit one connected top-level identity. */
+.admin-legacy-branded > .header-bar { display: none; }
+.admin-legacy-branded .admin-connected-bar + .sidebar { top: 4.5rem; height: calc(100vh - 4.5rem); }

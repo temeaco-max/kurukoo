@@ -253,6 +253,48 @@ router.post('/disputes/resolve', authenticateAdmin, async (req: AuthRequest, res
   }
 });
 
+router.get('/disputes', authenticateAdmin, async (_req: AuthRequest, res) => {
+  try {
+    const db = await getDb();
+    const stmt = db.prepare(`SELECT id, phone, order_id, status, reason, resolution, created_at FROM disputes ORDER BY created_at DESC LIMIT 100`);
+    const disputes: any[] = [];
+    while (stmt.step()) disputes.push(stmt.getAsObject());
+    stmt.free();
+    res.json({ success: true, disputes });
+  } catch (error) {
+    console.error('Error loading admin disputes:', error);
+    res.status(500).json({ error: 'Failed to load disputes' });
+  }
+});
+
+router.get('/communications', authenticateAdmin, async (_req: AuthRequest, res) => {
+  try {
+    const db = await getDb();
+    const grouped = (query: string) => {
+      try {
+        const stmt = db.prepare(query);
+        const rows: any[] = [];
+        while (stmt.step()) rows.push(stmt.getAsObject());
+        stmt.free();
+        return rows;
+      } catch { return []; }
+    };
+    const outbox = grouped(`SELECT dispatch_state AS state, COUNT(*) AS count FROM communication_outbox GROUP BY dispatch_state ORDER BY dispatch_state`);
+    const deliveries = grouped(`SELECT channel, state, COUNT(*) AS count FROM communication_deliveries GROUP BY channel, state ORDER BY channel, state`);
+    const consents = grouped(`SELECT channel, consent_state AS state, COUNT(*) AS count FROM communication_preferences GROUP BY channel, consent_state ORDER BY channel, consent_state`);
+    res.json({
+      success: true,
+      outbox,
+      deliveries,
+      consents,
+      boundary: 'Counts reflect durable internal records only. Accepted delivery is not external receipt confirmation, and this console cannot send arbitrary messages.',
+    });
+  } catch (error) {
+    console.error('Error loading communication observability:', error);
+    res.status(500).json({ error: 'Failed to load communication observability' });
+  }
+});
+
 router.post('/disputes/escalate', authenticateAdmin, async (req: AuthRequest, res) => {
   const { disputeId } = req.body || {};
   if (!disputeId) return res.status(400).json({ error: 'Missing disputeId' });
@@ -268,7 +310,7 @@ router.post('/disputes/escalate', authenticateAdmin, async (req: AuthRequest, re
 
     db.run(`UPDATE disputes SET status = 'escalated' WHERE id = ?`, [parseInt(String(disputeId), 10)]);
 
-    const adminMsg = `[Admin Dispute Escalation] Your dispute #${disputeId} has been escalated for secondary review. Our escrow agents will contact you shortly if additional verification is needed.`;
+    const adminMsg = `[Admin Dispute Escalation] Your dispute #${disputeId} has been escalated for secondary review. Kurukoo will record any further supported update in your request history.`;
     db.run(`INSERT INTO messages (phone, sender, content, channel) VALUES (?, 'assistant', ?, 'pwa')`, [
       dispute.phone,
       adminMsg,

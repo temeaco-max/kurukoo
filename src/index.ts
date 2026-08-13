@@ -91,6 +91,8 @@ app.use('/api/economic-requests', economicRequestRouter);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/seo', seoAdminRoutes);
 app.use('/api', paymentRoutes);
+// Task moderation includes authenticated admin controls and must not be intercepted by user-scoped API middleware.
+app.use('/api', taskRoutes);
 // Public CMS content must be reachable before user-scoped API middleware.
 app.use('/', contentRoutes);
 app.use('/api', userRoutes);
@@ -111,7 +113,6 @@ app.use('/', discoveryRoutes);
 app.use('/api', reminderRoutes);
 app.use('/api', notificationRoutes);
 app.use('/api', safetyRoutes);
-app.use('/api', taskRoutes);
 app.use('/api', trustRoutes);
 app.use('/api/webrtc', webrtcRoutes);
 app.use('/', healthRoutes);
