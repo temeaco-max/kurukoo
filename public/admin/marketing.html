@@ -3,54 +3,47 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Kurukoo Admin - Marketing evidence</title>
+  <title>Kurukoo Admin — Marketing and campaigns</title>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/site.css">
   <link rel="stylesheet" href="/css/legacy-inline-migration.css?v=1">
   <link rel="stylesheet" href="/css/admin-console.css">
-    <link rel="stylesheet" href="/css/admin-control-room.css?v=1">
+  <link rel="stylesheet" href="/css/admin-control-room.css?v=1">
 </head>
 <body>
-  <div class="header-bar">
-    <div class="logo"><span>Kurukoo</span> Admin</div>
-    <nav>
-      <a href="/admin/dashboard.html">Console</a>
-      <a href="/admin/marketing.html" class="active">Marketing evidence</a>
-    </nav>
-  </div>
-  <main class="container">
-    <h1>Marketing evidence</h1>
-    <p id="marketing-boundary">Loading recorded marketing activity. Engagement figures are unavailable until measurement is configured.</p>
-    <div class="card-grid" id="mkt-grid" aria-live="polite"><div class="stat-card">Loading…</div></div>
+  <main class="admin-page admin-marketing-page">
+    <header class="admin-page-heading">
+      <p class="admin-kicker">Commercial controls</p>
+      <h1>Marketing and campaigns</h1>
+      <p>Manage disclosed campaign records through Kurukoo’s canonical advertising service. A campaign is not proof of charged media, provider verification, inventory, availability, delivery, or a completed commercial outcome.</p>
+    </header>
+
+    <section class="admin-card" aria-labelledby="marketing-evidence-title">
+      <div class="admin-card-heading"><div><p class="admin-kicker">Recorded signals</p><h2 id="marketing-evidence-title">Marketing evidence</h2></div><p id="marketing-boundary" class="admin-muted">Loading recorded marketing activity.</p></div>
+      <div class="admin-card-grid" id="mkt-grid" aria-live="polite"><article class="admin-stat-card"><span>Loading</span><strong>—</strong></article></div>
+    </section>
+
+    <section class="admin-card" aria-labelledby="campaign-create-title">
+      <div class="admin-card-heading"><div><p class="admin-kicker">Canonical advertising manager</p><h2 id="campaign-create-title">Create a disclosed campaign</h2></div><p class="admin-muted">Target an existing category, a keyword, or both. Category targeting reuses the existing skill-flow taxonomy; it does not create a Topic or advertising hierarchy.</p></div>
+      <form id="campaign-form" class="admin-form-grid" novalidate>
+        <label>Campaign title<input name="title" required minlength="3" maxlength="160" placeholder="e.g. Repair service campaign"></label>
+        <label>Target keyword<input name="targetKeyword" maxlength="120" placeholder="e.g. repair"></label>
+        <label class="admin-form-full">Description<textarea name="desc" required minlength="3" maxlength="320" rows="3" placeholder="Describe the placement without claiming provider verification, stock, availability, price, delivery, or fulfilment."></textarea></label>
+        <label class="admin-form-full">Canonical categories<select name="targetCategories" id="campaign-categories" multiple aria-describedby="campaign-category-help"></select><small id="campaign-category-help">Optional. Select one or more existing Kurukoo categories; choose a keyword if no category applies.</small></label>
+        <label>Credit budget<input name="creditsBudget" type="number" min="0" step="1" value="0" required></label>
+        <label>Placement source<select name="placementSource"><option value="external_inventory">External advertisement</option><option value="kurukoo_sponsored">Kurukoo-sponsored</option></select></label>
+        <label class="admin-form-full">Disclosure<input name="disclosure" required maxlength="120" value="External advertisement"></label>
+        <button class="admin-button admin-button--primary" type="submit">Create campaign</button>
+      </form>
+      <p class="admin-form-status" id="campaign-status" role="status"></p>
+    </section>
+
+    <section class="admin-card" aria-labelledby="campaign-list-title">
+      <div class="admin-card-heading"><div><p class="admin-kicker">Campaign records</p><h2 id="campaign-list-title">Current placements</h2></div><button class="admin-button admin-button--secondary" type="button" id="campaign-refresh">Refresh</button></div>
+      <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Campaign</th><th>Targeting</th><th>Disclosure</th><th>Budget</th><th>Status</th><th>Control</th></tr></thead><tbody id="campaign-list"><tr><td colspan="6" class="admin-empty-state">Loading campaign records…</td></tr></tbody></table></div>
+    </section>
   </main>
-  <script>
-    (() => {
-      const grid = document.getElementById('mkt-grid');
-      const boundary = document.getElementById('marketing-boundary');
-      const card = (value, label, detail) => {
-        const article = document.createElement('article'); article.className = 'stat-card';
-        const primary = document.createElement('div'); primary.className = 'stat-value'; primary.textContent = value;
-        const heading = document.createElement('div'); heading.className = 'stat-label'; heading.textContent = label;
-        const note = document.createElement('small'); note.textContent = detail;
-        article.append(primary, heading, note); return article;
-      };
-      fetch('/api/admin/marketing', { credentials: 'same-origin' })
-        .then((response) => { if (!response.ok) throw new Error('Marketing metrics unavailable'); return response.json(); })
-        .then((data) => {
-          grid.replaceChildren(
-            card(Number(data.referrals || 0).toLocaleString(), 'Recorded referrals', 'Counts are based on recorded referral records.'),
-            card(Number(data.activeCampaigns || 0).toLocaleString(), 'Active campaign records', 'A campaign record is not evidence of charged advertising or an external broadcast.'),
-            card(data.measuredAdImpressions === null ? 'Not measured' : Number(data.measuredAdImpressions || 0).toLocaleString(), 'Advertising impressions', 'No impression tracker is configured, so this value is intentionally unavailable.'),
-            card(data.measuredAdClicks === null ? 'Not measured' : Number(data.measuredAdClicks || 0).toLocaleString(), 'Advertising clicks', 'No click tracker is configured, so this value is intentionally unavailable.')
-          );
-          boundary.textContent = data.boundary || 'Only measured marketing activity is shown.';
-        })
-        .catch(() => {
-          grid.replaceChildren(card('Unavailable', 'Marketing evidence', 'Metrics could not be loaded. No marketing status change is implied.'));
-          boundary.textContent = 'Marketing evidence is currently unavailable.';
-        });
-    })();
-  </script>
-    <script src="/js/admin-shell.js?v=1"></script>
+  <script src="/js/admin-shell.js?v=1"></script>
+  <script src="/admin/marketing.js?v=2"></script>
 </body>
 </html>

@@ -374,7 +374,7 @@ function initTables(database: any) {
     );
     CREATE INDEX IF NOT EXISTS idx_pilot_feedback_created ON pilot_feedback(created_at);
     CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, phone TEXT, order_type TEXT, provider_phone TEXT, amount INTEGER, status TEXT, idempotency_key TEXT UNIQUE, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
-    CREATE TABLE IF NOT EXISTS ad_campaigns (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, desc TEXT, image_url TEXT, target_keyword TEXT, credits_budget INTEGER, credits_spent INTEGER DEFAULT 0, status TEXT DEFAULT 'active', placement_source TEXT DEFAULT 'external_inventory', disclosure TEXT DEFAULT 'Sponsored', created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP);
+    CREATE TABLE IF NOT EXISTS ad_campaigns (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, desc TEXT, image_url TEXT, target_keyword TEXT, target_categories_json TEXT DEFAULT '[]', credits_budget INTEGER, credits_spent INTEGER DEFAULT 0, status TEXT DEFAULT 'active', placement_source TEXT DEFAULT 'external_inventory', disclosure TEXT DEFAULT 'Sponsored', created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS email_log (id INTEGER PRIMARY KEY AUTOINCREMENT, recipient TEXT, subject TEXT, body TEXT, status TEXT, sent_at TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS future_plans (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, description TEXT, phase TEXT, status TEXT);
     CREATE TABLE IF NOT EXISTS ai_agents (id TEXT PRIMARY KEY, name TEXT, system_prompt TEXT, skills TEXT, tools TEXT, status TEXT DEFAULT 'active', lga TEXT, concurrency_limit INTEGER DEFAULT 5, token_quota_daily INTEGER DEFAULT 10000, cost_threshold_usd REAL DEFAULT 1.0, temperature REAL DEFAULT 0.2, tokens_used_today INTEGER DEFAULT 0, success_count INTEGER DEFAULT 0, escalation_count INTEGER DEFAULT 0, avatar TEXT DEFAULT '🤖', created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP);
@@ -402,6 +402,7 @@ function initTables(database: any) {
   const adNames = new Set<string>((adColumns[0]?.values || []).map((row: unknown[]) => String(row[1])));
   if (!adNames.has('placement_source')) database.run("ALTER TABLE ad_campaigns ADD COLUMN placement_source TEXT DEFAULT 'external_inventory'");
   if (!adNames.has('disclosure')) database.run("ALTER TABLE ad_campaigns ADD COLUMN disclosure TEXT DEFAULT 'Sponsored'");
+  if (!adNames.has('target_categories_json')) database.run("ALTER TABLE ad_campaigns ADD COLUMN target_categories_json TEXT DEFAULT '[]'");
   
   const emergency = [['ng', 'Police Emergency', '112'], ['ng', 'Federal Road Safety (FRSC)', '122'], ['ng', 'Lagos State Emergency (LASEMA)', '767']];
   for (const e of emergency) database.run(`INSERT OR IGNORE INTO emergency_contacts(country, name, phone) VALUES(?,?,?)`, e);

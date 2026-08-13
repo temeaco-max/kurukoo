@@ -5482,3 +5482,18 @@ The Topic authority remains intentionally small, but the approved **projections*
 The implementation intentionally leaves category sponsorship, provider/business references, public-media uploads, notification fan-out, and autonomous agents **deferred**. Daily Picks may project only quality-gated public Topic context through the existing owner-scoped opportunity engine; it does not create a Topic ranking system, commercial claim, or autonomous prompt. Their existing owners must first gain their own truthful source, consent, privacy, disclosure, and regression contracts. No future Topic feature may bypass this addendum’s single-network test.
 
 ---
+
+### Advertising Convergence Completion Addendum (2026-08-13)
+
+Kurukoo advertising remains a compact projection of the canonical `ad_campaigns` persistence and `adManager`; it is not a provider directory, catalogue, ranking engine, payment system, delivery system, recommendation engine, or commercial-fact authority. The existing Admin Marketing workspace now operates that same campaign owner through authenticated listing, creation, and lifecycle controls.
+
+| Concern | Canonical owner | Implemented boundary |
+|---|---|---|
+| Campaign records, budgets, and state | `ad_campaigns` and `adManager` | Campaigns retain their existing title, description, keyword, credit budget/spend, placement source, disclosure, and status. The additive `target_categories_json` field contains only existing canonical skill-flow categories. |
+| Category relevance | Existing `ECONOMIC_CATEGORIES`, skill flows, and FastText-routed skill | A campaign may match its exact target keyword or a category already resolved by the existing taxonomy. Advertising defines neither a classifier nor a category hierarchy. |
+| Public and chat placement | Existing Explore routes and canonical chat card rendering | General active campaigns can project on Explore; category-targeted campaigns project only in their matching Explore section. FastText-routed cards may receive disclosed sponsored suggestions. A placement is an advertisement, not a provider recommendation, availability, price, quote, booking, payment, delivery, or fulfilment claim. |
+| Campaign operations | Existing Admin Marketing route and Control Room shell | Administrators can create a disclosed campaign and pause/activate a record. No self-serve advertiser onboarding, billing, invoicing, third-party media purchase, automatic charge, external broadcast, delivery tracking, or performance measurement is implied. |
+
+The existing advertising disclosure regression covers canonical category validation, active/paused state gates, admin authentication, disclosure persistence, public-context matching, and the explicit absence of provider-verification semantics. Commercial delivery, independently measured impressions/clicks, invoicing/collection, and real advertiser inventory remain external or operational dependencies.
+
+---

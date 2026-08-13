@@ -34,6 +34,7 @@ import { getCommercialMetrics, getMarketingMetrics } from '../services/commercia
 import { getAllContent, getContentBySlug, saveContent, deleteContentBySlug, type ContentItem } from '../services/contentManager.js';
 import { getAdminControlPlaneStatus, listAdminFeatureFlags, updateAdminFeatureFlag, updateAdminRuntimeControl } from '../services/adminControlPlane.js';
 import { getSeoDashboard } from '../services/seoService.js';
+import { createAdCampaign, getAdCampaigns, setAdCampaignStatus, type AdCampaignStatus } from '../services/adManager.js';
 
 const router = Router();
 
@@ -705,6 +706,34 @@ router.get('/marketing', authenticateAdmin, async (_req: AuthRequest, res) => {
     res.json(await getMarketingMetrics());
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to fetch marketing metrics' });
+  }
+});
+
+// Campaign state remains owned by adManager; this admin projection does not imply advertiser onboarding, billing, or delivered impressions.
+router.get('/marketing/campaigns', authenticateAdmin, async (_req: AuthRequest, res) => {
+  try { res.json({ campaigns: await getAdCampaigns() }); }
+  catch (error) { res.status(500).json({ error: error instanceof Error ? error.message : 'Unable to load campaigns' }); }
+});
+
+router.post('/marketing/campaigns', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const campaign = await createAdCampaign(req.body || {});
+    res.status(201).json(campaign);
+  } catch (error) {
+    res.status(400).json({ error: error instanceof Error ? error.message : 'Unable to create campaign' });
+  }
+});
+
+router.post('/marketing/campaigns/:id/status', authenticateAdmin, async (req: AuthRequest, res) => {
+  const id = Number(req.params.id);
+  const status = String(req.body?.status || '') as AdCampaignStatus;
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'A valid campaign id is required' });
+  try {
+    const campaign = await setAdCampaignStatus(id, status);
+    if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+    res.json({ campaign });
+  } catch (error) {
+    res.status(400).json({ error: error instanceof Error ? error.message : 'Unable to update campaign' });
   }
 });
 

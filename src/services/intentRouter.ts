@@ -232,7 +232,9 @@ export async function routeIntent(query: string, phone?: string, provider?: AIPr
         console.warn('[Router] storefront start failed:', e);
       }
     }
-    const cardData = decorateCardWithSuggestions(actionCard(classification.intent), flowSkill) || suggestionCard(flowSkill);
+    const cardData: any = decorateCardWithSuggestions(actionCard(classification.intent), flowSkill) || suggestionCard(flowSkill);
+    const ads = await matchAdCampaigns(query, { category: getEconomicCategory(flowSkill) || undefined });
+    if (ads.length) cardData.sponsored = ads.map((ad) => ({ title: ad.title, desc: ad.desc, keyword: ad.targetKeyword, disclosure: ad.disclosure, placementSource: ad.placementSource }));
     const reply = flowReply(flowSkill, flow);
     return { skill: flowSkill, reply, cardData };
   }
@@ -248,7 +250,7 @@ export async function routeIntent(query: string, phone?: string, provider?: AIPr
   const cardData: any = ai.provider === 'SmolLM2' ? { type: 'ai_metadata', provider: ai.provider, model: ai.model } : undefined;
 
   const ads = await matchAdCampaigns(query);
-  const sponsored = ads.map(ad => ({ title: ad.title, desc: ad.desc, keyword: ad.targetKeyword }));
+  const sponsored = ads.map((ad) => ({ title: ad.title, desc: ad.desc, keyword: ad.targetKeyword, disclosure: ad.disclosure, placementSource: ad.placementSource }));
 
   if (sponsored.length > 0) {
     const finalCard = cardData || { type: 'intent_suggestions', intent: 'general_question', suggestions: [] };
