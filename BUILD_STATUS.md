@@ -221,3 +221,10 @@ Verification is covered by the expanded `test:topics-convergence` real-app regre
 The canonical `ad_campaigns` and `adManager` authority now supports disclosed keyword and existing-category targeting, campaign lifecycle state, FastText-routed chat-card placement, and matching Explore-section projection. The existing Admin Marketing workspace presents the same authenticated campaign authority for list, create, pause, and activate operations; it is not a second campaign database or a self-serve commercial platform.
 
 Every campaign and placement retains a source/disclosure label. Category targeting reads only the existing skill-flow category catalogue; it does not infer providers, create social/topic rankings, or establish inventory, availability, price, quotes, bookings, payments, delivery, or fulfilment. Local campaign records, credit spend, and rendered cards remain operational records—not proof of paid media, billed charges, external distribution, impressions, clicks, or commercial performance. Those external delivery and measurement requirements remain deployment work.
+
+
+## Current integration: Evidence-gated public provider profiles
+
+The existing `/p/:providerSlug` route now depends on the canonical `providerVerification` lifecycle rather than treating a profile slug, provider record, or legacy `verified_provider` field as public proof. Unverified profiles return no public provider identity, location, skills, rating, or account phone. Only a current evidence-backed verification state may render the existing public profile, and public rendering continues to omit the private account phone.
+
+This gate does not assert live availability, a quote, price, booking, payment, delivery, or fulfilment. Topic detail pages continue to route users through the labelled Topic-to-Chat context rather than rendering provider cards: the current supply registry correctly distinguishes public listings, claimed supply, linked provider accounts, and verified provider evidence, but does not yet provide a truthful availability-qualified Topic-provider projection.

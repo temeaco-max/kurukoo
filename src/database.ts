@@ -69,6 +69,7 @@ function initTables(database: any) {
     CREATE TABLE IF NOT EXISTS memory_profiles (
       phone TEXT PRIMARY KEY, 
       name TEXT, 
+      profile_slug TEXT,
       email TEXT, 
       location TEXT, 
       primary_lga TEXT, 
@@ -392,6 +393,10 @@ function initTables(database: any) {
     CREATE TABLE IF NOT EXISTS commission_config (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT UNIQUE, rate_minor INTEGER, description TEXT, active INTEGER DEFAULT 1);
   `);
   
+  const profileColumns = database.exec("PRAGMA table_info(memory_profiles)");
+  const profileNames = new Set<string>((profileColumns[0]?.values || []).map((row: unknown[]) => String(row[1])));
+  if (!profileNames.has('profile_slug')) database.run("ALTER TABLE memory_profiles ADD COLUMN profile_slug TEXT");
+  database.run("CREATE INDEX IF NOT EXISTS idx_memory_profiles_profile_slug ON memory_profiles(profile_slug)");
   database.run("CREATE INDEX IF NOT EXISTS idx_messages_phone ON messages(phone)");
   database.run("CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at)");
   const presenceColumns = database.exec("PRAGMA table_info(provider_presence)");

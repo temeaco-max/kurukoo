@@ -5497,3 +5497,11 @@ Kurukoo advertising remains a compact projection of the canonical `ad_campaigns`
 The existing advertising disclosure regression covers canonical category validation, active/paused state gates, admin authentication, disclosure persistence, public-context matching, and the explicit absence of provider-verification semantics. Commercial delivery, independently measured impressions/clicks, invoicing/collection, and real advertiser inventory remain external or operational dependencies.
 
 ---
+
+### Public Provider Profile Evidence Gate (2026-08-13)
+
+The existing `/p/:providerSlug` public profile projection is now gated by the canonical `providerVerification` lifecycle. A matching profile slug and a `memory_profiles` row are not public evidence. The route returns no public provider identity, location, skill, rating, or phone data unless `providerMayBeDiscovered(phone)` confirms a current evidence-backed verification state. The supporting `profile_slug` field is an additive indexed projection on `memory_profiles`, not a second provider identity store.
+
+Topic detail pages deliberately do **not** render provider cards at this stage. The public supply registry distinguishes reviewed public business listings from claimed, linked, and evidence-verified provider accounts; neither an unclaimed listing nor a verified account establishes current availability, a quote, price, booking, delivery, or fulfilment. Users continue through the existing labelled Topic-to-Chat handoff when they want Kurukoo to evaluate a request through the canonical intent and provider flow.
+
+---
