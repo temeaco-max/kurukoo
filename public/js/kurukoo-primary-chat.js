@@ -897,11 +897,12 @@
     const text = String(raw || input.value || '').trim(); if (!text || state.busy || !(await ensureIdentity())) return;
     state.busy = true; send.disabled = true; setConnection(true); input.value = '';
     let attachment = state.attached;
+    let assistant = null;
     try {
       if (attachment instanceof File) { input.placeholder = 'Uploading attachment…'; attachment = await uploadAttachment(attachment); }
       state.attached = null; $('attachment-preview').hidden = true; $('attachment-preview').textContent = '';
       const finalText = attachment ? `${text}\n\n[Attachment: ${attachment.name} — ${attachment.type} — ${attachment.url}]` : text;
-      const user = addUserMessage(finalText); const assistant = appendStreamBubble(); const output = assistant.querySelector('.markdown-body'); const thinking = assistant.querySelector('.thinking'); let full = '';
+      const user = addUserMessage(finalText); assistant = appendStreamBubble(); const output = assistant.querySelector('.markdown-body'); const thinking = assistant.querySelector('.thinking'); let full = '';
       const response = await fetch('/api/chat/stream', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ message: finalText, channel: 'web', conversationId: state.conversationId || undefined, attachment: attachment || undefined, topicSlug: state.topicContext?.slug || undefined }) });
       if (response.status === 401) { await ensureIdentity(); throw new Error('Your session has expired.'); }
       if (!response.ok || !response.body) throw new Error(`Chat request failed (${response.status})`);
@@ -942,9 +943,12 @@
       if (!full) output.textContent = 'I could not complete that request. Please try again.';
       await refreshHistory();
     } catch (error) { 
-      setConnection(false, 'Connection issue'); setTypingStatus('error'); assistant.hidden = false; assistant.classList.remove('message-streaming'); assistant.classList.add('message-arrived');
+      setConnection(false, 'Connection issue'); setTypingStatus('error');
+      if (!assistant) assistant = appendStreamBubble();
+      assistant.hidden = false; assistant.classList.remove('message-streaming'); assistant.classList.add('message-arrived');
       const bubble = chatContent.querySelector('.message.assistant:last-child .markdown-body'); 
-      if (bubble) setMarkdown(bubble, `I’m having trouble completing that right now. **Please try again.**\n\n_${escapeAttr(error.message)}_`); 
+      const reason = error instanceof Error ? error.message : 'Unexpected error';
+      if (bubble) setMarkdown(bubble, `I’m having trouble completing that right now. **Please try again.**\n\n_${escapeAttr(reason)}_`);
     } finally { setTypingStatus('complete'); state.busy = false; send.disabled = false; input.placeholder = 'Tell Kurukoo what you need…'; input.focus(); loadPoints(); loadPresence(); loadReminders(); loadNotificationDeliveries(); loadSafety(); loadAgentGoal(); loadRequestContext(); }
   }
 

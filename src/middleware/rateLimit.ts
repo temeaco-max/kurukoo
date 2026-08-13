@@ -97,6 +97,14 @@ export const paymentRateLimit = createRateLimiter({
   message: 'Payment rate limit exceeded',
 });
 
+/** Authenticated binary uploads are intentionally bounded to protect local pilot storage. */
+export const attachmentUploadRateLimit = createRateLimiter({
+  windowMs: 60_000,
+  max: 6,
+  keyPrefix: 'chat-attachment',
+  message: 'Too many attachment uploads — try again shortly',
+});
+
 // Periodic cleanup to avoid unbounded Map growth
 setInterval(() => {
   const now = Date.now();

@@ -100,7 +100,6 @@ The application does **not** simulate unavailable real-world infrastructure. In 
 - Finish deleting any genuinely dead legacy route bodies after extraction coverage proves they are unused.
 - Complete universal catalogue/inventory matching for catalogue-bearing skills using the existing provider/product data model rather than creating per-skill ordering systems.
 - Expand economic integration tests so each canonical category proves the same lifecycle with category-specific requirements.
-- Strengthen attachment storage/access controls before production-scale media uploads.
 - Keep CSS, messaging, services, skills, security and economic audits behavioural rather than presence-only where practical.
 - Keep documentation aligned with the implementation; stale historical claims must not be treated as current architecture.
 - Add a real FCM provider and channel fallback/receipt workflow before treating deferred-match or session nudges as delivered notifications.
@@ -236,3 +235,10 @@ The conversation workspace remains a shell over canonical services rather than a
 The audit found no persisted Cart, saved-item, or saved-provider owner. Rather than manufacture one in the workspace, the sidebar no longer advertises Cart, the compatibility `/cart` route clearly reports **Cart unavailable**, and its only next step is the existing conversation-to-Economic-Request flow. It neither adds items nor claims inventory, a subtotal, a quote, reservation, payment, delivery, or fulfilment. The `/saved` surface is now truthfully named **External offers** and explicitly states that no saved-items list exists. The strengthened workspace regression protects these negative boundaries.
 
 Daily Picks now keeps personal context and sponsorship separate. Its sponsored panel reads only a current disclosed `ad_campaign` opportunity from the existing owner-scoped opportunity engine, while the generic static promotion preview and unbacked proactive question have been removed. Stored campaign opportunities stop projecting immediately when the same canonical campaign is paused, completed, or inactive; they never appear among personal suggestions. The opportunity and advertising regressions cover active eligibility, disclosure, owner isolation, and paused-campaign exclusion.
+
+
+## 2026-08-13 private chat attachment hardening
+
+The existing chat attachment flow now requires an authenticated user and a shared bounded upload limiter. Validated supported attachment bytes live only in the private configured `CHAT_UPLOAD_DIR` (outside `public/` by default), and `chat_attachments` records bind opaque identifiers, trusted type, bounded size, and storage path to the owner phone. Declared data URLs must have strict Base64 form and match the respective binary file signature; the server never trusts a submitted filename for the stored extension.
+
+Attachments have no public static URL. Download and deletion require the same owner and send attachment disposition, explicit type, `nosniff`, and `private, no-store`; a chat stream resolves an attachment id to the canonical owner-scoped record before persisting message metadata. The new real-app regression covers unauthenticated, malformed, cross-owner, guest-stream, retrieval, deletion, and static-hosting boundaries. Binary malware scanning, full content moderation, object storage, durable cleanup/retention, encrypted-at-rest key management, and multi-instance media durability remain deployment work rather than claims of the current SQL.js pilot.

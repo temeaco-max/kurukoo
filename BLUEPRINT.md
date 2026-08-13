@@ -5516,3 +5516,12 @@ The strengthened workspace regression preserves this boundary alongside the exis
 Daily Picks now separates personal context from sponsorship. Its dedicated sponsored panel reads only a disclosed `ad_campaign` opportunity emitted by the existing owner-scoped opportunity engine; the generic workspace advertisement preview and the unsupported static proactive question were removed. A stored campaign opportunity is suppressed immediately when the canonical campaign becomes paused, completed, or inactive, and no sponsor appears if no current disclosed campaign is eligible. Campaigns never enter the personal-suggestion list, and their panel repeats the boundary that sponsorship is not provider verification, inventory, availability, price, a quote, booking, payment, delivery, or fulfilment.
 
 ---
+### Private Chat Attachment Hardening Addendum (2026-08-13)
+
+Chat attachments remain subordinate to the existing conversation service; they are not a media platform, public file host, CMS asset library, provider portfolio, or Topic-media feature. Upload requires an authenticated phone identity and uses a shared bounded upload limiter. The existing chat attachment flow now stores only validated JPEG, PNG, WebP, GIF, PDF, MP4, or WebM bytes in the configured private `CHAT_UPLOAD_DIR` (defaulting outside `public/`), with an opaque attachment identifier and owner record.
+
+The server validates the declared data-URL content type, strict Base64 form, per-type size limit, and a matching binary signature. It chooses the on-disk extension from the validated type rather than the supplied filename. Retrieval and deletion require the same authenticated owner; downloads use an attachment disposition, explicit content type, `nosniff`, and `private, no-store`. The chat stream replaces any client-supplied attachment metadata with the owner-scoped stored record before it persists the existing message, and rejects guest or cross-owner attachment references.
+
+The attachment regression covers unauthenticated upload rejection, malformed content rejection, private non-static storage, owner-only retrieval/deletion, forced-download headers, cross-user rejection, and stream-level metadata ownership. Virus scanning, content moderation of binaries, object storage, encrypted-at-rest key management, durable retention/cleanup policy, and multi-instance media storage remain deployment requirements; no code path represents the current pilot file store as permanent or publicly shareable media.
+
+---

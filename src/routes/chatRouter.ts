@@ -1,6 +1,4 @@
 import { Router } from 'express';
-import fs from 'fs/promises';
-import path from 'path';
 import crypto from 'crypto';
 import { authenticateUser, optionalAuthenticateUser, type AuthRequest } from '../middleware/auth.js';
 import { getDb } from '../database.js';
@@ -17,6 +15,8 @@ import economicRequestRouter from './economicRequestRouter.js';
 import { createConversationGoal } from '../services/agentRuntime.js';
 import { emitPilotEvent } from '../services/pilotObservability.js';
 import { getTopicChatContext } from '../services/topicService.js';
+import { attachmentDownloadName, createChatAttachment, deleteChatAttachment, getChatAttachment } from '../services/chatAttachmentService.js';
+import { attachmentUploadRateLimit } from '../middleware/rateLimit.js';
 
 const router = Router();
 
@@ -49,11 +49,18 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
   const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
   const channel = typeof req.body?.channel === 'string' ? req.body.channel.slice(0, 30) : 'web';
   const conversationId = typeof req.body?.conversationId === 'string' ? req.body.conversationId : undefined;
-  const attachment = req.body?.attachment;
+  let attachment: Record<string, unknown> | undefined;
   const suppliedTopicSlug = typeof req.body?.topicSlug === 'string' && /^[a-z0-9][a-z0-9-]{0,100}$/i.test(req.body.topicSlug) ? req.body.topicSlug : null;
   const topicContext = suppliedTopicSlug ? await getTopicChatContext(suppliedTopicSlug) : null;
 
   if (!phone || !message) return res.status(400).json({ error: 'Message is required' });
+  if (req.body?.attachment) {
+    const attachmentId = typeof req.body.attachment?.id === 'string' ? req.body.attachment.id : '';
+    if (!req.user?.phone) return res.status(401).json({ error: 'Sign in before sending an attachment' });
+    const storedAttachment = await getChatAttachment(attachmentId, String(req.user.phone));
+    if (!storedAttachment) return res.status(404).json({ error: 'Attachment not found' });
+    attachment = { id: storedAttachment.id, name: storedAttachment.name, type: storedAttachment.type, size: storedAttachment.size, url: storedAttachment.url };
+  }
   if (suppliedTopicSlug && !topicContext) return res.status(404).json({ error: 'Public Topic context not found' });
 
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
@@ -247,6 +254,40 @@ router.post('/conversation', optionalAuthenticateUser, async (req: AuthRequest, 
 
 router.delete('/message/:id', async (req: AuthRequest, res) => { const phone = userPhone(req); const id = Number(req.params.id); if (!phone || !Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid message ID' }); try { const deleted = await deleteChatMessage(phone, id); if (!deleted) return res.status(404).json({ error: 'Message not found' }); res.json({ success: true }); } catch (error) { console.error('[Chat] message delete failed:', error); res.status(500).json({ error: 'Unable to delete message' }); } });
 router.delete('/conversation/:id', async (req: AuthRequest, res) => { const phone = userPhone(req); const conversationId = String(req.params.id || ''); if (!phone || !conversationId) return res.status(400).json({ error: 'Invalid conversation ID' }); try { const deleted = await clearChatConversation(phone, conversationId); res.json({ success: true, deleted }); } catch (error) { console.error('[Chat] conversation delete failed:', error); res.status(500).json({ error: 'Unable to delete conversation' }); } });
-router.post('/attachments', async (req: AuthRequest, res) => { const phone = userPhone(req); if (!phone) return res.status(401).json({ error: 'Authenticated phone is required' }); const { name, type, data } = req.body || {}; if (typeof name !== 'string' || typeof type !== 'string' || typeof data !== 'string') return res.status(400).json({ error: 'name, type and data are required' }); const allowed = new Set(['image/jpeg','image/png','image/webp','image/gif','application/pdf','text/plain','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','video/mp4','video/webm']); if (!allowed.has(type)) return res.status(415).json({ error: 'Unsupported attachment type' }); const raw = data.replace(/^data:[^;]+;base64,/, ''); const bytes = Buffer.byteLength(raw, 'base64'); const limit = type.startsWith('video/') ? 25 * 1024 * 1024 : 10 * 1024 * 1024; if (bytes > limit) return res.status(413).json({ error: `Attachment exceeds ${Math.floor(limit / 1024 / 1024)}MB limit` }); const safeExt = path.extname(name).toLowerCase().replace(/[^a-z0-9.]/g, '').slice(0, 8) || '.bin'; const dir = process.env.CHAT_UPLOAD_DIR || path.join(process.cwd(), 'public', 'uploads', 'chat'); await fs.mkdir(dir, { recursive: true }); const filename = `${crypto.createHash('sha256').update(`${phone}:${Date.now()}:${Math.random()}`).digest('hex').slice(0,32)}${safeExt}`; await fs.writeFile(path.join(dir, filename), Buffer.from(raw, 'base64'), { flag: 'wx' }); res.json({ success: true, attachment: { url: `/uploads/chat/${filename}`, name: name.slice(0,160), type, size: bytes } }); });
+router.post('/attachments', authenticateUser, attachmentUploadRateLimit, async (req: AuthRequest, res) => {
+  const phone = String(req.user?.phone || '').trim();
+  if (!phone) return res.status(401).json({ error: 'Authenticated phone is required' });
+  try {
+    const attachment = await createChatAttachment({ ownerPhone: phone, ...(req.body || {}) });
+    res.status(201).json({ success: true, attachment });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Attachment upload failed';
+    const status = /unsupported/i.test(message) ? 415 : /exceeds/i.test(message) ? 413 : /required|valid base64|does not match|empty/i.test(message) ? 400 : 500;
+    res.status(status).json({ error: message });
+  }
+});
+
+router.get('/attachments/:id', authenticateUser, async (req: AuthRequest, res) => {
+  const attachment = await getChatAttachment(String(req.params.id || ''), String(req.user?.phone || ''));
+  if (!attachment) return res.status(404).json({ error: 'Attachment not found' });
+  res.setHeader('Content-Type', attachment.type);
+  res.setHeader('Content-Disposition', `attachment; filename="${attachmentDownloadName(attachment.name)}"`);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.sendFile(attachment.storagePath, { dotfiles: 'deny' }, (error?: Error & { statusCode?: number }) => {
+    if (error && !res.headersSent) res.status(error.statusCode === 404 ? 404 : 500).json({ error: 'Attachment is unavailable' });
+  });
+});
+
+router.delete('/attachments/:id', authenticateUser, async (req: AuthRequest, res) => {
+  try {
+    const deleted = await deleteChatAttachment(String(req.params.id || ''), String(req.user?.phone || ''));
+    if (!deleted) return res.status(404).json({ error: 'Attachment not found' });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Chat] attachment deletion failed:', error);
+    res.status(500).json({ error: 'Unable to delete attachment' });
+  }
+});
 
 export default router;
