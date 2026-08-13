@@ -47,6 +47,25 @@ export function isControlledPilotEnabled(): boolean { return process.env.KURUKOO
 
 function currentIso(): string { return new Date().toISOString(); }
 
+function normalizeServiceArea(value: unknown): string {
+  return String(value || '')
+    .toLocaleLowerCase('en-NG')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function isMatchingServiceArea(serviceArea: unknown, requestedLocation: unknown): boolean {
+  const area = normalizeServiceArea(serviceArea);
+  const location = normalizeServiceArea(requestedLocation);
+  if (!area || !location) return !area;
+  const areaTokens = area.split(' ');
+  const locationTokens = location.split(' ');
+  return area === location || areaTokens.every((token) => locationTokens.includes(token));
+}
+
 function providerRequestProjection(request: EconomicRequest): Pick<EconomicRequest, 'id' | 'skill' | 'category' | 'requirements' | 'status'> {
   const allowed = new Set(['location', 'origin', 'destination', 'service', 'device', 'device_or_asset', 'issue', 'items', 'quantity', 'time', 'date_time', 'deadline', 'event_date', 'venue', 'budget', 'urgency', 'duration']);
   const requirements: Record<string, unknown> = {};
@@ -220,11 +239,10 @@ export async function isCurrentProviderAvailability(phone: string, skill: string
   const db = await getDb();
   const stmt = db.prepare("SELECT service_area FROM provider_coordination_availability WHERE phone=? AND lower(skill)=lower(?) AND state='available' AND available_until>? ORDER BY updated_at DESC");
   stmt.bind([cleanText(phone, 'Provider identity', 128), cleanText(skill, 'Skill', 128), currentIso()]);
-  const requestedLocation = String(location || '').trim().toLowerCase();
   let eligible = false;
   while (stmt.step()) {
-    const area = String((stmt.getAsObject() as Record<string, unknown>).service_area || '').trim().toLowerCase();
-    if (!requestedLocation || !area || requestedLocation.includes(area) || area.includes(requestedLocation)) { eligible = true; break; }
+    const area = (stmt.getAsObject() as Record<string, unknown>).service_area;
+    if (isMatchingServiceArea(area, location)) { eligible = true; break; }
   }
   stmt.free();
   return eligible;
@@ -279,8 +297,8 @@ export async function listProviderInvitations(providerPhone: string, limit = 30)
   await requireVerifiedProvider(cleanText(providerPhone, 'Provider identity', 128));
   await ensureCoordinationSchema();
   const db = await getDb();
-  db.run(`UPDATE provider_coordination_invitations SET status='expired', updated_at=CURRENT_TIMESTAMP WHERE provider_phone=? AND status='invited' AND expires_at IS NOT NULL AND expires_at < CURRENT_TIMESTAMP`, [providerPhone]);
-  const stmt = db.prepare(`SELECT * FROM provider_coordination_invitations WHERE provider_phone=? AND status IN ('invited','accepted','declined') ORDER BY created_at DESC LIMIT ?`);
+  db.run(`UPDATE provider_coordination_invitations SET status='expired', updated_at=CURRENT_TIMESTAMP WHERE provider_phone=? AND status IN ('invited','accepted') AND expires_at IS NOT NULL AND datetime(expires_at) < CURRENT_TIMESTAMP`, [providerPhone]);
+  const stmt = db.prepare(`SELECT * FROM provider_coordination_invitations WHERE provider_phone=? AND status IN ('invited','accepted','declined','expired') ORDER BY created_at DESC LIMIT ?`);
   stmt.bind([providerPhone, Math.min(Math.max(Number(limit) || 30, 1), 100)]);
   const rows: ProviderInvitation[] = [];
   while (stmt.step()) rows.push(invitationFromRow(stmt.getAsObject()));
@@ -375,6 +393,7 @@ export async function selectProviderResponse(input: { requestId: string; ownerPh
 
 export async function acceptSelectedProviderQuote(input: { requestId: string; ownerPhone: string }): Promise<EconomicRequest> {
   const request = await requireOwner(input.requestId, input.ownerPhone);
+  if (request.status === 'awaiting_confirmation' && request.quote?.source === 'provider_submitted') return request;
   if (request.status !== 'quoted' || request.quote?.source !== 'provider_submitted') throw new Error('A selected provider-submitted quote is required');
   const participants = await getEconomicParticipants(request.id);
   const selected = participants.find((participant) => participant.role === 'service_provider' && participant.status === 'selected' && participant.providerPhone === request.providerPhone);

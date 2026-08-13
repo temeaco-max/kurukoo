@@ -15,7 +15,7 @@ process.env.KURUKOO_CONTROLLED_PILOT = 'true';
 const { app } = await import('../src/index.js');
 const { getDb, saveDb } = await import('../src/database.js');
 const { ensureProviderVerificationSchema, setProviderVerification } = await import('../src/services/providerVerification.js');
-const { setControlledPilotAccount, setProviderCoordinationAvailability } = await import('../src/services/providerCoordination.js');
+const { isCurrentProviderAvailability, setControlledPilotAccount, setProviderCoordinationAvailability } = await import('../src/services/providerCoordination.js');
 const db = await getDb();
 await ensureProviderVerificationSchema();
 const customerPhone = '+2348010001001';
@@ -28,6 +28,9 @@ saveDb();
 await setProviderVerification(providerPhone, 'verified', { evidenceRef: 'pilot-fixture:evidence:provider-001', reviewedBy: 'test' });
 await setControlledPilotAccount({ phone: customerPhone, role: 'customer', operatorId: 'test-admin' });
 await setControlledPilotAccount({ phone: providerPhone, role: 'provider', operatorId: 'test-admin' });
+await setProviderCoordinationAvailability({ phone: providerPhone, skill: 'phone_repairer', serviceArea: 'Ike', state: 'available', availableForMinutes: 60 });
+assert.equal(await isCurrentProviderAvailability(providerPhone, 'phone_repairer', 'Ikeja'), false, 'partial-string service areas must not make a provider eligible for a different locality');
+await setProviderCoordinationAvailability({ phone: providerPhone, skill: 'phone_repairer', serviceArea: 'Ike', state: 'unavailable' });
 await setProviderCoordinationAvailability({ phone: providerPhone, skill: 'phone_repairer', serviceArea: 'Ikeja', state: 'available', availableForMinutes: 60 });
 
 const sign = (payload: object) => jwt.sign(payload, process.env.JWT_SECRET!, { algorithm: 'HS256', expiresIn: '10m' });
@@ -74,6 +77,16 @@ try {
   assert.match(String(acceptedBody.invitation.note), /\[redacted-phone\]/, 'provider note must redact phone-like PII');
   assert.equal(acceptedBody.external_delivery_confirmed, false);
 
+  db.run(`UPDATE provider_coordination_invitations SET expires_at=? WHERE id=?`, [new Date(Date.now() - 60_000).toISOString(), invitationId]);
+  saveDb();
+  const expiredQueue = await fetch(`${baseUrl}/api/coordination/provider/invitations`, { headers: auth(providerToken) });
+  assert.equal(expiredQueue.status, 200, 'provider can inspect its own expired invitation state');
+  assert.equal((await expiredQueue.json()).invitations[0].status, 'expired', 'an accepted but expired quote must become visibly expired in the provider queue');
+  const expiredSelection = await fetch(`${baseUrl}/api/coordination/requests/${encodeURIComponent(requestId)}/select-provider`, { method: 'POST', headers: auth(customerToken), body: JSON.stringify({ invitationId }) });
+  assert.equal(expiredSelection.status, 409, 'customer cannot select an expired provider quote');
+  db.run(`UPDATE provider_coordination_invitations SET status='accepted', expires_at=? WHERE id=?`, [new Date(Date.now() + 60 * 60_000).toISOString(), invitationId]);
+  saveDb();
+
   const responses = await fetch(`${baseUrl}/api/coordination/requests/${encodeURIComponent(requestId)}/provider-responses`, { headers: auth(customerToken) });
   const responsesBody = await responses.json();
   assert.equal(responses.status, 200, `owner can review responses: ${JSON.stringify(responsesBody)}`);
@@ -97,11 +110,19 @@ try {
   assert.equal(selectedBody.request.quote.source, 'provider_submitted');
   assert.equal(selectedBody.payment_confirmed, false, 'selection cannot claim payment');
 
+  await setProviderVerification(providerPhone, 'suspended', { reason: 'acceptance revalidation test' });
+  const blockedAcceptance = await fetch(`${baseUrl}/api/coordination/requests/${encodeURIComponent(requestId)}/accept-provider-quote`, { method: 'POST', headers: auth(customerToken), body: '{}' });
+  assert.equal(blockedAcceptance.status, 409, 'customer cannot accept a quote after the provider becomes suspended');
+  await setProviderVerification(providerPhone, 'verified', { evidenceRef: 'pilot-fixture:evidence:provider-003', reviewedBy: 'test' });
+
   const quoteAccepted = await fetch(`${baseUrl}/api/coordination/requests/${encodeURIComponent(requestId)}/accept-provider-quote`, { method: 'POST', headers: auth(customerToken), body: '{}' });
   assert.equal(quoteAccepted.status, 200, 'owner can explicitly accept selected provider quote');
   const quoteAcceptedBody = await quoteAccepted.json();
   assert.equal(quoteAcceptedBody.request.status, 'awaiting_confirmation');
   assert.equal(quoteAcceptedBody.payment_confirmed, false, 'quote acceptance cannot claim payment or dispatch');
+  const repeatedQuoteAcceptance = await fetch(`${baseUrl}/api/coordination/requests/${encodeURIComponent(requestId)}/accept-provider-quote`, { method: 'POST', headers: auth(customerToken), body: '{}' });
+  assert.equal(repeatedQuoteAcceptance.status, 200, 'a repeated quote acceptance must return the already accepted canonical request rather than creating another effect');
+  assert.equal((await repeatedQuoteAcceptance.json()).request.status, 'awaiting_confirmation');
 
   const handoff = await fetch(`${baseUrl}/api/coordination/requests/${encodeURIComponent(requestId)}/handoff`, { method: 'POST', headers: auth(customerToken), body: JSON.stringify({ reason: 'Need human assistance after provider quote.' }) });
   assert.equal(handoff.status, 201, 'customer may request operator handoff');
@@ -123,6 +144,7 @@ try {
   assert.equal(events.status, 200, 'owner can inspect bounded coordination events');
   const eventNames = (await events.json()).events.map((event: any) => event.event);
   for (const expected of ['provider_invited', 'provider_accepted', 'provider_response_selected', 'provider_quote_accepted', 'operator_handoff_requested', 'operator_handoff_claimed', 'operator_handoff_resolved']) assert.ok(eventNames.includes(expected), `expected coordination event ${expected}`);
+  assert.equal(eventNames.filter((event: string) => event === 'provider_quote_accepted').length, 1, 'repeated quote acceptance must not create another canonical acceptance event');
   console.log('Provider coordination loop regression passed: evidence-verified provider invitation, provider-owned quote, customer selection/acceptance, human handoff, internal-only delivery truthfulness, and no payment or dispatch fabrication.');
 } finally {
   await new Promise<void>(resolve => server.close(() => resolve()));

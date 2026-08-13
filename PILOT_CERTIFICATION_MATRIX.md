@@ -2,8 +2,8 @@
 
 **Certification target:** controlled pilot, not unrestricted public launch.  
 **Branch:** `integration/main-convergence-audit`  
-**Baseline:** `b6eecd4`  
-**Certification build:** current working tree after pilot-hardening fixes  
+**Baseline:** `36104d5` pre-final-pilot-gate reconciliation
+**Certification build:** current working tree after final pilot-gate hardening and validation
 **PR vehicle:** [#31](https://github.com/temeaco-max/kurukoo/pull/31)
 
 > This matrix distinguishes repository evidence from external configuration, provider contracts, legal decisions, and human operations. No production payment, real provider dispatch, real channel delivery, or human-test result is claimed here.
@@ -115,3 +115,11 @@ No real human cohort was available in this environment. The exact protocol is do
 The controlled pilot may begin only after the deployment and human-operation gates in [`LAUNCH_HARDENING_MATRIX.md`](./LAUNCH_HARDENING_MATRIX.md) and [`PILOT_OPERATING_GUIDE.md`](./PILOT_OPERATING_GUIDE.md) are completed: HTTPS and backups; a production secret manager; WAF/rate limits; named pilot operator and escalation rota; approved sources and terms; adult tester consent; manual provider verification evidence; a restricted Nigerian locality; and a tested stop/rollback procedure.
 
 This matrix does not certify any real Nigerian business record, provider, or customer outcome because no real record has been imported or contacted during this pass.
+
+## Final pre-human-pilot gate update
+
+The final red-team pass is recorded in [`PILOT_RED_TEAM_FINDINGS.md`](./PILOT_RED_TEAM_FINDINGS.md). It discovered and fixed strict provider service-area matching, SQLite ISO-8601 invitation-expiry evaluation, and repeat quote-acceptance idempotency in the existing provider-coordination service. The adversarial coordination regression now proves partial-area rejection, expired accepted-quote visibility and selection denial, provider-suspension revalidation before acceptance, and one canonical quote-acceptance event.
+
+The integration history and resolved upstream QR/voice/chat conflict map are in [`PILOT_CONFLICT_MAP.md`](./PILOT_CONFLICT_MAP.md). The deployment go/no-go controls, single-instance backup/recovery rehearsal, manual public-supply onboarding procedure, human pilot test script, and fresh runtime inspection are documented in [`PILOT_DEPLOYMENT_CHECKLIST.md`](./PILOT_DEPLOYMENT_CHECKLIST.md), [`PILOT_RECOVERY_AND_ROLLBACK_RUNBOOK.md`](./PILOT_RECOVERY_AND_ROLLBACK_RUNBOOK.md), [`PILOT_SUPPLY_ONBOARDING_PROCEDURE.md`](./PILOT_SUPPLY_ONBOARDING_PROCEDURE.md), [`PILOT_HUMAN_TEST_SCRIPT.md`](./PILOT_HUMAN_TEST_SCRIPT.md), and [`PILOT_RUNTIME_INSPECTION.md`](./PILOT_RUNTIME_INSPECTION.md).
+
+> **Final repository decision: GO WITH CONDITIONS — controlled human pilot only.** No repository-solvable P0 or P1 is known after the final regression suite. Inviting people remains blocked until the mandatory external deployment, backup/restore, operator, consent, source-policy, provider-evidence, and shutdown controls are completed and recorded. The repository is not public-production ready.
