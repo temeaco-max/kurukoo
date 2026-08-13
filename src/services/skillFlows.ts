@@ -38,6 +38,39 @@ export interface EconomicRequest { id:string; phone:string; skill:string; catego
 async function ensureEconomicRequestsTable(){const db=await getDb();db.run(`CREATE TABLE IF NOT EXISTS economic_requests (id TEXT PRIMARY KEY, phone TEXT NOT NULL, skill TEXT NOT NULL, category TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'requested', requirements_json TEXT NOT NULL DEFAULT '{}', capabilities_json TEXT NOT NULL DEFAULT '[]', provider_phone TEXT, quote_json TEXT, fulfillment_json TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`);db.run(`CREATE INDEX IF NOT EXISTS idx_economic_requests_phone_status ON economic_requests(phone,status)`);return db;}
 export async function createEconomicRequest(input:{id:string;phone:string;skill:string;requirements:Record<string,unknown>;amount?:number}):Promise<EconomicRequest>{const category=getEconomicCategory(input.skill)||'classifieds-marketplace';const capabilities=getSkillCapabilities(input.skill);const db=await ensureEconomicRequestsTable();const s=db.prepare(`INSERT INTO economic_requests(id,phone,skill,category,status,requirements_json,capabilities_json) VALUES(?,?,?,?,'requested',?,?)`);s.bind([input.id,input.phone,input.skill,category,JSON.stringify({...input.requirements,amount_minor:input.amount??null}),JSON.stringify(capabilities)]);s.step();s.free();saveDb();return (await getEconomicRequest(input.id))!;}
 export async function getEconomicRequest(id:string):Promise<EconomicRequest|null>{const db=await ensureEconomicRequestsTable();const s=db.prepare(`SELECT * FROM economic_requests WHERE id=? LIMIT 1`);s.bind([id]);const r=s.step()?s.getAsObject():null;s.free();if(!r)return null;return{id:String(r.id),phone:String(r.phone),skill:String(r.skill),category:String(r.category),status:String(r.status) as EconomicRequestStatus,requirements:JSON.parse(String(r.requirements_json||'{}')),capabilities:JSON.parse(String(r.capabilities_json||'[]')),providerPhone:r.provider_phone?String(r.provider_phone):null,quote:r.quote_json?JSON.parse(String(r.quote_json)):null,fulfillment:r.fulfillment_json?JSON.parse(String(r.fulfillment_json)):null};}
+
+export class ActiveEconomicRequestDeletionError extends Error {
+  readonly requestIds: string[];
+  constructor(requestIds: string[]) { super('Active Economic Requests must be resolved or cancelled before account deletion.'); this.name = 'ActiveEconomicRequestDeletionError'; this.requestIds = requestIds; }
+}
+
+/**
+ * Account deletion preserves the economic lifecycle and evidence records while
+ * removing a terminal participant’s direct phone identity. Active requests are
+ * deliberately blocked rather than being orphaned or silently altered.
+ */
+export async function anonymizeEconomicIdentityForOwner(phone: string): Promise<{ requests: number; participants: number; offers: number }> {
+  const owner = String(phone || '').trim();
+  if (!owner) return { requests: 0, participants: 0, offers: 0 };
+  const db = await ensureEconomicRequestsTable();
+  const terminal = ['completed', 'cancelled', 'failed', 'abandoned'];
+  const active = db.prepare(`SELECT id FROM economic_requests WHERE (phone=? OR provider_phone=?) AND status NOT IN (${terminal.map(() => '?').join(',')}) ORDER BY id LIMIT 20`);
+  active.bind([owner, owner, ...terminal]);
+  const activeIds: string[] = []; while (active.step()) activeIds.push(String(active.getAsObject().id)); active.free();
+  if (activeIds.length) throw new ActiveEconomicRequestDeletionError(activeIds);
+
+  db.run(`UPDATE economic_requests SET phone='ANONYMOUS', requirements_json='{}', updated_at=CURRENT_TIMESTAMP WHERE phone=?`, [owner]);
+  let requests = db.getRowsModified();
+  db.run(`UPDATE economic_requests SET provider_phone='ANONYMOUS', updated_at=CURRENT_TIMESTAMP WHERE provider_phone=?`, [owner]);
+  requests += db.getRowsModified();
+
+  const hasTable = (name: string) => Boolean(db.exec(`SELECT name FROM sqlite_master WHERE type='table' AND name=?`, [name])[0]?.values?.length);
+  let participants = 0; let offers = 0;
+  if (hasTable('economic_participants')) { db.run(`UPDATE economic_participants SET provider_phone='ANONYMOUS' WHERE provider_phone=?`, [owner]); participants = db.getRowsModified(); }
+  if (hasTable('economic_offers')) { db.run(`UPDATE economic_offers SET seller_phone='ANONYMOUS' WHERE seller_phone=?`, [owner]); offers = db.getRowsModified(); }
+  if (requests || participants || offers) saveDb();
+  return { requests, participants, offers };
+}
 /** Persist non-lifecycle request context collected through the canonical storefront. */
 export async function updateEconomicRequestRequirements(id:string,ownerPhone:string,patch:Record<string,unknown>):Promise<EconomicRequest>{const current=await getEconomicRequest(id);if(!current)throw new Error('Economic request not found');if(current.phone!==ownerPhone)throw new Error('Economic request ownership is required');if(!patch||typeof patch!=='object'||Array.isArray(patch))throw new Error('Requirements patch is required');const safe=Object.fromEntries(Object.entries(patch).filter(([key,value])=>/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/.test(key)&&value!==undefined));const db=await ensureEconomicRequestsTable();const s=db.prepare(`UPDATE economic_requests SET requirements_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`);s.bind([JSON.stringify({...current.requirements,...safe}),id]);s.step();s.free();saveDb();return (await getEconomicRequest(id))!;}
 const TRANSITIONS:Record<EconomicRequestStatus,EconomicRequestStatus[]>={requested:['awaiting_match','abandoned','cancelled'],awaiting_match:['partially_matched','matched','abandoned','cancelled'],partially_matched:['matched','quoting','abandoned','cancelled'],matched:['quoting','quoted','reserved','abandoned','cancelled'],quoting:['quoted','abandoned','cancelled'],quoted:['awaiting_confirmation','reserved','abandoned','cancelled'],awaiting_confirmation:['reserved','cancelled'],reserved:['payment_pending','paid','cancelled'],payment_pending:['paid','failed','cancelled'],paid:['in_fulfillment','fulfilled','disputed','cancelled'],in_fulfillment:['fulfilled','disputed','failed','cancelled'],fulfilled:['completed','disputed'],completed:['disputed'],cancelled:[],disputed:['completed','failed'],failed:['requested','cancelled'],abandoned:[]};

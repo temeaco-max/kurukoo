@@ -6,6 +6,7 @@ import { getProfile } from '../services/memoryProfile.js';
 import { generateReferralCode, trackReferral } from '../services/referralService.js';
 import { buildQrEntryUrl, parseQrContext } from '../services/qrContextService.js';
 import { submitRating } from '../services/ratingService.js';
+import { ActiveEconomicRequestDeletionError } from '../services/skillFlows.js';
 
 const router = Router();
 
@@ -61,8 +62,8 @@ router.post('/profile/skills/remove', authenticateUser, async (req: AuthRequest,
 
 router.get('/user/export', authenticateUser, async (req: AuthRequest, res) => { const phone = sessionPhone(req); if (!phone) return res.status(401).json({ error: 'Authentication required' }); if (req.query.phone && String(req.query.phone) !== phone) return res.status(403).json({ error: 'Forbidden' }); try { res.json({ success: true, data: await exportUserData(phone) }); } catch (_) { res.status(500).json({ error: 'Failed to export user data' }); } });
 router.get('/profile/export', authenticateUser, async (req: AuthRequest, res) => { const phone = sessionPhone(req); if (!phone) return res.status(401).json({ error: 'Authentication required' }); try { res.json(await exportUserData(phone)); } catch (err) { console.error(err); res.status(500).json({ error: 'Internal error exporting data' }); } });
-router.post('/user/delete', authenticateUser, async (req: AuthRequest, res) => { const phone = sessionPhone(req); if (!phone) return res.status(401).json({ error: 'Authentication required' }); try { await deleteUserData(phone); res.json({ success: true }); } catch (_) { res.status(500).json({ error: 'Failed to delete user data' }); } });
-router.delete('/profile/delete', authenticateUser, async (req: AuthRequest, res) => { const phone = sessionPhone(req); if (!phone) return res.status(401).json({ error: 'Authentication required' }); try { await deleteUserData(phone); res.json({ success: true }); } catch (err) { console.error(err); res.status(500).json({ error: 'Internal error deleting data' }); } });
+router.post('/user/delete', authenticateUser, async (req: AuthRequest, res) => { const phone = sessionPhone(req); if (!phone) return res.status(401).json({ error: 'Authentication required' }); try { await deleteUserData(phone); res.json({ success: true }); } catch (error) { if (error instanceof ActiveEconomicRequestDeletionError) return res.status(409).json({ error: error.message, requestIds: error.requestIds }); res.status(500).json({ error: 'Failed to delete user data' }); } });
+router.delete('/profile/delete', authenticateUser, async (req: AuthRequest, res) => { const phone = sessionPhone(req); if (!phone) return res.status(401).json({ error: 'Authentication required' }); try { await deleteUserData(phone); res.json({ success: true }); } catch (error) { if (error instanceof ActiveEconomicRequestDeletionError) return res.status(409).json({ error: error.message, requestIds: error.requestIds }); console.error(error); res.status(500).json({ error: 'Internal error deleting data' }); } });
 
 // ── Referrals + QR ─────────────────────────────────────────────────────
 router.post('/referral/code', authenticateUser, async (req: AuthRequest, res) => { const phone = sessionPhone(req); if (!phone) return res.status(401).json({ error: 'Authentication required' }); res.json({ success: true, code: await generateReferralCode(phone) }); });

@@ -5,6 +5,7 @@ import { deleteRemindersForOwner } from './reminderService.js';
 import { deleteSafetyDataForOwner } from './safetyService.js';
 import { deleteIntentionsForOwner } from './deferredRequestService.js';
 import { deleteOpportunitiesForOwner } from './opportunityEngine.js';
+import { anonymizeEconomicIdentityForOwner } from './skillFlows.js';
 
 export async function purgeExpiredData(): Promise<{ messagesDeleted: number; tempSessionsDeleted: number; pulseLocationsDeleted: number }> {
     const db = await getDb();
@@ -78,6 +79,10 @@ export async function exportUserData(phone: string): Promise<any> {
 
 export async function deleteUserData(phone: string): Promise<void> {
     const db = await getDb();
+
+    // Economic requests remain canonical lifecycle/audit records. Terminal records are
+    // identity-anonymised; active request deletion fails before any other account state changes.
+    await anonymizeEconomicIdentityForOwner(phone);
     
     // Conversation history owns message metadata and final-reference attachment cleanup.
     // Remove it first so an attachment still referenced by chat cannot outlive account deletion.

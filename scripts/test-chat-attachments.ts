@@ -24,6 +24,7 @@ const { createReminder } = await import('../src/services/reminderService.js');
 const { addSafetyContact, startCheckIn } = await import('../src/services/safetyService.js');
 const { createOpenIntention } = await import('../src/services/deferredRequestService.js');
 const { initOpportunityTable } = await import('../src/services/opportunityEngine.js');
+const { createEconomicRequest, transitionEconomicRequest } = await import('../src/services/skillFlows.js');
 const server = app.listen(0, '127.0.0.1');
 await new Promise<void>((resolve, reject) => { server.once('listening', resolve); server.once('error', reject); });
 const baseUrl = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
@@ -122,6 +123,16 @@ try {
   assert.doesNotMatch(serializedExport, new RegExp(storagePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), 'protected export must not expose a private attachment storage path');
   assert.doesNotMatch(serializedExport, /data:image\/png;base64/i, 'protected export must not expose private attachment bytes');
 
+  const terminalEconomic = await createEconomicRequest({ id: 'account-delete-terminal-request', phone: owner, skill: 'phone_repairer', requirements: { location: 'Private address', device: 'Phone' } });
+  await transitionEconomicRequest(terminalEconomic.id, 'abandoned');
+  const activeEconomic = await createEconomicRequest({ id: 'account-delete-active-request', phone: otherOwner, skill: 'phone_repairer', requirements: { location: 'Other private address' } });
+  const blockedDeletion = await fetch(`${baseUrl}/api/user/delete`, { method: 'POST', headers: headers(otherOwner) });
+  const blockedPayload = await blockedDeletion.json() as { error?: string; requestIds?: string[] };
+  assert.equal(blockedDeletion.status, 409, JSON.stringify(blockedPayload));
+  assert.ok(blockedPayload.requestIds?.includes(activeEconomic.id), 'the active request conflict must identify only the deleting owner’s unresolved request');
+  assert.equal((await listChatMessages(otherOwner, { conversationId: foreignMessage.conversationId })).length, 1, 'active-request conflict must fail before unrelated account state is partially deleted');
+  assert.equal(String(db.exec(`SELECT phone FROM economic_requests WHERE id=?`, [activeEconomic.id])[0]?.values?.[0]?.[0]), otherOwner, 'active requests must retain their owner identity until resolved or cancelled');
+
   await createReminder(owner, { title: 'Remove private reminder', dueAt: new Date(Date.now() + 86_400_000).toISOString() });
   const contact = await addSafetyContact(owner, { name: 'Private safety contact', phone: '+2347000000991', activate: true });
   await startCheckIn(owner, { contactId: contact.id, durationMinutes: 15, routeNote: 'Private route note' });
@@ -138,6 +149,8 @@ try {
   assert.equal(accountDeleted.status, 200, 'the protected account-deletion lifecycle must complete for the attachment owner');
   assert.deepEqual(await fs.readdir(storagePath), [], 'account deletion must remove private attachment bytes through the canonical attachment owner');
   assert.equal((await listChatMessages(owner)).length, 0, 'account deletion must remove the owner’s canonical chat history');
+  const terminalEconomicRow = db.exec(`SELECT phone, requirements_json FROM economic_requests WHERE id=?`, [terminalEconomic.id])[0]?.values?.[0] as unknown[] | undefined;
+  assert.deepEqual(terminalEconomicRow, ['ANONYMOUS', '{}'], 'terminal Economic Requests must retain lifecycle identity only after owner deletion');
   for (const table of ['reminders', 'user_safety_contacts', 'safety_checkins', 'open_intentions', 'proactive_opportunities']) {
     const count = Number(db.exec(`SELECT COUNT(*) AS count FROM ${table} WHERE ${table === 'user_safety_contacts' || table === 'safety_checkins' ? 'owner_phone' : 'phone'}=?`, [owner])[0]?.values?.[0]?.[0] || 0);
     assert.equal(count, 0, `account deletion must remove private ${table} state through its canonical owner`);
@@ -146,7 +159,7 @@ try {
   assert.equal(afterAccountDeletion.status, 404, 'account deletion must remove attachment metadata as well as bytes');
 
   console.log('Chat attachment regression passed');
-  console.log('Verified: authenticated upload, strict base64/signature validation, private storage, owner-only download/delete, bounded owner export without bytes or storage paths, scheduled retention plus message/conversation/account-deletion cleanup of private workspace state, cross-owner conversation isolation, forced download headers, no public static URL, and stream-level owner validation.');
+  console.log('Verified: authenticated upload, strict base64/signature validation, private storage, owner-only download/delete, bounded owner export without bytes or storage paths, scheduled retention plus message/conversation/account-deletion cleanup of private workspace state, terminal Economic Request anonymisation, and active-request conflict safety, cross-owner conversation isolation, forced download headers, no public static URL, and stream-level owner validation.');
 } finally {
   await new Promise<void>((resolve) => server.close(() => resolve()));
   await fs.rm(storagePath, { recursive: true, force: true });
