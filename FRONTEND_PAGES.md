@@ -250,18 +250,16 @@ This document is the **implementation reference** for every page and surface in 
 | **Purpose** | Canonical conversation-first interface for requests, Web Chat fulfilment, reminders, personal safety check-ins, and context inspection. |
 | **Status** | ✅ Exists and covered by runtime/chat contracts |
 
-### G1a. Request Hub shell
+### G1a. Requests workspace handoff
 | Field | Value |
 |---|---|
-| **Route** | `/web` |
-| **Template** | `public/dashboard.html` |
-| **Purpose** | Authenticated shell linking to canonical chat, discovery, resources, profile, and logout surfaces. It is not a second chat architecture. |
-| **Status** | ✅ Exists as a shell; do not treat placeholder copy as live economic data. |
-| **Layout** | Lightweight authenticated navigation shell. The canonical conversation thread remains `/chat`; this shell must not be documented as a second chat, storefront, or dashboard architecture. |
-| **Linked discovery** | Links to the registered `/discover` and `/explore` surfaces. Any provider, activity, distance, availability, or sponsored content must be data-backed at runtime. |
-| **Product truthfulness** | The shell does not claim live monetization, sponsored inventory, or activity unless the corresponding backend data is present and labelled. |
-| **Inline cards** | Canonical chat response cards and request-state evidence only; card content must remain provider-neutral and tied to the supported Economic Request lifecycle. |
-| **Responsive** | Mobile: the sidebar becomes a drawer and the context inspector opens as a keyboard-accessible overlay. Desktop: chat and context inspector remain visible in the shared shell. No emergency-services capability is claimed. |
+| **Canonical route** | `/requests` |
+| **Legacy routes** | `/web` and `/dashboard.html` redirect to `/requests`; they do not own a competing product shell. |
+| **Template** | `views/workspace.ejs` with `public/js/kurukoo-workspace.js` |
+| **Purpose** | Authenticated workspace for request records, reminders, saved context, points, safety, memory and protected account controls. The canonical conversation remains `/chat`. |
+| **Status** | ✅ Exists, is data-backed where canonical APIs are available, and uses labelled empty or unavailable states where they are not. |
+| **Product truthfulness** | The workspace does not claim live providers, sponsored inventory, external delivery, payment, emergency response, or activity without the corresponding configured backend state. |
+| **Responsive** | Mobile uses a keyboard-accessible navigation drawer. Desktop retains a single shared workspace with no second chat, storefront, or dashboard architecture. |
 | **Blueprint ref** | §32.3, §32.9, §33 |
 
 ### G2. Login

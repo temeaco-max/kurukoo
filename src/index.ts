@@ -58,6 +58,25 @@ console.log(`[Kurukoo Startup] Environment initialized. PORT=${process.env.PORT 
 const app = express();
 app.set('view engine', 'ejs');
 app.set('views', path.join(process.cwd(), 'views'));
+
+// Retire directly reachable static product shells in favour of the canonical route owners.
+// This preserves deep links without keeping a second dashboard, settings, discovery, or content architecture alive.
+const legacySurfaceRedirects: Record<string, string> = {
+  '/dashboard.html': '/requests',
+  '/settings.html': '/settings',
+  '/discover/index.html': '/discover',
+  '/resources/index.html': '/resources',
+  '/partners/index.html': '/partners',
+  '/advertise/index.html': '/advertise',
+  '/call/index.html': '/call',
+  '/api-docs.html': '/api-docs',
+};
+app.use((req, res, next) => {
+  const target = legacySurfaceRedirects[req.path];
+  if (!target || (req.method !== 'GET' && req.method !== 'HEAD')) return next();
+  const query = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+  return res.redirect(302, `${target}${query}`);
+});
 app.use(express.static(path.join(process.cwd(), 'public'), { index: false, fallthrough: true }));
 app.use(express.json({ limit: process.env.CHAT_ATTACHMENT_BODY_LIMIT || '35mb', verify: (req, _res, buf) => { (req as any).rawBody = Buffer.from(buf); } }));
 

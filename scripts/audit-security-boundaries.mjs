@@ -12,7 +12,7 @@ const authSource = read('src/middleware/auth.ts');
 const indexSource = read('src/index.ts');
 const economicSource = read('src/routes/economicRequestRouter.ts');
 const chatSource = read('public/js/kurukoo-primary-chat.js');
-const hubSource = read('public/dashboard.html');
+const workspaceSource = read('public/js/kurukoo-workspace.js');
 
 for (const rule of [
   { value: 'req.query.token', reason: 'JWTs must not be accepted from URLs' },
@@ -53,12 +53,12 @@ for (const unsafeRenderer of [
   'onclick="',
 ]) {
   expect(!chatSource.includes(unsafeRenderer), `Unsafe dynamic renderer remains in chat client: ${unsafeRenderer}`);
-  expect(!hubSource.includes(unsafeRenderer), `Unsafe dynamic renderer remains in Request Hub: ${unsafeRenderer}`);
+  expect(!workspaceSource.includes(unsafeRenderer), `Unsafe dynamic renderer remains in canonical workspace controller: ${unsafeRenderer}`);
 }
 
 expect(chatSource.includes('.textContent = '), 'Chat client must use textContent for dynamic content');
-expect(hubSource.includes('.textContent = '), 'Request Hub must use textContent for dynamic content');
-expect(hubSource.includes('.replaceChildren('), 'Request Hub must use replaceChildren for list rendering');
+expect(workspaceSource.includes('.textContent = '), 'Canonical workspace controller must use textContent for dynamic content');
+expect(workspaceSource.includes('.replaceChildren('), 'Canonical workspace controller must use replaceChildren for list rendering');
 
 if (failures.length) {
   console.error('Security boundary audit failed:');

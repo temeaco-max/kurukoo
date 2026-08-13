@@ -1,62 +1,24 @@
 <%- include('_partials/head') %>
 <%- include('_partials/nav') %>
+<% const icon = (name) => `<svg class="k-icon" aria-hidden="true"><use href="/icons/kurukoo-icons.svg#${name}"></use></svg>`; %>
 
 <main class="container page-container">
-    <section class="page-header-center">
-        <span class="badge-pill">The Kurukoo Ecosystem</span>
-        <h1 class="page-title">The Orchestration Network</h1>
-        <p class="page-desc">Kurukoo is powered by a diverse network of capable participants, from local providers to automated agents.</p>
-    </section>
+  <section class="page-header-center">
+    <span class="badge-pill">The Kurukoo network</span>
+    <h1 class="page-title">People, businesses and services that can help.</h1>
+    <p class="page-desc">Kurukoo begins with your conversation. When a request needs someone else, it can coordinate eligible participants through the same request lifecycle and explicit capability checks.</p>
+  </section>
 
-    <div class="network-grid">
-        <div class="network-card">
-            <div class="network-icon">👤</div>
-            <h3>Providers</h3>
-            <p>Individual specialists whose skills can be represented in a request after the relevant profile and capability checks.</p>
-        </div>
+  <div class="network-grid">
+    <article class="network-card"><div class="network-icon"><%- icon('request') %></div><h3>Providers</h3><p>Individual specialists whose skills can be considered only after the relevant profile, capability, verification and availability checks.</p></article>
+    <article class="network-card"><div class="network-icon"><%- icon('package') %></div><h3>Businesses</h3><p>Businesses whose products or services can be represented when their relevant data and authorization boundaries are configured.</p></article>
+    <article class="network-card"><div class="network-icon"><%- icon('settings') %></div><h3>AI Agents</h3><p>Software services that can participate in digital tasks only when their tools, permissions and request path are configured.</p></article>
+    <article class="network-card"><div class="network-icon"><%- icon('work') %></div><h3>Contributors</h3><p>Community members who can contribute information or onboarding support through explicitly scoped and reviewed workflows.</p></article>
+    <article class="network-card"><div class="network-icon"><%- icon('channels') %></div><h3>Partners</h3><p>External organizations that may be represented after a scoped connector, authorization and operational boundary is configured.</p></article>
+    <article class="network-card"><div class="network-icon"><%- icon('ride') %></div><h3>Delivery providers</h3><p>Delivery-related providers can participate in an eligible request only when a supported delivery path is available.</p></article>
+  </div>
 
-        <div class="network-card">
-            <div class="network-icon">🏪</div>
-            <h3>Businesses</h3>
-            <p>Businesses whose products or services can be represented when their relevant data and authorization boundaries are configured.</p>
-        </div>
-
-        <div class="network-card">
-            <div class="network-icon">🤖</div>
-            <h3>AI Agents</h3>
-            <p>Software services that can participate in digital tasks when the required tools, permissions, and request path are configured.</p>
-        </div>
-
-        <div class="network-card">
-            <div class="network-icon">🏅</div>
-            <h3>Contributors</h3>
-            <p>Community members who can contribute information or onboarding support through explicitly scoped workflows.</p>
-        </div>
-
-        <div class="network-card">
-            <div class="network-icon">🤝</div>
-            <h3>Partners</h3>
-            <p>External organizations that may be represented after a scoped connector, authorization, and operational boundary is configured.</p>
-        </div>
-
-        <div class="network-card">
-            <div class="network-icon">📦</div>
-            <h3>Delivery Providers</h3>
-            <p>Delivery-related providers can participate in an eligible request when a supported delivery path is available.</p>
-        </div>
-    </div>
-
-    <section class="network-vision">
-        <div class="vision-box">
-            <h2>Participate in the Network</h2>
-            <p>Tell Kurukoo whether you provide a skill, represent a business, or need to discuss an integration. Capabilities and authorization remain explicit.</p>
-            <div class="vision-actions">
-                <a href="/chat?prompt=I%20want%20to%20offer%20my%20skills%20or%20business%20through%20Kurukoo" class="btn btn-primary">Start chatting</a>
-                <a href="/partners" class="btn btn-outline">Become a Partner</a>
-            </div>
-        </div>
-    </section>
+  <section class="network-vision"><div class="vision-box"><span class="workspace-eyebrow">Participation is explicit</span><h2>Participate in the network</h2><p>Tell Kurukoo whether you provide a skill, represent a business, or need to discuss an integration. A participant type does not itself confirm verification, availability, authorization, payment or fulfilment.</p><div class="vision-actions"><a href="/chat?prompt=I%20want%20to%20offer%20my%20skills%20or%20business%20through%20Kurukoo" class="btn btn-primary">Start chatting</a><a href="/partners" class="btn btn-outline">Talk about a partnership</a></div></div></section>
 </main>
-
 
 <%- include('_partials/footer') %>

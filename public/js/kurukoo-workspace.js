@@ -130,6 +130,83 @@
     }
   };
 
+  const setProfileFeedback = (selector, message, error = false) => {
+    const node = qs(selector);
+    if (!node) return;
+    node.textContent = message || '';
+    node.dataset.kind = error ? 'error' : 'success';
+  };
+
+  const loadProfile = async () => {
+    const form = qs('[data-profile-form]');
+    const memoryProfile = qs('[data-memory-profile]');
+    const memoryLocation = qs('[data-memory-location]');
+    if (!form && !memoryProfile && !memoryLocation) return null;
+    try {
+      const payload = await api('/api/profile');
+      const profile = payload.profile || {};
+      if (form) {
+        const fields = new FormData(form);
+        form.elements.name.value = String(profile.name || '');
+        form.elements.location.value = String(profile.location || '');
+        form.elements.country.value = String(profile.country || 'ng');
+        qs('[data-profile-phone]')?.replaceChildren(document.createTextNode(String(profile.phone || 'Protected sign-in identity')));
+        const status = qs('[data-profile-status]');
+        if (status) status.textContent = 'Profile ready';
+        void fields;
+      }
+      if (memoryProfile) memoryProfile.textContent = profile.name ? `Kurukoo uses the profile name “${profile.name}” when you choose to continue your relationship across conversations.` : 'No profile name is available yet.';
+      if (memoryLocation) memoryLocation.textContent = profile.location ? `Your current useful location is “${profile.location}”. Update it whenever it stops being relevant.` : 'No useful location is saved yet.';
+      return profile;
+    } catch (_) {
+      const status = qs('[data-profile-status]');
+      if (status) status.textContent = 'Profile unavailable';
+      if (memoryProfile) memoryProfile.textContent = 'Your profile context is unavailable at the moment.';
+      if (memoryLocation) memoryLocation.textContent = 'Your location context is unavailable at the moment.';
+      return null;
+    }
+  };
+
+  const saveProfile = async (form) => {
+    const button = form.querySelector('button[type="submit"]');
+    if (button) button.disabled = true;
+    setProfileFeedback('[data-profile-feedback]', 'Saving…');
+    try {
+      const values = new FormData(form);
+      await api('/api/profile/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: String(values.get('name') || '').trim(), location: String(values.get('location') || '').trim(), country: String(values.get('country') || 'ng') }) });
+      setProfileFeedback('[data-profile-feedback]', 'Profile saved.');
+      await loadProfile();
+    } catch (_) {
+      setProfileFeedback('[data-profile-feedback]', 'Could not save your profile. Please try again.', true);
+    } finally { if (button) button.disabled = false; }
+  };
+
+  const exportProfileData = async () => {
+    const button = qs('[data-profile-export]');
+    if (button) button.disabled = true;
+    setProfileFeedback('[data-data-feedback]', 'Preparing your available data…');
+    try {
+      const payload = await api('/api/profile/export');
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob); const link = document.createElement('a');
+      link.href = url; link.download = 'kurukoo-data-export.json'; document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+      setProfileFeedback('[data-data-feedback]', 'Your available data export has been downloaded.');
+    } catch (_) { setProfileFeedback('[data-data-feedback]', 'Could not prepare your data export. Please try again.', true); }
+    finally { if (button) button.disabled = false; }
+  };
+
+  const deleteProfile = async () => {
+    if (!window.confirm('Delete your Kurukoo account and its associated data? This cannot be undone.')) return;
+    const button = qs('[data-profile-delete]');
+    if (button) button.disabled = true;
+    setProfileFeedback('[data-data-feedback]', 'Deleting account…');
+    try {
+      await api('/api/profile/delete', { method: 'DELETE' });
+      localStorage.removeItem('kurukoo_auth_token'); localStorage.removeItem('kurukoo_user_phone'); localStorage.removeItem('kurukoo_user_name');
+      window.location.assign('/chat');
+    } catch (_) { setProfileFeedback('[data-data-feedback]', 'Could not delete your account. Please try again.', true); if (button) button.disabled = false; }
+  };
+
   const postSafetyAction = async (path, body, button) => {
     button.disabled = true;
     try {
@@ -253,7 +330,11 @@
 
   if (section === 'requests') loadRequests();
   if (section === 'reminders') loadReminders();
+  qs('[data-profile-form]')?.addEventListener('submit', event => { event.preventDefault(); void saveProfile(event.currentTarget); });
+  qs('[data-profile-export]')?.addEventListener('click', () => void exportProfileData());
+  qs('[data-profile-delete]')?.addEventListener('click', () => void deleteProfile());
   if (section === 'points') loadPoints();
   if (section === 'safety') loadSafety();
   if (section === 'daily-picks') loadDailyPicks();
+  if (section === 'settings' || section === 'memory') loadProfile();
 })();

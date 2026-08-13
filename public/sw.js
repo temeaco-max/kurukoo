@@ -1,11 +1,10 @@
-const STATIC_CACHE = 'kurukoo-static-v5';
-const PAGES_CACHE = 'kurukoo-pages-v5';
-const PWA_SHELL_CACHE = 'kurukoo-pwa-shell-v5';
+const STATIC_CACHE = 'kurukoo-static-v6';
+const PAGES_CACHE = 'kurukoo-pages-v6';
+const PWA_SHELL_CACHE = 'kurukoo-pwa-shell-v6';
 const ALLOWED_CACHES = [STATIC_CACHE, PAGES_CACHE, PWA_SHELL_CACHE];
 
 const SHELL_ASSETS = [
-    '/dashboard.html',
-    '/chat/',
+    '/chat',
     '/css/site.css',
     '/css/kurukoo-platform.css',
     '/css/kurukoo-chat.css',
@@ -43,14 +42,6 @@ self.addEventListener('fetch', event => {
     const url = new URL(request.url);
 
     if (url.pathname.startsWith('/admin') || url.pathname.startsWith('/api/messages') || url.pathname.startsWith('/api/profile') || url.pathname.startsWith('/api/credits') || url.pathname.startsWith('/api/pulse') || url.pathname.startsWith('/api/orders') || url.pathname.startsWith('/api/chat') || url.pathname.startsWith('/webhook') || url.pathname.startsWith('/ussd')) return;
-
-    if (url.pathname === '/dashboard.html') {
-        event.respondWith(fetch(request).then(response => {
-            if (response.ok) caches.open(PWA_SHELL_CACHE).then(cache => cache.put(request, response.clone()));
-            return response;
-        }).catch(() => caches.match(request).then(cached => cached || caches.match('/offline.html'))));
-        return;
-    }
 
     const isStatic = url.pathname.startsWith('/css/') || url.pathname.startsWith('/js/') || url.pathname.startsWith('/assets/') || url.pathname === '/manifest.json' || url.hostname.includes('fonts.googleapis.com') || url.hostname.includes('fonts.gstatic.com') || url.hostname.includes('unpkg.com');
     if (isStatic) {

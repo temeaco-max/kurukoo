@@ -80,8 +80,20 @@ export async function handleConversationalAuth(guestPhone: string, text: string)
   }
   
   if (state === 'awaiting_otp') {
-    const code = text.trim().replace(/\D/g, '');
-    if (code.length !== 6) return { reply: "Please enter the 6-digit code I sent to your phone." };
+    const instruction = text.trim().toLowerCase();
+    if (instruction === 'resend code') {
+      const result = await requestPhoneOtp(data.phone);
+      if (!result.success) return { reply: `I couldn't resend a code: ${result.message || 'unknown error'}. Please try again.`, cardData: { type: 'auth_otp_input' } };
+      let reply = `I've sent another 6-digit verification code to ${data.phone}. Enter it here to continue.`;
+      if (result.debugCode) reply += ` (Dev code: ${result.debugCode})`;
+      return { reply, cardData: { type: 'auth_otp_input' } };
+    }
+    if (instruction === 'change number') {
+      await setAuthState(guestPhone, 'awaiting_phone', { ...data, phone: undefined });
+      return { reply: "No problem. What's the best phone number for your Kurukoo account?" };
+    }
+    const code = instruction.replace(/\D/g, '');
+    if (code.length !== 6) return { reply: "Please enter the 6-digit code I sent to your phone.", cardData: { type: 'auth_otp_input' } };
     
     const result = await verifyPhoneOtp(data.phone, code);
     if (!result.success || !result.phone) return { reply: `That code didn't work: ${result.message}. Please check the code and try again.` };

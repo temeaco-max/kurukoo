@@ -1,207 +1,23 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-    <meta name="theme-color" content="#FDFCFB">
-    <link rel="stylesheet" href="/css/site.css">
-    <link rel="stylesheet" href="/css/kurukoo-hub.css">
-    <title>Request Hub — Kurukoo</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta http-equiv="refresh" content="0;url=/requests">
+  <meta name="theme-color" content="#FFF8F0">
+  <meta name="description" content="Continue to your Kurukoo requests.">
+  <link rel="canonical" href="/requests">
+  <title>Continue to Kurukoo</title>
+  <link rel="stylesheet" href="/css/site.css?v=1.2.0">
 </head>
 <body>
-    <div class="hub-layout">
-        <aside class="hub-sidebar">
-            <a href="/" class="logo">
-                <img src="/assets/brand/logo-icon.svg" alt="K" width="32">
-                <span>Kurukoo</span>
-            </a>
-            <ul class="hub-nav">
-                <li><a href="/web" class="active">📋 Requests</a></li>
-                <li><a href="/chat">💬 Conversations</a></li>
-                <li><a href="/discover">📡 Nearby Radar</a></li>
-                <li><a href="/resources">❓ Resources</a></li>
-                <li><button type="button" id="logout-button">↪ Log out</button></li>
-            </ul>
-        </aside>
-
-        <main class="hub-main">
-            <header class="hub-header">
-                <div>
-                    <span class="eyebrow" id="user-greeting">Your Activity</span>
-                    <h1>Request Hub</h1>
-                </div>
-                <a href="/chat" class="btn btn-primary">Start something new</a>
-            </header>
-
-            <div class="hub-grid">
-                <!-- Active Section -->
-                <section class="hub-section">
-                    <div class="hub-section-header">
-                        <h3>Active Requests</h3>
-                    </div>
-                    <div id="active-requests-container" class="item-list">
-                        <div class="muted-info-text">Loading activity...</div>
-                    </div>
-                </section>
-
-                <!-- Upcoming Section -->
-                <section class="hub-section">
-                    <div class="hub-section-header">
-                        <h3>Upcoming & Reminders</h3>
-                    </div>
-                    <div id="upcoming-container" class="item-list">
-                        <div class="muted-info-text">Loading reminders...</div>
-                    </div>
-                </section>
-
-                <!-- Personal Section -->
-                <section class="hub-section">
-                    <div class="hub-section-header">
-                        <h3>Safety Contacts</h3>
-                    </div>
-                    <div id="safety-container" class="item-list">
-                        <div class="muted-info-text">Loading contacts...</div>
-                    </div>
-                </section>
-
-                <!-- Stats/Points Section -->
-                <aside class="hub-stats">
-                    <div class="points-summary">
-                        <h3>Your Points</h3>
-                        <div class="points-value" id="points-display">--</div>
-                        <p class="points-desc">Daily allowance included. Use points to request services and unlock leads.</p>
-                        <a href="/pricing" class="btn btn-outline btn-block points-topup-btn">Top up</a>
-                    </div>
-                </aside>
-            </div>
-        </main>
-    </div>
-    <script>
-        function createItemCard(badgeText, badgeClass, titleText, subtitleText, actionText, actionHref) {
-            const card = document.createElement('div');
-            card.className = 'hub-item-card';
-
-            const info = document.createElement('div');
-            info.className = 'item-info';
-
-            const badge = document.createElement('span');
-            badge.className = `item-badge ${badgeClass}`;
-            badge.textContent = badgeText;
-
-            const title = document.createElement('div');
-            title.className = 'item-title';
-            title.textContent = titleText;
-
-            const subtitle = document.createElement('div');
-            subtitle.className = 'item-subtitle';
-            subtitle.textContent = subtitleText;
-
-            info.appendChild(badge);
-            info.appendChild(title);
-            info.appendChild(subtitle);
-            card.appendChild(info);
-
-            if (actionText && actionHref) {
-                const btn = document.createElement('a');
-                btn.className = 'btn btn-outline btn-sm';
-                btn.textContent = actionText;
-                btn.href = actionHref;
-                card.appendChild(btn);
-            }
-
-            return card;
-        }
-
-        async function loadHubData() {
-            try {
-                const [profileRes, requestsRes, remindersRes, safetyRes] = await Promise.all([
-                    fetch('/api/profile', { credentials: 'same-origin' }),
-                    fetch('/api/chat/economic-requests', { credentials: 'same-origin' }),
-                    fetch('/api/reminders', { credentials: 'same-origin' }),
-                    fetch('/api/safety/contacts', { credentials: 'same-origin' })
-                ]);
-
-                // 1. Profile & Points
-                if (profileRes.ok) {
-                    const profileData = await profileRes.json();
-                    const profile = profileData.profile || {};
-                    if (profile.name) document.getElementById('user-greeting').textContent = `Welcome, ${profile.name}`;
-                    document.getElementById('points-display').textContent = profile.points_balance || 0;
-                }
-
-                // 2. Active Requests
-                const activeContainer = document.getElementById('active-requests-container');
-                if (requestsRes.ok) {
-                    const data = await requestsRes.json();
-                    const requests = data.requests || [];
-                    if (requests.length === 0) {
-                        const empty = document.createElement('div');
-                        empty.className = 'muted-info-text';
-                        empty.textContent = 'No active requests. Start a conversation to get going.';
-                        activeContainer.replaceChildren(empty);
-                    } else {
-                        activeContainer.replaceChildren(...requests.slice(0, 5).map(r => {
-                            const statusText = String(r.status || 'requested').replace(/_/g, ' ');
-                            const badgeClass = r.status === 'requested' ? 'pending' : 'active';
-                            const skillText = String(r.skill || 'request').replace(/_/g, ' ');
-                            const dateText = `Started ${new Date(r.created_at).toLocaleDateString()}`;
-                            return createItemCard(statusText, badgeClass, skillText, dateText, 'View', '/chat');
-                        }));
-                    }
-                }
-
-                // 3. Upcoming & Reminders
-                const upcomingContainer = document.getElementById('upcoming-container');
-                if (remindersRes.ok) {
-                    const data = await remindersRes.json();
-                    const reminders = data.reminders || [];
-                    if (reminders.length === 0) {
-                        const empty = document.createElement('div');
-                        empty.className = 'muted-info-text';
-                        empty.textContent = 'No active reminders.';
-                        upcomingContainer.replaceChildren(empty);
-                    } else {
-                        upcomingContainer.replaceChildren(...reminders.slice(0, 5).map(rem => {
-                            const titleText = rem.title || 'Untitled Reminder';
-                            const dueText = `Due ${new Date(rem.due_at).toLocaleString()}`;
-                            return createItemCard('Reminder', 'active', titleText, dueText, null, null);
-                        }));
-                    }
-                }
-
-                // 4. Safety Contacts
-                const safetyContainer = document.getElementById('safety-container');
-                if (safetyRes.ok) {
-                    const data = await safetyRes.json();
-                    const contacts = data.contacts || [];
-                    if (contacts.length === 0) {
-                        const empty = document.createElement('div');
-                        empty.className = 'muted-info-text';
-                        empty.textContent = 'No safety contacts added.';
-                        safetyContainer.replaceChildren(empty);
-                    } else {
-                        safetyContainer.replaceChildren(...contacts.map(c => {
-                            const status = c.status || 'pending';
-                            const badgeClass = status === 'active' ? 'active' : 'pending';
-                            const subText = `${c.relationship || 'Contact'} · ${c.phone}`;
-                            return createItemCard(status, badgeClass, c.name, subText, null, null);
-                        }));
-                    }
-                }
-
-            } catch (error) {
-                console.error('Failed to load hub data:', error);
-            }
-        }
-
-        document.getElementById('logout-button')?.addEventListener('click', async () => {
-            try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); } catch (_) {}
-            localStorage.removeItem('kurukoo_user_phone');
-            localStorage.removeItem('kurukoo_user_name');
-            window.location.assign('/');
-        });
-
-        window.addEventListener('DOMContentLoaded', loadHubData);
-    </script>
+  <main class="route-continuation" aria-labelledby="continuation-title">
+    <img src="/assets/brand/logo-icon.svg" alt="Kurukoo" width="48" height="48">
+    <h1 id="continuation-title">Continuing to your requests</h1>
+    <p>Kurukoo now keeps requests, reminders, and account tools in one connected workspace.</p>
+    <a class="btn btn-primary" href="/requests">Open requests</a>
+    <p><a href="/chat">Start chatting instead</a></p>
+  </main>
+  <script>window.location.replace('/requests');</script>
 </body>
 </html>

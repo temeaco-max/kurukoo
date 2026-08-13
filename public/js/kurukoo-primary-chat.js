@@ -24,6 +24,28 @@
     return el;
   };
 
+  const makeIcon = (name, label = '') => {
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    icon.setAttribute('class', 'k-icon');
+    icon.setAttribute('aria-hidden', label ? 'false' : 'true');
+    if (label) icon.setAttribute('aria-label', label);
+    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    use.setAttribute('href', `/icons/kurukoo-icons.svg#${name}`);
+    icon.appendChild(use);
+    return icon;
+  };
+
+  const makeBrandAvatar = () => {
+    const avatar = makeElement('div', 'avatar');
+    avatar.setAttribute('aria-hidden', 'true');
+    const image = document.createElement('img');
+    image.src = '/assets/brand/logo-icon.svg';
+    image.alt = '';
+    image.width = 20;
+    avatar.appendChild(image);
+    return avatar;
+  };
+
   const setConnection = (ok, text = ok ? 'Connected' : 'Offline') => { 
     const el = $('connection-status'); 
     if (el) { 
@@ -112,7 +134,7 @@
     gate.dataset.embedSigninGate = '1';
     gate.className = 'message assistant';
     
-    const avatar = makeElement('div', 'avatar', 'K'); avatar.setAttribute('aria-hidden', 'true');
+    const avatar = makeBrandAvatar();
     const body = makeElement('div', 'message-body');
     const bubble = makeElement('div', 'bubble');
     const md = makeElement('div', 'markdown-body');
@@ -182,7 +204,7 @@
     
     const avatarDiv = makeElement('div', 'avatar'); avatarDiv.setAttribute('aria-hidden', 'true');
     if (role === 'assistant') {
-      const img = document.createElement('img'); img.src = '/assets/brand/logo-icon.svg'; img.alt = 'K'; img.width = 20;
+      const img = document.createElement('img'); img.src = '/assets/brand/logo-icon.svg'; img.alt = ''; img.width = 20;
       avatarDiv.appendChild(img);
     }
     
@@ -282,7 +304,7 @@
     if (card.type === 'agentic_storefront') {
       if (card.stage === 'deferred') {
         status.hidden = false;
-        status.textContent = '⏳ Request deferred — Kurukoo will retain the request for a supported next step. Any notification depends on a configured channel.';
+        status.textContent = 'Request deferred — Kurukoo will retain it for a supported next step. Any notification depends on a configured channel.';
       } else if (card.stage === 'fulfillment') {
         status.hidden = false;
         status.textContent = 'Fulfilment milestone recorded. Confirm completion to continue the documented request lifecycle.';
@@ -297,8 +319,8 @@
     if (!['worker_match','service_search','nearby_radar'].includes(card.type)) { status.hidden = true; return; }
     status.hidden = false;
     status.textContent = card.type === 'nearby_radar'
-      ? '📡 Checking request context for a supported nearby path…'
-      : '🔎 Assessing the request for a supported match. If no path is currently available, the request can be deferred.';
+      ? 'Checking request context for a supported nearby path…'
+      : 'Assessing the request for a supported match. If no path is currently available, the request can be deferred.';
   }
 
   function collectStorefrontFields(holder) {
@@ -585,7 +607,11 @@
       holder.appendChild(actionGroup);
     }
 
-    if (card.escrowProtected !== false) holder.appendChild(makeElement('span', 'escrow-badge', '🔒 Escrow Protected'));
+    if (card.escrowProtected !== false) {
+      const escrowBadge = makeElement('span', 'escrow-badge');
+      escrowBadge.append(makeIcon('safety'), document.createTextNode('Escrow state requires confirmation'));
+      holder.appendChild(escrowBadge);
+    }
 
     holder.querySelectorAll('[data-storefront-field]').forEach(field => {
       field.addEventListener('keydown', event => {
@@ -645,21 +671,39 @@
     if (card.type === 'ai_metadata') return updateModelStatus(card);
 
     if (card.type === 'auth_otp_input') {
-      const holder = makeElement('div', 'auth-otp-card');
-      holder.appendChild(makeElement('strong', '', 'Verification code'));
-      const input = document.createElement('input');
-      input.type = 'text'; input.inputMode = 'numeric'; input.pattern = '[0-9]*'; input.maxLength = 6; input.placeholder = '123456';
-      input.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(input.value); });
-      holder.appendChild(input);
+      const holder = makeElement('section', 'auth-otp-card');
+      holder.setAttribute('aria-label', 'Phone verification');
+      holder.appendChild(makeElement('strong', '', 'Enter your verification code'));
+      holder.appendChild(makeElement('p', 'auth-otp-copy', 'Enter the six-digit code sent to your phone.'));
+      const cells = makeElement('div', 'auth-otp-cells');
+      const inputs = Array.from({ length: 6 }, (_, index) => {
+        const field = document.createElement('input');
+        field.type = 'text'; field.inputMode = 'numeric'; field.pattern = '[0-9]*'; field.maxLength = 1;
+        field.autocomplete = index === 0 ? 'one-time-code' : 'off';
+        field.setAttribute('aria-label', `Verification digit ${index + 1} of 6`);
+        field.addEventListener('input', () => { field.value = field.value.replace(/\D/g, '').slice(0, 1); if (field.value && inputs[index + 1]) inputs[index + 1].focus(); });
+        field.addEventListener('keydown', event => { if (event.key === 'Backspace' && !field.value && inputs[index - 1]) inputs[index - 1].focus(); if (event.key === 'Enter') verify.click(); });
+        field.addEventListener('paste', event => { const code = event.clipboardData?.getData('text').replace(/\D/g, '').slice(0, 6) || ''; if (!code) return; event.preventDefault(); code.split('').forEach((digit, digitIndex) => { if (inputs[digitIndex]) inputs[digitIndex].value = digit; }); inputs[Math.min(code.length, 6) - 1]?.focus(); });
+        cells.appendChild(field); return field;
+      });
+      const verify = makeElement('button', 'primary-btn', 'Verify');
+      verify.type = 'button';
+      verify.addEventListener('click', () => { const code = inputs.map(field => field.value).join(''); if (code.length !== 6) { inputs.find(field => !field.value)?.focus(); return; } void sendMessage(code); });
+      const actions = makeElement('div', 'auth-otp-actions');
+      const resend = makeElement('button', 'text-btn', 'Resend code'); resend.type = 'button'; resend.addEventListener('click', () => void sendMessage('resend code'));
+      const change = makeElement('button', 'text-btn', 'Change number'); change.type = 'button'; change.addEventListener('click', () => void sendMessage('change number'));
+      actions.append(resend, change);
+      holder.append(cells, verify, actions);
       messageEl.querySelector('.bubble').appendChild(holder);
-      input.focus();
+      inputs[0]?.focus();
       return;
     }
 
     if (card.type === 'safety_contact_capture') {
       const holder = makeElement('div', 'safety-capture-card');
       const inner = makeElement('div', 'safety-capture-inner');
-      const icon = makeElement('div', 'safety-capture-icon', '🛡️');
+      const icon = makeElement('div', 'safety-capture-icon');
+      icon.appendChild(makeIcon('safety'));
       const title = makeElement('strong', '', 'Add emergency contact');
       const desc = makeElement('p', '', `You're adding ${card.name} as a contact. Share their phone number in the chat to continue.`);
       const btn = makeElement('button', 'primary-btn', 'Manage contacts');
@@ -717,7 +761,12 @@
     if (card.type === 'ride_picker') {
       holder.appendChild(makeElement('strong', '', 'Describe a ride request'));
       const qa = makeElement('div', 'quick-actions');
-      ['🚗 Okada', '🛺 Keke', '🚕 Taxi'].forEach(t => { const b = makeElement('button', '', t); b.type = 'button'; qa.appendChild(b); });
+      ['Okada', 'Keke', 'Taxi'].forEach(label => {
+        const button = makeElement('button');
+        button.type = 'button';
+        button.append(makeIcon('ride'), document.createTextNode(label));
+        qa.appendChild(button);
+      });
       holder.append(qa, makeElement('span', 'escrow-badge', 'Availability is confirmed in the request flow.'));
       holder.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => sendMessage(`${btn.textContent.trim()} ride`)));
     } else if (card.type === 'worker_match' || card.type === 'service_search') {
@@ -822,11 +871,71 @@
       setConnection(false, 'Connection issue'); setTypingStatus('error'); assistant.hidden = false; assistant.classList.remove('message-streaming'); assistant.classList.add('message-arrived');
       const bubble = chatContent.querySelector('.message.assistant:last-child .markdown-body'); 
       if (bubble) setMarkdown(bubble, `I’m having trouble completing that right now. **Please try again.**\n\n_${escapeAttr(error.message)}_`); 
-    } finally { setTypingStatus('complete'); state.busy = false; send.disabled = false; input.placeholder = 'Message Kurukoo'; input.focus(); loadPoints(); loadReminders(); loadSafety(); loadAgentGoal(); }
+    } finally { setTypingStatus('complete'); state.busy = false; send.disabled = false; input.placeholder = 'Tell Kurukoo what you need…'; input.focus(); loadPoints(); loadReminders(); loadSafety(); loadAgentGoal(); loadRequestContext(); }
   }
 
   function updateModelStatus(data) { const label = $('model-badge'); if (label && data.model) label.textContent = data.model; }
   async function loadPoints() { try { const res = await fetch('/api/points/balance', { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const points = Number(data.points || 0); const balance = $('points-balance')?.querySelector('span'); if (balance) balance.textContent = points; const ip = $('inspector-points'); if (ip) ip.textContent = points; } catch {} }
+
+  const requestStageCopy = {
+    requested: ['Request received', 'Kurukoo is collecting the details needed for a supported next step.'],
+    awaiting_match: ['Finding options', 'Kurukoo is checking for an eligible option. You can keep the request active, broaden the search, or choose an alternative when offered.'],
+    partially_matched: ['Options found', 'Some request details or confirmations are still needed before an option can progress.'],
+    matched: ['Option matched', 'An eligible option is being checked against the request details.'],
+    quoting: ['Quote requested', 'A provider quote is being prepared. A listed rate is not a confirmed quote.'],
+    quoted: ['Quote ready', 'Review the confirmed quote before you decide whether to continue.'],
+    awaiting_confirmation: ['Waiting for confirmation', 'Your request is not paid, booked, dispatched, or fulfilled at this stage.'],
+    reserved: ['Reservation recorded', 'The next action is shown in the request flow.'],
+    payment_pending: ['Payment pending', 'Payment is not complete until a configured payment boundary verifies it.'],
+    paid: ['Payment verified', 'A verified payment state does not by itself confirm fulfilment.'],
+    in_fulfillment: ['Fulfilment in progress', 'Follow the evidence-backed request updates here and in the conversation.'],
+    fulfilled: ['Fulfilment recorded', 'Confirm completion only when the documented request evidence supports it.'],
+    completed: ['Completed', 'This request remains connected to its conversation and any available follow-up.'],
+    disputed: ['Under review', 'The request is paused while the dispute process is reviewed.'],
+    cancelled: ['Cancelled', 'This request will not progress unless you start a new supported request.']
+  };
+
+  function requestDetail(request) {
+    const source = request?.requirements || request?.requirements_json || {};
+    let requirements = source;
+    if (typeof source === 'string') { try { requirements = JSON.parse(source); } catch { requirements = {}; } }
+    const details = [requirements?.items, requirements?.service, requirements?.location, requirements?.origin, requirements?.destination].filter(Boolean).map(String);
+    return details.length ? details.slice(0, 2).join(' · ') : 'Details remain in the linked conversation.';
+  }
+
+  function renderRequestContext(request) {
+    const card = $('request-context-card'); const title = $('request-context-title'); const detail = $('request-context-detail'); const timeline = $('request-context-timeline'); const inspectorTitle = $('inspector-title');
+    if (!card || !title || !detail || !timeline) return;
+    timeline.replaceChildren();
+    if (!request) {
+      if (inspectorTitle) inspectorTitle.textContent = 'About this conversation';
+      title.textContent = 'No active request';
+      detail.textContent = 'Relevant request details, next actions and state appear here as Kurukoo works with you.';
+      return;
+    }
+    const status = String(request.status || 'requested');
+    const [heading, copy] = requestStageCopy[status] || ['Request update', 'The linked conversation contains the current request details.'];
+    if (inspectorTitle) inspectorTitle.textContent = heading;
+    title.textContent = `${String(request.skill || request.category || 'Request').replace(/_/g, ' ')} · ${heading}`;
+    detail.textContent = `${copy} ${requestDetail(request)}`;
+    const stages = ['requested', 'awaiting_match', 'quoted', 'awaiting_confirmation', 'payment_pending', 'in_fulfillment', 'completed'];
+    const currentIndex = Math.max(0, stages.indexOf(status));
+    stages.forEach((stage, index) => {
+      const item = makeElement('span', `request-context-step${index <= currentIndex ? ' is-reached' : ''}${stage === status ? ' is-current' : ''}`, requestStageCopy[stage]?.[0] || stage.replace(/_/g, ' '));
+      timeline.appendChild(item);
+    });
+  }
+
+  async function loadRequestContext() {
+    try {
+      const response = await fetch('/api/chat/economic-requests', { credentials: 'same-origin' });
+      if (!response.ok) { renderRequestContext(null); return; }
+      const data = await response.json(); const requests = Array.isArray(data.requests) ? data.requests : [];
+      const active = requests.find(item => String(item.id || '') === String(state.activeStorefrontId || '')) || requests.find(item => !['completed', 'cancelled', 'abandoned'].includes(String(item.status || '')));
+      renderRequestContext(active || requests[0] || null);
+    } catch { renderRequestContext(null); }
+  }
+
   async function loadMemory() { try { const res = await fetch('/api/profile', { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const profile = data.profile || {}; const text = `Kurukoo remembers ${profile.location || 'your area'}${profile.primary_lga ? `, ${profile.primary_lga}` : ''}. Your Memory Profile remains attached to your account.`; const mc = $('memory-context'); if (mc) mc.textContent = text; const im = $('inspector-memory'); if (im) im.textContent = text; } catch {} }
 
   function renderAgentGoal(goal, events = []) {
@@ -926,6 +1035,7 @@
       if (data.messages?.length && chatContent.querySelectorAll('.message').length === 0) renderMessages(data.messages);
     } catch { setConnection(false, 'Offline'); }
     loadAgentGoal();
+    loadRequestContext();
   }
 
   function renderMessages(messages) {
@@ -1008,14 +1118,23 @@
   function renderWelcome() {
     const welcome = makeElement('div', 'welcome'); welcome.id = 'welcome';
     const mark = makeElement('div', 'welcome-mark');
-    const img = document.createElement('img'); img.src = '/assets/brand/logo-icon.svg'; img.alt = 'K'; img.width = 32;
+    const img = document.createElement('img'); img.src = '/assets/brand/logo-icon.svg'; img.alt = 'Kurukoo'; img.width = 32;
     mark.appendChild(img);
     welcome.appendChild(mark);
-    welcome.appendChild(makeElement('h1', '', 'What can I help you get done?'));
-    welcome.appendChild(makeElement('p', '', 'Describe a service, work, coordination, or everyday information need. Kurukoo will show the supported request path.'));
+    welcome.appendChild(makeElement('h1', '', 'Hi, I’m Kurukoo. What do you need help with?'));
+    welcome.appendChild(makeElement('p', '', 'Start with a conversation. Kurukoo will show the supported next step for your request, reminder, safety or everyday information need.'));
     const qa = makeElement('div', 'quick-actions'); qa.id = 'quick-actions';
-    [['I need a ride request', '🚗 Ride'], ['I have a food request', '🍔 Food'], ['I need repair help', '🔧 Repair'], ['I have an urgent non-emergency service request', '🏥 Urgent request'], ['I want to discuss a work request', '⚡ Work']].forEach(([p, l]) => {
-      const b = makeElement('button', '', l); b.dataset.prompt = p; qa.appendChild(b);
+    [
+      ['I need a ride request', 'Ride', 'ride'],
+      ['I have a food request', 'Food', 'food'],
+      ['I need repair help', 'Repair', 'request'],
+      ['I have an urgent non-emergency service request', 'Urgent request', 'alert'],
+      ['I want to discuss a work request', 'Work', 'work']
+    ].forEach(([prompt, label, icon]) => {
+      const button = makeElement('button');
+      button.dataset.prompt = prompt;
+      button.append(makeIcon(icon), document.createTextNode(label));
+      qa.appendChild(button);
     });
     welcome.appendChild(qa);
     chatContent.replaceChildren(welcome);
@@ -1025,7 +1144,7 @@
   applyTheme();
   ensureIdentity().then(ok => { 
     if (ok) {
-      Promise.all([loadPoints(), loadMemory(), loadReminders(), loadSafety(), loadAgentGoal(), refreshHistory()]);
+      Promise.all([loadPoints(), loadMemory(), loadReminders(), loadSafety(), loadAgentGoal(), loadRequestContext(), refreshHistory()]);
       if (!state.conversationId) renderWelcome();
     }
   });
