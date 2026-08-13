@@ -33,20 +33,9 @@
                     </div>
                 </div>
 
-                <!-- Ad Placement Boundary -->
-                <% if ((index + 1) % 8 === 0 && ads && ads.length > 0) { %>
-                    <% const adIndex = Math.floor(index / 8) % ads.length; %>
-                    <% const ad = ads[adIndex]; %>
-                    <div class="sponsored-ad-card" aria-label="Paid promotion">
-                        <span class="sponsored-badge"><%= ad.disclosure || (ad.placementSource === 'kurukoo_sponsored' ? 'Kurukoo-sponsored' : 'External advertisement') %></span>
-                        <h4><%= ad.title %></h4>
-                        <p><%= ad.desc %></p>
-                        <small>This promotion is not a verified provider, quote, availability, payment, dispatch or fulfilment claim.</small>
-                        <a href="/chat?prompt=Tell%20me%20about%20<%= encodeURIComponent(ad.title) %>" class="text-link">Ask Kurukoo <span>→</span></a>
-                    </div>
-                <% } %>
             <% }) %>
         </div>
+        <div class="kurukoo-ad-placement" data-kurukoo-ad-placement="explore_inline" data-country="<%= market.code %>" aria-live="polite" aria-label="Sponsored content"></div>
     </section>
 </main>
 

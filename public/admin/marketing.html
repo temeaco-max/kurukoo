@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/css/site.css">
   <link rel="stylesheet" href="/css/legacy-inline-migration.css?v=1">
   <link rel="stylesheet" href="/css/admin-console.css">
-  <link rel="stylesheet" href="/css/admin-control-room.css?v=1">
+  <link rel="stylesheet" href="/css/admin-control-room.css?v=2">
 </head>
 <body>
   <main class="admin-page admin-marketing-page">
@@ -30,6 +30,8 @@
         <label>Target keyword<input name="targetKeyword" maxlength="120" placeholder="e.g. repair"></label>
         <label class="admin-form-full">Description<textarea name="desc" required minlength="3" maxlength="320" rows="3" placeholder="Describe the placement without claiming provider verification, stock, availability, price, delivery, or fulfilment."></textarea></label>
         <label class="admin-form-full">Canonical categories<select name="targetCategories" id="campaign-categories" multiple aria-describedby="campaign-category-help"></select><small id="campaign-category-help">Optional. Select one or more existing Kurukoo categories; choose a keyword if no category applies.</small></label>
+        <label class="admin-form-full">Eligible markets<select name="targetCountries" id="campaign-countries" multiple aria-describedby="campaign-country-help"><option value="ng">Nigeria</option><option value="gh">Ghana</option><option value="gb">United Kingdom</option></select><small id="campaign-country-help">Optional coarse market targeting only. Kurukoo does not use precise location, private profile data, or conversation content for campaign targeting.</small></label>
+        <fieldset class="admin-form-full"><legend>Eligible placement inventory</legend><div id="campaign-placements" class="admin-choice-grid" aria-describedby="campaign-placement-help"></div><small id="campaign-placement-help">Assign only approved canonical placement slots. A slot still applies safety exclusions, frequency caps, campaign status, category matching, disclosure, and budget rules.</small></fieldset>
         <label>Credit budget<input name="creditsBudget" type="number" min="0" step="1" value="0" required></label>
         <label>Placement source<select name="placementSource"><option value="external_inventory">External advertisement</option><option value="kurukoo_sponsored">Kurukoo-sponsored</option></select></label>
         <label class="admin-form-full">Disclosure<input name="disclosure" required maxlength="120" value="External advertisement"></label>
@@ -38,12 +40,17 @@
       <p class="admin-form-status" id="campaign-status" role="status"></p>
     </section>
 
+    <section class="admin-card" aria-labelledby="placement-list-title">
+      <div class="admin-card-heading"><div><p class="admin-kicker">Canonical placement catalogue</p><h2 id="placement-list-title">Inventory, occupancy, and aggregate evidence</h2></div><p id="placement-boundary" class="admin-muted">Loading approved placement inventory.</p></div>
+      <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Placement</th><th>Surface and format</th><th>Safety and frequency</th><th>Evidence</th><th>Control</th></tr></thead><tbody id="placement-list"><tr><td colspan="5" class="admin-empty-state">Loading placement inventory…</td></tr></tbody></table></div>
+    </section>
+
     <section class="admin-card" aria-labelledby="campaign-list-title">
       <div class="admin-card-heading"><div><p class="admin-kicker">Campaign records</p><h2 id="campaign-list-title">Current placements</h2></div><button class="admin-button admin-button--secondary" type="button" id="campaign-refresh">Refresh</button></div>
-      <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Campaign</th><th>Targeting</th><th>Disclosure</th><th>Budget</th><th>Status</th><th>Control</th></tr></thead><tbody id="campaign-list"><tr><td colspan="6" class="admin-empty-state">Loading campaign records…</td></tr></tbody></table></div>
+      <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Campaign</th><th>Targeting and slots</th><th>Disclosure</th><th>Budget</th><th>Status</th><th>Control</th></tr></thead><tbody id="campaign-list"><tr><td colspan="6" class="admin-empty-state">Loading campaign records…</td></tr></tbody></table></div>
     </section>
   </main>
   <script src="/js/admin-shell.js?v=1"></script>
-  <script src="/admin/marketing.js?v=2"></script>
+  <script src="/admin/marketing.js?v=3"></script>
 </body>
 </html>

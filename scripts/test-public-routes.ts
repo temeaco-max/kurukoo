@@ -1,6 +1,8 @@
 import publicRouter from '../src/routes/publicRoutes.js';
 
 const expected = [
+    '/api/advertising/placements/:placementId',
+    '/api/advertising/placements/:placementId/events',
     '/',
     '/explore',
     '/explore/:slug',

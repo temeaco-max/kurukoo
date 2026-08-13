@@ -108,8 +108,8 @@ try {
 
   const marketing = await json('/api/admin/marketing', { method: 'GET', headers: adminHeaders });
   assert.equal(marketing.response.status, 200, marketing.body.error);
-  assert.equal(marketing.body.measuredAdImpressions, null, 'unmeasured advertising impressions must remain unavailable');
-  assert.equal(marketing.body.measuredAdClicks, null, 'unmeasured advertising clicks must remain unavailable');
+  assert.equal(marketing.body.measuredAdImpressions, 0, 'configured aggregate placement evidence must report zero when no placement exposure exists');
+  assert.equal(marketing.body.measuredAdClicks, 0, 'configured aggregate placement evidence must report zero when no placement click exists');
 
   const pointsAfterConversion = Number(db.exec(`SELECT COUNT(*) FROM credit_transactions`)[0]?.values?.[0]?.[0] || 0);
   assert.equal(pointsAfterConversion, pointsBefore, 'confirmed affiliate commission evidence must remain distinct from the Points economy');

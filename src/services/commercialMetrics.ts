@@ -1,5 +1,6 @@
 import { getDb } from '../database.js';
 import { getAffiliateMetrics } from './affiliateService.js';
+import { getPlacementMetrics } from './adManager.js';
 
 interface CurrencyAmount { currency: string; amountMinor: number; count: number; }
 
@@ -39,7 +40,7 @@ export async function getCommercialMetrics(): Promise<{
   escrow: { byStatus: Array<{ status: string; count: number; byCurrency: CurrencyAmount[] }>; boundary: string };
   subscriptions: { activeRecords: number; collectionsStatus: 'not_configured'; boundary: string };
   pointsLeadActivity: { debits: number; pointsDebited: number; boundary: string };
-  advertising: { activeCampaigns: number; billingStatus: 'not_configured'; boundary: string };
+  advertising: { activeCampaigns: number; billingStatus: 'not_configured'; placementMeasurementStatus: 'recorded'; impressions: number; clicks: number; boundary: string };
   affiliate: Awaited<ReturnType<typeof getAffiliateMetrics>>;
 }> {
   const db = await getDb();
@@ -120,7 +121,10 @@ export async function getCommercialMetrics(): Promise<{
     advertising: {
       activeCampaigns,
       billingStatus: 'not_configured',
-      boundary: 'Active campaigns and Points budgets are not advertising revenue without a verified advertising billing and settlement record.',
+      placementMeasurementStatus: 'recorded',
+      impressions: (await getPlacementMetrics()).reduce((total, metric) => total + metric.impressions, 0),
+      clicks: (await getPlacementMetrics()).reduce((total, metric) => total + metric.clicks, 0),
+      boundary: 'Placement impression and click counts are deduplicated event evidence. They are not provider viewability certification, conversion, advertising revenue, billed spend, or settlement without a verified commercial collection record.',
     },
     affiliate: await getAffiliateMetrics(),
   };
@@ -129,8 +133,8 @@ export async function getCommercialMetrics(): Promise<{
 export async function getMarketingMetrics(): Promise<{
   referrals: number;
   activeCampaigns: number;
-  measuredAdImpressions: null;
-  measuredAdClicks: null;
+    measuredAdImpressions: number;
+  measuredAdClicks: number;
   boundary: string;
 }> {
   const db = await getDb();
@@ -146,11 +150,12 @@ export async function getMarketingMetrics(): Promise<{
     activeCampaigns = campaignStmt.step() ? Number(campaignStmt.getAsObject().count || 0) : 0;
     campaignStmt.free();
   }
+  const placementMetrics = await getPlacementMetrics();
   return {
     referrals,
     activeCampaigns,
-    measuredAdImpressions: null,
-    measuredAdClicks: null,
-    boundary: 'Advertising impression and click tracking is not configured, so unmeasured counts are intentionally unavailable rather than estimated.',
+    measuredAdImpressions: placementMetrics.reduce((total, metric) => total + metric.impressions, 0),
+    measuredAdClicks: placementMetrics.reduce((total, metric) => total + metric.clicks, 0),
+    boundary: 'Advertising impression and click counts are recorded placement-event evidence. They are not provider viewability certification, conversions, billed spend, revenue, or settlement.',
   };
 }

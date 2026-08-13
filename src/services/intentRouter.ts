@@ -7,7 +7,6 @@ import { previewStorefrontCard, startStorefrontSession, tryResumeStorefront } fr
 import { searchKnownEconomicOffers } from './economicParticipants.js';
 import { searchProviderProductListings } from './productSourcing.js';
 import { createReminder } from './reminderService.js';
-import { matchAdCampaigns } from './adManager.js';
 import type { IntentRoutingResult } from '../types.js';
 
 const ACTION_INTENTS = new Set(['ride_request', 'order_food', 'find_worker', 'universal_vendor_order', 'sports_matchmaking', 'event_coverage', 'how_to_video', 'security_booking', 'circle_create', 'artist_booking', 'national_events']);
@@ -245,8 +244,6 @@ export async function routeIntent(query: string, phone?: string, provider?: AIPr
       }
     }
     const cardData: any = decorateCardWithSuggestions(actionCard(classification.intent), flowSkill) || suggestionCard(flowSkill);
-    const ads = await matchAdCampaigns(query, { category: getEconomicCategory(flowSkill) || undefined });
-    if (ads.length) cardData.sponsored = ads.map((ad) => ({ title: ad.title, desc: ad.desc, keyword: ad.targetKeyword, disclosure: ad.disclosure, placementSource: ad.placementSource }));
     const reply = flowReply(flowSkill, flow);
     return { skill: flowSkill, reply, cardData };
   }
@@ -260,15 +257,6 @@ export async function routeIntent(query: string, phone?: string, provider?: AIPr
 
   const ai = await queryUnifiedAI(query, { provider, phone });
   const cardData: any = ai.provider === 'SmolLM2' ? { type: 'ai_metadata', provider: ai.provider, model: ai.model } : undefined;
-
-  const ads = await matchAdCampaigns(query);
-  const sponsored = ads.map((ad) => ({ title: ad.title, desc: ad.desc, keyword: ad.targetKeyword, disclosure: ad.disclosure, placementSource: ad.placementSource }));
-
-  if (sponsored.length > 0) {
-    const finalCard = cardData || { type: 'intent_suggestions', intent: 'general_question', suggestions: [] };
-    finalCard.sponsored = sponsored;
-    return { skill: 'general_question', reply: ai.text, cardData: finalCard };
-  }
 
   return { skill: 'general_question', reply: ai.text, cardData };
 }

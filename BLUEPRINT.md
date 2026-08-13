@@ -5559,3 +5559,26 @@ The product-sourcing owner projects matched listings through the existing chat/s
 
 The regression covers authenticated owner-only writing, malformed/anonymous rejection, evidence-gated discovery, opaque references, chat/storefront projection, canonical request/seller linkage, no stock/final-price claim, and immediate withdrawal. There is no external inventory feed or automatic availability integration.
 ---
+
+
+## Addendum — Canonical advertising and monetisation placement boundary (2026-08-13)
+
+`adManager` is the **sole advertising placement authority**. It extends the existing `ad_campaigns` owner rather than creating an Ads, Topic Ads, Chat Ads, Opportunity Ads, or separate commercial database. A campaign carries its current embedded creative and disclosure. `ad_placements` is a small configuration catalogue, `ad_campaign_placements` assigns a reviewed campaign to a slot, and `ad_placement_events` retains only deduplicated, opaque-session-hashed impression/click evidence. The canonical lifecycle is **campaign → creative → canonical category/coarse market/placement eligibility → clear disclosure → event evidence → bounded delivery-unit budget → aggregate reporting**.
+
+| Concern | Canonical rule |
+|---|---|
+| Public targeting | Existing economic categories and coarse active market (`ng`, `gh`, `gb`) only. No raw chat text, private request text, Memory, profile data, precise location, sensitive inference, or advertiser data export. Canada is an inactive foundation market and receives no commercial inventory. |
+| Eligibility | Campaign status, active slot assignment, source compatibility, category/market match, frequency cap, and remaining delivery-unit budget all must pass. A paused, completed, inactive, capped, unknown, private, or excluded placement returns no card. |
+| Fallback order | Eligible direct campaign → approved matching existing affiliate offer where that slot permits it → explicitly unconfigured programmatic boundary → empty. An empty result is normal and does not reserve a giant blank or fabricate advertiser content. |
+| Evidence | Impression and explicit CTA click are opaque-session deduplicated local evidence; campaign CTR is derived from them. They are not third-party viewability, conversion, collected spend, revenue, settlement, delivery, or read evidence. |
+| Surfaces | Reusable responsive hosts exist on homepage, How It Works, Explore/category, Discover feed, Topic list/detail, Resources/article, and provider-related content. Existing Daily Picks is a dedicated workspace sponsor panel; External Offers remains the affiliate surface. |
+| Strict exclusions | No placement in chat message streams, assistant responses, auth/OTP, account/privacy/security, safety/emergency, health/legal/financial-sensitive context, payment/escrow/quote/dispute/fulfilment, verification, moderation, admin, voice, attachments, or error/security flows. |
+| Programmatic | `KURUKOO_PROGRAMMATIC_AD_PROVIDER=none` is disabled by default. A provider label cannot load an SDK or supply inventory. A reviewed adapter, credentials, consent/privacy assessment, approved format policy, and acceptance/error contract are required before activation. Overlay formats are intentionally absent. |
+
+Daily Picks does not target sponsorship from private content. Its sponsor panel resolves transiently through `workspace_daily_picks_sponsor` using only canonical deferred-request category context, so a pause, budget cap, or inventory change removes it immediately. Legacy raw-query chat sponsorship is removed; general conversation output cannot carry advertising cards.
+
+The Admin Marketing Control Room is the only administrative projection. It exposes the existing campaign records, placement catalogue/occupancy, assignment, activation, frequency caps, category/coarse-market targeting, aggregate placement/campaign metrics, and provider-neutral readiness state. It is not an advertiser self-service, billing, settlement, conversion, or third-party ad-network console.
+
+> A sponsored or affiliate card is commercial context—not an assistant message, community statement, organic provider result, verified provider, quote, inventory, availability, price, booking, payment, delivery, or fulfilment confirmation.
+
+This addendum supersedes earlier Blueprint statements that described FastText-routed chat sponsorship or treated placement evidence as wholly unavailable. FastText and existing taxonomy remain request-routing context owners; they are not advertising classifiers or a secondary placement engine.

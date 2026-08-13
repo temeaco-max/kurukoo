@@ -100,8 +100,9 @@ app.use((error: any, _req: express.Request, res: express.Response, next: express
   return next(error);
 });
 
-// Public system documentation must remain reachable before authenticated /api route boundaries.
+// Public system documentation and public placement resolution must remain reachable before authenticated /api route boundaries.
 app.use('/', systemRoutes);
+app.use('/', publicRoutes);
 
 app.use('/api', channelRoutes);
 app.use('/api', circleRoutes);
@@ -135,7 +136,6 @@ app.use('/api', safetyRoutes);
 app.use('/api', trustRoutes);
 app.use('/api/webrtc', webrtcRoutes);
 app.use('/', healthRoutes);
-app.use('/', publicRoutes);
 app.use('/api/pricing', pricingRoutes);
 app.use('/api', subscriptionRoutes);
 

@@ -35,7 +35,7 @@ import { getAllContent, getContentBySlug, saveContent, deleteContentBySlug, type
 import { getAdminControlPlaneStatus, listAdminFeatureFlags, updateAdminFeatureFlag, updateAdminRuntimeControl } from '../services/adminControlPlane.js';
 import { getSeoDashboard } from '../services/seoService.js';
 import { ECONOMIC_CATEGORIES } from '../services/skillFlows.js';
-import { createAdCampaign, getAdCampaigns, setAdCampaignStatus, type AdCampaignStatus } from '../services/adManager.js';
+import { createAdCampaign, getAdCampaigns, getCampaignPlacementMetrics, getPlacementMetrics, getProgrammaticAdProviderStatus, listAdPlacements, setAdCampaignStatus, setCampaignPlacements, updateAdPlacement, type AdCampaignStatus } from '../services/adManager.js';
 
 const router = Router();
 
@@ -712,8 +712,37 @@ router.get('/marketing', authenticateAdmin, async (_req: AuthRequest, res) => {
 
 // Campaign state remains owned by adManager; this admin projection does not imply advertiser onboarding, billing, or delivered impressions.
 router.get('/marketing/campaigns', authenticateAdmin, async (_req: AuthRequest, res) => {
-  try { res.json({ campaigns: await getAdCampaigns(), categories: ECONOMIC_CATEGORIES }); }
+  try { res.json({ campaigns: await getAdCampaigns(), campaignMetrics: await getCampaignPlacementMetrics(), categories: ECONOMIC_CATEGORIES, placements: await listAdPlacements() }); }
   catch (error) { res.status(500).json({ error: error instanceof Error ? error.message : 'Unable to load campaigns' }); }
+});
+
+router.get('/marketing/placements', authenticateAdmin, async (_req: AuthRequest, res) => {
+  try {
+    res.json({
+      placements: await listAdPlacements(),
+      metrics: await getPlacementMetrics(),
+      programmatic: getProgrammaticAdProviderStatus(),
+      boundary: 'Placement occupancy and event counts are canonical aggregate evidence. They do not establish advertiser billing, revenue, settlement, conversion, provider verification, stock, availability, or fulfilment.',
+    });
+  } catch (error) { res.status(500).json({ error: error instanceof Error ? error.message : 'Unable to load placement inventory' }); }
+});
+
+router.post('/marketing/placements/:id', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const placement = await updateAdPlacement(req.params.id, req.body || {});
+    if (!placement) return res.status(404).json({ error: 'Placement not found' });
+    res.json({ placement });
+  } catch (error) { res.status(400).json({ error: error instanceof Error ? error.message : 'Unable to update placement' }); }
+});
+
+router.post('/marketing/campaigns/:id/placements', authenticateAdmin, async (req: AuthRequest, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'A valid campaign id is required' });
+  try {
+    const campaign = await setCampaignPlacements(id, req.body?.placementIds);
+    if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+    res.json({ campaign });
+  } catch (error) { res.status(400).json({ error: error instanceof Error ? error.message : 'Unable to assign campaign placements' }); }
 });
 
 router.post('/marketing/campaigns', authenticateAdmin, async (req: AuthRequest, res) => {

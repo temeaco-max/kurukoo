@@ -128,3 +128,11 @@ export const providerCatalogueMutationRateLimit = createRateLimiter({
   keyPrefix: 'provider-catalogue-mutation',
   message: 'Too many product catalogue changes — try again shortly',
 });
+
+/** Public placement-event evidence is deliberately bounded to limit analytics abuse and artificial engagement. */
+export const placementEventRateLimit = createRateLimiter({
+  windowMs: 60_000,
+  max: 60,
+  keyPrefix: 'placement-event',
+  message: 'Too many placement events — try again shortly',
+});

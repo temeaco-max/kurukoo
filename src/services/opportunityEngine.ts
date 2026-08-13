@@ -1,6 +1,7 @@
 import { getDb, saveDb } from '../database.js';
 import { getIntentions } from './deferredRequestService.js';
-import { getAdCampaigns } from './adManager.js';
+import { resolveAdPlacement } from './adManager.js';
+import { getEconomicCategory } from './skillFlows.js';
 import { listPublicTopics } from './topicService.js';
 
 /**
@@ -24,6 +25,7 @@ export interface Opportunity {
   sourceType: 'deferred_intention' | 'ad_campaign' | 'topic';
   sourceId: string;
   disclosure?: string;
+  category?: string;
   expiresAt: string;
   createdAt?: string;
   updatedAt?: string;
@@ -123,6 +125,7 @@ async function deferredCandidates(phone: string): Promise<Opportunity[]> {
         status: 'sent' as const,
         sourceType: 'deferred_intention' as const,
         sourceId: String(item.id),
+        category: getEconomicCategory(String(item.skill || item.intent || '')) || undefined,
         expiresAt: opportunityExpiry(item.expires_at),
       };
     });
@@ -158,27 +161,29 @@ async function topicCandidates(phone: string, intentionText: string[]): Promise<
     }));
 }
 
-async function sponsoredCandidates(phone: string, intentionText: string[]): Promise<Opportunity[]> {
-  const haystack = intentionText.join(' ').toLowerCase();
-  if (!haystack) return [];
-  const campaigns = await getAdCampaigns();
-  return campaigns
-    .filter((campaign) => campaign.status === 'active' && campaign.targetKeyword && haystack.includes(campaign.targetKeyword.toLowerCase().trim()))
-    .map((campaign) => ({
-      phone,
-      type: 'daily_pick' as const,
-      title: cleanText(campaign.title, 'Sponsored suggestion', 160),
-      subtitle: `${cleanText(campaign.desc, 'A disclosed sponsored placement.', 260)} ${cleanText(campaign.disclosure, 'External advertisement', 120)}`,
-      ctaText: 'Discuss in Web Chat',
-      ctaLink: promptLink(`I am interested in ${cleanText(campaign.title, 'this sponsored placement', 120)}`),
-      urgency: 0.3,
-      businessValue: 0,
-      status: 'sent' as const,
-      sourceType: 'ad_campaign' as const,
-      sourceId: String(campaign.id),
-      disclosure: cleanText(campaign.disclosure, 'External advertisement', 120),
-      expiresAt: opportunityExpiry(undefined, 24),
-    }));
+async function sponsoredCandidates(phone: string, categories: string[]): Promise<Opportunity[]> {
+  const category = categories.find(Boolean);
+  const resolution = await resolveAdPlacement({
+    placementId: 'workspace_daily_picks_sponsor', category, safeContext: 'workspace_sponsor', device: 'desktop',
+  });
+  const item = resolution.item;
+  if (!item || item.source !== 'campaign' || !item.campaignId) return [];
+  return [{
+    phone,
+    type: 'daily_pick' as const,
+    title: cleanText(item.title, 'Sponsored suggestion', 160),
+    subtitle: `${cleanText(item.description, 'A disclosed sponsored placement.', 260)} ${cleanText(item.boundary, 'External advertisement', 280)}`,
+    ctaText: cleanText(item.ctaText, 'Review in Web Chat', 80),
+    ctaLink: cleanText(item.ctaLink, '/chat', 2048),
+    urgency: 0.3,
+    businessValue: 0,
+    status: 'sent' as const,
+    sourceType: 'ad_campaign' as const,
+    sourceId: String(item.campaignId),
+    disclosure: cleanText(item.disclosure, 'Sponsored', 120),
+    category,
+    expiresAt: opportunityExpiry(undefined, 24),
+  }];
 }
 
 async function storeOpportunity(opportunity: Opportunity): Promise<Opportunity> {
@@ -230,33 +235,34 @@ export async function generateProactiveOpportunities(phone: string): Promise<Opp
   const deferred = await deferredCandidates(owner);
   const intentText = deferred.map((item) => item.title);
   const topics = await topicCandidates(owner, intentText);
-  const sponsored = await sponsoredCandidates(owner, intentText);
-  const candidates = [...deferred, ...topics, ...sponsored].map((item) => ({ ...item, score: score(item) }))
+  // Sponsorship receives only canonical deferred-request categories; raw request text is never an advertising payload.
+  const sponsored = await sponsoredCandidates(owner, deferred.map((item) => item.category || '').filter(Boolean));
+  const candidates = [...deferred, ...topics].map((item) => ({ ...item, score: score(item) }))
     .sort((left, right) => (right.score || 0) - (left.score || 0)).slice(0, 3);
   const stored: Opportunity[] = [];
   for (const candidate of candidates) stored.push(await storeOpportunity(candidate));
-  return stored;
+  // Campaign items remain transient: a pause, budget cap, or inventory change removes them immediately.
+  return [...stored, ...sponsored];
 }
 
 export async function getOpportunitiesForFeed(phone: string): Promise<Opportunity[]> {
   const owner = String(phone || '').trim();
   if (!owner) throw new Error('Authenticated owner is required');
   await initOpportunityTable();
-  await generateProactiveOpportunities(owner);
+  const currentCandidates = await generateProactiveOpportunities(owner);
   const db = await getDb();
   const stmt = db.prepare(`SELECT * FROM proactive_opportunities
     WHERE phone=? AND status != 'dismissed' AND (expires_at IS NULL OR datetime(expires_at) > datetime('now'))
     ORDER BY CASE status WHEN 'sent' THEN 0 WHEN 'viewed' THEN 1 ELSE 2 END, created_at DESC LIMIT 15`);
   stmt.bind([owner]);
-  const activeCampaignIds = new Set((await getAdCampaigns()).filter((campaign) => campaign.status === 'active').map((campaign) => String(campaign.id)));
   const results: Opportunity[] = [];
   while (stmt.step()) {
     const opportunity = rowToOpportunity(stmt.getAsObject() as Record<string, unknown>);
-    if (opportunity.sourceType === 'ad_campaign' && !activeCampaignIds.has(opportunity.sourceId)) continue;
+    if (opportunity.sourceType === 'ad_campaign') continue;
     results.push(opportunity);
   }
   stmt.free();
-  return results;
+  return [...results, ...currentCandidates.filter((item) => item.sourceType === 'ad_campaign')];
 }
 
 /** Records the user interaction; the client follows the already-disclosed CTA separately. */
