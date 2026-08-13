@@ -1,0 +1,35 @@
+name: Chat correctness
+
+on:
+  push:
+    branches:
+      - main
+      - 'integration/**'
+  pull_request:
+    paths:
+      - 'src/routes/chatRouter.ts'
+      - 'src/services/agentRuntime.ts'
+      - 'src/services/intentRouter.ts'
+      - 'src/services/agenticStorefront.ts'
+      - 'src/services/chatConversationService.ts'
+      - 'src/services/reminderService.ts'
+      - 'scripts/test-chat-correctness.ts'
+      - '.github/workflows/chat-correctness.yml'
+      - 'package.json'
+      - 'package-lock.json'
+
+permissions:
+  contents: read
+
+jobs:
+  chat-correctness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx tsx scripts/test-chat-correctness.ts
