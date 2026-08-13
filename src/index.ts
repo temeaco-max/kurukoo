@@ -77,7 +77,7 @@ app.use((req, res, next) => {
   const query = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
   return res.redirect(302, `${target}${query}`);
 });
-app.use(express.static(path.join(process.cwd(), 'public'), { index: false, fallthrough: true }));
+app.use(express.static(path.join(process.cwd(), 'public'), { index: false, fallthrough: true, redirect: false }));
 app.use(express.json({ limit: process.env.CHAT_ATTACHMENT_BODY_LIMIT || '35mb', verify: (req, _res, buf) => { (req as any).rawBody = Buffer.from(buf); } }));
 
 // Public system documentation must remain reachable before authenticated /api route boundaries.

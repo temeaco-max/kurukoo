@@ -1,62 +1,73 @@
-# Kurukoo QR Context Architecture
+# Kurukoo QR architecture
 
-## Product boundary
+QR is an entry and continuity mechanism for the existing Kurukoo relationship. It is **not** a second registration, request, payment, referral, points, or channel system.
 
-QR is a **contextual entry mechanism** into the one canonical Kurukoo conversation. It is not authentication, a QR conversation engine, a referral engine, a Points engine, a payment mechanism, a marketplace, a channel adapter, or a voice system.
+## Supported context types
 
-```text
-QR scan → /start → signed bounded context validation → existing guest conversation
-→ one contextual greeting → text or Web Voice → FastText → intentRouter
-→ existing skillFlows → existing Economic Request lifecycle when a user later asks for work
-```
+A Kurukoo QR may resolve to a public HTTPS URL with an opaque context identifier and optional contextual parameters:
 
-A scan has no economic side effect. Only a subsequent ordinary user message can pass through FastText, `intentRouter`, `skillFlows`, and the existing Economic Request lifecycle.
+- `public` — generic Kurukoo entry
+- `referral` — referral invitation
+- `contributor` — contributor onboarding/invitation
+- `network` — provider/business/physical-agent/network entry
+- `offer` — known offer or promotion
+- `product` — product/service context
+- `location` — physical Kurukoo location/signage
+- `channel` — channel connection hand-off
+- `continue` — short-lived cross-device continuation
 
-## Reconciliation audit
+Example public pattern:
 
-| Component | Status | Reconciled behaviour |
-|---|---|---|
-| `qrContextService` | **IMPLEMENTED** | Owns bounded context parsing, credential-like key rejection, HMAC signing, expiry, tamper rejection, opaque entry URLs, contextual copy, and post-auth referral registration. |
-| `GET /start` | **IMPLEMENTED** | Verifies an opaque signed context and forwards only `qr` to `/chat`; malformed or expired values redirect to a safe chat error state. |
-| `POST /api/qr/activate` | **IMPLEMENTED** | Requires a verified token, reuses the owned canonical conversation, persists one greeting in the existing message ledger, and is idempotent for the same QR activation. |
-| `POST /api/qr/generate` | **IMPLEMENTED** | Authenticated generator of a signed `/start?qr=…` URL and QR SVG. Referral codes are created through the existing referral service. |
-| `/referral-qr/` | **IMPLEMENTED** | Generates through the canonical API and opens only same-origin `/start` URLs after scanning. |
-| `referralService` | **IMPLEMENTED** | Remains the sole referral registration and qualification authority. Its stale parallel QR URL builder was removed. |
-| Points | **IMPLEMENTED** | QR activation neither invokes Points nor creates a qualifying referral reward. Referral registration remains `registered` until the existing qualification flow applies a reward. |
-| Channel registry | **IMPLEMENTED** | Adapter credential checks determine whether a channel context may say a channel is configured; otherwise it explicitly says the channel is not connected. |
-| Chat conversation creation | **IMPLEMENTED** | `ensureConversation` reuses a supplied owned conversation or the current conversation for the same guest/account; no QR-specific conversation table exists. |
-| Guest session migration | **IMPLEMENTED** | Canonical conversation and message ownership migrate to the verified phone; browser OTP and in-chat OTP both run post-migration QR referral attribution. |
-| FastText and `intentRouter` | **IMPLEMENTED** | QR adds only a persisted contextual greeting. Subsequent text uses the existing classifier and router without a QR intent path. |
-| Web Voice adapter | **IMPLEMENTED** | Reads and sends the same `kurukoo_conversation_id`; QR does not modify or duplicate the free browser voice implementation. |
+`https://kurukoo.ai/start?context=referral&ref=ABC123`
 
-## Context model and security
+The client treats these values as context only. It does not grant trust, provider verification, points, payment, account access, or channel connectivity.
 
-`QrContext` supports `referral`, `contributor`, `network`, `offer`, `product`, `location`, `channel`, and `public`. Values are type-checked, character-restricted, and length-bounded. The parser rejects unknown keys and credential-like keys, including OTPs, passwords, cookies, session identifiers, API keys, payment credentials, raw contact data, and voice tokens.
+## Guest-first onboarding
 
-Generated URLs use only an opaque HMAC-signed token:
+Scanning must preserve the existing conversation-first identity model:
 
-```text
-/start?qr=<opaque-token>
-```
+`scan -> contextual guest conversation -> protected/durable action -> name -> phone -> OTP -> authenticated profile`
 
-The token contains a bounded context and expiration timestamp. `/start` and `/api/qr/activate` both verify it, reject tampering or expiry, and never expose raw context values in the URL. QR scanning never opens an external destination automatically.
+A QR code must never contain a password, session cookie, authentication credential, payment credential, or raw personal information.
 
-## Conversation, referral, and Points boundaries
+## Referral integration
 
-Activation persists the contextual greeting through `appendChatMessage` with QR metadata in the existing `messages` and `chat_message_meta` tables. The metadata includes a non-reversible activation hash; reopening the same QR reuses the same greeting instead of adding another one. The arrival banner is rendered once for the activation and removed from the URL after activation.
+The existing referral service remains the authority for referral attribution and Points rewards. QR is only the acquisition/attribution entry point.
 
-A referral QR can register attribution **only after** the guest conversation has migrated through normal verified identity. Both OTP paths call `applyQrReferralAttribution` after migration. That function delegates to `trackReferral`, which records a `registered` referral and does not award Points. Existing qualification is still required before the referral service can upgrade status and award a reward.
+`referral QR -> guest conversation -> authenticated identity -> server-side referral attribution -> existing referral/Points engine`
 
-## Channel and voice truthfulness
+The client must never award Points merely because a QR was scanned or a referral link was opened. Referral rewards must continue to be granted only by the existing server-side referral rules and verified qualifying event.
 
-A channel QR remains a contextual web entry. Web is available in the browser. WhatsApp, Telegram, SMS, and USSD are described as configured only when their existing adapters have the required credentials; otherwise the user is told that the channel is not connected and can continue in Web Chat.
+## Contributors and agent networks
 
-Web Voice remains independent of QR. It starts a normal voice session with the active `kurukoo_conversation_id`, so a QR-originated conversation can immediately continue by voice while retaining the same memory, transcript, and request boundaries.
+A contributor or agent-network QR can open a contextual conversation:
 
-## Validation coverage
+`QR -> contributor/network context -> Kurukoo conversation -> existing contributor/provider/offer/request capability`
 
-`scripts/test-qr-context.ts` exercises all supported context families, signed `/start` handling, expiry and tampering rejection, sensitive metadata rejection, repeated activation idempotence, no scan-time Economic Request creation, no scan-time Points path, same-origin scanning, guest-to-OTP migration, post-auth referral registration, and QR-to-voice conversation handoff.
+An agent network may distribute or promote a QR for onboarding, a verified campaign, a known offer, or an approved Points-related action. The QR itself does not make the agent verified and does not create a new commerce engine.
 
-## Remaining deployment dependencies
+If an agent sells a product, service, or Points package, the QR should resolve to the existing offer/Economic Request/cart/payment architecture. Never represent a QR scan as a completed purchase.
 
-QR contextual entry has no external dependency. Channel-context wording reflects configuration only: WhatsApp requires `WHATSAPP_TOKEN` and `WHATSAPP_PHONE_NUMBER_ID`; Telegram requires `TELEGRAM_BOT_TOKEN`; SMS and USSD require the configured Africa's Talking credentials. Web Voice remains available only when its existing server-side Gemini configuration is enabled; the QR flow never creates or exposes a voice credential.
+## Channels
+
+A channel QR may start a connection hand-off for a user's chosen channel, for example:
+
+`QR -> context=channel&channel=whatsapp -> conversation -> channel connection flow`
+
+`QR -> context=channel&channel=telegram -> conversation -> channel connection flow`
+
+The UI must check the existing channel registry/configuration before saying a channel is connected. If an adapter is unavailable, the product says `Not connected` or `Coming soon`; it must not simulate a successful connection.
+
+## Cross-device continuation
+
+A future continuation QR should contain only a short-lived, single-use opaque server token. Never encode the user's authenticated session or conversation data directly in the QR.
+
+## Security and trust
+
+- Accept only HTTPS Kurukoo URLs and approved Kurukoo hosts.
+- Treat all QR query parameters as untrusted input.
+- Limit parameter lengths.
+- Do not auto-execute payments, dispatches, external calls, or account changes from a scan.
+- Show the resolved context before continuing where appropriate.
+- Preserve Economic Request and skillFlows as the canonical transaction model.
+- Preserve the existing referral, Points, contributor, provider, offer, and channel services rather than duplicating them.
