@@ -29,9 +29,11 @@ import {
   deleteSchemaTemplate,
   getInternalLinks,
   addInternalLink,
+  updateInternalLink,
   deleteInternalLink,
   getBacklinks,
   addBacklink,
+  updateBacklink,
   deleteBacklink,
   getContentCalendar,
   addContentCalendar,
@@ -39,6 +41,7 @@ import {
   deleteContentCalendar,
   getContentBriefs,
   addContentBrief,
+  updateContentBrief,
   deleteContentBrief,
   get404Log,
   ignore404,
@@ -50,6 +53,7 @@ import {
   getRankings,
   getOrphanPages,
   getImageMeta,
+  upsertImageMeta,
   deleteImageMeta,
 } from '../services/seoService.js';
 
@@ -223,7 +227,7 @@ router.post('/redirects', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
     const b = req.body || {};
     await addRedirect(
-      String(b.from_pattern || ''),
+      String(b.from_url || b.from_pattern || ''),
       String(b.to_url || ''),
       Number(b.status_code) || 301,
       !!b.is_regex
@@ -303,6 +307,16 @@ router.post('/internal-links', authenticateAdmin, async (req: AuthRequest, res) 
   }
 });
 
+router.put('/internal-links/:id', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    await updateInternalLink(Number(req.params.id), req.body || {});
+    res.json({ success: true });
+  } catch (e) {
+    console.error('SEO internal link update error:', e);
+    res.status(500).json({ error: 'Failed to update internal link' });
+  }
+});
+
 router.delete('/internal-links/:id', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
     await deleteInternalLink(Number(req.params.id));
@@ -331,6 +345,16 @@ router.post('/backlinks', authenticateAdmin, async (req: AuthRequest, res) => {
   } catch (e) {
     console.error('SEO backlink add error:', e);
     res.status(500).json({ error: 'Failed to add backlink' });
+  }
+});
+
+router.put('/backlinks/:id', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    await updateBacklink(Number(req.params.id), req.body || {});
+    res.json({ success: true });
+  } catch (e) {
+    console.error('SEO backlink update error:', e);
+    res.status(500).json({ error: 'Failed to update backlink' });
   }
 });
 
@@ -400,6 +424,16 @@ router.post('/content-briefs', authenticateAdmin, async (req: AuthRequest, res) 
   } catch (e) {
     console.error('SEO content brief add error:', e);
     res.status(500).json({ error: 'Failed to add content brief' });
+  }
+});
+
+router.put('/content-briefs/:id', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    await updateContentBrief(Number(req.params.id), req.body || {});
+    res.json({ success: true });
+  } catch (e) {
+    console.error('SEO content brief update error:', e);
+    res.status(500).json({ error: 'Failed to update content brief' });
   }
 });
 
@@ -528,6 +562,18 @@ router.post('/image-meta/generate-alt', authenticateAdmin, async (req: AuthReque
   } catch (e: any) {
     console.error('SEO alt-text generation error:', e);
     res.status(500).json({ error: e.message || 'Failed to generate alt text' });
+  }
+});
+
+router.post('/image-meta', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const body = req.body || {};
+    if (!String(body.image_path || body.imagePath || '').trim()) return res.status(400).json({ error: 'image_path is required' });
+    await upsertImageMeta(body);
+    res.json({ success: true });
+  } catch (e: any) {
+    console.error('SEO image meta save error:', e);
+    res.status(500).json({ error: 'Failed to save image metadata' });
   }
 });
 

@@ -1,32 +1,10 @@
-<%- include('../_partials/head') %>
+<%- include('../_partials/head', { seo, reqPath }) %>
 <%- include('../_partials/nav') %>
 
 <main class="container article-main">
-    <div class="article-back-bar">
-        <a href="/resources" class="article-back-link">&larr; All Resources</a>
-    </div>
-    <div id="article-body" class="article-content-card">
-        <div class="muted-info-text">Loading guide…</div>
-    </div>
+  <div class="article-back-bar"><a href="/resources" class="article-back-link">← All resources</a></div>
+  <article id="article-body" class="article-content-card" data-resource-slug="<%= slug %>"><p class="muted-info-text">Loading guide…</p></article>
 </main>
 
-<script>
-(async function(){
-    const body = document.getElementById('article-body');
-    const slug = '<%= slug %>';
-    try {
-        const res = await fetch(`/api/resources/${slug}`);
-        const data = await res.json();
-        if (!data.title) { body.innerHTML = '<div class="muted-info-text">Guide not found. <a href="/resources" class="article-back-link">Browse all guides</a>.</div>'; return; }
-        body.innerHTML = `
-            <div class="resource-card-cat text-terracotta">${data.category||'Guide'}</div>
-            <h1 class="article-title-h1">${data.title}</h1>
-            <div class="article-date-meta">${data.updated_at ? 'Updated ' + new Date(data.updated_at).toLocaleDateString() : ''}</div>
-            <div class="article-body-text">${data.body || data.excerpt || ''}</div>`;
-    } catch(e) {
-        body.innerHTML = '<div class="muted-info-text">Could not load this guide.</div>';
-    }
-})();
-</script>
-
+<script src="/js/kurukoo-resource-article.js?v=1" defer></script>
 <%- include('../_partials/footer') %>

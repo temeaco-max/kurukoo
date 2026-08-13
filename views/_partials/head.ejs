@@ -6,11 +6,20 @@
     <%
         const seoTitle = (typeof seo !== 'undefined' && seo.title) ? seo.title : 'Kurukoo — Tell us what you need.';
         const seoDesc = (typeof seo !== 'undefined' && seo.meta_description) ? seo.meta_description : 'Kurukoo is a conversational fulfillment network. Tell us what you need, and we figure out who or what can fulfil it.';
-        const seoCanonical = (typeof seo !== 'undefined' && seo.canonical) ? seo.canonical : 'https://kurukoo.com' + (typeof reqPath !== 'undefined' ? reqPath : '');
+        const seoCanonical = (typeof seo !== 'undefined' && (seo.canonical_url || seo.canonical)) ? (seo.canonical_url || seo.canonical) : 'https://kurukoo.com' + (typeof reqPath !== 'undefined' ? reqPath : '');
+        const seoOgTitle = (typeof seo !== 'undefined' && seo.og_title) ? seo.og_title : seoTitle;
+        const seoOgDesc = (typeof seo !== 'undefined' && seo.og_description) ? seo.og_description : seoDesc;
+        const seoOgImage = (typeof seo !== 'undefined' && seo.og_image) ? seo.og_image : 'https://kurukoo.com/assets/icon-512.png';
     %>
     <title><%= seoTitle %></title>
     <meta name="description" content="<%= seoDesc %>">
     <link rel="canonical" href="<%= seoCanonical %>">
+    <% if (typeof seo !== 'undefined' && seo.keywords) { %><meta name="keywords" content="<%= seo.keywords %>"><% } %>
+    <meta property="og:title" content="<%= seoOgTitle %>">
+    <meta property="og:description" content="<%= seoOgDesc %>">
+    <meta property="og:url" content="<%= seoCanonical %>">
+    <meta property="og:image" content="<%= seoOgImage %>">
+    <meta name="twitter:card" content="summary_large_image">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

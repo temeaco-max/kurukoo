@@ -1,164 +1,58 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Kurukoo Admin - Content & SEO</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/site.css">
-
-  <link rel="stylesheet" href="/css/legacy-inline-migration.css?v=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Content studio · Kurukoo Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/site.css">
+  <link rel="stylesheet" href="/css/admin-console.css">
 </head>
-<body>
-    <div class="header-bar">
-        <div class="logo"><span>Kurukoo</span> Admin</div>
-        <nav>
-            <a href="/admin/dashboard.html">Console</a>
-            <a href="/admin/content.html" class="active">Content & SEO</a>
-        </nav>
+<body class="admin-shell admin-workbench">
+  <a class="admin-skip-link" href="#content-main">Skip to main content</a>
+  <header class="admin-workbench-header">
+    <a class="admin-workbench-brand" href="/admin/dashboard.html"><img src="/assets/brand/logo-icon.svg" alt="" width="28" height="28">Kurukoo <strong>Admin</strong></a>
+    <nav class="admin-workbench-nav" aria-label="Admin tools"><a href="/admin/dashboard.html">Control room</a><a class="is-current" href="/admin/content.html" aria-current="page">Content studio</a><a href="/admin/seo.html">SEO studio</a><a href="/" target="_blank" rel="noopener">View public site</a></nav>
+    <button class="admin-button admin-button--secondary" id="content-sign-out" type="button">Sign out</button>
+  </header>
+
+  <main class="admin-workbench-main" id="content-main">
+    <header class="admin-workbench-intro">
+      <div><p class="admin-eyebrow">Canonical publishing</p><h1>Content studio</h1><p>Create useful help, policy, page, and blog records in the same CMS that powers public resources. Saving a record does not invent search rank, a live service, or an external operational outcome.</p></div>
+      <a class="admin-button admin-button--secondary" href="/admin/seo.html">Open SEO studio</a>
+    </header>
+
+    <p class="admin-workbench-status" id="content-status" role="status">Loading content repository…</p>
+    <div class="admin-workbench-grid">
+      <section class="admin-panel admin-content-editor" aria-labelledby="content-editor-title">
+        <div class="admin-panel__header"><div><p class="admin-eyebrow">Draft and publish</p><h2 id="content-editor-title">Content record</h2></div><span class="admin-panel__meta" id="content-mode">New record</span></div>
+        <form id="content-form" class="admin-form">
+          <label><span>Title</span><input id="content-title" name="title" maxlength="180" required placeholder="Clear, factual title"></label>
+          <div class="admin-form-grid">
+            <label><span>Slug</span><input id="content-slug" name="slug" maxlength="120" pattern="[a-z0-9-]+" required placeholder="for-example-a-guide"><small>Lowercase letters, numbers, and hyphens only.</small></label>
+            <label><span>Content type</span><select id="content-type" name="type"><option value="help">Help guide</option><option value="page">Resource page</option><option value="legal">Policy / legal</option><option value="blog">Blog article</option></select></label>
+          </div>
+          <label><span>Author</span><input id="content-author" name="author" maxlength="120" required value="Kurukoo Team"></label>
+          <label><span>Body</span><textarea id="content-body" name="body" rows="16" maxlength="50000" required placeholder="Write plain Markdown. Keep operational claims evidence-based."></textarea><small>Use plain Markdown. The public resource reader renders text safely.</small></label>
+          <div class="admin-form-actions"><button class="admin-button" id="content-save" type="submit">Save content</button><button class="admin-button admin-button--secondary" id="content-generate" type="button">Generate draft</button><button class="admin-button admin-button--secondary" id="content-reset" type="button">New record</button></div>
+        </form>
+      </section>
+
+      <aside class="admin-panel admin-content-preview" aria-labelledby="content-preview-title">
+        <div class="admin-panel__header"><div><p class="admin-eyebrow">Review before publishing</p><h2 id="content-preview-title">Safe preview</h2></div></div>
+        <article id="content-preview" class="admin-markdown-preview"><p class="admin-empty-state">Your draft preview will appear here.</p></article>
+        <div class="admin-content-note"><strong>Public route</strong><span id="content-public-route">Save a help, page, or legal record to make it available through Resources.</span></div>
+      </aside>
     </div>
 
-    <div class="container">
-        <div class="card-box">
-            <h2>Create / Edit Content</h2>
-            <p class="legacy-inline-8fjpyn">
-                Use this tool to manage SEO pages or draft blog posts. <br>
-                <strong>Tip:</strong> Edit the item with slug <code>rotating-banner-texts</code> to change the fading announcement messages at the top of the homepage (one message per line, up to 10 lines).
-            </p>
-            <form id="content-form" onsubmit="saveContent(event)">
-                <div class="form-group">
-                    <label>Slug (URL Path)</label>
-                    <input type="text" id="c-slug" placeholder="e.g. how-to-save-money" required>
-                </div>
-                <div class="form-group">
-                    <label>Title (SEO H1 / Meta Title)</label>
-                    <input type="text" id="c-title" required>
-                </div>
-                <div class="form-group">
-                    <label>Type</label>
-                    <select id="c-type">
-                        <option value="blog">Blog Post</option>
-                        <option value="seo">SEO Landing Page</option>
-                        <option value="legal">Legal / Policy</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Author</label>
-                    <input type="text" id="c-author" value="Kurukoo Team" required>
-                </div>
-                <div class="form-group">
-                    <label>Content Body (HTML Supported)</label>
-                    <textarea id="c-body" rows="10" required></textarea>
-                </div>
-                <div class="legacy-inline-1n59jlh">
-                    <button type="submit" class="btn">Save Content</button>
-                    <button type="button" class="btn secondary" onclick="autoGenerate()">AI Auto-Draft</button>
-                </div>
-            </form>
-        </div>
-
-        <div class="card-box">
-            <h3>Content Repository</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Slug</th>
-                        <th>Type</th>
-                        <th>Updated</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="content-tbody">
-                    <tr><td colspan="4">Loading...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <script>
-        function loadContent() {
-            fetch('/api/admin/content').then(r => r.json()).then(data => {
-                document.getElementById('content-tbody').innerHTML = data.map(c => `
-                    <tr>
-                        <td><strong>${c.slug}</strong></td>
-                        <td>${c.type}</td>
-                        <td class="legacy-inline-1341fo6">${c.updated_at}</td>
-                        <td>
-                            <button class="btn legacy-inline-l07m83" onclick="editItem('${c.slug}')">Edit</button>
-                            <a href="/admin/seo.html?slug=${c.slug}" class="btn secondary legacy-inline-zfisg2">SEO</a>
-                        </td>
-                    </tr>
-                `).join('') || '<tr><td colspan="4">No content found.</td></tr>';
-            });
-        }
-
-        function saveContent(e) {
-            e.preventDefault();
-            const payload = {
-                slug: document.getElementById('c-slug').value,
-                title: document.getElementById('c-title').value,
-                body: document.getElementById('c-body').value,
-                type: document.getElementById('c-type').value,
-                author: document.getElementById('c-author').value
-            };
-
-            fetch('/api/admin/content', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }).then(() => {
-                loadContent();
-                alert('Content saved!');
-            });
-        }
-
-        function autoGenerate() {
-            const topic = document.getElementById('c-title').value;
-            if (!topic) {
-                alert('Please enter a Title to serve as the topic for AI generation.');
-                return;
-            }
-
-            const btn = document.querySelector('.btn.secondary');
-            const originalText = btn.innerText;
-            btn.innerText = 'Generating...';
-            btn.disabled = true;
-
-            fetch('/api/admin/content/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ topic })
-            }).then(r => r.json()).then(data => {
-                if (data.success) {
-                    document.getElementById('c-body').value = data.generatedBody;
-                    let slug = topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                    if (!document.getElementById('c-slug').value) {
-                        document.getElementById('c-slug').value = slug;
-                    }
-                } else {
-                    alert('Generation failed.');
-                }
-            }).finally(() => {
-                btn.innerText = originalText;
-                btn.disabled = false;
-            });
-        }
-
-        function editItem(slug) {
-            fetch('/api/admin/content/' + slug).then(r => r.json()).then(item => {
-                if (item) {
-                    document.getElementById('c-slug').value = item.slug;
-                    document.getElementById('c-title').value = item.title;
-                    document.getElementById('c-type').value = item.type;
-                    document.getElementById('c-author').value = item.author;
-                    document.getElementById('c-body').value = item.body;
-                    alert("Content loaded for editing.");
-                } else {
-                    alert("Failed to load content.");
-                }
-            });
-        }
-
-        window.onload = loadContent;
-    </script>
+    <section class="admin-panel admin-content-repository" aria-labelledby="content-repository-title">
+      <div class="admin-panel__header"><div><p class="admin-eyebrow">Existing records</p><h2 id="content-repository-title">Content repository</h2></div><div class="admin-table-controls"><label class="admin-field-inline"><span>Filter</span><select id="content-filter"><option value="all">All types</option><option value="help">Help guides</option><option value="page">Resource pages</option><option value="legal">Policies / legal</option><option value="blog">Blog articles</option></select></label><button class="admin-button admin-button--secondary" id="content-refresh" type="button">Refresh</button></div></div>
+      <div class="admin-table-wrap"><table class="admin-data-table"><thead><tr><th scope="col">Title</th><th scope="col">Slug</th><th scope="col">Type</th><th scope="col">Updated</th><th scope="col"><span class="admin-sr-only">Actions</span></th></tr></thead><tbody id="content-list"><tr><td class="admin-empty-state" colspan="5">Loading content…</td></tr></tbody></table></div>
+    </section>
+  </main>
+  <script src="/admin/content.js" defer></script>
 </body>
 </html>

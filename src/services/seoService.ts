@@ -666,6 +666,15 @@ export async function addInternalLink(sourceOrData: any, target?: string, anchor
     saveDb();
 }
 
+export async function updateInternalLink(id: number, data: any) {
+    await initSeoTables();
+    const db = await getDb();
+    db.run('UPDATE seo_internal_links SET source_url = COALESCE(?, source_url), target_url = COALESCE(?, target_url), anchor_text = COALESCE(?, anchor_text), link_type = COALESCE(?, link_type) WHERE id = ?', [
+        data.source_url || null, data.target_url || null, data.anchor_text || null, data.link_type || null, id
+    ]);
+    saveDb();
+}
+
 export async function deleteInternalLink(id: number) {
     await initSeoTables();
     const db = await getDb();
@@ -674,9 +683,20 @@ export async function deleteInternalLink(id: number) {
 }
 
 export async function getOrphanPages() {
-    return [
-        { url_path: '/explore/niche-skills', reason: 'No inbound internal links found' }
-    ];
+    await initSeoTables();
+    const db = await getDb();
+    const stmt = db.prepare(`
+        SELECT p.url_path, 0 AS internal_inlinks
+        FROM seo_pages p
+        WHERE NOT EXISTS (
+          SELECT 1 FROM seo_internal_links l WHERE l.target_url = p.url_path
+        )
+        ORDER BY p.url_path ASC
+    `);
+    const pages: any[] = [];
+    while (stmt.step()) pages.push(stmt.getAsObject());
+    stmt.free();
+    return pages;
 }
 
 export async function getKeywords() {
@@ -727,11 +747,9 @@ export async function deleteKeyword(id: number) {
 }
 
 export async function getRankings() {
-    return [
-        { keyword: 'request plumber lagos', position: 3, url: '/explore/repairs-maintenance' },
-        { keyword: 'okada ride booking app', position: 1, url: '/explore/transport-mobility' },
-        { keyword: 'uk life admin reminder bot', position: 2, url: '/explore/digital-services' }
-    ];
+    // Search-console or rank-tracker ingestion is not configured. Return an explicit
+    // empty collection rather than inventing positions, clicks, or search visibility.
+    return [];
 }
 
 export async function getBacklinks() {
@@ -766,6 +784,15 @@ export async function addBacklink(sourceOrData: any, target?: string, anchor?: s
     }
 
     db.run('INSERT INTO seo_backlinks (source_url, target_url, anchor_text, domain_authority) VALUES (?, ?, ?, ?)', [src, tgt, anch, da]);
+    saveDb();
+}
+
+export async function updateBacklink(id: number, data: any) {
+    await initSeoTables();
+    const db = await getDb();
+    db.run('UPDATE seo_backlinks SET source_url = COALESCE(?, source_url), target_url = COALESCE(?, target_url), anchor_text = COALESCE(?, anchor_text), domain_authority = COALESCE(?, domain_authority) WHERE id = ?', [
+        data.source_url || null, data.target_url || null, data.anchor_text || null, data.domain_authority !== undefined ? Number(data.domain_authority) : null, id
+    ]);
     saveDb();
 }
 
@@ -830,6 +857,15 @@ export async function addContentBrief(data: any) {
     const db = await getDb();
     db.run('INSERT INTO seo_content_briefs (title, target_keyword, target_audience, outline) VALUES (?, ?, ?, ?)', [
         data.title, data.target_keyword, data.target_audience || 'Everyday hustlers', data.outline || ''
+    ]);
+    saveDb();
+}
+
+export async function updateContentBrief(id: number, data: any) {
+    await initSeoTables();
+    const db = await getDb();
+    db.run('UPDATE seo_content_briefs SET title = COALESCE(?, title), target_keyword = COALESCE(?, target_keyword), target_audience = COALESCE(?, target_audience), outline = COALESCE(?, outline), search_intent = COALESCE(?, search_intent), recommended_word_count = COALESCE(?, recommended_word_count) WHERE id = ?', [
+        data.title || null, data.target_keyword || null, data.target_audience || null, data.outline || null, data.search_intent || null, data.recommended_word_count !== undefined ? Number(data.recommended_word_count) : null, id
     ]);
     saveDb();
 }
@@ -990,9 +1026,9 @@ export async function generateFaqsForPageWithAI(urlPath: string, topicName?: str
     if (faqs.length === 0) {
         faqs = [
             { question: `How do I request ${topic} on Kurukoo?`, answer: `Open Web Chat, specify what you need, and Kurukoo will show the supported request path when eligible provider data is available.` },
-            { question: `Are ${topic} providers verified on Kurukoo?`, answer: `Provider identity and authorization are evaluated through the platform's verification and capability boundaries; provider type alone does not grant authorization.` },
-            { question: `How much does ${topic} cost?`, answer: `Prices are transparent with funds held safely in escrow until you confirm satisfaction.` },
-            { question: `Where is ${topic} available?`, answer: `Availability depends on the configured service area and verified provider data returned for the request.` }
+            { question: `Are ${topic} providers verified on Kurukoo?`, answer: `Provider identity and authorization are evaluated through Kurukoo's verification and capability boundaries. A provider type alone does not grant authorization, and verification is shown only when recorded evidence supports it.` },
+            { question: `How much does ${topic} cost?`, answer: `Pricing is shown only when a relevant provider or supported path records a quote. Kurukoo does not present an estimate as a confirmed price.` },
+            { question: `Where is ${topic} available?`, answer: `Availability depends on the relevant recorded provider data and supported service area. Kurukoo does not claim availability until that evidence exists.` }
         ];
     }
 
@@ -1016,7 +1052,7 @@ export async function generateContentBriefWithAI(targetKeyword: string) {
             title: `Complete Guide to ${targetKeyword}`,
             search_intent: 'informational',
             recommended_word_count: 1800,
-            outline: `1. Introduction\n2. Key Benefits of ${targetKeyword}\n3. How to Choose a Verified Provider\n4. Cost Breakdown & Escrow Protection\n5. Frequently Asked Questions`
+            outline: `1. Introduction\n2. What to consider about ${targetKeyword}\n3. How to evaluate recorded provider information\n4. Quote, payment, and fulfilment boundaries\n5. Frequently asked questions`
         };
     }
 

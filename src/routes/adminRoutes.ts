@@ -7,7 +7,7 @@
  * - Reuses existing services (aiAgentService, pricingService, commissionService,
  *   analytics, content, disputes, etc.). No parallel admin DB.
  *
- * SEO admin (/api/admin/seo/*) stays in index.ts for a follow-up extraction batch.
+ * SEO administration is a separately mounted route owner that reuses seoService.
  */
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
@@ -31,6 +31,7 @@ import { isProviderEntityType } from '../services/providerEntity.js';
 import { ensureProviderVerificationSchema, setProviderVerification } from '../services/providerVerification.js';
 import { getPilotDashboard } from '../services/pilotObservability.js';
 import { getCommercialMetrics, getMarketingMetrics } from '../services/commercialMetrics.js';
+import { getAllContent, getContentBySlug, saveContent, deleteContentBySlug, type ContentItem } from '../services/contentManager.js';
 
 const router = Router();
 
@@ -658,16 +659,15 @@ router.get('/scam_reports', authenticateAdmin, async (_req: AuthRequest, res) =>
 
 // ── Content ─────────────────────────────────────────────────────────────
 
+const CONTENT_TYPES = new Set<ContentItem['type']>(['blog', 'help', 'legal', 'page']);
+const contentSlug = (value: unknown) => String(value || '').trim().toLowerCase().replace(/^\/+|\/+$/g, '');
+
 router.get('/content', authenticateAdmin, async (_req: AuthRequest, res) => {
   try {
-    const db = await getDb();
-    const stmt = db.prepare(
-      `SELECT slug, title, type, author, updated_at FROM content ORDER BY updated_at DESC`
-    );
-    const content: any[] = [];
-    while (stmt.step()) content.push(stmt.getAsObject());
-    stmt.free();
-    res.json(content);
+    const content = await getAllContent();
+    res.json(content.map(({ slug, title, type, author, updatedAt, createdAt }) => ({
+      slug, title, type, author, updated_at: updatedAt || createdAt || null,
+    })));
   } catch (e) {
     res.status(500).json({ error: 'Failed to fetch content' });
   }
@@ -675,54 +675,47 @@ router.get('/content', authenticateAdmin, async (_req: AuthRequest, res) => {
 
 router.get('/content/:slug', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
-    const { slug } = req.params;
-    const db = await getDb();
-    const stmt = db.prepare(`SELECT * FROM content WHERE slug = ?`);
-    stmt.bind([slug]);
-    let item = null;
-    if (stmt.step()) item = stmt.getAsObject();
-    stmt.free();
-    if (item) res.json(item);
-    else res.status(404).json({ error: 'Content not found' });
+    const item = await getContentBySlug(contentSlug(req.params.slug));
+    if (!item) return res.status(404).json({ error: 'Content not found' });
+    return res.json(item);
   } catch (e) {
-    res.status(500).json({ error: 'Failed to fetch content' });
+    return res.status(500).json({ error: 'Failed to fetch content' });
   }
 });
 
 router.post('/content', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
-    const { slug, title, body, type, author } = req.body || {};
-    const db = await getDb();
-    const stmt = db.prepare(`SELECT slug FROM content WHERE slug = ?`);
-    stmt.bind([slug]);
-    const exists = stmt.step();
-    stmt.free();
-
-    if (exists) {
-      db.run(
-        `UPDATE content SET title = ?, body = ?, type = ?, author = ?, updated_at = CURRENT_TIMESTAMP WHERE slug = ?`,
-        [title, body, type, author, slug]
-      );
-    } else {
-      db.run(`INSERT INTO content (slug, title, body, type, author) VALUES (?, ?, ?, ?, ?)`, [
-        slug,
-        title,
-        body,
-        type,
-        author,
-      ]);
-    }
-    saveDb();
-    res.json({ success: true });
+    const { title, body, type, author } = req.body || {};
+    const slug = contentSlug(req.body?.slug);
+    if (!/^[a-z0-9][a-z0-9-]{0,119}$/.test(slug)) return res.status(400).json({ error: 'Slug must use lowercase letters, numbers, and hyphens only' });
+    if (typeof title !== 'string' || !title.trim() || title.trim().length > 180) return res.status(400).json({ error: 'Title is required and must be 180 characters or fewer' });
+    if (typeof body !== 'string' || !body.trim() || body.length > 50000) return res.status(400).json({ error: 'Content body is required and must be 50,000 characters or fewer' });
+    if (!CONTENT_TYPES.has(type)) return res.status(400).json({ error: 'Content type must be blog, help, legal, or page' });
+    if (typeof author !== 'string' || !author.trim() || author.trim().length > 120) return res.status(400).json({ error: 'Author is required and must be 120 characters or fewer' });
+    await saveContent({ slug, title: title.trim(), body: body.trim(), type, author: author.trim() });
+    res.json({ success: true, slug });
   } catch (e) {
     res.status(500).json({ error: 'Failed to save content' });
+  }
+});
+
+router.delete('/content/:slug', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const slug = contentSlug(req.params.slug);
+    if (!/^[a-z0-9][a-z0-9-]{0,119}$/.test(slug)) return res.status(400).json({ error: 'Invalid content slug' });
+    const existing = await getContentBySlug(slug);
+    if (!existing) return res.status(404).json({ error: 'Content not found' });
+    await deleteContentBySlug(slug);
+    return res.json({ success: true });
+  } catch (e) {
+    return res.status(500).json({ error: 'Failed to delete content' });
   }
 });
 
 router.post('/content/generate', authenticateAdmin, async (req: AuthRequest, res) => {
   try {
     const { topic } = req.body || {};
-    const prompt = `Write a short, professional blog post (about 250 words) on the topic: "${topic}". The post should be suitable for the Kurukoo Everyday Utility platform blog. Use HTML formatting.`;
+    const prompt = `Write a short, professional content draft (about 250 words) on the topic: "${topic}". The draft must be suitable for the Kurukoo conversational fulfilment network. Use plain Markdown only; do not make claims of live provider availability, delivery, payment settlement, escrow custody, emergency response, or external execution unless the topic itself provides verified evidence.`;
     const generatedBody = await queryGroq(prompt);
     res.json({ success: true, generatedBody });
   } catch (e) {
