@@ -181,7 +181,9 @@ function buildGoalPlan(objective: string, skill: string, requestId?: string): Ag
 }
 
 export async function createConversationGoal(input: { phone: string; conversationId?: string; skill: string; objective: string; economicRequestId?: string; source?: AgentGoalSource }): Promise<AgentGoal | null> {
-  if (!enabled() || !input.phone || input.phone.startsWith('anon_') || (!ECONOMIC_SKILLS.has(input.skill) && input.skill !== 'reminder')) return null;
+  const source = input.source || 'conversation';
+  const implicitConversationalGoal = source === 'conversation' && !input.economicRequestId && input.skill !== 'autonomous_agent';
+  if (!enabled() || !input.phone || input.phone.startsWith('anon_') || (!ECONOMIC_SKILLS.has(input.skill) && input.skill !== 'reminder' && input.skill !== 'autonomous_agent') || implicitConversationalGoal) return null;
   await ensureAgentRuntimeSchema();
   const db = await getDb();
   const countStmt = db.prepare(`SELECT COUNT(*) AS count FROM agent_goals WHERE phone=? AND status IN ('active','waiting','needs_user','blocked')`);
@@ -196,7 +198,7 @@ export async function createConversationGoal(input: { phone: string; conversatio
   if (prior) return prior;
   const autonomy: AgentAutonomyLevel = input.economicRequestId ? 'act_with_confirmation' : 'assist';
   const plan = buildGoalPlan(input.objective, input.skill, input.economicRequestId);
-  const goal: AgentGoal = { id: crypto.randomUUID(), phone: input.phone, conversationId: input.conversationId, economicRequestId: input.economicRequestId, source: input.source || 'conversation', goalType: input.skill, objective: input.objective.slice(0, 1000), status: input.economicRequestId ? 'active' : 'needs_user', priority: 50, autonomy, plan, nextActionAt: input.economicRequestId ? nextTime() : undefined, summary: input.economicRequestId ? 'Kurukoo is checking the existing request state.' : 'Kurukoo needs a few details before it can continue.', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+  const goal: AgentGoal = { id: crypto.randomUUID(), phone: input.phone, conversationId: input.conversationId, economicRequestId: input.economicRequestId, source, goalType: input.skill, objective: input.objective.slice(0, 1000), status: input.economicRequestId ? 'active' : 'needs_user', priority: 50, autonomy, plan, nextActionAt: input.economicRequestId ? nextTime() : undefined, summary: input.economicRequestId ? 'Kurukoo is checking the existing request state.' : 'Kurukoo needs a few details before it can continue.', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
   db.run(`INSERT INTO agent_goals (id, phone, conversation_id, economic_request_id, source, goal_type, objective, status, priority, autonomy, next_action_at, summary, plan_json, risk_level, confirmation_required, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [goal.id, goal.phone, goal.conversationId || null, goal.economicRequestId || null, goal.source, goal.goalType, goal.objective, goal.status, goal.priority, goal.autonomy, goal.nextActionAt || null, goal.summary || null, JSON.stringify(plan), plan.riskLevel, plan.confirmationRequired ? 1 : 0, plan.expiresAt]);
   saveDb();
   await recordEvent(goal, 'goal_created', goal.status === 'needs_user' ? 'needs_user' : 'success', goal.summary || 'Goal created.', { idempotencyKey: `goal:create:${goal.phone}:${goal.conversationId || 'none'}:${goal.goalType}` });
