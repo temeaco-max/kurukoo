@@ -14,13 +14,15 @@ import {
 } from './livingMemoryEngine.js';
 import { processDueReminders } from './reminderService.js';
 import { processExpiredCheckIns } from './safetyService.js';
-import { purgeExpiredData } from '../database.js';
+import { purgeExpiredData, getDb } from '../database.js';
 import { inviteEligibleProviders } from './providerCoordination.js';
 import { getEconomicRequest, transitionEconomicRequest } from './skillFlows.js';
 import { ensureTrustScoreSchema, recalculateAllTrustScores } from './trustScore.js';
 import { dispatchDueCommunicationOutbox } from './communicationOutbox.js';
 import { expireDueProviderVerifications } from './providerVerification.js';
 import { notifyGoalIfNeeded, reenterDueDeferredGoals, runDueAgentGoals } from './agentRuntime.js';
+import { getOpportunitiesForFeed } from './opportunityEngine.js';
+import { enqueueInternalNotification } from './pushNotifications.js';
 
 let started = false;
 const timers: NodeJS.Timeout[] = [];
@@ -40,6 +42,7 @@ async function safe(label: string, fn: () => Promise<unknown>): Promise<void> {
 }
 
 let deferredPassActive = false;
+let proactivePassActive = false;
 
 /** The one Trust Score recalculation path used by worker boot and recurring execution. */
 export async function runTrustScoreWorkerPass(): Promise<number> {
@@ -91,6 +94,60 @@ export async function processDueDeferred(): Promise<{ checked: number; matched: 
   }
 }
 
+/**
+ * Projects the existing owner-scoped Opportunity authority into the existing
+ * notification inbox. This adds no new opportunity source or notification
+ * transport; it simply makes the already-tested proactive loop operational.
+ */
+export async function processProactiveOpportunities(limit = 100): Promise<{ checked: number; notified: number }> {
+  if (proactivePassActive) return { checked: 0, notified: 0 };
+  proactivePassActive = true;
+  try {
+    const db = await getDb();
+    const safeLimit = Math.max(1, Math.min(500, Math.floor(Number(limit) || 100)));
+    const stmt = db.prepare(`SELECT phone FROM memory_profiles WHERE phone IS NOT NULL AND phone != '' ORDER BY COALESCE(last_active_at, updated_at, created_at) DESC LIMIT ?`);
+    stmt.bind([safeLimit]);
+    const owners: string[] = [];
+    while (stmt.step()) owners.push(String(stmt.getAsObject().phone || '').trim());
+    stmt.free();
+
+    let notified = 0;
+    for (const phone of owners) {
+      if (!phone || phone.startsWith('anon_')) continue;
+      try {
+        const opportunities = await getOpportunitiesForFeed(phone);
+        for (const opportunity of opportunities) {
+          if (opportunity.status !== 'sent') continue;
+          const sourceKey = `${opportunity.sourceType}:${opportunity.sourceId}`;
+          const ok = await enqueueInternalNotification(
+            phone,
+            opportunity.title,
+            opportunity.subtitle,
+            opportunity.ctaLink,
+            {
+              purpose: 'proactive_opportunity',
+              aggregateType: 'opportunity',
+              aggregateId: String(opportunity.id || opportunity.sourceId),
+              idempotencyKey: `opportunity:${phone}:${sourceKey}`,
+              metadata: {
+                sourceType: opportunity.sourceType,
+                sourceId: opportunity.sourceId,
+                disclosure: opportunity.disclosure || null,
+              },
+            },
+          );
+          if (ok) notified += 1;
+        }
+      } catch (error) {
+        console.warn('[Worker:opportunity] owner pass failed:', error);
+      }
+    }
+    return { checked: owners.length, notified };
+  } finally {
+    proactivePassActive = false;
+  }
+}
+
 export function startBackgroundWorkers(): void {
   if (started) return;
   if (process.env.KURUKOO_WORKERS === '0' || process.env.KURUKOO_WORKERS === 'false') { console.log('[Workers] Disabled via KURUKOO_WORKERS'); return; }
@@ -105,7 +162,8 @@ export function startBackgroundWorkers(): void {
   const trustMs = process.env.KURUKOO_TRUST_SCORE_INTERVAL_SEC ? Math.max(300_000, Number(process.env.KURUKOO_TRUST_SCORE_INTERVAL_SEC) * 1000) : 24 * 60 * 60 * 1000;
   const outboxMs = Math.max(10_000, Math.min(5 * 60_000, Number(process.env.KURUKOO_COMMUNICATION_OUTBOX_INTERVAL_MS || 30_000)));
   const verificationMs = Math.max(60_000, Math.min(24 * 60 * 60 * 1000, Number(process.env.KURUKOO_PROVIDER_VERIFICATION_INTERVAL_MS || 24 * 60 * 60 * 1000)));
-  const agentMs = Math.max(30_000, Math.min(15 * 60_000, Number(process.env.KURUKOO_AGENT_WORKER_INTERVAL_MS || 60_000)));
+  const agentMs = Math.max(30_000, Math.min(15 * 60_000, Number(process.env.KURUKOO_AGENT_WORKER_INTERVAL_MS || 60_000));
+  const opportunityMs = Math.max(15 * 60_000, Math.min(6 * 60 * 60_000, Number(process.env.KURUKOO_OPPORTUNITY_WORKER_INTERVAL_MS || 30 * 60_000)));
 
   timers.push(setInterval(() => {
     void safe('orchestration', async () => {
@@ -168,6 +226,13 @@ export function startBackgroundWorkers(): void {
     void safe('provider-verification', async () => { await expireDueProviderVerifications(); });
   }, verificationMs));
 
+  timers.push(setInterval(() => {
+    void safe('opportunity', async () => {
+      const r = await processProactiveOpportunities();
+      if (r.checked || r.notified) console.log(`[Worker:opportunity] checked=${r.checked} notified=${r.notified}`);
+    });
+  }, opportunityMs));
+
   if (process.env.KURUKOO_AGENT_ENABLED === 'true') {
     const runAgentFollowUp = async () => {
       const updates = [...await runDueAgentGoals(), ...await reenterDueDeferredGoals()];
@@ -187,9 +252,10 @@ export function startBackgroundWorkers(): void {
     void safe('trust-score:boot', async () => { await runTrustScoreWorkerPass(); });
     void safe('communication-outbox:boot', async () => { await dispatchDueCommunicationOutbox(); });
     void safe('provider-verification:boot', async () => { await expireDueProviderVerifications(); });
+    void safe('opportunity:boot', async () => { await processProactiveOpportunities(); });
   }, 15_000).unref?.();
 
-  console.log(`[Workers] Started orchestration=${Math.round(orchMs / 1000)}s deferred=${Math.round(deferredMs / 1000)}s reminders=${Math.round(reminderMs / 1000)}s safety=${Math.round(safetyMs / 1000)}s memory=${Math.round(memoryMs / 1000)}s purge=${Math.round(purgeMs / 1000)}s trust=${Math.round(trustMs / 1000)}s outbox=${Math.round(outboxMs / 1000)}s`);
+  console.log(`[Workers] Started orchestration=${Math.round(orchMs / 1000)}s deferred=${Math.round(deferredMs / 1000)}s reminders=${Math.round(reminderMs / 1000)}s safety=${Math.round(safetyMs / 1000)}s memory=${Math.round(memoryMs / 1000)}s purge=${Math.round(purgeMs / 1000)}s trust=${Math.round(trustMs / 1000)}s outbox=${Math.round(outboxMs / 1000)}s opportunities=${Math.round(opportunityMs / 1000)}s`);
 }
 
 export function stopBackgroundWorkers(): void {
