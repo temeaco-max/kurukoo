@@ -51,7 +51,7 @@ try {
   assert.match(opportunity.ctaLink, /^\/chat\?prompt=/, 'opportunity continuation must return to canonical Web Chat');
   assert.doesNotMatch(`${opportunity.title} ${opportunity.subtitle}`, /daily engagement|claim bonus|\+1 point|multiple people|₦|nearby verified providers/i, 'the feed must not fabricate rewards, demand, monetary price, or provider availability');
 
-  const workerFirst = await processProactiveOpportunities(10);
+  const workerFirst = await processProactiveOpportunities(500);
   assert.ok(workerFirst.checked >= 2, 'the proactive worker should inspect authenticated owners already in the profile store');
   assert.equal(workerFirst.notified, 1, 'the worker should turn the canonical deferred opportunity into an in-app notification');
   const workerNotifications = await getInternalNotifications(owner, 10);
@@ -59,7 +59,7 @@ try {
   assert.equal(workerNotifications[0].delivery_state, 'queued', 'in-app notification remains truthfully queued until read');
   assert.match(workerNotifications[0].link, /^\/chat\?prompt=/, 'proactive notification should deep-link to canonical Chat');
 
-  const workerRepeat = await processProactiveOpportunities(10);
+  const workerRepeat = await processProactiveOpportunities(500);
   assert.ok(workerRepeat.checked >= 2);
   assert.equal(workerRepeat.notified, 1, 'replaying the worker must remain idempotent at the notification layer');
   assert.equal((await getInternalNotifications(owner, 10)).length, 1, 'replaying the worker must not duplicate notifications');
