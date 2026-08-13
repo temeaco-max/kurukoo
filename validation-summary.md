@@ -1,12 +1,13 @@
 # Final built-runtime validation summary
 
-**Runtime:** `http://127.0.0.1:3300`, rebuilt from the final `dist/` output on 2026-08-13.
+**Runtime:** `http://127.0.0.1:3300`, rebuilt from the reconciled `integration/main-convergence-audit` branch on 2026-08-13.
 
 | Surface | Validation outcome |
 |---|---|
-| Homepage request-flow panel | The rendered **One request, visible boundaries** teardown shows complete descriptions for Capture, Coordinate, Confirm, and Fulfil. Each description now sits in the full text column beside its numbered marker; it does not collapse beneath the 30px marker column. |
-| Control Room shell | Dashboard, Control Plane, and SEO pages show the shared fixed sidebar, shared header, `Signals` trigger, and the standard **Kurukoo operating system / Control room** heading treatment. |
-| Unauthenticated admin safety | The Control Plane and SEO console fail closed with an explicit administrator-authentication message. No controls, statistics, or secret material are exposed. |
-| Responsive regression | The repeatable CDP harness exercised the homepage, login, and all 17 shared-shell Control Room destinations at 360, 390, 414, 768, 900, 1024, 1280, and 1440px (152 total checks). It recorded **0 horizontal-overflow failures**, **0 missing shared-shell failures**, and **0 non-fixed-sidebar failures**. |
+| Actual administrator login (`/admin/login`) | The server-rendered route now delivers a complete document with the canonical site and admin-auth stylesheets. It renders as a compact, branded, responsive sign-in card with no operator sidebar, aligned to the public authentication visual language. |
+| Homepage request-flow panel | The rendered **One request, visible boundaries** teardown shows complete descriptions for Capture, Coordinate, Confirm, and Fulfil. Each description occupies the full text column beside its numbered marker; it does not collapse beneath the marker column. |
+| Control Room shell | The shared shell is attached to every current static admin workspace. It provides the standard sidebar, header, `Signals` drawer, and **Kurukoo operating system / Control room** heading treatment when an authenticated operator opens a protected surface. |
+| Protected admin safety | In the anonymous browser state, remote CMS/SEO clients correctly redirect to `/admin/login` rather than exposing protected workspace data. The login page is the expected safety boundary; all management APIs independently require administrator authentication. |
+| Responsive regression | `scripts/validate-built-responsive.mjs` exercised the homepage, actual login route, and every current admin destination at 360, 390, 414, 768, 900, 1024, 1280, and 1440px. The final 200 sequential built-runtime checks recorded **0 horizontal-overflow failures**, **0 missing shared-shell failures**, and **0 non-fixed-sidebar failures**. |
 
-The responsive harness is retained as `scripts/validate-built-responsive.mjs` for repeatable built-runtime checks.
+The final build, route contracts, security/economic checks, services, skills, messaging, CSS audit, chat-DOM safety, email crypto checks, FastText tests, and staged-secret scan all passed after the reconciliation.

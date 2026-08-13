@@ -1,61 +1,71 @@
-<%- include('../_partials/head', { pageStyles: ['/css/admin-auth.css'] }) %>
-
-<main class="admin-auth-container">
-  <div class="admin-auth-card">
-    <div class="admin-auth-header">
-      <img src="/assets/brand/logo-icon.svg" alt="Kurukoo" width="48">
-      <h1>Admin Console</h1>
-      <p>Sign in to manage the Kurukoo network</p>
-    </div>
-    
-    <form id="login-form" class="admin-auth-form">
-      <div class="form-group">
-        <label for="admin-username">Username</label>
-        <input type="text" id="admin-username" name="username" required autocomplete="username">
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="color-scheme" content="light">
+  <title>Sign in to the Control Room | Kurukoo</title>
+  <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/site.css?v=1.2.0">
+  <link rel="stylesheet" href="/css/admin-auth.css?v=1.0.0">
+</head>
+<body class="admin-auth-page">
+  <main class="admin-auth-shell" aria-labelledby="admin-login-title">
+    <section class="admin-auth-card">
+      <div class="admin-auth-brand" aria-label="Kurukoo Admin">
+        <img src="/assets/brand/logo-icon.svg" alt="" width="30" height="30">
+        <span>Kurukoo Admin</span>
       </div>
-      
-      <div class="form-group">
-        <label for="admin-password">Password</label>
-        <input type="password" id="admin-password" name="password" required autocomplete="current-password">
-      </div>
-      
-      <button type="submit" class="primary-btn">Sign In to Console</button>
-      
-      <div id="auth-feedback" class="auth-feedback" hidden></div>
-    </form>
-    
-    <div class="admin-auth-footer">
-      <a href="/">← Back to Kurukoo Public</a>
-    </div>
-  </div>
-</main>
+      <h1 id="admin-login-title">Sign in to the Control Room</h1>
+      <p class="admin-auth-description">Access authorised operational tools for the Kurukoo network. Your administrator session is scoped to this console.</p>
+      <form id="login-form" class="admin-auth-form" novalidate>
+        <div class="admin-auth-field">
+          <label for="admin-username">Username</label>
+          <input type="text" id="admin-username" name="username" required autocomplete="username">
+        </div>
+        <div class="admin-auth-field">
+          <label for="admin-password">Password</label>
+          <input type="password" id="admin-password" name="password" required autocomplete="current-password">
+        </div>
+        <p id="auth-feedback" class="admin-auth-status" hidden role="alert" aria-live="polite"></p>
+        <button type="submit" class="btn-primary admin-auth-submit">Sign in</button>
+      </form>
+      <p class="admin-auth-description"><a href="/">← Back to Kurukoo Public</a></p>
+    </section>
+  </main>
 
-<script>
-  document.getElementById('login-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const feedback = document.getElementById('auth-feedback');
-    feedback.hidden = true;
-    
-    const username = document.getElementById('admin-username').value;
-    const password = document.getElementById('admin-password').value;
-    
-    try {
-      const res = await fetch('/api/admin/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && data.success && data.token) {
+  <script>
+    document.getElementById('login-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const feedback = document.getElementById('auth-feedback');
+      const submit = event.currentTarget.querySelector('button[type="submit"]');
+      feedback.hidden = true;
+      submit.disabled = true;
+      submit.setAttribute('aria-busy', 'true');
+      try {
+        const response = await fetch('/api/admin/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: document.getElementById('admin-username').value.trim(),
+            password: document.getElementById('admin-password').value,
+          }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success || !data.token) throw new Error(data.error || data.message || 'Unable to sign in. Check your credentials and try again.');
         localStorage.setItem('kurukoo_admin', data.token);
         window.location.assign('/admin/dashboard.html');
-      } else {
-        feedback.textContent = data.error || data.message || 'Invalid credentials';
+      } catch (error) {
+        feedback.textContent = error instanceof Error ? error.message : 'Unable to reach the admin service. Please try again.';
         feedback.hidden = false;
+      } finally {
+        submit.disabled = false;
+        submit.removeAttribute('aria-busy');
       }
-    } catch (err) {
-      feedback.textContent = 'Connection error';
-      feedback.hidden = false;
-    }
-  });
-</script>
+    });
+  </script>
+</body>
+</html>

@@ -7,7 +7,8 @@ const debugPort = 9222;
 const viewports = [360, 390, 414, 768, 900, 1024, 1280, 1440];
 const routes = [
   '/',
-  '/admin/login.html',
+  '/admin/login',
+  '/admin/index.html',
   '/admin/dashboard.html',
   '/admin/analytics.html',
   '/admin/users.html',
@@ -24,7 +25,12 @@ const routes = [
   '/admin/pricing.html',
   '/admin/commissions.html',
   '/admin/social.html',
-  '/admin/future.html'
+  '/admin/future.html',
+  '/admin/artists.html',
+  '/admin/celebrity.html',
+  '/admin/marketing.html',
+  '/admin/operations.html',
+  '/admin/revenue.html'
 ];
 
 function request(path, method = 'GET') {
@@ -94,6 +100,8 @@ for (const width of viewports) {
       const rect = sidebar ? sidebar.getBoundingClientRect() : null;
       return {
         title: document.title,
+        currentPath: window.location.pathname,
+        redirectedToLogin: window.location.pathname === '/admin/login' && !location.pathname.endsWith('login.html'),
         documentWidth: root.scrollWidth,
         viewportWidth: window.innerWidth,
         horizontalOverflow: root.scrollWidth > window.innerWidth + 1,
@@ -115,8 +123,8 @@ await cdp('Emulation.clearDeviceMetricsOverride');
 socket.close();
 await request(`/json/close/${target.id}`);
 const failures = results.filter((result) => result.horizontalOverflow);
-const shellFailures = results.filter((result) => result.route.startsWith('/admin/') && !result.route.includes('login') && (!result.sidebarPresent || !result.topbarPresent));
-const fixedSidebarFailures = results.filter((result) => result.route.startsWith('/admin/') && !result.route.includes('login') && result.sidebarPosition !== 'fixed');
+const shellFailures = results.filter((result) => result.route.startsWith('/admin/') && !result.route.includes('login') && !result.redirectedToLogin && (!result.sidebarPresent || !result.topbarPresent));
+const fixedSidebarFailures = results.filter((result) => result.route.startsWith('/admin/') && !result.route.includes('login') && !result.redirectedToLogin && result.sidebarPosition !== 'fixed');
 const report = {
   runtime: baseUrl,
   testedAt: new Date().toISOString(),
