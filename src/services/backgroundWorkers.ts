@@ -28,23 +28,17 @@ let started = false;
 const timers: NodeJS.Timeout[] = [];
 const activeTasks = new Set<string>();
 
-/** Prevent a slow interval or bootstrap pass from overlapping the same canonical job. */
 async function safe(label: string, fn: () => Promise<unknown>): Promise<void> {
   if (activeTasks.has(label)) return;
   activeTasks.add(label);
-  try {
-    await fn();
-  } catch (e) {
-    console.error(`[Worker:${label}]`, e);
-  } finally {
-    activeTasks.delete(label);
-  }
+  try { await fn(); }
+  catch (e) { console.error(`[Worker:${label}]`, e); }
+  finally { activeTasks.delete(label); }
 }
 
 let deferredPassActive = false;
 let proactivePassActive = false;
 
-/** The one Trust Score recalculation path used by worker boot and recurring execution. */
 export async function runTrustScoreWorkerPass(): Promise<number> {
   await ensureTrustScoreSchema();
   return recalculateAllTrustScores();
@@ -61,15 +55,9 @@ export async function processDueDeferred(): Promise<{ checked: number; matched: 
     for (const intention of due) {
       const phone = String(intention.phone || '');
       const skill = String(intention.skill || intention.intent || '').trim();
-      if (!phone || !skill) {
-        await incrementAttempt(phone || 'unknown', intention.id);
-        continue;
-      }
+      if (!phone || !skill) { await incrementAttempt(phone || 'unknown', intention.id); continue; }
       const requestId = intention.economic_request_id ? String(intention.economic_request_id) : '';
-      if (!requestId) {
-        await incrementAttempt(phone, intention.id);
-        continue;
-      }
+      if (!requestId) { await incrementAttempt(phone, intention.id); continue; }
       try {
         const coordination = await inviteEligibleProviders({ requestId, ownerPhone: phone, max: 3 });
         if (coordination.invitations.length > 0) {
@@ -80,25 +68,17 @@ export async function processDueDeferred(): Promise<{ checked: number; matched: 
           matched += coordination.invitations.length;
           await markPartiallyMatched(phone, intention.id, 'Eligible providers were invited to review your request. Provider acceptance and a provider-owned quote are still required.');
           notified += 1;
-        } else {
-          await incrementAttempt(phone, intention.id);
-        }
+        } else await incrementAttempt(phone, intention.id);
       } catch (error) {
         console.warn('[Worker:deferred] provider invitation re-check failed:', error);
         await incrementAttempt(phone, intention.id);
       }
     }
     return { checked: due.length, matched, notified, quoted };
-  } finally {
-    deferredPassActive = false;
-  }
+  } finally { deferredPassActive = false; }
 }
 
-/**
- * Projects the existing owner-scoped Opportunity authority into the existing
- * notification inbox. This adds no new opportunity source or notification
- * transport; it simply makes the already-tested proactive loop operational.
- */
+/** Connects the existing owner-scoped Opportunity authority to the existing in-app notification authority. */
 export async function processProactiveOpportunities(limit = 100): Promise<{ checked: number; notified: number }> {
   if (proactivePassActive) return { checked: 0, notified: 0 };
   proactivePassActive = true;
@@ -110,7 +90,6 @@ export async function processProactiveOpportunities(limit = 100): Promise<{ chec
     const owners: string[] = [];
     while (stmt.step()) owners.push(String(stmt.getAsObject().phone || '').trim());
     stmt.free();
-
     let notified = 0;
     for (const phone of owners) {
       if (!phone || phone.startsWith('anon_')) continue;
@@ -119,33 +98,19 @@ export async function processProactiveOpportunities(limit = 100): Promise<{ chec
         for (const opportunity of opportunities) {
           if (opportunity.status !== 'sent') continue;
           const sourceKey = `${opportunity.sourceType}:${opportunity.sourceId}`;
-          const ok = await enqueueInternalNotification(
-            phone,
-            opportunity.title,
-            opportunity.subtitle,
-            opportunity.ctaLink,
-            {
-              purpose: 'proactive_opportunity',
-              aggregateType: 'opportunity',
-              aggregateId: String(opportunity.id || opportunity.sourceId),
-              idempotencyKey: `opportunity:${phone}:${sourceKey}`,
-              metadata: {
-                sourceType: opportunity.sourceType,
-                sourceId: opportunity.sourceId,
-                disclosure: opportunity.disclosure || null,
-              },
-            },
-          );
+          const ok = await enqueueInternalNotification(phone, opportunity.title, opportunity.subtitle, opportunity.ctaLink, {
+            purpose: 'proactive_opportunity',
+            aggregateType: 'opportunity',
+            aggregateId: String(opportunity.id || opportunity.sourceId),
+            idempotencyKey: `opportunity:${phone}:${sourceKey}`,
+            metadata: { sourceType: opportunity.sourceType, sourceId: opportunity.sourceId, disclosure: opportunity.disclosure || null },
+          });
           if (ok) notified += 1;
         }
-      } catch (error) {
-        console.warn('[Worker:opportunity] owner pass failed:', error);
-      }
+      } catch (error) { console.warn('[Worker:opportunity] owner pass failed:', error); }
     }
     return { checked: owners.length, notified };
-  } finally {
-    proactivePassActive = false;
-  }
+  } finally { proactivePassActive = false; }
 }
 
 export function startBackgroundWorkers(): void {
@@ -162,76 +127,56 @@ export function startBackgroundWorkers(): void {
   const trustMs = process.env.KURUKOO_TRUST_SCORE_INTERVAL_SEC ? Math.max(300_000, Number(process.env.KURUKOO_TRUST_SCORE_INTERVAL_SEC) * 1000) : 24 * 60 * 60 * 1000;
   const outboxMs = Math.max(10_000, Math.min(5 * 60_000, Number(process.env.KURUKOO_COMMUNICATION_OUTBOX_INTERVAL_MS || 30_000)));
   const verificationMs = Math.max(60_000, Math.min(24 * 60 * 60 * 1000, Number(process.env.KURUKOO_PROVIDER_VERIFICATION_INTERVAL_MS || 24 * 60 * 60 * 1000)));
-  const agentMs = Math.max(30_000, Math.min(15 * 60_000, Number(process.env.KURUKOO_AGENT_WORKER_INTERVAL_MS || 60_000));
+  const agentMs = Math.max(30_000, Math.min(15 * 60_000, Number(process.env.KURUKOO_AGENT_WORKER_INTERVAL_MS || 60_000)));
   const opportunityMs = Math.max(15 * 60_000, Math.min(6 * 60 * 60_000, Number(process.env.KURUKOO_OPPORTUNITY_WORKER_INTERVAL_MS || 30 * 60_000)));
 
-  timers.push(setInterval(() => {
-    void safe('orchestration', async () => {
-      const result = await runOrchestrationPass();
-      if (result.matched || result.quoted || result.released) console.log(`[Worker:orchestration] matched=${result.matched} quoted=${result.quoted} released=${result.released} failed=${result.failed}`);
-    });
-  }, orchMs));
+  timers.push(setInterval(() => { void safe('orchestration', async () => {
+    const result = await runOrchestrationPass();
+    if (result.matched || result.quoted || result.released) console.log(`[Worker:orchestration] matched=${result.matched} quoted=${result.quoted} released=${result.released} failed=${result.failed}`);
+  }); }, orchMs));
 
-  timers.push(setInterval(() => {
-    void safe('deferred', async () => {
-      const r = await processDueDeferred();
-      await expireDeferredIntentions();
-      if (r.checked || r.matched) console.log(`[Worker:deferred] checked=${r.checked} matched=${r.matched} notified=${r.notified} quoted=${r.quoted}`);
-    });
-  }, deferredMs));
+  timers.push(setInterval(() => { void safe('deferred', async () => {
+    const r = await processDueDeferred();
+    await expireDeferredIntentions();
+    if (r.checked || r.matched) console.log(`[Worker:deferred] checked=${r.checked} matched=${r.matched} notified=${r.notified} quoted=${r.quoted}`);
+  }); }, deferredMs));
 
-  timers.push(setInterval(() => {
-    void safe('reminders', async () => {
-      const r = await processDueReminders(100);
-      if (r.checked) console.log(`[Worker:reminders] checked=${r.checked} delivered=${r.delivered} queued=${r.queued}`);
-    });
-  }, reminderMs));
+  timers.push(setInterval(() => { void safe('reminders', async () => {
+    const r = await processDueReminders(100);
+    if (r.checked) console.log(`[Worker:reminders] checked=${r.checked} delivered=${r.delivered} queued=${r.queued}`);
+  }); }, reminderMs));
 
-  timers.push(setInterval(() => {
-    void safe('safety', async () => {
-      const count = await processExpiredCheckIns();
-      if (count) console.warn(`[Worker:safety] ${count} check-in(s) require escalation review`);
-    });
-  }, safetyMs));
+  timers.push(setInterval(() => { void safe('safety', async () => {
+    const count = await processExpiredCheckIns();
+    if (count) console.warn(`[Worker:safety] ${count} check-in(s) require escalation review`);
+  }); }, safetyMs));
 
-  timers.push(setInterval(() => {
-    void safe('memory', async () => {
-      await ensureLivingMemorySchema();
-      const decay = await runDailyMemoryDecay();
-      const prune = await runWeeklyMemoryPrune();
-      const crystallize = await runMemoryCrystallize();
-      console.log(`[Worker:memory] decay=${decay.updated} prune=${prune.deleted} crystallize=${crystallize.promoted}`);
-    });
-  }, memoryMs));
+  timers.push(setInterval(() => { void safe('memory', async () => {
+    await ensureLivingMemorySchema();
+    const decay = await runDailyMemoryDecay();
+    const prune = await runWeeklyMemoryPrune();
+    const crystallize = await runMemoryCrystallize();
+    console.log(`[Worker:memory] decay=${decay.updated} prune=${prune.deleted} crystallize=${crystallize.promoted}`);
+  }); }, memoryMs));
 
-  timers.push(setInterval(() => {
-    void safe('purge', async () => {
-      const r = await purgeExpiredData();
-      console.log(`[Worker:purge] messages=${r.messagesDeleted} sessions=${r.tempSessionsDeleted} pulse=${r.pulseLocationsDeleted}`);
-    });
-  }, purgeMs));
+  timers.push(setInterval(() => { void safe('purge', async () => {
+    const r = await purgeExpiredData();
+    console.log(`[Worker:purge] messages=${r.messagesDeleted} sessions=${r.tempSessionsDeleted} pulse=${r.pulseLocationsDeleted}`);
+  }); }, purgeMs));
 
-  timers.push(setInterval(() => {
-    void safe('trust-score', async () => {
-      const updated = await runTrustScoreWorkerPass();
-      if (updated) console.log(`[Worker:trust-score] recalculated=${updated}`);
-    });
-  }, trustMs));
+  timers.push(setInterval(() => { void safe('trust-score', async () => {
+    const updated = await runTrustScoreWorkerPass();
+    if (updated) console.log(`[Worker:trust-score] recalculated=${updated}`);
+  }); }, trustMs));
 
-  timers.push(setInterval(() => {
-    void safe('communication-outbox', async () => { await dispatchDueCommunicationOutbox(); });
-  }, outboxMs));
+  timers.push(setInterval(() => { void safe('communication-outbox', async () => { await dispatchDueCommunicationOutbox(); }); }, outboxMs));
 
-  timers.push(setInterval(() => {
-    void safe('provider-verification', async () => { await expireDueProviderVerifications(); });
-  }, verificationMs));
+  timers.push(setInterval(() => { void safe('provider-verification', async () => { await expireDueProviderVerifications(); }); }, verificationMs));
 
-  timers.push(setInterval(() => {
-    void safe('opportunity', async () => {
-      const r = await processProactiveOpportunities();
-      if (r.checked || r.notified) console.log(`[Worker:opportunity] checked=${r.checked} notified=${r.notified}`);
-    });
-  }, opportunityMs));
+  timers.push(setInterval(() => { void safe('opportunity', async () => {
+    const r = await processProactiveOpportunities();
+    if (r.checked || r.notified) console.log(`[Worker:opportunity] checked=${r.checked} notified=${r.notified}`);
+  }); }, opportunityMs));
 
   if (process.env.KURUKOO_AGENT_ENABLED === 'true') {
     const runAgentFollowUp = async () => {
