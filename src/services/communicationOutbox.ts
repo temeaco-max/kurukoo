@@ -32,7 +32,7 @@ function dueAfterAttempts(attempts: number): string {
 }
 
 function isExternalChannel(channel: string): boolean {
-  return ['sms', 'whatsapp', 'telegram'].includes(String(channel || '').toLowerCase());
+  return ['sms', 'whatsapp', 'telegram', 'fcm'].includes(String(channel || '').toLowerCase());
 }
 
 function normalisePurpose(value: string | undefined): string {

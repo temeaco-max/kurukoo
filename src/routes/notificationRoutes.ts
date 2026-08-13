@@ -3,6 +3,8 @@ import { authenticateUser, AuthRequest } from '../middleware/auth.js';
 import { getInternalNotifications, markNotificationRead } from '../services/pushNotifications.js';
 import { listCommunicationConsents, recordCommunicationConsent } from '../services/communicationOutbox.js';
 import { actOnOpportunity, dismissOpportunity, getOpportunitiesForFeed } from '../services/opportunityEngine.js';
+import { registerFcmDeviceToken, clearFcmDeviceTokenIfMatches } from '../services/memoryProfile.js';
+import { fcmDeviceRegistrationRateLimit } from '../middleware/rateLimit.js';
 
 const router = Router();
 
@@ -17,6 +19,28 @@ router.get('/notifications', authenticateUser, async (req: AuthRequest, res) => 
     res.json({ success: true, notifications });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message || 'Unable to load notifications' });
+  }
+});
+
+router.put('/notifications/fcm-device', authenticateUser, fcmDeviceRegistrationRateLimit, async (req: AuthRequest, res) => {
+  const phone = phoneFromRequest(req);
+  if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
+  try {
+    await registerFcmDeviceToken(phone, req.body?.token);
+    res.status(204).end();
+  } catch (error: any) {
+    res.status(400).json({ success: false, error: error.message || 'Unable to register device' });
+  }
+});
+
+router.delete('/notifications/fcm-device', authenticateUser, fcmDeviceRegistrationRateLimit, async (req: AuthRequest, res) => {
+  const phone = phoneFromRequest(req);
+  if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
+  try {
+    await clearFcmDeviceTokenIfMatches(phone, String(req.body?.token || ''));
+    res.status(204).end();
+  } catch (error: any) {
+    res.status(400).json({ success: false, error: error.message || 'Unable to remove device' });
   }
 });
 
@@ -36,7 +60,7 @@ router.put('/notifications/preferences/:channel', authenticateUser, async (req: 
   const purpose = typeof req.body?.purpose === 'string' ? req.body.purpose.trim().toLowerCase() : 'all';
   const consent = req.body?.consent;
   if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
-  if (!['sms', 'whatsapp', 'telegram'].includes(channel)) return res.status(400).json({ success: false, error: 'Unsupported external communication channel' });
+  if (!['sms', 'whatsapp', 'telegram', 'fcm'].includes(channel)) return res.status(400).json({ success: false, error: 'Unsupported external communication channel' });
   if (!['granted', 'denied'].includes(consent)) return res.status(400).json({ success: false, error: 'consent must be granted or denied' });
   if (!/^[a-z0-9_:-]{1,64}$/.test(purpose)) return res.status(400).json({ success: false, error: 'Invalid communication purpose' });
   try {

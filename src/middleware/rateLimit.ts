@@ -112,3 +112,11 @@ setInterval(() => {
     if (v.resetAt <= now) buckets.delete(k);
   }
 }, 5 * 60_000).unref?.();
+
+/** Device-token churn is bounded to protect owner notification routing and local pilot storage. */
+export const fcmDeviceRegistrationRateLimit = createRateLimiter({
+  windowMs: 60_000,
+  max: 10,
+  keyPrefix: 'fcm-device-registration',
+  message: 'Too many device registration attempts — try again shortly',
+});

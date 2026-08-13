@@ -3,6 +3,8 @@ import {
     createCommunicationDelivery,
     updateCommunicationDelivery,
 } from './communicationDelivery.js';
+import { enqueueCommunicationOutbox } from './communicationOutbox.js';
+import { getFcmDeviceToken } from './memoryProfile.js';
 
 export interface InternalNotificationOptions {
     purpose?: string;
@@ -77,13 +79,37 @@ export async function enqueueInternalNotification(
 }
 
 /**
- * External FCM delivery boundary. It first records an in-app notification and
- * returns false until a separately configured adapter records real acceptance
- * and receipt evidence.
+ * Queue an optional FCM transport behind the canonical in-app fallback. This
+ * function returns `false` until an asynchronous provider acceptance is recorded;
+ * neither queueing nor FCM acceptance is a device-delivery or read receipt.
  */
 export async function sendFcmPush(phone: string, title: string, body: string, link?: string): Promise<boolean> {
-    await enqueueInternalNotification(phone, title, body, link, { purpose: 'push_fallback' });
-    console.warn('[Push] FCM delivery adapter is not configured; notification stored in the internal queue.');
+    const owner = String(phone || '').trim();
+    if (!owner) return false;
+    const idempotencyKey = `fcm:${owner}:${Buffer.from(`${title}\n${body}\n${link || ''}`).toString('base64url').slice(0, 120)}`;
+    await enqueueInternalNotification(owner, title, body, link, {
+        purpose: 'push_fallback',
+        idempotencyKey: `in-app:${idempotencyKey}`,
+        metadata: { fallback_for: 'fcm' },
+    });
+    const deviceToken = await getFcmDeviceToken(owner);
+    if (!deviceToken) return false;
+    const delivery = await createCommunicationDelivery({
+        phone: owner,
+        channel: 'fcm',
+        direction: 'outbound',
+        purpose: 'push_notification',
+        idempotencyKey,
+        state: 'queued',
+        metadata: { provider_acceptance_only: true, per_message_receipt: 'not_supported' },
+    });
+    await enqueueCommunicationOutbox({
+        deliveryId: delivery.id,
+        text: body.slice(0, 4_096),
+        metadata: { title: title.slice(0, 120), link: link || '/chat/', deliveryId: delivery.id },
+        maxAttempts: 3,
+    });
+    // Outbox queueing is deliberately not reported as delivery to reminder callers.
     return false;
 }
 

@@ -130,3 +130,49 @@ export async function updateProfile(phone: string, serviceName: string = 'system
     saveDb();
     return await getProfile(phone, serviceName);
 }
+
+const FCM_TOKEN_PATTERN = /^[A-Za-z0-9:_-]{20,4096}$/;
+
+/** Store one current device token only for an existing authenticated profile. */
+export async function registerFcmDeviceToken(phone: string, token: unknown): Promise<void> {
+    const owner = String(phone || '').trim();
+    const normalizedToken = typeof token === 'string' ? token.trim() : '';
+    if (!owner) throw new Error('Authenticated phone is required');
+    if (!FCM_TOKEN_PATTERN.test(normalizedToken)) throw new Error('Invalid FCM device token');
+    const db = await getDb();
+    const existing = db.prepare(`SELECT phone FROM memory_profiles WHERE phone = ? LIMIT 1`);
+    existing.bind([owner]);
+    const found = existing.step();
+    existing.free();
+    if (!found) throw new Error('Profile is required before registering a device');
+    db.run(`UPDATE memory_profiles SET fcm_token = ?, updated_at = CURRENT_TIMESTAMP WHERE phone = ?`, [normalizedToken, owner]);
+    saveDb();
+    await logProfileAccess(owner, 'pushNotifications', 'write');
+}
+
+/** Clear the current token only when it still matches the token rejected by FCM. */
+export async function clearFcmDeviceTokenIfMatches(phone: string, token: string): Promise<boolean> {
+    const owner = String(phone || '').trim();
+    const normalizedToken = String(token || '').trim();
+    if (!owner || !normalizedToken) return false;
+    const db = await getDb();
+    db.run(`UPDATE memory_profiles SET fcm_token = NULL, updated_at = CURRENT_TIMESTAMP WHERE phone = ? AND fcm_token = ?`, [owner, normalizedToken]);
+    const changed = db.getRowsModified() === 1;
+    if (changed) {
+        saveDb();
+        await logProfileAccess(owner, 'pushNotifications', 'write');
+    }
+    return changed;
+}
+
+/** Internal transport lookup: callers must never return the token to a browser or log it. */
+export async function getFcmDeviceToken(phone: string): Promise<string | null> {
+    const owner = String(phone || '').trim();
+    if (!owner) return null;
+    const db = await getDb();
+    const stmt = db.prepare(`SELECT fcm_token FROM memory_profiles WHERE phone = ? LIMIT 1`);
+    stmt.bind([owner]);
+    const token = stmt.step() ? String(stmt.getAsObject().fcm_token || '').trim() : '';
+    stmt.free();
+    return FCM_TOKEN_PATTERN.test(token) ? token : null;
+}

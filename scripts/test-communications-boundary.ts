@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import jwt from 'jsonwebtoken';
 
 const dbPath = path.join(os.tmpdir(), `kurukoo-communications-${process.pid}-${Date.now()}.sqlite`);
 process.env.DB_PATH = dbPath;
@@ -12,6 +13,7 @@ process.env.JWT_SECRET = 'communications_boundary_test_secret_32_chars';
 process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN = 'communications-verify-token';
 delete process.env.AFRICASTALKING_API_KEY;
 delete process.env.AFRICASTALKING_USERNAME;
+delete process.env.FCM_SERVICE_ACCOUNT_JSON;
 
 const { app } = await import('../src/index.js');
 const { getDb, saveDb } = await import('../src/database.js');
@@ -24,13 +26,20 @@ const {
 const { dispatchDueCommunicationOutbox } = await import('../src/services/communicationOutbox.js');
 const { handleSmsWebhook } = await import('../src/channels/sms.js');
 const { isChannelConfigured } = await import('../src/channels/channelRegistry.js');
+const { sendFcmPush } = await import('../src/services/pushNotifications.js');
+const { getFcmDeviceToken } = await import('../src/services/memoryProfile.js');
+const { upsertProfile } = await import('../src/routes/authRoutes.js');
 
 const server = app.listen(0, '127.0.0.1');
 await new Promise<void>((resolve, reject) => { server.once('listening', resolve); server.once('error', reject); });
-const { port } = server.address() as { port: number };
-const baseUrl = `http://127.0.0.1:${port}`;
+  const { port } = server.address() as { port: number };
+  const baseUrl = `http://127.0.0.1:${port}`;
+  const fcmOwnerPhone = '+2347000000898';
+  const fcmOwnerToken = jwt.sign({ phone: fcmOwnerPhone, role: 'user' }, process.env.JWT_SECRET!, { algorithm: 'HS256', expiresIn: '5m' });
+  const fcmDeviceToken = `fcm_${'A'.repeat(80)}`;
+  await upsertProfile(fcmOwnerPhone, 'FCM Test Owner');
 
-try {
+  try {
   assert.equal(isChannelConfigured('whatsapp'), false, 'absent verification prerequisites must keep WhatsApp unavailable publicly');
   process.env.WHATSAPP_TOKEN = 'test-token';
   process.env.WHATSAPP_PHONE_NUMBER_ID = 'test-phone-id';
@@ -107,6 +116,42 @@ try {
   const repeatedSms = await handleSmsWebhook({ from: '+2347000000890', text: 'check balance', id: 'sms-unconfigured-inbound-1' });
   assert.equal(repeatedSms.status, 'duplicate', 'a repeated inbound SMS event must not create a second conversation turn');
 
+  const anonymousFcmRegistration = await fetch(`${baseUrl}/api/notifications/fcm-device`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: fcmDeviceToken }),
+  });
+  assert.equal(anonymousFcmRegistration.status, 401, 'device tokens must never be registered without an authenticated owner');
+  const invalidFcmRegistration = await fetch(`${baseUrl}/api/notifications/fcm-device`, {
+    method: 'PUT', headers: { Authorization: `Bearer ${fcmOwnerToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ token: 'invalid' }),
+  });
+  assert.equal(invalidFcmRegistration.status, 400, 'malformed device tokens must be rejected');
+  const validFcmRegistration = await fetch(`${baseUrl}/api/notifications/fcm-device`, {
+    method: 'PUT', headers: { Authorization: `Bearer ${fcmOwnerToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ token: fcmDeviceToken }),
+  });
+  assert.equal(validFcmRegistration.status, 204, 'an authenticated owner may register one bounded device token');
+  assert.equal(await getFcmDeviceToken(fcmOwnerPhone), fcmDeviceToken, 'the token must stay bound to the authenticated owner');
+  const fcmConsent = await fetch(`${baseUrl}/api/notifications/preferences/fcm`, {
+    method: 'PUT', headers: { Authorization: `Bearer ${fcmOwnerToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ consent: 'granted', purpose: 'push_notification' }),
+  });
+  assert.equal(fcmConsent.status, 200, 'push requires an explicit owner consent record');
+  assert.equal(await sendFcmPush(fcmOwnerPhone, 'Deferred match', 'A provider is reviewing your request.', '/chat/'), false, 'outbox queueing must not claim FCM acceptance or delivery');
+  const fcmDb = await getDb();
+  const fcmOutboxPayload = String(fcmDb.exec(`SELECT o.payload_json FROM communication_outbox o JOIN communication_deliveries d ON d.id = o.delivery_id WHERE d.phone = '${fcmOwnerPhone}' AND d.channel = 'fcm'`)[0]?.values?.[0]?.[0] || '');
+  assert.doesNotMatch(fcmOutboxPayload, new RegExp(fcmDeviceToken), 'device tokens must not be copied into durable outbox payloads');
+  const fcmDispatch = await dispatchDueCommunicationOutbox();
+  assert.equal(fcmDispatch.not_configured, 1, 'an unconfigured FCM adapter must retain the in-app fallback and record not_configured externally');
+  const fcmRows = fcmDb.exec(`SELECT channel, state, provider_reference FROM communication_deliveries WHERE phone = '${fcmOwnerPhone}' AND channel = 'fcm'`)[0]?.values || [];
+  assert.deepEqual(fcmRows, [['fcm', 'not_configured', null]], 'FCM must record an explicit unconfigured state, never a fabricated provider receipt');
+  const mismatchedFcmRemoval = await fetch(`${baseUrl}/api/notifications/fcm-device`, {
+    method: 'DELETE', headers: { Authorization: `Bearer ${fcmOwnerToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ token: `${fcmDeviceToken}different` }),
+  });
+  assert.equal(mismatchedFcmRemoval.status, 204, 'withdrawal remains idempotent without exposing token ownership');
+  assert.equal(await getFcmDeviceToken(fcmOwnerPhone), fcmDeviceToken, 'a mismatched withdrawal must not erase the current owner token');
+  const validFcmRemoval = await fetch(`${baseUrl}/api/notifications/fcm-device`, {
+    method: 'DELETE', headers: { Authorization: `Bearer ${fcmOwnerToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ token: fcmDeviceToken }),
+  });
+  assert.equal(validFcmRemoval.status, 204, 'the authenticated owner may withdraw its current device token');
+  assert.equal(await getFcmDeviceToken(fcmOwnerPhone), null, 'successful withdrawal must remove the current owner token');
+
   const goodVerification = await fetch(`${baseUrl}/api/webhook/whatsapp?hub.mode=subscribe&hub.verify_token=communications-verify-token&hub.challenge=challenge-123`);
   assert.equal(goodVerification.status, 200, 'WhatsApp callback handshake must require and accept the configured verification token');
   assert.equal(await goodVerification.text(), 'challenge-123');
@@ -127,7 +172,7 @@ try {
   assert.doesNotMatch(ussdText, /alerted with your location|triggered/i, 'USSD must not fabricate emergency dispatch or notification');
 
   console.log('Communications boundary regression passed');
-  console.log('Verified: idempotent delivery records, durable outbox dispatch, receipt-driven states, protected channel readiness, unconfigured SMS truthfulness, WhatsApp handshake, and USSD non-dispatch language.');
+  console.log('Verified: idempotent delivery records, durable outbox dispatch, receipt-driven states, owner-bound FCM registration/consent/fallback, protected channel readiness, unconfigured SMS truthfulness, WhatsApp handshake, and USSD non-dispatch language.');
 } finally {
   await new Promise<void>((resolve) => server.close(() => resolve()));
   saveDb(true);

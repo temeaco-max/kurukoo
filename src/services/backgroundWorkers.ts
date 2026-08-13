@@ -41,6 +41,12 @@ async function safe(label: string, fn: () => Promise<unknown>): Promise<void> {
 
 let deferredPassActive = false;
 
+/** The one Trust Score recalculation path used by worker boot and recurring execution. */
+export async function runTrustScoreWorkerPass(): Promise<number> {
+  await ensureTrustScoreSchema();
+  return recalculateAllTrustScores();
+}
+
 export async function processDueDeferred(): Promise<{ checked: number; matched: number; notified: number; quoted: number }> {
   if (deferredPassActive) return { checked: 0, matched: 0, notified: 0, quoted: 0 };
   deferredPassActive = true;
@@ -149,8 +155,7 @@ export function startBackgroundWorkers(): void {
 
   timers.push(setInterval(() => {
     void safe('trust-score', async () => {
-      await ensureTrustScoreSchema();
-      const updated = await recalculateAllTrustScores();
+      const updated = await runTrustScoreWorkerPass();
       if (updated) console.log(`[Worker:trust-score] recalculated=${updated}`);
     });
   }, trustMs));
@@ -179,7 +184,7 @@ export function startBackgroundWorkers(): void {
     void safe('memory:boot', async () => { await ensureLivingMemorySchema(); });
     void safe('reminders:boot', async () => { await processDueReminders(100); });
     void safe('safety:boot', async () => { await processExpiredCheckIns(); });
-    void safe('trust-score:boot', async () => { await ensureTrustScoreSchema(); await recalculateAllTrustScores(); });
+    void safe('trust-score:boot', async () => { await runTrustScoreWorkerPass(); });
     void safe('communication-outbox:boot', async () => { await dispatchDueCommunicationOutbox(); });
     void safe('provider-verification:boot', async () => { await expireDueProviderVerifications(); });
   }, 15_000).unref?.();

@@ -79,7 +79,7 @@ Artists/creators are **not a separate economic system**. Artist booking is a cat
 - Escrow release awards the bounded canonical job-completion Points reward (1–5), keyed to the released escrow event for idempotency; the monetary escrow amount is never converted into Points.
 - SMS and Telegram share the canonical channel handler with an identity-aware intent route. SMS normalizes its phone key before persisting messages or creating an Economic Request.
 - Pulse statistics are derived from the shared active-presence service and do not emit fabricated match, dispatch, payment, or escrow events.
-- An unconfigured FCM adapter fails closed and redacts device tokens from logs. It is not described as a delivery confirmation until a real provider adapter is installed.
+- FCM HTTP v1 now reuses authenticated owner-bound device registration, explicit communication consent, the shared outbox, the canonical delivery ledger, and deterministic in-app fallback. Tokens are private and absent from durable outbox payloads. Provider acceptance is not described as delivery, display, open, or read; individual delivery receipt remains unavailable through this boundary.
 - The authenticated trust boundary is mounted at `/api`: a buyer can list only their own escrow records and open an idempotent dispute against only their own order.
 - Opening a dispute freezes the existing held escrow, transitions its linked Economic Request from `completed` to `disputed` during cooling-off, and blocks escrow release. A duplicate open dispute does not create another dispute or escrow ledger row.
 - Generic customer Economic Request transitions cannot set `disputed`; disputes enter only through the buyer-owned trust boundary so escrow freezing is not bypassed.
@@ -105,10 +105,10 @@ The application does **not** simulate unavailable real-world infrastructure. In 
 ### P1 — architecture and behavioural completeness
 - Finish deleting any genuinely dead legacy route bodies after extraction coverage proves they are unused.
 - Complete universal catalogue/inventory matching for catalogue-bearing skills using the existing provider/product data model rather than creating per-skill ordering systems.
-- Expand economic integration tests so each canonical category proves the same lifecycle with category-specific requirements.
+- Keep the completed table-driven all-category Economic Request regression current: every canonical category must continue to create an authenticated request with its own required-field schema and enter the same lifecycle.
 - Keep CSS, messaging, services, skills, security and economic audits behavioural rather than presence-only where practical.
 - Keep documentation aligned with the implementation; stale historical claims must not be treated as current architecture.
-- Add a real FCM provider and channel fallback/receipt workflow before treating deferred-match or session nudges as delivered notifications.
+- Configure the optional FCM service account and client SDK only with consented delivery analytics/reporting, then monitor provider acceptance and aggregate evidence without representing it as a per-message delivery receipt.
 
 ### P2 — scale when justified
 - PostgreSQL when concurrent/multi-instance write load requires it.

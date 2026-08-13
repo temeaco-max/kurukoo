@@ -115,6 +115,26 @@ async function main() {
     assert.equal(created.response.status, 201, `owner must create request: ${JSON.stringify(created.body)}`);
     const requestId = String((created.body.request as { id?: string }).id || '');
     assert.ok(requestId, 'created request must include an id');
+
+    const representativeSkillByCategory = new Map<string, string>();
+    for (const skill of known) {
+      const category = getEconomicCategory(skill);
+      if (category && !representativeSkillByCategory.has(category)) representativeSkillByCategory.set(category, skill);
+    }
+    assert.equal(representativeSkillByCategory.size, ECONOMIC_CATEGORIES.length, 'every canonical category must have a skill that enters the shared request boundary');
+    for (const category of ECONOMIC_CATEGORIES) {
+      const skill = representativeSkillByCategory.get(category)!;
+      const requirements = Object.fromEntries(getSkillRequirements(skill)
+        .filter((requirement) => requirement.required)
+        .map((requirement) => [requirement.key, `integration fixture ${requirement.key}`]));
+      const categoryRequest = await request('/api/economic-requests', json(owner, { skill, requirements }));
+      assert.equal(categoryRequest.response.status, 201, `${category} (${skill}) must create through the canonical Economic Request route: ${JSON.stringify(categoryRequest.body)}`);
+      const categoryRecord = categoryRequest.body.request as { category?: string; skill?: string; status?: string };
+      assert.equal(categoryRecord.category, category, `${category} must retain its canonical category on the persisted request`);
+      assert.equal(categoryRecord.skill, skill, `${category} must retain its selected canonical skill`);
+      assert.equal(categoryRecord.status, 'requested', `${category} must enter the shared request lifecycle at requested`);
+    }
+
     const crossUserRead = await request(`/api/economic-requests/${encodeURIComponent(requestId)}`, { headers: { Authorization: `Bearer ${otherUser}` } });
     assert.equal(crossUserRead.response.status, 404, 'another user must not read an owner request');
     const ownerRead = await request(`/api/economic-requests/${encodeURIComponent(requestId)}`, { headers: { Authorization: `Bearer ${owner}` } });

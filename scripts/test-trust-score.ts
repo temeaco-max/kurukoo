@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { calculateTrustScoreValue, listTrustScoreLedger, recalculateTrustScore } from '../src/services/trustScore.js';
 import { upsertProfile } from '../src/routes/authRoutes.js';
+import { runTrustScoreWorkerPass } from '../src/services/backgroundWorkers.js';
 
 assert.equal(calculateTrustScoreValue({ avgRating: 3, completedJobs: 0, verifiedProvider: false, disputesLost: 0, accountAgeDays: 0 }), 5, 'neutral profile should begin at the 5.0 baseline');
 assert.equal(calculateTrustScoreValue({ avgRating: 5, completedJobs: 100, verifiedProvider: true, disputesLost: 0, accountAgeDays: 365 }), 8, 'formula should cap at the documented 8.0 range');
@@ -9,10 +10,14 @@ assert.equal(calculateTrustScoreValue({ avgRating: 0, completedJobs: 0, verified
 
 const phone = `+234809${String(Date.now()).slice(-7)}`;
 await upsertProfile(phone, 'Trust Ledger Test');
+const workerUpdated = await runTrustScoreWorkerPass();
+assert.ok(workerUpdated >= 1, 'the canonical Trust Score worker pass must recalculate persisted profiles');
+const scheduledLedger = await listTrustScoreLedger(phone);
+assert.equal(scheduledLedger[0]?.reason, 'scheduled_recalculation', 'the worker pass must append canonical scheduled evidence');
 const recalculated = await recalculateTrustScore(phone, 'regression_recalculation');
 assert.ok(recalculated, 'An existing profile must produce a canonical Trust Score');
 const ledger = await listTrustScoreLedger(phone);
 assert.equal(ledger[0]?.reason, 'regression_recalculation', 'Recalculation must record an explicit audit reason');
 assert.equal(ledger[0]?.score, recalculated?.score, 'Ledger score must match the persisted canonical score result');
 assert.equal(typeof ledger[0]?.breakdown.completedJobs, 'number', 'Ledger evidence must contain a concise canonical breakdown rather than hidden reasoning');
-console.log('Trust Score formula and ledger regression passed.');
+console.log('Trust Score formula, ledger, and canonical worker-pass regression passed.');
