@@ -9,13 +9,13 @@ const { upsertProfile } = await import('../src/routes/authRoutes.js');
 const { createEconomicRequest } = await import('../src/services/skillFlows.js');
 const { executeAgentTool, listAgentTools } = await import('../src/services/agentToolRegistry.js');
 const { cancelAgentGoal, createConversationGoal, getAgentGoal, goalTimeline, listAgentGoals, runAgentGoal, runDueAgentGoals } = await import('../src/services/agentRuntime.js');
-const { getDb } = await import('../src/database.js');
 const { executeVoiceTool } = await import('../src/services/voiceToolRegistry.js');
 
 const owner = `+234807${String(Date.now()).slice(-7)}`;
 const other = `+234808${String(Date.now()).slice(-7)}`;
 await upsertProfile(owner, 'Goal Owner');
 await upsertProfile(other, 'Other User');
+
 const request = await createEconomicRequest({ id: `agent-request-${Date.now()}`, phone: owner, skill: 'find_worker', requirements: { location: 'Ikeja', description: 'Car repair' } });
 
 const goal = await createConversationGoal({ phone: owner, conversationId: 'conversation-agent-test', skill: 'find_worker', objective: 'Find a mechanic tomorrow.', economicRequestId: request.id });
@@ -23,6 +23,13 @@ assert.ok(goal, 'Enabled runtime must create one bounded owned goal for a canoni
 assert.equal(goal.plan.riskLevel, 'user_confirmation_required', 'A request-linked plan must declare confirmation-required risk rather than grant autonomous commitment authority');
 assert.equal(goal.plan.confirmationRequired, true, 'A request-linked plan must preserve a reusable confirmation gate');
 assert.ok(goal.plan.steps.some(step => step.risk === 'read_only') && goal.plan.steps.some(step => step.risk === 'user_confirmation_required'), 'Persistent plans must retain bounded operational steps without hidden reasoning');
+
+const implicitChatGoal = await createConversationGoal({ phone: owner, conversationId: 'ordinary-chat-turn', skill: 'find_worker', objective: 'I need a mechanic.' , source: 'conversation' });
+assert.equal(implicitChatGoal, null, 'Ordinary conversation intent must not create a persistent autonomous goal before a canonical request exists');
+
+const explicitAutonomousGoal = await createConversationGoal({ phone: owner, conversationId: 'explicit-agent-turn', skill: 'autonomous_agent', objective: 'Keep watching my existing task for changes.', source: 'conversation' });
+assert.ok(explicitAutonomousGoal, 'Explicit autonomous-agent intent may create a bounded conversational goal');
+
 const declaredTools = listAgentTools();
 assert.ok(declaredTools.every(tool => tool.description && tool.authorization && tool.risk && tool.idempotency && tool.audit === 'goal_event'), 'Every exposed tool must declare its contract, risk, authorization, idempotency and audit behaviour');
 assert.equal((await createConversationGoal({ phone: owner, conversationId: 'conversation-agent-test', skill: 'find_worker', objective: 'Duplicate', economicRequestId: request.id }))?.id, goal.id, 'Duplicate conversation goals must be idempotent');
@@ -46,7 +53,7 @@ const unsafeTool = await executeAgentTool('payment' as any, {}, { phone: owner, 
 assert.equal(unsafeTool.ok, false, 'High-risk payment or arbitrary tool names are unavailable to the runtime');
 assert.equal(goal.plan.steps.some(step => step.tool === ('payment' as any)), false, 'Plans must not contain undeclared high-risk payment actions');
 
-const db = await getDb();
+const db = await (await import('../src/database.js')).getDb();
 db.run(`UPDATE agent_goals SET priority=999, next_action_at=datetime('now','-1 minute') WHERE id=?`, [goal.id]);
 const due = await runDueAgentGoals();
 assert.ok(due.some(item => item.id === goal.id), 'Due goals must re-enter only through the bounded worker pass');
@@ -56,4 +63,4 @@ assert.equal((await runAgentGoal(goal.id, owner))?.status, 'cancelled', 'Cancell
 
 process.env.KURUKOO_AGENT_ENABLED = 'false';
 assert.equal(await createConversationGoal({ phone: owner, skill: 'find_worker', objective: 'Disabled runtime', economicRequestId: request.id }), null, 'Disabled runtime must preserve normal chat behaviour without creating goals');
-console.log('Agent runtime regression passed: persistent owned goals, idempotency, bounded tools, waiting and worker re-entry, cancellation, disabled mode, and high-risk denial.');
+console.log('Agent runtime regression passed: persistent owned goals, explicit-vs-implicit creation, idempotency, bounded tools, waiting and worker re-entry, cancellation, disabled mode, and high-risk denial.');
