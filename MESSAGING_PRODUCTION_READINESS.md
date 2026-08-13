@@ -21,8 +21,8 @@ No channel is represented as live until its required production controls are con
 | WhatsApp | Live Meta app and business account, production token, phone-number ID, app secret, verified callback token, subscribed status webhooks, template policy and approval where required, consent policy, and receipt monitoring. |
 | SMS | Africa’s Talking production credentials, registered sender policy where required, delivery-report callback, callback token in the configured URL, opt-out callback, consent policy, and delivery-failure monitoring. |
 | USSD | Africa’s Talking service code, enabled controlled rollout flag, protected session and session-outcome callback URLs, callback token, session monitoring, carrier/regulatory approval, and support procedure. |
-| Outbox runtime | A persistent application runtime with `KURUKOO_WORKERS` enabled. The worker is started through the canonical application startup path; this development sandbox is not an operational production host. |
+| Outbox runtime | A persistent application runtime with `KURUKOO_WORKERS` not set to `0` and `KURUKOO_COMMUNICATION_OUTBOX_ENABLED` not set to `false`. The worker is started through the canonical application startup path, leases durable due work, and records provider acceptance separately from delivery; this development sandbox is not an operational production host. |
 
 ## Validation
 
-The messaging boundary and related provider/economic flows passed focused regression tests. Compilation, production build, security and service audits, DOM-safety checks, and staged-secret scanning passed after implementation.
+The messaging boundary and related provider/economic flows passed focused regression tests. The browser-facing product copy describes external execution as controlled and evidence-gated, matching the outbox rule that provider acceptance is not delivery and an unconfigured or suppressed channel is never represented as external fulfilment. Compilation, production build, security and service audits, DOM-safety checks, and staged-secret scanning passed after implementation.

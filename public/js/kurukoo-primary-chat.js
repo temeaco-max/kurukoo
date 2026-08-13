@@ -1200,7 +1200,7 @@
     mark.appendChild(img);
     welcome.appendChild(mark);
     welcome.appendChild(makeElement('h1', '', 'Hi, I’m Kurukoo. What do you need help with?'));
-    welcome.appendChild(makeElement('p', '', 'Start with a conversation. Kurukoo will show the supported next step for your request, reminder, safety or everyday information need.'));
+    welcome.appendChild(makeElement('p', '', 'Start with a conversation. Kurukoo combines personal assistance, a provider and inventory network, and bounded goal follow-up to organise supported next steps. External execution happens only when the required authority, integration and evidence are available.'));
     const qa = makeElement('div', 'quick-actions'); qa.id = 'quick-actions';
     [
       ['I need a ride request', 'Ride', 'ride'],
