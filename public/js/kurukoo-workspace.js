@@ -437,21 +437,41 @@
   const loadDailyPicks = async () => {
     const list = qs('[data-daily-picks]');
     if (!list) return;
-    const [requests, reminders] = await Promise.all([loadRequests(), loadReminders()]);
+    const [requests, reminders, opportunityPayload] = await Promise.all([
+      loadRequests(), loadReminders(), api('/api/opportunities').catch(() => ({ opportunities: [] })),
+    ]);
+    const opportunities = Array.isArray(opportunityPayload.opportunities) ? opportunityPayload.opportunities : [];
     clear(list);
+    opportunities.forEach((opportunity) => {
+      const action = document.createElement('a');
+      action.className = 'workspace-text-action';
+      action.href = String(opportunity.ctaLink || '/chat');
+      action.textContent = String(opportunity.ctaText || 'Review in Web Chat');
+      action.addEventListener('click', () => { void api(`/api/opportunities/${encodeURIComponent(opportunity.id)}/act`, { method: 'POST' }).catch(() => null); });
+      const dismiss = document.createElement('button');
+      dismiss.type = 'button'; dismiss.className = 'workspace-text-action'; dismiss.textContent = 'Dismiss';
+      dismiss.addEventListener('click', async () => {
+        dismiss.disabled = true;
+        try { await api(`/api/opportunities/${encodeURIComponent(opportunity.id)}/dismiss`, { method: 'POST' }); await loadDailyPicks(); }
+        catch (_) { dismiss.disabled = false; }
+      });
+      const actions = document.createElement('span'); actions.append(action, document.createTextNode(' · '), dismiss);
+      const source = opportunity.sourceType === 'ad_campaign' ? (opportunity.disclosure || 'Sponsored placement') : 'Request follow-up';
+      list.appendChild(makeDataCard({ eyebrow: source, title: String(opportunity.title || 'Suggested next step'), detail: String(opportunity.subtitle || 'Review this evidence-backed suggestion in Kurukoo.'), state: 'Not a provider, price, or fulfilment confirmation', action: actions }));
+    });
     const nextReminder = reminders[0];
     const recentRequest = requests[0];
-    if (nextReminder) {
+    if (!opportunities.length && nextReminder) {
       const row = document.createElement('div');
       row.append(Object.assign(document.createElement('strong'), { textContent: nextReminder.title || 'Review an upcoming reminder' }), Object.assign(document.createElement('small'), { textContent: `Due ${formatDate(nextReminder.dueAt || nextReminder.due_at)}.` }));
       list.appendChild(row);
     }
-    if (recentRequest) {
+    if (!opportunities.length && recentRequest) {
       const row = document.createElement('div');
       row.append(Object.assign(document.createElement('strong'), { textContent: `Continue ${humanize(recentRequest.skill || 'your request')}` }), Object.assign(document.createElement('small'), { textContent: `Current state: ${humanize(recentRequest.status)}.` }));
       list.appendChild(row);
     }
-    if (!nextReminder && !recentRequest) {
+    if (!opportunities.length && !nextReminder && !recentRequest) {
       const row = document.createElement('div');
       row.append(Object.assign(document.createElement('strong'), { textContent: 'No connected picks yet' }), Object.assign(document.createElement('small'), { textContent: 'Start a conversation to create a request or reminder.' }));
       list.appendChild(row);

@@ -1,351 +1,220 @@
 import { getDb, saveDb } from '../database.js';
-import { sendFcmPush } from './pushNotifications.js';
-import { addPoints as addCredits } from './pointsEngine.js';
 import { getIntentions } from './deferredRequestService.js';
+import { getAdCampaigns } from './adManager.js';
 
-/*
- * Proactive Opportunity Engine (§21.3, §33)
- * Score formula:
- * score = (user_need_match * 0.4) + (urgency * 0.3) + (recency * 0.2) + (business_value * 0.1)
+/**
+ * Owner-scoped, evidence-backed suggestions for existing Daily Picks surfaces.
+ * This is not a provider directory, inventory system, request lifecycle, or
+ * notification authority. It only projects actionable state already owned by
+ * deferred intentions and disclosed active advertising campaigns.
  */
-
 export interface Opportunity {
-    id?: number;
-    phone: string;
-    type: 'job' | 'market_intel' | 'daily_pick' | 'reward';
-    title: string;
-    subtitle: string;
-    ctaText: string;
-    ctaLink: string;
-    urgency: number;
-    businessValue: number;
-    score?: number;
-    status: 'sent' | 'viewed' | 'acted' | 'dismissed';
-    createdAt?: string;
-    updatedAt?: string;
+  id?: number;
+  phone: string;
+  type: 'market_intel' | 'daily_pick';
+  title: string;
+  subtitle: string;
+  ctaText: string;
+  ctaLink: string;
+  urgency: number;
+  businessValue: number;
+  score?: number;
+  status: 'sent' | 'viewed' | 'acted' | 'dismissed';
+  sourceType: 'deferred_intention' | 'ad_campaign';
+  sourceId: string;
+  disclosure?: string;
+  expiresAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export async function initOpportunityTable() {
-    const db = await getDb();
-    db.run(`
-        CREATE TABLE IF NOT EXISTS proactive_opportunities (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            phone TEXT,
-            type TEXT,
-            title TEXT,
-            subtitle TEXT,
-            cta_text TEXT,
-            cta_link TEXT,
-            urgency REAL DEFAULT 0.5,
-            business_value REAL DEFAULT 0.5,
-            status TEXT DEFAULT 'sent',
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-        );
-    `);
-    saveDb();
+function parseDate(value: unknown): number | null {
+  const timestamp = Date.parse(String(value || ''));
+  return Number.isFinite(timestamp) ? timestamp : null;
 }
 
-/**
- * Generate, rank, and store personalized opportunities for a user
- */
-export async function generateProactiveOpportunities(phone: string): Promise<Opportunity[]> {
-    await initOpportunityTable();
-    const db = await getDb();
+function clamp(value: unknown, fallback = 0.5): number {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.max(0, Math.min(1, number)) : fallback;
+}
 
-    // 1. Retrieve user details
-    const userStmt = db.prepare(`SELECT * FROM memory_profiles WHERE phone = ?`);
-    userStmt.bind([phone]);
-    let userProfile: any = null;
-    if (userStmt.step()) {
-        userProfile = userStmt.getAsObject();
-    }
-    userStmt.free();
+function cleanText(value: unknown, fallback: string, maximum = 280): string {
+  const text = String(value || '').trim();
+  return (text || fallback).slice(0, maximum);
+}
 
-    if (!userProfile) return [];
+function opportunityExpiry(sourceExpiry: unknown, fallbackHours = 24): string {
+  const timestamp = parseDate(sourceExpiry);
+  return new Date(timestamp && timestamp > Date.now() ? timestamp : Date.now() + fallbackHours * 60 * 60 * 1000).toISOString();
+}
 
-    const userState = userProfile.primary_state || 'Lagos';
-    const userLga = userProfile.primary_lga || 'Ikeja';
+function promptLink(prompt: string): string {
+  return `/chat?prompt=${encodeURIComponent(prompt)}`;
+}
 
-    // 2. Fetch user's registered skills
-    const skills: string[] = [];
-    const skillsStmt = db.prepare(`SELECT skill FROM skills WHERE phone = ?`);
-    skillsStmt.bind([phone]);
-    while (skillsStmt.step()) {
-        skills.push(String(skillsStmt.getAsObject().skill).toLowerCase());
-    }
-    skillsStmt.free();
+export async function initOpportunityTable(): Promise<void> {
+  const db = await getDb();
+  db.run(`CREATE TABLE IF NOT EXISTS proactive_opportunities (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    phone TEXT NOT NULL,
+    type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    subtitle TEXT NOT NULL,
+    cta_text TEXT NOT NULL,
+    cta_link TEXT NOT NULL,
+    urgency REAL DEFAULT 0.5,
+    business_value REAL DEFAULT 0.5,
+    status TEXT DEFAULT 'sent',
+    source_type TEXT,
+    source_id TEXT,
+    idempotency_key TEXT,
+    disclosure TEXT,
+    expires_at TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+  )`);
+  const columns = db.exec('PRAGMA table_info(proactive_opportunities)')[0]?.values || [];
+  const names = new Set(columns.map((row: any[]) => String(row[1])));
+  const additions: Record<string, string> = {
+    source_type: 'TEXT', source_id: 'TEXT', idempotency_key: 'TEXT', disclosure: 'TEXT', expires_at: 'TEXT',
+  };
+  for (const [name, type] of Object.entries(additions)) if (!names.has(name)) db.run(`ALTER TABLE proactive_opportunities ADD COLUMN ${name} ${type}`);
+  db.run('CREATE INDEX IF NOT EXISTS idx_proactive_opportunities_owner ON proactive_opportunities(phone, status, expires_at, created_at)');
+  db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_proactive_opportunities_dedupe ON proactive_opportunities(phone, idempotency_key) WHERE idempotency_key IS NOT NULL');
+  saveDb();
+}
 
-    // 3. Fetch user's open intentions
-    const openIntentions = await getIntentions(phone);
-    const activeOpenIntentions = openIntentions.filter((i: any) => i.status === 'open' || i.status === 'awaiting_match');
+function score(opportunity: Opportunity): number {
+  const sourceMatch = opportunity.sourceType === 'deferred_intention' ? 1 : 0.4;
+  return (sourceMatch * 0.5) + (clamp(opportunity.urgency) * 0.3) + (clamp(opportunity.businessValue) * 0.2);
+}
 
-    // 4. Build list of potential opportunities
-    const rawOpportunities: Omit<Opportunity, 'status'>[] = [];
-
-    // --- Type A: Engagement Reward (Engagement) ---
-    rawOpportunities.push({
+async function deferredCandidates(phone: string): Promise<Opportunity[]> {
+  const intentions = await getIntentions(phone);
+  return intentions
+    .filter((item: any) => ['requested', 'awaiting_match', 'partially_matched'].includes(String(item.status)) && (!item.expires_at || (parseDate(item.expires_at) || 0) > Date.now()))
+    .map((item: any) => {
+      const intent = cleanText(item.intent || item.skill, 'your request', 120);
+      const state = String(item.status).replaceAll('_', ' ');
+      return {
         phone,
-        type: 'reward',
-        title: 'Daily Engagement Bonus',
-        subtitle: 'You have been active! Claim your +1 Point daily bonus now.',
-        ctaText: 'Claim Bonus',
-        ctaLink: '/api/opportunities/act',
-        urgency: 1.0, // Same-day
-        businessValue: 0.5 // Engagement
+        type: 'market_intel' as const,
+        title: `Continue your ${intent}`,
+        subtitle: `Your request is ${state}. Review the current canonical request state in Kurukoo; a provider, price, payment, or fulfilment is not implied.`,
+        ctaText: 'Continue in Web Chat',
+        ctaLink: promptLink(`Continue my ${intent} request`),
+        urgency: item.status === 'partially_matched' ? 0.8 : 0.6,
+        businessValue: 0,
+        status: 'sent' as const,
+        sourceType: 'deferred_intention' as const,
+        sourceId: String(item.id),
+        expiresAt: opportunityExpiry(item.expires_at),
+      };
     });
-
-    // --- Type B: Skill Demand Alerts (if user has skills) ---
-    for (const skill of skills) {
-        rawOpportunities.push({
-            phone,
-            type: 'job',
-            title: `High Skill Demand: ${skill.charAt(0).toUpperCase() + skill.slice(1)}`,
-            subtitle: `Multiple people near ${userLga} need a ${skill} this week. Toggle Go Live to get matched!`,
-            ctaText: 'Go Live Now',
-            ctaLink: '/api/pulse/activate',
-            urgency: 0.8,
-            businessValue: 0.8 // Lead-gen value
-        });
-    }
-
-    // --- Type C: Open Intention follow-ups / Re-order suggestions ---
-    for (const intention of activeOpenIntentions) {
-        rawOpportunities.push({
-            phone,
-            type: 'market_intel',
-            title: `Follow-up: ${intention.intent}`,
-            subtitle: `Still looking for assistance with "${intention.intent}"? Tap to notify nearby verified providers.`,
-            ctaText: 'Check Providers',
-            ctaLink: '/explore',
-            urgency: 1.0, // Urgent follow-up
-            businessValue: 0.6
-        });
-    }
-
-    // --- Type D: Market Intelligence based on location ---
-    if (userState.toLowerCase() === 'lagos') {
-        rawOpportunities.push({
-            phone,
-            type: 'market_intel',
-            title: 'Lagos Rice Supply Alert',
-            subtitle: 'Ask Web Chat about verified market information and available wholesale providers in your area.',
-            ctaText: 'Ask in Web Chat',
-            ctaLink: '/chat?prompt=Show%20verified%20wholesale%20options%20near%20me',
-            urgency: 0.5,
-            businessValue: 0.7
-        });
-    } else {
-        rawOpportunities.push({
-            phone,
-            type: 'market_intel',
-            title: 'Direct Wholesale Sourcing',
-            subtitle: 'Direct-from-farm tubers of Yam and Palm Oil discounts available this week for your local area.',
-            ctaText: 'View Wholesale Gigs',
-            ctaLink: '/explore',
-            urgency: 0.5,
-            businessValue: 0.7
-        });
-    }
-
-    // --- Type E: Sponsored Daily Picks (Ad campaigns) ---
-    const adsStmt = db.prepare(`SELECT * FROM ad_campaigns WHERE status = 'active' LIMIT 2`);
-    let adCount = 0;
-    while (adsStmt.step()) {
-        const ad = adsStmt.getAsObject();
-        rawOpportunities.push({
-            phone,
-            type: 'daily_pick',
-            title: ad.title as string,
-            subtitle: ad.desc as string,
-            ctaText: 'Ask in Web Chat',
-            ctaLink: `/chat?prompt=${encodeURIComponent(`I am interested in ${String(ad.title || 'this offer')}`)}`,
-            urgency: 0.5,
-            businessValue: 1.0 // High revenue sponsored ad
-        });
-        adCount++;
-    }
-    adsStmt.free();
-
-    // Fallback static daily picks if no active campaigns
-    if (adCount === 0) {
-        rawOpportunities.push({
-            phone,
-            type: 'daily_pick',
-            title: 'Ask about local essentials',
-            subtitle: 'Use Web Chat to ask about verified products and fulfilment options when supporting data is available.',
-            ctaText: 'Ask in Web Chat',
-            ctaLink: '/chat?prompt=Help%20me%20find%20verified%20local%20essentials',
-            urgency: 0.5,
-            businessValue: 1.0
-        });
-    }
-
-    // 5. Score opportunities using the formula:
-    // score = (user_need_match * 0.4) + (urgency * 0.3) + (recency * 0.2) + (business_value * 0.1)
-    const rankedOpportunities: Opportunity[] = [];
-
-    for (const opp of rawOpportunities) {
-        // Evaluate user_need_match
-        let userNeedMatch = 0.3; // Default/General
-        if (opp.type === 'reward') {
-            userNeedMatch = 0.6; // High engagement matching
-        } else if (opp.type === 'job') {
-            userNeedMatch = 1.0; // Perfect matching registered skill!
-        } else if (opp.type === 'market_intel' && opp.title.startsWith('Follow-up:')) {
-            userNeedMatch = 1.0; // Perfect match for active open intention!
-        }
-
-        // Evaluate recency decay: query how many times an opportunity with this title has been sent before
-        const recencyStmt = db.prepare(`SELECT COUNT(*) as cnt FROM proactive_opportunities WHERE phone = ? AND title = ?`);
-        recencyStmt.bind([phone, opp.title]);
-        let sentCount = 0;
-        if (recencyStmt.step()) {
-            sentCount = Number(recencyStmt.getAsObject().cnt);
-        }
-        recencyStmt.free();
-
-        const recency = Math.max(0.1, 1.0 - sentCount * 0.1);
-
-        // Calculate final score
-        const score = (userNeedMatch * 0.4) + (opp.urgency * 0.3) + (recency * 0.2) + (opp.businessValue * 0.1);
-
-        rankedOpportunities.push({
-            ...opp,
-            score,
-            status: 'sent'
-        });
-    }
-
-    // Sort descending by score
-    rankedOpportunities.sort((a, b) => (b.score || 0) - (a.score || 0));
-
-    // Keep top 3 ranked opportunities for the day
-    const topThree = rankedOpportunities.slice(0, 3);
-
-    // Save top three to proactive_opportunities table
-    const now = new Date().toISOString();
-    for (const opp of topThree) {
-        db.run(`
-            INSERT INTO proactive_opportunities (phone, type, title, subtitle, cta_text, cta_link, urgency, business_value, status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'sent', ?, ?)
-        `, [opp.phone, opp.type, opp.title, opp.subtitle, opp.ctaText, opp.ctaLink, opp.urgency, opp.businessValue, now, now]);
-    }
-    saveDb();
-
-    // Send push notification for the highest scored opportunity if not throttled
-    // Throttle check: Max 1 push notification per 6 hours
-    const throttleStmt = db.prepare(`
-        SELECT COUNT(*) as cnt FROM proactive_opportunities 
-        WHERE phone = ? AND status = 'sent' AND created_at > datetime('now', '-6 hours')
-    `);
-    let recentSentCount = 0;
-    if (throttleStmt.step()) {
-        recentSentCount = Number(throttleStmt.getAsObject().cnt);
-    }
-    throttleStmt.free();
-
-    if (recentSentCount <= 1 && topThree.length > 0) {
-        const topOpp = topThree[0];
-        await sendFcmPush(phone, topOpp.title, topOpp.subtitle);
-    }
-
-    return topThree;
 }
 
-/**
- * Fetch all opportunities for a user's feed
- */
-export async function getOpportunitiesForFeed(phone: string): Promise<any[]> {
-    await initOpportunityTable();
-    const db = await getDb();
-
-    const stmt = db.prepare(`
-        SELECT * FROM proactive_opportunities 
-        WHERE phone = ? AND status != 'dismissed'
-        ORDER BY created_at DESC LIMIT 15
-    `);
-    const results: any[] = [];
-    while (stmt.step()) {
-        const row = stmt.getAsObject();
-        results.push({
-            id: row.id,
-            phone: row.phone,
-            type: row.type,
-            title: row.title,
-            subtitle: row.subtitle,
-            ctaText: row.cta_text,
-            ctaLink: row.cta_link,
-            urgency: row.urgency,
-            businessValue: row.business_value,
-            status: row.status,
-            createdAt: row.created_at
-        });
-    }
-    stmt.free();
-
-    // If feed is empty, dynamically pre-populate and return top opportunities
-    if (results.length === 0) {
-        const generated = await generateProactiveOpportunities(phone);
-        return generated;
-    }
-
-    return results;
+async function sponsoredCandidates(phone: string, intentionText: string[]): Promise<Opportunity[]> {
+  const haystack = intentionText.join(' ').toLowerCase();
+  if (!haystack) return [];
+  const campaigns = await getAdCampaigns();
+  return campaigns
+    .filter((campaign) => campaign.status === 'active' && campaign.targetKeyword && haystack.includes(campaign.targetKeyword.toLowerCase().trim()))
+    .map((campaign) => ({
+      phone,
+      type: 'daily_pick' as const,
+      title: cleanText(campaign.title, 'Sponsored suggestion', 160),
+      subtitle: `${cleanText(campaign.desc, 'A disclosed sponsored placement.', 260)} ${cleanText(campaign.disclosure, 'External advertisement', 120)}`,
+      ctaText: 'Discuss in Web Chat',
+      ctaLink: promptLink(`I am interested in ${cleanText(campaign.title, 'this sponsored placement', 120)}`),
+      urgency: 0.3,
+      businessValue: 0,
+      status: 'sent' as const,
+      sourceType: 'ad_campaign' as const,
+      sourceId: String(campaign.id),
+      disclosure: cleanText(campaign.disclosure, 'External advertisement', 120),
+      expiresAt: opportunityExpiry(undefined, 24),
+    }));
 }
 
-/**
- * Perform action on a specific opportunity card
- */
-export async function actOnOpportunity(id: number, phone: string): Promise<{ success: boolean; message: string }> {
-    await initOpportunityTable();
-    const db = await getDb();
-    const now = new Date().toISOString();
-
-    // 1. Fetch opportunity details
-    const stmt = db.prepare(`SELECT * FROM proactive_opportunities WHERE id = ? AND phone = ?`);
-    stmt.bind([id, phone]);
-    let opp: any = null;
-    if (stmt.step()) {
-        opp = stmt.getAsObject();
-    }
-    stmt.free();
-
-    if (!opp) {
-        return { success: false, message: 'Opportunity not found' };
-    }
-
-    // 2. Perform type-specific actions
-    let actionMessage = 'Action completed successfully!';
-    if (opp.type === 'reward' && opp.status !== 'acted') {
-        // Trigger +1 Credit reward!
-        await addCredits(phone, 1, 'Daily Engagement Reward');
-        actionMessage = 'Daily reward claimed! +1 Credit added to your balance.';
-    }
-
-    // 3. Update opportunity status to 'acted'
-    db.run(`
-        UPDATE proactive_opportunities 
-        SET status = 'acted', updated_at = ?
-        WHERE id = ? AND phone = ?
-    `, [now, id, phone]);
-    saveDb();
-
-    return { success: true, message: actionMessage };
+async function storeOpportunity(opportunity: Opportunity): Promise<Opportunity> {
+  const db = await getDb();
+  const idempotencyKey = `${opportunity.sourceType}:${opportunity.sourceId}`;
+  db.run(`INSERT OR IGNORE INTO proactive_opportunities
+    (phone,type,title,subtitle,cta_text,cta_link,urgency,business_value,status,source_type,source_id,idempotency_key,disclosure,expires_at,created_at,updated_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`, [
+    opportunity.phone, opportunity.type, opportunity.title, opportunity.subtitle, opportunity.ctaText, opportunity.ctaLink,
+    opportunity.urgency, opportunity.businessValue, opportunity.status, opportunity.sourceType, opportunity.sourceId,
+    idempotencyKey, opportunity.disclosure || null, opportunity.expiresAt,
+  ]);
+  saveDb();
+  const stmt = db.prepare('SELECT * FROM proactive_opportunities WHERE phone=? AND idempotency_key=? LIMIT 1');
+  stmt.bind([opportunity.phone, idempotencyKey]);
+  const row = stmt.step() ? stmt.getAsObject() as Record<string, unknown> : null;
+  stmt.free();
+  return row ? rowToOpportunity(row) : opportunity;
 }
 
-/**
- * Dismiss an opportunity card from feed
- */
+function rowToOpportunity(row: Record<string, unknown>): Opportunity {
+  return {
+    id: Number(row.id), phone: String(row.phone), type: String(row.type) === 'daily_pick' ? 'daily_pick' : 'market_intel',
+    title: String(row.title), subtitle: String(row.subtitle), ctaText: String(row.cta_text), ctaLink: String(row.cta_link),
+    urgency: Number(row.urgency || 0), businessValue: Number(row.business_value || 0), status: String(row.status) as Opportunity['status'],
+    sourceType: String(row.source_type) === 'ad_campaign' ? 'ad_campaign' : 'deferred_intention', sourceId: String(row.source_id || ''),
+    disclosure: row.disclosure ? String(row.disclosure) : undefined, expiresAt: String(row.expires_at || ''),
+    createdAt: row.created_at ? String(row.created_at) : undefined, updatedAt: row.updated_at ? String(row.updated_at) : undefined,
+  };
+}
+
+/** Generate only current, owner-scoped opportunities from canonical evidence. */
+export async function generateProactiveOpportunities(phone: string): Promise<Opportunity[]> {
+  const owner = String(phone || '').trim();
+  if (!owner) throw new Error('Authenticated owner is required');
+  await initOpportunityTable();
+  const deferred = await deferredCandidates(owner);
+  const sponsored = await sponsoredCandidates(owner, deferred.map((item) => item.title));
+  const candidates = [...deferred, ...sponsored].map((item) => ({ ...item, score: score(item) }))
+    .sort((left, right) => (right.score || 0) - (left.score || 0)).slice(0, 3);
+  const stored: Opportunity[] = [];
+  for (const candidate of candidates) stored.push(await storeOpportunity(candidate));
+  return stored;
+}
+
+export async function getOpportunitiesForFeed(phone: string): Promise<Opportunity[]> {
+  const owner = String(phone || '').trim();
+  if (!owner) throw new Error('Authenticated owner is required');
+  await initOpportunityTable();
+  await generateProactiveOpportunities(owner);
+  const db = await getDb();
+  const stmt = db.prepare(`SELECT * FROM proactive_opportunities
+    WHERE phone=? AND status != 'dismissed' AND (expires_at IS NULL OR datetime(expires_at) > datetime('now'))
+    ORDER BY CASE status WHEN 'sent' THEN 0 WHEN 'viewed' THEN 1 ELSE 2 END, created_at DESC LIMIT 15`);
+  stmt.bind([owner]);
+  const results: Opportunity[] = [];
+  while (stmt.step()) results.push(rowToOpportunity(stmt.getAsObject() as Record<string, unknown>));
+  stmt.free();
+  return results;
+}
+
+/** Records the user interaction; the client follows the already-disclosed CTA separately. */
+export async function actOnOpportunity(id: number, phone: string): Promise<{ success: boolean; message: string; ctaLink?: string }> {
+  await initOpportunityTable();
+  const owner = String(phone || '').trim();
+  const db = await getDb();
+  const stmt = db.prepare(`SELECT * FROM proactive_opportunities WHERE id=? AND phone=? AND (expires_at IS NULL OR datetime(expires_at) > datetime('now')) LIMIT 1`);
+  stmt.bind([Number(id), owner]);
+  const row = stmt.step() ? stmt.getAsObject() as Record<string, unknown> : null;
+  stmt.free();
+  if (!row) return { success: false, message: 'Opportunity not found or expired' };
+  if (String(row.status) !== 'acted') db.run(`UPDATE proactive_opportunities SET status='acted', updated_at=CURRENT_TIMESTAMP WHERE id=? AND phone=?`, [Number(id), owner]);
+  saveDb();
+  return { success: true, message: 'Opportunity marked as reviewed. Continue only through the disclosed Kurukoo path.', ctaLink: String(row.cta_link) };
+}
+
 export async function dismissOpportunity(id: number, phone: string): Promise<boolean> {
-    await initOpportunityTable();
-    const db = await getDb();
-    const now = new Date().toISOString();
-
-    db.run(`
-        UPDATE proactive_opportunities 
-        SET status = 'dismissed', updated_at = ?
-        WHERE id = ? AND phone = ?
-    `, [now, id, phone]);
-    saveDb();
-    return true;
+  await initOpportunityTable();
+  const db = await getDb();
+  db.run(`UPDATE proactive_opportunities SET status='dismissed', updated_at=CURRENT_TIMESTAMP WHERE id=? AND phone=? AND status != 'dismissed'`, [Number(id), String(phone || '').trim()]);
+  const changed = db.getRowsModified() > 0;
+  saveDb();
+  return changed;
 }

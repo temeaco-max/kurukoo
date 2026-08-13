@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticateUser, AuthRequest } from '../middleware/auth.js';
 import { getInternalNotifications, markNotificationRead } from '../services/pushNotifications.js';
 import { listCommunicationConsents, recordCommunicationConsent } from '../services/communicationOutbox.js';
+import { actOnOpportunity, dismissOpportunity, getOpportunitiesForFeed } from '../services/opportunityEngine.js';
 
 const router = Router();
 
@@ -50,6 +51,40 @@ router.put('/notifications/preferences/:channel', authenticateUser, async (req: 
     res.json({ success: true, channel, purpose, consent, message: consent === 'granted' ? 'External communication consent recorded. Delivery still depends on configured transport and provider receipts.' : 'External communication delivery is suppressed for this preference.' });
   } catch (error: any) {
     res.status(400).json({ success: false, error: error.message || 'Unable to update communication preference' });
+  }
+});
+
+router.get('/opportunities', authenticateUser, async (req: AuthRequest, res) => {
+  try {
+    const phone = phoneFromRequest(req);
+    if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
+    res.json({ success: true, opportunities: await getOpportunitiesForFeed(phone) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message || 'Unable to load personalised suggestions' });
+  }
+});
+
+router.post('/opportunities/:id/act', authenticateUser, async (req: AuthRequest, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ success: false, error: 'Invalid opportunity id' });
+  try {
+    const result = await actOnOpportunity(id, phoneFromRequest(req));
+    if (!result.success) return res.status(404).json(result);
+    res.json(result);
+  } catch (error: any) {
+    res.status(400).json({ success: false, error: error.message || 'Unable to review suggestion' });
+  }
+});
+
+router.post('/opportunities/:id/dismiss', authenticateUser, async (req: AuthRequest, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ success: false, error: 'Invalid opportunity id' });
+  try {
+    const dismissed = await dismissOpportunity(id, phoneFromRequest(req));
+    if (!dismissed) return res.status(404).json({ success: false, error: 'Suggestion not found or already dismissed' });
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(400).json({ success: false, error: error.message || 'Unable to dismiss suggestion' });
   }
 });
 

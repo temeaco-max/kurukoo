@@ -4,7 +4,6 @@ import {
   expireDeferredIntentions,
   getDueIntentions,
   incrementAttempt,
-  resolveOpenIntention,
   markPartiallyMatched,
 } from './deferredRequestService.js';
 import {
@@ -16,41 +15,30 @@ import {
 import { processDueReminders } from './reminderService.js';
 import { processExpiredCheckIns } from './safetyService.js';
 import { purgeExpiredData } from '../database.js';
-import { find_worker } from './find-worker.js';
-import { sendFcmPush } from './pushNotifications.js';
+import { inviteEligibleProviders } from './providerCoordination.js';
 import { getEconomicRequest, transitionEconomicRequest } from './skillFlows.js';
 import { ensureTrustScoreSchema, recalculateAllTrustScores } from './trustScore.js';
+import { dispatchDueCommunicationOutbox } from './communicationOutbox.js';
+import { expireDueProviderVerifications } from './providerVerification.js';
+import { notifyGoalIfNeeded, reenterDueDeferredGoals, runDueAgentGoals } from './agentRuntime.js';
 
 let started = false;
 const timers: NodeJS.Timeout[] = [];
+const activeTasks = new Set<string>();
 
+/** Prevent a slow interval or bootstrap pass from overlapping the same canonical job. */
 async function safe(label: string, fn: () => Promise<unknown>): Promise<void> {
+  if (activeTasks.has(label)) return;
+  activeTasks.add(label);
   try {
     await fn();
   } catch (e) {
     console.error(`[Worker:${label}]`, e);
+  } finally {
+    activeTasks.delete(label);
   }
 }
 
-type DeferredEconomicProgress = 'quoted' | 'matched_without_quote' | 'not_linked' | 'not_eligible';
-async function progressLinkedEconomicRequest(economicRequestId: string | null | undefined, provider: { phone: string; name: string; rating: number; hourly_rate: number }): Promise<DeferredEconomicProgress> {
-  if (!economicRequestId) return 'not_linked';
-  const req = await getEconomicRequest(String(economicRequestId));
-  if (!req || !['requested', 'awaiting_match', 'partially_matched', 'matched', 'quoting'].includes(req.status)) return 'not_eligible';
-  try {
-    if (req.status === 'requested' || req.status === 'awaiting_match' || req.status === 'partially_matched') {
-      await transitionEconomicRequest(req.id, 'matched', { providerPhone: provider.phone });
-    }
-    const amountMinor = Math.round(Number(provider.hourly_rate));
-    if (!Number.isInteger(amountMinor) || amountMinor <= 0) return 'matched_without_quote';
-    await transitionEconomicRequest(req.id, 'quoting');
-    await transitionEconomicRequest(req.id, 'quoted', {
-      providerPhone: provider.phone,
-      quote: { amount_minor: amountMinor, currency: 'NGN', provider_name: provider.name, rating: provider.rating },
-    });
-    return 'quoted';
-  } catch (e) { console.warn('[Worker:deferred] progressLinkedEconomicRequest failed:', e); return 'not_eligible'; }
-}
 let deferredPassActive = false;
 
 export async function processDueDeferred(): Promise<{ checked: number; matched: number; notified: number; quoted: number }> {
@@ -68,23 +56,26 @@ export async function processDueDeferred(): Promise<{ checked: number; matched: 
         await incrementAttempt(phone || 'unknown', intention.id);
         continue;
       }
-      const match = await find_worker({ skill, location: intention.location ? String(intention.location) : undefined, max: 3 });
-      if (match.count > 0) {
-        matched += 1;
-        const top = match.providers[0];
-        const note = `Matched ${top.name} (${Number(top.rating || 0).toFixed(1)}★) on deferred re-check`;
-        const progress = await progressLinkedEconomicRequest(intention.economic_request_id ? String(intention.economic_request_id) : null, top);
-        if (progress === 'quoted') quoted += 1;
-        if (progress === 'matched_without_quote') {
-          await markPartiallyMatched(phone, intention.id, `${note}. A final provider quote is still required before any payment step.`);
+      const requestId = intention.economic_request_id ? String(intention.economic_request_id) : '';
+      if (!requestId) {
+        await incrementAttempt(phone, intention.id);
+        continue;
+      }
+      try {
+        const coordination = await inviteEligibleProviders({ requestId, ownerPhone: phone, max: 3 });
+        if (coordination.invitations.length > 0) {
+          const request = await getEconomicRequest(requestId);
+          if (request && ['requested', 'awaiting_match', 'partially_matched'].includes(request.status)) {
+            await transitionEconomicRequest(requestId, 'matched', { providerPhone: coordination.invitations[0].providerPhone });
+          }
+          matched += coordination.invitations.length;
+          await markPartiallyMatched(phone, intention.id, 'Eligible providers were invited to review your request. Provider acceptance and a provider-owned quote are still required.');
+          notified += 1;
         } else {
-          await resolveOpenIntention(phone, intention.id, 'provider_matched', note, `Open chat and continue with ${skill}`).catch(async () => {
-            await markPartiallyMatched(phone, intention.id, note).catch(() => null);
-          });
+          await incrementAttempt(phone, intention.id);
         }
-        const pushed = await sendFcmPush(phone, 'Kurukoo found a match', `A provider is available for "${skill}". Open the app and say "continue" to review the quote.`, undefined).catch(() => false);
-        if (pushed) notified += 1;
-      } else {
+      } catch (error) {
+        console.warn('[Worker:deferred] provider invitation re-check failed:', error);
         await incrementAttempt(phone, intention.id);
       }
     }
@@ -106,6 +97,9 @@ export function startBackgroundWorkers(): void {
   const memoryMs = process.env.KURUKOO_MEMORY_INTERVAL_SEC ? Math.max(300_000, Number(process.env.KURUKOO_MEMORY_INTERVAL_SEC) * 1000) : 24 * 60 * 60 * 1000;
   const purgeMs = process.env.KURUKOO_PURGE_INTERVAL_SEC ? Math.max(300_000, Number(process.env.KURUKOO_PURGE_INTERVAL_SEC) * 1000) : 24 * 60 * 60 * 1000;
   const trustMs = process.env.KURUKOO_TRUST_SCORE_INTERVAL_SEC ? Math.max(300_000, Number(process.env.KURUKOO_TRUST_SCORE_INTERVAL_SEC) * 1000) : 24 * 60 * 60 * 1000;
+  const outboxMs = Math.max(10_000, Math.min(5 * 60_000, Number(process.env.KURUKOO_COMMUNICATION_OUTBOX_INTERVAL_MS || 30_000)));
+  const verificationMs = Math.max(60_000, Math.min(24 * 60 * 60 * 1000, Number(process.env.KURUKOO_PROVIDER_VERIFICATION_INTERVAL_MS || 24 * 60 * 60 * 1000)));
+  const agentMs = Math.max(30_000, Math.min(15 * 60_000, Number(process.env.KURUKOO_AGENT_WORKER_INTERVAL_MS || 60_000)));
 
   timers.push(setInterval(() => {
     void safe('orchestration', async () => {
@@ -161,6 +155,23 @@ export function startBackgroundWorkers(): void {
     });
   }, trustMs));
 
+  timers.push(setInterval(() => {
+    void safe('communication-outbox', async () => { await dispatchDueCommunicationOutbox(); });
+  }, outboxMs));
+
+  timers.push(setInterval(() => {
+    void safe('provider-verification', async () => { await expireDueProviderVerifications(); });
+  }, verificationMs));
+
+  if (process.env.KURUKOO_AGENT_ENABLED === 'true') {
+    const runAgentFollowUp = async () => {
+      const updates = [...await runDueAgentGoals(), ...await reenterDueDeferredGoals()];
+      for (const goal of updates) await notifyGoalIfNeeded(goal);
+    };
+    timers.push(setInterval(() => { void safe('agent-follow-up', runAgentFollowUp); }, agentMs));
+    setTimeout(() => { void safe('agent-follow-up:boot', runAgentFollowUp); }, 5_000).unref?.();
+  }
+
   for (const t of timers) t.unref?.();
 
   setTimeout(() => {
@@ -169,13 +180,16 @@ export function startBackgroundWorkers(): void {
     void safe('reminders:boot', async () => { await processDueReminders(100); });
     void safe('safety:boot', async () => { await processExpiredCheckIns(); });
     void safe('trust-score:boot', async () => { await ensureTrustScoreSchema(); await recalculateAllTrustScores(); });
+    void safe('communication-outbox:boot', async () => { await dispatchDueCommunicationOutbox(); });
+    void safe('provider-verification:boot', async () => { await expireDueProviderVerifications(); });
   }, 15_000).unref?.();
 
-  console.log(`[Workers] Started orchestration=${Math.round(orchMs / 1000)}s deferred=${Math.round(deferredMs / 1000)}s reminders=${Math.round(reminderMs / 1000)}s safety=${Math.round(safetyMs / 1000)}s memory=${Math.round(memoryMs / 1000)}s purge=${Math.round(purgeMs / 1000)}s trust=${Math.round(trustMs / 1000)}s`);
+  console.log(`[Workers] Started orchestration=${Math.round(orchMs / 1000)}s deferred=${Math.round(deferredMs / 1000)}s reminders=${Math.round(reminderMs / 1000)}s safety=${Math.round(safetyMs / 1000)}s memory=${Math.round(memoryMs / 1000)}s purge=${Math.round(purgeMs / 1000)}s trust=${Math.round(trustMs / 1000)}s outbox=${Math.round(outboxMs / 1000)}s`);
 }
 
 export function stopBackgroundWorkers(): void {
   for (const t of timers) clearInterval(t);
   timers.length = 0;
+  activeTasks.clear();
   started = false;
 }
