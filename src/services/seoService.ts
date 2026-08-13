@@ -285,7 +285,7 @@ export async function getChildSitemap(type: string): Promise<string> {
     let urls: string[] = [];
 
     if (type === 'pages') {
-        urls = ['/', '/explore', '/pricing', '/about', '/help', '/contact', '/terms', '/privacy'];
+        urls = ['/', '/ng', '/gh', '/gb', '/ca', '/explore', '/pricing', '/about', '/help', '/contact', '/terms', '/privacy'];
     } else if (type === 'categories') {
         urls = ['/explore/transport-mobility', '/explore/food-drink', '/explore/repairs-maintenance', '/explore/health-medical', '/explore/digital-services'];
     } else if (type === 'blog') {
@@ -313,14 +313,19 @@ export async function getSeoPage(urlPath: string) {
     stmt.free();
 
     if (!page) {
+        const canada = urlPath === '/ca';
+        const title = canada ? 'Kurukoo Canada — Web Chat Foundation' : 'Kurukoo — Wake Up. Get Going.';
+        const description = canada
+            ? 'Explore Kurukoo’s Canada web and account foundation. Local provider supply, payment, dispatch and fulfilment are not yet live in this market.'
+            : 'Use Web Chat to organise everyday requests, reminders and supported next steps. Provider, payment and fulfilment states are shown only when verified.';
         return {
             url_path: urlPath,
-            title: 'Kurukoo — Wake Up. Get Going.',
-            meta_description: 'Request services, offer your skills, and connect with trusted providers in your everyday chat.',
-            keywords: 'kurukoo, hustle, services, local jobs, nigera, UK life admin',
+            title,
+            meta_description: description,
+            keywords: canada ? 'Kurukoo Canada, Canadian life admin, CAD, web chat foundation' : 'kurukoo, requests, reminders, services, life admin',
             canonical_url: `https://kurukoo.com${urlPath}`,
-            og_title: 'Kurukoo — Wake Up. Get Going.',
-            og_description: 'Request services, offer your skills, and connect with trusted providers in your everyday chat.',
+            og_title: title,
+            og_description: description,
             og_image: 'https://kurukoo.com/assets/icon-512.png'
         };
     }
@@ -393,8 +398,12 @@ export async function getFaqForPage(urlPath: string) {
     stmt.free();
 
     if (faqs.length === 0) {
+        if (urlPath === '/ca') return [
+            { question: 'Is Kurukoo operating a live provider network in Canada?', answer: 'No. Canada is currently a web, account, CAD and English/French foundation. Kurukoo does not claim live Canadian provider supply, dispatch, payment, escrow or fulfilment.' },
+            { question: 'What can I do in the Canada foundation?', answer: 'You can explore Web Chat and account foundations. A request proceeds only when its canonical provider, payment and fulfilment boundaries are available and verified.' }
+        ];
         return [
-            { question: 'What is Kurukoo?', answer: 'Kurukoo is an AI-powered everyday utility platform that lets you request services, offer your skills, and earn inside your chat.' },
+            { question: 'What is Kurukoo?', answer: 'Kurukoo is a conversational platform for everyday requests, reminders and supported next steps.' },
             { question: 'How do I get started?', answer: 'Open Web Chat and describe what you need. Kurukoo will show the supported next step when the relevant data and service boundary are available.' }
         ];
     }

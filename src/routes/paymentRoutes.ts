@@ -6,7 +6,7 @@
 import { Router } from 'express';
 import { authenticateUser, AuthRequest } from '../middleware/auth.js';
 import { paymentRateLimit } from '../middleware/rateLimit.js';
-import { addPoints, getPointsBalance, addCredits } from '../services/pointsEngine.js';
+import { addPoints, getPointsBalance, getPointsHistory, addCredits } from '../services/pointsEngine.js';
 import { getProfile } from '../services/memoryProfile.js';
 import { getEconomicRequest, transitionEconomicRequest } from '../services/skillFlows.js';
 import { lockEscrowForEconomicRequest } from '../services/tradeEngine.js';
@@ -27,6 +27,16 @@ router.get('/points/balance', authenticateUser, async (req: AuthRequest, res) =>
   if (req.query.phone && String(req.query.phone) !== phone) return res.status(403).json({ error: 'You can only view your own balance' });
   try { const balance = await getPointsBalance(phone); const profile = await getProfile(phone, 'points_query'); res.json({ success: true, points: balance, tier: profile?.subscription_tier || 'Base', currency: 'NGN' }); }
   catch (e: any) { res.status(500).json({ error: e.message || 'Failed to fetch points balance' }); }
+});
+
+router.get('/points/history', authenticateUser, async (req: AuthRequest, res) => {
+  const phone = req.user?.phone ? String(req.user.phone) : null;
+  if (!phone) return res.status(401).json({ error: 'Authenticated phone is required' });
+  if (req.query.phone && String(req.query.phone) !== phone) return res.status(403).json({ error: 'You can only view your own Points history' });
+  const requestedLimit = Number(req.query.limit || 20);
+  const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(100, Math.floor(requestedLimit))) : 20;
+  try { res.json({ success: true, history: await getPointsHistory(phone, limit) }); }
+  catch (error: any) { res.status(500).json({ error: error?.message || 'Failed to fetch Points history' }); }
 });
 
 router.get('/payments/stripe/status', authenticateUser, (_req: AuthRequest, res) => res.json(stripeStatus()));

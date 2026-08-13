@@ -6,486 +6,20 @@
     <title>Kurukoo Unified Admin Console</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/site.css">
-    <style>
-        body {
-            background-color: var(--cream);
-            color: var(--charcoal);
-            font-family: var(--font-body);
-            margin: 0;
-            padding: 0;
-            line-height: 1.6;
-        }
 
-        h1, h2, h3, h4 {
-            font-family: var(--font-heading);
-            color: #1A1A1A;
-            margin-top: 0;
-            letter-spacing: -0.02em;
-        }
-
-        .sidebar {
-            width: 250px;
-            background: #1A1A1A;
-            color: #F8F7F4;
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            padding: 20px;
-            transition: transform 0.3s ease;
-            z-index: 100;
-        }
-
-        .sidebar.collapsed {
-            transform: translateX(-200px);
-        }
-
-        .sidebar-item {
-            display: block;
-            padding: 10px;
-            color: #ccc;
-            text-decoration: none;
-            border-radius: 4px;
-        }
-
-        .sidebar-item:hover {
-            background: #333;
-            color: white;
-        }
-
-        .main-content {
-            margin-left: 250px;
-            transition: margin-left 0.3s ease;
-        }
-
-        .main-content.expanded {
-            margin-left: 50px;
-        }
-
-        .header-bar {
-            background-color: #1A1A1A;
-            color: #F8F7F4;
-            padding: 20px 32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .header-bar .logo {
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .header-bar .logo span {
-            color: #D97A5C;
-        }
-
-        .header-bar nav a {
-            color: #F8F7F4;
-            text-decoration: none;
-            margin-left: 20px;
-            font-weight: 500;
-            font-size: 14px;
-            padding: 8px 16px;
-            border-radius: 6px;
-            transition: background 0.2s;
-        }
-
-        .header-bar nav a:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 40px auto;
-            padding: 0 32px;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 24px;
-            margin-bottom: 40px;
-        }
-
-        .metric-card {
-            background: #FFFFFF;
-            border: 1px solid #E5E2DE;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-
-        .metric-title {
-            font-size: 12px;
-            color: #666;
-            text-transform: uppercase;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            margin-bottom: 8px;
-        }
-
-        .metric-value {
-            font-size: 36px;
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 700;
-            color: #1A1A1A;
-        }
-
-        .layout-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 24px;
-            align-items: start;
-        }
-
-        @media (max-width: 900px) {
-            .layout-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .admin-section {
-            background: #FFFFFF;
-            border: 1px solid #E5E2DE;
-            border-radius: 12px;
-            padding: 32px;
-            margin-bottom: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-
-        .admin-section h3 {
-            font-size: 18px;
-            border-bottom: 1px solid #E5E2DE;
-            padding-bottom: 16px;
-            margin-bottom: 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .btn-action {
-            background-color: #D97A5C;
-            color: #FFFFFF;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-family: 'Inter', sans-serif;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .btn-action:hover {
-            background-color: #C06B4F;
-        }
-
-        .btn-secondary {
-            background-color: #2E2E2E;
-            color: #FFF8F0;
-        }
-
-        .table-container {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            font-size: 14px;
-        }
-
-        th {
-            background-color: #FFF8F0;
-            color: #2E2E2E;
-            font-weight: 600;
-            padding: 12px;
-            border-bottom: 2px solid #EAE0D5;
-        }
-
-        td {
-            padding: 12px;
-            border-bottom: 1px solid #FFF8F0;
-            color: #4A4A4A;
-        }
-
-        tr:hover td {
-            background-color: #FFFDFB;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .badge-active {
-            background-color: rgba(30, 136, 229, 0.1);
-            color: #1E88E5;
-        }
-
-        .badge-spent {
-            background-color: rgba(217, 122, 92, 0.1);
-            color: #D97A5C;
-        }
-
-        /* Modal styling */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(46, 46, 46, 0.6);
-            backdrop-filter: blur(4px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
-        }
-
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .modal-content {
-            background-color: #FFFFFF;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 500px;
-            padding: 24px;
-            border-top: 6px solid #D97A5C;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            font-size: 13px;
-            margin-bottom: 6px;
-            color: #2E2E2E;
-        }
-
-        .form-group input, .form-group textarea, .form-group select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #EAE0D5;
-            border-radius: 4px;
-            background-color: #FFFDFB;
-            font-family: inherit;
-            box-sizing: border-box;
-        }
-
-        .form-group input:focus, .form-group textarea:focus {
-            outline: none;
-            border-color: #D97A5C;
-        }
-
-        .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-            margin-top: 24px;
-        }
-
-        .trend-bar-container {
-            margin-bottom: 12px;
-        }
-
-        .trend-label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 13px;
-            margin-bottom: 4px;
-        }
-
-        .trend-bar-bg {
-            background-color: #FFF8F0;
-            height: 8px;
-            border-radius: 4px;
-            overflow: hidden;
-            border: 1px solid #EAE0D5;
-        }
-
-        .trend-bar-fill {
-            background-color: #D97A5C;
-            height: 100%;
-            border-radius: 4px;
-            transition: width 0.5s ease-out;
-        }
-
-        .trend-bar-fill.blue {
-            background-color: #1E88E5;
-        }
-        .sidebar {
-            width: 260px;
-            background: #111111;
-            color: #F8F7F4;
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            padding: 24px 12px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid #2A2A2A;
-            box-shadow: 4px 0 10px rgba(0,0,0,0.15);
-        }
-
-        .sidebar.collapsed {
-            width: 76px;
-            padding: 24px 8px;
-        }
-
-        .sidebar-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 0 12px;
-            margin-bottom: 28px;
-            overflow: hidden;
-            white-space: nowrap;
-        }
-
-        .sidebar.collapsed .sidebar-brand {
-            justify-content: center;
-            padding: 0;
-        }
-
-        .sidebar-brand-text {
-            font-family: 'Space Grotesk', sans-serif;
-            color: white;
-            font-size: 18px;
-            font-weight: 700;
-            transition: opacity 0.2s;
-        }
-
-        .sidebar.collapsed .sidebar-brand-text {
-            display: none;
-        }
-
-        .sidebar-menu-section {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: #555555;
-            letter-spacing: 0.1em;
-            padding: 16px 12px 8px 12px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .sidebar.collapsed .sidebar-menu-section {
-            display: none;
-        }
-
-        .sidebar-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 14px;
-            color: #a3a3a3;
-            text-decoration: none;
-            border-radius: 8px;
-            margin-bottom: 4px;
-            font-size: 13.5px;
-            font-weight: 500;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-
-        .sidebar.collapsed .sidebar-item {
-            justify-content: center;
-            padding: 10px 0;
-            border-radius: 50%;
-            width: 44px;
-            height: 44px;
-            margin: 0 auto 6px auto;
-        }
-
-        .sidebar-item-label {
-            transition: opacity 0.2s;
-        }
-
-        .sidebar.collapsed .sidebar-item-label {
-            display: none;
-        }
-
-        .sidebar-item:hover {
-            background: #222222;
-            color: #FFFFFF;
-        }
-        
-        .sidebar-item.active {
-            background: #D97A5C;
-            color: white;
-        }
-
-        .sidebar-item svg {
-            width: 20px;
-            height: 20px;
-            min-width: 20px;
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            opacity: 0.8;
-        }
-
-        .main-content {
-            margin-left: 260px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            padding: 32px;
-        }
-
-        .main-content.expanded {
-            margin-left: 76px;
-        }
-
-        .header-bar {
-            background-color: #FFFFFF;
-            color: #1A1A1A;
-            padding: 16px 32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #E5E2DE;
-            margin-bottom: 32px;
-            border-radius: 12px;
-        }
-    </style>
+  <link rel="stylesheet" href="/css/legacy-inline-migration.css?v=1">
 </head>
 <body>
     <div class="sidebar" id="sidebar">
         <div class="sidebar-brand">
-            <svg style="width:24px; height:24px; color:#D97A5C;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="legacy-inline-g71dwx" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
             </svg>
             <span class="sidebar-brand-text">Kurukoo Admin</span>
         </div>
-        
-        <div style="flex-grow: 1; overflow-y: auto; padding-bottom: 20px;">
+
+        <div class="legacy-inline-85h53v">
             <div class="sidebar-menu-section">Core Modules</div>
             <a href="/admin/dashboard.html" class="sidebar-item active" title="Dashboard">
                 <svg viewBox="0 0 24 24">
@@ -629,20 +163,20 @@
             </a>
         </div>
 
-        <button onclick="toggleSidebar()" style="width:100%; background:#222; border:1px solid #333; color:#a3a3a3; padding:12px; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; gap:8px;" title="Collapse Menu">
-            <svg id="sidebar-toggle-icon" style="width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2;" viewBox="0 0 24 24">
+        <button onclick="toggleSidebar()" class="legacy-inline-1oz7i8v" title="Collapse Menu">
+            <svg id="sidebar-toggle-icon" class="legacy-inline-1wstgoc" viewBox="0 0 24 24">
                 <polyline points="11 17 6 12 11 7"></polyline>
                 <polyline points="18 17 13 12 18 7"></polyline>
             </svg>
             <span class="sidebar-item-label" id="toggle-button-text">Collapse Menu</span>
         </button>
     </div>
-    
+
     <div class="main-content" id="main-content">
         <div class="header-bar">
-            <div class="logo" style="font-weight: 700; font-size: 20px;"><span>Kurukoo</span> Admin Console</div>
-            <nav style="display: flex; gap: 8px; align-items: center;">
-                <a href="/dashboard.html" target="_blank" style="padding:8px 16px; border:1px solid #E5E2DE; border-radius:8px; text-decoration:none; color:#1A1A1A;">View Live App</a>
+            <div class="logo legacy-inline-1fafmww"><span>Kurukoo</span> Admin Console</div>
+            <nav class="legacy-inline-3yos7v">
+                <a href="/dashboard.html" target="_blank" class="legacy-inline-tfyzm7">View Live App</a>
             </nav>
         </div>
 
@@ -706,7 +240,7 @@
                                     <th>Post-Match Action</th>
                                     <th>Payment Model</th>
                                     <th>Fulfillment</th>
-                                    <th style="text-align: right;">Actions</th>
+                                    <th class="legacy-inline-i0oyy0">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="skill-flows-tbody">
@@ -754,7 +288,7 @@
                                     <th>Title</th>
                                     <th>Type</th>
                                     <th>Author</th>
-                                    <th style="text-align: right;">Actions</th>
+                                    <th class="legacy-inline-i0oyy0">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="cms-tbody">
@@ -770,8 +304,8 @@
                 <!-- SECTION 9: Active Pulse Broadcasts -->
                 <div class="admin-section">
                     <h3>Active Pulse Broadcasts</h3>
-                    <div id="pulse-sessions-list" style="font-size: 14px;">
-                        <p style="color: #7A7A7A;">No active broadcast sessions currently detected on map grid.</p>
+                    <div id="pulse-sessions-list" class="legacy-inline-9zefdl">
+                        <p class="legacy-inline-3b24bx">No active broadcast sessions currently detected on map grid.</p>
                     </div>
                 </div>
 
@@ -779,7 +313,7 @@
                 <div class="admin-section">
                     <h3>Intelligence Analytics</h3>
                     <div id="analytics-section">
-                        <p style="font-size: 13px; color: #7A7A7A; margin-bottom: 16px;">Top contextual keyword hits parsed in raw conversational threads:</p>
+                        <p class="legacy-inline-u6cad3">Top contextual keyword hits parsed in raw conversational threads:</p>
                         <div id="trends-bars">
                             <!-- Bars loaded dynamically -->
                             Loading analytical intelligence...
@@ -799,38 +333,38 @@
                 <!-- SECTION 11: Internal Notification and Lifecycle Observability -->
                 <div class="admin-section">
                     <h3>Internal Notification and Lifecycle Observability</h3>
-                    <p style="font-size: 13px; color: #7A7A7A; margin-bottom: 16px;">
+                    <p class="legacy-inline-u6cad3">
                         Canonical request, reminder, safety, and internal notification metrics. External delivery adapters are not represented as active here:
                     </p>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-                        <div style="background: #F0F9FF; border: 1px solid #BAE6FD; padding: 12px; border-radius: 8px; text-align: center;">
-                            <div style="font-size: 11px; color: #0369A1; font-weight: 700; text-transform: uppercase;">Unread Internal Notifications</div>
-                            <div id="platform-unread-notifications" style="font-size: 24px; font-weight: 700; color: #0369A1; font-family: 'Space Grotesk', sans-serif;">0</div>
+                    <div class="legacy-inline-1kgse2x">
+                        <div class="legacy-inline-xfsptd">
+                            <div class="legacy-inline-115rql2">Unread Internal Notifications</div>
+                            <div id="platform-unread-notifications" class="legacy-inline-15tai86">0</div>
                         </div>
-                        <div style="background: #ECFDF5; border: 1px solid #A7F3D0; padding: 12px; border-radius: 8px; text-align: center;">
-                            <div style="font-size: 11px; color: #047857; font-weight: 700; text-transform: uppercase;">Active Reminders</div>
-                            <div id="platform-active-reminders" style="font-size: 24px; font-weight: 700; color: #047857; font-family: 'Space Grotesk', sans-serif;">0</div>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-                        <div style="background: #FFFBEB; border: 1px solid #FDE68A; padding: 12px; border-radius: 8px; text-align: center;">
-                            <div style="font-size: 11px; color: #B45309; font-weight: 700; text-transform: uppercase;">Active Safety Check-ins</div>
-                            <div id="platform-active-checkins" style="font-size: 24px; font-weight: 700; color: #B45309; font-family: 'Space Grotesk', sans-serif;">0</div>
-                        </div>
-                        <div style="background: #FFF5F5; border: 1px solid #FECACA; padding: 12px; border-radius: 8px; text-align: center;">
-                            <div style="font-size: 11px; color: #B91C1C; font-weight: 700; text-transform: uppercase;">Open Economic Requests</div>
-                            <div id="platform-open-requests" style="font-size: 24px; font-weight: 700; color: #B91C1C; font-family: 'Space Grotesk', sans-serif;">0</div>
+                        <div class="legacy-inline-hen0ti">
+                            <div class="legacy-inline-1dt5cyz">Active Reminders</div>
+                            <div id="platform-active-reminders" class="legacy-inline-lg0g5l">0</div>
                         </div>
                     </div>
 
-                    <div style="background: #FAF5FF; border: 1px solid #E9D5FF; padding: 12px; border-radius: 8px; margin-bottom: 16px; text-align: center;">
-                        <div style="font-size: 11px; color: #6B21A8; font-weight: 700; text-transform: uppercase;">Completed Economic Requests</div>
-                        <div id="platform-completed-requests" style="font-size: 20px; font-weight: 700; color: #6B21A8; font-family: 'Space Grotesk', sans-serif;">0</div>
+                    <div class="legacy-inline-1kgse2x">
+                        <div class="legacy-inline-1a0g1nn">
+                            <div class="legacy-inline-qjukdp">Active Safety Check-ins</div>
+                            <div id="platform-active-checkins" class="legacy-inline-1uv3hc7">0</div>
+                        </div>
+                        <div class="legacy-inline-1m5q5q5">
+                            <div class="legacy-inline-vzjg31">Open Economic Requests</div>
+                            <div id="platform-open-requests" class="legacy-inline-u99bbb">0</div>
+                        </div>
                     </div>
 
-                    <h4 style="margin-top: 16px; margin-bottom: 8px; font-size: 13px;">Recent Internal Observability</h4>
-                    <div id="platform-observability-stream" style="font-size: 12px; max-height: 200px; overflow-y: auto; border: 1px solid #E5E2DE; border-radius: 6px; padding: 8px; background: #FFF;">
+                    <div class="legacy-inline-1pmds5p">
+                        <div class="legacy-inline-bpq0fo">Completed Economic Requests</div>
+                        <div id="platform-completed-requests" class="legacy-inline-1tfcwq4">0</div>
+                    </div>
+
+                    <h4 class="legacy-inline-oqz28f">Recent Internal Observability</h4>
+                    <div id="platform-observability-stream" class="legacy-inline-14fazdc">
                         Loading internal metrics...
                     </div>
                 </div>
@@ -847,7 +381,7 @@
                                     <th>Order</th>
                                     <th>Reason</th>
                                     <th>Status</th>
-                                    <th style="text-align: right;">Actions</th>
+                                    <th class="legacy-inline-i0oyy0">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="disputes-tbody">
@@ -868,7 +402,7 @@
                                     <th>User</th>
                                     <th>Message</th>
                                     <th>Status</th>
-                                    <th style="text-align: right;">Actions</th>
+                                    <th class="legacy-inline-i0oyy0">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="tickets-tbody">
@@ -959,7 +493,7 @@
     <!-- Modal for CMS Page Create/Update -->
     <div id="cms-modal" class="modal-overlay">
         <div class="modal-content">
-            <h3 id="cms-modal-title" style="color:var(--terracotta); font-family:'Space Grotesk',sans-serif; margin-bottom:16px;">Create CMS Page</h3>
+            <h3 id="cms-modal-title" class="legacy-inline-rdwla6">Create CMS Page</h3>
             <form id="cms-form" onsubmit="saveCmsPage(event)">
                 <div class="form-group">
                     <label for="cms-slug">Slug (Unique Name / ID)</label>
@@ -971,7 +505,7 @@
                 </div>
                 <div class="form-group">
                     <label for="cms-type">Content Type</label>
-                    <select id="cms-type" style="width:100%; padding:8px; border:1px solid #C4B6A6; border-radius:4px;">
+                    <select id="cms-type" class="legacy-inline-1ihzpxf">
                         <option value="blog">Blog Post</option>
                         <option value="help">Help Article</option>
                         <option value="legal">Legal & Terms</option>
@@ -996,13 +530,13 @@
 
     <!-- Modal for Support Ticket Reply -->
     <div id="ticket-reply-modal" class="modal-overlay">
-        <div class="modal-content" style="border-top: 4px solid var(--electric-blue);">
-            <h3 style="color:var(--electric-blue); font-family:'Space Grotesk',sans-serif; margin-bottom:16px;">Reply to Support Ticket</h3>
+        <div class="modal-content legacy-inline-1ijhkvi">
+            <h3 class="legacy-inline-13sdzyf">Reply to Support Ticket</h3>
             <form id="ticket-reply-form" onsubmit="submitTicketReply(event)">
                 <input type="hidden" id="reply-ticket-id">
                 <div class="form-group">
                     <label>User's Message</label>
-                    <div id="reply-ticket-message" style="background: #FFF8F0; padding: 10px; border-radius: 4px; font-size:13px; color: #555; max-height:100px; overflow-y:auto; border:1px solid #EADCC9; margin-top:4px;">...</div>
+                    <div id="reply-ticket-message" class="legacy-inline-bfvgsd">...</div>
                 </div>
                 <div class="form-group">
                     <label for="reply-content">Agent Reply Content</label>
@@ -1010,7 +544,7 @@
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-action btn-secondary" onclick="closeTicketReplyModal()">Cancel</button>
-                    <button type="submit" class="btn-action" style="background-color: var(--electric-blue); border-color:var(--electric-blue);">Send Reply & Resolve</button>
+                    <button type="submit" class="btn-action legacy-inline-6uiz6m">Send Reply & Resolve</button>
                 </div>
             </form>
         </div>
@@ -1035,13 +569,13 @@
                         <td><strong>${f.skill}</strong></td>
                         <td><span class="badge badge-active">${f.post_match_action}</span></td>
                         <td>${f.payment_model}</td>
-                        <td style="max-width: 250px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${f.fulfillment_instructions || 'N/A'}</td>
-                        <td style="text-align: right;">
-                            <button class="btn-action" style="padding: 4px 8px; font-size:12px; background-color:#1E88E5;" onclick="editSkillFlow('${escapeHtml(JSON.stringify(f))}')">Edit</button>
-                            <button class="btn-action btn-secondary" style="padding: 4px 8px; font-size:12px;" onclick="deleteSkillFlow('${f.skill}')">Delete</button>
+                        <td class="legacy-inline-1t4sc4u">${f.fulfillment_instructions || 'N/A'}</td>
+                        <td class="legacy-inline-i0oyy0">
+                            <button class="btn-action legacy-inline-r67ggt" onclick="editSkillFlow('${escapeHtml(JSON.stringify(f))}')">Edit</button>
+                            <button class="btn-action btn-secondary legacy-inline-1n0fws7" onclick="deleteSkillFlow('${f.skill}')">Delete</button>
                         </td>
                     </tr>
-                `).join('') || `<tr><td colspan="5" style="text-align:center;">No custom skill flows defined. Click add flow above!</td></tr>`;
+                `).join('') || `<tr><td colspan="5" class="legacy-inline-f5comt">No custom skill flows defined. Click add flow above!</td></tr>`;
             }).catch(e => console.error('Skill flows load error:', e));
 
             // Load ad campaigns
@@ -1055,20 +589,20 @@
                         <td>${ad.creditsSpent}</td>
                         <td><span class="badge ${ad.status === 'active' ? 'badge-active' : 'badge-spent'}">${ad.status}</span></td>
                     </tr>
-                `).join('') || `<tr><td colspan="5" style="text-align:center;">No campaigns active.</td></tr>`;
+                `).join('') || `<tr><td colspan="5" class="legacy-inline-f5comt">No campaigns active.</td></tr>`;
             }).catch(e => console.error('Ads load error:', e));
 
             // Load active pulse sessions
             fetch('/api/admin/pulse-sessions').then(res=>res.json()).then(sessions => {
                 const div = document.getElementById('pulse-sessions-list');
                 div.innerHTML = sessions.map(s => `
-                    <div style="background-color:#FFF8F0; border:1px dashed #EAE0D5; padding:12px; border-radius:6px; margin-bottom:10px;">
+                    <div class="legacy-inline-j1frh1">
                         <strong>${s.name}</strong> (${s.location})<br/>
-                        Broadcasting: <span style="color:#D97A5C; font-weight:600;">${s.skill}</span><br/>
+                        Broadcasting: <span class="legacy-inline-lcg77">${s.skill}</span><br/>
                         Coords: [${s.lat.toFixed(4)}, ${s.lng.toFixed(4)}]<br/>
-                        <span style="font-size:11px; color:#7A7A7A;">Expires: ${s.expires_at}</span>
+                        <span class="legacy-inline-wlr3fn">Expires: ${s.expires_at}</span>
                     </div>
-                `).join('') || `<p style="color:#7A7A7A; text-align:center; padding:16px;">No live broadcasts active on map grid.</p>`;
+                `).join('') || `<p class="legacy-inline-1noqu7t">No live broadcasts active on map grid.</p>`;
             }).catch(e => console.error('Pulse sessions error:', e));
 
             // Load real-time trends analytics
@@ -1084,11 +618,11 @@
                                 <span>${t.count} hits</span>
                             </div>
                             <div class="trend-bar-bg">
-                                <div class="trend-bar-fill" style="width: ${percent}%;"></div>
+                                <div class="trend-bar-fill legacy-inline-qdc8mx"></div>
                             </div>
                         </div>
                     `;
-                }).join('') || `<p style="color:#7A7A7A; font-size:12px;">Waiting for conversational queries to aggregate trends...</p>`;
+                }).join('') || `<p class="legacy-inline-ez4s4">Waiting for conversational queries to aggregate trends...</p>`;
 
                 // Density
                 const densityDiv = document.getElementById('density-bars');
@@ -1101,11 +635,11 @@
                                 <span>${d.providersCount} active profiles</span>
                             </div>
                             <div class="trend-bar-bg">
-                                <div class="trend-bar-fill blue" style="width: ${percent}%;"></div>
+                                <div class="trend-bar-fill blue legacy-inline-qdc8mx"></div>
                             </div>
                         </div>
                     `;
-                }).join('') || `<p style="color:#7A7A7A; font-size:12px;">No regional profile data distributed.</p>`;
+                }).join('') || `<p class="legacy-inline-ez4s4">No regional profile data distributed.</p>`;
             }).catch(e => console.error('Analytics trends error:', e));
 
             // CMS, Disputes, and Support Tickets Loaders
@@ -1257,14 +791,14 @@
                     <tr>
                         <td><strong>${page.slug}</strong></td>
                         <td>${page.title}</td>
-                        <td><span class="badge badge-active" style="background:#1E88E5;">${page.type}</span></td>
+                        <td><span class="badge badge-active legacy-inline-lbeqa">${page.type}</span></td>
                         <td>${page.author || 'Admin'}</td>
-                        <td style="text-align: right;">
-                            <button class="btn-action" style="padding: 4px 8px; font-size:12px; background-color:#1E88E5;" onclick="editCmsPage('${escapeHtml(JSON.stringify(page))}')">Edit</button>
-                            <button class="btn-action btn-secondary" style="padding: 4px 8px; font-size:12px;" onclick="deleteCmsPage('${page.slug}')">Delete</button>
+                        <td class="legacy-inline-i0oyy0">
+                            <button class="btn-action legacy-inline-r67ggt" onclick="editCmsPage('${escapeHtml(JSON.stringify(page))}')">Edit</button>
+                            <button class="btn-action btn-secondary legacy-inline-1n0fws7" onclick="deleteCmsPage('${page.slug}')">Delete</button>
                         </td>
                     </tr>
-                `).join('') || `<tr><td colspan="5" style="text-align:center;">No CMS content found. Click create page to add!</td></tr>`;
+                `).join('') || `<tr><td colspan="5" class="legacy-inline-f5comt">No CMS content found. Click create page to add!</td></tr>`;
             }).catch(e => console.error('CMS load error:', e));
         }
 
@@ -1333,17 +867,17 @@
                         <td><strong>#${d.id}</strong></td>
                         <td>${d.phone}</td>
                         <td>Order #${d.order_id || 'N/A'}</td>
-                        <td style="max-width:200px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${d.reason}</td>
-                        <td><span class="badge ${d.status === 'open' ? 'badge-active' : d.status === 'escalated' ? 'badge-spent' : 'badge-spent'}" style="background:${d.status === 'open' ? 'var(--terracotta)' : d.status === 'escalated' ? '#e0a800' : '#28a745'};">${d.status}</span></td>
-                        <td style="text-align: right;">
+                        <td class="legacy-inline-1xb426h">${d.reason}</td>
+                        <td><span class="badge ${d.status === 'open' ? 'badge-active' : d.status === 'escalated' ? 'badge-spent' : 'badge-spent'} legacy-inline-43oemz">${d.status}</span></td>
+                        <td class="legacy-inline-i0oyy0">
                             ${d.status === 'open' || d.status === 'escalated' ? `
-                                <button class="btn-action" style="padding: 4px 8px; font-size:11px; background-color:#28a745;" onclick="resolveDisputeAction('${d.id}', 'refund')">Refund</button>
-                                <button class="btn-action" style="padding: 4px 8px; font-size:11px; background-color:#007bff;" onclick="resolveDisputeAction('${d.id}', 'release')">Release</button>
-                                <button class="btn-action btn-secondary" style="padding: 4px 8px; font-size:11px;" onclick="escalateDisputeAction('${d.id}')">Escalate</button>
-                            ` : `<span style="font-size:11px; color:#777;">Resolved</span>`}
+                                <button class="btn-action legacy-inline-43jt7d" onclick="resolveDisputeAction('${d.id}', 'refund')">Refund</button>
+                                <button class="btn-action legacy-inline-1jq74id" onclick="resolveDisputeAction('${d.id}', 'release')">Release</button>
+                                <button class="btn-action btn-secondary legacy-inline-1cp1wlc" onclick="escalateDisputeAction('${d.id}')">Escalate</button>
+                            ` : `<span class="legacy-inline-8r856a">Resolved</span>`}
                         </td>
                     </tr>
-                `).join('') || `<tr><td colspan="6" style="text-align:center;">No active disputes.</td></tr>`;
+                `).join('') || `<tr><td colspan="6" class="legacy-inline-f5comt">No active disputes.</td></tr>`;
             }).catch(e => console.error('Disputes load error:', e));
         }
 
@@ -1387,15 +921,15 @@
                     <tr>
                         <td><strong>#${t.id}</strong></td>
                         <td>${t.phone}</td>
-                        <td style="max-width:250px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${t.reason}</td>
-                        <td><span class="badge ${t.status === 'open' ? 'badge-active' : 'badge-spent'}" style="background:${t.status === 'open' ? 'var(--electric-blue)' : '#28a745'};">${t.status}</span></td>
-                        <td style="text-align: right;">
+                        <td class="legacy-inline-rb92jo">${t.reason}</td>
+                        <td><span class="badge ${t.status === 'open' ? 'badge-active' : 'badge-spent'} legacy-inline-3jpix9">${t.status}</span></td>
+                        <td class="legacy-inline-i0oyy0">
                             ${t.status === 'open' ? `
-                                <button class="btn-action" style="padding: 4px 8px; font-size:11px; background-color:var(--electric-blue);" onclick="openTicketReplyModal('${t.id}', '${escapeHtml(t.reason)}')">Reply & Resolve</button>
-                            ` : `<span style="font-size:11px; color:#777;">Resolved</span>`}
+                                <button class="btn-action legacy-inline-g48ih" onclick="openTicketReplyModal('${t.id}', '${escapeHtml(t.reason)}')">Reply & Resolve</button>
+                            ` : `<span class="legacy-inline-8r856a">Resolved</span>`}
                         </td>
                     </tr>
-                `).join('') || `<tr><td colspan="5" style="text-align:center;">No support tickets active.</td></tr>`;
+                `).join('') || `<tr><td colspan="5" class="legacy-inline-f5comt">No support tickets active.</td></tr>`;
             }).catch(e => console.error('Tickets load error:', e));
         }
 
@@ -1441,7 +975,7 @@
             const mainContent = document.getElementById('main-content');
             const toggleIcon = document.getElementById('sidebar-toggle-icon');
             const buttonText = document.getElementById('toggle-button-text');
-            
+
             if (isCollapsed) {
                 sidebar.classList.add('collapsed');
                 mainContent.classList.add('expanded');

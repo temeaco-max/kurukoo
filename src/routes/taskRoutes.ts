@@ -4,9 +4,9 @@
  * by the underlying task service.
  */
 import { Router } from 'express';
-import { authenticateUser, AuthRequest } from '../middleware/auth.js';
+import { authenticateAdmin, authenticateUser, AuthRequest } from '../middleware/auth.js';
 import { bookAppointment } from '../services/appointmentService.js';
-import { getAvailableTasks, acceptTask, completeTask } from '../services/microTasks.js';
+import { getAvailableTasks, getContributorTasks, getSubmittedTasks, acceptTask, completeTask, submitTaskEvidence, moderateTask } from '../services/microTasks.js';
 
 const router = Router();
 
@@ -56,6 +56,14 @@ router.get('/tasks', authenticateUser, async (req: AuthRequest, res) => {
   }
 });
 
+router.get('/tasks/mine', authenticateUser, async (req: AuthRequest, res) => {
+  const phone = sessionPhone(req);
+  if (!phone) return res.status(401).json({ error: 'Authentication required' });
+  if (req.query?.phone && String(req.query.phone) !== phone) return res.status(403).json({ error: 'Forbidden: phone must match session' });
+  try { res.json({ success: true, tasks: await getContributorTasks(phone) }); }
+  catch { res.status(500).json({ error: 'Failed to fetch contributor tasks' }); }
+});
+
 router.post('/tasks/accept', authenticateUser, async (req: AuthRequest, res) => {
   const phone = sessionPhone(req);
   if (!phone) return res.status(401).json({ error: 'Authentication required' });
@@ -65,11 +73,21 @@ router.post('/tasks/accept', authenticateUser, async (req: AuthRequest, res) => 
   const taskId = positiveInteger(req.body?.taskId ?? req.body?.task_id);
   if (!taskId) return res.status(400).json({ error: 'A positive taskId is required' });
   try {
-    await acceptTask(phone, taskId);
-    res.json({ success: true });
-  } catch {
-    res.status(500).json({ error: 'Failed to accept task' });
+    const result = await acceptTask(phone, taskId);
+    res.json(result);
+  } catch (error) {
+    res.status(409).json({ error: error instanceof Error ? error.message : 'Failed to accept task' });
   }
+});
+
+router.post('/tasks/evidence', authenticateUser, async (req: AuthRequest, res) => {
+  const phone = sessionPhone(req);
+  if (!phone) return res.status(401).json({ error: 'Authentication required' });
+  if (req.body?.phone && String(req.body.phone) !== phone) return res.status(403).json({ error: 'Forbidden: phone must match session' });
+  const taskId = positiveInteger(req.body?.taskId ?? req.body?.task_id);
+  if (!taskId) return res.status(400).json({ error: 'A positive taskId is required' });
+  try { res.status(201).json(await submitTaskEvidence(phone, taskId, req.body?.evidence)); }
+  catch (error) { res.status(409).json({ error: error instanceof Error ? error.message : 'Failed to submit task evidence' }); }
 });
 
 router.post('/tasks/complete', authenticateUser, async (req: AuthRequest, res) => {
@@ -80,13 +98,28 @@ router.post('/tasks/complete', authenticateUser, async (req: AuthRequest, res) =
   }
   const taskId = positiveInteger(req.body?.taskId ?? req.body?.task_id);
   if (!taskId) return res.status(400).json({ error: 'A positive taskId is required' });
-  const result = typeof req.body?.result === 'string' ? req.body.result : '';
+  const result = typeof req.body?.result === 'string' ? req.body.result.trim() : '';
+  if (!result) return res.status(400).json({ error: 'A task evidence summary is required' });
   try {
     const response = await completeTask(phone, taskId, result);
-    res.json(response);
-  } catch {
-    res.status(500).json({ error: 'Failed to complete task' });
+    res.status(response.idempotent ? 200 : 201).json({ ...response, message: 'Evidence submitted for review. Points are awarded only after approval.' });
+  } catch (error) {
+    res.status(409).json({ error: error instanceof Error ? error.message : 'Failed to submit task evidence' });
   }
+});
+
+router.get('/admin/tasks/submitted', authenticateAdmin, async (_req: AuthRequest, res) => {
+  try { res.json({ success: true, tasks: await getSubmittedTasks() }); }
+  catch { res.status(500).json({ error: 'Failed to fetch submitted task evidence' }); }
+});
+
+router.post('/admin/tasks/:taskId/moderate', authenticateAdmin, async (req: AuthRequest, res) => {
+  const taskId = positiveInteger(req.params.taskId);
+  const decision = req.body?.decision === 'approved' || req.body?.decision === 'rejected' ? req.body.decision : null;
+  if (!taskId || !decision) return res.status(400).json({ error: 'A positive taskId and approved or rejected decision are required' });
+  const moderatorPhone = String(req.user?.phone || req.user?.username || 'admin').slice(0, 128);
+  try { res.json(await moderateTask({ taskId, moderatorPhone, decision, note: req.body?.note })); }
+  catch (error) { res.status(409).json({ error: error instanceof Error ? error.message : 'Failed to moderate task evidence' }); }
 });
 
 export default router;

@@ -1,112 +1,41 @@
 <%- include('_partials/head') %>
 <%- include('_partials/nav') %>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <main class="container page-container">
-    <section class="page-header-center">
-        <span class="badge-pill">Discover &middot; Nearby Pulse</span>
-        <h1 class="page-title">What's happening around you</h1>
-        <p class="page-desc">Live map of nearby providers, AI agents, stationary shops, emergency services and active deals. Locations are fuzzed to ~100m for privacy.</p>
-    </section>
+  <section class="page-header-center">
+    <span class="badge-pill">Discover · Nearby Radar</span>
+    <h1 class="page-title">Nearby providers, when they choose to go live</h1>
+    <p class="page-desc">Nearby Radar shows only approximate, time-bounded presence for evidence-verified mobile and stationary providers. It is not a dispatch, emergency, or external broadcast service.</p>
+  </section>
 
-    <div id="layer-chips" class="layer-chips-bar">
-        <button class="layer-chip active" data-layer="mobile">🟢 Mobile providers</button>
-        <button class="layer-chip" data-layer="stationary">📍 Stationary providers</button>
-        <button class="layer-chip" data-layer="agents">🤖 AI agents</button>
-        <button class="layer-chip" data-layer="emergency">🔴 Emergency</button>
-        <button class="layer-chip" data-layer="deals">🔵 Active deals</button>
-        <button class="layer-chip" data-layer="events">🟣 Events</button>
-    </div>
+  <div class="discover-controls">
+    <button id="use-my-location" class="btn btn-primary" type="button">Use my location</button>
+  </div>
+  <p id="discover-status" class="discover-status" role="status" aria-live="polite"></p>
 
-    <div class="discover-layout">
-        <aside class="discover-sidebar">
-            <h3 class="discover-sidebar-title">Happening now</h3>
-            <div id="discover-list" class="discover-list-box">
-                <div class="muted-info-text">Loading nearby activity…</div>
-            </div>
-        </aside>
-        <div id="discover-map" class="discover-map-box"></div>
-    </div>
+  <div id="layer-chips" class="layer-chips-bar" aria-label="Nearby Radar layers">
+    <button class="layer-chip active" type="button" data-layer="mobile" aria-pressed="true">Mobile providers</button>
+    <button class="layer-chip active" type="button" data-layer="stationary" aria-pressed="true">Stationary providers</button>
+    <button class="layer-chip is-unavailable" type="button" disabled aria-disabled="true" title="Live geographic agent presence is not configured.">AI agents unavailable</button>
+    <button class="layer-chip is-unavailable" type="button" disabled aria-disabled="true" title="Kurukoo does not provide a live emergency-service location feed.">Emergency unavailable</button>
+    <button class="layer-chip is-unavailable" type="button" disabled aria-disabled="true" title="No verified live deal-location source is configured.">Deals unavailable</button>
+    <button class="layer-chip is-unavailable" type="button" disabled aria-disabled="true" title="No verified live event-location source is configured.">Events unavailable</button>
+  </div>
 
-    <p class="discover-disclaimer">
-        🔒 Privacy: your location is fuzzed to ~100m and never shown publicly without consent.
-    </p>
+  <div class="discover-layout">
+    <aside class="discover-sidebar" aria-label="Nearby activity">
+      <h2 class="discover-sidebar-title">Happening nearby</h2>
+      <div id="discover-list" class="discover-list-box">
+        <div class="muted-info-text">Choose “Use my location” to load approximate nearby presence.</div>
+      </div>
+    </aside>
+    <div id="discover-map" class="discover-map-box" aria-label="Map of approximate nearby provider presence"></div>
+  </div>
+
+  <p class="discover-disclaimer">Privacy: provider coordinates are deliberately fuzzed to about 100 metres. Exact coordinates and contact details are not published by Nearby Radar.</p>
 </main>
 
-<script>
-(function(){
-    const activeLayers = { mobile:true, stationary:true, agents:true, emergency:true, deals:true, events:true };
-    const map = L.map('discover-map').setView([6.5244, 3.3792], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
-
-    const layerGroups = {};
-    document.querySelectorAll('.layer-chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-            const layer = chip.dataset.layer;
-            activeLayers[layer] = !activeLayers[layer];
-            chip.classList.toggle('active', activeLayers[layer]);
-            if (layerGroups[layer]) {
-                if (activeLayers[layer]) layerGroups[layer].addTo(map);
-                else map.removeLayer(layerGroups[layer]);
-            }
-        });
-    });
-
-    const colorFor = { mobile:'#25D366', stationary:'#E67E22', agents:'#8E44AD', emergency:'#E74C3C', deals:'#2E86DE', events:'#D35400' };
-
-    async function loadDiscover() {
-        try {
-            const center = map.getCenter();
-            const layers = Object.keys(activeLayers).filter(k=>activeLayers[k]).join(',');
-            const res = await fetch(`/api/discover/map?lat=${center.lat}&lng=${center.lng}&radius=10000&layers=${layers}`);
-            const data = await res.json();
-            render(data);
-        } catch(e) {
-            document.getElementById('discover-list').innerHTML = '<div class="muted-info-text">Could not load map data.</div>';
-        }
-    }
-
-    function render(data) {
-        Object.values(layerGroups).forEach(g => map.removeLayer(g));
-        Object.keys(layerGroups).forEach(k => delete layerGroups[k]);
-        const list = document.getElementById('discover-list');
-        list.innerHTML = '';
-        const features = data && data.features ? data.features : [];
-        if (!features.length) list.innerHTML = '<div class="muted-info-text">No active activity in this area yet.</div>';
-
-        features.forEach(f => {
-            const { layer, name, detail, lat, lng } = f.properties || {};
-            const color = colorFor[layer] || '#888';
-            if (lat && lng && activeLayers[layer] !== false) {
-                const g = layerGroups[layer] || (layerGroups[layer] = L.layerGroup());
-                L.circleMarker([lat,lng], { radius: 8, color, fillColor: color, fillOpacity: 0.8 }).bindPopup(`<strong>${name}</strong><br/>${detail||''}`).addTo(g);
-                if (activeLayers[layer]) g.addTo(map);
-            }
-            if (activeLayers[layer] !== false) {
-                const item = document.createElement('div');
-                item.className = 'discover-list-item-node';
-                const indicator = document.createElement('span');
-                indicator.className = 'dot-indicator';
-                indicator.style.backgroundColor = color;
-                const text = document.createElement('div');
-                const title = document.createElement('div');
-                title.className = 'item-title-bold';
-                title.textContent = String(name || 'Activity');
-                const detailText = document.createElement('div');
-                detailText.className = 'item-detail-muted';
-                detailText.textContent = String(detail || '');
-                text.append(title, detailText);
-                item.append(indicator, text);
-                list.appendChild(item);
-            }
-        });
-    }
-
-    map.on('moveend', loadDiscover);
-    setInterval(loadDiscover, 30000);
-    loadDiscover();
-})();
-</script>
-
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/js/discover.js" defer></script>
 <%- include('_partials/footer') %>

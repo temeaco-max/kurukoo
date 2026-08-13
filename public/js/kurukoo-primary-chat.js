@@ -650,8 +650,9 @@
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'suggestion-btn sponsored';
-        btn.appendChild(makeElement('span', '', 'Sponsored'));
+        btn.appendChild(makeElement('span', '', String(ad.disclosure || (ad.placementSource === 'kurukoo_sponsored' ? 'Kurukoo-sponsored' : 'External advertisement'))));
         btn.appendChild(makeElement('strong', '', ad.title));
+        btn.title = 'Promotion is not provider verification, a quote, availability, payment, dispatch, or fulfilment evidence.';
         btn.addEventListener('click', () => sendMessage(ad.keyword || ad.title));
         holder.appendChild(btn);
       });
@@ -871,11 +872,40 @@
       setConnection(false, 'Connection issue'); setTypingStatus('error'); assistant.hidden = false; assistant.classList.remove('message-streaming'); assistant.classList.add('message-arrived');
       const bubble = chatContent.querySelector('.message.assistant:last-child .markdown-body'); 
       if (bubble) setMarkdown(bubble, `I’m having trouble completing that right now. **Please try again.**\n\n_${escapeAttr(error.message)}_`); 
-    } finally { setTypingStatus('complete'); state.busy = false; send.disabled = false; input.placeholder = 'Tell Kurukoo what you need…'; input.focus(); loadPoints(); loadReminders(); loadSafety(); loadAgentGoal(); loadRequestContext(); }
+    } finally { setTypingStatus('complete'); state.busy = false; send.disabled = false; input.placeholder = 'Tell Kurukoo what you need…'; input.focus(); loadPoints(); loadPresence(); loadReminders(); loadSafety(); loadAgentGoal(); loadRequestContext(); }
   }
 
   function updateModelStatus(data) { const label = $('model-badge'); if (label && data.model) label.textContent = data.model; }
   async function loadPoints() { try { const res = await fetch('/api/points/balance', { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const points = Number(data.points || 0); const balance = $('points-balance')?.querySelector('span'); if (balance) balance.textContent = points; const ip = $('inspector-points'); if (ip) ip.textContent = points; } catch {} }
+
+  async function loadPresence() {
+    const label = $('presence-label');
+    const detail = $('presence-detail');
+    if (!label || !detail) return;
+    try {
+      const response = await fetch('/api/presence/me', { credentials: 'same-origin' });
+      if (response.status === 401) {
+        label.textContent = 'Sign in to review Go Live status';
+        detail.textContent = 'Go Live is available only to eligible providers who share a valid current location.';
+        return;
+      }
+      if (!response.ok) throw new Error('Presence unavailable');
+      const payload = await response.json();
+      const presence = payload?.presence || {};
+      if (!presence.active) {
+        label.textContent = 'Not currently Go Live';
+        detail.textContent = 'You are not currently shown on Nearby Radar. Go Live remains a time-bounded provider status, not a dispatch or broadcast.';
+        return;
+      }
+      const expiry = presence.expiresAt ? new Date(presence.expiresAt) : null;
+      const expiryCopy = expiry && !Number.isNaN(expiry.getTime()) ? ` until ${expiry.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '';
+      label.textContent = `Go Live · ${String(presence.source || 'provider')}`;
+      detail.textContent = `${String(presence.skill || 'Eligible skill').replace(/_/g, ' ')} is shown as approximate presence${expiryCopy}. Exact coordinates are not displayed.`;
+    } catch {
+      label.textContent = 'Go Live status unavailable';
+      detail.textContent = 'Kurukoo could not load your current presence state. No status change is implied.';
+    }
+  }
 
   const requestStageCopy = {
     requested: ['Request received', 'Kurukoo is collecting the details needed for a supported next step.'],
@@ -1036,6 +1066,7 @@
     } catch { setConnection(false, 'Offline'); }
     loadAgentGoal();
     loadRequestContext();
+    loadPresence();
   }
 
   function renderMessages(messages) {
@@ -1144,7 +1175,7 @@
   applyTheme();
   ensureIdentity().then(ok => { 
     if (ok) {
-      Promise.all([loadPoints(), loadMemory(), loadReminders(), loadSafety(), loadAgentGoal(), loadRequestContext(), refreshHistory()]);
+      Promise.all([loadPoints(), loadPresence(), loadMemory(), loadReminders(), loadSafety(), loadAgentGoal(), loadRequestContext(), refreshHistory()]);
       if (!state.conversationId) renderWelcome();
     }
   });

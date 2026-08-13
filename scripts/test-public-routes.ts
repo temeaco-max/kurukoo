@@ -44,7 +44,7 @@ const expected = [
     '/resources/:slug',
     '/partners',
     '/advertise',
-    '/:country(ng|gh|gb)',
+    '/:country(ng|gh|gb|ca)',
 ];
 
 const stack = (publicRouter as any).stack || [];

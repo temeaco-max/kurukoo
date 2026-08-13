@@ -526,9 +526,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const tagsDiv = document.getElementById('profile-skills-tags');
                 if (tagsDiv && data.skills) {
                     tagsDiv.innerHTML = data.skills.map(s => `
-                        <span class="skill-tag" style="display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:4px 8px; border-radius:12px; background:rgba(217, 122, 92, 0.1); color:var(--terracotta);">
+                        <span class="skill-tag legacy-inline-3gxp7q">
                             ${s.skill}
-                            <span style="cursor:pointer; font-weight:bold; color:red;" onclick="removeUserSkillFromDrawer('${s.skill.replace(/'/g, "\\'")}')">&times;</span>
+                            <span class="legacy-inline-1m3smoq" onclick="removeUserSkillFromDrawer('${s.skill.replace(/'/g, "\\'")}')">&times;</span>
                         </span>
                     `).join('');
                 }
@@ -552,8 +552,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Add activity logs
                 if (drawerActivity) {
                     drawerActivity.innerHTML = `
-                        <div style="padding: 4px 0; border-bottom: 1px solid #eee;">Current Balance: <strong>${bal} Points</strong></div>
-                        <div style="padding: 4px 0; border-bottom: 1px solid #eee;">Tier: <strong>${data.profile.subscription_tier}</strong> (${data.profile.country.toUpperCase()})</div>
+                        <div class="legacy-inline-1808bd8">Current Balance: <strong>${bal} Points</strong></div>
+                        <div class="legacy-inline-1808bd8">Tier: <strong>${data.profile.subscription_tier}</strong> (${data.profile.country.toUpperCase()})</div>
                     `;
                 }
 
@@ -566,11 +566,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         fetch(`/api/tasks?phone=${encodeURIComponent(userPhone)}`)
                             .then(r => r.json())
                             .then(tasks => {
-                                tList.innerHTML = tasks.length === 0 ? '<div style="padding:4px 0;">No available tasks.</div>' : tasks.map(t => `
-                                    <div style="padding:6px; border:1px solid #eee; border-radius:4px; margin-bottom:6px; background:#fcfcfc;">
-                                        <strong>${t.title}</strong> - <span style="color:var(--terracotta);">${t.points_reward} Points</span><br>
-                                        <span style="font-size:11px;">${t.description}</span><br>
-                                        <button onclick="acceptTask(${t.id})" style="margin-top:4px; padding:4px 8px; font-size:11px; background:var(--electric-blue); color:white; border:none; border-radius:4px; cursor:pointer;">Accept Task</button>
+                                tList.innerHTML = tasks.length === 0 ? '<div class="legacy-inline-1jot9tl">No available tasks.</div>' : tasks.map(t => `
+                                    <div class="legacy-inline-1jv4od2">
+                                        <strong>${t.title}</strong> - <span class="legacy-inline-14o3a2o">${t.points_reward} Points</span><br>
+                                        <span class="legacy-inline-1oh8uwz">${t.description}</span><br>
+                                        <button onclick="acceptTask(${t.id})" class="legacy-inline-197ca85">Accept Task</button>
                                     </div>
                                 `).join('');
                             });
@@ -738,27 +738,49 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Emergency contacts loader
+    // Published contact directory only: Kurukoo does not connect, dispatch, or operate emergency services.
+    function renderEmergencyDirectoryMessage(message, className) {
+        if (!emergencyContactsDiv) return;
+        const item = document.createElement('div');
+        item.className = className;
+        item.textContent = message;
+        emergencyContactsDiv.replaceChildren(item);
+    }
+
     async function loadEmergencyContacts() {
         try {
-            emergencyContactsDiv.innerHTML = '<div style="font-size:13px; color:#555;">Querying emergency pipeline...</div>';
+            renderEmergencyDirectoryMessage('Loading published emergency contacts…', 'legacy-inline-1njomhr');
             const res = await fetch(`/api/emergency?phone=${encodeURIComponent(userPhone)}`);
+            if (!res.ok) throw new Error('Emergency contact directory is unavailable');
             const data = await res.json();
-            if (data?.contacts && data.contacts.length > 0) {
-                emergencyContactsDiv.innerHTML = data.contacts.map(c => `
-                    <div style="display:flex; justify-content:space-between; align-items:center; background:#FFF5F5; padding:8px 12px; border-radius:6px; border:1px solid #FAD2D2;">
-                        <div>
-                            <strong style="color:var(--danger-red); font-size:13px;">${c.name}</strong>
-                        </div>
-                        <a href="tel:${c.phone}" style="background:var(--danger-red); color:white; text-decoration:none; padding:4px 10px; border-radius:4px; font-weight:bold; font-size:12px;">CALL ${c.phone}</a>
-                    </div>
-                `).join('');
-            } else {
-                emergencyContactsDiv.innerHTML = '<div style="font-size:13px; color:#555;">No local emergency responders found. Dial 112 / 999.</div>';
+            const contacts = Array.isArray(data?.contacts) ? data.contacts : [];
+            if (!contacts.length) {
+                renderEmergencyDirectoryMessage('No published emergency contact is available for this location. Contact local emergency services directly using the number appropriate to you.', 'legacy-inline-1njomhr');
+                return;
             }
-        } catch (e) {
-            console.error('Error loading emergency contacts:', e);
-            emergencyContactsDiv.innerHTML = '<div style="font-size:13px; color:red;">Failed to connect to local emergency services. Dial 112 / 999.</div>';
+            const fragment = document.createDocumentFragment();
+            contacts.forEach(contact => {
+                const name = String(contact?.name || 'Emergency contact').slice(0, 140);
+                const phone = String(contact?.phone || '').replace(/[^0-9+]/g, '').slice(0, 32);
+                const row = document.createElement('div');
+                row.className = 'legacy-inline-4k3l89';
+                const label = document.createElement('strong');
+                label.className = 'legacy-inline-19ixrls';
+                label.textContent = name;
+                row.appendChild(label);
+                if (phone) {
+                    const call = document.createElement('a');
+                    call.className = 'legacy-inline-seb2gt';
+                    call.href = `tel:${phone}`;
+                    call.textContent = `Call ${phone}`;
+                    row.appendChild(call);
+                }
+                fragment.appendChild(row);
+            });
+            emergencyContactsDiv.replaceChildren(fragment);
+        } catch (error) {
+            console.error('Emergency contact directory unavailable:', error);
+            renderEmergencyDirectoryMessage('Emergency contact information is unavailable. Contact local emergency services directly using the number appropriate to you.', 'legacy-inline-eemgwo');
         }
     }
 
@@ -850,35 +872,28 @@ document.addEventListener('DOMContentLoaded', () => {
         cardDiv.className = 'inline-card';
 
         if (card.type === 'autonomous_agent_state') {
-            cardDiv.style.background = '#f8fafc';
-            cardDiv.style.borderLeft = '4px solid #f97316';
-            cardDiv.style.padding = '12px';
-            cardDiv.style.borderRadius = '8px';
-            cardDiv.style.boxShadow = 'inset 0 1px 3px rgba(0,0,0,0.05)';
-            cardDiv.style.marginTop = '6px';
+            cardDiv.classList.add('legacy-agent-state-card');
 
             if (card.thoughts) {
                 const thoughtEl = document.createElement('div');
-                thoughtEl.style.fontSize = '0.8rem';
-                thoughtEl.style.fontStyle = 'italic';
-                thoughtEl.style.color = '#475569';
-                thoughtEl.style.background = '#f1f5f9';
-                thoughtEl.style.padding = '10px';
-                thoughtEl.style.borderRadius = '6px';
-                thoughtEl.style.marginBottom = '8px';
-                thoughtEl.style.border = '1px solid #e2e8f0';
-                thoughtEl.innerHTML = `🧠 <strong>Thinking process:</strong><br>${card.thoughts}`;
+                thoughtEl.className = 'legacy-agent-thought';
+                const heading = document.createElement('strong');
+                heading.textContent = 'Reasoning summary:';
+                thoughtEl.append('Context review · ', heading, document.createElement('br'), document.createTextNode(String(card.thoughts)));
                 cardDiv.appendChild(thoughtEl);
             }
 
             const detailsEl = document.createElement('div');
-            detailsEl.style.fontSize = '0.85rem';
-            detailsEl.style.fontWeight = '500';
-            detailsEl.style.color = '#1e293b';
-            detailsEl.style.marginBottom = '8px';
-            detailsEl.innerHTML = `🎯 <strong>Agent Category Match:</strong> ${card.category ? card.category.toUpperCase() : 'UNKNOWN'}`;
+            detailsEl.className = 'legacy-agent-details';
+            const categoryHeading = document.createElement('strong');
+            categoryHeading.textContent = 'Request category:';
+            detailsEl.append('Request context · ', categoryHeading, document.createTextNode(` ${card.category ? String(card.category).toUpperCase() : 'UNKNOWN'}`));
             if (card.selectedType) {
-                detailsEl.innerHTML += `<br>✨ <strong>Selected Option:</strong> ${card.selectedType}`;
+                const selectedRow = document.createElement('div');
+                const selectedHeading = document.createElement('strong');
+                selectedHeading.textContent = 'Selected option:';
+                selectedRow.append(selectedHeading, document.createTextNode(` ${String(card.selectedType)}`));
+                detailsEl.appendChild(selectedRow);
             }
             cardDiv.appendChild(detailsEl);
 
@@ -887,35 +902,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!card.hasAllDetails) {
                 let options = [];
-                if (card.category === 'ride') {
-                    options = ['🏍️ Okada', '🛺 Keke', '🚗 Taxi / Car'];
-                } else if (card.category === 'food') {
-                    options = ['🍲 Suya & Masa', '🍚 Rice & Yam Bundle', '🍢 Caterer Platter'];
-                } else if (card.category === 'artisan') {
-                    options = ['🔧 Mobile Mechanic', '🛡️ Event Security', '🇬🇧 Electricity Bill'];
-                }
-
+                if (card.category === 'ride') options = ['🏍️ Okada', '🛺 Keke', '🚗 Taxi / Car'];
+                else if (card.category === 'food') options = ['🍲 Suya & Masa', '🍚 Rice & Yam Bundle', '🍢 Caterer Platter'];
+                else if (card.category === 'artisan') options = ['🔧 Mobile Mechanic', '🛡️ Event Security', '🇬🇧 Electricity Bill'];
                 options.forEach(opt => {
                     const btn = document.createElement('button');
                     btn.className = 'btn-card';
                     btn.textContent = opt;
-                    btn.onclick = () => submitInlineMessage(opt);
+                    btn.addEventListener('click', () => submitInlineMessage(opt));
                     actionsDiv.appendChild(btn);
                 });
             } else {
                 const statusEl = document.createElement('div');
-                statusEl.style.color = '#10b981';
-                statusEl.style.fontSize = '0.8rem';
-                statusEl.style.fontWeight = '700';
-                statusEl.style.marginTop = '4px';
-                statusEl.innerHTML = `⚡ Launching Kurukoo autonomous matching engine... Agent fully synchronized!`;
+                statusEl.className = 'legacy-agent-status';
+                statusEl.textContent = 'Kurukoo has enough request details to check the supported next step. No external action, payment, dispatch or fulfilment has started.';
                 cardDiv.appendChild(statusEl);
             }
 
-            if (actionsDiv.hasChildNodes()) {
-                cardDiv.appendChild(actionsDiv);
-            }
-
+            if (actionsDiv.hasChildNodes()) cardDiv.appendChild(actionsDiv);
             return cardDiv;
         }
 
@@ -925,14 +929,7 @@ document.addEventListener('DOMContentLoaded', () => {
             img.className = 'card-thumbnail';
             img.src = card.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=400';
             img.alt = card.title || 'Product Image';
-            img.onclick = () => {
-                // Simple inline expand effect
-                if (img.style.maxHeight === 'none') {
-                    img.style.maxHeight = '140px';
-                } else {
-                    img.style.maxHeight = 'none';
-                }
-            };
+            img.addEventListener('click', () => img.classList.toggle('is-expanded'));
             cardDiv.appendChild(img);
         }
 
@@ -953,7 +950,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (card.type === 'product_card') {
             const src = document.createElement('div');
             src.className = 'card-source';
-            src.textContent = `Local · ${card.providerName || 'Verified Supplier'}`;
+            src.textContent = card.providerName ? `Provider context · ${card.providerName}` : 'Provider not yet confirmed';
             cardDiv.appendChild(src);
 
             const prc = document.createElement('div');
@@ -1015,17 +1012,46 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (card.type === 'pulse_toggle') {
             const btnGoLive = document.createElement('button');
             btnGoLive.className = 'btn-card primary';
-            btnGoLive.textContent = 'Go Live (Deduct 5 Points)';
+            btnGoLive.textContent = 'Go Live with current location (5 Points)';
             btnGoLive.onclick = async () => {
-                const res = await fetch('/api/pulse/activate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: userPhone, skill: 'service_provider', lat: 7.3775, lng: 3.9470 })
-                });
-                const result = await res.json();
-                alert(result.message);
-                await updateProfile();
-                await loadMessages();
+                const skill = typeof card.skill === 'string' ? card.skill.trim() : '';
+                if (!skill) {
+                    alert('Go Live requires a specific eligible mobile skill. Add or select the skill in your provider profile first.');
+                    return;
+                }
+                if (!navigator.geolocation) {
+                    alert('This browser cannot provide your current location. Kurukoo cannot activate Go Live without one.');
+                    return;
+                }
+                btnGoLive.disabled = true;
+                const originalLabel = btnGoLive.textContent;
+                btnGoLive.textContent = 'Getting current location…';
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    try {
+                        btnGoLive.textContent = 'Activating…';
+                        const res = await fetch('/api/presence/go-live', {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ skill, lat: position.coords.latitude, lng: position.coords.longitude })
+                        });
+                        const result = await res.json();
+                        alert(result.message || result.error || 'Go Live could not be updated.');
+                        if (result.success) {
+                            await updateProfile();
+                            await loadMessages();
+                        }
+                    } catch (_error) {
+                        alert('Go Live could not be activated. Please try again.');
+                    } finally {
+                        btnGoLive.disabled = false;
+                        btnGoLive.textContent = originalLabel;
+                    }
+                }, () => {
+                    btnGoLive.disabled = false;
+                    btnGoLive.textContent = originalLabel;
+                    alert('Kurukoo needs your current location to activate Go Live. No fallback location was used.');
+                }, { enableHighAccuracy: false, maximumAge: 60_000, timeout: 10_000 });
             };
             actionsDiv.appendChild(btnGoLive);
         } else if (card.type === 'survey') {
@@ -1414,133 +1440,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (livecastStreamBtn) {
         livecastStreamBtn.addEventListener('click', () => {
-            if (locationTimer) {
-                clearInterval(locationTimer);
-                locationTimer = null;
-                livecastStatus.textContent = 'Paused (Stream inactive)';
-                livecastStreamBtn.textContent = '📡 Render liveCast Button';
-            } else {
-                livecastStreamBtn.textContent = '🛑 Stop Streaming Location';
-                // Simulate continuous GPS liveCast telemetry stream
-                locationTimer = setInterval(() => {
-                    const lat = (7.3775 + (Math.random() - 0.5) * 0.001).toFixed(6);
-                    const lng = (3.9470 + (Math.random() - 0.5) * 0.001).toFixed(6);
-                    if (livecastStatus) {
-                        livecastStatus.innerHTML = `<span style="color:#2e7d32; font-weight:700;">📡 Streaming:</span> Lat: ${lat}, Lng: ${lng}`;
-                    }
-                    // Draw on Leaflet map if open
-                    updateLiveMap(lat, lng);
-                }, 2000);
+            if (livecastStatus) {
+                livecastStatus.textContent = 'Live location streaming is not enabled in this client. Use provider Go Live to share time-bounded approximate presence.';
             }
+            livecastStreamBtn.disabled = true;
+            livecastStreamBtn.setAttribute('aria-disabled', 'true');
         });
     }
 
-    // --- SECTION 2: Leaflet & OpenStreetMap Integration ---
-    let pulseMap = null;
-    let livePathLine = null;
-    let mapMarkers = [];
-
-    function showPulseMap(providers) {
+    // Nearby provider listings intentionally exclude coordinates. The canonical
+    // Nearby Radar page provides the only public, fuzzed map projection.
+    function showPulseMap(_providers) {
         const mapContainer = document.getElementById('pulse-map');
         if (!mapContainer) return;
-        mapContainer.style.display = 'block';
-
-        // Initialize Leaflet Map if not initialized yet
-        if (!pulseMap) {
-            try {
-                // Center map at Ibadan default
-                pulseMap = L.map('pulse-map').setView([7.3775, 3.9470], 13);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; OpenStreetMap contributors'
-                }).addTo(pulseMap);
-            } catch (e) {
-                console.error('Leaflet initialization failed', e);
-                return;
-            }
-        }
-
-        // Clear existing markers
-        mapMarkers.forEach(m => pulseMap.removeLayer(m));
-        mapMarkers = [];
-
-        // Add terracotta markers for each provider with random offset ±0.001
-        if (providers && providers.length > 0) {
-            providers.forEach(p => {
-                const lat = parseFloat(p.lat) + (Math.random() - 0.5) * 0.002;
-                const lng = parseFloat(p.lng) + (Math.random() - 0.5) * 0.002;
-                
-                // Custom colored circle marker based on source
-                const isStationary = p.source === 'stationary';
-                const markerColor = isStationary ? '#1E88E5' : '#D97A5C'; // Blue for stationary, Terracotta for mobile
-                
-                const marker = L.circleMarker([lat, lng], {
-                    color: markerColor,
-                    fillColor: markerColor,
-                    fillOpacity: 0.8,
-                    radius: isStationary ? 6 : 8
-                }).addTo(pulseMap);
-                
-                const sourceLabel = isStationary ? 'Stationary' : 'Mobile (Live)';
-                marker.bindPopup(`<strong>${p.name || 'Provider'}</strong><br>Skill: ${p.skill || 'General'}<br>Source: ${sourceLabel}`);
-                mapMarkers.push(marker);
-            });
-            
-            // Re-adjust view to fit coordinates
-            try {
-                const group = new L.featureGroup(mapMarkers);
-                pulseMap.fitBounds(group.getBounds());
-            } catch(e) {}
-        } else {
-            pulseMap.setView([7.3775, 3.9470], 13);
-        }
-        
-        // Force map to render correctly when shown
-        setTimeout(() => {
-            if (pulseMap) pulseMap.invalidateSize();
-        }, 200);
-    }
-
-    function updateLiveMap(lat, lng) {
-        const mapContainer = document.getElementById('pulse-map');
-        if (mapContainer && mapContainer.style.display === 'none') {
-            mapContainer.style.display = 'block';
-        }
-
-        if (!pulseMap) {
-            try {
-                pulseMap = L.map('pulse-map').setView([lat, lng], 14);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; OpenStreetMap contributors'
-                }).addTo(pulseMap);
-            } catch (e) {
-                console.error(e);
-                return;
-            }
-        } else {
-            pulseMap.setView([lat, lng], 14);
-        }
-
-        const pLat = parseFloat(lat);
-        const pLng = parseFloat(lng);
-
-        // Add a marker for current location
-        const marker = L.circleMarker([pLat, pLng], {
-            color: '#1E88E5',
-            fillColor: '#1E88E5',
-            fillOpacity: 0.9,
-            radius: 10
-        }).addTo(pulseMap);
-        mapMarkers.push(marker);
-
-        if (!livePathLine) {
-            livePathLine = L.polyline([[pLat, pLng]], {color: '#1E88E5'}).addTo(pulseMap);
-        } else {
-            livePathLine.addLatLng([pLat, pLng]);
-        }
-
-        setTimeout(() => {
-            if (pulseMap) pulseMap.invalidateSize();
-        }, 100);
+        mapContainer.replaceChildren();
+        const message = document.createElement('p');
+        message.textContent = 'Pulse listings do not expose map coordinates here. Use Nearby Radar to view approximate, privacy-protected provider presence.';
+        const link = document.createElement('a');
+        link.href = '/discover';
+        link.textContent = 'Open Nearby Radar';
+        mapContainer.append(message, link);
     }
 
     // --- SECTION 6: Discover & Explore Panel Wiring ---
@@ -1606,7 +1525,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const exploreGigs = document.getElementById('explore-gigs');
             if (exploreGigs) {
                 if (!userPhone) {
-                    exploreGigs.innerHTML = `<div style="text-align:center; padding: 20px; color: #666; font-size:13px;">Please log in or register to view personalized opportunities.</div>`;
+                    exploreGigs.innerHTML = `<div class="legacy-inline-1krz0b3">Please log in or register to view personalized opportunities.</div>`;
                 } else {
                     const oppRes = await fetch(`/api/opportunities?phone=${encodeURIComponent(userPhone)}`);
                     if (oppRes.ok) {
@@ -1653,10 +1572,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                 return card;
                             }));
                         } else {
-                            exploreGigs.innerHTML = `<div style="text-align:center; padding: 20px; color: #666; font-size:13px;">No new opportunities matching your skills right now. Try going live on Kuru Pulse!</div>`;
+                            exploreGigs.innerHTML = `<div class="legacy-inline-1krz0b3">No new opportunities matching your skills right now. Try going live on Kuru Pulse!</div>`;
                         }
                     } else {
-                        exploreGigs.innerHTML = `<div style="text-align:center; padding: 20px; color: red; font-size:13px;">Failed to load opportunities.</div>`;
+                        exploreGigs.innerHTML = `<div class="legacy-inline-17o0cob">Failed to load opportunities.</div>`;
                     }
                 }
             }
@@ -1665,7 +1584,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const exploreDailyPicks = document.getElementById('explore-daily-picks');
             if (exploreDailyPicks) {
                 if (!userPhone) {
-                    exploreDailyPicks.innerHTML = `<div style="text-align:center; padding: 20px; color: #666; font-size:13px;">Log in to see Daily Picks.</div>`;
+                    exploreDailyPicks.innerHTML = `<div class="legacy-inline-1krz0b3">Log in to see Daily Picks.</div>`;
                 } else {
                     const picksRes = await fetch(`/api/opportunities/daily-picks?phone=${encodeURIComponent(userPhone)}`);
                     if (picksRes.ok) {
@@ -1708,10 +1627,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                 return card;
                             }));
                         } else {
-                            exploreDailyPicks.innerHTML = `<div style="text-align:center; padding: 20px; color: #666; font-size:13px;">No promotional picks today. Check back tomorrow!</div>`;
+                            exploreDailyPicks.innerHTML = `<div class="legacy-inline-1krz0b3">No promotional picks today. Check back tomorrow!</div>`;
                         }
                     } else {
-                        exploreDailyPicks.innerHTML = `<div style="text-align:center; padding: 20px; color: red; font-size:13px;">Failed to load daily picks.</div>`;
+                        exploreDailyPicks.innerHTML = `<div class="legacy-inline-17o0cob">Failed to load daily picks.</div>`;
                     }
                 }
             }
@@ -1843,26 +1762,26 @@ document.addEventListener('DOMContentLoaded', () => {
                         const isHeld = order.status === 'held';
                         
                         return `
-                            <div style="padding: 6px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-                                <div style="text-align: left;">
-                                    <strong style="color:var(--charcoal);">${order.description || 'Order'}</strong><br/>
-                                    <span style="font-size:10px; color:#777;">Amt: ${displayAmount} | Status: <span style="font-weight:600; color:${isHeld ? 'var(--electric-blue)' : 'var(--terracotta)'};">${order.status}</span></span>
+                            <div class="legacy-inline-cpo8pj">
+                                <div class="legacy-inline-4cm9li">
+                                    <strong class="legacy-inline-qgf754">${order.description || 'Order'}</strong><br/>
+                                    <span class="legacy-inline-i165pq">Amt: ${displayAmount} | Status: <span class="legacy-inline-1ug2akj">${order.status}</span></span>
                                 </div>
                                 ${isHeld ? `
-                                    <button onclick="openDisputeModal('${order.id}')" style="font-size:10px; padding:3px 6px; border:1px solid var(--terracotta); background:none; color:var(--terracotta); border-radius:4px; cursor:pointer; font-weight:600;">Report Issue</button>
+                                    <button onclick="openDisputeModal('${order.id}')" class="legacy-inline-wjqqmi">Report Issue</button>
                                 ` : ''}
                             </div>
                         `;
                     }).join('');
                 } else {
-                    escrowListDiv.innerHTML = `<span style="color:#777; font-size:11px;">No active escrow orders found.</span>`;
+                    escrowListDiv.innerHTML = `<span class="legacy-inline-1pg10mz">No active escrow orders found.</span>`;
                 }
             } else {
-                escrowListDiv.innerHTML = `<span style="color:#777; font-size:11px;">Failed to load escrow orders.</span>`;
+                escrowListDiv.innerHTML = `<span class="legacy-inline-1pg10mz">Failed to load escrow orders.</span>`;
             }
         } catch (e) {
             console.error('Error loading escrow orders:', e);
-            escrowListDiv.innerHTML = `<span style="color:#777; font-size:11px;">Error loading orders.</span>`;
+            escrowListDiv.innerHTML = `<span class="legacy-inline-1pg10mz">Error loading orders.</span>`;
         }
     }
 
@@ -1946,32 +1865,34 @@ window.renderDevices = function() {
     if (!list) return;
     const devices = JSON.parse(localStorage.getItem('smart_devices') || '[]');
     const devicesPanel = document.getElementById('devices-panel');
-    
-    if (devices.length === 0) {
-        if (devicesPanel) devicesPanel.style.display = 'none';
-        list.innerHTML = '<div>No devices found.</div>';
+    if (devicesPanel) devicesPanel.hidden = devices.length === 0;
+    list.replaceChildren();
+    if (!devices.length) {
+        const empty = document.createElement('div');
+        empty.textContent = 'Hardware-control connectors are not configured in this deployment.';
+        list.appendChild(empty);
         return;
     }
-    
-    if (devicesPanel) devicesPanel.style.display = 'block';
-    
-    list.innerHTML = devices.map((d, i) => {
-        const tpl = deviceTemplates[d.type];
-        if (!tpl) return `<div>Unknown device: ${d.name}</div>`;
-        
-        const cmds = Object.keys(tpl.commands).map(k => {
-            const label = tpl.commands[k].label || k;
-            return `<button onclick="executeDeviceCommand(JSON.parse(decodeURIComponent('${encodeURIComponent(JSON.stringify(d))}')), '${k}')" style="margin:2px; padding:4px 8px; font-size:11px; background:#fff; border:1px solid #ccc; border-radius:4px; cursor:pointer;">${label}</button>`;
-        }).join('');
-        
-        return `
-            <div style="padding:6px; border:1px solid #eee; border-radius:4px; margin-bottom:6px; background:#f9f9f9;">
-                <strong>${d.name}</strong> <span style="font-size:10px; color:#777;">(${d.ip || 'MQTT'})</span><br>
-                <div style="margin-top:4px;">${cmds}</div>
-                <button onclick="removeDevice(${i})" style="margin-top:6px; color:red; border:none; background:none; font-size:10px; cursor:pointer;">Remove</button>
-            </div>
-        `;
-    }).join('');
+    const notice = document.createElement('p');
+    notice.className = 'legacy-device-boundary';
+    notice.textContent = 'Saved device references are inactive. Kurukoo does not discover, connect to, or control IoT, drone, robot, vehicle, or other hardware in this deployment.';
+    list.appendChild(notice);
+    devices.forEach((device, index) => {
+        const row = document.createElement('div');
+        row.className = 'legacy-inline-fyykps';
+        const name = document.createElement('strong');
+        name.textContent = String(device?.name || 'Saved device reference').slice(0, 120);
+        const type = document.createElement('span');
+        type.className = 'legacy-inline-i165pq';
+        type.textContent = ` (${String(device?.type || 'unknown').slice(0, 60)})`;
+        const remove = document.createElement('button');
+        remove.className = 'legacy-inline-5g39aa';
+        remove.type = 'button';
+        remove.textContent = 'Remove saved reference';
+        remove.addEventListener('click', () => window.removeDevice(index));
+        row.append(name, type, document.createElement('br'), remove);
+        list.appendChild(row);
+    });
 };
 
 window.removeDevice = function(idx) {
@@ -1982,19 +1903,7 @@ window.removeDevice = function(idx) {
 };
 
 window.discoverDevices = function() {
-    const type = prompt("Enter device type (samsung_tv, roku, lg_tv, android_tv, tp_link_plug, sonoff_plug):", "sonoff_plug");
-    if (!type) return;
-    
-    const name = prompt("Enter a friendly name for this device:", "Living Room Plug");
-    if (!name) return;
-    
-    const ip = prompt("Enter device IP address (leave blank if MQTT):", "");
-    
-    const devices = JSON.parse(localStorage.getItem('smart_devices') || '[]');
-    devices.push({ name, type, ip });
-    localStorage.setItem('smart_devices', JSON.stringify(devices));
-    if (typeof window.renderDevices === "function") window.renderDevices();
-    alert("Device added successfully!");
+    alert('Hardware discovery and control are unavailable in this deployment. Kurukoo has not connected to any device or external hardware service.');
 };
 
 document.addEventListener('DOMContentLoaded', () => {

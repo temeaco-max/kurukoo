@@ -5,37 +5,8 @@
     <title>Kurukoo Admin - Commissions & Fees</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/site.css">
-    <style>
-        :root {
-            --cream: #FFF8F0;
-            --terracotta: #D97A5C;
-            --electric-blue: #1E88E5;
-            --charcoal: #2E2E2E;
-        }
-        body { background-color: var(--cream); font-family: 'Inter', sans-serif; color: var(--charcoal); margin:0; padding:0; }
-        .header-bar { background: var(--charcoal); color: var(--cream); padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
-        .logo { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; color: var(--terracotta); }
-        nav a { color: var(--cream); text-decoration: none; margin-left: 20px; font-weight: 500; font-size: 14px; padding: 6px 12px; border-radius: 4px; transition: background 0.2s; }
-        nav a:hover, nav a.active { background: rgba(255,248,240,0.15); }
-        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
-        .card-box { background: #FFFFFF; border: 1px solid #E0D0C0; border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(46,46,46,0.03); }
-        .btn { background: var(--terracotta); color: #FFF; border: none; padding: 10px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; }
-        .btn:hover { opacity: 0.9; }
-        .btn-secondary { background: #777; }
-        table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
-        th, td { padding: 12px 16px; border-bottom: 1px solid #E0D0C0; text-align: left; }
-        th { background: rgba(217,122,92,0.1); font-family: 'Space Grotesk', sans-serif; font-weight: 600; color: var(--charcoal); }
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; color: #FFF; }
-        .badge-active { background: #28a745; }
-        .badge-inactive { background: #dc3545; }
-        /* Modal */
-        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
-        .modal.active { display: flex; }
-        .modal-content { background: #FFF; padding: 30px; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; }
-        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; font-family: 'Inter', sans-serif; box-sizing: border-box; }
-    </style>
+
+  <link rel="stylesheet" href="/css/legacy-inline-migration.css?v=1">
 </head>
 <body>
     <div class="header-bar">
@@ -50,9 +21,9 @@
     </div>
 
     <div class="container">
-        <div style="margin-bottom: 20px;">
-            <h2 style="font-family: 'Space Grotesk', sans-serif; margin:0;">Agent Commissions & Platform Fees</h2>
-            <p style="color: #666; font-size: 14px; margin-top: 6px;">Manage agent payout rates and provider lead fees across the network.</p>
+        <div class="legacy-inline-1p6ejdj">
+            <h2 class="legacy-inline-13fjtle">Agent Commissions & Platform Fees</h2>
+            <p class="legacy-inline-1opwtod">Manage agent payout rates and provider lead fees across the network.</p>
         </div>
 
         <div class="card-box">
@@ -64,11 +35,11 @@
                         <th>Description</th>
                         <th>Rate (Minor Unit)</th>
                         <th>Status</th>
-                        <th style="text-align: right;">Actions</th>
+                        <th class="legacy-inline-mzlg82">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="commissions-tbody">
-                    <tr><td colspan="6" style="text-align:center; padding: 20px;">Loading commission rules...</td></tr>
+                    <tr><td colspan="6" class="legacy-inline-wednlv">Loading commission rules...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -77,16 +48,16 @@
     <!-- Modal -->
     <div id="comm-modal" class="modal">
         <div class="modal-content">
-            <h3 style="font-family: 'Space Grotesk', sans-serif; margin-top:0;">Edit Commission Rule</h3>
+            <h3 class="legacy-inline-x2lfvs">Edit Commission Rule</h3>
             <form id="comm-form" onsubmit="saveCommission(event)">
                 <input type="hidden" id="c-id">
                 <div class="form-group">
                     <label>Rule Type</label>
-                    <input type="text" id="c-type" disabled style="background:#f5f5f5;">
+                    <input type="text" id="c-type" disabled class="legacy-inline-15om11f">
                 </div>
                 <div class="form-group">
                     <label>Description</label>
-                    <input type="text" id="c-desc" disabled style="background:#f5f5f5;">
+                    <input type="text" id="c-desc" disabled class="legacy-inline-15om11f">
                 </div>
                 <div class="form-group">
                     <label>Rate (Minor Unit / Kobo / Pence)</label>
@@ -99,7 +70,7 @@
                         <option value="0">Inactive</option>
                     </select>
                 </div>
-                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <div class="legacy-inline-1y83w8z">
                     <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
                     <button type="submit" class="btn">Update Rate</button>
                 </div>
@@ -123,12 +94,12 @@
                             <td>${c.description}</td>
                             <td><strong>${c.rate_minor.toLocaleString()}</strong></td>
                             <td><span class="badge ${c.active ? 'badge-active' : 'badge-inactive'}">${c.active ? 'Active' : 'Inactive'}</span></td>
-                            <td style="text-align: right;">
-                                <button class="btn" style="padding: 4px 10px; font-size: 12px;" onclick="openEditModal(${c.id})">Edit</button>
-                                <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;" onclick="toggleCommission(${c.id}, ${c.active ? 0 : 1})">${c.active ? 'Disable' : 'Enable'}</button>
+                            <td class="legacy-inline-mzlg82">
+                                <button class="btn legacy-inline-1cjag28" onclick="openEditModal(${c.id})">Edit</button>
+                                <button class="btn btn-secondary legacy-inline-1cjag28" onclick="toggleCommission(${c.id}, ${c.active ? 0 : 1})">${c.active ? 'Disable' : 'Enable'}</button>
                             </td>
                         </tr>
-                    `).join('') || `<tr><td colspan="6" style="text-align:center;">No commission rules found.</td></tr>`;
+                    `).join('') || `<tr><td colspan="6" class="legacy-inline-xvvptn">No commission rules found.</td></tr>`;
                 })
                 .catch(err => console.error('Error loading commissions:', err));
         }

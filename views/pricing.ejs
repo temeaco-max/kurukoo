@@ -10,14 +10,14 @@
 
     <section class="access-grid" aria-label="Current access and economic boundaries">
         <article class="access-card">
-            <h2>Web Chat access</h2>
-            <p>There is no published paid subscription or self-service upgrade in this deployment. You can begin a request in Web Chat without choosing a plan.</p>
+            <h2>Free consumer core</h2>
+            <p>Consumers can start with Web Chat, requests, reminders and account tools without choosing a paid plan. A request can still require a separate confirmed provider quote or configured payment boundary before it progresses.</p>
             <a href="/chat" class="btn btn-primary">Start in Web Chat</a>
         </article>
 
         <article class="access-card">
-            <h2>Points</h2>
-            <p>Points are an internal application concept. Where a request flow uses them, the applicable balance and action are shown in the product rather than promised on this public page.</p>
+            <h2>Points, not money</h2>
+            <p>Points are loyalty and contribution units. They are not cash, stored value, a payout promise or a substitute for a verified payment. Eligible contributor rewards are recorded only after evidence review.</p>
         </article>
 
         <article class="access-card">
@@ -27,7 +27,12 @@
 
         <article class="access-card">
             <h2>Providers &amp; businesses</h2>
-            <p>Provider and business participation is assessed through the request and onboarding flows. Verification, matching, lead access, and catalogue availability are not granted by selecting a public plan.</p>
+            <p>Provider and business revenue may use approved subscriptions, lead access, platform fees or other published commercial terms. No public plan activates verification, matching, catalogue availability or payment settlement by itself.</p>
+        </article>
+
+        <article class="access-card">
+            <h2>Sponsored placement</h2>
+            <p>Kurukoo-sponsored placement and external advertising inventory are separate concepts. Any paid promotion is labelled, never treated as verified-provider evidence, and remains unavailable unless the advertising authority has active eligible inventory.</p>
         </article>
     </section>
 
@@ -36,16 +41,5 @@
         <p>Describe the need in Web Chat. Kurukoo evaluates the request, preserves the conversation through any required sign-in step, and presents a provider, quote, payment, or fulfilment action only when the necessary integration and data are available.</p>
     </section>
 </main>
-
-<style>
-.access-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin: 48px 0; }
-.access-card { padding: 28px; background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--border-radius); }
-.access-card h2 { margin-bottom: 12px; font-size: 1.25rem; }
-.access-card p { color: var(--gray-600); margin-bottom: 20px; }
-.access-note { padding: 36px; background: var(--gray-50); border-radius: var(--border-radius-lg); margin-bottom: 48px; }
-.access-note h2 { margin-bottom: 12px; }
-.access-note p { max-width: 760px; color: var(--gray-600); }
-@media (max-width: 720px) { .access-grid { grid-template-columns: 1fr; } .access-card, .access-note { padding: 24px; } }
-</style>
 
 <%- include('_partials/footer') %>

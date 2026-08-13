@@ -5,93 +5,100 @@ type RadarLayer = 'mobile' | 'stationary' | 'agents' | 'emergency' | 'deals' | '
 
 const EARTH_RADIUS_METRES = 6_371_000;
 const PUBLIC_LOCATION_FUZZ_METRES = 100;
+const RADAR_LAYERS: Record<RadarLayer, { available: boolean; label: string; reason?: string }> = {
+  mobile: { available: true, label: 'Mobile providers' },
+  stationary: { available: true, label: 'Stationary providers' },
+  agents: { available: false, label: 'AI agents', reason: 'Live geographic agent presence is not configured.' },
+  emergency: { available: false, label: 'Emergency services', reason: 'Kurukoo does not provide a live emergency-service location feed.' },
+  deals: { available: false, label: 'Active deals', reason: 'No verified live deal-location source is configured.' },
+  events: { available: false, label: 'Events', reason: 'No verified live event-location source is configured.' },
+};
 
 function distanceMetres(lat1: number, lng1: number, lat2: number, lng2: number): number {
-    const toRad = (value: number) => value * Math.PI / 180;
-    const dLat = toRad(lat2 - lat1);
-    const dLng = toRad(lng2 - lng1);
-    const a = Math.sin(dLat / 2) ** 2
-        + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-    return 2 * EARTH_RADIUS_METRES * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const toRad = (value: number) => value * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * EARTH_RADIUS_METRES * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 function fuzzCoordinate(value: number, metres: number, seed: string): number {
-    let hash = 0;
-    for (let i = 0; i < seed.length; i += 1) hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
-    const normalized = (Math.abs(hash) % 10000) / 10000;
-    return value + ((normalized * 2 - 1) * metres) / EARTH_RADIUS_METRES * (180 / Math.PI);
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
+  const normalized = (Math.abs(hash) % 10000) / 10000;
+  return value + ((normalized * 2 - 1) * metres) / EARTH_RADIUS_METRES * (180 / Math.PI);
+}
+
+function parseLayers(raw: unknown): RadarLayer[] {
+  const requested = typeof raw === 'string' ? raw.split(',').map((value) => value.trim()).filter(Boolean) : ['mobile', 'stationary'];
+  return Array.from(new Set(requested.filter((value): value is RadarLayer => value in RADAR_LAYERS)));
 }
 
 /**
- * Discovery is a read-only projection of the existing presence/Pulse system.
- * It deliberately does not create a second provider registry or identity
- * system. Exact provider coordinates are never returned to the browser.
+ * Nearby Radar is a read-only public projection of canonical provider presence.
+ * It never creates providers, grants verification, exposes exact coordinates, or
+ * represents unavailable data sources as live layers.
  */
 export function createDiscoveryRouter(): Router {
-    const router = express.Router();
+  const router = express.Router();
 
-    router.get('/api/discover/map', async (req, res, next) => {
-        try {
-            const lat = Number(req.query.lat);
-            const lng = Number(req.query.lng);
-            const radius = req.query.radius === undefined ? 5000 : Number(req.query.radius);
+  router.get('/api/discover/map', async (req, res, next) => {
+    try {
+      const lat = Number(req.query.lat);
+      const lng = Number(req.query.lng);
+      const radius = req.query.radius === undefined ? 5000 : Number(req.query.radius);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return res.status(400).json({ success: false, error: 'lat and lng are required numbers' });
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return res.status(400).json({ success: false, error: 'invalid coordinates' });
+      if (!Number.isFinite(radius) || radius <= 0 || radius > 50000) return res.status(400).json({ success: false, error: 'radius must be between 1 and 50000 metres' });
 
-            if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-                return res.status(400).json({ success: false, error: 'lat and lng are required numbers' });
-            }
-            if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-                return res.status(400).json({ success: false, error: 'invalid coordinates' });
-            }
-            if (!Number.isFinite(radius) || radius <= 0 || radius > 50000) {
-                return res.status(400).json({ success: false, error: 'radius must be between 1 and 50000 metres' });
-            }
+      const layers = parseLayers(req.query.layers);
+      const category = typeof req.query.category === 'string' ? req.query.category.trim().toLowerCase() : undefined;
+      const providers = await getActivePulseProviders();
+      const features = providers
+        .filter((provider: any) => {
+          const providerLat = Number(provider.lat);
+          const providerLng = Number(provider.lng);
+          const source = provider.source === 'stationary' ? 'stationary' : 'mobile';
+          return Number.isFinite(providerLat) && Number.isFinite(providerLng)
+            && layers.includes(source)
+            && distanceMetres(lat, lng, providerLat, providerLng) <= radius
+            && (!category || String(provider.skill || '').toLowerCase() === category);
+        })
+        .map((provider: any, index: number) => {
+          const source: 'mobile' | 'stationary' = provider.source === 'stationary' ? 'stationary' : 'mobile';
+          const rawLat = Number(provider.lat);
+          const rawLng = Number(provider.lng);
+          const seed = `${provider.phone}:${provider.skill}:${Math.round(rawLat * 1000)}:${Math.round(rawLng * 1000)}`;
+          const hasFuzzedLat = provider.fuzzed_lat !== null && provider.fuzzed_lat !== undefined && Number.isFinite(Number(provider.fuzzed_lat));
+          const hasFuzzedLng = provider.fuzzed_lng !== null && provider.fuzzed_lng !== undefined && Number.isFinite(Number(provider.fuzzed_lng));
+          const publicLat = hasFuzzedLat ? Number(provider.fuzzed_lat) : fuzzCoordinate(rawLat, PUBLIC_LOCATION_FUZZ_METRES, `${seed}:lat`);
+          const publicLng = hasFuzzedLng ? Number(provider.fuzzed_lng) : fuzzCoordinate(rawLng, PUBLIC_LOCATION_FUZZ_METRES, `${seed}:lng`);
+          return {
+            type: 'Feature',
+            id: `${source}-${index}`,
+            geometry: { type: 'Point', coordinates: [publicLng, publicLat] },
+            properties: {
+              layer: source,
+              name: provider.name || 'Verified provider',
+              detail: provider.skill || 'Service provider',
+              distanceMetres: Math.round(distanceMetres(lat, lng, rawLat, rawLng)),
+              locationPrecision: 'approximate_100m',
+              liveUntil: provider.live_until || null,
+            },
+          };
+        });
 
-            const requestedLayers = typeof req.query.layers === 'string'
-                ? req.query.layers.split(',').filter(Boolean) as RadarLayer[]
-                : ['mobile', 'stationary'];
-            const layers = new Set(requestedLayers);
-            const category = typeof req.query.category === 'string' ? req.query.category.trim().toLowerCase() : undefined;
-            const providers = await getActivePulseProviders();
+      const layerMeta = Object.fromEntries(layers.map((layer) => [layer, RADAR_LAYERS[layer]]));
+      res.setHeader('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
+      return res.json({
+        type: 'FeatureCollection',
+        features,
+        meta: { radius, layers: layerMeta, generatedAt: new Date().toISOString(), exactCoordinatesExposed: false },
+      });
+    } catch (error) { return next(error); }
+  });
 
-            const features = providers
-                .filter((provider: any) => {
-                    const providerLat = Number(provider.lat);
-                    const providerLng = Number(provider.lng);
-                    if (!Number.isFinite(providerLat) || !Number.isFinite(providerLng)) return false;
-                    if (distanceMetres(lat, lng, providerLat, providerLng) > radius) return false;
-                    if (category && String(provider.skill || '').toLowerCase() !== category) return false;
-                    return layers.has(provider.source === 'stationary' ? 'stationary' : 'mobile');
-                })
-                .map((provider: any, index: number) => {
-                    const source = provider.source === 'stationary' ? 'stationary' : 'mobile';
-                    const seed = `${provider.phone}:${provider.skill}:${Math.round(Number(provider.lat) * 1000)}:${Math.round(Number(provider.lng) * 1000)}`;
-                    const publicLat = fuzzCoordinate(Number(provider.lat), PUBLIC_LOCATION_FUZZ_METRES, `${seed}:lat`);
-                    const publicLng = fuzzCoordinate(Number(provider.lng), PUBLIC_LOCATION_FUZZ_METRES, `${seed}:lng`);
-                    return {
-                        type: 'Feature',
-                        id: `${source}-${index}`,
-                        geometry: { type: 'Point', coordinates: [publicLng, publicLat] },
-                        properties: {
-                            layer: source,
-                            name: provider.name || 'Verified provider',
-                            detail: provider.skill || 'Service provider',
-                            distanceMetres: Math.round(distanceMetres(lat, lng, Number(provider.lat), Number(provider.lng))),
-                        },
-                    };
-                });
-
-            res.setHeader('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
-            return res.json({
-                type: 'FeatureCollection',
-                features,
-                meta: { radius, layers: Array.from(layers), generatedAt: new Date().toISOString() },
-            });
-        } catch (error) {
-            return next(error);
-        }
-    });
-
-    return router;
+  return router;
 }
 
 export default createDiscoveryRouter();

@@ -6,173 +6,8 @@
     <title>Kurukoo AI Agents Console</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/site.css">
-    <style>
-        body {
-            background-color: #FFF8F0;
-            color: #2E2E2E;
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 0;
-        }
 
-        h1, h2, h3, h4 {
-            font-family: 'Space Grotesk', sans-serif;
-            color: #2E2E2E;
-            margin-top: 0;
-        }
-
-        .header-bar {
-            background-color: #2E2E2E;
-            color: #FFF8F0;
-            padding: 16px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 4px solid #D97A5C;
-        }
-
-        .header-bar .logo {
-            font-size: 20px;
-            font-weight: 700;
-            font-family: 'Space Grotesk', sans-serif;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .header-bar .logo span {
-            color: #D97A5C;
-        }
-
-        .header-bar nav a {
-            color: #FFF8F0;
-            text-decoration: none;
-            margin-left: 12px;
-            font-weight: 500;
-            font-size: 14px;
-            padding: 6px 12px;
-            border-radius: 4px;
-            transition: background 0.2s;
-        }
-
-        .header-bar nav a:hover {
-            background-color: rgba(255, 248, 240, 0.1);
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 32px auto;
-            padding: 0 24px;
-        }
-
-        .card {
-            background: #FFFFFF;
-            border: 1px solid #EAE0D5;
-            border-radius: 8px;
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 16px;
-        }
-
-        th, td {
-            padding: 12px 16px;
-            text-align: left;
-            border-bottom: 1px solid #EAE0D5;
-            font-size: 14px;
-        }
-
-        th {
-            background-color: #FAF4ED;
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 600;
-        }
-
-        .badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
-            display: inline-block;
-        }
-
-        .badge-active { background-color: #E8F5E9; color: #2E7D32; }
-        .badge-paused { background-color: #FFEBEE; color: #C62828; }
-
-        .btn {
-            background-color: #D97A5C;
-            color: #FFFFFF;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background 0.2s;
-        }
-
-        .btn:hover {
-            background-color: #C06143;
-        }
-
-        .btn-secondary {
-            background-color: #1E88E5;
-        }
-
-        .btn-secondary:hover {
-            background-color: #1565C0;
-        }
-
-        .btn-sm {
-            padding: 4px 10px;
-            font-size: 12px;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 6px;
-            font-size: 14px;
-        }
-
-        .form-group input, .form-group textarea, .form-group select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #EAE0D5;
-            border-radius: 6px;
-            font-family: inherit;
-            box-sizing: border-box;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        .modal-content {
-            background: #FFF;
-            padding: 24px;
-            border-radius: 8px;
-            max-width: 600px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-    </style>
+  <link rel="stylesheet" href="/css/legacy-inline-migration.css?v=1">
 </head>
 <body>
 
@@ -183,29 +18,29 @@
         <nav>
             <a href="/admin/dashboard.html">Dashboard</a>
             <a href="/admin/users.html">Users</a>
-            <a href="/admin/ai-agents.html" style="background: rgba(255,248,240,0.2);">AI Agents</a>
+            <a href="/admin/ai-agents.html" class="legacy-inline-1ejyds1">AI Agents</a>
             <a href="/admin/revenue.html">Revenue</a>
             <a href="/admin/analytics.html">Analytics</a>
         </nav>
     </header>
 
     <div class="container">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <div class="legacy-inline-16zyydk">
             <div>
                 <h2>First-Class AI Agents Management (§21a)</h2>
-                <p style="color: #666; margin: 0;">Configure, prompt-tune, quota-manage, and test AI Agents running on Kurukoo.</p>
+                <p class="legacy-inline-pfoj01">Configure, prompt-tune, quota-manage, and test AI Agents running on Kurukoo.</p>
             </div>
             <button class="btn" onclick="openCreateModal()">+ Create New AI Agent</button>
         </div>
 
         <!-- Intent Classification System Override Settings -->
-        <div class="card" style="display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #D97A5C;">
+        <div class="card legacy-inline-1a5uurh">
             <div>
-                <h3 style="margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">🧠 Intent Classification Override Settings</h3>
-                <p style="color: #666; margin: 4px 0 0 0; font-size: 13px;">Toggle the routing engine between FastText (Default local keywords-matching) and Groq (LLM semantic classification).</p>
+                <h3 class="legacy-inline-1xfjozg">🧠 Intent Classification Override Settings</h3>
+                <p class="legacy-inline-17gtc0n">Toggle the routing engine between FastText (Default local keywords-matching) and Groq (LLM semantic classification).</p>
             </div>
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <span id="routing-mode-label" style="font-weight: 600; font-size: 14px; color: #2E2E2E;">Loading...</span>
+            <div class="legacy-inline-lozcvv">
+                <span id="routing-mode-label" class="legacy-inline-9jvxqp">Loading...</span>
                 <button class="btn" id="toggle-routing-btn" onclick="toggleRoutingEngine()">Toggle Engine</button>
             </div>
         </div>
@@ -230,7 +65,7 @@
             </table>
         </div>
 
-        <div class="card" id="test-agent-card" style="display: none;">
+        <div class="card" id="test-agent-card legacy-inline-1t6w2v2">
             <h3 id="test-agent-title">Test Agent Execution</h3>
             <div class="form-group">
                 <label>Input Task Prompt:</label>
@@ -238,9 +73,9 @@
             </div>
             <button class="btn btn-secondary" onclick="runAgentTask()">Execute Task</button>
 
-            <div id="test-output-box" style="margin-top: 16px; padding: 16px; background: #FAF4ED; border: 1px solid #EAE0D5; border-radius: 6px; display: none;">
+            <div id="test-output-box" class="legacy-inline-1sjrvkr">
                 <h4>Execution Result:</h4>
-                <pre id="test-output-text" style="white-space: pre-wrap; margin: 0;"></pre>
+                <pre id="test-output-text" class="legacy-inline-uij8lx"></pre>
             </div>
         </div>
     </div>
@@ -294,8 +129,8 @@
                     <label>Temperature (0.0 to 1.0):</label>
                     <input type="number" step="0.1" id="agent-temp" value="0.2">
                 </div>
-                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
-                    <button type="button" class="btn" style="background: #888;" onclick="closeModal()">Cancel</button>
+                <div class="legacy-inline-1ovzhis">
+                    <button type="button" class="btn legacy-inline-10r55v9" onclick="closeModal()">Cancel</button>
                     <button type="submit" class="btn">Save Agent</button>
                 </div>
             </form>
@@ -323,9 +158,9 @@
 
                 tr.innerHTML = `
                     <td>
-                        <span style="font-size: 24px; margin-right: 8px;">${agent.avatar || '🤖'}</span>
+                        <span class="legacy-inline-6e0ctn">${agent.avatar || '🤖'}</span>
                         <strong>${agent.name}</strong><br>
-                        <small style="color:#666;">${agent.id}</small>
+                        <small class="legacy-inline-1gu41xc">${agent.id}</small>
                     </td>
                     <td>${(agent.skills || []).join(', ')}</td>
                     <td><span class="badge ${badgeClass}">${agent.status.toUpperCase()}</span></td>
@@ -336,8 +171,8 @@
                         <button class="btn btn-sm" onclick="togglePause('${agent.id}', '${agent.status}')">${agent.status === 'active' ? 'Pause' : 'Resume'}</button>
                         <button class="btn btn-sm btn-secondary" onclick="openTestPanel('${agent.id}', '${agent.name}')">Test</button>
                         <button class="btn btn-sm" onclick="editAgent('${agent.id}')">Edit</button>
-                        <button class="btn btn-sm" style="background: #333;" onclick="cloneAgentPrompt('${agent.id}', '${agent.name}')">Clone</button>
-                        <button class="btn btn-sm" style="background: #C62828;" onclick="deleteAgent('${agent.id}')">Delete</button>
+                        <button class="btn btn-sm legacy-inline-1drxxgg" onclick="cloneAgentPrompt('${agent.id}', '${agent.name}')">Clone</button>
+                        <button class="btn btn-sm legacy-inline-1kikze6" onclick="deleteAgent('${agent.id}')">Delete</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -398,7 +233,7 @@
         async function editAgent(id) {
             const res = await fetch(`/api/admin/ai-agents/${id}`);
             const agent = await res.json();
-            
+
             document.getElementById('edit-agent-id').value = agent.id;
             document.getElementById('agent-id').value = agent.id;
             document.getElementById('agent-id').disabled = true;
@@ -411,7 +246,7 @@
             document.getElementById('agent-status').value = agent.status;
             document.getElementById('agent-quota').value = agent.token_quota_daily;
             document.getElementById('agent-temp').value = agent.temperature;
-            
+
             document.getElementById('modalTitle').innerText = 'Edit AI Agent';
             document.getElementById('agentModal').style.display = 'flex';
         }
@@ -480,11 +315,11 @@
             const label = document.getElementById('routing-mode-label');
             const btn = document.getElementById('toggle-routing-btn');
             if (currentRoutingMode) {
-                label.innerHTML = '⚡ <span style="color: #2E7D32;">Groq Routing Mode</span> (FastText Bypassed)';
+                label.innerHTML = '⚡ <span class="legacy-inline-yay0od">Groq Routing Mode</span> (FastText Bypassed)';
                 btn.innerText = 'Switch to FastText';
                 btn.style.backgroundColor = '#888';
             } else {
-                label.innerHTML = '⚡ <span style="color: #C62828;">FastText Routing Mode</span> (Default)';
+                label.innerHTML = '⚡ <span class="legacy-inline-swwt4z">FastText Routing Mode</span> (Default)';
                 btn.innerText = 'Switch to Groq';
                 btn.style.backgroundColor = '#D97A5C';
             }

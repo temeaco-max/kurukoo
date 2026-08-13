@@ -4,28 +4,8 @@
     <meta charset="UTF-8">
     <title>Kurukoo Admin - Referrals</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <style>
-        :root { --cream: #FFF8F0; --terracotta: #D97A5C; --electric-blue: #1E88E5; --charcoal: #2E2E2E; }
-        body { background-color: var(--cream); font-family: 'Inter', sans-serif; color: var(--charcoal); margin:0; padding:0; }
-        .header-bar { background: var(--charcoal); color: var(--cream); padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
-        .logo { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; color: var(--terracotta); }
-        nav a { color: var(--cream); text-decoration: none; margin-left: 20px; font-weight: 500; font-size: 14px; padding: 6px 12px; border-radius: 4px; transition: background 0.2s; }
-        nav a:hover, nav a.active { background: rgba(255,248,240,0.15); }
-        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: #FFFFFF; border: 1px solid #E0D0C0; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(46,46,46,0.02); }
-        .stat-val { font-size: 28px; font-weight: 700; color: var(--terracotta); font-family: 'Space Grotesk', sans-serif; }
-        .stat-lbl { font-size: 12px; color: #777; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
-        .grid-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
-        .card-box { background: #FFFFFF; border: 1px solid #E0D0C0; border-radius: 12px; padding: 24px; box-shadow: 0 4px 12px rgba(46,46,46,0.03); }
-        table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
-        th, td { padding: 12px 16px; border-bottom: 1px solid #E0D0C0; text-align: left; }
-        th { background: rgba(217,122,92,0.1); font-family: 'Space Grotesk', sans-serif; font-weight: 600; color: var(--charcoal); }
-        .badge-status { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-        .status-subscribed { background-color: #E8F5E9; color: #2E7D32; }
-        .status-registered { background-color: #FFF3E0; color: #E65100; }
-        .status-pending { background-color: #ECEFF1; color: #37474F; }
-    </style>
+
+  <link rel="stylesheet" href="/css/legacy-inline-migration.css?v=1">
 </head>
 <body>
     <div class="header-bar">
@@ -39,7 +19,7 @@
     <div class="container">
         <h2>Referral System & Growth Stats</h2>
         <p>Monitor organic invitations, claimant statuses, and marketing point distributions.</p>
-        
+
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-val" id="metric-total">0</div>
@@ -101,7 +81,7 @@
                 .then(data => {
                     const refs = data.referrals || [];
                     const top = data.topReferrers || [];
-                    
+
                     const total = refs.length;
                     const subscribed = refs.filter(r => r.status === 'subscribed').length;
                     const convRate = total > 0 ? ((subscribed / total) * 100).toFixed(1) : 0;
@@ -125,7 +105,7 @@
                         <tr>
                             <td>${t.referrer_phone}</td>
                             <td><strong>${t.total}</strong></td>
-                            <td style="color: var(--terracotta); font-weight: 600;">${t.successful}</td>
+                            <td class="legacy-inline-p8omki">${t.successful}</td>
                         </tr>
                     `).join('') || '<tr><td colspan="3">No rankings found.</td></tr>';
                 });

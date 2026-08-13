@@ -19,6 +19,12 @@
     </div>
   </section>
 
+  <% if (typeof market !== 'undefined' && market.launchStatus === 'inactive') { %>
+    <section class="home-market-notice section" aria-labelledby="market-notice-title">
+      <div class="container"><div class="home-market-notice__inner"><span class="eyebrow"><%= market.name %> foundation</span><h2 id="market-notice-title">Kurukoo is not yet operating a live local supply network in Canada.</h2><p>Web Chat and account foundations are available for exploration. Canada is modelled with Canadian dollar (CAD) currency context and English/French locale foundations. Canadian provider availability, dispatch, payments, escrow, fulfilment, emergency action and advertising inventory are not represented as live until their canonical operating evidence and integrations exist.</p><div class="home-hero__actions"><a class="btn btn-outline" href="/chat">Use Web Chat</a><a class="text-link" href="/ca?lang=fr" lang="fr">Français</a><a class="text-link" href="/ca?lang=en">English</a></div></div></div>
+    </section>
+  <% } %>
+
   <section class="home-storefront section" aria-labelledby="storefront-demo-title">
     <div class="container">
       <div class="section-heading"><span class="eyebrow">Request preview</span><h2 id="storefront-demo-title">See a request become a clear next step.</h2><p>This interactive preview illustrates Kurukoo’s shared request flow. It does not show a live provider, inventory, price or payment state.</p></div>

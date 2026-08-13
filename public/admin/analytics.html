@@ -7,421 +7,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <style>
-        :root {
-            --primary: #D97A5C;
-            --primary-hover: #C56548;
-            --neutral-dark: #111111;
-            --neutral-light: #F8F7F4;
-            --neutral-white: #FFFFFF;
-            --neutral-muted: #7A7A7A;
-            --border-color: #E5E2DE;
-        }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            background-color: var(--neutral-light);
-            color: var(--neutral-dark);
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            min-height: 100vh;
-        }
-
-        /* Sidebar Styling */
-        .sidebar {
-            width: 260px;
-            background: #111111;
-            color: #F8F7F4;
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            padding: 24px 12px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid #2A2A2A;
-            box-shadow: 4px 0 10px rgba(0,0,0,0.15);
-        }
-
-        .sidebar.collapsed {
-            width: 76px;
-            padding: 24px 8px;
-        }
-
-        .sidebar-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 0 12px;
-            margin-bottom: 28px;
-            overflow: hidden;
-            white-space: nowrap;
-        }
-
-        .sidebar.collapsed .sidebar-brand {
-            justify-content: center;
-            padding: 0;
-        }
-
-        .sidebar-brand-text {
-            font-family: 'Space Grotesk', sans-serif;
-            color: white;
-            font-size: 18px;
-            font-weight: 700;
-            transition: opacity 0.2s;
-        }
-
-        .sidebar.collapsed .sidebar-brand-text {
-            display: none;
-        }
-
-        .sidebar-menu-section {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: #555555;
-            letter-spacing: 0.1em;
-            padding: 16px 12px 8px 12px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .sidebar.collapsed .sidebar-menu-section {
-            display: none;
-        }
-
-        .sidebar-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 14px;
-            color: #a3a3a3;
-            text-decoration: none;
-            border-radius: 8px;
-            margin-bottom: 4px;
-            font-size: 13.5px;
-            font-weight: 500;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-
-        .sidebar.collapsed .sidebar-item {
-            justify-content: center;
-            padding: 10px 0;
-            border-radius: 50%;
-            width: 44px;
-            height: 44px;
-            margin: 0 auto 6px auto;
-        }
-
-        .sidebar-item-label {
-            transition: opacity 0.2s;
-        }
-
-        .sidebar.collapsed .sidebar-item-label {
-            display: none;
-        }
-
-        .sidebar-item:hover {
-            background: #222222;
-            color: #FFFFFF;
-        }
-        
-        .sidebar-item.active {
-            background: var(--primary);
-            color: white;
-        }
-
-        .sidebar-item svg {
-            width: 20px;
-            height: 20px;
-            min-width: 20px;
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            opacity: 0.8;
-        }
-
-        /* Main Content Container */
-        .main-content {
-            margin-left: 260px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            padding: 32px;
-        }
-
-        .main-content.expanded {
-            margin-left: 76px;
-        }
-
-        /* Header block */
-        .header-bar {
-            background-color: var(--neutral-white);
-            color: var(--neutral-dark);
-            padding: 16px 32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 32px;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-        }
-
-        .header-title h1 {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 24px;
-            font-weight: 700;
-        }
-
-        .header-title p {
-            font-size: 13px;
-            color: var(--neutral-muted);
-            margin-top: 4px;
-        }
-
-        /* Interactive Tabs */
-        .tabs-header {
-            display: flex;
-            gap: 8px;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 24px;
-        }
-
-        .tab-btn {
-            background: none;
-            border: none;
-            padding: 12px 20px;
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--neutral-muted);
-            cursor: pointer;
-            position: relative;
-            transition: color 0.2s;
-        }
-
-        .tab-btn:hover {
-            color: var(--neutral-dark);
-        }
-
-        .tab-btn.active {
-            color: var(--primary);
-        }
-
-        .tab-btn.active::after {
-            content: '';
-            position: absolute;
-            bottom: -1px;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background-color: var(--primary);
-            border-radius: 3px 3px 0 0;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        /* Grid layout for cards */
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 32px;
-        }
-
-        .metric-card {
-            background: var(--neutral-white);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .metric-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-        }
-
-        .metric-label {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: var(--neutral-muted);
-            letter-spacing: 0.05em;
-            margin-bottom: 8px;
-        }
-
-        .metric-value {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--neutral-dark);
-            margin-bottom: 4px;
-        }
-
-        .metric-desc {
-            font-size: 12px;
-            color: var(--neutral-muted);
-        }
-
-        /* Interactive Dashboard Block Layout */
-        .dashboard-row {
-            display: grid;
-            grid-template-columns: 1.5fr 1fr;
-            gap: 24px;
-            margin-bottom: 32px;
-        }
-
-        @media (max-width: 1024px) {
-            .dashboard-row {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .panel-card {
-            background: var(--neutral-white);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-        }
-
-        .panel-card h3 {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* Cost chart comparison component */
-        .cost-comparison-container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            padding: 8px 0;
-        }
-
-        .cost-bar-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .cost-bar-header {
-            display: flex;
-            justify-content: space-between;
-            font-size: 13px;
-            font-weight: 600;
-        }
-
-        .cost-bar-track {
-            background-color: #F1EFFD;
-            height: 28px;
-            border-radius: 6px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .cost-bar-fill {
-            height: 100%;
-            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            padding-left: 12px;
-            color: white;
-            font-size: 12px;
-            font-weight: 700;
-            font-family: 'Space Grotesk', sans-serif;
-        }
-
-        .cost-bar-fill.red {
-            background: linear-gradient(90deg, #F87171, #EF4444);
-        }
-
-        .cost-bar-fill.green {
-            background: linear-gradient(90deg, #34D399, #10B981);
-        }
-
-        /* Keep-alive Stream list */
-        .stream-list {
-            max-height: 280px;
-            overflow-y: auto;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background: #FAFAFA;
-        }
-
-        .stream-item {
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 13px;
-        }
-
-        .stream-item:last-child {
-            border-bottom: none;
-        }
-
-        /* Map styling */
-        #map {
-            height: 550px;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-        }
-
-        /* Map controls */
-        .map-filters {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .map-select {
-            padding: 8px 16px;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            background: white;
-            font-size: 13px;
-            font-weight: 500;
-        }
-    </style>
+  <link rel="stylesheet" href="/css/legacy-inline-migration.css?v=1">
 </head>
 <body>
     <div class="sidebar" id="sidebar">
         <div class="sidebar-brand">
-            <svg style="width:24px; height:24px; color:#D97A5C;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="legacy-inline-hryk35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
             </svg>
             <span class="sidebar-brand-text">Kurukoo Admin</span>
         </div>
-        
-        <div style="flex-grow: 1; overflow-y: auto; padding-bottom: 20px;">
+
+        <div class="legacy-inline-heordn">
             <div class="sidebar-menu-section">Core Modules</div>
             <a href="/admin/dashboard.html" class="sidebar-item" title="Dashboard">
                 <svg viewBox="0 0 24 24">
@@ -565,8 +164,8 @@
             </a>
         </div>
 
-        <button onclick="toggleSidebar()" style="width:100%; background:#222; border:1px solid #333; color:#a3a3a3; padding:12px; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; gap:8px;" title="Collapse Menu">
-            <svg id="sidebar-toggle-icon" style="width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2;" viewBox="0 0 24 24">
+        <button onclick="toggleSidebar()" class="legacy-inline-1f4xpjz" title="Collapse Menu">
+            <svg id="sidebar-toggle-icon" class="legacy-inline-36ccvg" viewBox="0 0 24 24">
                 <polyline points="11 17 6 12 11 7"></polyline>
                 <polyline points="18 17 13 12 18 7"></polyline>
             </svg>
@@ -580,7 +179,7 @@
                 <h1>Analytics & Strategy</h1>
                 <p>Track geographic demand heatmaps and configured internal platform observability metrics.</p>
             </div>
-            <div style="font-size: 13px; color: var(--neutral-muted); font-weight: 500;" id="current-time-display">
+            <div class="legacy-inline-1okuybh" id="current-time-display">
                 Nigeria Standard Time
             </div>
         </div>
@@ -596,35 +195,35 @@
             <div class="metrics-grid">
                 <div class="metric-card">
                     <div>
-                        <div class="metric-label" style="color: #0284C7;">Unread Internal Notifications</div>
+                        <div class="metric-label legacy-inline-ltao11">Unread Internal Notifications</div>
                         <div class="metric-value" id="fcm-sent">0</div>
                     </div>
                     <div class="metric-desc">Queued items requiring owner or admin review</div>
                 </div>
                 <div class="metric-card">
                     <div>
-                        <div class="metric-label" style="color: #059669;">Active Reminders</div>
+                        <div class="metric-label legacy-inline-1ish0o2">Active Reminders</div>
                         <div class="metric-value" id="session-resets">0</div>
                     </div>
                     <div class="metric-desc">Native reminders currently active</div>
                 </div>
                 <div class="metric-card">
                     <div>
-                        <div class="metric-label" style="color: #D97A5C;">Active Safety Check-ins</div>
+                        <div class="metric-label legacy-inline-1qocy20">Active Safety Check-ins</div>
                         <div class="metric-value" id="reset-rate">0</div>
                     </div>
                     <div class="metric-desc">Check-ins awaiting completion or expiry processing</div>
                 </div>
                 <div class="metric-card">
                     <div>
-                        <div class="metric-label" style="color: #9333EA;">Open Economic Requests</div>
+                        <div class="metric-label legacy-inline-rp1khd">Open Economic Requests</div>
                         <div class="metric-value" id="total-savings">0</div>
                     </div>
                     <div class="metric-desc">Requests still within the shared lifecycle</div>
                 </div>
                 <div class="metric-card">
                     <div>
-                        <div class="metric-label" style="color: #4B5563;">Completed Requests</div>
+                        <div class="metric-label legacy-inline-1e771vc">Completed Requests</div>
                         <div class="metric-value" id="avg-duration">0</div>
                     </div>
                     <div class="metric-desc">Requests recorded as completed</div>
@@ -635,14 +234,14 @@
                 <!-- Cost Impact Visualizer Panel -->
                 <div class="panel-card">
                     <h3>
-                        <svg style="width:20px; height:20px; color:var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg class="legacy-inline-6ywye7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="2" y="2" width="20" height="20" rx="2" ry="2"></rect>
                             <line x1="12" y1="18" x2="12" y2="12"></line>
                             <line x1="12" y1="8" x2="12.01" y2="8"></line>
                         </svg>
                         Internal Queue and Lifecycle Evidence
                     </h3>
-                    <p style="font-size: 13px; color: var(--neutral-muted); margin-bottom: 24px;">
+                    <p class="legacy-inline-7b886q">
                         External messaging and push adapters are not configured in this deployment. Internal notification records and lifecycle counts are shown only when backed by the canonical database tables.
                     </p>
 
@@ -650,25 +249,25 @@
                         <div class="cost-bar-group">
                             <div class="cost-bar-header">
                                 <span>Unread notifications requiring review</span>
-                                <span style="color:#EF4444;" id="cost-without-label">0</span>
+                                <span class="legacy-inline-12ut4my" id="cost-without-label">0</span>
                             </div>
                             <div class="cost-bar-track">
-                                <div class="cost-bar-fill red" id="cost-without-bar" style="width: 0%"></div>
+                                <div class="cost-bar-fill red" id="cost-without-bar legacy-inline-13ucn5j"></div>
                             </div>
                         </div>
 
                         <div class="cost-bar-group">
                             <div class="cost-bar-header">
                                 <span>Active reminders and check-ins</span>
-                                <span style="color:#10B981;" id="cost-with-label">0</span>
+                                <span class="legacy-inline-1jdv0si" id="cost-with-label">0</span>
                             </div>
                             <div class="cost-bar-track">
-                                <div class="cost-bar-fill green" id="cost-with-bar" style="width: 0%"></div>
+                                <div class="cost-bar-fill green" id="cost-with-bar legacy-inline-13ucn5j"></div>
                             </div>
                         </div>
                     </div>
 
-                    <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 8px; padding: 16px; margin-top: 24px; font-size: 13px; line-height: 1.5;">
+                    <div class="legacy-inline-ch27oq">
                         <strong>Delivery boundary:</strong>
                         Web Chat and the authenticated internal notification inbox are the supported surfaces. FCM, SMS, WhatsApp, and USSD delivery are not represented as active until their adapters are configured and produce delivery evidence.
                     </div>
@@ -677,16 +276,16 @@
                 <!-- Recent Platform Observability Stream -->
                 <div class="panel-card">
                     <h3>
-                        <svg style="width:20px; height:20px; color:#D97A5C;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg class="legacy-inline-hkr8xl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                         </svg>
                         Internal Notification Queue
                     </h3>
-                    <p style="font-size: 13px; color: var(--neutral-muted); margin-bottom: 16px;">
+                    <p class="legacy-inline-1d00bht">
                         Latest internal notification and lifecycle evidence available to the admin boundary:
                     </p>
                     <div class="stream-list" id="stream-container">
-                        <div style="padding: 24px; text-align: center; color: var(--neutral-muted);">
+                        <div class="legacy-inline-ku6vdq">
                             Loading stream feeds...
                         </div>
                     </div>
@@ -697,9 +296,9 @@
         <!-- Tab 2: Map Heatmap -->
         <div id="heatmap-tab" class="tab-content">
             <div class="panel-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div class="legacy-inline-p1lzso">
                     <h3>
-                        <svg style="width:20px; height:20px; color:var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg class="legacy-inline-6ywye7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                             <circle cx="12" cy="10" r="3"></circle>
                         </svg>
@@ -726,7 +325,7 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
 
             document.getElementById(tabId).classList.add('active');
-            
+
             // Highlight the correct tab button
             const buttons = document.querySelectorAll('.tab-btn');
             if (tabId === 'platform-observability-tab') {
@@ -857,10 +456,10 @@
                                 fillOpacity: 0.6,
                                 weight: 2
                             }).addTo(map);
-                            
+
                             marker.bindPopup(`
-                                <div style="font-family:'Inter', sans-serif; font-size:12px;">
-                                    <strong style="font-family:'Space Grotesk', sans-serif; font-size:13px; display:block; margin-bottom:4px;">${t.keyword}</strong>
+                                <div class="legacy-inline-18wbfp5">
+                                    <strong class="legacy-inline-uoq7k8">${t.keyword}</strong>
                                     <span>Location: ${t.lat.toFixed(4)}, ${t.lng.toFixed(4)}</span><br/>
                                     <strong>Demand Volume: ${t.count} hits</strong>
                                 </div>

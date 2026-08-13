@@ -4,9 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Kurukoo Pilot Dashboard</title>
-  <style>
-    :root{color-scheme:light;--ink:#202124;--muted:#667085;--line:#e5e7eb;--surface:#fff7ef;--accent:#d97a5c;--good:#26734d;--bad:#b42318}*{box-sizing:border-box}body{margin:0;background:var(--surface);color:var(--ink);font:15px/1.5 Inter,system-ui,sans-serif}main{max-width:1180px;margin:0 auto;padding:32px 20px 64px}header{display:flex;justify-content:space-between;gap:16px;align-items:end;border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:24px}h1,h2{margin:0;font-family:Georgia,serif;letter-spacing:-.03em}h1{font-size:clamp(30px,5vw,48px)}h2{font-size:23px;margin-bottom:12px}.muted{color:var(--muted)}.decision{padding:18px 20px;border-radius:14px;background:#fff;border:1px solid var(--line);margin-bottom:22px}.decision.go{border-color:#9ad1b2}.decision.no-go{border-color:#efb0aa}.decision strong{font-size:24px;color:var(--good)}.decision.no-go strong{color:var(--bad)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:26px}.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px}.metric{font-size:32px;font-weight:750;margin-top:6px}.label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}.card ul{padding-left:18px;margin:8px 0 0}.table-wrap{overflow:auto;background:#fff;border:1px solid var(--line);border-radius:12px}table{border-collapse:collapse;width:100%;min-width:680px}th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.pill{display:inline-block;border-radius:999px;padding:3px 8px;font-size:12px;background:#f2f4f7}.error{color:var(--bad)}button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 11px;cursor:pointer}button:hover{border-color:var(--accent)}@media(max-width:600px){header{align-items:start;flex-direction:column}}
-  </style>
+
+  <link rel="stylesheet" href="/css/legacy-inline-migration.css?v=1">
 </head>
 <body>
 <main>
@@ -14,7 +13,7 @@
   <section id="decision" class="decision"><span class="muted">Loading pilot decision…</span></section>
   <section id="metrics" class="grid"></section>
   <section><h2>Recovery signals</h2><div id="recovery" class="grid"></div></section>
-  <section><h2>Coordinator handoffs</h2><div id="handoffs" class="table-wrap"><p class="muted" style="padding:16px">Loading…</p></div></section>
+  <section><h2>Coordinator handoffs</h2><div id="handoffs" class="table-wrap"><p class="muted legacy-inline-sqsnti">Loading…</p></div></section>
   <section><h2>Feedback distribution</h2><div id="feedback-summary" class="grid"></div></section>
 </main>
 <script>
@@ -27,10 +26,10 @@
     document.querySelector('#decision').innerHTML=`<strong>${noGo?'NO-GO':'GO — continue controlled pilot'}</strong><p class="muted">${noGo?'Failure rate is above the controlled-pilot threshold; pause invites and inspect recovery paths.':'No aggregate stop signal exceeded the current threshold. Keep the invite cohort at 5–10 users and review this surface daily.'} Feedback records in window: ${feedback}.</p>`;
   }
   async function updateHandoff(id,status){
-    try{const response=await fetch(`/api/coordination/admin/handoffs/${encodeURIComponent(id)}`,{method:'PATCH',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});const data=await response.json().catch(()=>({}));if(!response.ok||!data.success)throw new Error(data.error||'Coordinator action unavailable');await load();}catch(error){document.querySelector('#handoffs').innerHTML=`<p class="error" style="padding:16px">${esc(error.message)}</p>`;}
+    try{const response=await fetch(`/api/coordination/admin/handoffs/${encodeURIComponent(id)}`,{method:'PATCH',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});const data=await response.json().catch(()=>({}));if(!response.ok||!data.success)throw new Error(data.error||'Coordinator action unavailable');await load();}catch(error){document.querySelector('#handoffs').innerHTML=`<p class="error legacy-inline-sqsnti">${esc(error.message)}</p>`;}
   }
   async function loadHandoffs(){
-    const response=await fetch('/api/coordination/admin/handoffs',{credentials:'same-origin'});if(!response.ok)throw new Error('Coordinator queue unavailable.');const data=await response.json();const rows=data.handoffs||[];document.querySelector('#handoffs').innerHTML=rows.length?`<table><thead><tr><th>Created</th><th>Request</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead><tbody>${rows.map(row=>`<tr><td>${esc(row.createdAt)}</td><td><code>handoff-${esc(String(row.id||'').slice(0,8))}</code></td><td>${esc(row.reason)}</td><td><span class="pill">${esc(row.status)}</span></td><td>${row.status==='requested'?`<button data-handoff="${esc(row.id)}" data-status="claimed">Claim</button>`:row.status==='claimed'?`<button data-handoff="${esc(row.id)}" data-status="resolved">Resolve</button>`:'—'}</td></tr>`).join('')}</tbody></table>`:'<p class="muted" style="padding:16px">No open coordinator handoffs.</p>';document.querySelectorAll('[data-handoff]').forEach(button=>button.addEventListener('click',()=>updateHandoff(button.dataset.handoff,button.dataset.status)));
+    const response=await fetch('/api/coordination/admin/handoffs',{credentials:'same-origin'});if(!response.ok)throw new Error('Coordinator queue unavailable.');const data=await response.json();const rows=data.handoffs||[];document.querySelector('#handoffs').innerHTML=rows.length?`<table><thead><tr><th>Created</th><th>Request</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead><tbody>${rows.map(row=>`<tr><td>${esc(row.createdAt)}</td><td><code>handoff-${esc(String(row.id||'').slice(0,8))}</code></td><td>${esc(row.reason)}</td><td><span class="pill">${esc(row.status)}</span></td><td>${row.status==='requested'?`<button data-handoff="${esc(row.id)}" data-status="claimed">Claim</button>`:row.status==='claimed'?`<button data-handoff="${esc(row.id)}" data-status="resolved">Resolve</button>`:'—'}</td></tr>`).join('')}</tbody></table>`:'<p class="muted legacy-inline-sqsnti">No open coordinator handoffs.</p>';document.querySelectorAll('[data-handoff]').forEach(button=>button.addEventListener('click',()=>updateHandoff(button.dataset.handoff,button.dataset.status)));
   }
   async function load(){
     try{

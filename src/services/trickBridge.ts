@@ -26,16 +26,16 @@ function fuzzCoordinates(lat: number, lng: number): { lat: number; lng: number }
     return { lat: Number((lat + latOffset).toFixed(5)), lng: Number((lng + lngOffset).toFixed(5)) };
 }
 
-export async function updateTrickPresence(phone: string, lat: number, lng: number, movementMeters: number = 50): Promise<{ success: boolean; fuzzed: { lat: number; lng: number } }> {
+export async function updateTrickPresence(phone: string, lat: number, lng: number, movementMeters: number = 50, operationMode?: 'mobile' | 'stationary'): Promise<{ success: boolean; fuzzed: { lat: number; lng: number } }> {
     if (!phone || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
         throw new Error('Invalid presence coordinates');
     }
     const db = await getDb();
     const fuzzed = fuzzCoordinates(lat, lng);
-    const isStationary = movementMeters < 80;
+    const mode = operationMode || (movementMeters < 80 ? 'stationary' : 'mobile');
     db.run(
         `UPDATE provider_presence SET last_lat = ?, last_lng = ?, fuzzed_lat = ?, fuzzed_lng = ?, last_confirmed = datetime('now'), updated_at = datetime('now'), operation_mode = ? WHERE phone = ?`,
-        [lat, lng, fuzzed.lat, fuzzed.lng, isStationary ? 'stationary' : 'mobile', phone]
+        [lat, lng, fuzzed.lat, fuzzed.lng, mode, phone]
     );
     saveDb();
     return { success: true, fuzzed };
@@ -46,15 +46,15 @@ export async function getFuzzedTrickPresence(): Promise<TrickPresence[]> {
     const stmt = db.prepare(`
         SELECT phone, fuzzed_lat, fuzzed_lng, is_live, last_confirmed, operation_mode
         FROM provider_presence
-        WHERE is_live = 1 AND live_until > datetime('now')
+        WHERE is_live = 1 AND live_until > datetime('now') AND fuzzed_lat IS NOT NULL AND fuzzed_lng IS NOT NULL
     `);
     const results: TrickPresence[] = [];
     while (stmt.step()) {
         const row = stmt.getAsObject();
         results.push({
             providerId: publicProviderId(String(row.phone || '')),
-            fuzzedLat: (row.fuzzed_lat !== null && row.fuzzed_lat !== undefined) ? Number(row.fuzzed_lat) : 0,
-            fuzzedLng: (row.fuzzed_lng !== null && row.fuzzed_lng !== undefined) ? Number(row.fuzzed_lng) : 0,
+            fuzzedLat: Number(row.fuzzed_lat),
+            fuzzedLng: Number(row.fuzzed_lng),
             isLive: row.is_live === 1,
             lastConfirmed: row.last_confirmed as string,
             mode: (row.operation_mode as 'mobile' | 'stationary') || 'stationary'

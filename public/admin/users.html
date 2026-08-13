@@ -5,546 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kurukoo User Management</title>
     <link rel="stylesheet" href="/css/site.css">
-    <style>
-        :root {
-            --primary: #D97A5C;
-            --primary-hover: #C56548;
-            --neutral-dark: #111111;
-            --neutral-light: #F8F7F4;
-            --neutral-white: #FFFFFF;
-            --neutral-muted: #7A7A7A;
-            --border-color: #E5E2DE;
-            --success: #10B981;
-            --danger: #EF4444;
-        }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            background-color: var(--neutral-light);
-            color: var(--neutral-dark);
-            font-family: var(--font-body);
-            min-height: 100vh;
-        }
-
-        /* Sidebar Styling */
-        .sidebar {
-            width: 260px;
-            background: #111111;
-            color: #F8F7F4;
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            padding: 24px 12px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid #2A2A2A;
-            box-shadow: 4px 0 10px rgba(0,0,0,0.15);
-        }
-
-        .sidebar.collapsed {
-            width: 76px;
-            padding: 24px 8px;
-        }
-
-        .sidebar-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 0 12px;
-            margin-bottom: 28px;
-            overflow: hidden;
-            white-space: nowrap;
-        }
-
-        .sidebar.collapsed .sidebar-brand {
-            justify-content: center;
-            padding: 0;
-        }
-
-        .sidebar-brand-text {
-            font-family: 'Space Grotesk', sans-serif;
-            color: white;
-            font-size: 18px;
-            font-weight: 700;
-            transition: opacity 0.2s;
-        }
-
-        .sidebar.collapsed .sidebar-brand-text {
-            display: none;
-        }
-
-        .sidebar-menu-section {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: #555555;
-            letter-spacing: 0.1em;
-            padding: 16px 12px 8px 12px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .sidebar.collapsed .sidebar-menu-section {
-            display: none;
-        }
-
-        .sidebar-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 14px;
-            color: #a3a3a3;
-            text-decoration: none;
-            border-radius: 8px;
-            margin-bottom: 4px;
-            font-size: 13.5px;
-            font-weight: 500;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-
-        .sidebar.collapsed .sidebar-item {
-            justify-content: center;
-            padding: 10px 0;
-            border-radius: 50%;
-            width: 44px;
-            height: 44px;
-            margin: 0 auto 6px auto;
-        }
-
-        .sidebar-item-label {
-            transition: opacity 0.2s;
-        }
-
-        .sidebar.collapsed .sidebar-item-label {
-            display: none;
-        }
-
-        .sidebar-item:hover {
-            background: #222222;
-            color: #FFFFFF;
-        }
-        
-        .sidebar-item.active {
-            background: var(--primary);
-            color: white;
-        }
-
-        .sidebar-item svg {
-            width: 20px;
-            height: 20px;
-            min-width: 20px;
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            opacity: 0.8;
-        }
-
-        /* Main Content Container */
-        .main-content {
-            margin-left: 260px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            padding: 32px;
-        }
-
-        .main-content.expanded {
-            margin-left: 76px;
-        }
-
-        /* Header block */
-        .header-bar {
-            background-color: var(--neutral-white);
-            color: var(--neutral-dark);
-            padding: 16px 32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 32px;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-        }
-
-        .header-title h1 {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 24px;
-            font-weight: 700;
-        }
-
-        .header-title p {
-            font-size: 13px;
-            color: var(--neutral-muted);
-            margin-top: 4px;
-        }
-
-        /* Console Panels */
-        .panel {
-            background: var(--neutral-white);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-            margin-bottom: 24px;
-        }
-
-        /* Filter Controls */
-        .filters-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 24px;
-        }
-
-        .search-container {
-            position: relative;
-            flex: 1;
-            min-width: 300px;
-        }
-
-        .search-container svg {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--neutral-muted);
-            width: 18px;
-            height: 18px;
-            pointer-events: none;
-        }
-
-        .input-field {
-            width: 100%;
-            padding: 10px 14px 10px 42px;
-            font-size: 14px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background-color: #FAFAFA;
-            color: var(--neutral-dark);
-            transition: all 0.2s;
-        }
-
-        .input-field:focus {
-            outline: none;
-            border-color: var(--primary);
-            background-color: #FFFFFF;
-            box-shadow: 0 0 0 3px rgba(217, 122, 92, 0.15);
-        }
-
-        .select-field {
-            padding: 10px 14px;
-            font-size: 14px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background-color: #FFFFFF;
-            color: var(--neutral-dark);
-            cursor: pointer;
-            outline: none;
-            transition: all 0.2s;
-        }
-
-        .select-field:focus {
-            border-color: var(--primary);
-        }
-
-        .filter-group {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
-        /* Custom Table Styling */
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            font-size: 14px;
-        }
-
-        th {
-            background-color: #FAFAFA;
-            color: var(--neutral-dark);
-            font-weight: 600;
-            padding: 14px 16px;
-            border-bottom: 2px solid var(--border-color);
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-        }
-
-        td {
-            padding: 14px 16px;
-            border-bottom: 1px solid var(--border-color);
-            color: #333333;
-            vertical-align: middle;
-        }
-
-        tr:hover {
-            background-color: #FAF9F6;
-        }
-
-        tr.selected {
-            background-color: #FFF3EF;
-        }
-
-        /* Checkboxes */
-        .checkbox-cell {
-            width: 48px;
-            text-align: center;
-        }
-
-        input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            accent-color: var(--primary);
-            cursor: pointer;
-        }
-
-        /* Badges */
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 4px 8px;
-            border-radius: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.02em;
-        }
-
-        .badge-premium {
-            background-color: #FDF2F8;
-            color: #DB2777;
-        }
-
-        .badge-base {
-            background-color: #F3F4F6;
-            color: #4B5563;
-        }
-
-        .badge-enterprise {
-            background-color: #EEF2F6;
-            color: #2563EB;
-        }
-
-        .badge-contributor {
-            background-color: #F5F3FF;
-            color: #7C3AED;
-        }
-
-        .badge-success {
-            background-color: #D1FAE5;
-            color: #065F46;
-        }
-
-        .badge-muted {
-            background-color: #F3F4F6;
-            color: #6B7280;
-        }
-
-        /* Pagination Controls */
-        .pagination-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 24px;
-            gap: 16px;
-        }
-
-        .pagination-info {
-            font-size: 13px;
-            color: var(--neutral-muted);
-        }
-
-        .pagination-buttons {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-        }
-
-        .btn {
-            padding: 8px 16px;
-            font-size: 13px;
-            font-weight: 600;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            background: white;
-            color: var(--neutral-dark);
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .btn:hover:not(:disabled) {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .btn-primary {
-            background-color: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            background-color: var(--primary-hover);
-            color: white;
-            border-color: var(--primary-hover);
-        }
-
-        .page-num {
-            min-width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            font-weight: 600;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 1px solid transparent;
-        }
-
-        .page-num:hover:not(.active) {
-            background-color: #F3F4F6;
-        }
-
-        .page-num.active {
-            background-color: var(--primary);
-            color: white;
-            font-weight: 700;
-        }
-
-        /* Bulk Action Toast / Bar */
-        .bulk-action-bar {
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%) translateY(150px);
-            background: var(--neutral-dark);
-            color: white;
-            padding: 16px 24px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            z-index: 200;
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            max-width: 90%;
-            width: auto;
-        }
-
-        .bulk-action-bar.visible {
-            transform: translateX(-50%) translateY(0);
-        }
-
-        .selected-count-badge {
-            background-color: var(--primary);
-            color: white;
-            font-weight: 700;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-        }
-
-        .bulk-action-selects {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .bulk-select {
-            background: #2A2A2A;
-            border: 1px solid #444444;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 13px;
-            outline: none;
-            cursor: pointer;
-        }
-
-        .bulk-select:focus {
-            border-color: var(--primary);
-        }
-
-        .bulk-input {
-            background: #2A2A2A;
-            border: 1px solid #444444;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 13px;
-            outline: none;
-            width: 100px;
-        }
-
-        /* Toast Notifications */
-        .toast-notification {
-            position: fixed;
-            top: 24px;
-            right: 24px;
-            background: #1F2937;
-            color: white;
-            padding: 14px 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            font-size: 13.5px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            z-index: 300;
-            transform: translateY(-100px);
-            opacity: 0;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .toast-notification.show {
-            transform: translateY(0);
-            opacity: 1;
-        }
-    </style>
+  <link rel="stylesheet" href="/css/legacy-inline-migration.css?v=1">
 </head>
 <body>
     <div class="sidebar" id="sidebar">
         <div class="sidebar-brand">
-            <svg style="width:24px; height:24px; color:#D97A5C;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="legacy-inline-30mx3l" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
             </svg>
             <span class="sidebar-brand-text">Kurukoo Admin</span>
         </div>
-        
-        <div style="flex-grow: 1; overflow-y: auto; padding-bottom: 20px;">
+
+        <div class="legacy-inline-107qtvf">
             <div class="sidebar-menu-section">Core Modules</div>
             <a href="/admin/dashboard.html" class="sidebar-item" title="Dashboard">
                 <svg viewBox="0 0 24 24">
@@ -688,8 +162,8 @@
             </a>
         </div>
 
-        <button onclick="toggleSidebar()" style="width:100%; background:#222; border:1px solid #333; color:#a3a3a3; padding:12px; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; gap:8px;" title="Collapse Menu">
-            <svg id="sidebar-toggle-icon" style="width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2;" viewBox="0 0 24 24">
+        <button onclick="toggleSidebar()" class="legacy-inline-itjxdr" title="Collapse Menu">
+            <svg id="sidebar-toggle-icon" class="legacy-inline-1vz13ws" viewBox="0 0 24 24">
                 <polyline points="11 17 6 12 11 7"></polyline>
                 <polyline points="18 17 13 12 18 7"></polyline>
             </svg>
@@ -703,7 +177,7 @@
                 <h1>User Base Manager</h1>
                 <p>Support high-scale paginated data query, instant search by phone, and multi-user bulk action management.</p>
             </div>
-            <div style="font-size: 13px; color: var(--neutral-muted); font-weight: 500;" id="last-sync-time">
+            <div class="legacy-inline-gswd9" id="last-sync-time">
                 Synced in real-time
             </div>
         </div>
@@ -734,7 +208,7 @@
                         <option value="0">Unverified Users</option>
                     </select>
 
-                    <select id="limit-select" class="select-field" onchange="changeLimit(this.value)" style="width: 80px;">
+                    <select id="limit-select" class="select-field" onchange="changeLimit(this.value) legacy-inline-1jh89bt">
                         <option value="10">10 / pg</option>
                         <option value="25">25 / pg</option>
                         <option value="50">50 / pg</option>
@@ -766,7 +240,7 @@
                     </thead>
                     <tbody id="users-tbody">
                         <tr>
-                            <td colspan="8" style="text-align: center; padding: 40px; color: var(--neutral-muted);">
+                            <td colspan="8" class="legacy-inline-nc3h8e">
                                 Loading active profiles...
                             </td>
                         </tr>
@@ -791,7 +265,7 @@
         <div>
             Selected: <span class="selected-count-badge" id="selected-count">0</span>
         </div>
-        
+
         <div class="bulk-action-selects">
             <select class="bulk-select" id="bulk-action-dropdown" onchange="handleBulkActionChange(this.value)">
                 <option value="">Choose Bulk Action...</option>
@@ -802,24 +276,24 @@
             </select>
 
             <!-- Conditional values for actions -->
-            <select class="bulk-select" id="bulk-value-tier" style="display: none;">
+            <select class="bulk-select" id="bulk-value-tier legacy-inline-dluxel">
                 <option value="Base">Base Tier</option>
                 <option value="Premium">Premium Tier</option>
                 <option value="Enterprise">Enterprise Tier</option>
                 <option value="Contributor">Contributor Tier</option>
             </select>
 
-            <select class="bulk-select" id="bulk-value-boolean" style="display: none;">
+            <select class="bulk-select" id="bulk-value-boolean legacy-inline-dluxel">
                 <option value="1">Enable / Active</option>
                 <option value="0">Disable / Off</option>
             </select>
 
-            <input type="number" class="bulk-input" id="bulk-value-points" placeholder="Points" style="display: none;" min="1" max="1000">
+            <input type="number" class="bulk-input" id="bulk-value-points" placeholder="Points legacy-inline-dluxel" min="1" max="1000">
 
             <button class="btn btn-primary" onclick="submitBulkActions()">
                 Apply to Batch
             </button>
-            <button class="btn" style="background: none; border-color: #444; color: #a3a3a3;" onclick="clearSelection()">
+            <button class="btn legacy-inline-1mhjliy" onclick="clearSelection()">
                 Cancel
             </button>
         </div>
@@ -934,11 +408,11 @@
         // Fetch User list from our backend API
         function loadUsersData() {
             const url = `/api/admin/users?page=${currentPage}&limit=${currentLimit}&search=${encodeURIComponent(searchQuery)}&tier=${tierFilter}&verified=${verifiedFilter}`;
-            
+
             const tbody = document.getElementById('users-tbody');
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" style="text-align: center; padding: 40px; color: var(--neutral-muted);">
+                    <td colspan="8" class="legacy-inline-nc3h8e">
                         Fetching profiles...
                     </td>
                 </tr>
@@ -959,7 +433,7 @@
                     console.error('Error fetching users:', err);
                     tbody.innerHTML = `
                         <tr>
-                            <td colspan="8" style="text-align: center; padding: 40px; color: var(--danger); font-weight: 500;">
+                            <td colspan="8" class="legacy-inline-21xggs">
                                 Error loading user records. Please try again.
                             </td>
                         </tr>
@@ -970,11 +444,11 @@
         // Render dynamic table rows
         function renderUsersList() {
             const tbody = document.getElementById('users-tbody');
-            
+
             if (loadedUsers.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="8" style="text-align: center; padding: 40px; color: var(--neutral-muted);">
+                        <td colspan="8" class="legacy-inline-nc3h8e">
                             No registered users match your query parameters.
                         </td>
                     </tr>
@@ -984,7 +458,7 @@
 
             tbody.innerHTML = loadedUsers.map(user => {
                 const isChecked = selectedPhones.has(user.phone);
-                
+
                 // Get subscription badge style
                 let tierBadgeClass = 'badge-base';
                 if (user.subscription_tier === 'Premium') tierBadgeClass = 'badge-premium';
@@ -1004,22 +478,22 @@
                         <td class="checkbox-cell">
                             <input type="checkbox" class="user-row-checkbox" data-phone="${user.phone}" ${isChecked ? 'checked' : ''} onchange="toggleRowCheckbox(this, '${user.phone}')">
                         </td>
-                        <td style="font-weight: 700; font-family: 'Space Grotesk', sans-serif;">
+                        <td class="legacy-inline-jvi7xp">
                             ${user.phone}
                         </td>
                         <td>
                             ${user.name || 'Anonymous User'}
                         </td>
-                        <td style="font-size: 13px; color: #4B5563;">
+                        <td class="legacy-inline-1dad1ww">
                             ${user.location || 'Ibadan'}, ${user.country ? user.country.toUpperCase() : 'NG'}
                         </td>
                         <td>
                             <span class="badge ${tierBadgeClass}">${user.subscription_tier || 'Base'}</span>
                         </td>
-                        <td style="font-family: monospace; font-weight: 600;">
+                        <td class="legacy-inline-1l810cl">
                             ${displayWallet}
                         </td>
-                        <td style="font-weight: 600; color: var(--neutral-dark);">
+                        <td class="legacy-inline-thc34h">
                             ${user.points_balance || 0} pts
                         </td>
                         <td>
@@ -1067,7 +541,7 @@
         function updateBulkDockUI() {
             const dock = document.getElementById('bulk-action-dock');
             const counter = document.getElementById('selected-count');
-            
+
             if (selectedPhones.size > 0) {
                 counter.innerText = selectedPhones.size;
                 dock.classList.add('visible');
@@ -1081,7 +555,7 @@
             loadedUsers.forEach(user => {
                 const rowChk = document.querySelector(`.user-row-checkbox[data-phone="${user.phone}"]`);
                 const tr = document.querySelector(`tr[data-phone="${user.phone}"]`);
-                
+
                 if (isChecked) {
                     selectedPhones.add(user.phone);
                     if (rowChk) rowChk.checked = true;
@@ -1112,11 +586,11 @@
         // Clear selection entirely
         function clearSelection() {
             selectedPhones.clear();
-            
+
             // Uncheck visible boxes
             document.querySelectorAll('.user-row-checkbox').forEach(chk => chk.checked = false);
             document.querySelectorAll('tr.selected').forEach(tr => tr.classList.remove('selected'));
-            
+
             const headerChk = document.getElementById('select-all-checkbox');
             if (headerChk) headerChk.checked = false;
 
@@ -1182,10 +656,10 @@
         function showToast(message) {
             const toast = document.getElementById('toast-notify');
             const text = document.getElementById('toast-text');
-            
+
             text.innerText = message;
             toast.classList.add('show');
-            
+
             setTimeout(() => {
                 toast.classList.remove('show');
             }, 3500);
@@ -1196,7 +670,7 @@
             const infoText = document.getElementById('pagination-info-text');
             const startRange = totalRecords === 0 ? 0 : (currentPage - 1) * currentLimit + 1;
             const endRange = Math.min(currentPage * currentLimit, totalRecords);
-            
+
             infoText.innerText = `Showing ${startRange} to ${endRange} of ${totalRecords} registered profiles`;
 
             const container = document.getElementById('pagination-buttons-container');
@@ -1249,7 +723,7 @@
         // Start initialization sequence
         window.onload = function() {
             loadUsersData();
-            
+
             // Format dynamic sync timestamp
             document.getElementById('last-sync-time').innerText = 'Synced: ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         };

@@ -130,6 +130,148 @@
     }
   };
 
+  const loadPointsHistory = async () => {
+    const list = qs('[data-points-history]');
+    const status = qs('[data-points-history-status]');
+    const error = qs('[data-points-history-error]');
+    if (!list) return;
+    clear(list);
+    if (status) status.textContent = 'Loading activity';
+    if (error) { error.hidden = true; error.textContent = ''; }
+    try {
+      const payload = await api('/api/points/history?limit=20');
+      const history = Array.isArray(payload.history) ? payload.history : [];
+      history.forEach((entry) => {
+        const amount = Number(entry.amount || 0);
+        const signedAmount = amount > 0 ? `+${amount}` : String(amount);
+        const detail = String(entry.description || 'Points activity');
+        const createdAt = entry.created_at || entry.createdAt;
+        list.appendChild(makeDataCard({
+          eyebrow: formatDate(createdAt),
+          title: `${signedAmount} Points`,
+          detail,
+          state: humanize(entry.type || (amount >= 0 ? 'credit' : 'debit')),
+        }));
+      });
+      setEmpty('[data-points-history-empty]', history.length === 0);
+      if (status) status.textContent = history.length ? 'Current activity' : 'No activity yet';
+    } catch (_) {
+      setEmpty('[data-points-history-empty]', false);
+      if (status) status.textContent = 'Activity unavailable';
+      if (error) { error.textContent = 'Points activity could not be loaded. Your balance may still be available above.'; error.hidden = false; }
+    }
+  };
+
+  const acceptTask = async (taskId, button) => {
+    button.disabled = true;
+    button.textContent = 'Accepting…';
+    try {
+      await api('/api/tasks/accept', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ taskId }) });
+      await Promise.all([loadTasks(), loadContributorTasks()]);
+    } catch (_) {
+      button.disabled = false;
+      button.textContent = 'Could not accept';
+    }
+  };
+
+  const submitTaskEvidence = async (task, button) => {
+    const summary = window.prompt(`Describe the evidence for “${String(task.title || 'this task')}”. Do not include sensitive personal information.`);
+    if (!summary?.trim()) return;
+    button.disabled = true;
+    button.textContent = 'Submitting…';
+    try {
+      await api('/api/tasks/evidence', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ taskId: Number(task.id), evidence: { summary: summary.trim() } }) });
+      await Promise.all([loadTasks(), loadContributorTasks(), loadPoints(), loadPointsHistory()]);
+    } catch (_) {
+      button.disabled = false;
+      button.textContent = 'Could not submit';
+    }
+  };
+
+  const loadTasks = async () => {
+    const list = qs('[data-tasks-list]');
+    const status = qs('[data-tasks-status]');
+    const error = qs('[data-tasks-error]');
+    if (!list) return [];
+    clear(list);
+    if (status) status.textContent = 'Loading tasks';
+    if (error) { error.hidden = true; error.textContent = ''; }
+    try {
+      const payload = await api('/api/tasks');
+      const tasks = Array.isArray(payload) ? payload : (Array.isArray(payload.tasks) ? payload.tasks : []);
+      tasks.forEach((task) => {
+        const accept = document.createElement('button');
+        accept.type = 'button';
+        accept.className = 'workspace-text-action';
+        accept.textContent = 'Accept task';
+        accept.addEventListener('click', () => { void acceptTask(Number(task.id), accept); });
+        const reward = Number(task.pointsReward || task.credits_reward || task.points_reward || 0);
+        const rewardCopy = reward > 0 ? `Potential reward: ${reward} Points after the documented task lifecycle completes.` : 'Potential reward is not specified for this task.';
+        list.appendChild(makeDataCard({
+          eyebrow: humanize(task.skill_tag || 'Contribution'),
+          title: String(task.title || 'Contribution task'),
+          detail: `${String(task.description || 'Task details are provided by the contributor service.')} ${rewardCopy}`,
+          state: 'Available',
+          action: accept,
+        }));
+      });
+      setEmpty('[data-tasks-empty]', tasks.length === 0);
+      if (status) status.textContent = tasks.length ? 'Available now' : 'No tasks available';
+      return tasks;
+    } catch (_) {
+      setEmpty('[data-tasks-empty]', false);
+      if (status) status.textContent = 'Tasks unavailable';
+      if (error) { error.textContent = 'Tasks could not be loaded. No task or reward status has changed.'; error.hidden = false; }
+      return [];
+    }
+  };
+
+  const loadContributorTasks = async () => {
+    const list = qs('[data-my-tasks-list]');
+    const status = qs('[data-my-tasks-status]');
+    const error = qs('[data-my-tasks-error]');
+    if (!list) return [];
+    clear(list);
+    if (status) status.textContent = 'Loading your tasks';
+    if (error) { error.hidden = true; error.textContent = ''; }
+    try {
+      const payload = await api('/api/tasks/mine');
+      const tasks = Array.isArray(payload.tasks) ? payload.tasks : [];
+      tasks.forEach((task) => {
+        const taskStatus = String(task.status || 'in_progress');
+        const reward = Number(task.pointsReward || task.credits_reward || 0);
+        let detail = String(task.description || 'Contribution task');
+        let state = humanize(taskStatus);
+        let action = null;
+        if (taskStatus === 'in_progress') {
+          detail = `${detail} Submit a concise evidence summary when the work is ready for review. Points are not awarded until an administrator approves it.`;
+          const submit = document.createElement('button');
+          submit.type = 'button'; submit.className = 'workspace-text-action'; submit.textContent = 'Submit evidence';
+          submit.addEventListener('click', () => { void submitTaskEvidence(task, submit); });
+          action = submit;
+        } else if (taskStatus === 'submitted') {
+          detail = `Evidence submitted${task.submittedAt ? ` ${formatDate(task.submittedAt)}` : ''}. It is awaiting administrator review. No Points have been awarded yet.`;
+          state = 'Awaiting review';
+        } else if (taskStatus === 'approved') {
+          detail = `${task.reviewNote || 'Evidence approved.'}${reward > 0 ? ` ${reward} Points were recorded after approval.` : ''}`;
+          state = 'Approved';
+        } else if (taskStatus === 'rejected') {
+          detail = task.reviewNote || 'The submitted evidence was not approved. No Points were awarded.';
+          state = 'Not approved';
+        }
+        list.appendChild(makeDataCard({ eyebrow: humanize(task.skillTag || task.skill_tag || 'Contribution'), title: String(task.title || 'Contribution task'), detail, state, action }));
+      });
+      setEmpty('[data-my-tasks-empty]', tasks.length === 0);
+      if (status) status.textContent = tasks.length ? 'Your task status' : 'No accepted tasks';
+      return tasks;
+    } catch (_) {
+      setEmpty('[data-my-tasks-empty]', false);
+      if (status) status.textContent = 'Tasks unavailable';
+      if (error) { error.textContent = 'Your contribution status could not be loaded. No task or Points status has changed.'; error.hidden = false; }
+      return [];
+    }
+  };
+
   const setProfileFeedback = (selector, message, error = false) => {
     const node = qs(selector);
     if (!node) return;
@@ -333,7 +475,8 @@
   qs('[data-profile-form]')?.addEventListener('submit', event => { event.preventDefault(); void saveProfile(event.currentTarget); });
   qs('[data-profile-export]')?.addEventListener('click', () => void exportProfileData());
   qs('[data-profile-delete]')?.addEventListener('click', () => void deleteProfile());
-  if (section === 'points') loadPoints();
+  if (section === 'points') { loadPoints(); loadPointsHistory(); }
+  if (section === 'tasks') { loadTasks(); loadContributorTasks(); }
   if (section === 'safety') loadSafety();
   if (section === 'daily-picks') loadDailyPicks();
   if (section === 'settings' || section === 'memory') loadProfile();

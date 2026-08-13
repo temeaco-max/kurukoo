@@ -1,0 +1,30 @@
+{
+  "app.name": "Kurukoo",
+  "app.tagline": "Dites à Kurukoo ce dont vous avez besoin. Kurukoo vous aide à trouver la prochaine étape utile.",
+  "tagline": "Dites à Kurukoo ce dont vous avez besoin. Kurukoo vous aide à trouver la prochaine étape utile.",
+  "hero_title": "Dites à Kurukoo ce dont vous avez besoin.",
+  "hero_subtitle": "Kurukoo peut vous aider à organiser une demande, un rappel ou une prochaine étape prise en charge.",
+  "currency": "CAD",
+  "pricing": {
+    "base": "Non disponible",
+    "plus": "Non disponible",
+    "business": "Sur demande"
+  },
+  "shortcode": "",
+  "welcome": "Bienvenue sur Kurukoo",
+  "request_ride": "Planifier un déplacement",
+  "find_worker": "Trouver de l’aide",
+  "money_circle": "Cercle Kurukoo",
+  "reload": "Points et paiements",
+  "feature_flags": {
+    "ussd": false,
+    "nimc_kyc": false,
+    "mobile_money": false,
+    "stripe_paypal": false,
+    "points_enabled": true,
+    "email_required": false,
+    "reminders": true,
+    "safety_checkins": true,
+    "execution_connectors": false
+  }
+}

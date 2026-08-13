@@ -98,6 +98,10 @@ app.use('/api', pilotRouter);
 app.use('/api/coordination', providerCoordinationRouter);
 app.use('/api/supply-registry', providerSupplyRegistryRouter);
 app.use('/api', orderRoutes);
+// Public Radar reads and explicitly authenticated presence writes must be mounted
+// before unrelated routers that apply authentication to their whole boundary.
+app.use('/', presenceRoutes);
+app.use('/', discoveryRoutes);
 app.use('/api', reminderRoutes);
 app.use('/api', notificationRoutes);
 app.use('/api', safetyRoutes);
@@ -105,8 +109,6 @@ app.use('/api', taskRoutes);
 app.use('/api', trustRoutes);
 app.use('/api/webrtc', webrtcRoutes);
 app.use('/', healthRoutes);
-app.use('/', presenceRoutes);
-app.use('/', discoveryRoutes);
 app.use('/', contentRoutes);
 app.use('/', publicRoutes);
 app.use('/api/pricing', pricingRoutes);

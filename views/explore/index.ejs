@@ -37,11 +37,12 @@
                 <% if ((index + 1) % 8 === 0 && ads && ads.length > 0) { %>
                     <% const adIndex = Math.floor(index / 8) % ads.length; %>
                     <% const ad = ads[adIndex]; %>
-                    <div class="sponsored-ad-card">
-                        <span class="sponsored-badge">Partner Placement</span>
+                    <div class="sponsored-ad-card" aria-label="Paid promotion">
+                        <span class="sponsored-badge"><%= ad.disclosure || (ad.placementSource === 'kurukoo_sponsored' ? 'Kurukoo-sponsored' : 'External advertisement') %></span>
                         <h4><%= ad.title %></h4>
                         <p><%= ad.desc %></p>
-                        <a href="/chat?prompt=Tell%20me%20about%20<%= encodeURIComponent(ad.title) %>" class="text-link">Learn more <span>→</span></a>
+                        <small>This promotion is not a verified provider, quote, availability, payment, dispatch or fulfilment claim.</small>
+                        <a href="/chat?prompt=Tell%20me%20about%20<%= encodeURIComponent(ad.title) %>" class="text-link">Ask Kurukoo <span>→</span></a>
                     </div>
                 <% } %>
             <% }) %>
@@ -54,16 +55,16 @@
 <script>
     const searchInput = document.getElementById('explore-search');
     const searchBtn = document.getElementById('explore-search-btn');
-    
+
     function filterCategories() {
         const query = searchInput.value.toLowerCase().trim();
         const cards = document.querySelectorAll('.category-card');
         cards.forEach(card => {
             const name = card.getAttribute('data-name');
-            card.style.display = (!query || name.includes(query)) ? 'flex' : 'none';
+            card.hidden = Boolean(query && !name.includes(query));
         });
     }
-    
+
     searchInput.addEventListener('input', filterCategories);
     searchBtn.addEventListener('click', () => {
         const query = searchInput.value.trim();
@@ -72,49 +73,3 @@
         }
     });
 </script>
-
-<style>
-.explore-search-container {
-    display: flex;
-    gap: 12px;
-    max-width: 600px;
-    margin: 32px auto 0;
-}
-.explore-search-input {
-    flex: 1;
-    padding: 12px 20px;
-    border: 1px solid var(--gray-200);
-    border-radius: 100px;
-    font-size: 1rem;
-}
-.categories-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 24px;
-    margin-top: 60px;
-}
-.category-card {
-    padding: 32px;
-    background: var(--white);
-    border: 1px solid var(--gray-200);
-    border-radius: var(--border-radius);
-    display: flex;
-    flex-direction: column;
-    text-align: center;
-}
-.explore-category-icon { font-size: 2.5rem; margin-bottom: 20px; }
-.explore-category-title { margin-bottom: 12px; }
-.explore-category-desc { color: var(--gray-600); font-size: 0.9rem; margin-bottom: 24px; flex: 1; }
-.sponsored-ad-card {
-    grid-column: 1 / -1;
-    padding: 24px;
-    background: var(--gray-50);
-    border: 1px dashed var(--terracotta);
-    border-radius: var(--border-radius);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-}
-.sponsored-badge { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--terracotta); font-weight: 700; margin-bottom: 8px; }
-</style>

@@ -1,5 +1,7 @@
 import { getDb, saveDb } from '../database.js';
 
+export type AdPlacementSource = 'kurukoo_sponsored' | 'external_inventory';
+
 export interface AdCampaign {
     id: number;
     title: string;
@@ -9,15 +11,25 @@ export interface AdCampaign {
     creditsBudget: number;
     creditsSpent: number;
     status: string;
+    placementSource: AdPlacementSource;
+    disclosure: string;
     createdAt: string;
     updatedAt: string;
+}
+
+export type CreateAdCampaign = Omit<AdCampaign, 'id' | 'creditsSpent' | 'status' | 'createdAt' | 'updatedAt' | 'placementSource' | 'disclosure'> & Partial<Pick<AdCampaign, 'placementSource' | 'disclosure'>>;
+
+function normalizeCampaign(campaign: Partial<AdCampaign>): AdCampaign {
+    const placementSource: AdPlacementSource = campaign.placementSource === 'kurukoo_sponsored' ? 'kurukoo_sponsored' : 'external_inventory';
+    const disclosure = String(campaign.disclosure || (placementSource === 'kurukoo_sponsored' ? 'Kurukoo-sponsored' : 'External advertisement')).slice(0, 120);
+    return { ...campaign, placementSource, disclosure } as AdCampaign;
 }
 
 export async function getAdCampaigns(): Promise<AdCampaign[]> {
     const db = await getDb();
     const rows = db.exec(`SELECT * FROM ad_campaigns`);
     if (rows.length === 0) return [];
-    
+
     const campaigns: AdCampaign[] = [];
     const columns = rows[0].columns;
     for (const values of rows[0].values) {
@@ -26,16 +38,17 @@ export async function getAdCampaigns(): Promise<AdCampaign[]> {
             const camelKey = col.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
             campaign[camelKey] = values[idx];
         });
-        campaigns.push(campaign as AdCampaign);
+        campaigns.push(normalizeCampaign(campaign));
     }
     return campaigns;
 }
 
-export async function createAdCampaign(campaign: Omit<AdCampaign, 'id' | 'creditsSpent' | 'status' | 'createdAt' | 'updatedAt'>): Promise<any> {
+export async function createAdCampaign(campaign: CreateAdCampaign): Promise<any> {
     const db = await getDb();
+    const normalized = normalizeCampaign(campaign);
     db.run(
-        `INSERT INTO ad_campaigns (title, desc, image_url, target_keyword, credits_budget) VALUES (?, ?, ?, ?, ?)`,
-        [campaign.title, campaign.desc, campaign.imageUrl, campaign.targetKeyword, campaign.creditsBudget]
+        `INSERT INTO ad_campaigns (title, desc, image_url, target_keyword, credits_budget, placement_source, disclosure) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [normalized.title, normalized.desc, normalized.imageUrl, normalized.targetKeyword, normalized.creditsBudget, normalized.placementSource, normalized.disclosure]
     );
     saveDb();
     return { success: true, message: 'Ad campaign created successfully' };
@@ -78,10 +91,8 @@ export async function seedDemoAdCampaigns(): Promise<void> {
     const existing = db.exec(`SELECT count(*) FROM ad_campaigns`);
     if (existing[0].values[0][0] === 0) {
         db.run(`
-            INSERT INTO ad_campaigns (title, desc, image_url, target_keyword, credits_budget) VALUES 
-            ('Premium Jasmine Rice (50kg)', 'Get premium quality jasmine rice delivered to your doorstep.', 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=400', 'rice', 50),
-            ('Swift Okada Riders Ibadan', 'Request Ibadan fast local okada. 10% discount on first ride today.', 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80&w=400', 'ride', 100),
-            ('Dugbe Bakers Association', 'Get hot, freshly baked Ibadan soft bread delivered to your area.', 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=400', 'bread', 80)
+            INSERT INTO ad_campaigns (title, desc, image_url, target_keyword, credits_budget, placement_source, disclosure, status) VALUES
+            ('Kurukoo discovery placement preview', 'Illustrative Kurukoo-sponsored placement. It is not a provider verification, live stock or delivery claim.', '', 'preview', 0, 'kurukoo_sponsored', 'Kurukoo-sponsored preview', 'inactive')
         `);
         saveDb();
         console.log('Demo ad campaigns seeded successfully');
