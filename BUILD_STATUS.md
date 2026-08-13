@@ -103,8 +103,8 @@ The application does **not** simulate unavailable real-world infrastructure. In 
 - Configure GitHub branch protection for `main` with required build, FastText, and secret-scan checks, pull requests, and review. This repository change cannot enforce a GitHub setting without owner authorization.
 
 ### P1 — architecture and behavioural completeness
-- Finish deleting any genuinely dead legacy route bodies after extraction coverage proves they are unused.
-- Complete universal catalogue/inventory matching for catalogue-bearing skills using the existing provider/product data model rather than creating per-skill ordering systems.
+- The proven-unmounted standalone `src/server.ts` FCM/WhatsApp-receipt router was deleted; the composition regression now protects its absence so notification delivery remains within the authenticated canonical owners.
+- The completed provider-product catalogue uses the existing `skills.products` field and the existing product-sourcing/Economic Request owners: owner-only bounded listings, evidence-gated matching, opaque references, chat/storefront selection, request-scoped seller evidence, and immediate withdrawal are regression-proven. External inventory feeds and automatic availability are intentionally not claimed.
 - Keep the completed table-driven all-category Economic Request regression current: every canonical category must continue to create an authenticated request with its own required-field schema and enter the same lifecycle.
 - Keep CSS, messaging, services, skills, security and economic audits behavioural rather than presence-only where practical.
 - Keep documentation aligned with the implementation; stale historical claims must not be treated as current architecture.

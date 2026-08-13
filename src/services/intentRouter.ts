@@ -5,6 +5,7 @@ import { getContextualIntentSuggestions, getEconomicCategory, getKnownSkills, ge
 import { classifyWithFastText } from './fastTextService.js';
 import { previewStorefrontCard, startStorefrontSession, tryResumeStorefront } from './agenticStorefront.js';
 import { searchKnownEconomicOffers } from './economicParticipants.js';
+import { searchProviderProductListings } from './productSourcing.js';
 import { createReminder } from './reminderService.js';
 import { matchAdCampaigns } from './adManager.js';
 import type { IntentRoutingResult } from '../types.js';
@@ -194,8 +195,19 @@ export async function routeIntent(query: string, phone?: string, provider?: AIPr
 
   if (phone && (/\b(listing|offer)\b/.test(q) || /\b[a-z][a-z-]{1,40}['’]s\b/.test(q))) {
     try {
-      const offers = await searchKnownEconomicOffers(query, 3);
-      if (offers.length) return { skill: 'product_sourcing', reply: `I found ${offers.length === 1 ? 'a known seller offer' : 'known seller offers'} matching that reference. Choose one to start a single Economic Request.`, cardData: { type: 'agentic_storefront', stage: 'offer_review', skill: 'product_sourcing', title: 'Known seller offers', message: 'Choose a verified seller offer to continue.', knownOffers: offers, escrowProtected: false, progress: 55 } };
+      const [offers, providerListings] = await Promise.all([
+        searchKnownEconomicOffers(query, 3),
+        searchProviderProductListings(query, 3),
+      ]);
+      if (offers.length || providerListings.length) return {
+        skill: 'product_sourcing',
+        reply: `I found ${offers.length + providerListings.length} provider-listed reference${offers.length + providerListings.length === 1 ? '' : 's'} matching that request. Choose one to start a single Economic Request; current availability and final price still require provider confirmation.`,
+        cardData: {
+          type: 'agentic_storefront', stage: 'offer_review', skill: 'product_sourcing', title: 'Provider-listed references',
+          message: 'Choose a verified provider listing to continue. A listing is not a stock reservation, current availability confirmation, final quote, payment, or delivery confirmation.',
+          knownOffers: offers, providerProductListings: providerListings, escrowProtected: false, progress: 55,
+        },
+      };
     } catch (e) {
       console.warn('[Router] known offer lookup failed:', e);
     }

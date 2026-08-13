@@ -1,6 +1,6 @@
-const STATIC_CACHE = 'kurukoo-static-v7';
-const PAGES_CACHE = 'kurukoo-pages-v7';
-const PWA_SHELL_CACHE = 'kurukoo-pwa-shell-v7';
+const STATIC_CACHE = 'kurukoo-static-v8';
+const PAGES_CACHE = 'kurukoo-pages-v8';
+const PWA_SHELL_CACHE = 'kurukoo-pwa-shell-v8';
 const ALLOWED_CACHES = [STATIC_CACHE, PAGES_CACHE, PWA_SHELL_CACHE];
 
 const SHELL_ASSETS = [

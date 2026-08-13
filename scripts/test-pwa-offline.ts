@@ -6,9 +6,9 @@ const manifest = JSON.parse(fs.readFileSync('public/manifest.json', 'utf8')) as 
 const offline = fs.readFileSync('public/offline.html', 'utf8');
 const registration = fs.readFileSync('public/js/kurukoo-pwa.js', 'utf8');
 
-assert.match(worker, /kurukoo-static-v7/);
-assert.match(worker, /kurukoo-pages-v7/);
-assert.match(worker, /kurukoo-pwa-shell-v7/);
+assert.match(worker, /kurukoo-static-v8/);
+assert.match(worker, /kurukoo-pages-v8/);
+assert.match(worker, /kurukoo-pwa-shell-v8/);
 assert.match(worker, /const CACHEABLE_PAGE_PATHS = new Set\(PAGES_TO_CACHE\)/);
 assert.match(worker, /const CACHEABLE_PUBLIC_APIS = new Set\(\);/);
 assert.match(worker, /isExplicitlyCacheablePublicRequest/);

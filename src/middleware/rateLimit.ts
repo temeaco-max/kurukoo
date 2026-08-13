@@ -120,3 +120,11 @@ export const fcmDeviceRegistrationRateLimit = createRateLimiter({
   keyPrefix: 'fcm-device-registration',
   message: 'Too many device registration attempts — try again shortly',
 });
+
+/** Provider catalogue writes are bounded to limit repeated index churn and listing abuse. */
+export const providerCatalogueMutationRateLimit = createRateLimiter({
+  windowMs: 60_000,
+  max: 12,
+  keyPrefix: 'provider-catalogue-mutation',
+  message: 'Too many product catalogue changes — try again shortly',
+});

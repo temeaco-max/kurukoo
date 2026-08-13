@@ -5551,3 +5551,11 @@ Every push first creates the existing durable in-app notification fallback. Exte
 
 The communications regression proves anonymous and malformed token rejection, owner-bound registration, explicit consent, fallback preservation, durable outbox state, and unconfigured-provider truthfulness. Provider credential configuration, client SDK setup, aggregate analytics/export consent, and production operational monitoring remain deployment-dependent.
 ---
+
+### Provider Product Catalogue Addendum (2026-08-13)
+Provider product listings are not a new marketplace or inventory engine. They are structured provider-declared records stored only in the existing `skills.products` field and managed only by the authenticated owner of that existing skill. A product list is bounded, validated, rate-limited, and uses an opaque matching reference rather than exposing database identifiers. Matching requires the existing canonical provider-verification evidence, current skill availability, and an active provider declaration. A listed product is explicitly **not** a stock level, reservation, current availability confirmation, final quote, payment confirmation, delivery commitment, or fulfilment record.
+
+The product-sourcing owner projects matched listings through the existing chat/storefront card and starts only the canonical `product_sourcing` Economic Request. Selection snapshots the listed reference onto that request, attaches the existing request-scoped Economic Offer, and records the existing verified seller participant. Delivery remains optional request context; quotes, payments, escrow, fulfilment, disputes, and execution remain entirely in their current canonical owners. Withdrawing or deactivating a product removes it from matching immediately and invalidates subsequent selection attempts without modifying already-created request evidence.
+
+The regression covers authenticated owner-only writing, malformed/anonymous rejection, evidence-gated discovery, opaque references, chat/storefront projection, canonical request/seller linkage, no stock/final-price claim, and immediate withdrawal. There is no external inventory feed or automatic availability integration.
+---

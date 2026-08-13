@@ -46,6 +46,7 @@ import {
   getExecutionRequestsForRequest,
 } from '../services/executionConnector.js';
 import { assertControlledPilotAccount } from '../services/providerCoordination.js';
+import { searchProviderProductListings, startProviderProductListingRequest } from '../services/productSourcing.js';
 
 const router = Router();
 
@@ -182,6 +183,37 @@ router.get('/offers/search', authenticateUser, async (req: AuthRequest, res) => 
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to search known offers';
     res.status(422).json({ success: false, error: message });
+  }
+});
+
+router.get('/catalogue/search', authenticateUser, async (req: AuthRequest, res) => {
+  const phone = phoneFrom(req);
+  if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
+  try {
+    const listings = await searchProviderProductListings(String(req.query.q || ''), Number(req.query.limit) || 5, typeof req.query.country === 'string' ? req.query.country : undefined);
+    res.json({ success: true, listings, disclosure: 'Provider-listed products require current availability and final-price confirmation.' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to search provider product listings';
+    res.status(422).json({ success: false, error: message });
+  }
+});
+
+router.post('/catalogue/:listingId/start', authenticateUser, async (req: AuthRequest, res) => {
+  const phone = phoneFrom(req);
+  if (!phone) return res.status(401).json({ success: false, error: 'Authenticated phone is required' });
+  try {
+    const result = await startProviderProductListingRequest({
+      buyerPhone: phone,
+      listingId: String(req.params.listingId || ''),
+      deliveryRequired: typeof req.body?.deliveryRequired === 'boolean' ? req.body.deliveryRequired : undefined,
+      deliveryLocation: typeof req.body?.deliveryLocation === 'string' ? req.body.deliveryLocation : undefined,
+      quantity: typeof req.body?.quantity === 'string' ? req.body.quantity : undefined,
+    });
+    const card = await advanceStorefront(phone, result.requestId, {}, 'view_offer');
+    res.status(201).json({ success: true, requestId: result.requestId, card });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to start a request from this provider product listing';
+    res.status(/not found|eligible/.test(message) ? 404 : 422).json({ success: false, error: message });
   }
 });
 

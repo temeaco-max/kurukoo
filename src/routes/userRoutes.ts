@@ -7,6 +7,8 @@ import { generateReferralCode, trackReferral } from '../services/referralService
 import { buildQrEntryUrl, parseQrContext } from '../services/qrContextService.js';
 import { submitRating } from '../services/ratingService.js';
 import { ActiveEconomicRequestDeletionError } from '../services/skillFlows.js';
+import { replaceProviderSkillProducts } from '../services/productSourcing.js';
+import { providerCatalogueMutationRateLimit } from '../middleware/rateLimit.js';
 
 const router = Router();
 
@@ -55,6 +57,17 @@ router.post('/profile/skills/add', authenticateUser, async (req: AuthRequest, re
   const phone = sessionPhone(req); if (!phone) return res.status(401).json({ error: 'Authentication required' }); const skill = String(req.body?.skill || '').trim(); if (!skill) return res.status(400).json({ error: 'Missing skill' }); if (req.body?.phone && req.body.phone !== phone) return res.status(403).json({ error: 'Forbidden' });
   try { const db = await getDb(); const stmt = db.prepare(`SELECT id FROM skills WHERE phone = ? AND skill = ?`); stmt.bind([phone, skill]); const exists = stmt.step(); stmt.free(); if (!exists) { db.run(`INSERT INTO skills (phone, skill, operation_mode, hourly_rate, service_radius_km, transport_mode, pricing_model, payment_method) VALUES (?, ?, 'stationary', 0, 10, 'none', 'hourly', 'cash')`, [phone, skill]); saveDb(); } res.json({ success: true }); } catch (err) { console.error('Error adding skill:', err); res.status(500).json({ error: 'Internal error adding skill' }); }
 });
+router.put('/profile/skills/:skill/products', authenticateUser, providerCatalogueMutationRateLimit, async (req: AuthRequest, res) => {
+  const phone = sessionPhone(req);
+  if (!phone) return res.status(401).json({ error: 'Authentication required' });
+  try {
+    const products = await replaceProviderSkillProducts({ providerPhone: phone, skill: String(req.params.skill || ''), products: req.body?.products });
+    res.json({ success: true, products });
+  } catch (error: any) {
+    res.status(400).json({ success: false, error: error.message || 'Unable to update skill products' });
+  }
+});
+
 router.post('/profile/skills/remove', authenticateUser, async (req: AuthRequest, res) => {
   const phone = sessionPhone(req); if (!phone) return res.status(401).json({ error: 'Authentication required' }); const skill = String(req.body?.skill || '').trim(); if (!skill) return res.status(400).json({ error: 'Missing skill' }); if (req.body?.phone && req.body.phone !== phone) return res.status(403).json({ error: 'Forbidden' });
   try { const db = await getDb(); db.run(`DELETE FROM skills WHERE phone = ? AND skill = ?`, [phone, skill]); saveDb(); res.json({ success: true }); } catch (err) { console.error('Error removing skill:', err); res.status(500).json({ error: 'Internal error removing skill' }); }

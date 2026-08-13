@@ -20,6 +20,7 @@ const requiredMounts = [
 ];
 for (const mount of requiredMounts) assert.ok(indexSource.includes(mount), `missing composition boundary: ${mount}`);
 assert.doesNotMatch(indexSource, /legacyApp|registerLegacyRoutes/, 'composition root must not depend on legacyApp');
+await assert.rejects(fs.access(new URL('../src/server.ts', import.meta.url)), 'the unmounted standalone FCM/receipt router must remain deleted; notification delivery belongs to canonical owners');
 
 for (const route of ["router.get('/',", "router.get('/explore',", "router.get('/p/:providerSlug',"]) {
   assert.ok(publicSource.includes(route), `publicRoutes must own ${route}`);

@@ -393,6 +393,32 @@
     } finally { state.busy = false; if (send) send.disabled = false; }
   }
 
+  async function startProviderProductListing(listingId) {
+    if (!listingId || state.busy) return;
+    state.busy = true;
+    if (send) send.disabled = true;
+    try {
+      const res = await fetch(`/api/chat/economic-requests/catalogue/${encodeURIComponent(listingId)}/start`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: '{}'
+      });
+      if (res.status === 401) { await ensureIdentity(); throw new Error('Session expired'); }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) throw new Error(data.error || 'Could not start request from that provider listing');
+      const card = data.card;
+      setDeferredStatus(card);
+      if (card?.requestId) state.activeStorefrontId = card.requestId;
+      const wrap = appendStreamBubble();
+      setMarkdown(wrap.querySelector('.markdown-body'), card.message || 'Provider listing selected.');
+      renderCard(card, wrap);
+      state.messages.push({ role: 'assistant', text: card.message || '', id: null });
+      scroll.scrollTop = scroll.scrollHeight;
+      await loadPoints();
+    } catch (error) {
+      const wrap = appendStreamBubble();
+      setMarkdown(wrap.querySelector('.markdown-body'), `Could not select that provider listing. **${escapeText(error.message)}**`);
+    } finally { state.busy = false; if (send) send.disabled = false; }
+  }
+
   async function selectDeliveryCandidate(requestId, providerPhone) {
     if (!requestId || !providerPhone || state.busy) return;
     state.busy = true;
@@ -480,6 +506,31 @@
       });
       offers.appendChild(list);
       holder.appendChild(offers);
+    }
+
+    if (Array.isArray(card.providerProductListings) && card.providerProductListings.length) {
+      const listings = makeElement('section', 'storefront-known-offers');
+      listings.appendChild(makeElement('strong', '', 'Provider-listed products'));
+      const list = makeElement('ul', 'storefront-offers-list');
+      card.providerProductListings.forEach(listing => {
+        const item = makeElement('li');
+        const details = makeElement('div');
+        const price = Number(listing.priceMinor);
+        const amount = Number.isInteger(price) ? `${price} ${String(listing.currency || 'NGN')} listed price` : 'Price requires provider confirmation';
+        details.append(
+          makeElement('strong', '', listing.title || 'Provider-listed product'),
+          makeElement('span', '', `${String(listing.providerName || 'Verified provider')} · ${amount}`),
+          makeElement('small', '', 'Current availability and final price require provider confirmation.')
+        );
+        if (listing.availabilityNote) details.appendChild(makeElement('small', '', String(listing.availabilityNote)));
+        const button = makeElement('button', 'sf-btn sf-primary', 'Choose listing');
+        button.type = 'button';
+        button.addEventListener('click', () => { void startProviderProductListing(String(listing.id || '')); });
+        item.append(details, button);
+        list.appendChild(item);
+      });
+      listings.appendChild(list);
+      holder.appendChild(listings);
     }
 
     if (Array.isArray(card.deliveryCandidates) && card.deliveryCandidates.length) {
