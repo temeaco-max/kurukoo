@@ -51,11 +51,13 @@ import providerCoordinationRouter from './routes/providerCoordinationRouter.js';
 import providerSupplyRegistryRouter from './routes/providerSupplyRegistryRouter.js';
 import affiliateRoutes from './routes/affiliateRoutes.js';
 import { startBackgroundServices } from './startup/backgroundServices.js';
+import { hydrateAdminControlPlane } from './services/adminControlPlane.js';
 
 if (process.env.NODE_ENV !== 'production' && !process.env.KURUKOO_PAY_PROVIDER) process.env.KURUKOO_PAY_PROVIDER = 'sandbox';
 if (!process.env.CREDIT_ECONOMY_ENABLED) process.env.CREDIT_ECONOMY_ENABLED = 'true';
 if (process.env.NODE_ENV === 'production' && process.env.KURUKOO_PAY_PROVIDER === 'sandbox') delete process.env.KURUKOO_PAY_PROVIDER;
 console.log(`[Kurukoo Startup] Environment initialized. PORT=${process.env.PORT || 3000}, Pay Provider=${process.env.KURUKOO_PAY_PROVIDER || 'unconfigured'}`);
+await hydrateAdminControlPlane();
 
 const app = express();
 app.set('view engine', 'ejs');

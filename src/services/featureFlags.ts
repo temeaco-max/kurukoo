@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { getAdminFeatureOverride } from './adminControlPlane.js';
 
 const FLAG_ENV_PREFIX = 'FF_';
 
@@ -21,8 +22,13 @@ function localeCandidates(country: string): string[] {
 }
 
 export function getFeatureFlag(country: string, flagName: string): boolean {
-    // Environment always wins, allowing deployment-specific overrides.
-    const envValue = parseBoolean(process.env[`${FLAG_ENV_PREFIX}${flagName.toUpperCase()}`]);
+    const envName = `${FLAG_ENV_PREFIX}${flagName.toUpperCase()}`;
+    const deploymentLocked = parseBoolean(process.env[`KURUKOO_ADMIN_LOCK_${envName}`]) === true;
+    // An explicit deployment lock wins. Otherwise a persisted admin override can safely supersede a bootstrap default.
+    const envValue = parseBoolean(process.env[envName]);
+    if (deploymentLocked && envValue !== undefined) return envValue;
+    const adminOverride = getAdminFeatureOverride(country, flagName);
+    if (adminOverride !== undefined) return adminOverride;
     if (envValue !== undefined) return envValue;
 
     for (const locale of localeCandidates(country)) {

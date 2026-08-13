@@ -47,7 +47,7 @@ assert.equal(unsafeTool.ok, false, 'High-risk payment or arbitrary tool names ar
 assert.equal(goal.plan.steps.some(step => step.tool === ('payment' as any)), false, 'Plans must not contain undeclared high-risk payment actions');
 
 const db = await getDb();
-db.run(`UPDATE agent_goals SET next_action_at=datetime('now','-1 minute') WHERE id=?`, [goal.id]);
+db.run(`UPDATE agent_goals SET priority=999, next_action_at=datetime('now','-1 minute') WHERE id=?`, [goal.id]);
 const due = await runDueAgentGoals();
 assert.ok(due.some(item => item.id === goal.id), 'Due goals must re-enter only through the bounded worker pass');
 const cancelled = await cancelAgentGoal(owner, goal.id);

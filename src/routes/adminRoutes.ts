@@ -32,6 +32,7 @@ import { ensureProviderVerificationSchema, setProviderVerification } from '../se
 import { getPilotDashboard } from '../services/pilotObservability.js';
 import { getCommercialMetrics, getMarketingMetrics } from '../services/commercialMetrics.js';
 import { getAllContent, getContentBySlug, saveContent, deleteContentBySlug, type ContentItem } from '../services/contentManager.js';
+import { getAdminControlPlaneStatus, listAdminFeatureFlags, updateAdminFeatureFlag, updateAdminRuntimeControl } from '../services/adminControlPlane.js';
 
 const router = Router();
 
@@ -796,6 +797,40 @@ router.post('/settings', authenticateAdmin, async (req: AuthRequest, res) => {
     res.json({ success: true, use_groq_routing: !!use_groq_routing });
   } catch (e) {
     res.status(500).json({ error: 'Failed to update settings' });
+  }
+});
+
+// ── Guarded Control Plane ───────────────────────────────────────────────
+
+router.get('/control-plane', authenticateAdmin, (_req: AuthRequest, res) => {
+  res.json({ success: true, controlPlane: getAdminControlPlaneStatus() });
+});
+
+router.put('/control-plane/controls/:key', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const controlPlane = await updateAdminRuntimeControl({ key: String(req.params.key || ''), value: req.body?.value, actor: String(req.user?.phone || req.user?.username || 'admin') });
+    res.json({ success: true, controlPlane });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to update runtime control';
+    res.status(/unknown|must be|disabled|locked|deployment/.test(message) ? 409 : 422).json({ success: false, error: message });
+  }
+});
+
+router.get('/control-plane/feature-flags', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    res.json({ success: true, ...(await listAdminFeatureFlags(typeof req.query.country === 'string' ? req.query.country : 'ng')) });
+  } catch {
+    res.status(500).json({ success: false, error: 'Unable to list feature flags' });
+  }
+});
+
+router.put('/control-plane/feature-flags/:name', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const flag = await updateAdminFeatureFlag({ country: typeof req.body?.country === 'string' ? req.body.country : 'ng', name: String(req.params.name || ''), value: req.body?.value, actor: String(req.user?.phone || req.user?.username || 'admin') });
+    res.json({ success: true, flag });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to update feature flag';
+    res.status(/Invalid|disabled|locked/.test(message) ? 409 : 422).json({ success: false, error: message });
   }
 });
 

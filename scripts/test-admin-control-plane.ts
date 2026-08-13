@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import jwt from 'jsonwebtoken';
+import os from 'node:os';
+import path from 'node:path';
+
+const dbPath = path.join(os.tmpdir(), `kurukoo-admin-control-${process.pid}.sqlite`);
+process.env.DB_PATH = dbPath; process.env.KURUKOO_DISABLE_LISTEN = 'true'; process.env.KURUKOO_WORKERS = '0'; process.env.NODE_ENV = 'test'; process.env.JWT_SECRET = 'admin_control_plane_test_secret_with_32_chars'; process.env.KURUKOO_VOICE_ENABLED = 'false';
+const { app } = await import('../src/index.js'); const { getFeatureFlag } = await import('../src/services/featureFlags.js');
+const server = app.listen(0); const address = server.address(); assert.ok(address && typeof address === 'object'); const baseUrl = `http://127.0.0.1:${address.port}`;
+const token = jwt.sign({ username: 'control-admin', role: 'admin' }, process.env.JWT_SECRET!, { algorithm: 'HS256', expiresIn: '10m' }); const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+try {
+  const anonymous = await fetch(`${baseUrl}/api/admin/control-plane`); assert.equal(anonymous.status, 401);
+  const status = await fetch(`${baseUrl}/api/admin/control-plane`, { headers }); assert.equal(status.status, 200); const statusBody = await status.json(); assert.equal(statusBody.controlPlane.enabled, true); assert.ok(statusBody.controlPlane.controls.some((control: any) => control.key === 'voice_enabled')); assert.doesNotMatch(JSON.stringify(statusBody), /admin_control_plane_test_secret_with_32_chars/);
+  const voiceUpdate = await fetch(`${baseUrl}/api/admin/control-plane/controls/voice_enabled`, { method: 'PUT', headers, body: JSON.stringify({ value: true }) }); assert.equal(voiceUpdate.status, 200); const voiceStatus = await fetch(`${baseUrl}/api/voice/status`); const voiceBody = await voiceStatus.json(); assert.equal(voiceBody.voice.enabled, true); assert.equal(voiceBody.voice.available, false); assert.match(voiceBody.voice.reason, /not configured/i);
+  const unsafe = await fetch(`${baseUrl}/api/admin/control-plane/controls/external_execution_enabled`, { method: 'PUT', headers, body: JSON.stringify({ value: true }) }); assert.equal(unsafe.status, 409, 'external execution remains deployment-controlled');
+  const flag = await fetch(`${baseUrl}/api/admin/control-plane/feature-flags/controlled_pilot_card`, { method: 'PUT', headers, body: JSON.stringify({ country: 'ng', value: true }) }); assert.equal(flag.status, 200); assert.equal(getFeatureFlag('ng', 'controlled_pilot_card'), true);
+  const flags = await fetch(`${baseUrl}/api/admin/control-plane/feature-flags?country=ng`, { headers }); const flagBody = await flags.json(); assert.ok(flagBody.flags.some((item: any) => item.name === 'controlled_pilot_card' && item.value === true));
+  console.log('Admin control-plane regression passed: authenticated controls, safe feature overrides, deployment-only execution guard, secret-safe status, and truthful voice configuration.');
+} finally { await new Promise<void>(resolve => server.close(() => resolve())); for (const suffix of ['', '-journal', '-wal', '-shm']) { try { fs.unlinkSync(`${dbPath}${suffix}`); } catch {} } }

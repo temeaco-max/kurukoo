@@ -5302,6 +5302,8 @@ The public interface incorporates four interconnected interactive visual systems
 ---
 
 ## Appendix: Version History
+- v5.63: **Control Room and admin Control Plane (§21c).** Implemented the shared responsive Control Room navigation, topbar, Signals drawer, non-secret runtime-control registry, persisted country feature overrides, per-control deployment locks, startup hydration, concise audit records, and secret-safe configuration status. The operator interface reuses canonical agent, skill-flow, CMS, SEO, supply, provider, and safety boundaries; deployment-only execution remains unavailable to the ordinary UI. The advanced SEO workspace uses its existing authenticated API boundary, and chat voice now provides reason-specific recovery with browser dictation fallback where available. No secret is stored, displayed, exported, or logged by the Control Plane; no new parallel architecture is introduced.
+
 - v5.62: **Agentic Storefront & Interactive UI/UX Transformation (§55.6).** Benchmarked against next-gen agentic commerce platforms (e.g. Swap Commerce agentic storefront model). Added §55.6 codifying the "Show, Don't Tell" interactive agentic UI/UX transformation across the entire public web surface (Homepage, Explore Categories, For You, Discover). Details interactive Agent Action Simulators, step-by-step agentic execution teardowns (Intent Extraction → Living Memory Lookup → Catalog & Worker Match → Escrow Lock → Multi-Leg Dispatch), interactive traditional vs. agentic comparison matrices, domain-specific category simulators, and live anonymized agentic pulse tickers. Fully compliant with single memory profile, multi-channel mirrors (WhatsApp 7000, USSD *7000#, PWA), and Points economy. Created `AGENTIC_STOREFRONT_TRANSFORMATION_PLAN.md`.
 
 - v5.61: **Deferred Request Protocol — Handling Unavailable Requests (§4.1.3).** Added §4.1.3 — a 5-state protocol (`requested` → `awaiting_match` → `partially_matched` → `fulfilled`/`abandoned`) that keeps users engaged when no provider is immediately available. States table, lifecycle transition table (trigger → from→to → action), and technical implementation (Open Intentions storage in `memory_profiles.open_intentions` with 7-day TTL, 2-hour re-evaluation cron, nightly expiration cron, proactive FCM+WA nudges, user controls: "Check again in X", "Expand to nearby LGAs", "Cancel", "Find alternative skill", fallback pathways after 3 days). Integrates with memory profile (readable by AI, feeds behavior_patterns, surfaces to Opportunity Engine §33, increments `deferred_attempts` for trust-score adjustment). Mandate-compliant (Rules 1, 3, 4, 5).
@@ -5374,6 +5376,36 @@ Text, Web Voice, QR contextual entry, and future configured channels converge on
 ### 21b.5 Production requirements
 
 The runtime is feature-flagged off by default. Production activation requires an always-running Kurukoo application worker, policy-reviewed event adapters for each external source, notification preference checks, provider/connector evidence, and configured channel or push adapters before any external delivery claim. The default server worker is suitable for the present SQLite deployment; horizontally scaled production deployment requires a shared queue/lease before multiple worker replicas process the same due goal.
+
+
+## 21c. Admin Control Plane and Control Room
+
+> **Principle.** The Control Room is an operator surface over existing canonical services, never a second configuration, agent, SEO, provider, CMS, payment, or execution architecture. It can alter only explicitly allowlisted **non-secret** runtime values and country-scoped feature overrides; it cannot turn a UI action into payment, escrow, dispatch, fulfilment, external outreach, or proof of an external fact.
+
+### 21c.1 Authority, configuration, and precedence
+
+The `adminControlPlane` service owns the approved runtime-control registry and persists an operator override only as a namespaced `system_settings` value. At startup, `hydrateAdminControlPlane()` loads approved persisted controls into the existing runtime configuration. A production deployment remains disabled unless `KURUKOO_ADMIN_CONTROL_PLANE_ENABLED=true`; development preserves the safe local-control path. A deployment may lock an individual control with `KURUKOO_ADMIN_LOCK_<CONTROL_ENV_SUFFIX>=true`. A lock is authoritative: the Control Room presents its status but cannot mutate it.
+
+| Configuration class | Examples | Control Room rule |
+|---|---|---|
+| **Low-risk or guarded non-secret controls** | Voice session limits; bounded-agent activation, cooldown, action, retry, and concurrency limits | Editable only when the Control Plane is enabled and the deployment has not locked the control. Input is range- and type-validated. |
+| **Deployment-only safety controls** | `KURUKOO_EXTERNAL_EXECUTION_ENABLED` | Always visible as a deployment boundary and never editable from the ordinary operator UI. It creates no connector or evidence path. |
+| **Country feature overrides** | Locale feature names validated as `^[a-z][a-z0-9_]{1,63}$` | Stored by country and feature name. Deployment flag/lock policy retains precedence; missing flags remain fail-closed. |
+| **Secrets and credentials** | Gemini, Stripe, JWT, memory-encryption, channel/provider keys | Never stored, displayed, exported, logged, or rotated by the Control Plane. The UI may show only a configured/not-configured status and directs rotation to the deployment secret manager. |
+
+Every accepted edit creates a concise `audit_logs` entry containing the approved key/value and bounded administrator identifier. It must never contain PII beyond the authenticated operator identifier, secrets, raw credentials, payment data, OTPs, or hidden reasoning. The status endpoint reports sources such as safe default, deployment default, deployment lock, or administrator override without returning secret values.
+
+### 21c.2 Operator workspaces and boundaries
+
+The shared Control Room shell provides one responsive sidebar, fixed operational header, compact Signals drawer, and a uniform **Kurukoo operating system / Control room** heading treatment. It links existing, authoritative management surfaces: users and providers, AI agents, skill flows, CMS, SEO, pilot observability, supply registry, safety reports, pricing, commissions, referrals, partnerships, social scheduling, and roadmap. It does not create alternate data stores or unauthorised bulk mutations.
+
+AI agents are first-class operating entities only through the bounded `agent_goals`/tool registry described in §21b. The Control Room may configure its approved limits and display truthful state, but cannot add arbitrary tools, bypass ownership checks, grant a payment/escrow/dispatch capability, or convert an agent into a provider. Skill-flow management remains on the existing `/api/admin/skill-flows` boundary. Supply registry controls remain provenance-first and continue through the existing claim, verification, capability, availability, and coordination boundaries.
+
+The SEO Management Console uses the existing authenticated `/api/admin/seo/*` boundary for metadata, redirects, keywords, backlinks, calendar items, content briefs, internal links, FAQs, schema templates, 404 records, audits, rankings, orphan discovery, image metadata, and health checks. AI-assisted SEO outputs remain drafts subject to the existing human-review, quota, and truthfulness requirements; they do not invent rankings, backlinks, public availability, or external Search Console evidence.
+
+### 21c.3 Voice recovery truthfulness
+
+Web Voice remains disabled by default unless its configured provider and server policy permit a live session. When a live voice session cannot be provisioned, the chat client states the specific availability reason and offers browser `SpeechRecognition` dictation where the browser supports it. Dictation is a text-entry recovery path, not evidence of a live provider session, stored audio, transcription guarantee, or ability to execute an external action. Text chat remains available when neither live voice nor browser dictation can run.
 
 
 ## Canonical Provider Supply Architecture — Controlled Nigerian Pilot
