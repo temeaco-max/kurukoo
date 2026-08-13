@@ -128,6 +128,16 @@ async function transition(phone: string, intentionId: string | number, status: D
     return getIntentionById(phone, intentionId);
 }
 
+/** Protected account deletion removes private deferred-intention state through this owner. */
+export async function deleteIntentionsForOwner(phone: string): Promise<number> {
+    await initDeferredTables();
+    const db = await getDb();
+    db.run('DELETE FROM open_intentions WHERE phone = ?', [String(phone || '').trim()]);
+    const deleted = db.getRowsModified();
+    if (deleted) saveDb();
+    return deleted;
+}
+
 export async function getIntentions(phone: string) {
     await initDeferredTables();
     const db = await getDb();

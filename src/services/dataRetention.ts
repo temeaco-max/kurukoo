@@ -1,6 +1,10 @@
 import { getDb, saveDb } from '../database.js';
 import { deleteChatAttachmentsForOwner, listChatAttachmentMetadataForOwner } from './chatAttachmentService.js';
 import { deleteAllChatHistoryForOwner, exportChatHistory, purgeExpiredChatMessages } from './chatConversationService.js';
+import { deleteRemindersForOwner } from './reminderService.js';
+import { deleteSafetyDataForOwner } from './safetyService.js';
+import { deleteIntentionsForOwner } from './deferredRequestService.js';
+import { deleteOpportunitiesForOwner } from './opportunityEngine.js';
 
 export async function purgeExpiredData(): Promise<{ messagesDeleted: number; tempSessionsDeleted: number; pulseLocationsDeleted: number }> {
     const db = await getDb();
@@ -82,6 +86,13 @@ export async function deleteUserData(phone: string): Promise<void> {
     // The attachment owner removes any uploaded-but-unreferenced records and private bytes.
     // Both operations run before profile deletion so a failed file operation leaves the account intact for retry.
     await deleteChatAttachmentsForOwner(phone);
+
+    // Remove private workspace state only through each existing canonical owner.
+    // Economic, payment, verification, trust, and compliance records are deliberately not deleted here.
+    await deleteRemindersForOwner(phone);
+    await deleteSafetyDataForOwner(phone);
+    await deleteIntentionsForOwner(phone);
+    await deleteOpportunitiesForOwner(phone);
 
     // Hard delete personal data
     db.run(`DELETE FROM memory_profiles WHERE phone = ?`, [phone]);

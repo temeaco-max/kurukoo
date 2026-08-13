@@ -213,6 +213,16 @@ function rowToOpportunity(row: Record<string, unknown>): Opportunity {
 }
 
 /** Generate only current, owner-scoped opportunities from canonical evidence. */
+/** Protected account deletion removes private opportunity-feed state through this owner. */
+export async function deleteOpportunitiesForOwner(phone: string): Promise<number> {
+  await initOpportunityTable();
+  const db = await getDb();
+  db.run('DELETE FROM proactive_opportunities WHERE phone=?', [String(phone || '').trim()]);
+  const deleted = db.getRowsModified();
+  if (deleted) saveDb();
+  return deleted;
+}
+
 export async function generateProactiveOpportunities(phone: string): Promise<Opportunity[]> {
   const owner = String(phone || '').trim();
   if (!owner) throw new Error('Authenticated owner is required');

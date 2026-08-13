@@ -73,6 +73,19 @@ export async function listSafetyContacts(ownerPhone: string): Promise<SafetyCont
   return (result[0]?.values || []).map((row: any[]) => Object.fromEntries((result[0].columns || []).map((c: string, i: number) => [c, row[i]])) as SafetyContact);
 }
 
+/** Protected account deletion removes private safety contacts and check-ins through this owner. */
+export async function deleteSafetyDataForOwner(ownerPhone: string): Promise<{ contacts: number; checkIns: number }> {
+  await ensureSafetySchema();
+  const owner = String(ownerPhone || '').trim();
+  const db = await getDb();
+  db.run('DELETE FROM safety_checkins WHERE owner_phone=?', [owner]);
+  const checkIns = db.getRowsModified();
+  db.run('DELETE FROM user_safety_contacts WHERE owner_phone=?', [owner]);
+  const contacts = db.getRowsModified();
+  if (checkIns || contacts) saveDb();
+  return { contacts, checkIns };
+}
+
 export async function revokeSafetyContact(ownerPhone: string, contactId: string): Promise<boolean> {
   await ensureSafetySchema();
   const db = await getDb();

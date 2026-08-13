@@ -99,6 +99,16 @@ export async function listReminders(phone: string, includeCompleted = false): Pr
   return (result[0]?.values || []).map((values: any[]) => rowToReminder(Object.fromEntries((result[0].columns || []).map((c: string, i: number) => [c, values[i]]))));
 }
 
+/** Protected account deletion removes private reminder state through this owner. */
+export async function deleteRemindersForOwner(phone: string): Promise<number> {
+  await ensureReminderSchema();
+  const db = await getDb();
+  db.run('DELETE FROM reminders WHERE phone = ?', [String(phone || '').trim()]);
+  const deleted = db.getRowsModified();
+  if (deleted) saveDb();
+  return deleted;
+}
+
 export async function cancelReminder(phone: string, id: string): Promise<boolean> {
   await ensureReminderSchema();
   const db = await getDb();
