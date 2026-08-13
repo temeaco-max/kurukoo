@@ -1,4 +1,5 @@
 import { getDb, saveDb } from '../database.js';
+import { deleteChatAttachmentsForOwner } from './chatAttachmentService.js';
 
 export async function purgeExpiredData(): Promise<{ messagesDeleted: number; tempSessionsDeleted: number; pulseLocationsDeleted: number }> {
     const db = await getDb();
@@ -61,6 +62,10 @@ export async function exportUserData(phone: string): Promise<any> {
 export async function deleteUserData(phone: string): Promise<void> {
     const db = await getDb();
     
+    // Attachment records and private bytes are owned by the chat attachment service.
+    // Remove them before profile deletion so a failed file operation leaves the account intact for retry.
+    await deleteChatAttachmentsForOwner(phone);
+
     // Hard delete personal data
     db.run(`DELETE FROM memory_profiles WHERE phone = ?`, [phone]);
     db.run(`DELETE FROM skills WHERE phone = ?`, [phone]);

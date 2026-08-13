@@ -153,6 +153,30 @@ export async function deleteChatAttachment(id: string, ownerPhone: string): Prom
   return deleted;
 }
 
+/** Account deletion reuses this owner to remove every owner-bound attachment record and its private bytes. */
+export async function deleteChatAttachmentsForOwner(ownerPhone: string): Promise<number> {
+  const owner = String(ownerPhone || '').trim();
+  if (!owner) return 0;
+  const db = await ensureSchema();
+  const statement = db.prepare('SELECT * FROM chat_attachments WHERE owner_phone=?');
+  statement.bind([owner]);
+  const attachments: StoredAttachment[] = [];
+  while (statement.step()) {
+    const attachment = rowToAttachment(statement.getAsObject() as Record<string, unknown>);
+    if (attachment && isStoragePath(attachment.storagePath)) attachments.push(attachment);
+  }
+  statement.free();
+  for (const attachment of attachments) {
+    await fs.unlink(attachment.storagePath).catch((error: NodeJS.ErrnoException) => {
+      if (error.code !== 'ENOENT') throw error;
+    });
+  }
+  db.run('DELETE FROM chat_attachments WHERE owner_phone=?', [owner]);
+  const deleted = db.getRowsModified();
+  if (deleted) saveDb();
+  return deleted;
+}
+
 export function attachmentDownloadName(name: string): string {
   return safeDisplayName(name).replace(/["\\]/g, '_');
 }
