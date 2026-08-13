@@ -75,7 +75,9 @@ try {
   assert.equal(pausedViaAdmin.status, 200, await pausedViaAdmin.text());
   const listed = await fetch(`${baseUrl}/api/admin/marketing/campaigns`, { headers: adminHeaders });
   assert.equal(listed.status, 200);
-  assert.ok((await listed.json() as { campaigns?: Array<{ id?: number; status?: string }> }).campaigns?.some((campaign) => campaign.id === managedPayload.campaign?.id && campaign.status === 'paused'));
+  const listedPayload = await listed.json() as { campaigns?: Array<{ id?: number; status?: string }>; categories?: string[] };
+  assert.ok(listedPayload.campaigns?.some((campaign) => campaign.id === managedPayload.campaign?.id && campaign.status === 'paused'));
+  assert.ok(listedPayload.categories?.includes('food-drink'), 'Admin campaign targeting must project the canonical category owner rather than maintain a frontend copy');
   console.log('Advertising disclosure regression passed: persisted placement source, truthful default labels, canonical category targeting, paused exclusion, active-only matching, and no provider-evidence field.');
 } finally {
   await new Promise<void>((resolve) => server.close(() => resolve()));

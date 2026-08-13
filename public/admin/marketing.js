@@ -1,9 +1,6 @@
 (() => {
   'use strict';
 
-  const categories = [
-    ['transport-mobility', 'Transport & mobility'], ['food-drink', 'Food & drink'], ['repairs-maintenance', 'Repairs & maintenance'], ['personal-care', 'Personal care'], ['emergency-dispatch', 'Emergency dispatch'], ['health-medical', 'Health & medical'], ['education-learning', 'Education & learning'], ['events-entertainment', 'Events & entertainment'], ['accommodation-lodging', 'Accommodation & lodging'], ['agriculture-produce', 'Agriculture & produce'], ['professional-services', 'Professional services'], ['spiritual-religious', 'Spiritual & religious'], ['freelance-services', 'Freelance services'], ['gigs-microtasks', 'Gigs & microtasks'], ['errands-delivery', 'Errands & delivery'], ['communication-telecom', 'Communication & telecom'], ['logistics-freight', 'Logistics & freight'], ['tourism-travel', 'Tourism & travel'], ['creative-arts', 'Creative arts'], ['security-safety', 'Security & safety'], ['fitness-coaching', 'Fitness & coaching'], ['nightlife-lounges', 'Nightlife & lounges'], ['betting-gaming', 'Betting & gaming'], ['money-circle', 'Money circle'], ['classifieds-marketplace', 'Classifieds & marketplace'], ['price-check', 'Price check'], ['government-civic', 'Government & civic'], ['community-neighbourhood', 'Community & neighbourhood'], ['cravings-streetfood', 'Cravings & street food'], ['reach-reference', 'Reach & reference'], ['language-services', 'Language services'], ['automotive-mechanics', 'Automotive & mechanics'], ['finance-tax', 'Finance & tax'], ['pet-animal-care', 'Pet & animal care'], ['digital-services', 'Digital services'], ['property-real-estate', 'Property & real estate'], ['childcare-nanny', 'Childcare & nanny'], ['beauty-wellness', 'Beauty & wellness'], ['cleaning-sanitation', 'Cleaning & sanitation'], ['home-automation', 'Home automation'], ['legal-compliance', 'Legal & compliance'], ['fashion-apparel', 'Fashion & apparel'], ['solar-energy', 'Solar energy'], ['event-rentals', 'Event rentals'], ['water-beverage', 'Water & beverage'], ['sports-recreation', 'Sports & recreation'],
-  ];
   const byId = (id) => document.getElementById(id);
   const form = byId('campaign-form');
   const status = byId('campaign-status');
@@ -19,8 +16,13 @@
   const element = (tag, text, className) => { const node = document.createElement(tag); if (className) node.className = className; if (text !== undefined) node.textContent = text; return node; };
   const clear = (node) => node.replaceChildren();
   const money = (value) => `${Number(value || 0).toLocaleString()} credits`;
-
-  categories.forEach(([value, label]) => { const option = document.createElement('option'); option.value = value; option.textContent = label; categorySelect.append(option); });
+  const categoryLabel = (value) => String(value || '').split('-').map((part) => part ? `${part[0].toUpperCase()}${part.slice(1)}` : '').join(' ');
+  let categoriesLoaded = false;
+  const populateCategories = (values) => {
+    if (categoriesLoaded || !Array.isArray(values)) return;
+    values.forEach((value) => { const option = document.createElement('option'); option.value = String(value); option.textContent = categoryLabel(value); categorySelect.append(option); });
+    categoriesLoaded = true;
+  };
 
   function metricsCard(value, label, detail) {
     const card = element('article', undefined, 'admin-stat-card');
@@ -70,7 +72,7 @@
   }
 
   async function loadCampaigns() {
-    try { const data = await request('/marketing/campaigns'); renderCampaigns(Array.isArray(data.campaigns) ? data.campaigns : []); }
+    try { const data = await request('/marketing/campaigns'); populateCategories(data.categories); renderCampaigns(Array.isArray(data.campaigns) ? data.campaigns : []); }
     catch (error) { clear(list); const row = element('tr'); const cell = element('td', error instanceof Error ? error.message : 'Campaign records are unavailable.'); cell.colSpan = 6; cell.className = 'admin-empty-state'; row.append(cell); list.append(row); }
   }
 

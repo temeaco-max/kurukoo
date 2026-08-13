@@ -34,6 +34,7 @@ import { getCommercialMetrics, getMarketingMetrics } from '../services/commercia
 import { getAllContent, getContentBySlug, saveContent, deleteContentBySlug, type ContentItem } from '../services/contentManager.js';
 import { getAdminControlPlaneStatus, listAdminFeatureFlags, updateAdminFeatureFlag, updateAdminRuntimeControl } from '../services/adminControlPlane.js';
 import { getSeoDashboard } from '../services/seoService.js';
+import { ECONOMIC_CATEGORIES } from '../services/skillFlows.js';
 import { createAdCampaign, getAdCampaigns, setAdCampaignStatus, type AdCampaignStatus } from '../services/adManager.js';
 
 const router = Router();
@@ -711,7 +712,7 @@ router.get('/marketing', authenticateAdmin, async (_req: AuthRequest, res) => {
 
 // Campaign state remains owned by adManager; this admin projection does not imply advertiser onboarding, billing, or delivered impressions.
 router.get('/marketing/campaigns', authenticateAdmin, async (_req: AuthRequest, res) => {
-  try { res.json({ campaigns: await getAdCampaigns() }); }
+  try { res.json({ campaigns: await getAdCampaigns(), categories: ECONOMIC_CATEGORIES }); }
   catch (error) { res.status(500).json({ error: error instanceof Error ? error.message : 'Unable to load campaigns' }); }
 });
 
