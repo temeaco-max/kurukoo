@@ -48,6 +48,7 @@ export async function getProviderVerification(phone: string): Promise<ProviderVe
 
 /** Admin or external-adapter boundary only. `verified` requires an evidence reference; a profile field alone is not KYC proof. */
 export async function setProviderVerification(phone: string, state: ProviderVerificationState, options: { evidenceRef?: string; reviewedBy?: string; expiresAt?: string; reason?: string } = {}): Promise<ProviderVerification> {
+  await ensureProviderVerificationSchema();
   if (!phone || !isState(state)) throw new Error('A valid provider verification state is required.');
   if (state === 'verified' && !options.evidenceRef) throw new Error('Verified provider status requires authoritative evidence.');
   const db = await getDb();

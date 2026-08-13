@@ -1,6 +1,7 @@
 import { getDb, saveDb, updateProviderPresence } from '../database.js';
 import { deductCredits } from './pointsEngine.js';
 import { updateTrickPresence } from './trickBridge.js';
+import { providerMayBeDiscovered } from './providerVerification.js';
 
 /**
  * Canonical Nearby Pulse lifecycle.
@@ -117,16 +118,18 @@ export async function getActivePulseProviders(): Promise<any[]> {
     FROM pulse_sessions p
     JOIN provider_presence pr ON pr.phone=p.phone
     JOIN memory_profiles m ON m.phone=p.phone
-    WHERE p.active=1 AND datetime(p.expires_at)>CURRENT_TIMESTAMP AND pr.is_live=1 AND datetime(pr.live_until)>CURRENT_TIMESTAMP AND m.verified_provider=1
+    WHERE p.active=1 AND datetime(p.expires_at)>CURRENT_TIMESTAMP AND pr.is_live=1 AND datetime(pr.live_until)>CURRENT_TIMESTAMP
     UNION ALL
     SELECT pr.phone,s.skill,pr.last_lat AS lat,pr.last_lng AS lng,pr.fuzzed_lat,pr.fuzzed_lng,m.name,m.location,m.subscription_tier,'stationary' AS source,pr.live_until,pr.last_confirmed
     FROM provider_presence pr
     JOIN memory_profiles m ON m.phone=pr.phone
     JOIN skills s ON s.phone=pr.phone
-    WHERE pr.is_live=1 AND pr.operation_mode='stationary' AND datetime(pr.live_until)>CURRENT_TIMESTAMP AND s.is_available=1 AND m.verified_provider=1 AND NOT EXISTS (SELECT 1 FROM pulse_sessions p WHERE p.phone=pr.phone AND p.active=1 AND datetime(p.expires_at)>CURRENT_TIMESTAMP)
+    WHERE pr.is_live=1 AND pr.operation_mode='stationary' AND datetime(pr.live_until)>CURRENT_TIMESTAMP AND s.is_available=1 AND NOT EXISTS (SELECT 1 FROM pulse_sessions p WHERE p.phone=pr.phone AND p.active=1 AND datetime(p.expires_at)>CURRENT_TIMESTAMP)
   `);
   const results: any[] = [];
   while (stmt.step()) results.push(stmt.getAsObject());
   stmt.free();
-  return results;
+  const eligible: any[] = [];
+  for (const provider of results) if (await providerMayBeDiscovered(String(provider.phone || ''))) eligible.push(provider);
+  return eligible;
 }

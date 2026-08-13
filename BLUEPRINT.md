@@ -5516,6 +5516,12 @@ The strengthened workspace regression preserves this boundary alongside the exis
 Daily Picks now separates personal context from sponsorship. Its dedicated sponsored panel reads only a disclosed `ad_campaign` opportunity emitted by the existing owner-scoped opportunity engine; the generic workspace advertisement preview and the unsupported static proactive question were removed. A stored campaign opportunity is suppressed immediately when the canonical campaign becomes paused, completed, or inactive, and no sponsor appears if no current disclosed campaign is eligible. Campaigns never enter the personal-suggestion list, and their panel repeats the boundary that sponsorship is not provider verification, inventory, availability, price, a quote, booking, payment, delivery, or fulfilment.
 
 ---
+### Public Provider Projection Parity Addendum (2026-08-13)
+
+`providerMayBeDiscovered()` is the sole public-provider eligibility predicate. The public `/p/:providerSlug` profile and Discover’s Nearby Radar now both use that canonical evidence-backed verification lifecycle; a legacy `memory_profiles.verified_provider` projection field cannot independently expose a provider name, skills, or approximate live location. The Nearby Pulse owner filters active mobile and stationary rows after it has resolved canonical verification, while Discover continues to fuzz public coordinates and omits direct phone identifiers. Public provider-supply listings remain a distinct provenance-bearing business directory projection: they explicitly state `providerVerified: false`, availability and price unknown, and never represent a business listing as a verified provider account.
+
+The public-provider and Discover regressions prove verified profile and Radar projections remain available, a legacy-flag-only active provider is excluded, private phone data remains absent, and unavailable Radar layers are not fabricated.
+
 ### Private Chat Attachment Hardening Addendum (2026-08-13)
 
 Chat attachments remain subordinate to the existing conversation service; they are not a media platform, public file host, CMS asset library, provider portfolio, or Topic-media feature. Upload requires an authenticated phone identity and uses a shared bounded upload limiter. The existing chat attachment flow now stores only validated JPEG, PNG, WebP, GIF, PDF, MP4, or WebM bytes in the configured private `CHAT_UPLOAD_DIR` (defaulting outside `public/`), with an opaque attachment identifier and owner record.

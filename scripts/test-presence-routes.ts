@@ -14,6 +14,7 @@ process.env.KURUKOO_CONTROLLED_PILOT = 'false';
 
 const { app } = await import('../src/index.js');
 const { getDb, saveDb } = await import('../src/database.js');
+const { setProviderVerification } = await import('../src/services/providerVerification.js');
 const presenceRouter = (await import('../src/routes/presenceRoutes.js')).default;
 const db = await getDb();
 const providerPhone = '+2348010003003';
@@ -23,6 +24,7 @@ db.run(`INSERT OR REPLACE INTO memory_profiles(phone,name,location,country,verif
 db.run(`INSERT OR REPLACE INTO memory_profiles(phone,name,location,country,verified_provider,provider_type,is_available,points_balance,subscription_tier) VALUES(?,?,?,?,?,?,?,?,?)`, [otherPhone, 'Other provider', 'Ikeja', 'ng', 1, 'human', 1, 30, 'Base']);
 db.run(`INSERT OR REPLACE INTO skills(phone,skill,is_available,hourly_rate,rating,jobs_completed,operation_mode,service_radius_km) VALUES(?,?,?,?,?,?,?,?)`, [providerPhone, 'phone_repairer', 1, 250000, 4.9, 12, 'mobile', 8]);
 saveDb();
+await setProviderVerification(providerPhone, 'verified', { evidenceRef: 'presence-route-evidence', reviewedBy: 'test' });
 
 const stack = (presenceRouter as any).stack || [];
 const routes = stack.filter((layer: any) => layer.route).map((layer: any) => ({ path: layer.route.path, methods: Object.keys(layer.route.methods) }));
@@ -109,7 +111,7 @@ try {
   const finalState = await fetch(`${baseUrl}/api/presence/me`, { headers: auth(providerPhone) });
   assert.equal((await finalState.json() as { presence?: { active?: boolean } }).presence?.active, false, 'ended sessions must not remain live');
 
-  console.log(`Presence route regression passed: ${expected.length} routes, authenticated Go Live lifecycle, exact-skill eligibility, no fallback coordinates, Trick Bridge projection, and privacy-safe legacy aliases.`);
+  console.log(`Presence route regression passed: ${expected.length} routes, evidence-verified authenticated Go Live lifecycle, exact-skill eligibility, no fallback coordinates, Trick Bridge projection, and privacy-safe legacy aliases.`);
 } finally {
   await new Promise<void>((resolve) => server.close(() => resolve()));
   for (const suffix of ['', '-journal', '-wal', '-shm']) { try { fs.unlinkSync(`${dbPath}${suffix}`); } catch {} }

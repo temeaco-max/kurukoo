@@ -237,6 +237,10 @@ The audit found no persisted Cart, saved-item, or saved-provider owner. Rather t
 Daily Picks now keeps personal context and sponsorship separate. Its sponsored panel reads only a current disclosed `ad_campaign` opportunity from the existing owner-scoped opportunity engine, while the generic static promotion preview and unbacked proactive question have been removed. Stored campaign opportunities stop projecting immediately when the same canonical campaign is paused, completed, or inactive; they never appear among personal suggestions. The opportunity and advertising regressions cover active eligibility, disclosure, owner isolation, and paused-campaign exclusion.
 
 
+## 2026-08-13 public provider projection parity
+
+The existing `providerMayBeDiscovered()` evidence lifecycle is now the sole public-provider gate for both `/p/:providerSlug` and Discover’s Nearby Radar. `getActivePulseProviders()` no longer treats the legacy `memory_profiles.verified_provider` projection field as eligibility; it resolves every active mobile/stationary presence candidate through canonical verification. Discover keeps approximate coordinates and omits direct identifiers. The strengthened Discover and presence regressions prove that evidence-verified active providers project, while a legacy-flag-only active profile remains excluded. Public supply listings remain separate provenance-bearing business entities with explicit unverified/unknown availability semantics.
+
 ## 2026-08-13 private chat attachment hardening
 
 The existing chat attachment flow now requires an authenticated user and a shared bounded upload limiter. Validated supported attachment bytes live only in the private configured `CHAT_UPLOAD_DIR` (outside `public/` by default), and `chat_attachments` records bind opaque identifiers, trusted type, bounded size, and storage path to the owner phone. Declared data URLs must have strict Base64 form and match the respective binary file signature; the server never trusts a submitted filename for the stored extension.
