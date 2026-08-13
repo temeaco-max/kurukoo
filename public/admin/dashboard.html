@@ -1,1041 +1,135 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kurukoo Unified Admin Console</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/site.css">
-
-  <link rel="stylesheet" href="/css/legacy-inline-migration.css?v=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Kurukoo Admin Control Room</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/site.css">
+  <link rel="stylesheet" href="/css/admin-console.css">
 </head>
-<body>
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-brand">
-            <svg class="legacy-inline-g71dwx" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
-            </svg>
-            <span class="sidebar-brand-text">Kurukoo Admin</span>
-        </div>
-
-        <div class="legacy-inline-85h53v">
-            <div class="sidebar-menu-section">Core Modules</div>
-            <a href="/admin/dashboard.html" class="sidebar-item active" title="Dashboard">
-                <svg viewBox="0 0 24 24">
-                    <rect x="3" y="3" width="7" height="9"></rect>
-                    <rect x="14" y="3" width="7" height="5"></rect>
-                    <rect x="14" y="12" width="7" height="9"></rect>
-                    <rect x="3" y="16" width="7" height="5"></rect>
-                </svg>
-                <span class="sidebar-item-label">Dashboard</span>
-            </a>
-            <a href="/admin/analytics.html" class="sidebar-item" title="Analytics">
-                <svg viewBox="0 0 24 24">
-                    <line x1="18" y1="20" x2="18" y2="10"></line>
-                    <line x1="12" y1="20" x2="12" y2="4"></line>
-                    <line x1="6" y1="20" x2="6" y2="14"></line>
-                </svg>
-                <span class="sidebar-item-label">Analytics</span>
-            </a>
-            <a href="/admin/users.html" class="sidebar-item" title="Users">
-                <svg viewBox="0 0 24 24">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
-                <span class="sidebar-item-label">Users</span>
-            </a>
-            <a href="/admin/ai-agents.html" class="sidebar-item" title="AI Agents">
-                <svg viewBox="0 0 24 24">
-                    <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
-                    <rect x="9" y="9" width="6" height="6"></rect>
-                    <line x1="9" y1="1" x2="9" y2="4"></line>
-                    <line x1="15" y1="1" x2="15" y2="4"></line>
-                    <line x1="9" y1="20" x2="9" y2="23"></line>
-                    <line x1="15" y1="20" x2="15" y2="23"></line>
-                    <line x1="20" y1="9" x2="23" y2="9"></line>
-                    <line x1="20" y1="15" x2="23" y2="15"></line>
-                    <line x1="1" y1="9" x2="4" y2="9"></line>
-                    <line x1="1" y1="15" x2="4" y2="15"></line>
-                </svg>
-                <span class="sidebar-item-label">AI Agents</span>
-            </a>
-
-            <div class="sidebar-menu-section">Operations</div>
-            <a href="/admin/content.html" class="sidebar-item" title="Content CMS">
-                <svg viewBox="0 0 24 24">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                    <polyline points="10 9 9 9 8 9"></polyline>
-                </svg>
-                <span class="sidebar-item-label">Content CMS</span>
-            </a>
-            <a href="/admin/referrals.html" class="sidebar-item" title="Referral Engine">
-                <svg viewBox="0 0 24 24">
-                    <circle cx="18" cy="5" r="3"></circle>
-                    <circle cx="6" cy="12" r="3"></circle>
-                    <circle cx="18" cy="19" r="3"></circle>
-                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                </svg>
-                <span class="sidebar-item-label">Referrals</span>
-            </a>
-            <a href="/admin/partnerships.html" class="sidebar-item" title="Partnerships">
-                <svg viewBox="0 0 24 24">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
-                <span class="sidebar-item-label">Partnerships</span>
-            </a>
-            <a href="/admin/scam.html" class="sidebar-item" title="Scam Reports">
-                <svg viewBox="0 0 24 24">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                    <line x1="12" y1="9" x2="12" y2="13"></line>
-                    <line x1="12" y1="17" x2="13" y2="17"></line>
-                </svg>
-                <span class="sidebar-item-label">Scam Reports</span>
-            </a>
-
-            <div class="sidebar-menu-section">Monetization</div>
-            <a href="/admin/pricing.html" class="sidebar-item" title="Pricing Plans">
-                <svg viewBox="0 0 24 24">
-                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                    <line x1="1" y1="10" x2="23" y2="10"></line>
-                </svg>
-                <span class="sidebar-item-label">Pricing Plans</span>
-            </a>
-            <a href="/admin/commissions.html" class="sidebar-item" title="Commission Settings">
-                <svg viewBox="0 0 24 24">
-                    <line x1="19" y1="5" x2="5" y2="19"></line>
-                    <circle cx="6.5" cy="6.5" r="2.5"></circle>
-                    <circle cx="17.5" cy="17.5" r="2.5"></circle>
-                </svg>
-                <span class="sidebar-item-label">Commissions</span>
-            </a>
-            <a href="/admin/revenue.html" class="sidebar-item" title="Revenue & Escrow">
-                <svg viewBox="0 0 24 24">
-                    <line x1="12" y1="1" x2="12" y2="23"></line>
-                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                </svg>
-                <span class="sidebar-item-label">Revenue & Escrow</span>
-            </a>
-
-            <div class="sidebar-menu-section">Growth & Strategy</div>
-            <a href="/admin/artists.html" class="sidebar-item" title="Artists Hub">
-                <svg viewBox="0 0 24 24">
-                    <path d="M9 18V5l12-2v13"></path>
-                    <circle cx="6" cy="18" r="3"></circle>
-                    <circle cx="18" cy="16" r="3"></circle>
-                </svg>
-                <span class="sidebar-item-label">Artists Hub</span>
-            </a>
-            <a href="/admin/social.html" class="sidebar-item" title="Social Scheduler">
-                <svg viewBox="0 0 24 24">
-                    <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path>
-                </svg>
-                <span class="sidebar-item-label">Social Scheduler</span>
-            </a>
-            <a href="/admin/future.html" class="sidebar-item" title="Future Roadmap">
-                <svg viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-                <span class="sidebar-item-label">Future Roadmap</span>
-            </a>
-            <a href="/admin/seo.html" class="sidebar-item" title="SEO Settings">
-                <svg viewBox="0 0 24 24">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-                <span class="sidebar-item-label">SEO Config</span>
-            </a>
-            <a href="/admin/celebrity.html" class="sidebar-item" title="Celebrity Demand">
-                <svg viewBox="0 0 24 24">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                </svg>
-                <span class="sidebar-item-label">Celebrity Demand</span>
-            </a>
-        </div>
-
-        <button onclick="toggleSidebar()" class="legacy-inline-1oz7i8v" title="Collapse Menu">
-            <svg id="sidebar-toggle-icon" class="legacy-inline-1wstgoc" viewBox="0 0 24 24">
-                <polyline points="11 17 6 12 11 7"></polyline>
-                <polyline points="18 17 13 12 18 7"></polyline>
-            </svg>
-            <span class="sidebar-item-label" id="toggle-button-text">Collapse Menu</span>
-        </button>
+<body class="admin-shell admin-dashboard">
+  <a class="admin-skip-link" href="#admin-main">Skip to main content</a>
+  <aside class="admin-rail" id="admin-rail" aria-label="Admin navigation">
+    <div class="admin-rail__brand">
+      <a class="admin-rail__brand-link" href="/" aria-label="Kurukoo public site">
+        <img src="/assets/brand/logo-icon.svg" alt="" width="30" height="30">
+        <span>Kurukoo <strong>Admin</strong></span>
+      </a>
+      <button class="admin-rail__toggle" id="admin-rail-toggle" type="button" aria-expanded="true" aria-controls="admin-rail">
+        <span class="admin-rail__toggle-icon" aria-hidden="true">‹</span>
+        <span class="admin-rail__toggle-label">Collapse navigation</span>
+      </button>
     </div>
 
-    <div class="main-content" id="main-content">
-        <div class="header-bar">
-            <div class="logo legacy-inline-1fafmww"><span>Kurukoo</span> Admin Console</div>
-            <nav class="legacy-inline-3yos7v">
-                <a href="/dashboard.html" target="_blank" class="legacy-inline-tfyzm7">View Live App</a>
-            </nav>
-        </div>
+    <nav class="admin-rail__nav" aria-label="Primary">
+      <p class="admin-rail__group">Control room</p>
+      <a class="admin-nav-link is-current" href="/admin/dashboard.html" aria-current="page"><span aria-hidden="true">▦</span><span>Overview</span></a>
+      <a class="admin-nav-link" href="/admin/analytics.html"><span aria-hidden="true">↗</span><span>Evidence & analytics</span></a>
+      <a class="admin-nav-link" href="/admin/users.html"><span aria-hidden="true">◎</span><span>Profiles & providers</span></a>
+      <a class="admin-nav-link" href="/admin/ai-agents.html"><span aria-hidden="true">◌</span><span>Bounded agents</span></a>
 
-    <script>
-        // Close the dropdown if the user clicks outside of it
-        window.onclick = function(event) {
-            if (!event.target.matches('.dropdown a')) {
-                var dropdowns = document.getElementsByClassName("dropdown-content");
-                for (var i = 0; i < dropdowns.length; i++) {
-                    var openDropdown = dropdowns[i];
-                    if (openDropdown.classList.contains('show')) {
-                        openDropdown.classList.remove('show');
-                        openDropdown.style.display = 'none';
-                    }
-                }
-            } else if (event.target.matches('.dropdown a')) {
-                const dd = document.getElementById('admin-dropdown');
-                if (dd.classList.contains('show')) {
-                    dd.style.display = 'block';
-                } else {
-                    dd.style.display = 'none';
-                }
-            }
-        }
-    </script>
-    <div class="container">
-        <!-- Metric Cards -->
-        <div class="stats-grid">
-            <div class="metric-card">
-                <div class="metric-title">Registered Profiles</div>
-                <div id="stat-users" class="metric-value">...</div>
-            </div>
-            <div class="metric-card blue">
-                <div class="metric-title">Active Workers</div>
-                <div id="stat-providers" class="metric-value">...</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-title">Telemetry Stream</div>
-                <div id="stat-messages" class="metric-value">...</div>
-            </div>
-            <div class="metric-card blue">
-                <div class="metric-title">Budget Circulated</div>
-                <div id="stat-credits" class="metric-value">...</div>
-            </div>
-        </div>
+      <p class="admin-rail__group">Operations</p>
+      <a class="admin-nav-link" href="/admin/content.html"><span aria-hidden="true">▤</span><span>Content</span></a>
+      <a class="admin-nav-link" href="/admin/scam.html"><span aria-hidden="true">⚑</span><span>Safety & reports</span></a>
+      <a class="admin-nav-link" href="/admin/revenue.html"><span aria-hidden="true">₦</span><span>Collections & escrow</span></a>
+      <a class="admin-nav-link" href="/admin/referrals.html"><span aria-hidden="true">↗</span><span>Referrals</span></a>
 
-        <div class="layout-grid">
-            <!-- Left Side: Flows & Campaigns -->
-            <div>
-                <!-- SECTION 9: Skill Flow Taxonomy Manager -->
-                <div class="admin-section">
-                    <h3>
-                        <span>Skill Flow Taxonomy</span>
-                        <button class="btn-action" onclick="openSkillFlowModal()">+ Add New Flow</button>
-                    </h3>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Skill Name</th>
-                                    <th>Post-Match Action</th>
-                                    <th>Payment Model</th>
-                                    <th>Fulfillment</th>
-                                    <th class="legacy-inline-i0oyy0">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="skill-flows-tbody">
-                                <tr><td colspan="5">Loading skill flows...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+      <p class="admin-rail__group">Configuration</p>
+      <a class="admin-nav-link" href="/admin/pricing.html"><span aria-hidden="true">◇</span><span>Pricing</span></a>
+      <a class="admin-nav-link" href="/admin/commissions.html"><span aria-hidden="true">%</span><span>Commissions</span></a>
+      <a class="admin-nav-link" href="/admin/seo.html"><span aria-hidden="true">⌕</span><span>Search & SEO</span></a>
+    </nav>
 
-                <!-- SECTION 5: Active Sponsored Campaigns -->
-                <div class="admin-section">
-                    <h3>
-                        <span>Active Sponsored Campaigns</span>
-                        <button class="btn-action btn-secondary" onclick="openAdModal()">+ Launch Campaign</button>
-                    </h3>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Title</th>
-                                    <th>Keyword Match</th>
-                                    <th>Budget (Credits)</th>
-                                    <th>Spent (Credits)</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="ads-tbody">
-                                <tr><td colspan="5">Loading active campaigns...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Unified Content Management System (CMS) -->
-                <div class="admin-section">
-                    <h3>
-                        <span>Unified Content Management System (CMS)</span>
-                        <button class="btn-action" onclick="openCmsModal()">+ Create Page</button>
-                    </h3>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Slug</th>
-                                    <th>Title</th>
-                                    <th>Type</th>
-                                    <th>Author</th>
-                                    <th class="legacy-inline-i0oyy0">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="cms-tbody">
-                                <tr><td colspan="5">Loading CMS content...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Side: Real-Time Active Sessions & Analytics Trends -->
-            <div>
-                <!-- SECTION 9: Active Pulse Broadcasts -->
-                <div class="admin-section">
-                    <h3>Active Pulse Broadcasts</h3>
-                    <div id="pulse-sessions-list" class="legacy-inline-9zefdl">
-                        <p class="legacy-inline-3b24bx">No active broadcast sessions currently detected on map grid.</p>
-                    </div>
-                </div>
-
-                <!-- SECTION 8: Real-Time Analytics & Search Trends -->
-                <div class="admin-section">
-                    <h3>Intelligence Analytics</h3>
-                    <div id="analytics-section">
-                        <p class="legacy-inline-u6cad3">Top contextual keyword hits parsed in raw conversational threads:</p>
-                        <div id="trends-bars">
-                            <!-- Bars loaded dynamically -->
-                            Loading analytical intelligence...
-                        </div>
-                    </div>
-                </div>
-
-                <!-- SECTION 8: Geographic Density Tracker -->
-                <div class="admin-section">
-                    <h3>Geographic Density Tracker</h3>
-                    <div id="density-bars">
-                        <!-- Density bars loaded dynamically -->
-                        Loading density analytics...
-                    </div>
-                </div>
-
-                <!-- SECTION 11: Internal Notification and Lifecycle Observability -->
-                <div class="admin-section">
-                    <h3>Internal Notification and Lifecycle Observability</h3>
-                    <p class="legacy-inline-u6cad3">
-                        Canonical request, reminder, safety, and internal notification metrics. External delivery adapters are not represented as active here:
-                    </p>
-                    <div class="legacy-inline-1kgse2x">
-                        <div class="legacy-inline-xfsptd">
-                            <div class="legacy-inline-115rql2">Unread Internal Notifications</div>
-                            <div id="platform-unread-notifications" class="legacy-inline-15tai86">0</div>
-                        </div>
-                        <div class="legacy-inline-hen0ti">
-                            <div class="legacy-inline-1dt5cyz">Active Reminders</div>
-                            <div id="platform-active-reminders" class="legacy-inline-lg0g5l">0</div>
-                        </div>
-                    </div>
-
-                    <div class="legacy-inline-1kgse2x">
-                        <div class="legacy-inline-1a0g1nn">
-                            <div class="legacy-inline-qjukdp">Active Safety Check-ins</div>
-                            <div id="platform-active-checkins" class="legacy-inline-1uv3hc7">0</div>
-                        </div>
-                        <div class="legacy-inline-1m5q5q5">
-                            <div class="legacy-inline-vzjg31">Open Economic Requests</div>
-                            <div id="platform-open-requests" class="legacy-inline-u99bbb">0</div>
-                        </div>
-                    </div>
-
-                    <div class="legacy-inline-1pmds5p">
-                        <div class="legacy-inline-bpq0fo">Completed Economic Requests</div>
-                        <div id="platform-completed-requests" class="legacy-inline-1tfcwq4">0</div>
-                    </div>
-
-                    <h4 class="legacy-inline-oqz28f">Recent Internal Observability</h4>
-                    <div id="platform-observability-stream" class="legacy-inline-14fazdc">
-                        Loading internal metrics...
-                    </div>
-                </div>
-
-                <!-- Dispute Resolution Board -->
-                <div class="admin-section">
-                    <h3>Dispute Resolution Board</h3>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>User</th>
-                                    <th>Order</th>
-                                    <th>Reason</th>
-                                    <th>Status</th>
-                                    <th class="legacy-inline-i0oyy0">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="disputes-tbody">
-                                <tr><td colspan="6">Loading active disputes...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Customer Support Tickets -->
-                <div class="admin-section">
-                    <h3>Customer Support Tickets</h3>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>User</th>
-                                    <th>Message</th>
-                                    <th>Status</th>
-                                    <th class="legacy-inline-i0oyy0">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tickets-tbody">
-                                <tr><td colspan="5">Loading support tickets...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="admin-rail__footer">
+      <a class="admin-nav-link" href="/" target="_blank" rel="noopener"><span aria-hidden="true">↗</span><span>View public app</span></a>
+      <button class="admin-nav-link admin-nav-link--button" id="admin-sign-out" type="button"><span aria-hidden="true">↩</span><span>Sign out</span></button>
     </div>
+  </aside>
 
-    <!-- Modal for Skill Flow Create/Update -->
-    <div id="skill-flow-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 id="flow-modal-title">Create New Skill Flow</h3>
-            <form id="skill-flow-form" onsubmit="saveSkillFlow(event)">
-                <div class="form-group">
-                    <label for="flow-skill">Skill Tag Name</label>
-                    <input type="text" id="flow-skill" required placeholder="e.g. laundry_service">
-                </div>
-                <div class="form-group">
-                    <label for="flow-questions">Question Set (JSON Array)</label>
-                    <textarea id="flow-questions" rows="3" required placeholder='["Do you have washing machine?", "Where are you located?"]'></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="flow-action">Post-Match Action</label>
-                    <select id="flow-action">
-                        <option value="direct_phone_bridge">Direct Phone Bridge (Privacy Masked)</option>
-                        <option value="group_savings_escrow">Hold in Group Savings Escrow</option>
-                        <option value="principal_arbitrage">Principal Arbitrage Instant Purchase</option>
-                        <option value="logistics_dispatch">Automatic Rider Logistics Dispatch</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="flow-payment">Payment Model</label>
-                    <select id="flow-payment">
-                        <option value="subscription_plus">Subscription Plus Plus / Leads</option>
-                        <option value="lead_charge_minor">Lead Charge (Deducted on Accept)</option>
-                        <option value="escrow_release">Full Escrow Release on Delivery</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="flow-instructions">Fulfillment & Operations Instructions</label>
-                    <textarea id="flow-instructions" rows="2" placeholder="Step-by-step instructions for automated matching engine dispatch..."></textarea>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-action btn-secondary" onclick="closeSkillFlowModal()">Cancel</button>
-                    <button type="submit" class="btn-action">Save Flow</button>
-                </div>
-            </form>
+  <button class="admin-rail-reopen" id="admin-rail-reopen" type="button" aria-controls="admin-rail" aria-label="Show navigation">
+    <span aria-hidden="true">›</span><span>Navigation</span>
+  </button>
+
+  <main class="admin-main" id="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <p class="admin-eyebrow">Kurukoo operating system</p>
+        <h1>Control room</h1>
+        <p class="admin-intro">Review actual platform records, govern supported paths, and keep every action bounded by identity, evidence, consent, and the canonical Economic Request lifecycle.</p>
+      </div>
+      <div class="admin-topbar__actions">
+        <span class="admin-runtime-status" id="admin-runtime-status" role="status">Loading authenticated records…</span>
+        <button class="admin-button admin-button--secondary" id="admin-refresh" type="button">Refresh records</button>
+      </div>
+    </header>
+
+    <section class="admin-mandate" aria-labelledby="admin-mandate-title">
+      <div>
+        <p class="admin-eyebrow">Operating mandate</p>
+        <h2 id="admin-mandate-title">Conversation first. Evidence before execution.</h2>
+      </div>
+      <p>Kurukoo is a conversational fulfilment network. This console can review and govern records already created by the platform; it does not imply a provider is selected, a message is delivered, funds are settled, or external work is dispatched without the required evidence and configured integration.</p>
+    </section>
+
+    <section class="admin-metrics" aria-label="Platform summary">
+      <article class="admin-metric-card"><p>Registered profiles</p><strong id="metric-profiles">—</strong><span>Recorded Memory Profiles</span></article>
+      <article class="admin-metric-card"><p>Available providers</p><strong id="metric-providers">—</strong><span>Recorded availability, not a dispatch claim</span></article>
+      <article class="admin-metric-card"><p>Open requests</p><strong id="metric-open-requests">—</strong><span>Canonical Economic Requests</span></article>
+      <article class="admin-metric-card"><p>Unread internal notices</p><strong id="metric-notifications">—</strong><span>Internal queue only</span></article>
+    </section>
+
+    <section class="admin-dashboard-grid">
+      <article class="admin-panel admin-panel--wide">
+        <div class="admin-panel__header">
+          <div><p class="admin-eyebrow">Lifecycle visibility</p><h2>Economic Request state</h2></div>
+          <a class="admin-text-link" href="/admin/analytics.html">Open evidence & analytics</a>
         </div>
-    </div>
+        <div class="admin-state-list" id="request-state-list" aria-live="polite"><p class="admin-empty-state">Loading request state…</p></div>
+      </article>
 
-    <!-- Modal for Ad Campaign Launch -->
-    <div id="ad-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3>Launch New Sponsored Campaign</h3>
-            <form id="ad-form" onsubmit="saveAdCampaign(event)">
-                <div class="form-group">
-                    <label for="ad-title">Campaign / Product Title</label>
-                    <input type="text" id="ad-title" required placeholder="e.g. Mama Gold Rice (50kg)">
-                </div>
-                <div class="form-group">
-                    <label for="ad-desc">Ad Body Description</label>
-                    <textarea id="ad-desc" rows="2" required placeholder="Get premium Nigerian rice delivered straight to your home."></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="ad-image">Image URL</label>
-                    <input type="text" id="ad-image" placeholder="https://images.unsplash.com/photo-...">
-                </div>
-                <div class="form-group">
-                    <label for="ad-keyword">Target Context Keyword Match</label>
-                    <input type="text" id="ad-keyword" required placeholder="e.g. rice">
-                </div>
-                <div class="form-group">
-                    <label for="ad-budget">Credits Budget</label>
-                    <input type="number" id="ad-budget" required value="100">
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-action btn-secondary" onclick="closeAdModal()">Cancel</button>
-                    <button type="submit" class="btn-action">Launch Campaign</button>
-                </div>
-            </form>
+      <article class="admin-panel">
+        <div class="admin-panel__header"><div><p class="admin-eyebrow">Safety gates</p><h2>Non-negotiable boundaries</h2></div></div>
+        <ul class="admin-gate-list">
+          <li><span>Provider participation</span><strong>Evidence-backed</strong></li>
+          <li><span>External messaging</span><strong>Consent + receipt</strong></li>
+          <li><span>Payments & escrow</span><strong>Verified adapter only</strong></li>
+          <li><span>Bounded agent actions</span><strong>Quota + authority</strong></li>
+        </ul>
+      </article>
+
+      <article class="admin-panel admin-panel--wide">
+        <div class="admin-panel__header"><div><p class="admin-eyebrow">Canonical operating records</p><h2>Current queue</h2></div><span class="admin-panel__meta" id="queue-summary">Loading…</span></div>
+        <div class="admin-queue-grid">
+          <a class="admin-queue-card" href="/admin/users.html"><span class="admin-queue-card__icon" aria-hidden="true">◎</span><span><strong id="queue-profiles">—</strong><small>Profiles to review</small></span><span aria-hidden="true">→</span></a>
+          <a class="admin-queue-card" href="/admin/ai-agents.html"><span class="admin-queue-card__icon" aria-hidden="true">◌</span><span><strong id="queue-messages">—</strong><small>Recorded conversations</small></span><span aria-hidden="true">→</span></a>
+          <a class="admin-queue-card" href="/admin/revenue.html"><span class="admin-queue-card__icon" aria-hidden="true">₦</span><span><strong id="queue-points">—</strong><small>Points ledger entries</small></span><span aria-hidden="true">→</span></a>
         </div>
-    </div>
+      </article>
 
-    <!-- Modal for CMS Page Create/Update -->
-    <div id="cms-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 id="cms-modal-title" class="legacy-inline-rdwla6">Create CMS Page</h3>
-            <form id="cms-form" onsubmit="saveCmsPage(event)">
-                <div class="form-group">
-                    <label for="cms-slug">Slug (Unique Name / ID)</label>
-                    <input type="text" id="cms-slug" required placeholder="e.g. refund-policy">
-                </div>
-                <div class="form-group">
-                    <label for="cms-title">Title</label>
-                    <input type="text" id="cms-title" required placeholder="e.g. Refund Policy & Guidelines">
-                </div>
-                <div class="form-group">
-                    <label for="cms-type">Content Type</label>
-                    <select id="cms-type" class="legacy-inline-1ihzpxf">
-                        <option value="blog">Blog Post</option>
-                        <option value="help">Help Article</option>
-                        <option value="legal">Legal & Terms</option>
-                        <option value="page">Custom Page</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="cms-author">Author</label>
-                    <input type="text" id="cms-author" placeholder="Admin">
-                </div>
-                <div class="form-group">
-                    <label for="cms-body">Body Content</label>
-                    <textarea id="cms-body" rows="6" required placeholder="Type the page content here..."></textarea>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-action btn-secondary" onclick="closeCmsModal()">Cancel</button>
-                    <button type="submit" class="btn-action">Save Content</button>
-                </div>
-            </form>
-        </div>
-    </div>
+      <article class="admin-panel">
+        <div class="admin-panel__header"><div><p class="admin-eyebrow">Commercial evidence</p><h2>Recorded, not inferred</h2></div><a class="admin-text-link" href="/admin/revenue.html">Open details</a></div>
+        <dl class="admin-evidence-list">
+          <div><dt>Verified collections</dt><dd id="commercial-collections">Loading…</dd></div>
+          <div><dt>Active campaigns</dt><dd id="commercial-campaigns">Loading…</dd></div>
+          <div><dt>Affiliate records</dt><dd id="commercial-affiliate">Loading…</dd></div>
+        </dl>
+      </article>
 
-    <!-- Modal for Support Ticket Reply -->
-    <div id="ticket-reply-modal" class="modal-overlay">
-        <div class="modal-content legacy-inline-1ijhkvi">
-            <h3 class="legacy-inline-13sdzyf">Reply to Support Ticket</h3>
-            <form id="ticket-reply-form" onsubmit="submitTicketReply(event)">
-                <input type="hidden" id="reply-ticket-id">
-                <div class="form-group">
-                    <label>User's Message</label>
-                    <div id="reply-ticket-message" class="legacy-inline-bfvgsd">...</div>
-                </div>
-                <div class="form-group">
-                    <label for="reply-content">Agent Reply Content</label>
-                    <textarea id="reply-content" rows="4" required placeholder="Type your response to send directly to the user's chat..."></textarea>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-action btn-secondary" onclick="closeTicketReplyModal()">Cancel</button>
-                    <button type="submit" class="btn-action legacy-inline-6uiz6m">Send Reply & Resolve</button>
-                </div>
-            </form>
-        </div>
-    </div>
+      <article class="admin-panel admin-panel--wide">
+        <div class="admin-panel__header"><div><p class="admin-eyebrow">Configured capability</p><h2>Skill flows</h2></div><a class="admin-text-link" href="/admin/analytics.html">Review analytics</a></div>
+        <div class="admin-table-wrap"><table class="admin-data-table"><thead><tr><th scope="col">Skill</th><th scope="col">Next step</th><th scope="col">Payment boundary</th></tr></thead><tbody id="skill-flow-list"><tr><td colspan="3" class="admin-empty-state">Loading configured skill flows…</td></tr></tbody></table></div>
+      </article>
 
-    <script>
-        // Load initial console data
-        function loadConsoleData() {
-            // Load stats
-            fetch('/api/admin/stats').then(res=>res.json()).then(data => {
-                document.getElementById('stat-users').innerText = data.users;
-                document.getElementById('stat-providers').innerText = data.providers;
-                document.getElementById('stat-messages').innerText = data.messages;
-                document.getElementById('stat-credits').innerText = data.credits;
-            }).catch(e => console.error('Stats error:', e));
-
-            // Load skill flows
-            fetch('/api/admin/skill-flows').then(res=>res.json()).then(flows => {
-                const tbody = document.getElementById('skill-flows-tbody');
-                tbody.innerHTML = flows.map(f => `
-                    <tr>
-                        <td><strong>${f.skill}</strong></td>
-                        <td><span class="badge badge-active">${f.post_match_action}</span></td>
-                        <td>${f.payment_model}</td>
-                        <td class="legacy-inline-1t4sc4u">${f.fulfillment_instructions || 'N/A'}</td>
-                        <td class="legacy-inline-i0oyy0">
-                            <button class="btn-action legacy-inline-r67ggt" onclick="editSkillFlow('${escapeHtml(JSON.stringify(f))}')">Edit</button>
-                            <button class="btn-action btn-secondary legacy-inline-1n0fws7" onclick="deleteSkillFlow('${f.skill}')">Delete</button>
-                        </td>
-                    </tr>
-                `).join('') || `<tr><td colspan="5" class="legacy-inline-f5comt">No custom skill flows defined. Click add flow above!</td></tr>`;
-            }).catch(e => console.error('Skill flows load error:', e));
-
-            // Load ad campaigns
-            fetch('/api/ads').then(res=>res.json()).then(ads => {
-                const tbody = document.getElementById('ads-tbody');
-                tbody.innerHTML = ads.map(ad => `
-                    <tr>
-                        <td><strong>${ad.title}</strong></td>
-                        <td><span class="badge badge-active">${ad.targetKeyword}</span></td>
-                        <td>${ad.creditsBudget}</td>
-                        <td>${ad.creditsSpent}</td>
-                        <td><span class="badge ${ad.status === 'active' ? 'badge-active' : 'badge-spent'}">${ad.status}</span></td>
-                    </tr>
-                `).join('') || `<tr><td colspan="5" class="legacy-inline-f5comt">No campaigns active.</td></tr>`;
-            }).catch(e => console.error('Ads load error:', e));
-
-            // Load active pulse sessions
-            fetch('/api/admin/pulse-sessions').then(res=>res.json()).then(sessions => {
-                const div = document.getElementById('pulse-sessions-list');
-                div.innerHTML = sessions.map(s => `
-                    <div class="legacy-inline-j1frh1">
-                        <strong>${s.name}</strong> (${s.location})<br/>
-                        Broadcasting: <span class="legacy-inline-lcg77">${s.skill}</span><br/>
-                        Coords: [${s.lat.toFixed(4)}, ${s.lng.toFixed(4)}]<br/>
-                        <span class="legacy-inline-wlr3fn">Expires: ${s.expires_at}</span>
-                    </div>
-                `).join('') || `<p class="legacy-inline-1noqu7t">No live broadcasts active on map grid.</p>`;
-            }).catch(e => console.error('Pulse sessions error:', e));
-
-            // Load real-time trends analytics
-            fetch('/api/admin/analytics/trends').then(res=>res.json()).then(data => {
-                // Trends
-                const trendsDiv = document.getElementById('trends-bars');
-                trendsDiv.innerHTML = data.trends.map(t => {
-                    const percent = Math.min(100, (t.count / 20) * 100);
-                    return `
-                        <div class="trend-bar-container">
-                            <div class="trend-label">
-                                <strong>${t.keyword}</strong>
-                                <span>${t.count} hits</span>
-                            </div>
-                            <div class="trend-bar-bg">
-                                <div class="trend-bar-fill legacy-inline-qdc8mx"></div>
-                            </div>
-                        </div>
-                    `;
-                }).join('') || `<p class="legacy-inline-ez4s4">Waiting for conversational queries to aggregate trends...</p>`;
-
-                // Density
-                const densityDiv = document.getElementById('density-bars');
-                densityDiv.innerHTML = data.density.map(d => {
-                    const percent = Math.min(100, (d.providersCount / 10) * 100);
-                    return `
-                        <div class="trend-bar-container">
-                            <div class="trend-label">
-                                <strong>${d.region}</strong>
-                                <span>${d.providersCount} active profiles</span>
-                            </div>
-                            <div class="trend-bar-bg">
-                                <div class="trend-bar-fill blue legacy-inline-qdc8mx"></div>
-                            </div>
-                        </div>
-                    `;
-                }).join('') || `<p class="legacy-inline-ez4s4">No regional profile data distributed.</p>`;
-            }).catch(e => console.error('Analytics trends error:', e));
-
-            // CMS, Disputes, and Support Tickets Loaders
-            loadCmsList();
-            loadDisputesList();
-            loadTicketsList();
-            loadPlatformStats();
-        }
-
-        function loadPlatformStats() {
-            fetch('/api/admin/stats')
-                .then(res => res.json())
-                .then(data => {
-                    const requests = data.economic_requests || {};
-                    const reminders = data.reminders || {};
-                    const checkIns = data.check_ins || {};
-                    const openStatuses = ['requested', 'awaiting_match', 'quoting', 'quoted', 'partially_matched', 'matched', 'in_progress', 'disputed'];
-                    const openRequests = openStatuses.reduce((total, status) => total + Number(requests[status] || 0), 0);
-                    const unreadNotifications = Number(data.unread_internal_notifications || 0);
-                    const activeReminders = Number(reminders.active || 0);
-                    const activeCheckIns = Number(checkIns.active || 0);
-                    document.getElementById('platform-unread-notifications').innerText = unreadNotifications;
-                    document.getElementById('platform-active-reminders').innerText = activeReminders;
-                    document.getElementById('platform-active-checkins').innerText = activeCheckIns;
-                    document.getElementById('platform-open-requests').innerText = openRequests;
-                    document.getElementById('platform-completed-requests').innerText = Number(requests.completed || 0);
-                    document.getElementById('platform-observability-stream').textContent = `Internal queue: ${unreadNotifications} unread notification(s). Active reminders: ${activeReminders}. Active safety check-ins: ${activeCheckIns}.`;
-                })
-                .catch(err => {
-                    console.error('Error loading admin observability metrics:', err);
-                    document.getElementById('platform-observability-stream').textContent = 'Internal observability is temporarily unavailable.';
-                });
-        }
-
-        // Skill Flow Actions
-        function openSkillFlowModal() {
-            document.getElementById('flow-modal-title').innerText = 'Create New Skill Flow';
-            document.getElementById('flow-skill').value = '';
-            document.getElementById('flow-skill').disabled = false;
-            document.getElementById('flow-questions').value = '[]';
-            document.getElementById('flow-action').value = 'direct_phone_bridge';
-            document.getElementById('flow-payment').value = 'subscription_plus';
-            document.getElementById('flow-instructions').value = '';
-            document.getElementById('skill-flow-modal').classList.add('active');
-        }
-
-        function closeSkillFlowModal() {
-            document.getElementById('skill-flow-modal').classList.remove('active');
-        }
-
-        function editSkillFlow(fEscaped) {
-            const f = JSON.parse(fEscaped);
-            document.getElementById('flow-modal-title').innerText = 'Update Skill Flow';
-            document.getElementById('flow-skill').value = f.skill;
-            document.getElementById('flow-skill').disabled = true;
-            document.getElementById('flow-questions').value = f.question_set;
-            document.getElementById('flow-action').value = f.post_match_action;
-            document.getElementById('flow-payment').value = f.payment_model;
-            document.getElementById('flow-instructions').value = f.fulfillment_instructions || '';
-            document.getElementById('skill-flow-modal').classList.add('active');
-        }
-
-        function saveSkillFlow(e) {
-            e.preventDefault();
-            const skill = document.getElementById('flow-skill').value;
-            const question_set = document.getElementById('flow-questions').value;
-            const post_match_action = document.getElementById('flow-action').value;
-            const payment_model = document.getElementById('flow-payment').value;
-            const fulfillment_instructions = document.getElementById('flow-instructions').value;
-
-            // Validate questions is valid JSON
-            try {
-                JSON.parse(question_set);
-            } catch (err) {
-                alert('Question Set must be a valid JSON array of strings!');
-                return;
-            }
-
-            fetch('/api/admin/skill-flows', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ skill, question_set, post_match_action, payment_model, fulfillment_instructions })
-            }).then(res => res.json()).then(data => {
-                closeSkillFlowModal();
-                loadConsoleData();
-            }).catch(err => {
-                console.error(err);
-                alert('Failed to save skill flow');
-            });
-        }
-
-        function deleteSkillFlow(skill) {
-            if (!confirm(`Are you sure you want to delete the skill flow for "${skill}"?`)) return;
-            fetch(`/api/admin/skill-flows/${skill}`, { method: 'DELETE' })
-                .then(res => res.json())
-                .then(() => loadConsoleData())
-                .catch(err => console.error(err));
-        }
-
-        // Ad Campaign Actions
-        function openAdModal() {
-            document.getElementById('ad-title').value = '';
-            document.getElementById('ad-desc').value = '';
-            document.getElementById('ad-image').value = '';
-            document.getElementById('ad-keyword').value = '';
-            document.getElementById('ad-budget').value = '100';
-            document.getElementById('ad-modal').classList.add('active');
-        }
-
-        function closeAdModal() {
-            document.getElementById('ad-modal').classList.remove('active');
-        }
-
-        function saveAdCampaign(e) {
-            e.preventDefault();
-            const title = document.getElementById('ad-title').value;
-            const desc = document.getElementById('ad-desc').value;
-            const imageUrl = document.getElementById('ad-image').value;
-            const targetKeyword = document.getElementById('ad-keyword').value;
-            const creditsBudget = document.getElementById('ad-budget').value;
-
-            fetch('/api/ads', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, desc, imageUrl, targetKeyword, creditsBudget })
-            }).then(res => res.json()).then(() => {
-                closeAdModal();
-                loadConsoleData();
-            }).catch(err => {
-                console.error(err);
-                alert('Failed to launch ad campaign');
-            });
-        }
-
-        function escapeHtml(str) {
-            return str
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
-
-        // CMS Actions & Loaders
-        function loadCmsList() {
-            fetch('/api/content').then(res => res.json()).then(data => {
-                const tbody = document.getElementById('cms-tbody');
-                tbody.innerHTML = data.map(page => `
-                    <tr>
-                        <td><strong>${page.slug}</strong></td>
-                        <td>${page.title}</td>
-                        <td><span class="badge badge-active legacy-inline-lbeqa">${page.type}</span></td>
-                        <td>${page.author || 'Admin'}</td>
-                        <td class="legacy-inline-i0oyy0">
-                            <button class="btn-action legacy-inline-r67ggt" onclick="editCmsPage('${escapeHtml(JSON.stringify(page))}')">Edit</button>
-                            <button class="btn-action btn-secondary legacy-inline-1n0fws7" onclick="deleteCmsPage('${page.slug}')">Delete</button>
-                        </td>
-                    </tr>
-                `).join('') || `<tr><td colspan="5" class="legacy-inline-f5comt">No CMS content found. Click create page to add!</td></tr>`;
-            }).catch(e => console.error('CMS load error:', e));
-        }
-
-        function openCmsModal() {
-            document.getElementById('cms-modal-title').innerText = 'Create CMS Page';
-            document.getElementById('cms-slug').value = '';
-            document.getElementById('cms-slug').disabled = false;
-            document.getElementById('cms-title').value = '';
-            document.getElementById('cms-type').value = 'help';
-            document.getElementById('cms-author').value = 'Admin';
-            document.getElementById('cms-body').value = '';
-            document.getElementById('cms-modal').classList.add('active');
-        }
-
-        function closeCmsModal() {
-            document.getElementById('cms-modal').classList.remove('active');
-        }
-
-        function editCmsPage(pEscaped) {
-            const page = JSON.parse(pEscaped);
-            document.getElementById('cms-modal-title').innerText = 'Edit CMS Page';
-            document.getElementById('cms-slug').value = page.slug;
-            document.getElementById('cms-slug').disabled = true;
-            document.getElementById('cms-title').value = page.title;
-            document.getElementById('cms-type').value = page.type;
-            document.getElementById('cms-author').value = page.author || 'Admin';
-            document.getElementById('cms-body').value = page.body;
-            document.getElementById('cms-modal').classList.add('active');
-        }
-
-        function deleteCmsPage(slug) {
-            if (!confirm(`Are you sure you want to delete the page "${slug}"?`)) return;
-            fetch(`/api/admin/content/${slug}`, { method: 'DELETE' })
-                .then(res => res.json())
-                .then(() => loadCmsList())
-                .catch(err => console.error(err));
-        }
-
-        function saveCmsPage(e) {
-            e.preventDefault();
-            const slug = document.getElementById('cms-slug').value;
-            const title = document.getElementById('cms-title').value;
-            const type = document.getElementById('cms-type').value;
-            const author = document.getElementById('cms-author').value;
-            const body = document.getElementById('cms-body').value;
-
-            fetch('/api/admin/content', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ slug, title, type, author, body })
-            }).then(res => res.json()).then(() => {
-                closeCmsModal();
-                loadCmsList();
-            }).catch(err => {
-                console.error(err);
-                alert('Failed to save CMS page');
-            });
-        }
-
-        // Disputes Actions & Loaders
-        function loadDisputesList() {
-            fetch('/api/admin/tickets?type=dispute').then(res => res.json()).then(data => {
-                const tbody = document.getElementById('disputes-tbody');
-                tbody.innerHTML = data.map(d => `
-                    <tr>
-                        <td><strong>#${d.id}</strong></td>
-                        <td>${d.phone}</td>
-                        <td>Order #${d.order_id || 'N/A'}</td>
-                        <td class="legacy-inline-1xb426h">${d.reason}</td>
-                        <td><span class="badge ${d.status === 'open' ? 'badge-active' : d.status === 'escalated' ? 'badge-spent' : 'badge-spent'} legacy-inline-43oemz">${d.status}</span></td>
-                        <td class="legacy-inline-i0oyy0">
-                            ${d.status === 'open' || d.status === 'escalated' ? `
-                                <button class="btn-action legacy-inline-43jt7d" onclick="resolveDisputeAction('${d.id}', 'refund')">Refund</button>
-                                <button class="btn-action legacy-inline-1jq74id" onclick="resolveDisputeAction('${d.id}', 'release')">Release</button>
-                                <button class="btn-action btn-secondary legacy-inline-1cp1wlc" onclick="escalateDisputeAction('${d.id}')">Escalate</button>
-                            ` : `<span class="legacy-inline-8r856a">Resolved</span>`}
-                        </td>
-                    </tr>
-                `).join('') || `<tr><td colspan="6" class="legacy-inline-f5comt">No active disputes.</td></tr>`;
-            }).catch(e => console.error('Disputes load error:', e));
-        }
-
-        function resolveDisputeAction(id, action) {
-            if (!confirm(`Are you sure you want to resolve dispute #${id} with action "${action}"?`)) return;
-            fetch(`/api/admin/disputes/resolve`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ disputeId: id, action })
-            }).then(res => res.json()).then(data => {
-                if (data.success) {
-                    alert('Dispute resolved successfully!');
-                    loadDisputesList();
-                } else {
-                    alert(`Error: ${data.error || 'Failed to resolve dispute'}`);
-                }
-            }).catch(err => console.error(err));
-        }
-
-        function escalateDisputeAction(id) {
-            if (!confirm(`Are you sure you want to escalate dispute #${id} to legal status?`)) return;
-            fetch(`/api/admin/disputes/escalate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ disputeId: id })
-            }).then(res => res.json()).then(data => {
-                if (data.success) {
-                    alert('Dispute escalated to external legal status!');
-                    loadDisputesList();
-                } else {
-                    alert(`Error: ${data.error || 'Failed to escalate dispute'}`);
-                }
-            }).catch(err => console.error(err));
-        }
-
-        // Tickets Actions & Loaders
-        function loadTicketsList() {
-            fetch('/api/admin/tickets?type=support').then(res => res.json()).then(data => {
-                const tbody = document.getElementById('tickets-tbody');
-                tbody.innerHTML = data.map(t => `
-                    <tr>
-                        <td><strong>#${t.id}</strong></td>
-                        <td>${t.phone}</td>
-                        <td class="legacy-inline-rb92jo">${t.reason}</td>
-                        <td><span class="badge ${t.status === 'open' ? 'badge-active' : 'badge-spent'} legacy-inline-3jpix9">${t.status}</span></td>
-                        <td class="legacy-inline-i0oyy0">
-                            ${t.status === 'open' ? `
-                                <button class="btn-action legacy-inline-g48ih" onclick="openTicketReplyModal('${t.id}', '${escapeHtml(t.reason)}')">Reply & Resolve</button>
-                            ` : `<span class="legacy-inline-8r856a">Resolved</span>`}
-                        </td>
-                    </tr>
-                `).join('') || `<tr><td colspan="5" class="legacy-inline-f5comt">No support tickets active.</td></tr>`;
-            }).catch(e => console.error('Tickets load error:', e));
-        }
-
-        function openTicketReplyModal(id, reason) {
-            document.getElementById('reply-ticket-id').value = id;
-            document.getElementById('reply-ticket-message').innerText = reason;
-            document.getElementById('reply-content').value = '';
-            document.getElementById('ticket-reply-modal').classList.add('active');
-        }
-
-        function closeTicketReplyModal() {
-            document.getElementById('ticket-reply-modal').classList.remove('active');
-        }
-
-        function submitTicketReply(e) {
-            e.preventDefault();
-            const disputeId = document.getElementById('reply-ticket-id').value;
-            const replyMessage = document.getElementById('reply-content').value;
-
-            fetch('/api/admin/tickets/reply', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ disputeId, replyMessage })
-            }).then(res => res.json()).then(data => {
-                if (data.success) {
-                    alert('Reply sent successfully and ticket marked as resolved!');
-                    closeTicketReplyModal();
-                    loadTicketsList();
-                } else {
-                    alert(`Error: ${data.error || 'Failed to send reply'}`);
-                }
-            }).catch(err => {
-                console.error(err);
-                alert('Error replying to ticket');
-            });
-        }
-
-        // Initialize Console on window load and set sidebar state
-        window.onload = function() {
-            // Apply persistent sidebar preference
-            const isCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('main-content');
-            const toggleIcon = document.getElementById('sidebar-toggle-icon');
-            const buttonText = document.getElementById('toggle-button-text');
-
-            if (isCollapsed) {
-                sidebar.classList.add('collapsed');
-                mainContent.classList.add('expanded');
-                if (toggleIcon) {
-                    toggleIcon.innerHTML = `
-                        <polyline points="13 17 18 12 13 7"></polyline>
-                        <polyline points="6 17 11 12 6 7"></polyline>
-                    `;
-                }
-                if (buttonText) buttonText.innerText = '';
-            } else {
-                sidebar.classList.remove('collapsed');
-                mainContent.classList.remove('expanded');
-                if (toggleIcon) {
-                    toggleIcon.innerHTML = `
-                        <polyline points="11 17 6 12 11 7"></polyline>
-                        <polyline points="18 17 13 12 18 7"></polyline>
-                    `;
-                }
-                if (buttonText) buttonText.innerText = 'Collapse Menu';
-            }
-
-            loadConsoleData();
-        };
-
-        // Auto-refresh console every 20 seconds
-        setInterval(loadConsoleData, 20000);
-    </script>
-    </div>
-    <script>
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('main-content');
-            const toggleIcon = document.getElementById('sidebar-toggle-icon');
-            const buttonText = document.getElementById('toggle-button-text');
-
-            sidebar.classList.toggle('collapsed');
-            mainContent.classList.toggle('expanded');
-
-            const isCollapsed = sidebar.classList.contains('collapsed');
-            localStorage.setItem('sidebar_collapsed', isCollapsed);
-
-            if (isCollapsed) {
-                if (toggleIcon) {
-                    toggleIcon.innerHTML = `
-                        <polyline points="13 17 18 12 13 7"></polyline>
-                        <polyline points="6 17 11 12 6 7"></polyline>
-                    `;
-                }
-                if (buttonText) buttonText.innerText = '';
-            } else {
-                if (toggleIcon) {
-                    toggleIcon.innerHTML = `
-                        <polyline points="11 17 6 12 11 7"></polyline>
-                        <polyline points="18 17 13 12 18 7"></polyline>
-                    `;
-                }
-                if (buttonText) buttonText.innerText = 'Collapse Menu';
-            }
-        }
-    </script>
+      <article class="admin-panel">
+        <div class="admin-panel__header"><div><p class="admin-eyebrow">Presence</p><h2>Live provider signals</h2></div></div>
+        <div class="admin-presence-list" id="presence-list"><p class="admin-empty-state">Loading provider presence…</p></div>
+      </article>
+    </section>
+  </main>
+  <script src="/admin/dashboard.js" defer></script>
 </body>
 </html>

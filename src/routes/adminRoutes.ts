@@ -90,9 +90,26 @@ router.get('/stats', authenticateAdmin, async (_req: AuthRequest, res) => {
       notificationsCount = Number(notifRes[0]?.values[0]?.[0] || 0);
     } catch {}
 
+    const countRows = (table: string, where = ''): number => {
+      try {
+        const result = db.exec(`SELECT COUNT(*) AS count FROM ${table}${where}`);
+        return Number(result[0]?.values[0]?.[0] || 0);
+      } catch { return 0; }
+    };
+    const profiles = countRows('memory_profiles');
+    const availableProviders = countRows('memory_profiles', ' WHERE is_available = 1');
+    const messages = countRows('messages');
+    const pointsLedgerEntries = countRows('credit_transactions');
+
     res.json({
       success: true,
       timestamp: new Date().toISOString(),
+      summary: { profiles, availableProviders, messages, pointsLedgerEntries },
+      // Backward-compatible fields for existing authenticated admin views.
+      users: profiles,
+      providers: availableProviders,
+      messages,
+      credits: pointsLedgerEntries,
       economic_requests: economicRequests,
       reminders,
       check_ins: checkIns,
@@ -264,26 +281,7 @@ router.post('/disputes/escalate', authenticateAdmin, async (req: AuthRequest, re
   }
 });
 
-// ── Stats / analytics ───────────────────────────────────────────────────
-
-router.get('/stats', authenticateAdmin, async (_req: AuthRequest, res) => {
-  try {
-    const db = await getDb();
-    const uRes = db.exec(`SELECT COUNT(*) FROM memory_profiles`);
-    const pRes = db.exec(`SELECT COUNT(*) FROM memory_profiles WHERE is_available = 1`);
-    const mRes = db.exec(`SELECT COUNT(*) FROM messages`);
-    const cRes = db.exec(`SELECT COUNT(*) FROM credit_transactions`);
-
-    res.json({
-      users: uRes[0]?.values[0][0] || 0,
-      providers: pRes[0]?.values[0][0] || 0,
-      messages: mRes[0]?.values[0][0] || 0,
-      credits: cRes[0]?.values[0][0] || 0,
-    });
-  } catch (e) {
-    res.status(500).json({ error: 'Failed to fetch stats' });
-  }
-});
+// ── Analytics ───────────────────────────────────────────────────────────
 
 router.get('/analytics/trends', authenticateAdmin, async (_req: AuthRequest, res) => {
   try {
