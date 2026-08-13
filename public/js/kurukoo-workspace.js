@@ -456,8 +456,8 @@
         catch (_) { dismiss.disabled = false; }
       });
       const actions = document.createElement('span'); actions.append(action, document.createTextNode(' · '), dismiss);
-      const source = opportunity.sourceType === 'ad_campaign' ? (opportunity.disclosure || 'Sponsored placement') : 'Request follow-up';
-      list.appendChild(makeDataCard({ eyebrow: source, title: String(opportunity.title || 'Suggested next step'), detail: String(opportunity.subtitle || 'Review this evidence-backed suggestion in Kurukoo.'), state: 'Not a provider, price, or fulfilment confirmation', action: actions }));
+      const source = opportunity.sourceType === 'ad_campaign' ? (opportunity.disclosure || 'Sponsored placement') : opportunity.sourceType === 'topic' ? 'Community-shared context' : 'Request follow-up';
+      list.appendChild(makeDataCard({ eyebrow: source, title: String(opportunity.title || 'Suggested next step'), detail: String(opportunity.subtitle || 'Review this evidence-backed suggestion in Kurukoo.'), state: opportunity.sourceType === 'topic' ? 'Not a verified fact, provider, price, or fulfilment confirmation' : 'Not a provider, price, or fulfilment confirmation', action: actions }));
     });
     const nextReminder = reminders[0];
     const recentRequest = requests[0];

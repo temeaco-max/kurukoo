@@ -13,6 +13,7 @@ process.env.JWT_SECRET = 'opportunity_lifecycle_test_secret_at_least_32_chars';
 const { app } = await import('../src/index.js');
 const { getDb } = await import('../src/database.js');
 const { createOpenIntention } = await import('../src/services/deferredRequestService.js');
+const { getDailyPick } = await import('../src/services/dailyPicks.js');
 
 const token = (phone: string) => jwt.sign({ phone, role: 'user' }, process.env.JWT_SECRET!, { algorithm: 'HS256', expiresIn: '10m' });
 const headers = (phone: string) => ({ Authorization: `Bearer ${token(phone)}`, 'Content-Type': 'application/json' });
@@ -64,7 +65,30 @@ try {
   const afterDismiss = await request('/api/opportunities', { headers: headers(owner) });
   assert.equal(afterDismiss.body.opportunities.length, 0, 'dismissal must suppress the same source opportunity rather than regenerate it');
 
+  const pointsBeforeTopic = Number(db.exec(`SELECT COALESCE(points_balance, 0) FROM memory_profiles WHERE phone=?`, [owner])[0].values[0][0]);
+  const topicId = '00000000-0000-4000-8000-000000000001';
+  db.run(`INSERT INTO topics(id,slug,author_phone,title,body,type,category,skills_json,city,lga,status,published_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)`, [
+    topicId, 'safe-plumber-repair-questions-ikeja', owner,
+    'Safe plumber repair questions in Ikeja',
+    'This community-shared guide collects cautious questions about plumber repair in Ikeja. It explains how to ask for a written scope, compare a provider quote, and use Kurukoo for a separate supported next step. It does not confirm any named provider, current availability, price, booking, payment, delivery, repair outcome, or fulfilment. Treat it as a starting point for discussion and verify important details independently before acting.',
+    'guide', 'repairs-maintenance', JSON.stringify(['plumber']), 'Ikeja', 'Ikeja', 'public',
+  ]);
+  const topicFeed = await request('/api/opportunities', { headers: headers(owner) });
+  assert.equal(topicFeed.response.status, 200, topicFeed.body.error);
+  const topicOpportunity = (topicFeed.body.opportunities || []).find((item: any) => item.sourceType === 'topic');
+  assert.ok(topicOpportunity, 'a meaningful public Topic may project through the existing owner-scoped opportunity feed');
+  assert.equal(topicOpportunity.sourceId, topicId);
+  assert.equal(topicOpportunity.disclosure, 'Community-shared context');
+  assert.equal(topicOpportunity.ctaLink, '/chat?topic=safe-plumber-repair-questions-ikeja');
+  assert.match(topicOpportunity.subtitle, /not verified provider, price, availability/i);
+  assert.doesNotMatch(`${topicOpportunity.title} ${topicOpportunity.subtitle}`, /₦|bonus|confirmed quote|delivery available/i, 'Topic Daily Picks must not fabricate a commercial or fulfilment fact');
+  const legacyPick = await getDailyPick(owner);
+  assert.equal(legacyPick.kind, 'opportunity', 'the legacy single-pick helper must project canonical opportunities rather than fabricate products');
+  assert.equal((legacyPick as any).sourceType, 'topic');
+  const topicPoints = db.exec(`SELECT COALESCE(points_balance, 0) FROM memory_profiles WHERE phone=?`, [owner]);
+  assert.equal(Number(topicPoints[0].values[0][0]), pointsBeforeTopic, 'a Topic-derived Daily Pick must not award Points');
   db.run(`UPDATE open_intentions SET expires_at=datetime('now','-1 minute') WHERE id=? AND phone=?`, [intention.id, owner]);
+
   const expiredOwner = '+2347000000773';
   db.run('INSERT INTO memory_profiles(phone,name,country) VALUES (?,?,?)', [expiredOwner, 'Expired owner', 'ng']);
   const expired = await createOpenIntention(expiredOwner, 'expired repair', '{}', { ttlDays: 1 });
@@ -73,7 +97,7 @@ try {
   assert.equal(expiredFeed.body.opportunities.length, 0, 'expired deferred requests must not produce a suggestion');
 
   console.log('Opportunity lifecycle regression passed');
-  console.log('Verified: authenticated owner isolation, canonical deferred evidence, duplicate suppression, no fabricated supply/demand/price/reward, dismissal, and expiry.');
+  console.log('Verified: authenticated owner isolation, canonical deferred and public Topic evidence, duplicate suppression, labelled community-context handoff, no fabricated supply/demand/price/reward, dismissal, and expiry.');
 } finally {
   await new Promise<void>((resolve) => server.close(() => resolve()));
 }

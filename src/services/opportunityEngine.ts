@@ -1,6 +1,7 @@
 import { getDb, saveDb } from '../database.js';
 import { getIntentions } from './deferredRequestService.js';
 import { getAdCampaigns } from './adManager.js';
+import { listPublicTopics } from './topicService.js';
 
 /**
  * Owner-scoped, evidence-backed suggestions for existing Daily Picks surfaces.
@@ -20,7 +21,7 @@ export interface Opportunity {
   businessValue: number;
   score?: number;
   status: 'sent' | 'viewed' | 'acted' | 'dismissed';
-  sourceType: 'deferred_intention' | 'ad_campaign';
+  sourceType: 'deferred_intention' | 'ad_campaign' | 'topic';
   sourceId: string;
   disclosure?: string;
   expiresAt: string;
@@ -50,6 +51,20 @@ function opportunityExpiry(sourceExpiry: unknown, fallbackHours = 24): string {
 
 function promptLink(prompt: string): string {
   return `/chat?prompt=${encodeURIComponent(prompt)}`;
+}
+
+function topicLink(slug: string): string {
+  return `/chat?topic=${encodeURIComponent(slug)}`;
+}
+
+function meaningfulTokens(value: unknown): Set<string> {
+  return new Set(String(value || '').toLowerCase().match(/[a-z0-9]{4,}/g)?.filter((token) => !['continue', 'your', 'request', 'with', 'from', 'this', 'that', 'about', 'community', 'kurukoo'].includes(token)) || []);
+}
+
+function overlap(left: Set<string>, right: Set<string>): number {
+  let count = 0;
+  for (const token of left) if (right.has(token)) count += 1;
+  return count;
 }
 
 export async function initOpportunityTable(): Promise<void> {
@@ -113,6 +128,36 @@ async function deferredCandidates(phone: string): Promise<Opportunity[]> {
     });
 }
 
+async function topicCandidates(phone: string, intentionText: string[]): Promise<Opportunity[]> {
+  const interest = meaningfulTokens(intentionText.join(' '));
+  if (!interest.size) return [];
+  const topics = await listPublicTopics({ limit: 100 });
+  return topics
+    .filter((topic: any) => {
+      // Match only substantive, taxonomised public context. This is a source-quality gate, not a Topic ranking system.
+      if (!topic?.slug || !topic?.category || !Array.isArray(topic.skills) || !topic.skills.length) return false;
+      if (!['question', 'guide', 'review', 'local_report', 'price_report', 'recommendation', 'experience'].includes(String(topic.type))) return false;
+      if (String(topic.title || '').trim().length < 20 || String(topic.body || '').trim().length < 240) return false;
+      return overlap(interest, meaningfulTokens(`${topic.title} ${topic.body} ${topic.category} ${(topic.skills || []).join(' ')}`)) >= 2;
+    })
+    .slice(0, 3)
+    .map((topic: any) => ({
+      phone,
+      type: 'daily_pick' as const,
+      title: String(topic.title).slice(0, 160),
+      subtitle: `Community-shared context in ${String(topic.category).replace(/-/g, ' ')}. It is not verified provider, price, availability, booking, payment, delivery, or fulfilment information.`,
+      ctaText: 'Discuss in Web Chat',
+      ctaLink: topicLink(String(topic.slug)),
+      urgency: 0.25,
+      businessValue: 0,
+      status: 'sent' as const,
+      sourceType: 'topic' as const,
+      sourceId: String(topic.id),
+      disclosure: 'Community-shared context',
+      expiresAt: opportunityExpiry(undefined, 12),
+    }));
+}
+
 async function sponsoredCandidates(phone: string, intentionText: string[]): Promise<Opportunity[]> {
   const haystack = intentionText.join(' ').toLowerCase();
   if (!haystack) return [];
@@ -138,7 +183,9 @@ async function sponsoredCandidates(phone: string, intentionText: string[]): Prom
 
 async function storeOpportunity(opportunity: Opportunity): Promise<Opportunity> {
   const db = await getDb();
-  const idempotencyKey = `${opportunity.sourceType}:${opportunity.sourceId}`;
+  const idempotencyKey = opportunity.sourceType === 'topic'
+    ? `topic:${opportunity.sourceId}:${new Date().toISOString().slice(0, 10)}`
+    : `${opportunity.sourceType}:${opportunity.sourceId}`;
   db.run(`INSERT OR IGNORE INTO proactive_opportunities
     (phone,type,title,subtitle,cta_text,cta_link,urgency,business_value,status,source_type,source_id,idempotency_key,disclosure,expires_at,created_at,updated_at)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`, [
@@ -159,7 +206,7 @@ function rowToOpportunity(row: Record<string, unknown>): Opportunity {
     id: Number(row.id), phone: String(row.phone), type: String(row.type) === 'daily_pick' ? 'daily_pick' : 'market_intel',
     title: String(row.title), subtitle: String(row.subtitle), ctaText: String(row.cta_text), ctaLink: String(row.cta_link),
     urgency: Number(row.urgency || 0), businessValue: Number(row.business_value || 0), status: String(row.status) as Opportunity['status'],
-    sourceType: String(row.source_type) === 'ad_campaign' ? 'ad_campaign' : 'deferred_intention', sourceId: String(row.source_id || ''),
+    sourceType: String(row.source_type) === 'ad_campaign' ? 'ad_campaign' : String(row.source_type) === 'topic' ? 'topic' : 'deferred_intention', sourceId: String(row.source_id || ''),
     disclosure: row.disclosure ? String(row.disclosure) : undefined, expiresAt: String(row.expires_at || ''),
     createdAt: row.created_at ? String(row.created_at) : undefined, updatedAt: row.updated_at ? String(row.updated_at) : undefined,
   };
@@ -171,8 +218,10 @@ export async function generateProactiveOpportunities(phone: string): Promise<Opp
   if (!owner) throw new Error('Authenticated owner is required');
   await initOpportunityTable();
   const deferred = await deferredCandidates(owner);
-  const sponsored = await sponsoredCandidates(owner, deferred.map((item) => item.title));
-  const candidates = [...deferred, ...sponsored].map((item) => ({ ...item, score: score(item) }))
+  const intentText = deferred.map((item) => item.title);
+  const topics = await topicCandidates(owner, intentText);
+  const sponsored = await sponsoredCandidates(owner, intentText);
+  const candidates = [...deferred, ...topics, ...sponsored].map((item) => ({ ...item, score: score(item) }))
     .sort((left, right) => (right.score || 0) - (left.score || 0)).slice(0, 3);
   const stored: Opportunity[] = [];
   for (const candidate of candidates) stored.push(await storeOpportunity(candidate));
