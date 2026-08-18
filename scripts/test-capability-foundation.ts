@@ -1,3 +1,5 @@
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
 import { getKnownSkills } from '../src/services/skillFlows.js';
 import { ensureCapabilityFoundation } from '../src/services/capabilityFoundation.js';
 import { resolveSkillCapabilityPlan } from '../src/services/capabilityFoundationIntegration.js';
@@ -25,6 +27,9 @@ async function main(): Promise<void> {
   for (const action of requiredPortfolioActions) if (!portfolio.descriptor.actions.includes(action)) throw new Error(`Capability portfolio action missing: ${action}`);
   const registry = validateCapabilityRegistry();
   if (!registry.valid) throw new Error(`Capability registry invalid: ${JSON.stringify(registry)}`);
+
+  const tsx = path.join(process.cwd(), 'node_modules', '.bin', 'tsx');
+  execFileSync(tsx, ['scripts/test-capability-portfolio.ts'], { stdio: 'inherit', env: process.env });
   console.log(`Capability foundation passed: ${skills.length} persisted skills plus Prayer and Capability Portfolio are composed over the canonical capability fabric.`);
 }
 
