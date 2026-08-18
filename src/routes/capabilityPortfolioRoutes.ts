@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticateUser, type AuthRequest } from '../middleware/auth.js';
 import { ensureCapability, listCapabilityPortfolio, capabilityPortfolioSummary, setCapabilityState, isKnownSkill } from '../services/capabilityPortfolioService.js';
+import { activatePulse, endPulseSession } from '../services/nearbyPulse.js';
 
 const router = Router();
 router.use(authenticateUser);
@@ -45,8 +46,31 @@ router.patch('/:skill', async (req: AuthRequest, res) => {
   const allowedAvailability = ['offline','available','live'];
   if (status !== undefined && !allowedStatus.includes(status)) return res.status(400).json({ error: 'Invalid capability status' });
   if (availability !== undefined && !allowedAvailability.includes(availability)) return res.status(400).json({ error: 'Invalid capability availability' });
+  if (availability === 'live') return res.status(400).json({ error: 'Use the canonical /:skill/live route with explicit coordinates to start Pulse.' });
   const capability = await setCapabilityState(phone, String(req.params.skill), { status, availability, kind: req.body?.kind, metadata: req.body?.metadata });
   res.json({ success: true, capability });
+});
+
+router.post('/:skill/live', async (req: AuthRequest, res) => {
+  const phone = owner(req);
+  if (!phone) return res.status(401).json({ error: 'Authenticated owner required' });
+  const skill = String(req.params.skill || '').trim().toLowerCase();
+  const lat = Number(req.body?.lat); const lng = Number(req.body?.lng);
+  if (!skill || !Number.isFinite(lat) || !Number.isFinite(lng)) return res.status(400).json({ error: 'skill, lat and lng are required' });
+  const result = await activatePulse(phone, skill, lat, lng);
+  if (!result.success) return res.status(403).json({ success: false, ...result });
+  const capability = await setCapabilityState(phone, skill, { availability: 'live', status: 'active' });
+  res.json({ success: true, capability, pulse: result });
+});
+
+router.delete('/:skill/live', async (req: AuthRequest, res) => {
+  const phone = owner(req);
+  if (!phone) return res.status(401).json({ error: 'Authenticated owner required' });
+  const skill = String(req.params.skill || '').trim().toLowerCase();
+  if (!skill) return res.status(400).json({ error: 'skill is required' });
+  await endPulseSession(phone, skill);
+  const capability = await setCapabilityState(phone, skill, { availability: 'offline' });
+  res.json({ success: true, capability, pulse: { active: false, skill } });
 });
 
 export default router;
