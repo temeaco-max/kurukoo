@@ -24,15 +24,19 @@ export interface PublicPulseProvider extends Omit<ActivePulseProvider, 'lat' | '
     live_now: true;
 }
 
-export async function canActivatePulse(phone: string): Promise<boolean> {
+export async function canActivatePulse(phone: string, skill?: string): Promise<boolean> {
     const db = await getDb();
-    const stmt = db.prepare(`SELECT operation_mode FROM skills WHERE phone = ?`);
-    let isMobile = false;
+    const stmt = db.prepare(skill
+        ? `SELECT operation_mode, is_available FROM skills WHERE phone = ? AND skill = ? LIMIT 1`
+        : `SELECT operation_mode, is_available FROM skills WHERE phone = ?`);
+    stmt.bind(skill ? [phone, skill] : [phone]);
+    let eligible = false;
     while (stmt.step()) {
-        if (stmt.getAsObject().operation_mode === 'mobile') { isMobile = true; break; }
+        const row = stmt.getAsObject() as Record<string, unknown>;
+        if (row.operation_mode === 'mobile' && Number(row.is_available ?? 1) === 1) { eligible = true; break; }
     }
     stmt.free();
-    return isMobile;
+    return eligible;
 }
 
 export interface PulseReadiness {
@@ -40,6 +44,7 @@ export interface PulseReadiness {
     active: boolean;
     eligibleToBroadcast: boolean;
     role: 'provider' | 'user';
+    activeSkills?: string[];
     nudge?: string;
 }
 
@@ -55,29 +60,31 @@ export async function getPulseReadiness(phone: string): Promise<PulseReadiness> 
         available = Number(profile.is_available || 0) === 1;
     }
     profileStmt.free();
+    const activeProviders = await getActivePulseProviders();
+    const activeSkills = activeProviders.filter(provider => provider.phone === phone).map(provider => provider.skill);
     const eligibleToBroadcast = verifiedProvider && available && await canActivatePulse(phone);
-    const active = (await getActivePulseProviders()).some(provider => provider.phone === phone);
     return {
         radarDefaultOn: true,
-        active,
+        active: activeSkills.length > 0,
         eligibleToBroadcast,
         role: verifiedProvider ? 'provider' : 'user',
-        nudge: active
-            ? 'You are live on Nearby Pulse. Kurukoo keeps your public location fuzzed and shows only confirmed availability.'
+        activeSkills,
+        nudge: activeSkills.length
+            ? `You are live on Nearby Pulse for ${activeSkills.join(', ')}. Kurukoo keeps your public location fuzzed and each capability's availability separate.`
             : eligibleToBroadcast
-                ? 'Nearby Radar is ready. Go Live only when you want nearby people to discover your available service.'
-                : 'Nearby Radar is ready for local discovery. Tell Kurukoo what you need nearby, or complete provider verification before broadcasting yourself.',
+                ? 'Nearby Radar is ready. Go Live only for the skill you want nearby people to discover.'
+                : 'Nearby Radar is ready for local discovery. Complete provider verification and capability setup before broadcasting yourself.',
     };
 }
 
 export async function activatePulse(phone: string, skill: string, lat: number, lng: number): Promise<{ success: boolean; message: string }> {
-    if (!await canActivatePulse(phone)) return { success: false, message: 'Cannot Go Live. Your skills are not registered as mobile operation mode.' };
+    const normalizedSkill = String(skill || '').trim().slice(0, 120);
+    if (!normalizedSkill) return { success: false, message: 'A service skill is required before going live.' };
+    if (!await canActivatePulse(phone, normalizedSkill)) return { success: false, message: `Cannot Go Live for ${normalizedSkill}. That skill is not registered as a mobile, available capability.` };
     const latitude = Number(lat); const longitude = Number(lng);
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
         return { success: false, message: 'Nearby Pulse needs an explicit valid location before it can be activated. No location was inferred.' };
     }
-    const normalizedSkill = String(skill || '').trim().slice(0, 120);
-    if (!normalizedSkill) return { success: false, message: 'A service skill is required before going live.' };
     const db = await getDb();
     const profileStmt = db.prepare(`SELECT subscription_tier, verified_provider, is_available FROM memory_profiles WHERE phone = ?`);
     profileStmt.bind([phone]);
@@ -97,16 +104,19 @@ export async function activatePulse(phone: string, skill: string, lat: number, l
         countStmt.free();
         if (sessionCount >= 10) return { success: false, message: 'Nearby Pulse monthly limit reached. Base tier is limited to 5 hours (10 sessions) per month. Upgrade to Plus or Business for unlimited access.' };
     }
-    if (!await deductCredits(phone, 5, 'Nearby Pulse "Go Live" (30 min)')) return { success: false, message: 'Insufficient credits for Nearby Pulse (requires 5 credits).' };
-    db.run(`UPDATE pulse_sessions SET active = 0 WHERE phone = ?`, [phone]);
+    if (!await deductCredits(phone, 5, `Nearby Pulse "Go Live" for ${normalizedSkill} (30 min)`)) return { success: false, message: 'Insufficient credits for Nearby Pulse (requires 5 credits).' };
+    /* Multi-skilled people may be live in several capabilities at once. Replacing
+       only the same skill prevents a barber session from disabling delivery work. */
+    db.run(`UPDATE pulse_sessions SET active = 0 WHERE phone = ? AND skill = ?`, [phone, normalizedSkill]);
     db.run(`INSERT INTO pulse_sessions (phone, skill, lat, lng, expires_at, active) VALUES (?, ?, ?, ?, datetime('now', '+30 minutes'), 1)`, [phone, normalizedSkill, latitude, longitude]);
     saveDb();
-    return { success: true, message: 'Nearby Pulse presence is active for 30 minutes using the location and skill you explicitly supplied. Public discovery is fuzzed; matching and any external contact remain separate, evidence-backed steps.' };
+    return { success: true, message: `${normalizedSkill} is live on Nearby Pulse for 30 minutes. Public discovery is fuzzed; matching and any external contact remain separate, evidence-backed steps.` };
 }
 
-export async function endPulseSession(phone: string): Promise<void> {
+export async function endPulseSession(phone: string, skill?: string): Promise<void> {
     const db = await getDb();
-    db.run(`UPDATE pulse_sessions SET active = 0 WHERE phone = ? AND active = 1`, [phone]);
+    if (skill) db.run(`UPDATE pulse_sessions SET active = 0 WHERE phone = ? AND skill = ? AND active = 1`, [phone, skill]);
+    else db.run(`UPDATE pulse_sessions SET active = 0 WHERE phone = ? AND active = 1`, [phone]);
     saveDb();
 }
 
