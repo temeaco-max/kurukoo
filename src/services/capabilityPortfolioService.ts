@@ -56,6 +56,35 @@ function parseJson(value: unknown): Record<string, unknown> {
   try { return typeof value === 'string' ? JSON.parse(value) : (value as Record<string, unknown>); } catch { return {}; }
 }
 
+async function reconcileFromCanonicalSources(phone: string) {
+  const db = await ensureTable();
+  const skillsStmt = db.prepare(`SELECT skill, confidence, is_available, operation_mode, service_radius_km FROM skills WHERE phone = ?`);
+  skillsStmt.bind([phone]);
+  while (skillsStmt.step()) {
+    const row = skillsStmt.getAsObject() as any;
+    const skill = String(row.skill || '').trim().toLowerCase();
+    if (!skill) continue;
+    const status = Number(row.is_available || 0) === 1 ? 'active' : 'verified';
+    db.run(`INSERT INTO capability_portfolio (id, phone, skill, kind, status, availability, metadata_json)
+      VALUES (?, ?, ?, 'provider', ?, ?, '{}')
+      ON CONFLICT(phone, skill, kind) DO UPDATE SET status=excluded.status, updated_at=CURRENT_TIMESTAMP`,
+      [idFor(phone, skill, 'provider'), phone, skill, status, Number(row.is_available || 0) === 1 ? 'available' : 'offline']);
+  }
+  skillsStmt.free();
+  const profileStmt = db.prepare(`SELECT is_contributor FROM memory_profiles WHERE phone = ? LIMIT 1`);
+  profileStmt.bind([phone]);
+  let contributor = false;
+  if (profileStmt.step()) contributor = Number((profileStmt.getAsObject() as any).is_contributor || 0) === 1;
+  profileStmt.free();
+  if (contributor) {
+    db.run(`INSERT INTO capability_portfolio (id, phone, skill, kind, status, availability, metadata_json)
+      VALUES (?, ?, 'contributor', 'contributor', 'active', 'available', '{}')
+      ON CONFLICT(phone, skill, kind) DO UPDATE SET status='active', updated_at=CURRENT_TIMESTAMP`,
+      [idFor(phone, 'contributor', 'contributor'), phone]);
+  }
+  saveDb();
+}
+
 async function enrich(phone: string, rows: any[]): Promise<CapabilityPortfolioItem[]> {
   const db = await getDb();
   const pulse = new Set<string>();
@@ -72,7 +101,7 @@ async function enrich(phone: string, rows: any[]): Promise<CapabilityPortfolioIt
     const skill = String(row.skill);
     const kind = (row.kind || 'provider') as CapabilityKind;
     const status = (row.status || (verified ? 'verified' : 'discovered')) as CapabilityStatus;
-    const availability = pulse.has(skill) ? 'live' : row.availability === 'available' || available && status === 'active' ? 'available' : 'offline';
+    const availability = pulse.has(skill) ? 'live' : row.availability === 'available' ? 'available' : 'offline';
     return {
       id: String(row.id), phone, skill, kind, status, availability,
       category: getEconomicCategory(skill), confidence: Number(row.confidence || 1),
@@ -89,7 +118,7 @@ async function enrich(phone: string, rows: any[]): Promise<CapabilityPortfolioIt
 }
 
 export async function listCapabilityPortfolio(phone: string): Promise<CapabilityPortfolioItem[]> {
-  await ensureTable();
+  await reconcileFromCanonicalSources(phone);
   const db = await getDb();
   const stmt = db.prepare(`SELECT p.id, p.skill, p.kind, p.status, p.availability, p.metadata_json, s.confidence, s.operation_mode, s.service_radius_km FROM capability_portfolio p LEFT JOIN skills s ON s.phone = p.phone AND s.skill = p.skill WHERE p.phone = ? ORDER BY p.updated_at DESC, p.skill ASC`);
   stmt.bind([phone]);
@@ -110,7 +139,7 @@ export async function ensureCapability(phone: string, skill: string, kind: Capab
   existing.free();
   if (!hasExisting) {
     db.run(`INSERT INTO capability_portfolio (id, phone, skill, kind, status, availability, metadata_json) VALUES (?, ?, ?, ?, 'interested', 'offline', ?)` , [idFor(phone, normalized, kind), phone, normalized, kind, JSON.stringify(metadata)]);
-  } else {
+  } else if (Object.keys(metadata).length) {
     db.run(`UPDATE capability_portfolio SET metadata_json = ?, updated_at = CURRENT_TIMESTAMP WHERE phone = ? AND skill = ? AND kind = ?`, [JSON.stringify(metadata), phone, normalized, kind]);
   }
   saveDb();
@@ -149,5 +178,5 @@ export async function capabilityPortfolioSummary(phone: string) {
 
 export function isKnownSkill(skill: string) {
   const normalized = skill.trim().toLowerCase().replace(/\s+/g, '_');
-  return getKnownSkills().includes(normalized) || ['prayer','life_admin','career','health_navigation','family_care','learning_tutor','home_household','finance_coach','grief_support'].includes(normalized);
+  return getKnownSkills().includes(normalized) || ['mobile_barber','barber','delivery_runner','prayer','life_admin','career','health_navigation','family_care','learning_tutor','home_household','finance_coach','grief_support','contributor'].includes(normalized);
 }
