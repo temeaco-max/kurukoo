@@ -10,6 +10,7 @@ process.env.CREDIT_ECONOMY_ENABLED = 'true';
 const { getDb, saveDb } = await import('../src/database.js');
 const { ensureCapability, listCapabilityPortfolio, setCapabilityState } = await import('../src/services/capabilityPortfolioService.js');
 const { activatePulse, endPulseSession, getActivePulseProviders } = await import('../src/services/nearbyPulse.js');
+const { executeCanonicalCapabilityProposal } = await import('../src/services/canonicalCapabilityExecutor.js');
 
 const phone = `portfolio_${Date.now()}`;
 
@@ -43,7 +44,13 @@ try {
   if (delivery?.availability !== 'offline') throw new Error('Canonical skill availability did not propagate to portfolio.');
   if (barber?.availability === 'offline') throw new Error('Changing one capability unexpectedly changed another.');
 
-  console.log('Capability portfolio passed: one identity can hold provider + contributor capabilities and operate skill-specific Pulse independently.');
+  const inspect = await executeCanonicalCapabilityProposal({ phone, capability: 'capability_portfolio', action: 'inspect', arguments: {}, confirmationGranted: false, channel: 'test', idempotencyKey: `portfolio-inspect-${phone}` });
+  if (inspect.status !== 'completed' || !Array.isArray(inspect.canonicalFacts?.capabilityPortfolio)) throw new Error(`Canonical portfolio inspection failed: ${JSON.stringify(inspect)}`);
+
+  const addResult = await executeCanonicalCapabilityProposal({ phone, capability: 'capability_portfolio', action: 'add', arguments: { skill: 'mobile_barber' }, confirmationGranted: false, channel: 'test', idempotencyKey: `portfolio-add-${phone}` });
+  if (addResult.status !== 'completed') throw new Error(`Canonical portfolio add failed: ${JSON.stringify(addResult)}`);
+
+  console.log('Capability portfolio passed: one identity can hold provider + contributor capabilities, operate skill-specific Pulse independently, and use the canonical capability executor.');
 } finally {
   try { fs.rmSync(dbPath, { force: true }); } catch {}
 }
