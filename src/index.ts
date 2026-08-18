@@ -60,6 +60,7 @@ import webrtcRoutes from './routes/webrtcRoutes.js';
 import systemRoutes from './routes/systemRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
 import voiceRouter from './routes/voiceRouter.js';
+import prayerRoutes from './routes/prayerRoutes.js';
 import qrRouter from './routes/qrRouter.js';
 import agentRouter from './routes/agentRouter.js';
 import fcmRouter from './server.js';
@@ -90,18 +91,7 @@ app.use((_req, res, next) => {
   next();
 });
 app.use(compression({ threshold: 1024 }));
-app.use(express.static(path.join(process.cwd(), 'public'), {
-  index: false,
-  fallthrough: true,
-  setHeaders: (res, filePath) => {
-    const lower = filePath.toLowerCase();
-    if (lower.endsWith('.html') || lower.endsWith('/sw.js') || lower.endsWith('/manifest.json')) {
-      res.setHeader('Cache-Control', 'no-cache, must-revalidate');
-      return;
-    }
-    if (/\.(?:css|js|svg|png|jpe?g|webp|woff2?)$/.test(lower)) res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
-  },
-}));
+app.use(express.static(path.join(process.cwd(), 'public'), { index: false, fallthrough: true, setHeaders: (res, filePath) => { const lower = filePath.toLowerCase(); if (lower.endsWith('.html') || lower.endsWith('/sw.js') || lower.endsWith('/manifest.json')) { res.setHeader('Cache-Control', 'no-cache, must-revalidate'); return; } if (/\.(?:css|js|svg|png|jpe?g|webp|woff2?)$/.test(lower)) res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400'); } }));
 app.use(express.json({ limit: process.env.CHAT_ATTACHMENT_BODY_LIMIT || '35mb', verify: (req, _res, buf) => { (req as any).rawBody = Buffer.from(buf); } }));
 
 app.use('/', systemRoutes);
@@ -115,6 +105,7 @@ app.use('/api', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRouter);
 app.use('/api/voice', voiceRouter);
+app.use('/api/prayer', prayerRoutes);
 app.use('/api/qr', qrRouter);
 app.use('/api/agent', agentRouter);
 app.use('/api/fcm', fcmRouter);
@@ -144,20 +135,9 @@ const host = (process.env.HOST && process.env.HOST !== 'localhost' && process.en
 export { app };
 
 if (process.env.KURUKOO_DISABLE_LISTEN !== 'true') {
-    const server = app.listen(port, host, () => {
-        console.log(`[Kurukoo] HTTP server listening on ${host}:${port}`);
-        if (process.env.KURUKOO_WORKERS !== '0') void startBackgroundServices();
-    });
-    server.on('error', (error) => { console.error('[Kurukoo] HTTP server error:', error); process.exitCode = 1; });
-    let shuttingDown = false;
-    const shutdown = (signal: string) => {
-        if (shuttingDown) return;
-        shuttingDown = true;
-        console.log(`[Kurukoo] Graceful shutdown requested (${signal})`);
-        stopBackgroundServices();
-        server.close((error) => { if (error) { console.error('[Kurukoo] HTTP server shutdown error:', error); process.exitCode = 1; } });
-        setTimeout(() => { console.error('[Kurukoo] Graceful shutdown timeout; forcing exit'); process.exitCode = 1; }, 10_000).unref();
-    };
-    process.once('SIGTERM', () => shutdown('SIGTERM'));
-    process.once('SIGINT', () => shutdown('SIGINT'));
+  const server = app.listen(port, host, () => { console.log(`[Kurukoo] HTTP server listening on ${host}:${port}`); if (process.env.KURUKOO_WORKERS !== '0') void startBackgroundServices(); });
+  server.on('error', (error) => { console.error('[Kurukoo] HTTP server error:', error); process.exitCode = 1; });
+  let shuttingDown = false;
+  const shutdown = (signal: string) => { if (shuttingDown) return; shuttingDown = true; console.log(`[Kurukoo] Graceful shutdown requested (${signal})`); stopBackgroundServices(); server.close((error) => { if (error) { console.error('[Kurukoo] HTTP server shutdown error:', error); process.exitCode = 1; } }); setTimeout(() => { console.error('[Kurukoo] Graceful shutdown timeout; forcing exit'); process.exitCode = 1; }, 10_000).unref(); };
+  process.once('SIGTERM', () => shutdown('SIGTERM')); process.once('SIGINT', () => shutdown('SIGINT'));
 }
