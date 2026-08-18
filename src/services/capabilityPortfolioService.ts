@@ -1,5 +1,6 @@
 import { getDb, saveDb } from '../database.js';
 import { getEconomicCategory, getSkillRequirements, getSkillCapabilities, getKnownSkills } from './skillFlows.js';
+import { ensureCapabilityPortfolioRegistration } from './capabilityPortfolioFoundation.js';
 
 export type CapabilityKind = 'provider' | 'contributor' | 'native' | 'agent';
 export type CapabilityStatus = 'discovered' | 'interested' | 'onboarding' | 'verified' | 'active' | 'paused' | 'suspended';
@@ -23,6 +24,8 @@ export interface CapabilityPortfolioItem {
   requirements: ReturnType<typeof getSkillRequirements>;
   capabilities: ReturnType<typeof getSkillCapabilities>;
 }
+
+ensureCapabilityPortfolioRegistration();
 
 function table() {
   return `CREATE TABLE IF NOT EXISTS capability_portfolio (
