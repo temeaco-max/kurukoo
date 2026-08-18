@@ -32,16 +32,20 @@ function extractSkill(message: string): string | null {
 }
 
 function isCapabilityStatement(message: string): boolean {
-  return /\b(?:i(?:'m| am)|i also|i can|i do|i provide|i offer|add me|include me|let me|make me|sign me up|i work as|i work in|i'm available for)\b/i.test(message)
-    && /\b(?:barber|hair|deliver|delivery|driver|rider|contributor|contribute|plumber|electrician|mechanic|cleaner|cleaning|housekeeping|photograph|coverage)\b/i.test(message);
+  const selfClaim = /^(?:i(?:'m| am)\s+(?:a|an)\b|i also\s+(?:do|provide|deliver)\b|i\s+(?:do|provide|offer)\b|add me\s+(?:as|for)\b|include me\s+(?:as|for)\b|sign me up\s+(?:as|for)\b|i work (?:as|in)\b|i(?:'m| am) available (?:for|to)\b)/i;
+  const explicitAvailability = /\b(?:make|mark)\s+me\s+(?:available|live)\s+(?:for|as)\b/i;
+  const portfolioControl = /\b(?:add|pause|stop|turn off|disable|enable)\s+(?:my|the)\s+(?:barber|delivery|contributor|plumber|electrician|mechanic|cleaning|cleaner|photographer)\b/i;
+  return (selfClaim.test(message) || explicitAvailability.test(message) || portfolioControl.test(message)) && /\b(?:barber|hair|deliver|delivery|driver|rider|contributor|contribute|plumber|electrician|mechanic|cleaner|cleaning|housekeeping|photograph|coverage)\b/i.test(message);
 }
 
 function action(message: string): 'add' | 'available' | 'pause' | null {
   if (/\b(?:pause|stop|turn off|go offline|disable)\b/i.test(message)) return 'pause';
-  if (/\b(?:available|go live|turn on|activate)\b/i.test(message)) return 'available';
-  if (/\b(?:i(?:'m| am)|i also|i can|i do|i provide|i offer|add me|include me|let me|make me|sign me up|i work as|i work in)\b/i.test(message)) return 'add';
-  return null;
+  if (/\b(?:available|go live|turn on|activate|make me live)\b/i.test(message)) return 'available';
+  return 'add';
 }
+
+function writeSse(res: Response, payload: unknown) { res.write(`data: ${JSON.stringify(payload)}\n\n`); }
+function chunkText(text: string): string[] { const chunks: string[] = []; for (let i = 0; i < text.length; i += 24) chunks.push(text.slice(i, i + 24)); return chunks; }
 
 export async function capabilityPortfolioFastPath(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   if (req.method !== 'POST' || req.path !== '/stream') return next();
@@ -58,9 +62,17 @@ export async function capabilityPortfolioFastPath(req: AuthRequest, res: Respons
     if (skill === 'contributor') {
       const item = await ensureCapability(phone, skill, 'contributor', { source: 'conversation', statement: message.slice(0, 300) });
       const reply = intent === 'pause'
-        ? 'I can pause your contributor capability without affecting your other skills.'
-        : 'I’ve added contributor capability to your Kurukoo profile. Your submissions remain separate, reviewable contribution records; being a contributor does not change your other provider skills.';
-      res.status(200).json({ success: true, conversationCapability: item, reply });
+        ? 'I paused your contributor capability without affecting your other skills.'
+        : 'I added contributor capability to your Kurukoo profile. Your submissions remain separate, reviewable contribution records; your other provider skills stay on the same identity.';
+      res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Connection', 'keep-alive');
+      res.flushHeaders?.();
+      writeSse(res, { type: 'status', status: 'processing', grounded: true });
+      for (const chunk of chunkText(reply)) writeSse(res, { type: 'text', content: chunk });
+      writeSse(res, { type: 'done', fullReply: reply, cardData: { type: 'capability_portfolio', capability: item, canonicalAction: 'capability_portfolio.update' }, diagnostics: { classificationSource: 'rules', intentConfidence: 0.99, canonicalAction: 'capability_portfolio.update', finalState: 'completed' } });
+      writeSse(res, '[DONE]');
+      res.end();
       return;
     }
 
@@ -69,31 +81,33 @@ export async function capabilityPortfolioFastPath(req: AuthRequest, res: Respons
     skillStmt.bind([phone, skill]);
     const exists = skillStmt.step();
     skillStmt.free();
-    if (!exists) {
-      db.run(`INSERT INTO skills (phone, skill, source, confidence, is_available, operation_mode) VALUES (?, ?, 'conversation', 1, 0, 'stationary')`, [phone, skill]);
-    }
+    if (!exists) db.run(`INSERT INTO skills (phone, skill, source, confidence, is_available, operation_mode) VALUES (?, ?, 'conversation', 1, 0, 'stationary')`, [phone, skill]);
     saveDb();
 
-    const item = await ensureCapability(phone, skill, 'provider', { source: 'conversation', statement: message.slice(0, 300) });
+    await ensureCapability(phone, skill, 'provider', { source: 'conversation', statement: message.slice(0, 300) });
     if (intent === 'pause') {
-      const db2 = await getDb();
-      db2.run(`UPDATE skills SET is_available = 0 WHERE phone = ? AND skill = ?`, [phone, skill]);
+      db.run(`UPDATE skills SET is_available = 0 WHERE phone = ? AND skill = ?`, [phone, skill]);
       saveDb();
-      const updated = (await listCapabilityPortfolio(phone)).find(x => x.skill === skill);
-      res.status(200).json({ success: true, conversationCapability: updated, reply: `${skill.replace(/_/g, ' ')} is now offline. Your other Kurukoo capabilities are unchanged.` });
-      return;
-    }
-    if (intent === 'available') {
-      const db2 = await getDb();
-      db2.run(`UPDATE skills SET is_available = 1 WHERE phone = ? AND skill = ?`, [phone, skill]);
+    } else if (intent === 'available') {
+      db.run(`UPDATE skills SET is_available = 1 WHERE phone = ? AND skill = ?`, [phone, skill]);
       saveDb();
     }
 
     const updated = (await listCapabilityPortfolio(phone)).find(x => x.skill === skill);
-    const reply = intent === 'available'
-      ? `${skill.replace(/_/g, ' ')} is marked available on your capability portfolio. Going Live nearby still requires explicit Pulse activation, verification and location consent.`
-      : `I’ve added ${skill.replace(/_/g, ' ')} to your Kurukoo capability portfolio. Next I can walk you through the existing onboarding, verification, service-area and availability flow. Your other skills remain on the same identity.`;
-    res.status(200).json({ success: true, conversationCapability: updated, reply });
+    const reply = intent === 'pause'
+      ? `${skill.replace(/_/g, ' ')} is now offline. Your other Kurukoo capabilities are unchanged.`
+      : intent === 'available'
+        ? `${skill.replace(/_/g, ' ')} is marked available on your capability portfolio. Going Live nearby still requires explicit Pulse activation, verification and location consent.`
+        : `I added ${skill.replace(/_/g, ' ')} to your Kurukoo capability portfolio. Next I can walk you through the existing onboarding, verification, service-area and availability flow. Your other skills remain on the same identity.`;
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders?.();
+    writeSse(res, { type: 'status', status: 'processing', grounded: true });
+    for (const chunk of chunkText(reply)) writeSse(res, { type: 'text', content: chunk });
+    writeSse(res, { type: 'done', fullReply: reply, cardData: { type: 'capability_portfolio', capability: updated, canonicalAction: 'capability_portfolio.update' }, diagnostics: { classificationSource: 'rules', intentConfidence: 0.99, canonicalAction: 'capability_portfolio.update', finalState: 'completed' } });
+    writeSse(res, '[DONE]');
+    res.end();
   } catch (error) {
     next(error);
   }
