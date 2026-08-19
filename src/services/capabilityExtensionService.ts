@@ -1,13 +1,9 @@
 import type { UniversalCapabilityDescriptor } from './universalCapabilityProtocol.js';
+import type { CapabilityExtensionExecutionAdapter } from './capabilityExtensionExecutionTypes.js';
 import { ensureCapabilityFoundation } from './capabilityFoundation.js';
 import { getCapabilityRegistration, registerCapability, resolveCapabilityComposition } from './capabilityRegistry.js';
 
-export type CapabilityExtensionExecutionAdapter = {
-  owner: string;
-  actions: string[];
-  activationState?: UniversalCapabilityDescriptor['activationState'];
-  mode?: UniversalCapabilityDescriptor['mode'];
-};
+export type { CapabilityExtensionExecutionAdapter } from './capabilityExtensionExecutionTypes.js';
 
 export interface ComposableSkillExtension {
   name: string;
@@ -36,17 +32,21 @@ export function registerCapabilityExecutionAdapter(name: string, adapter: Capabi
   for (const action of adapter.actions) {
     if (!allowed.has(String(action).toLowerCase())) throw new Error(`Adapter action ${action} is not registered for capability ${normalized}.`);
   }
-  executionAdapters.set(normalized, { ...adapter, actions: [...new Set(adapter.actions)] });
+  executionAdapters.set(normalized, {
+    ...adapter,
+    actions: [...new Set(adapter.actions)],
+    actionMetadata: adapter.actionMetadata ? { ...adapter.actionMetadata } : undefined,
+  });
 }
 
 export function getCapabilityExecutionAdapter(name: string): CapabilityExtensionExecutionAdapter | undefined {
   const normalized = String(name || '').trim().toLowerCase();
   const adapter = executionAdapters.get(normalized);
-  return adapter ? { ...adapter, actions: [...adapter.actions] } : undefined;
+  return adapter ? { ...adapter, actions: [...adapter.actions], actionMetadata: adapter.actionMetadata ? { ...adapter.actionMetadata } : undefined } : undefined;
 }
 
 export function listCapabilityExecutionAdapters(): Array<{ capability: string } & CapabilityExtensionExecutionAdapter> {
-  return [...executionAdapters.entries()].map(([capability, adapter]) => ({ capability, ...adapter, actions: [...adapter.actions] }));
+  return [...executionAdapters.entries()].map(([capability, adapter]) => ({ capability, ...adapter, actions: [...adapter.actions], actionMetadata: adapter.actionMetadata ? { ...adapter.actionMetadata } : undefined }));
 }
 
 export function registerComposableSkillExtension(extension: ComposableSkillExtension): UniversalCapabilityDescriptor {
@@ -89,16 +89,7 @@ export function registerComposableSkillExtension(extension: ComposableSkillExten
     activationState: extension.activationState || 'locally_available',
   };
 
-  registerCapability({
-    descriptor,
-    namespace: 'kurukoo.extensions',
-    version: '1',
-    aliases: [normalizedName],
-    requiresCapabilities: requiredCapabilities,
-    providesCapabilities: [`skill.${normalizedName}`],
-    source: extension.source || 'runtime-extension',
-  });
-
+  registerCapability({ descriptor, namespace: 'kurukoo.extensions', version: '1', aliases: [normalizedName], requiresCapabilities: requiredCapabilities, providesCapabilities: [`skill.${normalizedName}`], source: extension.source || 'runtime-extension' });
   if (extension.executionAdapter) registerCapabilityExecutionAdapter(descriptor.capability, extension.executionAdapter);
   return descriptor;
 }
