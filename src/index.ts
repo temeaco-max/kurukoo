@@ -1,4 +1,3 @@
-/** Kurukoo composition root. */
 import crypto from 'node:crypto';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -30,7 +29,7 @@ import authChallengePublicRoutes from './routes/authChallengePublicRoutes.js';
 import chatRouter from './routes/chatRouter.js';
 import prayerRoutes from './routes/prayerRoutes.js';
 import capabilityPortfolioRoutes from './routes/capabilityPortfolioRoutes.js';
-import { prayerChatFastPath } from './services/prayerChatSurface.js';
+import { prayerChatMiddleware } from './services/prayerChatSurface.js';
 import orderRoutes from './routes/orderRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import reminderRoutes from './routes/reminderRoutes.js';
@@ -74,7 +73,7 @@ app.use(express.static(path.join(process.cwd(),'public'),{index:false,fallthroug
 app.use(express.json({limit:process.env.CHAT_ATTACHMENT_BODY_LIMIT||'35mb',verify:(req,_res,buf)=>{(req as any).rawBody=Buffer.from(buf);}}));
 app.use('/',systemRoutes); app.use('/',authChallengePublicRoutes); app.use('/',mcpAppRoutes);
 app.use('/api',channelRoutes); app.use('/api',circleRoutes); app.use('/api/economic-requests',economicRequestRouter); app.use('/api/admin',adminRoutes); app.use('/api',paymentRoutes); app.use('/api',userRoutes); app.use('/api/auth',authRoutes);
-app.use('/api/chat',prayerChatFastPath);
+app.use('/api/chat',...prayerChatMiddleware);
 app.use('/api/chat',chatRouter);
 app.use('/api/prayer',prayerRoutes);
 app.use('/api/capabilities',capabilityPortfolioRoutes);
