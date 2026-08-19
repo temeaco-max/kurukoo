@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "visualFamilies": {
+    "web": "desktop workspace composition with rail, conversation, composer, and context inspector",
+    "mobile": "touch composition with safe areas, one-column conversation, cards/sheets, and native controls"
+  },
+  "sharedSemantics": {
+    "messageRoles": ["user", "assistant", "agent", "system"],
+    "lifecycleStates": ["empty", "loading", "streaming", "completed", "stopped", "error", "regenerating", "edited"],
+    "contextKinds": ["request", "task", "reminder", "notification", "provider", "artifact", "agent", "evidence", "confirmation"],
+    "providerReadiness": ["ready", "setup_required", "unavailable", "pending_verification", "verified"],
+    "agentLifecycle": ["paused", "resuming", "active", "completed", "blocked"],
+    "artifactStates": ["review", "queued", "syncing", "stored", "fallback", "migration_available", "deleted_reference", "deleted_original"],
+    "voiceStates": ["permission_required", "ready", "recording", "review", "syncing", "queued_retry", "failed"]
+  },
+  "fixtures": [
+    {"id":"empty","messageRole":"assistant","lifecycle":"empty","contextKinds":["agent"],"actions":["quick_actions","voice","attach"]},
+    {"id":"assistant-completed","messageRole":"assistant","lifecycle":"completed","contextKinds":["request","provider"],"actions":["copy","feedback","regenerate"]},
+    {"id":"user-editable","messageRole":"user","lifecycle":"completed","contextKinds":["request"],"actions":["edit","copy"]},
+    {"id":"streaming","messageRole":"assistant","lifecycle":"streaming","contextKinds":["agent"],"actions":["stop"]},
+    {"id":"error-retry","messageRole":"assistant","lifecycle":"error","contextKinds":["request"],"actions":["retry","copy"]},
+    {"id":"paused-agent","messageRole":"agent","lifecycle":"paused","contextKinds":["agent","task"],"actions":["resume","open_context"]},
+    {"id":"voice-review","messageRole":"user","lifecycle":"completed","contextKinds":["artifact"],"voiceState":"review","actions":["play","discard","sync"]},
+    {"id":"artifact-migration","messageRole":"assistant","lifecycle":"completed","contextKinds":["artifact"],"artifactState":"migration_available","actions":["migrate","delete_reference"]},
+    {"id":"provider-unavailable","messageRole":"assistant","lifecycle":"completed","contextKinds":["provider"],"providerReadiness":"unavailable","actions":["open_setup"]},
+    {"id":"confirmation","messageRole":"assistant","lifecycle":"completed","contextKinds":["confirmation","evidence"],"actions":["confirm","cancel","open_evidence"]}
+  ],
+  "platformRules": {
+    "web": ["retain_desktop_workspace_grid", "use_hover_and_keyboard_feedback", "context_inspector_may_be_persistent", "never_use_mobile_bottom_tab_shell"],
+    "mobile": ["retain_safe_area_and_touch_targets", "use_native_audio_camera_controls", "context_may_be_card_or_sheet", "never_use_desktop_rail_as_primary_navigation"]
+  }
+}

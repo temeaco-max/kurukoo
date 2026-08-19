@@ -1,0 +1,5 @@
+# This repository is a single managed project; no workspace packages are linked.
+packages: []
+# Dependency build scripts are opt-in. esbuild is required by the package build and is the only approved native build script.
+onlyBuiltDependencies:
+  - esbuild
