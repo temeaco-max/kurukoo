@@ -106,8 +106,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
-          cache-dependency-path: mobile/kurukoo-mobile/pnpm-lock.yaml
       - name: Install mobile dependencies
         run: pnpm install --frozen-lockfile
       - name: Typecheck mobile client
