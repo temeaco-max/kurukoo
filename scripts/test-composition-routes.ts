@@ -14,11 +14,22 @@ const canonicalImports = [
 for (const name of canonicalImports) assert.match(indexSource, new RegExp(`from './routes/${name}\\.js'`), `index.ts must import existing ${name}`);
 
 const requiredMounts = [
-  "app.use('/api/auth', authRoutes)","app.use('/api/chat', chatRouter)","app.use('/api', userRoutes)","app.use('/api', taskRoutes)","app.use('/api', trustRoutes)","app.use('/api/webrtc', webrtcRoutes)","app.use('/', systemRoutes)",
-  "app.use('/', healthRoutes)","app.use('/', presenceRoutes)","app.use('/', discoveryRoutes)","app.use('/', contentRoutes)",
-  "app.use('/', publicRoutes)","app.use('/api/pricing', pricingRoutes)","app.use('/api', subscriptionRoutes)",
+  /app\.use\('\/api\/auth',\s*authRoutes\)/,
+  /app\.use\('\/api\/chat',\s*(?:\.\.\.prayerChatMiddleware\);\s*)?chatRouter\)/,
+  /app\.use\('\/api',\s*userRoutes\)/,
+  /app\.use\('\/api',\s*taskRoutes\)/,
+  /app\.use\('\/api',\s*trustRoutes\)/,
+  /app\.use\('\/api\/webrtc',\s*webrtcRoutes\)/,
+  /app\.use\('\/',\s*systemRoutes\)/,
+  /app\.use\('\/',\s*healthRoutes\)/,
+  /app\.use\('\/',\s*presenceRoutes\)/,
+  /app\.use\('\/',\s*discoveryRoutes\)/,
+  /app\.use\('\/',\s*contentRoutes\)/,
+  /app\.use\('\/',\s*publicRoutes\)/,
+  /app\.use\('\/api\/pricing',\s*pricingRoutes\)/,
+  /app\.use\('\/api',\s*subscriptionRoutes\)/,
 ];
-for (const mount of requiredMounts) assert.ok(indexSource.includes(mount), `missing composition boundary: ${mount}`);
+for (const mount of requiredMounts) assert.match(indexSource, mount, `missing composition boundary: ${mount.source}`);
 assert.doesNotMatch(indexSource, /legacyApp|registerLegacyRoutes/, 'composition root must not depend on legacyApp');
 
 for (const route of ["router.get('/',", "router.get('/explore',", "router.get('/p/:providerSlug',"]) {
