@@ -8,10 +8,12 @@
   <link rel="stylesheet" href="/css/kurukoo-platform.css">
   <link rel="stylesheet" href="/css/admin-pages/admin-base.css">
   <link rel="stylesheet" href="/css/admin-pages/admin-platform-convergence.css">
+  <link rel="stylesheet" href="/css/kurukoo-screen-set-convergence.css">
+  <link rel="stylesheet" href="/css/kurukoo-final-screen-refinement.css">
   <link rel="stylesheet" href="/css/site.css">
   <script src="/admin/admin-auth.js"></script>
 </head>
-<body>
+<body class="k-admin-page k-screen-set-operations">
   <div class="k-shell">
     <nav class="k-nav" aria-label="Admin navigation">
       <a class="k-brand" href="/"><img src="/assets/brand/logo-icon.png" alt="" width="30" height="30">Kurukoo</a>
@@ -41,10 +43,10 @@
     </nav>
 
     <main class="k-main">
-      <header class="k-top">
+      <header class="k-top admin-screen-title" aria-labelledby="admin-title">
         <div>
-          <p class="k-muted">Operations console</p>
-          <h1>Kurukoo control room</h1>
+          <p class="k-muted admin-eyebrow">Operations console</p>
+          <h1 id="admin-title">Kurukoo control room</h1>
           <p class="k-muted">One canonical backend for Web, PWA, iOS, Android and the operator surface.</p>
         </div>
         <div class="k-top-actions"><span class="k-status"><span class="k-dot"></span> Authenticated control plane</span><button type="button" class="k-btn" id="load-admin">Refresh</button></div>
@@ -60,7 +62,8 @@
         <article class="k-card k-span-4"><p class="k-muted">Trusted devices</p><div class="k-stat" id="stat-devices">—</div><p class="k-muted" id="stat-disputes">Open disputes —</p></article>
 
         <article class="k-card k-span-8">
-          <div class="k-section-heading"><div><p class="k-muted">Live platform state</p><h2>Operational queue</h2></div><span class="k-status" id="surface-contract">Loading…</span></div>
+          <div class="k-section-heading"><div><p class="k-muted admin-eyebrow">Live platform state</p><h2>Operational queue</h2></div><span class="k-status" id="surface-contract">Loading…</span></div>
+          <div class="k-evidence-strip" aria-label="Operational evidence summary"><div class="admin-evidence-item"><span>Provider evidence</span><strong>Required</strong></div><div class="admin-evidence-item"><span>Payment</span><strong>Evidence-gated</strong></div><div class="admin-evidence-item"><span>Audit trail</span><strong>Required</strong></div><div class="admin-evidence-item"><span>External activation</span><strong>Explicit</strong></div></div>
           <div class="k-list" id="admin-queue"><div class="k-row"><span>Loading canonical state</span><span class="k-muted">Authenticated admin API</span></div></div>
         </article>
         <article class="k-card k-span-4">
@@ -75,12 +78,12 @@
         </article>
 
         <article class="k-card k-span-12">
-          <div class="k-section-heading"><div><p class="k-muted">Cross-platform contract</p><h2>One backend, every surface</h2></div><span class="k-status" id="surface-summary">—</span></div>
+          <div class="k-section-heading"><div><p class="k-muted admin-eyebrow">Cross-platform contract</p><h2>One backend, every surface</h2></div><span class="k-status" id="surface-summary">—</span></div>
           <div id="client-surfaces" class="admin-surface-grid" aria-live="polite"></div>
         </article>
 
         <article class="k-card k-span-12">
-          <div class="k-section-heading"><div><p class="k-muted">Admin capability map</p><h2>Every operational area has an owner</h2></div></div>
+          <div class="k-section-heading"><div><p class="k-muted admin-eyebrow">Admin capability map</p><h2>Every operational area has an owner</h2></div></div>
           <div id="admin-modules" class="admin-module-grid" aria-live="polite"></div>
         </article>
       </section>
