@@ -23,11 +23,14 @@ export interface ConversationalAuthResult {
 const GUEST_CONVERSATION_RE = /^(?:hi|hey|hello|hiya|yo|sup|morning|afternoon|evening|good\s+(?:morning|afternoon|evening)|how\s+are\s+you|how're\s+you|how\s+are\s+things)[.!?,\s]*$/i;
 const COMMON_TASK_OR_LOCATION_TERMS = /\b(?:rice|yam|food|groceries|ride|repair|work|barber|delivery|deliver|plumber|electrician|mechanic|cleaner|tailor|appointment|errand|ikeja|yaba|lagos|lekki|ajah|surulere|maryland|victoria\s+island|ibadan|abuja|port\s+harcourt)\b/i;
 const REQUEST_SHAPING_RE = /\b(?:and|in|at|near|around|to|from|for|deliver(?:ed|y)?|need|want|find|book|get|help|looking|area|location)\b/i;
+const EXPLICIT_NAME_RE = /^(?:my\s+name\s+is|i(?:'m| am)|call\s+me)\s+([A-Za-z][A-Za-z0-9 .'-]{1,58})[.!?]?$/i;
 
 /** A name-entry guard that refuses to persist obvious task/location text as identity. */
 export function isPlausibleConversationalName(text: string): boolean {
   const value = text.trim().replace(/\s+/g, ' ');
   if (!value || value.length > 60 || GUEST_CONVERSATION_RE.test(value)) return false;
+  const explicit = value.match(EXPLICIT_NAME_RE);
+  if (explicit) return /^[A-Za-z][A-Za-z0-9 .'-]*$/.test(explicit[1].trim()) && explicit[1].trim().split(/\s+/).length <= 4;
   if (!/^[A-Za-z][A-Za-z0-9 .'-]*$/.test(value)) return false;
   if (COMMON_TASK_OR_LOCATION_TERMS.test(value) && REQUEST_SHAPING_RE.test(value)) return false;
   if (/[,:;]/.test(value) || /(?:^|\s)(?:i|my|me|please)\b/i.test(value)) return false;
@@ -65,8 +68,10 @@ export async function handleConversationalAuth(guestPhone: string, text: string)
     if (GUEST_CONVERSATION_RE.test(name)) { await setAuthState(guestPhone, 'none', {}); const generated = await generateConversationalResponse({ prompt: text, phone: guestPhone, systemPrompt: 'You are Kurukoo, a helpful everyday conversational assistant. This is a casual greeting from a guest who has not signed in. Respond naturally and briefly. Do not ask for a name, phone number, OTP, or create a request unless the user explicitly asks for one.' }); return { reply: generated.text }; }
     if (!name) return { reply: "I didn't catch your name. What should I call you?" };
     if (!isPlausibleConversationalName(name)) return { reply: 'I want to keep your request separate from your identity. What name should I call you? You can also say “My name is …”.' };
-    await setAuthState(guestPhone, 'awaiting_phone', { ...data, name });
-    return { reply: `Nice to meet you, ${name}. Enter your phone number below and I’ll create a verification request and tell you whether an approved delivery method is available.`, cardData: { type: 'auth_conversation', step: 'phone', name } };
+    const explicit = name.match(EXPLICIT_NAME_RE);
+    const normalizedName = explicit ? explicit[1].trim() : name;
+    await setAuthState(guestPhone, 'awaiting_phone', { ...data, name: normalizedName });
+    return { reply: `Nice to meet you, ${normalizedName}. Enter your phone number below and I’ll create a verification request and tell you whether an approved delivery method is available.`, cardData: { type: 'auth_conversation', step: 'phone', name: normalizedName } };
   }
 
   if (state === 'awaiting_phone') {
