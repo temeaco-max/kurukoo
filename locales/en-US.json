@@ -1,0 +1,26 @@
+{
+  "app.name": "Kurukoo",
+  "app.tagline": "Tell Kurukoo what you need. Kurukoo figures out who or what can fulfil it.",
+  "tagline": "Tell Kurukoo what you need. Kurukoo figures out who or what can fulfil it.",
+  "hero_title": "Tell Kurukoo what you need.",
+  "hero_subtitle": "Kurukoo figures out who or what can fulfil it — from personal help and reminders to trusted people, businesses and services.",
+  "currency": "USD",
+  "currency_symbol": "$",
+  "shortcode": "",
+  "welcome": "Welcome to Kurukoo",
+  "request_ride": "Find a ride",
+  "find_worker": "Find someone",
+  "money_circle": "Kurukoo Circle",
+  "reload": "Points & payments",
+  "feature_flags": {
+    "ussd": false,
+    "nimc_kyc": false,
+    "mobile_money": false,
+    "stripe_paypal": false,
+    "points_enabled": true,
+    "email_required": false,
+    "reminders": true,
+    "safety_checkins": true,
+    "execution_connectors": false
+  }
+}
