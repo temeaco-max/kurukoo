@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { CLIENT_SURFACES, MOBILE_PRIMARY_NAVIGATION } from '../src/services/clientSurfaceRegistry.js';
+import { CLIENT_FEATURE_ENTRYPOINTS } from '../src/services/clientFeatureEntryPoints.js';
 
 const root = process.cwd();
 const exists = (relativePath: string) => fs.existsSync(path.join(root, relativePath));
@@ -24,6 +25,10 @@ requireFile('views/topics/detail.ejs', 'Topic detail frontend');
 requireFile('public/js/kurukoo-topics.js', 'Topics frontend behavior module');
 requireFile('docs/architecture/CLIENT_APPLICATION_CONVERGENCE.md', 'Client architecture contract');
 requireFile('docs/architecture/CLIENT_FEATURE_COVERAGE.md', 'Feature coverage contract');
+
+if (CLIENT_FEATURE_ENTRYPOINTS.length < 30) failures.push(`Historical feature inventory is incomplete: expected at least 30 entrypoints, found ${CLIENT_FEATURE_ENTRYPOINTS.length}`);
+const featureIds = new Set(CLIENT_FEATURE_ENTRYPOINTS.map((feature) => feature.id));
+for (const required of ['food','groceries','errands','logistics','parcels','fuel','mobility','home-services','repairs','solar','automotive','health','money-circle','emergency','security','neighborhood-safety','gigs','classifieds','advertising','contributors','sports','circles','price-alerts','government','exam-results','airtime-data','universal-remote','events','hawkers','prayer']) if (!featureIds.has(required)) failures.push(`Historical capability entrypoint missing ${required}`);
 
 const publicRoutes = read('src/routes/publicRoutes.ts');
 const topicRoutes = read('src/routes/topicRoutes.ts');
@@ -71,4 +76,4 @@ const surfaceIds = new Set(CLIENT_SURFACES.map(surface => surface.id));
 for (const required of ['web-marketing', 'web-how-it-works', 'web-explore', 'web-discover-public', 'web-topics-public', 'web-network', 'web-channels', 'web-resources', 'web-help', 'web-partners', 'web-advertise', 'web-chat', 'web-topics', 'web-requests', 'web-reminders', 'web-saved', 'web-cart', 'web-tasks', 'web-connect', 'web-agents', 'web-capabilities', 'web-opportunities', 'web-wallet', 'web-points', 'web-top-up', 'web-subscriptions', 'web-checkout', 'web-confirmations', 'web-memory', 'web-notifications', 'web-artifacts', 'web-prayer', 'web-call', 'web-safety', 'pwa-shell', 'native-ios', 'native-android', 'admin-control-room']) if (!surfaceIds.has(required)) failures.push(`Client surface registry missing ${required}`);
 
 if (failures.length) { console.error('Kurukoo client-surface coverage failed:'); failures.forEach(failure => console.error(`- ${failure}`)); process.exit(1); }
-console.log(`Kurukoo client-surface coverage passed: ${CLIENT_SURFACES.length} declared surfaces; public teaching, Resources, authenticated Web App, Topics/community, compatibility routes, PWA/native/Admin authorities and five-domain mobile navigation present.`);
+console.log(`Kurukoo client-surface coverage passed: ${CLIENT_SURFACES.length} declared client surfaces and ${CLIENT_FEATURE_ENTRYPOINTS.length} historical capability entrypoints; public teaching, Resources, authenticated Web App, Topics/community, PWA/native/Admin authorities and five-domain mobile navigation present.`);
