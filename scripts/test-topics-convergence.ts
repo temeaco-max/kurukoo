@@ -9,7 +9,7 @@ process.env.DB_PATH = dbPath;
 process.env.KURUKOO_DISABLE_LISTEN = 'true';
 process.env.KURUKOO_WORKERS = '0';
 process.env.NODE_ENV = 'test';
-process.env.JWT_SECRET = 'topics_convergence_test_secret_32_chars';
+process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.CREDIT_ECONOMY_ENABLED = 'true';
 
 const { app } = await import('../src/index.js');
@@ -41,11 +41,7 @@ try {
   const preciseLocation = await fetch(`${baseUrl}/api/topics`, { method: 'POST', headers: headers(author), body: JSON.stringify({ title: 'Question about a useful repair service', body: 'I am trying to understand whether there is a reliable approach for this repair.', city: '12 Banana Island Road' }) });
   assert.equal(preciseLocation.status, 400, 'Topics must reject a precise public address');
 
-  const created = await fetch(`${baseUrl}/api/topics`, { method: 'POST', headers: { ...headers(author), 'Idempotency-Key': 'topic-create-idempotency-key-0001' }, body: JSON.stringify({
-    title: 'Where can a neighbour learn safe generator maintenance?',
-    body: 'I am looking for community context about safe generator maintenance in Ibadan. This is a question, not a confirmed provider or availability claim. The discussion should focus on safe maintenance steps, how to assess a public recommendation, and when to ask Kurukoo for a separate supported next step. It does not establish a provider, current availability, price, booking, payment, delivery, or fulfilment outcome.',
-    type: 'question', category: 'repairs-maintenance', skills: ['generator_repairer'], city: 'Ibadan', lga: 'Ibadan North',
-  }) });
+  const created = await fetch(`${baseUrl}/api/topics`, { method: 'POST', headers: { ...headers(author), 'Idempotency-Key': 'topic-create-idempotency-key-0001' }, body: JSON.stringify({ title: 'Where can a neighbour learn safe generator maintenance?', body: 'I am looking for community context about safe generator maintenance in Ibadan. This is a question, not a confirmed provider or availability claim. The discussion should focus on safe maintenance steps, how to assess a public recommendation, and when to ask Kurukoo for a separate supported next step. It does not establish a provider, current availability, price, booking, payment, delivery, or fulfilment outcome.', type: 'question', category: 'repairs-maintenance', skills: ['generator_repairer'], city: 'Ibadan', lga: 'Ibadan North' }) });
   const createdPayload = await created.json() as { topic?: { id: string; slug: string; status: string; authorPhone?: string } };
   assert.equal(created.status, 201, JSON.stringify(createdPayload));
   assert.equal(createdPayload.topic?.status, 'submitted');
