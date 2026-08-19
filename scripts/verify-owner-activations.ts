@@ -10,6 +10,9 @@ function redact(value: string): string { return value ? 'configured' : 'missing'
 
 const country = process.env.KURUKOO_DEFAULT_COUNTRY || 'ng';
 const ownerPhone = String(process.env.KURUKOO_WHATSAPP_LINKED_DEVICE_OWNER_PHONE || process.env.KURUKOO_TELEGRAM_LINKED_DEVICE_OWNER_PHONE || '').trim();
+const sessionEncryptionConfigured = has(process.env.KURUKOO_STORAGE_ENCRYPTION_KEY)
+  || has(process.env.MEMORY_ENCRYPTION_KEY)
+  || String(process.env.JWT_SECRET || '').trim().length >= 32;
 
 const mistral = getFeatureFlagStatus(country, 'hosted_mistral');
 const bypassRequested = String(process.env.KURUKOO_AI_BYPASS_SMOLLM2 || '').toLowerCase() === 'true'
@@ -51,12 +54,14 @@ const report = {
     qrAvailable: telegramStatus.qrAvailable,
     apiId: has(process.env.TELEGRAM_API_ID) ? 'configured' : 'missing',
     apiHash: redact(process.env.TELEGRAM_API_HASH),
+    sessionEncryption: sessionEncryptionConfigured ? 'configured' : 'missing',
   },
   whatsappLinkedDevice: {
     runtimeConfigured: whatsappConfigured,
     state: whatsappStatus.state,
     ownerConfigured: Boolean(process.env.KURUKOO_WHATSAPP_LINKED_DEVICE_OWNER_PHONE),
     qrAvailable: whatsappStatus.qrAvailable,
+    authStorageBoundary: 'private-0700-directory; production requires encrypted deployment volume',
   },
 };
 
@@ -69,8 +74,8 @@ if (bypassRequested && (!has(process.env.MISTRAL_API_KEY) || mistral.status === 
 if (process.env.FF_GOOGLE_DRIVE === 'true' && (!has(process.env.KURUKOO_GOOGLE_DRIVE_CLIENT_ID) || !has(process.env.KURUKOO_GOOGLE_DRIVE_CLIENT_SECRET) || !has(process.env.KURUKOO_GOOGLE_DRIVE_REDIRECT_URI))) {
   hardFailures.push('Google Drive is enabled but OAuth deployment configuration is incomplete.');
 }
-if (process.env.KURUKOO_TELEGRAM_LINKED_DEVICE_ENABLED === 'true' && (!has(process.env.TELEGRAM_API_ID) || !has(process.env.TELEGRAM_API_HASH))) {
-  hardFailures.push('Telegram linked-device mode is enabled but Telegram API credentials are incomplete.');
+if (process.env.KURUKOO_TELEGRAM_LINKED_DEVICE_ENABLED === 'true' && (!has(process.env.TELEGRAM_API_ID) || !has(process.env.TELEGRAM_API_HASH) || !sessionEncryptionConfigured)) {
+  hardFailures.push('Telegram linked-device mode is enabled but Telegram API credentials or encrypted session storage configuration is incomplete.');
 }
 
 if (hardFailures.length) {
