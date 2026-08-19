@@ -13,7 +13,7 @@ process.env.SMOLLM2_DTYPE ||= 'q4';
 process.env.SMOLLM2_MAX_NEW_TOKENS ||= '64';
 process.on('exit', () => { try { fs.rmSync(isolatedDbPath, { force: true }); } catch {} });
 
-const { querySmolLM2, getSmolLM2RuntimeStatus, querySmolLM2Diagnostics } = await import('../src/services/smolLm2Service.js');
+const { querySmolLM2, getSmolLM2RuntimeStatus, querySmolLM2Diagnostics, verifyLocalSmolLM2Tokenization } = await import('../src/services/smolLm2Service.js');
 const { queryUnifiedAI } = await import('../src/services/unifiedAiEngine.js');
 const { upsertProfile } = await import('../src/routes/authRoutes.js');
 const { processCanonicalChatTurn } = await import('../src/services/canonicalChatTurnService.js');
@@ -27,6 +27,9 @@ const directDiagnostics = querySmolLM2Diagnostics();
 assert.equal(directDiagnostics.executionMode, 'local_pipeline', 'A local SmolLM2 test only passes after a real local pipeline generation.');
 assert.equal(directDiagnostics.actualModel, directStatus.model, 'Local diagnostics must identify the model that actually generated the response.');
 assert.ok(typeof directDiagnostics.latencyMs === 'number' && directDiagnostics.latencyMs >= 0, 'Local diagnostics must record actual generation latency.');
+const tokenization = await verifyLocalSmolLM2Tokenization();
+assert.equal(tokenization.model, directStatus.model, 'Tokenizer verification must use the same local checkpoint as generation.');
+assert.ok(tokenization.tokenCount > 0, 'Local tokenizer verification must return non-empty token IDs.');
 
 const unified = await queryUnifiedAI('Explain in one short sentence what Kurukoo helps with.', { provider: 'smollm2' });
 assert.ok(unified.text.trim(), 'unifiedAiEngine must return SmolLM2 text');
@@ -54,6 +57,7 @@ console.log(JSON.stringify({
   executionMode: directDiagnostics.executionMode,
   latencyMs: directDiagnostics.latencyMs,
   actualModel: directDiagnostics.actualModel,
+  tokenCount: tokenization.tokenCount,
   unifiedProvider: unified.provider,
   unifiedModel: unified.model,
   chatProvider: turn.modelProvider,

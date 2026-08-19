@@ -40,6 +40,16 @@ async function getLocalPipeline(modelName = getModelName()): Promise<any> {
   activeModelName = modelName;
   return localPipeline;
 }
+export async function verifyLocalSmolLM2Tokenization(text = 'Kurukoo needs one concise local tokenization check.'): Promise<{ model: string; tokenCount: number }> {
+  const generator = await getLocalPipeline();
+  const tokenizer = generator?.tokenizer;
+  if (typeof tokenizer !== 'function') throw new Error('Local SmolLM2 pipeline did not expose a tokenizer.');
+  const encoded = await tokenizer(String(text), { truncation: true, max_length: 64 });
+  const ids = encoded?.input_ids?.data || encoded?.input_ids || [];
+  const tokenCount = Number(ids?.length || 0);
+  if (!Number.isFinite(tokenCount) || tokenCount < 1) throw new Error('Local SmolLM2 tokenizer returned no token IDs.');
+  return { model: activeModelName || getModelName(), tokenCount };
+}
 function getHfClient(): HfInference { if (!hfClient) hfClient = new HfInference(process.env.HUGGINGFACE_API_KEY || process.env.HF_API_KEY || ''); return hfClient; }
 
 function buildPrompt(prompt: string, systemPrompt?: string): string {
