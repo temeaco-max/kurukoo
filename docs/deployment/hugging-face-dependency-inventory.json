@@ -1,0 +1,118 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "2026-08-19",
+  "repository": "temeaco-max/kurukoo",
+  "auditCommit": "200e80da578701c1fc88a836c76c574e43bf2bda",
+  "scannedReferenceFiles": 96,
+  "classificationVocabulary": {
+    "A": "CORE_RUNTIME_INFERENCE",
+    "B": "OPTIONAL_HOSTED_INFERENCE",
+    "C": "STUDENT_TRAINING_INPUT",
+    "D": "STUDENT_TRAINING_INFRASTRUCTURE",
+    "E": "MODEL_ARTIFACT_SOURCE",
+    "F": "TEACHER_LEARNING_PIPELINE",
+    "G": "TEST_VALIDATION_ONLY",
+    "H": "DOCUMENTATION",
+    "I": "DEAD_OBSOLETE"
+  },
+  "required_hf_dependencies": [
+    {
+      "id": "local-transformers-runtime",
+      "classification": "A",
+      "decision": "RETAIN",
+      "dependency": "@huggingface/transformers",
+      "locations": ["package.json", "package-lock.json", "src/services/smolLm2Service.ts"],
+      "requiredBy": ["configured local SmolLM2/base-model loading", "tokenization", "actual local generation"],
+      "safetyBoundary": "Only KURUKOO_SMOLLM2_LOCAL=true permits local model execution; unconfirmed execution is attributed to deterministic fallback."
+    },
+    {
+      "id": "student-base-model-and-tokenizer-acquisition",
+      "classification": "C",
+      "decision": "RETAIN",
+      "locations": ["ml/config/training.yaml", "ml/pyproject.toml", "ml/train_smollm2_qlora.py", "ml/training/README.md"],
+      "baseModel": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+      "requiredBy": ["QLoRA trainer", "reproducibility manifest", "tokenizer/base revision evidence"],
+      "safetyBoundary": "The exact configured base model is not changed by runtime cleanup."
+    },
+    {
+      "id": "managed-hf-jobs-backend",
+      "classification": "D",
+      "decision": "RETAIN",
+      "locations": ["ml/huggingface_jobs_backend.py", "ml/huggingface_remote_train_entrypoint.py", "ml/requirements-smollm2.txt", "ml/run_learning_cycle.py", "package.json"],
+      "requiredBy": ["approved remote GPU training when local CUDA is unavailable", "bounded cost selection", "remote job lifecycle"],
+      "requiredEnvironment": ["HF_TOKEN", "FF_HUGGINGFACE_JOBS", "KURUKOO_HF_ARTIFACT_REPO", "KURUKOO_HF_MAX_ESTIMATED_COST_USD", "KURUKOO_REMOTE_TRAINING_LAUNCH_APPROVED"],
+      "safetyBoundary": "No job starts without the explicit Jobs flag and launch-approval switch enabled, a positive cost cap, scoped credential, and private artifact repository."
+    },
+    {
+      "id": "student-artifact-retrieval-and-verification",
+      "classification": "E",
+      "decision": "RETAIN",
+      "locations": ["ml/huggingface_remote_train_entrypoint.py", "ml/huggingface_jobs_backend.py", "ml/verify_smollm2_artifact.py", "ml/model_registry.py", "ml/config/model-registry.json"],
+      "requiredBy": ["immutable artifact revision", "payload hash", "dataset and Behaviour Pack hashes", "candidate verification and registry review"],
+      "safetyBoundary": "The Kurukoo registry remains the promotion authority; external hosting is an artifact backend only."
+    }
+  ],
+  "optional_hf_dependencies": [
+    {
+      "id": "optional-hf-teacher-provider",
+      "classification": "F",
+      "decision": "RETAIN_OPTIONAL",
+      "locations": ["ml/teachers/generate_trajectory_candidates.py", "scripts/run-trajectory-teacher.py", ".env.example"],
+      "requiredEnvironment": ["HF_API_KEY or HUGGINGFACE_API_KEY", "KURUKOO_TEACHER_HUGGINGFACE_MODEL"],
+      "safetyBoundary": "Teacher output is candidate → review → curation → accepted and never changes canonical state or enters training data automatically."
+    },
+    {
+      "id": "hf-model-artifact-cache-in-deployment",
+      "classification": "E",
+      "decision": "RETAIN",
+      "locations": ["Dockerfile", "cloudbuild.yaml", "deploy/cloud-run/service.yaml", ".env.example"],
+      "requiredBy": ["ephemeral local Transformers.js model cache"],
+      "safetyBoundary": "The cache is not durable user or registry state and does not imply remote provider inference."
+    }
+  ],
+  "removable_hf_dependencies": [
+    {
+      "id": "raw-hf-serverless-smollm2-runtime",
+      "classification": "I",
+      "decision": "REMOVED",
+      "removedAtCommit": "200e80da578701c1fc88a836c76c574e43bf2bda",
+      "formerLocations": ["src/services/smolLm2Service.ts", "scripts/test-smollm2-hosted-fallback-contract.ts", "scripts/verify-smollm2-hf-unavailable.ts"],
+      "removedDependency": "@huggingface/inference",
+      "removedStates": ["hf_serverless", "huggingface_provider_unavailable", "huggingface_request_failed"],
+      "replacement": "existing local SmolLM2 boundary or existing provider-neutral hosted router, then deterministic fallback",
+      "safetyBoundary": "A legacy HF key yields only hf_serverless_runtime_deprecated with deterministic attribution; it cannot satisfy required-model readiness."
+    }
+  ],
+  "student_v1_dependency_graph": [
+    {"node": "Behaviour Pack", "locations": ["ml/behaviour/kurukoo-behaviour-v1.json", "scripts/compile-kurukoo-behaviour-pack.ts"], "hfRequired": false, "classification": "C"},
+    {"node": "Scenario compiler", "locations": ["scripts/generate-smollm2-training-universe.ts", "ml/schemas/scenario.schema.json"], "hfRequired": false, "classification": "C"},
+    {"node": "Corpus reconciliation and curation", "locations": ["ml/reconcile_behaviour_pack_corpus.py", "ml/curate_candidate_corpus.py"], "hfRequired": false, "classification": "C"},
+    {"node": "Accepted training manifest", "locations": ["ml/datasets/kurukoo-training-v2.accepted.train.manifest.json"], "hfRequired": false, "classification": "C"},
+    {"node": "Base model and tokenizer", "locations": ["ml/config/training.yaml", "ml/train_smollm2_qlora.py"], "hfRequired": true, "classification": "C"},
+    {"node": "QLoRA trainer", "locations": ["ml/train_smollm2_qlora.py"], "hfRequired": false, "classification": "C"},
+    {"node": "Training backend", "locations": ["ml/huggingface_jobs_backend.py", "ml/run_learning_cycle.py"], "hfRequired": "only_when_KURUKOO_TRAINING_BACKEND=huggingface", "classification": "D"},
+    {"node": "Immutable artifact", "locations": ["ml/huggingface_remote_train_entrypoint.py", "ml/verify_smollm2_artifact.py"], "hfRequired": "only_for_remote_hf_artifact_backend", "classification": "E"},
+    {"node": "Verifier and behavioural benchmark", "locations": ["ml/verify_smollm2_artifact.py", "ml/evaluate_behaviour_pack.py", "ml/test_model_registry.py"], "hfRequired": false, "classification": "G"},
+    {"node": "Registry, shadow and canary", "locations": ["ml/model_registry.py", "src/services/studentModelRegistryService.ts"], "hfRequired": false, "classification": "E"}
+  ],
+  "environment_variables": [
+    {"name": "HF_TOKEN", "classification": "D", "decision": "RETAIN", "purpose": "managed Jobs credential and private artifact retrieval; never a conversational runtime key"},
+    {"name": "HF_API_KEY", "classification": "F", "decision": "RETAIN_OPTIONAL", "purpose": "optional Hugging Face teacher-provider credential; never raw SmolLM2 runtime inference"},
+    {"name": "HUGGINGFACE_API_KEY", "classification": "F", "decision": "RETAIN_OPTIONAL", "purpose": "optional Hugging Face teacher-provider credential; never raw SmolLM2 runtime inference"},
+    {"name": "KURUKOO_HF_ARTIFACT_REPO", "classification": "E", "decision": "RETAIN", "purpose": "private remote Student artifact repository"},
+    {"name": "FF_HUGGINGFACE_JOBS", "classification": "D", "decision": "RETAIN", "purpose": "explicit remote GPU training execution gate"},
+    {"name": "HUGGINGFACE_API_BASE", "classification": "F", "decision": "RETAIN_OPTIONAL", "purpose": "optional OpenAI-compatible teacher endpoint only"}
+  ],
+  "active_reference_groups": {
+    "A": ["src/services/smolLm2Service.ts", "src/services/conversationalGenerationService.ts", "src/services/intentRouter.ts", "src/services/internalCoordinator.ts", "src/services/livingMemoryEngine.ts", "src/routes/healthRoutes.ts"],
+    "B": ["src/services/unifiedAiEngine.ts", "scripts/test-hosted-provider-failover.ts", "scripts/test-conversational-provider-selection.ts"],
+    "C": ["ml/config/training.yaml", "ml/pyproject.toml", "ml/train_smollm2_qlora.py", "ml/test_training_pipeline.py", "ml/test_model_registry.py", "ml/config/model-registry.json"],
+    "D": ["ml/huggingface_jobs_backend.py", "ml/huggingface_remote_train_entrypoint.py", "ml/requirements-smollm2.txt", "ml/run_learning_cycle.py", "ml/test_huggingface_jobs_backend.py", "src/services/featureFlags.ts", "src/services/pilotReadiness.ts"],
+    "E": ["package.json", "package-lock.json", "Dockerfile", "cloudbuild.yaml", "deploy/cloud-run/service.yaml", "ml/model_registry.py", "ml/verify_smollm2_artifact.py", "src/services/studentModelRegistryService.ts"],
+    "F": ["ml/teachers/generate_trajectory_candidates.py", "ml/teachers/README.md", "scripts/run-trajectory-teacher.py"],
+    "G": ["scripts/test-smollm2-local.ts", "scripts/test-smollm2-fallback.ts", "scripts/test-smollm2-serverless-deprecation.ts", "scripts/test-cloud-run-smollm2-boundary.ts", "scripts/test-student-model-registry.ts", "scripts/test-smollm2-training-universe.ts", "scripts/benchmark-conversational-models.ts", "scripts/benchmark-conversational-trajectories.ts", "scripts/test-ai-pipeline.ts", "scripts/test-external-integration-readiness.ts", "scripts/test-provider-outcome-scenario-lab.ts", "scripts/test-network-chat-convergence.ts", "scripts/test-canonical-multicontext-trajectory.ts", "scripts/test-conversational-intelligence.ts", "scripts/test-coordinator.ts", "scripts/test-memory-provenance.ts", "scripts/test-telegram-linked-session-chat.ts", "scripts/test-whatsapp-channel-parity.ts", "scripts/test-whatsapp-linked-session-chat.ts", "scripts/live-user1-chat-quality.ts"],
+    "H": [".env.example", "README.md", "BLUEPRINT.md", "BLUEPRINT_AI_MODEL_ADDENDUM.md", "BUILD_STATUS.md", "CHAT_SURFACE_CONTRACT.md", "SECURITY_AUDIT_STATUS.md", "todo.md", "public/admin/dashboard.html", "data/audits/main-reconciliation.json", "data/audits/main-reconciliation.md", "docs/KURUKOO_AI_MODEL_IMPLEMENTATION_MAP.md", "docs/KURUKOO_AI_MODEL_SYSTEM.md", "docs/KURUKOO_NATIVE_INTELLIGENCE_COMPLETION.md", "docs/KURUKOO_PRODUCTION_AND_LEARNING_PIPELINES.md", "docs/MANUS_KURUKOO_STUDENT_MODEL_COMPLETION_PROMPT.md", "docs/architecture/ACTIVE_AGENT_BOUNDARIES.md", "docs/architecture/BLUEPRINT_TRUTH.md", "docs/architecture/CURRENT_PRODUCT_TRUTH.md", "docs/architecture/KURUKOO_BUILD_CONVERGENCE_CONTRACT.md", "docs/architecture/MULTI_AGENT_NETWORK_ARCHITECTURE_AND_ACTIVATION_ROADMAP.md", "docs/architecture/conversational-evaluation.md", "docs/architecture/conversational-intelligence-contract.md", "docs/architecture/external-adapter-readiness.md", "docs/architecture/progressive-trust.md", "docs/deployment/CLOUD_RUN.md", "docs/deployment/end-to-end-readiness-matrix.md", "docs/deployment/external-integration-implementation-policy.md", "docs/deployment/hugging-face-architecture.md", "docs/internal-coordinator-brain.md", "docs/kurukoo-governance-policy-plane.md", "docs/kurukoo-language-locale-dialect.md", "docs/kurukoo-operating-system.md", "docs/verification/playwright-acceptance-findings-2026-08-14.md", "docs/verification/playwright-convergence-findings.md", "ml/README.md", "ml/evaluation/README.md", "ml/registry/README.md", "ml/training/README.md", "index.ts", "src/routes/adminRoutes.ts", "src/services/externalIntegrationReadiness.ts"],
+    "I": ["former @huggingface/inference dependency", "former raw HF serverless client and retry path", "former scripts/test-smollm2-hosted-fallback-contract.ts", "former scripts/verify-smollm2-hf-unavailable.ts"]
+  },
+  "unclassifiedPostCleanupReferences": []
+}

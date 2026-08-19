@@ -2,6 +2,8 @@
 
 **Status:** Repository-side cleanup complete; external activation remains independently gated.
 
+The complete machine-readable classification and Student V1 dependency graph are published in [`hugging-face-dependency-inventory.json`](./hugging-face-dependency-inventory.json).
+
 Kurukoo uses Hugging Face in several **separate roles**. A Hugging Face token must never be treated as proof that any one of these roles is available, and a failure in one role must not remove or enable another role.
 
 | Role | Kurukoo boundary | Repository state | Activation truth |
