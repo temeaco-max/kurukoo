@@ -4,9 +4,8 @@ import { getDb, saveDb } from '../database.js';
 import { escalateDispute, resolveDispute, resolveDisputeWithEconomicLifecycle } from '../services/disputeResolution.js';
 
 const router = Router();
-router.use(authenticateAdmin);
 
-router.post('/disputes/resolve', async (req: AuthRequest, res) => {
+router.post('/disputes/resolve', authenticateAdmin, async (req: AuthRequest, res) => {
   const disputeId = Number(req.body?.disputeId);
   const action = String(req.body?.action || '');
   if (!Number.isInteger(disputeId) || disputeId <= 0) return res.status(400).json({ success: false, error: 'A valid disputeId is required.' });
@@ -27,7 +26,7 @@ router.post('/disputes/resolve', async (req: AuthRequest, res) => {
   }
 });
 
-router.post('/disputes/escalate', async (req: AuthRequest, res) => {
+router.post('/disputes/escalate', authenticateAdmin, async (req: AuthRequest, res) => {
   const disputeId = Number(req.body?.disputeId);
   if (!Number.isInteger(disputeId) || disputeId <= 0) return res.status(400).json({ success: false, error: 'A valid disputeId is required.' });
 
@@ -47,7 +46,7 @@ router.post('/disputes/escalate', async (req: AuthRequest, res) => {
   }
 });
 
-router.post('/tickets/reply', async (req: AuthRequest, res) => {
+router.post('/tickets/reply', authenticateAdmin, async (req: AuthRequest, res) => {
   const disputeId = Number(req.body?.disputeId);
   const replyMessage = String(req.body?.replyMessage || '').trim();
   if (!Number.isInteger(disputeId) || disputeId <= 0 || !replyMessage) return res.status(400).json({ success: false, error: 'A valid disputeId and replyMessage are required.' });
