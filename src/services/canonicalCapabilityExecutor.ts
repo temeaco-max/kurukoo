@@ -271,7 +271,7 @@ async function dispatchCanonicalAction(input: CanonicalCapabilityExecutionInput,
   }
   const adapter = getExecutionAdapter(input.capability);
   const execute = adapter?.execute;
-  if (execute) {
+  if (execute && adapter.actions.includes(input.action)) {
     const result = await execute({ phone: input.phone, conversationId: input.conversationId, contextId: input.contextId, capability: input.capability, action: input.action, canonicalObjectId: input.canonicalObjectId, arguments: args, confirmationGranted: input.confirmationGranted, idempotencyKey: input.idempotencyKey || crypto.randomUUID(), ownerObject: object });
     if (result) return baseResult(input, result.status as ExecutorStatus, result.message, result);
   }
