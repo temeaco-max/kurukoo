@@ -67,6 +67,8 @@ async function main() {
   assert.match(platformSrc, /router\.get\('\/modules'/, 'module registry endpoint must exist');
   assert.match(platformSrc, /router\.get\('\/health'/, 'platform health endpoint must exist');
   assert.match(platformSrc, /router\.get\('\/scale-readiness'/, 'scale readiness endpoint must exist');
+  assert.match(platformSrc, /router\.get\('\/activation-matrix'/, 'external activation matrix endpoint must exist');
+  assert.match(platformSrc, /getExternalIntegrationOperationalStatus/, 'activation matrix must reuse canonical operational status');
   assert.match(serviceSrc, /clientSurfaceRegistry/, 'admin platform service must reuse client surface registry');
   assert.match(serviceSrc, /externalIntegrationReadiness/, 'admin platform service must reuse integration readiness');
   assert.match(serviceSrc, /pilotReadiness/, 'admin platform service must expose canonical dependency readiness');
@@ -78,7 +80,10 @@ async function main() {
   assert.match(scaleSrc, /DATABASE_URL|POSTGRES_URL/, 'scale readiness must identify approved multi-process persistence signals');
   assert.match(scaleSrc, /REDIS_URL|REDIS_HOST/, 'scale readiness must identify shared queue/limit state');
 
-  assert.match(disputeSrc, /router\.use\(authenticateAdmin\)/, 'canonical dispute admin router must require admin authentication');
+  assert.doesNotMatch(disputeSrc, /router\.use\(authenticateAdmin\)/, 'canonical dispute admin router must not globally guard public Admin login paths');
+  assert.match(disputeSrc, /router\.post\('\/disputes\/resolve',\s*authenticateAdmin/, 'dispute resolution must require Admin auth');
+  assert.match(disputeSrc, /router\.post\('\/disputes\/escalate',\s*authenticateAdmin/, 'dispute escalation must require Admin auth');
+  assert.match(disputeSrc, /router\.post\('\/tickets\/reply',\s*authenticateAdmin/, 'ticket reply must require Admin auth');
   assert.match(disputeSrc, /resolveDisputeWithEconomicLifecycle/, 'admin dispute route must use canonical resolution lifecycle');
   assert.match(disputeSrc, /resolveDispute\(/, 'admin ticket reply must use canonical dispute service');
   assert.match(disputeSrc, /escalateDispute/, 'admin escalation route must use canonical dispute service');
@@ -105,7 +110,7 @@ async function main() {
   assert.match(src, /isolated_actor_context/, 'Test As must disclose isolated actor boundary');
   assert.doesNotMatch(src, /\\+2348030000000/, 'no demo phone in admin routes');
   for (const p of paths) assert.ok(src.includes(p.replace('/api/admin', '')) || src.includes(p), `path reference for ${p}`);
-  console.log('test-admin-routes: PASS: protected admin API, shared shell/auth, canonical Control Room, platform health, scale transition, canonical dispute/ticket lifecycle, client-surface contract and module registry are present');
+  console.log('test-admin-routes: PASS: protected admin API, shared shell/auth, canonical Control Room, platform health, external activation matrix, scale transition, canonical dispute/ticket lifecycle, client-surface contract and module registry are present');
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
