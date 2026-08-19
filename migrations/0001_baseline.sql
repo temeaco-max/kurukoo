@@ -1,0 +1,5 @@
+-- Kurukoo schema baseline.
+-- The current SQL.js bootstrap remains authoritative for the legacy schema.
+-- This migration intentionally performs no schema mutation; it establishes the
+-- migration ledger so future persistence changes are applied in a deterministic,
+-- checksum-verified release step rather than inside request handling.
