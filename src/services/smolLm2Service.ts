@@ -15,12 +15,22 @@ let localBusy = false;
 let lastInferenceSource: 'local' | 'huggingface' | 'fallback' = 'fallback';
 let lastInferenceFailure: 'local_inference_failed' | 'local_model_fallback' | 'huggingface_provider_unavailable' | 'huggingface_request_failed' | 'no_model_boundary_configured' | null = null;
 let hostedInferenceUnavailableForModel: string | null = null;
+export type SmolLM2ExecutionMode = 'local_pipeline' | 'hf_serverless' | 'deterministic_fallback';
+let lastInferenceExecutionMode: SmolLM2ExecutionMode = 'deterministic_fallback';
+let lastInferenceLatencyMs: number | null = null;
+let lastInferenceActualModel = 'template-fallback';
 
-export function getSmolLM2RuntimeStatus(): { model: string; source: 'local' | 'huggingface' | 'fallback'; available: boolean; dtype: string; localEnabled: boolean; hostedConfigured: boolean; readiness: 'available' | 'fallback'; lastFailure: string | null; requestedStage: string; selectedStage: string; registrySource: 'environment_base' | 'registry'; registryFallbackReason?: string } {
+function recordInference(mode: SmolLM2ExecutionMode, actualModel: string, startedAt: number): void {
+  lastInferenceExecutionMode = mode;
+  lastInferenceActualModel = actualModel;
+  lastInferenceLatencyMs = Math.max(0, Date.now() - startedAt);
+}
+
+export function getSmolLM2RuntimeStatus(): { model: string; source: 'local' | 'huggingface' | 'fallback'; available: boolean; dtype: string; localEnabled: boolean; hostedConfigured: boolean; readiness: 'available' | 'fallback'; lastFailure: string | null; executionMode: SmolLM2ExecutionMode; latencyMs: number | null; actualModel: string; requestedStage: string; selectedStage: string; registrySource: 'environment_base' | 'registry'; registryFallbackReason?: string } {
   const localEnabled = process.env.KURUKOO_SMOLLM2_LOCAL === 'true';
   const hostedConfigured = Boolean(process.env.HUGGINGFACE_API_KEY || process.env.HF_API_KEY);
   const selection = getStudentModelRuntimeSelection();
-  return { model: activeModelName || selection.model, source: lastInferenceSource, available: lastInferenceSource !== 'fallback', dtype: String(process.env.SMOLLM2_DTYPE || 'q4'), localEnabled, hostedConfigured, readiness: lastInferenceSource !== 'fallback' ? 'available' : 'fallback', lastFailure: lastInferenceFailure, requestedStage: selection.requestedStage, selectedStage: selection.selectedStage, registrySource: selection.source, ...(selection.fallbackReason ? { registryFallbackReason: selection.fallbackReason } : {}) };
+  return { model: activeModelName || selection.model, source: lastInferenceSource, available: lastInferenceSource !== 'fallback', dtype: String(process.env.SMOLLM2_DTYPE || 'q4'), localEnabled, hostedConfigured, readiness: lastInferenceSource !== 'fallback' ? 'available' : 'fallback', lastFailure: lastInferenceFailure, executionMode: lastInferenceExecutionMode, latencyMs: lastInferenceLatencyMs, actualModel: lastInferenceActualModel, requestedStage: selection.requestedStage, selectedStage: selection.selectedStage, registrySource: selection.source, ...(selection.fallbackReason ? { registryFallbackReason: selection.fallbackReason } : {}) };
 }
 
 async function getLocalPipeline(modelName = getModelName()): Promise<any> {
@@ -74,7 +84,13 @@ function isHostedInferenceUnavailable(error: unknown): boolean {
   return /no inference provider available|auto selected provider: undefined|invalid username or password|unauthorized|forbidden/.test(message);
 }
 
+export function querySmolLM2Diagnostics(): { requestedModel: string; actualModel: string; executionMode: SmolLM2ExecutionMode; latencyMs: number | null; fallbackReason: string | null; source: 'local' | 'huggingface' | 'fallback'; available: boolean } {
+  const status = getSmolLM2RuntimeStatus();
+  return { requestedModel: getModelName(), actualModel: status.actualModel, executionMode: status.executionMode, latencyMs: status.latencyMs, fallbackReason: status.lastFailure, source: status.source, available: status.available };
+}
+
 export async function querySmolLM2(prompt: string, systemPrompt?: string): Promise<string> {
+  const startedAt = Date.now();
   const input = buildPrompt(prompt, systemPrompt);
   if (process.env.KURUKOO_SMOLLM2_LOCAL === 'true') {
     try {
@@ -96,25 +112,26 @@ export async function querySmolLM2(prompt: string, systemPrompt?: string): Promi
         const text = typeof first === 'object' && first && 'generated_text' in first ? String(first.generated_text || '').trim() : '';
         if (text) {
           const cleaned = sanitizeGeneratedText(text.replace(/<\|im_end\|>[\s\S]*$/g, ''));
-          if (cleaned && !containsInternalGeneration(cleaned)) { lastInferenceSource = 'local'; if (lastInferenceFailure !== 'local_model_fallback') lastInferenceFailure = null; return cleaned; }
+          if (cleaned && !containsInternalGeneration(cleaned)) { lastInferenceSource = 'local'; if (lastInferenceFailure !== 'local_model_fallback') lastInferenceFailure = null; recordInference('local_pipeline', activeModelName || getModelName(), startedAt); return cleaned; }
         }
         const retryInput = buildPrompt(prompt, 'You are Kurukoo. Answer the user directly in one or two natural sentences. For ambiguity, ask one concise clarifying question. For failure, explain that completion is unconfirmed and offer retry, resume, or cancellation. Do not use headings, delimiters, role labels, context narration, or internal architecture language.');
         const retryOutput = await generator(retryInput, { max_new_tokens: Math.min(Number(process.env.SMOLLM2_MAX_NEW_TOKENS || 192), 96), temperature: 0.1, do_sample: true, return_full_text: false });
         const retryFirst = Array.isArray(retryOutput) ? retryOutput[0] : retryOutput;
         const retryText = typeof retryFirst === 'object' && retryFirst && 'generated_text' in retryFirst ? String(retryFirst.generated_text || '').trim() : '';
         const retryCleaned = sanitizeGeneratedText(retryText.replace(/<\|im_end\|>[\s\S]*$/g, ''));
-        if (retryCleaned && !containsInternalGeneration(retryCleaned)) { lastInferenceSource = 'local'; if (lastInferenceFailure !== 'local_model_fallback') lastInferenceFailure = null; return retryCleaned; }
+        if (retryCleaned && !containsInternalGeneration(retryCleaned)) { lastInferenceSource = 'local'; if (lastInferenceFailure !== 'local_model_fallback') lastInferenceFailure = null; recordInference('local_pipeline', activeModelName || getModelName(), startedAt); return retryCleaned; }
       } finally { releaseLocal(); }
     } catch (err: any) { lastInferenceFailure = 'local_inference_failed'; console.warn('[SmolLM2] Local inference failed:', err?.message || err); releaseLocal(); }
   }
   if (process.env.KURUKOO_SMOLLM2_LOCAL === 'true' && lastInferenceSource === 'fallback' && !lastInferenceFailure) lastInferenceFailure = 'local_inference_failed';
   const hostedModel = getModelName();
-  if ((process.env.HUGGINGFACE_API_KEY || process.env.HF_API_KEY) && hostedInferenceUnavailableForModel !== hostedModel) {
+  const hostedConfigured = Boolean(process.env.HUGGINGFACE_API_KEY || process.env.HF_API_KEY);
+  if (hostedConfigured && hostedInferenceUnavailableForModel !== hostedModel) {
     try {
       const response = await getHfClient().textGeneration({ model: hostedModel, inputs: input, parameters: { max_new_tokens: Number(process.env.SMOLLM2_MAX_NEW_TOKENS || 192), temperature: 0.2, return_full_text: false } });
       if (response?.generated_text) {
         const cleaned = sanitizeGeneratedText(response.generated_text);
-        if (cleaned && !containsInternalGeneration(cleaned)) { lastInferenceSource = 'huggingface'; lastInferenceFailure = null; return cleaned; }
+        if (cleaned && !containsInternalGeneration(cleaned)) { lastInferenceSource = 'huggingface'; lastInferenceFailure = null; recordInference('hf_serverless', hostedModel, startedAt); return cleaned; }
       }
     } catch (err: any) {
       if (isHostedInferenceUnavailable(err)) {
@@ -126,10 +143,11 @@ export async function querySmolLM2(prompt: string, systemPrompt?: string): Promi
         console.warn('[SmolLM2] HF serverless inference request failed:', err?.message || err);
       }
     }
-  } else if (!process.env.KURUKOO_SMOLLM2_LOCAL || process.env.KURUKOO_SMOLLM2_LOCAL !== 'true') {
+  } else if (!hostedConfigured && process.env.KURUKOO_SMOLLM2_LOCAL !== 'true') {
     lastInferenceFailure = 'no_model_boundary_configured';
   }
   lastInferenceSource = 'fallback';
+  recordInference('deterministic_fallback', 'template-fallback', startedAt);
   return getFallbackResponse(prompt);
 }
 

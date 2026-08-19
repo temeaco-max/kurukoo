@@ -49,19 +49,56 @@ export interface AIStreamChunk {
   confidence?: number;
 }
 
-export function resolveConfiguredHostedProvider(): Extract<AIProvider, 'mistral' | 'gemini' | 'groq'> | null {
-  const requested = String(process.env.KURUKOO_AI_HOSTED_PROVIDER || '').trim().toLowerCase();
-  if (requested === 'none' || requested === 'smollm2' || requested === 'local_intent') return null;
-  const available: Record<'mistral' | 'gemini' | 'groq', boolean> = {
+type HostedProvider = Extract<AIProvider, 'mistral' | 'gemini' | 'groq'>;
+const HOSTED_PROVIDER_ORDER: HostedProvider[] = ['mistral', 'gemini', 'groq'];
+
+function configuredHostedProviders(): HostedProvider[] {
+  const available: Record<HostedProvider, boolean> = {
     mistral: hasConfiguredSecret(process.env.MISTRAL_API_KEY),
     gemini: hasConfiguredSecret(process.env.GEMINI_API_KEY) || hasConfiguredSecret(process.env.API_KEY),
     groq: hasConfiguredSecret(process.env.GROQ_API_KEY),
   };
-  const candidates: Array<'mistral' | 'gemini' | 'groq'> = requested === 'mistral' || requested === 'gemini' || requested === 'groq'
-    ? [requested, ...(['mistral', 'gemini', 'groq'] as const).filter(provider => provider !== requested)]
-    : ['mistral', 'gemini', 'groq'];
-  return candidates.find(provider => available[provider]) || null;
+  return HOSTED_PROVIDER_ORDER.filter(provider => available[provider]);
 }
+
+export function resolveHostedProviderCandidates(preferred: AIProvider | undefined = 'auto'): HostedProvider[] {
+  if (preferred === 'smollm2' || preferred === 'local_intent') return [];
+  const requested = preferred && preferred !== 'auto'
+    ? preferred
+    : String(process.env.KURUKOO_AI_HOSTED_PROVIDER || '').trim().toLowerCase();
+  if (requested === 'none' || requested === 'smollm2' || requested === 'local_intent') return [];
+  const configured = configuredHostedProviders();
+  if (requested === 'mistral' || requested === 'gemini' || requested === 'groq') {
+    return [...configured.filter(provider => provider === requested), ...configured.filter(provider => provider !== requested)];
+  }
+  return configured;
+}
+
+export function resolveConfiguredHostedProvider(): HostedProvider | null {
+  return resolveHostedProviderCandidates('auto')[0] || null;
+}
+
+export interface AiRoutingDiagnostic {
+  requestedProvider: AIProvider;
+  requestedModel: string;
+  attemptedProviders: string[];
+  actualProvider: string;
+  actualModel: string;
+  executionMode: 'hosted_provider' | 'local_pipeline' | 'hf_serverless' | 'deterministic_fallback' | 'local_intent';
+  fallbackReason: string | null;
+  success: boolean;
+  recordedAt: string;
+}
+let lastAiRoutingDiagnostic: AiRoutingDiagnostic | null = null;
+export function getLastAiRoutingDiagnostic(): AiRoutingDiagnostic | null { return lastAiRoutingDiagnostic ? { ...lastAiRoutingDiagnostic, attemptedProviders: [...lastAiRoutingDiagnostic.attemptedProviders] } : null; }
+function requestedModelFor(provider: AIProvider): string {
+  if (provider === 'gemini') return process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  if (provider === 'mistral') return process.env.MISTRAL_MODEL || 'mistral-small-latest';
+  if (provider === 'groq') return process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+  if (provider === 'local_intent') return 'kurukoo_intent';
+  return getSmolLM2RuntimeStatus().model;
+}
+function rememberAiRoutingDiagnostic(diagnostic: Omit<AiRoutingDiagnostic, 'recordedAt'>): void { lastAiRoutingDiagnostic = { ...diagnostic, recordedAt: new Date().toISOString() }; }
 
 const SIMPLE_INTENTS = new Set([
   'general_question', 'check_balance', 'balance', 'price_check', 'help', 'weather', 'faq', 'greeting', 'general', 'unknown',
@@ -207,7 +244,7 @@ export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions =
   const classification = classifyWithFastText(prompt);
 
   if (preferred === 'local_intent') {
-    return {
+    const response: AIResponse = {
       provider: 'FastText',
       model: 'kurukoo_intent',
       text: classification
@@ -218,6 +255,8 @@ export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions =
       intent: classification?.intent || 'general_question',
       confidence: classification?.confidence,
     };
+    rememberAiRoutingDiagnostic({ requestedProvider: preferred, requestedModel: response.model, attemptedProviders: [], actualProvider: response.provider, actualModel: response.model, executionMode: 'local_intent', fallbackReason: null, success: true });
+    return response;
   }
 
   const isSimple = !needsStrongConversationalModel(prompt, classification, options) && (!classification || SIMPLE_INTENTS.has(classification.intent));
@@ -225,13 +264,13 @@ export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions =
   const tokenEst = estimatePromptTokens(prompt, options.systemPrompt);
   const quota = await checkAiQuota(options.phone, kind, tokenEst);
   if (!quota.allowed || quota.downgradeToTemplate) {
-    return {
-      ...fallback(classification, quota.reason ? `⏳ ${quota.reason}. Using a short reply instead.` : undefined, prompt),
-      quotaRemaining: quota.remaining,
-    };
+    const response = { ...fallback(classification, quota.reason ? `⏳ ${quota.reason}. Using a short reply instead.` : undefined, prompt), quotaRemaining: quota.remaining };
+    rememberAiRoutingDiagnostic({ requestedProvider: preferred, requestedModel: requestedModelFor(preferred), attemptedProviders: [], actualProvider: response.provider, actualModel: response.model, executionMode: 'deterministic_fallback', fallbackReason: quota.reason || 'quota_downgrade', success: false });
+    return response;
   }
 
   const configuredHostedProvider = resolveConfiguredHostedProvider() || 'none';
+  const attemptedProviders: HostedProvider[] = [];
   const route =
     preferred === 'gemini'
       ? 'gemini'
@@ -248,6 +287,11 @@ export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions =
                   : configuredHostedProvider;
 
   const { systemPrompt, memoryTokens } = await resolveSystemPrompt(prompt, options, classification, route);
+  const fallbackWithDiagnostic = (reason: string): AIResponse => {
+    const response = fallback(classification, undefined, prompt);
+    rememberAiRoutingDiagnostic({ requestedProvider: preferred, requestedModel: requestedModelFor(route as AIProvider), attemptedProviders, actualProvider: response.provider, actualModel: response.model, executionMode: 'deterministic_fallback', fallbackReason: reason, success: false });
+    return response;
+  };
 
   const afterSuccess = async (response: AIResponse): Promise<AIResponse> => {
     const emotionalPrompt = /\b(?:frustrated|overwhelmed|stressed|having a bad day)\b/i.test(prompt);
@@ -256,64 +300,46 @@ export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions =
       ? { ...response, provider: 'Kurukoo Template', model: 'template-fallback', text: naturalFallback(prompt), cost: '$0.00' }
       : response;
     await recordAiUsage(options.phone, kind, (memoryTokens || 0) + tokenEst + Math.ceil((safeResponse.text || '').length / 4));
+    const runtime = safeResponse.provider === 'SmolLM2' || safeResponse.provider === 'Kurukoo Template' ? getSmolLM2RuntimeStatus() : null;
+    const deterministic = safeResponse.provider === 'Kurukoo Template';
+    rememberAiRoutingDiagnostic({ requestedProvider: preferred, requestedModel: requestedModelFor(route as AIProvider), attemptedProviders, actualProvider: safeResponse.provider, actualModel: safeResponse.model, executionMode: deterministic ? 'deterministic_fallback' : runtime?.executionMode === 'local_pipeline' ? 'local_pipeline' : runtime?.executionMode === 'hf_serverless' ? 'hf_serverless' : 'hosted_provider', fallbackReason: deterministic ? (runtime?.lastFailure || 'provider_or_quality_fallback') : null, success: !deterministic });
     return { ...safeResponse, quotaRemaining: quota.remaining };
   };
 
-  if (preferred === 'gemini') {
-    try {
-      const result = cleanThinking(await queryGemini(prompt, { systemInstruction: systemPrompt }));
-      return afterSuccess({
-        provider: 'Gemini',
-        model: 'configured-gemini',
-        text: result.text,
-        thought: result.thought,
-        latencyMs: Date.now() - started,
-        cost: 'configured',
-        intent: classification?.intent,
-        confidence: classification?.confidence,
-        memoryTokens,
-      });
-    } catch {
-      return fallback(classification, undefined, prompt);
+  const tryHostedProviders = async (candidates: HostedProvider[]): Promise<AIResponse | null> => {
+    for (const provider of candidates) {
+      attemptedProviders.push(provider);
+      try {
+        const raw = provider === 'mistral'
+          ? await queryMistral(prompt, { systemInstruction: systemPrompt })
+          : provider === 'gemini'
+            ? await queryGemini(prompt, { systemInstruction: systemPrompt })
+            : await queryGroq(prompt, { systemPrompt });
+        const result = cleanThinking(raw);
+        const response: AIResponse = {
+          provider: provider === 'mistral' ? 'Mistral' : provider === 'gemini' ? 'Gemini' : 'Groq',
+          model: provider === 'mistral' ? (process.env.MISTRAL_MODEL || 'mistral-small-latest') : provider === 'gemini' ? (process.env.GEMINI_MODEL || 'gemini-2.5-flash') : (process.env.GROQ_MODEL || 'llama-3.1-8b-instant'),
+          text: result.text,
+          thought: result.thought,
+          latencyMs: Date.now() - started,
+          cost: provider === 'gemini' ? 'configured' : 'rate-limited',
+          intent: classification?.intent,
+          confidence: classification?.confidence,
+          memoryTokens,
+        };
+        if (options.phone) {
+          logAiAudit({ phone: options.phone, requestText: prompt, threadId: options.threadId, intentClass: classification?.intent, intentConfidence: classification?.confidence, workingContext: systemPrompt.slice(-2000), available: [], selected: [], llmResponse: response.text, tokenCount: memoryTokens }).catch(() => {});
+        }
+        return afterSuccess(response);
+      } catch {
+        // A configured provider is not treated as reachable until it actually returns a usable response; try the next configured boundary.
+      }
     }
-  }
+    return null;
+  };
 
-  if (preferred === 'mistral') {
-    try {
-      const result = cleanThinking(await queryMistral(prompt, { systemInstruction: systemPrompt }));
-      return afterSuccess({
-        provider: 'Mistral',
-        model: process.env.MISTRAL_MODEL || 'mistral-small-latest',
-        text: result.text,
-        thought: result.thought,
-        latencyMs: Date.now() - started,
-        cost: 'rate-limited',
-        intent: classification?.intent,
-        confidence: classification?.confidence,
-        memoryTokens,
-      });
-    } catch {
-      return fallback(classification, undefined, prompt);
-    }
-  }
-
-  if (preferred === 'groq') {
-    try {
-      const result = cleanThinking(await queryGroq(prompt, { systemPrompt }));
-      return afterSuccess({
-        provider: 'Groq',
-        model: process.env.GROQ_MODEL || 'llama-3.1-8b-instant',
-        text: result.text,
-        thought: result.thought,
-        latencyMs: Date.now() - started,
-        cost: 'rate-limited',
-        intent: classification?.intent,
-        confidence: classification?.confidence,
-        memoryTokens,
-      });
-    } catch {
-      return fallback(classification, undefined, prompt);
-    }
+  if (preferred === 'gemini' || preferred === 'mistral' || preferred === 'groq') {
+    return (await tryHostedProviders(resolveHostedProviderCandidates(preferred))) || fallbackWithDiagnostic('all_eligible_hosted_providers_failed');
   }
 
   if (preferred === 'smollm2') {
@@ -332,7 +358,7 @@ export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions =
         memoryTokens,
       });
     } catch {
-      return fallback(classification, undefined, prompt);
+      return fallbackWithDiagnostic('explicit_smollm2_query_failed');
     }
   }
 
@@ -341,6 +367,11 @@ export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions =
     const cached = simpleCache.get(key);
     if (cached && cached.expires > Date.now()) {
       return { ...cached.value, latencyMs: Date.now() - started, memoryTokens, quotaRemaining: quota.remaining };
+    }
+    const hosted = await tryHostedProviders(resolveHostedProviderCandidates('auto'));
+    if (hosted) {
+      cacheSet(key, hosted);
+      return hosted;
     }
     try {
       const result = cleanThinking(await querySmolLM2(prompt, systemPrompt));
@@ -363,61 +394,10 @@ export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions =
     }
   }
 
-  if (route === 'mistral') {
-    try {
-      const result = cleanThinking(await queryMistral(prompt, { systemInstruction: systemPrompt }));
-      const response: AIResponse = {
-        provider: 'Mistral',
-        model: process.env.MISTRAL_MODEL || 'mistral-small-latest',
-        text: result.text,
-        thought: result.thought,
-        latencyMs: Date.now() - started,
-        cost: 'rate-limited',
-        intent: classification?.intent,
-        confidence: classification?.confidence,
-        memoryTokens,
-      };
-      return afterSuccess(response);
-    } catch {
-      /* continue to the next explicitly available hosted boundary */
-    }
-  }
+  const hosted = await tryHostedProviders(resolveHostedProviderCandidates('auto'));
+  if (hosted) return hosted;
 
-  if (process.env.GROQ_API_KEY) {
-    try {
-      const result = cleanThinking(await queryGroq(prompt, { systemPrompt }));
-      const response: AIResponse = {
-        provider: 'Groq',
-        model: process.env.GROQ_MODEL || 'llama-3.1-8b-instant',
-        text: result.text,
-        thought: result.thought,
-        latencyMs: Date.now() - started,
-        cost: 'rate-limited',
-        intent: classification?.intent,
-        confidence: classification?.confidence,
-        memoryTokens,
-      };
-      if (options.phone) {
-        logAiAudit({
-          phone: options.phone,
-          requestText: prompt,
-          threadId: options.threadId,
-          intentClass: classification?.intent,
-          intentConfidence: classification?.confidence,
-          workingContext: systemPrompt.slice(-2000),
-          available: [],
-          selected: [],
-          llmResponse: response.text,
-          tokenCount: memoryTokens,
-        }).catch(() => {});
-      }
-      return afterSuccess(response);
-    } catch {
-      /* template */
-    }
-  }
-
-  return fallback(classification, undefined, prompt);
+  return fallbackWithDiagnostic('all_eligible_paths_unavailable');
 }
 
 export async function* streamUnifiedAI(
