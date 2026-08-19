@@ -35,6 +35,7 @@ SEED = int(os.environ.get("KURUKOO_TRAIN_SEED", "42"))
 MIN_CUDA_MEMORY_GIB = max(1, int(os.environ.get("KURUKOO_TRAIN_MIN_CUDA_MEMORY_GIB", "16")))
 ALLOW_FULL_CPU = os.environ.get("KURUKOO_ALLOW_FULL_CPU_TRAINING", "false").lower() == "true"
 FULL_CORPUS_MIN_ROWS = max(1000, int(os.environ.get("KURUKOO_FULL_CORPUS_MIN_ROWS", "1000")))
+RUN_KIND = os.environ.get("KURUKOO_TRAIN_RUN_KIND", "student_candidate").strip().lower()
 
 @dataclass(frozen=True)
 class TrainingManifest:
@@ -54,6 +55,7 @@ class TrainingManifest:
     hardware: dict
     libraries: dict
     dataset_rows: int
+    run_kind: str
     blocker: dict | None = None
 
 
@@ -151,7 +153,7 @@ def main():
     dataset_hash = sha256(DATASET)
     if not ENABLE:
         hardware, libraries = runtime_metadata()
-        manifest = TrainingManifest(base_model=BASE_MODEL, dataset=str(DATASET), dataset_sha256=dataset_hash, output=str(OUTPUT), max_length=MAX_LENGTH, epochs=EPOCHS, batch_size=BATCH, gradient_accumulation=GRAD_ACCUM, learning_rate=LR, four_bit_requested=USE_4BIT, training_enabled=False, status="training_disabled", seed=SEED, hardware=hardware, libraries=libraries, dataset_rows=len(rows))
+        manifest = TrainingManifest(base_model=BASE_MODEL, dataset=str(DATASET), dataset_sha256=dataset_hash, output=str(OUTPUT), max_length=MAX_LENGTH, epochs=EPOCHS, batch_size=BATCH, gradient_accumulation=GRAD_ACCUM, learning_rate=LR, four_bit_requested=USE_4BIT, training_enabled=False, status="training_disabled", seed=SEED, hardware=hardware, libraries=libraries, dataset_rows=len(rows), run_kind=RUN_KIND)
         print(json.dumps(asdict(manifest), indent=2))
         write_manifest(asdict(manifest))
         print("Training is disabled. No model weights were created or promoted.")
@@ -169,12 +171,12 @@ def main():
     minimum_satisfied = any(float(device.get("memoryGiB", 0)) >= MIN_CUDA_MEMORY_GIB for device in hardware["cudaDevices"])
     if len(rows) >= FULL_CORPUS_MIN_ROWS and not ALLOW_FULL_CPU and not minimum_satisfied:
         blocker = {"code": "insufficient_gpu_for_full_corpus_training", "reason": "A full Kurukoo Student v1 run is intentionally blocked without a CUDA GPU meeting the configured memory floor.", "requiredGpuMemoryGiB": MIN_CUDA_MEMORY_GIB, "observedCudaDevices": hardware["cudaDevices"], "cpuOverrideEnv": "KURUKOO_ALLOW_FULL_CPU_TRAINING=true", "expectedArtifact": str(OUTPUT / "artifact-manifest.json"), "trainingCommand": "KURUKOO_ENABLE_TRAINING=true KURUKOO_TRAIN_DATASET=<accepted-train.jsonl> KURUKOO_TRAIN_OUTPUT=<artifact-dir> python3 ml/train_smollm2_qlora.py"}
-        manifest = TrainingManifest(base_model=BASE_MODEL, dataset=str(DATASET), dataset_sha256=dataset_hash, output=str(OUTPUT), max_length=MAX_LENGTH, epochs=EPOCHS, batch_size=BATCH, gradient_accumulation=GRAD_ACCUM, learning_rate=LR, four_bit_requested=USE_4BIT, training_enabled=True, status="blocked_hardware", seed=SEED, hardware=hardware, libraries=libraries, dataset_rows=len(rows), blocker=blocker)
+        manifest = TrainingManifest(base_model=BASE_MODEL, dataset=str(DATASET), dataset_sha256=dataset_hash, output=str(OUTPUT), max_length=MAX_LENGTH, epochs=EPOCHS, batch_size=BATCH, gradient_accumulation=GRAD_ACCUM, learning_rate=LR, four_bit_requested=USE_4BIT, training_enabled=True, status="blocked_hardware", seed=SEED, hardware=hardware, libraries=libraries, dataset_rows=len(rows), run_kind=RUN_KIND, blocker=blocker)
         print(json.dumps(asdict(manifest), indent=2))
         write_manifest(asdict(manifest))
         return 3
 
-    manifest = TrainingManifest(base_model=BASE_MODEL, dataset=str(DATASET), dataset_sha256=dataset_hash, output=str(OUTPUT), max_length=MAX_LENGTH, epochs=EPOCHS, batch_size=BATCH, gradient_accumulation=GRAD_ACCUM, learning_rate=LR, four_bit_requested=USE_4BIT, training_enabled=True, status="training_requested", seed=SEED, hardware=hardware, libraries=libraries, dataset_rows=len(rows))
+    manifest = TrainingManifest(base_model=BASE_MODEL, dataset=str(DATASET), dataset_sha256=dataset_hash, output=str(OUTPUT), max_length=MAX_LENGTH, epochs=EPOCHS, batch_size=BATCH, gradient_accumulation=GRAD_ACCUM, learning_rate=LR, four_bit_requested=USE_4BIT, training_enabled=True, status="training_requested", seed=SEED, hardware=hardware, libraries=libraries, dataset_rows=len(rows), run_kind=RUN_KIND)
     print(json.dumps(asdict(manifest), indent=2))
     write_manifest(asdict(manifest))
 
@@ -250,10 +252,12 @@ def main():
 
     artifact_manifest = {
         **asdict(manifest),
-        "status": "trained_candidate",
+        "status": "feasibility_only" if RUN_KIND == "feasibility_only" else "trained_candidate",
+        "runKind": RUN_KIND,
         "artifactDirectory": str(OUTPUT),
         "runtimeModel": (os.environ.get("KURUKOO_SMOLLM2_RUNTIME_MODEL") or "").strip() or None,
         "candidateOnly": True,
+        "registryEligible": RUN_KIND != "feasibility_only",
         "promoted": False,
         "productionEnabled": False,
         "datasetRows": len(rows),

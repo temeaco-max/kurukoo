@@ -49,6 +49,8 @@ def load_manifest(path: pathlib.Path) -> dict:
     manifest = json.loads(path.read_text(encoding="utf-8"))
     if manifest.get("productionEnabled") is True:
         raise SystemExit("Refusing to register an already-production-enabled artifact as a candidate")
+    if manifest.get("runKind") == "feasibility_only" or manifest.get("status") == "feasibility_only" or manifest.get("registryEligible") is False:
+        raise SystemExit("Refusing to register a feasibility-only artifact")
     return manifest
 
 

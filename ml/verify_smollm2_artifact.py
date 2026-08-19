@@ -53,6 +53,8 @@ def main():
         return fail("artifact-manifest.json is missing")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
+    if manifest.get("runKind") == "feasibility_only" or manifest.get("status") == "feasibility_only" or manifest.get("registryEligible") is False:
+        return fail("feasibility-only artifact is not eligible for registry review")
     if manifest.get("candidateOnly") is not True or manifest.get("promoted") is not False or manifest.get("productionEnabled") is not False:
         return fail("artifact manifest is not explicitly candidate-only")
 

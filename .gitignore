@@ -46,3 +46,14 @@ repo-main.zip
 secrets/
 # Persistent local connector sessions; contains WhatsApp auth keys and must never be committed.
 .data/
+
+# Generated Kurukoo learning artifacts — reproducible from the canonical source compilers.
+/ml/behaviour/
+/ml/datasets/kurukoo-os-v1.*
+/ml/datasets/kurukoo-training-v2.*
+/ml/datasets/kurukoo-teacher-candidates.jsonl
+/ml/datasets/kurukoo-teacher-candidates.summary.json
+/ml/artifacts/
+/artifacts/learning-cycle/
+/data/scenario-lab/teacher-evaluation*.json*
+/ml/teachers/__pycache__/

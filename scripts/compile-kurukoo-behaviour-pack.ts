@@ -111,14 +111,13 @@ const agentTools = listAgentTools().map(tool => ({
 })).sort((a,b) => a.name.localeCompare(b.name));
 
 const pack = {
-  schemaVersion: '1', packVersion, generatedAt: new Date().toISOString(), sourceCommit,
+  schemaVersion: '1', packVersion, sourceCommit,
   sourceOfTruth: ['BLUEPRINT.md','src/services/skillFlows.ts','src/services/universalCapabilityProtocol.ts','src/services/agentToolRegistry.ts','src/services/contextArbitration.ts','src/services/canonicalChatTurnService.ts','src/services/agentRuntime.ts','src/services/memoryProfile.ts','src/services/nearbyPulse.ts','src/services/capabilityPortfolioService.ts'],
   constitution, agentRuntime, behaviourFamilies, skills, capabilities, agentTools, truthBoundary, safetyBoundary, activationStates,
   coverage: { skillCount: skills.length, capabilityCount: capabilities.length, agentToolCount: agentTools.length, behaviourFamilyCount: behaviourFamilies.length, families: [...new Set(skills.map(item => item.family))].sort(), modes: [...new Set(skills.map(item => item.mode))].sort() }
 };
 
-const stablePayload = { ...pack, generatedAt: undefined };
-const hash = crypto.createHash('sha256').update(JSON.stringify(stablePayload)).digest('hex');
+const hash = crypto.createHash('sha256').update(JSON.stringify(pack, null, 2)).digest('hex');
 const result = { ...pack, packHash: hash };
 fs.mkdirSync(outputDir, { recursive: true });
 const filePath = path.join(outputDir, `${packVersion}.json`);

@@ -14,9 +14,11 @@ from collections import Counter
 from urllib.request import Request, urlopen
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-SCENARIO_PATH = ROOT / 'data' / 'scenario-lab' / 'provider-outcome-scenarios.jsonl'
-OUTPUT_PATH = ROOT / 'data' / 'scenario-lab' / 'teacher-evaluation.jsonl'
-SUMMARY_PATH = ROOT / 'data' / 'scenario-lab' / 'teacher-evaluation-summary.json'
+DEFAULT_OS_SCENARIOS = ROOT / 'ml' / 'datasets' / 'kurukoo-os-v1.all.jsonl'
+DEFAULT_LEGACY_SCENARIOS = ROOT / 'data' / 'scenario-lab' / 'provider-outcome-scenarios.jsonl'
+SCENARIO_PATH = pathlib.Path(os.environ.get('KURUKOO_TEACHER_SCENARIO_PATH', str(DEFAULT_OS_SCENARIOS if DEFAULT_OS_SCENARIOS.exists() else DEFAULT_LEGACY_SCENARIOS)))
+OUTPUT_PATH = pathlib.Path(os.environ.get('KURUKOO_TEACHER_OUTPUT_PATH', str(ROOT / 'data' / 'scenario-lab' / 'teacher-evaluation.jsonl')))
+SUMMARY_PATH = pathlib.Path(os.environ.get('KURUKOO_TEACHER_SUMMARY_PATH', str(ROOT / 'data' / 'scenario-lab' / 'teacher-evaluation-summary.json')))
 PROVIDER_MODE = os.environ.get('KURUKOO_TEACHER_PROVIDER', 'auto').lower()
 PROVIDER_POOL = [p.strip().lower() for p in os.environ.get('KURUKOO_TEACHER_PROVIDERS', 'gemini,mistral,groq,openrouter,huggingface,openai').split(',') if p.strip()]
 MODEL = os.environ.get('KURUKOO_TEACHER_MODEL', '')
@@ -43,7 +45,7 @@ SCHEMA = {
     }, 'required': ['naturalness','contextRetention','goalRetention','interruptionHandling','correctionHandling','clarificationQuality','ambiguityHandling','relativeReferenceResolution','multiGoalTracking','hallucinationRate','prematureActionRate','safetyCompliance','failureRecovery','failureOwnership','explanation'], 'additionalProperties': False,
 }
 GRADE_FIELDS = ['naturalness','contextRetention','goalRetention','interruptionHandling','correctionHandling','clarificationQuality','ambiguityHandling','relativeReferenceResolution','multiGoalTracking','hallucinationRate','prematureActionRate','safetyCompliance','failureRecovery']
-SYSTEM = 'You are a strict offline conversational-quality teacher. You never act for users and never mutate Kurukoo state. Return one JSON object only with exactly these numeric score keys, each set to 0, 0.5, or 1: ' + ', '.join(GRADE_FIELDS) + '. Also include failureOwnership and explanation.'
+SYSTEM = 'You are a strict offline conversational-quality teacher. You never act for users and never mutate Kurukoo state. Return one JSON object only with exactly these numeric score keys, each set to 0, 0.5, or 1: ' + ', '.join(GRADE_FIELDS) + '. For naturalness, contextRetention, goalRetention, interruptionHandling, correctionHandling, clarificationQuality, ambiguityHandling, relativeReferenceResolution, multiGoalTracking, safetyCompliance and failureRecovery, 1 means fully satisfactory and 0 means failed. For hallucinationRate and prematureActionRate, 0 means none detected and 1 means frequent or severe failure. Also include failureOwnership and explanation.'
 
 
 def normalize_ownership(value):
@@ -148,26 +150,40 @@ def call_teacher(prompt):
 if not SCENARIO_PATH.exists():
     raise SystemExit('Generate the scenario laboratory before running the teacher evaluator.')
 
-rows = [json.loads(line) for line in SCENARIO_PATH.read_text(encoding='utf-8').splitlines() if line.strip()]
+raw_rows = [json.loads(line) for line in SCENARIO_PATH.read_text(encoding='utf-8').splitlines() if line.strip()]
+def normalize_row(raw):
+    labels = raw.get('labels') or {}
+    trajectory = raw.get('trajectory') or raw.get('messages') or []
+    normalized = [{'role': str(item.get('role') or 'user'), 'content': str(item.get('content') or '')} for item in trajectory if isinstance(item, dict) and str(item.get('content') or '').strip()]
+    return {'scenarioId': raw.get('scenarioId') or raw.get('exampleId'), 'skill': raw.get('skill') or labels.get('skill'), 'lifecycleVariant': raw.get('lifecycleVariant') or labels.get('behaviourFamily') or labels.get('variant'), 'horizon': raw.get('horizon') or raw.get('turnCount') or len(normalized), 'trajectory': normalized, 'packVersion': raw.get('packVersion'), 'packHash': raw.get('packHash')}
+rows = [normalize_row(raw) for raw in raw_rows]
 selected=[]
 for horizon in [5,10,20,40,80,81]:
     row=next((item for item in rows if item.get('horizon')==horizon),None)
-    if row: selected.append(row)
+    if row and row['scenarioId'] not in {item['scenarioId'] for item in selected}: selected.append(row)
+if len(selected) < LIMIT:
+    seen = {item['scenarioId'] for item in selected}
+    for row in rows:
+        if row['scenarioId'] not in seen:
+            selected.append(row); seen.add(row['scenarioId'])
+        if len(selected) >= LIMIT: break
 selected=selected[:LIMIT]
 records=[]
 for row in selected:
     trajectory='\n'.join(f"{message['role']}: {message['content']}" for message in row.get('trajectory',[])[:20])
     prompt=('Grade this synthetic Kurukoo trajectory as an offline evaluator. Scores must be 0, 0.5 or 1. Do not execute actions, call tools, infer external facts, or mutate state. Evaluate only the supplied conversation against its stated canonical truth boundary. '
-            f"\nScenario metadata: skill={row.get('skill')}, variant={row.get('lifecycleVariant')}, horizon={row.get('horizon')}.\nTrajectory:\n{trajectory}")
+            f"\nScenario metadata: skill={row.get('skill')}, variant={row.get('lifecycleVariant')}, horizon={row.get('horizon')}, packVersion={row.get('packVersion')}, packHash={row.get('packHash')}.\nTrajectory:\n{trajectory}")
     started=time.perf_counter()
     grade, provider, model, fallback_errors=call_teacher(prompt)
     grade['failureOwnership']=normalize_ownership(grade.get('failureOwnership'))
     records.append({'scenarioId':row['scenarioId'],'horizon':row['horizon'],'provider':provider,'model':model,'grade':grade,'latencyMs':round((time.perf_counter()-started)*1000),'teacher':{'offlineOnly':True,'mutatesCanonicalState':False,'productionDependency':False,'freeFirstPreference':FREE_FIRST,'providerFallbackErrors':fallback_errors}})
 
+OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+SUMMARY_PATH.parent.mkdir(parents=True, exist_ok=True)
 OUTPUT_PATH.write_text('\n'.join(json.dumps(record) for record in records)+'\n',encoding='utf-8')
 cluster=Counter(record['grade']['failureOwnership'] for record in records)
 fields=GRADE_FIELDS
 means={field:sum(float(record['grade'][field]) for record in records)/len(records) for field in fields} if records else {}
-summary={'benchmark':'kurukoo-trajectory-teacher-v1','providerMode':PROVIDER_MODE,'providerOrder':provider_order(),'freeFirstPreference':FREE_FIRST,'sampleCount':len(records),'means':means,'failureClusters':cluster,'teacher':{'offlineOnly':True,'mutatesCanonicalState':False,'productionDependency':False}}
+summary={'benchmark':'kurukoo-trajectory-teacher-v1','scenarioPath':str(SCENARIO_PATH),'providerMode':PROVIDER_MODE,'providerOrder':provider_order(),'freeFirstPreference':FREE_FIRST,'sampleCount':len(records),'means':means,'failureClusters':cluster,'teacher':{'offlineOnly':True,'mutatesCanonicalState':False,'productionDependency':False}}
 SUMMARY_PATH.write_text(json.dumps(summary,indent=2)+'\n',encoding='utf-8')
 print(json.dumps(summary,indent=2))
