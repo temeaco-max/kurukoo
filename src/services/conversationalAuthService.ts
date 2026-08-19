@@ -47,9 +47,11 @@ export async function handleConversationalAuth(guestPhone: string, text: string)
   const { state, data } = await getAuthState(guestPhone);
 
   if (state === 'awaiting_name') {
-    const name = text.trim();
+    const supplied = text.trim();
+    const name = supplied.match(/^(?:my name is|i(?:'m| am))\s+(.+)$/i)?.[1]?.trim() || supplied;
     if (GUEST_CONVERSATION_RE.test(name)) { await setAuthState(guestPhone, 'none', {}); const generated = await generateConversationalResponse({ prompt: text, phone: guestPhone, systemPrompt: 'You are Kurukoo, a helpful everyday conversational assistant. This is a casual greeting from a guest who has not signed in. Respond naturally and briefly. Do not ask for a name, phone number, OTP, or create a request unless the user explicitly asks for one.' }); return { reply: generated.text }; }
     if (!name) return { reply: "I didn't catch your name. What should I call you?" };
+    if (/\b(?:need|want|deliver|delivery|rice|yam|food|ikeja|order|location)\b/i.test(name) && !/^(?:[A-Za-z][A-Za-z .'-]{1,58})$/.test(name)) return { reply: 'That sounds like request information, not a name. I have kept it out of your identity profile. Tell me the name you want Kurukoo to use, or continue the request after sign-in.' };
     await setAuthState(guestPhone, 'awaiting_phone', { ...data, name });
     return { reply: `Nice to meet you, ${name}. Enter your phone number below and I’ll create a verification request and tell you whether an approved delivery method is available.`, cardData: { type: 'auth_conversation', step: 'phone', name } };
   }

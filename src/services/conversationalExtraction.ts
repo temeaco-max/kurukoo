@@ -9,6 +9,8 @@ export interface ConversationalEntities {
   budget?: number;
   quantity?: number;
   product?: string;
+  items?: string;
+  delivery?: boolean;
   preferences?: string[];
   provider?: string;
   requestContext?: string;
@@ -21,7 +23,7 @@ const SKILL_ALIASES: Array<[RegExp, string]> = [
   [/\bcarpenter\b/i, 'carpenter'],
   [/\bclean(?:er|ing)?\b/i, 'cleaner'],
   [/\b(?:taxi|cab|ride|uber)\b/i, 'ride_request'],
-  [/\b(?:jollof|fried rice|food|meal|groceries)\b/i, 'order_food'],
+  [/\b(?:jollof|fried rice|rice|yam|plantain|food|meal|groceries)\b/i, 'order_food'],
 ];
 
 function clean(value: string | undefined): string | undefined {
@@ -60,6 +62,25 @@ function parseProduct(text: string): string | undefined {
   return clean(match?.[1]);
 }
 
+const FOOD_ITEM_PATTERN = /\b(?:rice|yam|plantain|jollof|egusi|amala|ewedu|suya|bread|chicken|beans|noodles|meal|groceries?)\b/gi;
+
+export function extractFoodOrderSlots(text: string): { items?: string; location?: string; delivery?: boolean } {
+  const query = String(text || '').trim();
+  const location = parseLocation(query);
+  const delivery = /\b(?:deliver(?:ed|y)?|bring|send)\b/i.test(query) || undefined;
+  const found = [...query.matchAll(FOOD_ITEM_PATTERN)].map(match => match[0].toLowerCase());
+  const unique = [...new Set(found)];
+  const explicitFoodIntent = /\b(?:order|buy|get|need|want|deliver(?:ed|y)?|bring|send|food|meal|grocer(?:y|ies))\b/i.test(query);
+  const contextualFoodIntent = unique.length >= 2 && Boolean(location);
+  if (!unique.length || (!explicitFoodIntent && !contextualFoodIntent)) return {};
+  return { items: unique.join(' and '), ...(location ? { location } : {}), ...(delivery ? { delivery: true } : {}) };
+}
+
+export function isFoodOrderExpression(text: string): boolean {
+  const slots = extractFoodOrderSlots(text);
+  return Boolean(slots.items && (slots.location || slots.delivery || /\b(?:order|buy|get|need|want|food|meal|grocer(?:y|ies))\b/i.test(String(text || ''))));
+}
+
 function parsePreferences(text: string): string[] | undefined {
   const preferences: string[] = [];
   if (/\bprefer\b.*\b(short|brief|concise|simple)\b/i.test(text)) preferences.push('response_style:concise');
@@ -72,6 +93,7 @@ export function extractConversationalEntities(text: string, intent?: string): Co
   const query = String(text || '').trim();
   const skill = SKILL_ALIASES.find(([pattern]) => pattern.test(query))?.[1] || getKnownSkills().find(candidate => query.toLowerCase().includes(candidate.replace(/_/g, ' ')));
   const dateTime = parseDateTime(query);
+  const food = extractFoodOrderSlots(query);
   const entities: ConversationalEntities = {
     intent,
     skill,
@@ -81,6 +103,8 @@ export function extractConversationalEntities(text: string, intent?: string): Co
     budget: parseBudget(query),
     quantity: parseQuantity(query),
     product: parseProduct(query),
+    items: food.items,
+    delivery: food.delivery,
     preferences: parsePreferences(query),
     requestContext: query,
   };
@@ -93,6 +117,8 @@ export function validateConversationalEntities(entities: ConversationalEntities,
   if (validated.quantity !== undefined && (!Number.isInteger(validated.quantity) || validated.quantity < 1 || validated.quantity > 10000)) delete validated.quantity;
   if (validated.location) validated.location = validated.location.slice(0, 80);
   if (validated.product) validated.product = validated.product.slice(0, 160);
+  if (validated.items) validated.items = validated.items.slice(0, 160);
+  if (validated.delivery !== undefined && typeof validated.delivery !== 'boolean') delete validated.delivery;
   if (validated.skill && validated.skill.length > 80) delete validated.skill;
   return validated;
 }

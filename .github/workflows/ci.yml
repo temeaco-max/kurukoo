@@ -29,6 +29,10 @@ jobs:
         run: npm run test:hosted-provider-resolution && npm run test:hosted-provider-failover && npm run test:smollm2-hosted-fallback
       - name: Test progressive identity contract
         run: npx tsx scripts/test-progressive-identity.ts
+      - name: Test food request identity and context resume
+        run: npm run test:food-auth-context-resume
+      - name: Test artifact storage ownership and durability contract
+        run: npm run test:artifact-storage
       - name: Test remote MCP app contract
         run: npx tsx scripts/test-mcp-app.ts
       - name: Test Pulse privacy contract

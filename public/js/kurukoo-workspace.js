@@ -146,6 +146,35 @@
     if (!nextReminder && !recentRequest) { const row = document.createElement('div'); row.append(Object.assign(document.createElement('strong'), { textContent: 'No connected picks yet' }), Object.assign(document.createElement('small'), { textContent: 'Start a conversation to create a request or reminder.' })); list.appendChild(row); }
   };
 
+  const loadArtifacts = async () => {
+    const list = qs('[data-artifact-list]'); if (!list) return;
+    const state = qs('[data-artifact-storage-state]'); const copy = qs('[data-artifact-storage-copy]'); const connect = qs('[data-artifact-connect]'); const note = qs('[data-artifact-action-note]');
+    try {
+      const payload = await api('/api/artifacts'); const artifacts = Array.isArray(payload.artifacts) ? payload.artifacts : []; const storage = payload.storage || {};
+      if (state) state.textContent = storage.connected ? 'Drive connected' : storage.configured ? 'Managed fallback' : 'Drive setup pending';
+      if (copy) copy.textContent = storage.connected ? 'New eligible artifacts are saved to your connected Google Drive and recorded here.' : storage.configured ? 'Google Drive is available to connect. Until you connect it, saved artifacts use Kurukoo managed fallback storage.' : 'Google Drive is not configured for this deployment. Saved artifacts use Kurukoo managed fallback storage when available.';
+      if (connect) { connect.hidden = Boolean(storage.connected); connect.disabled = !storage.configured; connect.textContent = storage.configured ? 'Connect Google Drive' : 'Drive not configured'; }
+      if (note) note.textContent = storage.connected ? 'External files are deleted only when you explicitly request it.' : storage.reason || '';
+      clear(list);
+      artifacts.forEach((artifact) => {
+        const open = document.createElement('a'); open.className = 'workspace-text-action'; open.href = `/api/artifacts/${encodeURIComponent(artifact.id)}/open`; open.textContent = 'Open';
+        const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'workspace-text-action'; remove.textContent = 'Remove reference'; remove.addEventListener('click', async () => { remove.disabled = true; try { await api(`/api/artifacts/${encodeURIComponent(artifact.id)}`, { method: 'DELETE' }); await loadArtifacts(); } catch (_) { remove.disabled = false; remove.textContent = 'Could not remove'; } });
+        const actions = document.createElement('span'); actions.append(open, document.createTextNode(' · '), remove);
+        const detail = `${humanize(artifact.kind)} · ${artifact.bytes || 0} bytes · ${humanize(artifact.durability)}${artifact.transcriptStatus && artifact.transcriptStatus !== 'not_requested' ? ` · Transcript ${humanize(artifact.transcriptStatus)}` : ''}`;
+        list.appendChild(makeDataCard({ eyebrow: formatDate(artifact.createdAt), title: artifact.filename || 'Artifact', detail, state: humanize(artifact.storageProvider), action: actions }));
+      });
+      setEmpty('[data-artifact-empty]', artifacts.length === 0);
+    } catch (_) {
+      if (state) state.textContent = 'Unavailable'; if (copy) copy.textContent = 'Artifact history is unavailable for this signed-in session.'; setEmpty('[data-artifact-empty]', true);
+    }
+  };
+
+  const connectArtifactDrive = async (button) => {
+    button.disabled = true;
+    try { const payload = await api('/api/artifacts/drive/connect', { method: 'POST' }); if (!payload.authorizationUrl) throw new Error('Authorization unavailable'); window.location.assign(payload.authorizationUrl); }
+    catch (_) { button.disabled = false; button.textContent = 'Could not start Drive connection'; }
+  };
+
   const loadConnectedResources = () => {
     if (document.getElementById('connected-resource-runtime')) return;
     const script = document.createElement('script'); script.id = 'connected-resource-runtime'; script.src = '/js/connected-resources.js?v=2'; script.defer = true; document.head.appendChild(script);
@@ -169,13 +198,14 @@
   document.addEventListener('click', (event) => { const link = event.target.closest('#workspace-more-items a, #workspace-more-items .workspace-link'); if (link) setMoreOpen(true); });
   if (workspaceSidebar && localStorage.getItem('kurukoo_workspace_collapsed') === '1') workspaceSidebar.classList.add('is-collapsed');
   qs('#workspace-open')?.addEventListener('click', () => workspaceSidebar?.classList.add('open'));
+  qs('[data-artifact-connect]')?.addEventListener('click', (event) => connectArtifactDrive(event.currentTarget));
   workspaceSidebar?.addEventListener('click', (event) => { if (event.target.closest('a')) workspaceSidebar.classList.remove('open'); });
 
   qsa('[data-proactive-dismiss], [data-proactive-response]').forEach((button) => button.addEventListener('click', () => { qs('[data-proactive-card]')?.setAttribute('hidden', ''); localStorage.setItem('kurukoo_proactive_dismissed', '1'); }));
   if (localStorage.getItem('kurukoo_proactive_dismissed') === '1') qs('[data-proactive-card]')?.setAttribute('hidden', '');
 
   const params = new URLSearchParams(window.location.search); const prompt = params.get('prompt'); if (prompt && input) window.requestAnimationFrame(() => seedPrompt(prompt));
-  if (section === 'requests') loadRequests(); if (section === 'reminders') loadReminders(); if (section === 'points') loadPoints(); if (section === 'safety') loadSafety(); if (section === 'daily-picks') loadDailyPicks();
+  if (section === 'requests') loadRequests(); if (section === 'reminders') loadReminders(); if (section === 'points') loadPoints(); if (section === 'safety') loadSafety(); if (section === 'daily-picks') loadDailyPicks(); if (section === 'connect') loadArtifacts();
 
   loadConnectedResources();
 })();

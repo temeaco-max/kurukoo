@@ -8,6 +8,7 @@ import { createVoiceSession, endVoiceSession, getVoiceSession, getVoiceStatus } 
 import { synthesizeSpeech } from '../services/serverTtsService.js';
 import { transcribeMistralAudio } from '../services/mistralService.js';
 import { executeVoiceTool, isVoiceToolAllowed } from '../services/voiceToolRegistry.js';
+import { createArtifact, setArtifactTranscript } from '../services/artifactService.js';
 
 const router = Router();
 const sessionRateLimit = createRateLimiter({ windowMs: 60_000, max: Math.max(1, Math.min(20, Number(process.env.KURUKOO_VOICE_SESSION_RATE_LIMIT) || 5)), keyPrefix: 'voice-session', message: 'Voice session limit reached — try again shortly' });
@@ -74,15 +75,20 @@ router.post('/transcribe', optionalAuthenticateUser, sessionRateLimit, async (re
   if (!encoded || !/^[A-Za-z0-9+/=]+$/.test(encoded)) return res.status(400).json({ error: 'audioBase64 is required.' });
   const data = Buffer.from(encoded, 'base64');
   if (!data.length || data.length > 10 * 1024 * 1024) return res.status(400).json({ error: 'Audio must be between 1 byte and 10 MB.' });
+  const filename = typeof req.body?.filename === 'string' ? req.body.filename.slice(0, 120) : 'kurukoo-audio';
+  let artifact: Awaited<ReturnType<typeof createArtifact>> | undefined;
   try {
-    const transcript = await transcribeMistralAudio({ data, mimeType, filename: typeof req.body?.filename === 'string' ? req.body.filename.slice(0, 120) : 'kurukoo-audio', language: typeof req.body?.language === 'string' ? req.body.language : undefined });
+    artifact = await createArtifact({ phone, filename, mimeType, data, kind: 'voice', transcriptStatus: 'pending' });
+    const transcript = await transcribeMistralAudio({ data, mimeType, filename, language: typeof req.body?.language === 'string' ? req.body.language : undefined });
+    artifact = (await setArtifactTranscript(phone, artifact.id, transcript.text, 'available')) || artifact;
     const turn = await processCanonicalChatTurn({ phone, message: transcript.text, channel: 'web_voice', conversationId: session.conversationId });
-    res.json({ transcript: transcript.text, provider: 'mistral', model: transcript.model, language: transcript.language, conversationId: turn.conversationId, turn });
+    res.json({ transcript: transcript.text, transcriptStatus: 'available', provider: 'mistral', model: transcript.model, language: transcript.language, conversationId: turn.conversationId, artifact, turn });
   } catch (error: any) {
     const code = error?.code || 'MISTRAL_REQUEST_FAILED';
-    const status = code === 'MISTRAL_NOT_CONFIGURED' ? 503 : 502;
-    console.warn('[Voice] transcription_failed', { code, guest: isGuest });
-    res.status(status).json({ error: 'Server transcription is unavailable right now.', code });
+    if (artifact) artifact = (await setArtifactTranscript(phone, artifact.id, undefined, 'failed').catch(() => artifact)) || artifact;
+    const status = code === 'MISTRAL_NOT_CONFIGURED' || code.startsWith('DRIVE_') || code.startsWith('ARTIFACT_') ? 503 : 502;
+    console.warn('[Voice] transcription_failed', { code, guest: isGuest, artifactId: artifact?.id, durability: artifact?.durability });
+    res.status(status).json({ error: 'Server transcription is unavailable right now. The voice artifact was retained only if the returned artifact record confirms it.', code, ...(artifact ? { artifact, transcriptStatus: 'failed' } : {}) });
   }
 });
 
