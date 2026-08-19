@@ -185,23 +185,22 @@ export async function getInternalNotifications(phone: string, limit = 20): Promi
     return results;
 }
 
-export async function getInternalNotificationById(phone: string, notificationId: number): Promise<{ id: number; title: string; body: string; link: string; status: string; delivery_state: string; provider_reference?: string; failure_reason?: string; context_id?: string; conversation_id?: string; available_action?: string; canonical_action?: string; object_type?: string; object_id?: string; owner_scope?: string; surface?: string; created_at: string } | null> {
+export async function getInternalNotificationById(phoneOrId: string | number, idOrPhone: number | string): Promise<{ id: number; title: string; body: string; link: string; status: string; delivery_state: string; provider_reference?: string; failure_reason?: string; context_id?: string; conversation_id?: string; available_action?: string; canonical_action?: string; object_type?: string; object_id?: string; owner_scope?: string; surface?: string; created_at: string } | null> {
+    const phone = typeof phoneOrId === 'string' ? phoneOrId : String(idOrPhone);
+    const id = Number(typeof phoneOrId === 'number' ? phoneOrId : idOrPhone);
     const db = await ensureNotificationTable();
-    const id = Number(notificationId);
     if (!Number.isSafeInteger(id) || id <= 0) return null;
     const row = db.exec(`SELECT id, title, body, link, status, delivery_state, provider_reference, failure_reason, context_id, conversation_id, available_action, canonical_action, object_type, object_id, owner_scope, surface, created_at FROM internal_notifications WHERE id = ? AND phone = ? LIMIT 1`, [id, phone])[0]?.values?.[0] as any[] | undefined;
     if (!row) return null;
-    return {
-        id: Number(row[0]), title: String(row[1]), body: String(row[2]), link: String(row[3] || '/chat'), status: String(row[4] || 'unread'), delivery_state: String(row[5] || 'queued'),
-        provider_reference: row[6] ? String(row[6]) : undefined, failure_reason: row[7] ? String(row[7]) : undefined, context_id: row[8] ? String(row[8]) : undefined, conversation_id: row[9] ? String(row[9]) : undefined,
-        available_action: row[10] ? String(row[10]) : undefined, canonical_action: row[11] ? String(row[11]) : undefined, object_type: row[12] ? String(row[12]) : undefined, object_id: row[13] ? String(row[13]) : undefined,
-        owner_scope: row[14] ? String(row[14]) : undefined, surface: row[15] ? String(row[15]) : undefined, created_at: String(row[16] || ''),
-    };
+    return { id: Number(row[0]), title: String(row[1]), body: String(row[2]), link: String(row[3] || '/chat'), status: String(row[4] || 'unread'), delivery_state: String(row[5] || 'queued'), provider_reference: row[6] ? String(row[6]) : undefined, failure_reason: row[7] ? String(row[7]) : undefined, context_id: row[8] ? String(row[8]) : undefined, conversation_id: row[9] ? String(row[9]) : undefined, available_action: row[10] ? String(row[10]) : undefined, canonical_action: row[11] ? String(row[11]) : undefined, object_type: row[12] ? String(row[12]) : undefined, object_id: row[13] ? String(row[13]) : undefined, owner_scope: row[14] ? String(row[14]) : undefined, surface: row[15] ? String(row[15]) : undefined, created_at: String(row[16] || '') };
 }
 
-export async function markNotificationRead(phone: string, notificationId: number): Promise<boolean> {
+export async function markNotificationRead(phoneOrId: string | number, idOrPhone: number | string): Promise<boolean> {
+    const phone = typeof phoneOrId === 'string' ? phoneOrId : String(idOrPhone);
+    const id = Number(typeof phoneOrId === 'number' ? phoneOrId : idOrPhone);
     const db = await ensureNotificationTable();
-    db.run(`UPDATE internal_notifications SET status='read' WHERE id = ? AND phone = ?`, [notificationId, phone]);
+    if (!Number.isSafeInteger(id) || id <= 0 || !phone) return false;
+    db.run(`UPDATE internal_notifications SET status='read' WHERE id = ? AND phone = ?`, [id, phone]);
     const updated = db.getRowsModified() > 0;
     if (updated) saveDb();
     return updated;
@@ -209,4 +208,39 @@ export async function markNotificationRead(phone: string, notificationId: number
 
 export function isFcmConfigured(): boolean {
     return getFirebaseFcmReadiness().configured;
+}
+
+async function sendSingleFcmMessage(phone: string, title: string, body: string, link?: string): Promise<{ accepted: boolean; providerReference?: string; failureReason?: string }> {
+    const profile = await getProfile(phone, 'pushNotifications.fcmDrain').catch(() => null) as any;
+    const token = profile?.fcm_token ? String(profile.fcm_token).trim() : '';
+    if (!token) return { accepted: false, failureReason: 'device_token_missing' };
+    return sendFirebaseFcmMessage({ token, title, body, link });
+}
+
+async function invalidateStoredFcmToken(phone: string): Promise<void> {
+    const db = await getDb();
+    db.run(`UPDATE memory_profiles SET fcm_token = NULL, updated_at = CURRENT_TIMESTAMP WHERE phone = ?`, [phone]);
+    if (db.getRowsModified() > 0) saveDb();
+}
+
+export async function drainFcmQueue(limit = 50): Promise<{ sent: number; retried: number; none: number; invalidTokens: number }> {
+    const outcome = { sent: 0, retried: 0, none: 0, invalidTokens: 0 };
+    if (!isFcmConfigured()) return outcome;
+    const rows = await listQueuedNotifications(Math.max(1, Math.min(100, Math.floor(Number(limit) || 50))));
+    for (const row of rows) {
+        const result = await sendSingleFcmMessage(row.phone, row.title, row.body, row.link);
+        if (result.accepted) {
+            await transitionNotificationDelivery(row.id, 'accepted', row.phone, result.providerReference);
+            outcome.sent += 1;
+        } else if (result.failureReason === 'device_token_unregistered') {
+            await invalidateStoredFcmToken(row.phone);
+            await transitionNotificationDelivery(row.id, 'dead_letter', row.phone, undefined, result.failureReason);
+            outcome.invalidTokens += 1;
+            outcome.none += 1;
+        } else {
+            const state = await recordNotificationAttempt(row.id, result.failureReason || 'fcm_delivery_failed', row.phone);
+            outcome[state === 'dead_letter' ? 'none' : 'retried'] += 1;
+        }
+    }
+    return outcome;
 }
