@@ -9,8 +9,9 @@ import { useColors } from "@/hooks/use-colors";
 const tabIcons = {
   index: "bubble.left.and.bubble.right.fill",
   discover: "map.fill",
+  requests: "list.bullet.rectangle.fill",
   tasks: "checklist",
-  more: "ellipsis.circle.fill",
+  connect: "link.circle.fill",
 } as const;
 
 export default function TabLayout() {
@@ -37,10 +38,11 @@ export default function TabLayout() {
         tabBarIcon: ({ color, size }) => <IconSymbol name={tabIcons[route.name as keyof typeof tabIcons]} size={size} color={color} />,
       })}
     >
-      <Tabs.Screen name="index" options={{ title: "Chat" }} />
+      <Tabs.Screen name="index" options={{ title: "Agent" }} />
       <Tabs.Screen name="discover" options={{ title: "Discover" }} />
+      <Tabs.Screen name="requests" options={{ title: "Requests" }} />
       <Tabs.Screen name="tasks" options={{ title: "Tasks" }} />
-      <Tabs.Screen name="more" options={{ title: "More" }} />
+      <Tabs.Screen name="connect" options={{ title: "Connect" }} />
     </Tabs>
   );
 }
