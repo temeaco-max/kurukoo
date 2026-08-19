@@ -22,7 +22,15 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run lint
       - run: npm run build
-      - run: npm run test:routes
+      - name: Run broad route contracts
+        run: npm run test:routes
+      - name: Upload route-suite diagnostic log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: route-suite-log
+          path: .artifacts/test-route-sequence.log
+          if-no-files-found: ignore
       - name: Test Hugging Face Jobs training backend contract
         run: npm run test:huggingface-jobs-backend
       - name: Test hosted provider routing and retired Hugging Face serverless boundary
