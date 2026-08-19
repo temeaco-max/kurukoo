@@ -22,7 +22,7 @@
 
             <% if (category.subCategories && category.subCategories.length > 0) { %>
                 <div class="sub-capabilities">
-                    <h2>Related capabilities</h2>
+                    <h2>Related Capabilities</h2>
                     <div class="subcat-grid">
                         <% category.subCategories.forEach(sub => { %>
                             <a href="/explore/<%= sub.slug %>" class="subcat-card"><span><%= sub.name %></span><span class="arrow" aria-hidden="true">→</span></a>
