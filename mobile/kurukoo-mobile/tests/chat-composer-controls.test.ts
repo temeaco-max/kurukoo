@@ -4,8 +4,9 @@ import { resolve } from "node:path";
 
 describe("Chat composer control contract", () => {
   const mobile = readFileSync(resolve(process.cwd(), "app/(tabs)/index.tsx"), "utf8");
-  const desktop = readFileSync(resolve(process.cwd(), "../kurukoo-website/client/src/App.tsx"), "utf8");
-  const desktopCss = readFileSync(resolve(process.cwd(), "../kurukoo-website/client/src/index.css"), "utf8");
+  const webRoot = resolve(process.cwd(), "../..");
+  const webApp = readFileSync(resolve(webRoot, "views/app.ejs"), "utf8");
+  const foundation = readFileSync(resolve(webRoot, "public/css/kurukoo-client-foundation.css"), "utf8");
 
   it("keeps every mobile composer control connected to an action", () => {
     expect(mobile).toContain('accessibilityLabel="Show conversation context"');
@@ -16,18 +17,17 @@ describe("Chat composer control contract", () => {
     expect(mobile).toContain('sending ? stopGenerating() : void ask()');
   });
 
-  it("keeps desktop composer controls connected and explainable", () => {
-    expect(desktop).toContain('className="chat-composer"');
-    expect(desktop).toContain('data-tooltip="Show preserved context"');
-    expect(desktop).toContain('data-tooltip="Clear this draft"');
-    expect(desktop).toContain('data-tooltip={sending ? "Stop generating" : "Ask Kurukoo"}');
-    expect(desktop).toContain('onClick={() => setMessage("")}');
-    expect(desktopCss).toContain('.composer-tool[data-tooltip]::after');
-    expect(desktopCss).toContain('.chat-ask-button[data-tooltip]::after');
+  it("keeps the canonical Web App represented without referencing the removed duplicate website", () => {
+    expect(webApp).toContain('href="/chat"');
+    expect(webApp).toContain('href="/app/requests"');
+    expect(webApp).toContain('href="/app/tasks"');
+    expect(webApp).toContain('href="/app/connect"');
+    expect(foundation).toContain('.k-mobile-tabbar');
+    expect(foundation).toContain('--k-primary');
   });
 
   it("preserves truthful disabled behavior for unsent or unavailable actions", () => {
     expect(mobile).toContain('disabled={!sending && !draft.trim()}');
-    expect(desktop).toContain('disabled={(!message.trim() && !sending) || contextState.status !== "ready"}');
+    expect(mobile).toContain('sending ? stopGenerating() : void ask()');
   });
 });
