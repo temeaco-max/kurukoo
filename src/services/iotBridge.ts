@@ -49,7 +49,10 @@ async function subscribeConfiguredStateTopics(): Promise<void> {
     try {
         const db = await getDb();
         const rows = db.exec(`SELECT metadata_json FROM connected_resources WHERE protocol='mqtt' AND status='active'`)[0]?.values || [];
-        const topics = [...new Set(rows.map((row: any[]) => { try { const metadata = JSON.parse(String(row[0] || '{}')); return String(metadata.stateTopic || '').trim(); } catch { return ''; } }).filter(Boolean))].slice(0, 200);
+        const topics: string[] = rows.map((row: any[]) => {
+            try { const metadata = JSON.parse(String(row[0] || '{}')); return String(metadata.stateTopic || '').trim(); }
+            catch { return ''; }
+        }).filter((topic): topic is string => Boolean(topic)).slice(0, 200);
         for (const topic of topics) {
             if (subscriptions.has(topic)) continue;
             await new Promise<void>((resolve, reject) => client!.subscribe(topic, { qos: 1 }, error => error ? reject(error) : resolve()));
@@ -66,7 +69,6 @@ async function startBridge(): Promise<void> {
     const enabled = isFeatureEnabled(process.env.KURUKOO_DEFAULT_COUNTRY || 'ng', 'iot_remote');
     status = { ...status, enabled, brokerConfigured: Boolean(brokerUrl), configured: Boolean(brokerUrl && enabled) };
     if (!brokerUrl || !enabled || client) return;
-
     try {
         client = mqtt.connect(brokerUrl, { reconnectPeriod: 5000, connectTimeout: 5000, clean: true });
         client.on('connect', () => {
