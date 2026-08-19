@@ -1,4 +1,4 @@
-import { queryUnifiedAI, type AIProvider, type AIResponse, type ConversationalContextHint } from './unifiedAiEngine.js';
+import { queryUnifiedAI, resolveConfiguredHostedProvider, type AIProvider, type AIResponse, type ConversationalContextHint } from './unifiedAiEngine.js';
 import { assessConversationQuality, type ConversationQualityAssessment } from './conversationQualityService.js';
 import { buildConversationTurnContract, buildConversationalSystemDirective, type ConversationTurnContract } from './conversationTurnContractService.js';
 import { buildConversationContextPack } from './conversationContextPackService.js';
@@ -45,10 +45,7 @@ const CONVERSATIONAL_REPAIR_REQUIRED = new Set(['premature_action', 'internal_me
 
 function strongerProvider(preferred: AIProvider | undefined): AIProvider {
   if (preferred === 'mistral' || preferred === 'gemini' || preferred === 'groq') return preferred;
-  if (process.env.KURUKOO_AI_HOSTED_PROVIDER === 'mistral' && process.env.MISTRAL_API_KEY) return 'mistral';
-  if (process.env.KURUKOO_AI_HOSTED_PROVIDER === 'gemini' && (process.env.GEMINI_API_KEY || process.env.API_KEY)) return 'gemini';
-  if (process.env.GROQ_API_KEY) return 'groq';
-  return 'smollm2';
+  return resolveConfiguredHostedProvider() || 'smollm2';
 }
 
 function responseViolatesActionPosture(text: string, contract: ConversationTurnContract): boolean {

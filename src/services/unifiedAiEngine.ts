@@ -49,6 +49,20 @@ export interface AIStreamChunk {
   confidence?: number;
 }
 
+export function resolveConfiguredHostedProvider(): Extract<AIProvider, 'mistral' | 'gemini' | 'groq'> | null {
+  const requested = String(process.env.KURUKOO_AI_HOSTED_PROVIDER || '').trim().toLowerCase();
+  if (requested === 'none' || requested === 'smollm2' || requested === 'local_intent') return null;
+  const available: Record<'mistral' | 'gemini' | 'groq', boolean> = {
+    mistral: hasConfiguredSecret(process.env.MISTRAL_API_KEY),
+    gemini: hasConfiguredSecret(process.env.GEMINI_API_KEY) || hasConfiguredSecret(process.env.API_KEY),
+    groq: hasConfiguredSecret(process.env.GROQ_API_KEY),
+  };
+  const candidates: Array<'mistral' | 'gemini' | 'groq'> = requested === 'mistral' || requested === 'gemini' || requested === 'groq'
+    ? [requested, ...(['mistral', 'gemini', 'groq'] as const).filter(provider => provider !== requested)]
+    : ['mistral', 'gemini', 'groq'];
+  return candidates.find(provider => available[provider]) || null;
+}
+
 const SIMPLE_INTENTS = new Set([
   'general_question', 'check_balance', 'balance', 'price_check', 'help', 'weather', 'faq', 'greeting', 'general', 'unknown',
 ]);
@@ -217,13 +231,7 @@ export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions =
     };
   }
 
-  const configuredHostedProvider = process.env.KURUKOO_AI_HOSTED_PROVIDER === 'mistral' && process.env.MISTRAL_API_KEY
-    ? 'mistral'
-    : process.env.KURUKOO_AI_HOSTED_PROVIDER === 'gemini' && (process.env.GEMINI_API_KEY || process.env.API_KEY)
-      ? 'gemini'
-      : process.env.GROQ_API_KEY
-        ? 'groq'
-        : 'none';
+  const configuredHostedProvider = resolveConfiguredHostedProvider() || 'none';
   const route =
     preferred === 'gemini'
       ? 'gemini'

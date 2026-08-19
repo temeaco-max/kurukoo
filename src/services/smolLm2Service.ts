@@ -13,7 +13,8 @@ let localPipelinePromise: Promise<any> | null = null;
 let hfClient: HfInference | null = null;
 let localBusy = false;
 let lastInferenceSource: 'local' | 'huggingface' | 'fallback' = 'fallback';
-let lastInferenceFailure: 'local_inference_failed' | 'local_model_fallback' | 'huggingface_request_failed' | 'no_model_boundary_configured' | null = null;
+let lastInferenceFailure: 'local_inference_failed' | 'local_model_fallback' | 'huggingface_provider_unavailable' | 'huggingface_request_failed' | 'no_model_boundary_configured' | null = null;
+let hostedInferenceUnavailableForModel: string | null = null;
 
 export function getSmolLM2RuntimeStatus(): { model: string; source: 'local' | 'huggingface' | 'fallback'; available: boolean; dtype: string; localEnabled: boolean; hostedConfigured: boolean; readiness: 'available' | 'fallback'; lastFailure: string | null; requestedStage: string; selectedStage: string; registrySource: 'environment_base' | 'registry'; registryFallbackReason?: string } {
   const localEnabled = process.env.KURUKOO_SMOLLM2_LOCAL === 'true';
@@ -68,6 +69,10 @@ function sanitizeGeneratedText(value: string): string {
 
 async function acquireLocal(): Promise<void> { while (localBusy) await new Promise(resolve => setTimeout(resolve, 20)); localBusy = true; }
 function releaseLocal() { localBusy = false; }
+function isHostedInferenceUnavailable(error: unknown): boolean {
+  const message = String((error as any)?.message || error || '').toLowerCase();
+  return /no inference provider available|auto selected provider: undefined|invalid username or password|unauthorized|forbidden/.test(message);
+}
 
 export async function querySmolLM2(prompt: string, systemPrompt?: string): Promise<string> {
   const input = buildPrompt(prompt, systemPrompt);
@@ -103,14 +108,24 @@ export async function querySmolLM2(prompt: string, systemPrompt?: string): Promi
     } catch (err: any) { lastInferenceFailure = 'local_inference_failed'; console.warn('[SmolLM2] Local inference failed:', err?.message || err); releaseLocal(); }
   }
   if (process.env.KURUKOO_SMOLLM2_LOCAL === 'true' && lastInferenceSource === 'fallback' && !lastInferenceFailure) lastInferenceFailure = 'local_inference_failed';
-  if (process.env.HUGGINGFACE_API_KEY || process.env.HF_API_KEY) {
+  const hostedModel = getModelName();
+  if ((process.env.HUGGINGFACE_API_KEY || process.env.HF_API_KEY) && hostedInferenceUnavailableForModel !== hostedModel) {
     try {
-      const response = await getHfClient().textGeneration({ model: getModelName(), inputs: input, parameters: { max_new_tokens: Number(process.env.SMOLLM2_MAX_NEW_TOKENS || 192), temperature: 0.2, return_full_text: false } });
+      const response = await getHfClient().textGeneration({ model: hostedModel, inputs: input, parameters: { max_new_tokens: Number(process.env.SMOLLM2_MAX_NEW_TOKENS || 192), temperature: 0.2, return_full_text: false } });
       if (response?.generated_text) {
         const cleaned = sanitizeGeneratedText(response.generated_text);
         if (cleaned && !containsInternalGeneration(cleaned)) { lastInferenceSource = 'huggingface'; lastInferenceFailure = null; return cleaned; }
       }
-    } catch (err: any) { if (!lastInferenceFailure) lastInferenceFailure = 'huggingface_request_failed'; console.warn('[SmolLM2] HF serverless inference failed:', err?.message || err); }
+    } catch (err: any) {
+      if (isHostedInferenceUnavailable(err)) {
+        hostedInferenceUnavailableForModel = hostedModel;
+        lastInferenceFailure = 'huggingface_provider_unavailable';
+        console.warn(`[SmolLM2] Hosted inference is unavailable for ${hostedModel}; using the bounded safe fallback until the model selection changes.`);
+      } else {
+        if (!lastInferenceFailure) lastInferenceFailure = 'huggingface_request_failed';
+        console.warn('[SmolLM2] HF serverless inference request failed:', err?.message || err);
+      }
+    }
   } else if (!process.env.KURUKOO_SMOLLM2_LOCAL || process.env.KURUKOO_SMOLLM2_LOCAL !== 'true') {
     lastInferenceFailure = 'no_model_boundary_configured';
   }
