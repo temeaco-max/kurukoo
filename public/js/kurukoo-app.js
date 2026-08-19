@@ -106,8 +106,41 @@
     });
   }
 
+  function findSurfaceCard(title) { return Array.from(root.querySelectorAll('.k-app-card')).find((card) => card.querySelector('h2')?.textContent?.trim() === title); }
+  function makeAction(label, href, handler) { const button = document.createElement(href ? 'a' : 'button'); button.className = 'k-app-card-action'; button.textContent = label; if (href) button.href = href; else { button.type = 'button'; button.addEventListener('click', handler); } return button; }
+
+  async function loadArtifacts() {
+    const card = findSurfaceCard('Your files, recordings and transcripts.'); if (!card) return;
+    card.innerHTML = '<span class="k-app-card-label">Artifact Service</span><h2>Your files, recordings and transcripts.</h2><p class="k-muted">Loading owner-scoped artifact state…</p>';
+    try {
+      const payload = await api('/api/artifacts');
+      const artifacts = Array.isArray(payload.artifacts) ? payload.artifacts : [];
+      const storage = payload.storage || {};
+      const status = document.createElement('span'); status.className = `k-status ${storage.connected ? 'k-status--ready' : 'k-status--pending'}`; status.textContent = storage.connected ? 'Google Drive connected' : 'Managed storage / Drive not connected';
+      const list = document.createElement('div'); list.className = 'k-action-row';
+      artifacts.slice(0, 8).forEach((artifact) => { const link = document.createElement('a'); link.className = 'k-app-card-action'; link.href = `/api/artifacts/${encodeURIComponent(artifact.id)}/open`; link.textContent = `${artifact.filename || 'Artifact'} · ${humanize(artifact.status || 'available')}`; list.appendChild(link); });
+      const actions = document.createElement('div'); actions.className = 'k-action-row';
+      actions.appendChild(makeAction(storage.connected ? 'Manage Connect →' : 'Connect Google Drive', storage.connected ? '/connect' : null, async () => { try { const result = await api('/api/artifacts/drive/connect', { method: 'POST' }); if (result.authorizationUrl) window.location.assign(result.authorizationUrl); else announce('Google Drive connection is not currently available.'); } catch (error) { announce(error.message); } }));
+      card.append(status, artifacts.length ? list : Object.assign(document.createElement('p'), { className: 'k-muted', textContent: 'No artifacts have been created yet.' }), actions);
+    } catch (error) { card.innerHTML = '<span class="k-app-card-label">Artifact Service</span><h2>Artifacts unavailable</h2>'; const p = document.createElement('p'); p.textContent = error.message || 'Artifact storage is unavailable right now.'; card.appendChild(p); card.appendChild(makeAction('Open Connect →', '/connect')); }
+  }
+
+  async function loadConnect() {
+    const cards = Array.from(root.querySelectorAll('.k-app-card')); if (!cards.length) return;
+    const providers = [{ name: 'Google Drive', url: '/api/artifacts', connect: '/api/artifacts/drive/connect', state: (p) => p.storage, kind: 'drive' }, { name: 'Google Sheets', url: '/api/artifacts/sheets', connect: '/api/artifacts/sheets/connect', state: (p) => p.source, kind: 'sheets' }, { name: 'Notion', url: '/api/artifacts/notion', connect: '/api/artifacts/notion/connect', state: (p) => p.source, kind: 'notion' }];
+    for (let i = 0; i < Math.min(providers.length, cards.length); i++) {
+      const provider = providers[i]; const card = cards[i];
+      try {
+        const payload = await api(provider.url); const state = provider.state(payload) || {}; const connected = Boolean(state.connected || state.status === 'connected');
+        const existing = card.querySelector('.k-status'); if (existing) existing.textContent = connected ? 'Connected' : 'Not connected';
+        const action = card.querySelector('.k-app-card-action');
+        if (action && !connected) { action.textContent = `Connect ${provider.name} →`; action.removeAttribute('href'); action.addEventListener('click', async (event) => { event.preventDefault(); action.setAttribute('aria-busy', 'true'); try { const result = await api(provider.connect, { method: 'POST' }); if (result.authorizationUrl) window.location.assign(result.authorizationUrl); else announce(`${provider.name} connection is not currently available.`); } catch (error) { announce(error.message); } finally { action.removeAttribute('aria-busy'); } }); }
+      } catch (error) { const status = card.querySelector('.k-status'); if (status) { status.className = 'k-status k-status--blocked'; status.textContent = 'Unavailable'; } }
+    }
+  }
+
   function bindRefresh() {
-    root.querySelectorAll('[data-action="refresh"]').forEach((button) => button.addEventListener('click', () => { if (section === 'tasks') loadTasks(); if (section === 'requests') loadRequests(); if (section === 'notifications') loadNotifications(); if (section === 'points') loadPoints(); }));
+    root.querySelectorAll('[data-action="refresh"]').forEach((button) => button.addEventListener('click', () => { if (section === 'tasks') loadTasks(); if (section === 'requests') loadRequests(); if (section === 'notifications') loadNotifications(); if (section === 'points') loadPoints(); if (section === 'artifacts') loadArtifacts(); if (section === 'connect') loadConnect(); }));
   }
   function bindSidebar() { const menu = q('[data-action="toggle-sidebar"]'); const sidebar = document.getElementById('app-sidebar') || q('.k-app-sidebar'); if (!menu || !sidebar) return; menu.addEventListener('click', () => sidebar.classList.toggle('is-open')); root.querySelectorAll('.k-app-sidebar a').forEach((link) => link.addEventListener('click', () => sidebar.classList.remove('is-open'))); }
 
@@ -117,4 +150,6 @@
   if (section === 'notifications') loadNotifications();
   if (section === 'points') loadPoints();
   if (section === 'top-up') { loadPoints(); topUpPoints(); }
+  if (section === 'artifacts') loadArtifacts();
+  if (section === 'connect') loadConnect();
 })();
