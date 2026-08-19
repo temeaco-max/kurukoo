@@ -24,18 +24,13 @@ const GUEST_CONVERSATION_RE = /^(?:hi|hey|hello|hiya|yo|sup|morning|afternoon|ev
 const COMMON_TASK_OR_LOCATION_TERMS = /\b(?:rice|yam|food|groceries|ride|repair|work|barber|delivery|deliver|plumber|electrician|mechanic|cleaner|tailor|appointment|errand|ikeja|yaba|lagos|lekki|ajah|surulere|maryland|victoria\s+island|ibadan|abuja|port\s+harcourt)\b/i;
 const REQUEST_SHAPING_RE = /\b(?:and|in|at|near|around|to|from|for|deliver(?:ed|y)?|need|want|find|book|get|help|looking|area|location)\b/i;
 
-/**
- * A guest's current auth step must never turn arbitrary task text into identity.
- * Accept an unlabelled name only when it is plausibly name-like and does not
- * contain obvious task/location language. Explicit identity wording is always
- * preferred for ambiguous values.
- */
+/** A name-entry guard that refuses to persist obvious task/location text as identity. */
 export function isPlausibleConversationalName(text: string): boolean {
   const value = text.trim().replace(/\s+/g, ' ');
   if (!value || value.length > 60 || GUEST_CONVERSATION_RE.test(value)) return false;
   if (!/^[A-Za-z][A-Za-z0-9 .'-]*$/.test(value)) return false;
   if (COMMON_TASK_OR_LOCATION_TERMS.test(value) && REQUEST_SHAPING_RE.test(value)) return false;
-  if (/[,:;]\.test(value) || /(?:^|\s)(?:i|my|me|please)\b/i.test(value)) return false;
+  if (/[,:;]/.test(value) || /(?:^|\s)(?:i|my|me|please)\b/i.test(value)) return false;
   const words = value.split(' ');
   if (words.length > 4) return false;
   return words.every(word => /^[A-Za-z][A-Za-z0-9'’-]*$/.test(word));
@@ -69,9 +64,7 @@ export async function handleConversationalAuth(guestPhone: string, text: string)
     const name = text.trim();
     if (GUEST_CONVERSATION_RE.test(name)) { await setAuthState(guestPhone, 'none', {}); const generated = await generateConversationalResponse({ prompt: text, phone: guestPhone, systemPrompt: 'You are Kurukoo, a helpful everyday conversational assistant. This is a casual greeting from a guest who has not signed in. Respond naturally and briefly. Do not ask for a name, phone number, OTP, or create a request unless the user explicitly asks for one.' }); return { reply: generated.text }; }
     if (!name) return { reply: "I didn't catch your name. What should I call you?" };
-    if (!isPlausibleConversationalName(name)) {
-      return { reply: 'I want to keep your request separate from your identity. What name should I call you? You can also say “My name is …”.' };
-    }
+    if (!isPlausibleConversationalName(name)) return { reply: 'I want to keep your request separate from your identity. What name should I call you? You can also say “My name is …”.' };
     await setAuthState(guestPhone, 'awaiting_phone', { ...data, name });
     return { reply: `Nice to meet you, ${name}. Enter your phone number below and I’ll create a verification request and tell you whether an approved delivery method is available.`, cardData: { type: 'auth_conversation', step: 'phone', name } };
   }
