@@ -133,7 +133,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          gitleaks detect --source . --no-git --redact --report-format json --report-path gitleaks-report.json --exit-code 2
+          gitleaks detect --config .gitleaks.toml --source . --no-git --redact --report-format json --report-path gitleaks-report.json --exit-code 2
           status=$?
           if [ -f gitleaks-report.json ]; then
             node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync("gitleaks-report.json","utf8")); for (const x of r) console.log(JSON.stringify({ruleID:x.RuleID,file:x.File,line:x.StartLine,commit:x.Commit,description:x.Description,match:x.Match?"[REDACTED]":"[NONE]"}));'
