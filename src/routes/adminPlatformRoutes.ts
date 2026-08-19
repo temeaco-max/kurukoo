@@ -3,6 +3,7 @@ import { authenticateAdmin, type AuthRequest } from '../middleware/auth.js';
 import { getAdminModules, getAdminPlatformOverview } from '../services/adminPlatformService.js';
 import { getScaleTransitionReport } from '../services/scaleTransition.js';
 import { getDb } from '../database.js';
+import { getExternalIntegrationOperationalStatus } from '../services/externalIntegrationOperationalStatus.js';
 
 const router = Router();
 
@@ -40,6 +41,17 @@ router.get('/scale-readiness', (_req: AuthRequest, res) => {
   res.json({ success: true, contractVersion: 'scale-readiness-v1', report: getScaleTransitionReport() });
 });
 
+router.get('/activation-matrix', (_req: AuthRequest, res) => {
+  const integrations = getExternalIntegrationOperationalStatus();
+  res.json({
+    success: true,
+    contractVersion: 'external-activation-matrix-v1',
+    checkedAt: new Date().toISOString(),
+    integrations,
+    claims: 'Configured/connected/runtime-ready describe repository-side operational state only. External delivery, settlement, physical device activation and peer interoperability require the evidence declared by each integration.',
+  });
+});
+
 router.get('/health', async (_req: AuthRequest, res) => {
   const checks: Record<string, 'ok' | 'degraded' | 'blocked'> = {
     database: 'blocked',
@@ -73,6 +85,7 @@ router.get('/health', async (_req: AuthRequest, res) => {
       workers: Number(process.env.KURUKOO_WORKERS || 1),
       externalPaymentConfigured: Boolean(process.env.KURUKOO_PAY_PROVIDER),
     },
+    externalIntegrations: getExternalIntegrationOperationalStatus(),
     scaleTransition: getScaleTransitionReport(),
     claims: 'Internal platform health only; this endpoint does not assert external provider delivery, payment settlement or device activation.',
   });
