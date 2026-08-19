@@ -30,6 +30,7 @@ const server = app.listen(0, '127.0.0.1');
 await new Promise<void>((resolve, reject) => { server.once('listening', resolve); server.once('error', reject); });
 const address = server.address() as AddressInfo;
 const baseUrl = `http://127.0.0.1:${address.port}`;
+const { handleConversationalAuth, setAuthState } = await import('../src/services/conversationalAuthService.js');
 
 async function turn(message: string, cookie = '', conversationId?: string): Promise<{ done: StreamDone; cookie: string; authCookie: string }> {
   const response = await fetch(`${baseUrl}/api/chat/stream`, {
@@ -45,6 +46,14 @@ async function turn(message: string, cookie = '', conversationId?: string): Prom
 }
 
 try {
+  const directGuest = 'guest-food-auth-name-boundary';
+  await setAuthState(directGuest, 'awaiting_name');
+  const directTaskText = await handleConversationalAuth(directGuest, 'rice and yam in Ikeja');
+  assert.doesNotMatch(directTaskText.reply, /nice to meet you/i, 'The direct awaiting-name boundary must reject task/location text even when it resembles a multiword name.');
+  await setAuthState(directGuest, 'awaiting_name');
+  const directExplicitName = await handleConversationalAuth(directGuest, 'My name is Rice');
+  assert.equal(directExplicitName.cardData?.name, 'Rice', 'An explicit identity introduction must remain valid at the direct awaiting-name boundary.');
+
   const first = await turn('I need rice and yam delivered to me in Ikeja.');
   const conversationId = String(first.done.conversationId || '');
   const firstCard = first.done.cardData;
@@ -104,7 +113,7 @@ try {
   assert.equal(resumed.done.cardData?.requestId, resumeRequestId, 'Resume must return to the same canonical request after an interruption.');
   assert.equal(resumed.done.cardData?.fields?.find((field: any) => field.key === 'location')?.value, 'Lekki');
 
-  console.log(JSON.stringify({ ok: true, requestId, resumedRequestId: resumeRequestId, identityIsolation: true, slots: ['items', 'location', 'delivery'], cases: ['rice_and_ikeja', 'rice_and_yam_in_ikeja', 'my_name_is_rice', 'inline_tunde_food', 'authentication_resume', 'repeated_answer', 'correction', 'interruption_resume'] }));
+  console.log(JSON.stringify({ ok: true, requestId, resumedRequestId: resumeRequestId, identityIsolation: true, slots: ['items', 'location', 'delivery'], cases: ['direct_name_guard', 'rice_and_ikeja', 'rice_and_yam_in_ikeja', 'my_name_is_rice', 'inline_tunde_food', 'authentication_resume', 'repeated_answer', 'correction', 'interruption_resume'] }));
 } finally {
   await new Promise<void>(resolve => server.close(() => resolve()));
 }
