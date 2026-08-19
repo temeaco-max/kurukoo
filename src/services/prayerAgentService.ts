@@ -1,11 +1,22 @@
 import { createAIAgent, executeAgentTask, getAIAgentById, type AIAgent } from './aiAgentService.js';
 import { createReminder, listReminders } from './reminderService.js';
 import { getProfile } from './memoryProfile.js';
+
 export type PrayerTradition = 'christian'|'muslim'|'jewish'|'spiritual'|'general';
 export type PrayerMode = 'text'|'audio'|'live';
 export const PRAYER_AGENT_ID = 'agent_prayer_companion';
 const PRAYER_SYSTEM_PROMPT = `[IDENTITY & ROLE]\nYou are Kurukoo's Prayer Companion, a first-class spiritual-support agent. Offer respectful, user-led prayer and spiritual conversation. Do not claim supernatural certainty, divine authority, guaranteed outcomes, healing, prophecy, or knowledge of God's intentions. Never impersonate a real religious leader.\n[BEHAVIOUR]\nListen before praying when the user wants conversation. Ask at most one useful clarification when it materially helps. Respect the user's stated tradition and wording; never assume a religion. Never fabricate scripture quotations. Never promise real-world outcomes. For immediate danger, abuse, medical emergency, or severe crisis, keep prayer supportive but direct the user to appropriate real-world help. For live voice, sound natural and keep turns interruptible.\n[OUTPUT]\nFor prayer requests, produce personalised original prayer language that names the stated concern and may include the user's name. Keep it spoken-aloud friendly.`;
-const DEFAULT_AGENT: AIAgent = { id:PRAYER_AGENT_ID,name:'Kurukoo Prayer Companion',avatar:'🙏',system_prompt:PRAYER_SYSTEM_PROMPT,skills:['prayer','spiritual_support','pray_for_me','prayer_routine','live_prayer'],tools:['prayer_script','prayer_voice','prayer_routine'],status:'active',lga:'All',concurrency_limit:20,token_quota_daily:50000,cost_threshold_usd:5,temperature:0.65 };
+
+const DEFAULT_AGENT: AIAgent = {
+  id: PRAYER_AGENT_ID,
+  name: 'Kurukoo Prayer Companion',
+  avatar: '🙏',
+  system_prompt: PRAYER_SYSTEM_PROMPT,
+  skills: ['prayer','spiritual_support','pray_for_me','prayer_routine','live_prayer'],
+  tools: ['get_memory_context','get_reminders','execute_capability'],
+  status: 'active', lga: 'All', concurrency_limit: 20, token_quota_daily: 50000, cost_threshold_usd: 5, temperature: 0.65,
+};
+
 export async function ensurePrayerAgent(): Promise<AIAgent> { const existing = await getAIAgentById(PRAYER_AGENT_ID); if (existing) return existing; await createAIAgent(DEFAULT_AGENT); return (await getAIAgentById(PRAYER_AGENT_ID)) || DEFAULT_AGENT; }
 function normalizeTradition(value: unknown): PrayerTradition { const text=String(value||'').trim().toLowerCase(); if(text==='christian'||text==='christianity')return'christian'; if(text==='muslim'||text==='islam'||text==='islamic')return'muslim'; if(text==='jewish'||text==='judaism')return'jewish'; if(text==='spiritual')return'spiritual'; return'general'; }
 function spokenFallback(name:string,topic:string,tradition:PrayerTradition){ const address=name?`${name}, `:''; if(tradition==='general'||tradition==='spiritual')return `${address}may you be held in peace as you face ${topic}. May you find clarity, courage, supportive people and steady strength for the work ahead. May your efforts bear good fruit, and may you feel accompanied rather than alone. Amen.`; const lead=tradition==='christian'?'Father, we bring ':tradition==='muslim'?'O Allah, we bring ':'Holy One, we bring '; return `${lead}${name||'this person'} and their concern about ${topic}. May they receive wisdom, strength, provision, peace and the right support. Help them act with integrity and patience, and strengthen them for the days ahead. Amen.`; }
