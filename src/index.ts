@@ -78,7 +78,10 @@ app.use(compression({threshold:1024}));
 app.use(express.static(path.join(process.cwd(),'public'),{index:false,fallthrough:true,setHeaders:(res,filePath)=>{const lower=filePath.toLowerCase();if(lower.endsWith('.html')||lower.endsWith('/sw.js')||lower.endsWith('/manifest.json')){res.setHeader('Cache-Control','no-cache, must-revalidate');return;}if(/\.(?:css|js|svg|png|jpe?g|webp|woff2?)$/.test(lower))res.setHeader('Cache-Control','public, max-age=604800, stale-while-revalidate=86400');}}));
 app.use(express.json({limit:process.env.CHAT_ATTACHMENT_BODY_LIMIT||'35mb',verify:(req,_res,buf)=>{(req as any).rawBody=Buffer.from(buf);}}));
 app.use('/',systemRoutes); app.use('/',authChallengePublicRoutes); app.use('/',mcpAppRoutes);
-app.use('/api',channelRoutes); app.use('/api',circleRoutes); app.use('/api/economic-requests',economicRequestRouter); app.use('/api/admin/platform',adminPlatformRoutes); app.use('/api/admin',adminFcmRoutes); app.use('/api/admin',adminDisputeRoutes); app.use('/api/admin',adminRoutes); app.use('/api',paymentRoutes); app.use('/api',userRoutes); app.use('/api/auth',authRoutes);
+app.use('/api',channelRoutes); app.use('/api',circleRoutes); app.use('/api/economic-requests',economicRequestRouter); app.use('/api/admin/platform',adminPlatformRoutes);
+// Keep the public Admin login boundary ahead of Admin routers that install a global authenticateAdmin middleware.
+app.use('/api/admin',adminRoutes); app.use('/api/admin',adminFcmRoutes); app.use('/api/admin',adminDisputeRoutes);
+app.use('/api',paymentRoutes); app.use('/api',userRoutes); app.use('/api/auth',authRoutes);
 app.use('/api/chat',...prayerChatMiddleware);
 app.use('/api/chat',chatRouter);
 app.use('/api/prayer',prayerRoutes);
