@@ -66,7 +66,6 @@ try {
   assert.equal(process.env.ADMIN_PASSWORD, 'admin-password-for-test');
   const adminLogin = await fetch(`${base}/api/admin/auth`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: 'admin', password: 'admin-password-for-test' }) });
   const adminData = await json(adminLogin);
-  if (adminLogin.status !== 200) console.error(`[dev-auth] admin auth rejected: status=${adminLogin.status} body=${JSON.stringify(adminData)} nodeEnv=${process.env.NODE_ENV} username=${process.env.ADMIN_USERNAME} passwordLength=${String(process.env.ADMIN_PASSWORD || '').length}`);
   assert.equal(adminLogin.status, 200);
   assert.ok(adminData.token);
 
