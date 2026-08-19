@@ -33,6 +33,12 @@ jobs:
         run: npm run test:food-auth-context-resume
       - name: Test artifact storage ownership and durability contract
         run: npm run test:artifact-storage
+      - name: Test Google Sheets source ownership and lifecycle contract
+        run: npm run test:google-sheets-source
+      - name: Test Notion source ownership and lifecycle contract
+        run: npm run test:notion-source
+      - name: Test Microsoft Graph source ownership and lifecycle contract
+        run: npm run test:microsoft-graph-source
       - name: Test canonical external integration readiness contract
         run: npm run test:external-integration-readiness
       - name: Test remote MCP app contract

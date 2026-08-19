@@ -38,10 +38,10 @@ The UI must render the current user state, all readiness dimensions, canonical b
 
 | Category | Integrations | Current repository policy |
 |---|---|---|
-| Owner sources | Google Drive, Google Sheets, Notion, Outlook, OneDrive | Drive has a canonical owner-scoped adapter and managed fallback. The others are explicitly unimplemented, not falsely connectable. |
+| Owner sources | Google Drive, Google Sheets, Notion, Outlook, OneDrive | Drive has a canonical owner-scoped adapter and managed fallback. Sheets has an independent owner-scoped, read-only OAuth and bounded-range adapter. Notion has an owner-scoped public OAuth and bounded shared-page search adapter. Outlook and OneDrive share one owner-scoped Microsoft Graph OAuth authority with separate feature gates and least-privilege delegated read scopes. |
 | Channels | WhatsApp, Telegram, SMS, USSD, email, FCM, voice | Canonical channel/voice boundaries, unavailable states and deterministic contracts exist. External delivery remains disabled until evidence. |
 | Payments | Stripe, mobile money | Canonical payment and failure boundaries exist. Sandbox is never settlement proof. |
-| AI and training | MCP, Gemini, Mistral, Groq, OpenRouter, Hugging Face | Provider-neutral routing and diagnostics remain canonical. Hugging Face Jobs is separate from hosted inference availability. |
+| AI and training | MCP, Gemini, Mistral, Groq, OpenRouter, Hugging Face | Provider-neutral routing and diagnostics remain canonical. OpenRouter is an explicit-model, feature-gated final hosted failover candidate. Hugging Face Jobs is separate from hosted inference availability. |
 | Infrastructure | WebRTC, MQTT/IoT, voice | Foundations remain fail-closed until relay/broker/provider and real-device evidence exist. |
 | Operations | External dispatch, provider verification, maps/geolocation | Canonical request, evidence and privacy boundaries exist; operations activate only through approved provider evidence and consent. |
 
@@ -61,10 +61,13 @@ The UI must render the current user state, all readiness dimensions, canonical b
 | Integration family | Minimum live evidence before production activation |
 |---|---|
 | Drive and object storage | Owner authorization, provider file ID, open, reference-only deletion, separately confirmed external deletion and revocation. |
+| Google Sheets sources | Owner authorization using `spreadsheets.readonly`, bounded range read, denied-source handling, token refresh, owner isolation, revocation and independent provider response evidence. |
+| Notion sources | Owner authorization for only pages/data sources chosen in Notion, bounded shared-page search, denied-page/re-authorization handling, local and provider revocation, owner isolation and independent provider response evidence. |
+| Outlook and OneDrive sources | Microsoft owner authorization using separate `Mail.ReadBasic` and `Files.Read` delegated scopes, PKCE, bounded `$select`/`$top` lists, token refresh, denial/re-authorization handling, local revocation, owner isolation and independent Graph response evidence. |
 | Messaging and email | Signed callback, controlled send/receive, duplicate/replay handling, delivery-failure handling and logout/revocation where relevant. |
 | FCM and voice | Authenticated device/session, provider acceptance, physical-device receipt or real audio result, timeout/disconnect and text fallback. |
 | Payments and KYC | Test and production configuration, signed webhook, reconciliation, retry/idempotency, refund/dispute process and operator escalation. |
-| Hosted AI | Actual selected provider/model diagnostics, success/failure classification, quota/timeout handling, retention review and canonical fallback evidence. |
+| Hosted AI | Actual selected provider/model diagnostics, success/failure classification, quota/timeout handling, retention review and canonical fallback evidence. For OpenRouter, also verify the explicit model, returned upstream attribution metadata where available, and no-charge/credit failure behaviour. |
 | Hugging Face Jobs | Scoped token, cost approval, remote GPU preflight, job lifecycle, immutable artifact, benchmark against base model and registry review. |
 | WebRTC and MQTT | Approved relay/broker, owner/device identity, consent, authorization, real device lifecycle, reconnect/revocation and operational monitoring. |
 | Dispatch and verification | Explicit connector authorization, attributable provider evidence, cancellation/escalation and no claimed completion without evidence. |
@@ -75,7 +78,7 @@ All external integration flags default to `false` in `.env.example`. Credentials
 
 ## Contract coverage
 
-`npm run test:external-integration-readiness` verifies all 25 registered planned integrations, all required readiness dimensions, unavailable states, credential-ready-but-unverified states, feature-flag state, the public Channels projection and the authenticated admin audit boundary. It runs in the all-domain suite and CI.
+`npm run test:external-integration-readiness` verifies all 25 registered planned integrations, all required readiness dimensions, unavailable states, credential-ready-but-unverified states, feature-flag state, the public Channels projection and the authenticated admin audit boundary. `npm run test:google-sheets-source` verifies least-privilege owner OAuth, encrypted tokens, bounded reads, non-content audit records, isolation and revocation. `npm run test:notion-source` verifies public OAuth state binding, basic token exchange, encrypted tokens, bounded shared-page search, non-content audit, isolation and revocation. `npm run test:microsoft-graph-source` verifies separate Mail.ReadBasic/Files.Read scope requests, CSRF/PKCE state, encrypted tokens, bounded field-selected reads, refresh-ready lifecycle, non-content audit, owner isolation and truthful local revocation. `npm run test:hosted-provider-failover` verifies explicit OpenRouter model selection, credential-plus-flag eligibility, request/response attribution, failover, and deterministic fallback. All run in the all-domain suite and CI.
 
 ## Live verification
 

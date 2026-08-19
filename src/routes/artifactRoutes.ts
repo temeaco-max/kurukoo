@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import { authenticateUser, type AuthRequest } from '../middleware/auth.js';
 import { completeGoogleDriveConnection, createArtifact, deleteArtifactReference, getArtifact, getDriveConnectionStatus, listArtifacts, readManagedArtifact, revokeGoogleDriveConnection, startGoogleDriveConnection } from '../services/artifactService.js';
+import { completeGoogleSheetsConnection, getGoogleSheetsConnectionStatus, readGoogleSheet, revokeGoogleSheetsConnection, startGoogleSheetsConnection } from '../services/googleSheetsSourceService.js';
+import { completeNotionConnection, getNotionConnectionStatus, revokeNotionConnection, searchNotion, startNotionConnection } from '../services/notionSourceService.js';
+import { completeMicrosoftConnection, getMicrosoftSourceStatus, listMicrosoftSource, revokeMicrosoftConnection, startMicrosoftConnection } from '../services/microsoftGraphSourceService.js';
 
 const router = Router();
 // This router is mounted at `/api`; scope authentication to its own namespace so it cannot intercept unrelated public or guest API routes.
@@ -14,7 +17,7 @@ function base64Data(value: unknown): Buffer | null {
 }
 function responseError(res: any, error: unknown) {
   const code = String((error as { code?: string })?.code || 'ARTIFACT_ERROR');
-  const status = code.includes('OWNER') ? 403 : code.includes('NOT_CONNECTED') || code.includes('OAUTH_NOT_CONFIGURED') ? 503 : code.includes('STATE') || code.includes('EXCHANGE') || code.includes('SCOPE') ? 400 : 502;
+  const status = code.includes('OWNER') ? 403 : code.includes('NOT_CONNECTED') || code.includes('OAUTH_NOT_CONFIGURED') || code.includes('FEATURE_DISABLED') ? 503 : code.includes('STATE') || code.includes('EXCHANGE') || code.includes('SCOPE') || code.includes('INVALID') ? 400 : 502;
   return res.status(status).json({ success: false, code, error: error instanceof Error ? error.message : 'Artifact operation failed.' });
 }
 
@@ -41,6 +44,99 @@ router.get('/artifacts/drive/callback', async (req: AuthRequest, res) => {
 
 router.post('/artifacts/drive/revoke', async (req: AuthRequest, res) => {
   try { return res.json({ success: true, revoked: await revokeGoogleDriveConnection(phone(req)) }); }
+  catch (error) { return responseError(res, error); }
+});
+
+router.get('/artifacts/sheets', async (req: AuthRequest, res) => {
+  try { return res.json({ success: true, source: await getGoogleSheetsConnectionStatus(phone(req)) }); }
+  catch (error) { return responseError(res, error); }
+});
+
+router.post('/artifacts/sheets/connect', async (req: AuthRequest, res) => {
+  try { return res.json({ success: true, provider: 'google_sheets', ...(await startGoogleSheetsConnection(phone(req))) }); }
+  catch (error) { return responseError(res, error); }
+});
+
+router.get('/artifacts/sheets/callback', async (req: AuthRequest, res) => {
+  const state = typeof req.query.state === 'string' ? req.query.state : '';
+  const code = typeof req.query.code === 'string' ? req.query.code : '';
+  if (!state || !code) return res.status(400).json({ success: false, code: 'SHEETS_OAUTH_CALLBACK_INVALID', error: 'Google Sheets authorization did not return a valid state and code.' });
+  try {
+    const completed = await completeGoogleSheetsConnection(phone(req), state, code);
+    if (req.accepts('html')) return res.redirect(302, '/connect?sheets=connected');
+    return res.json({ success: true, ...completed });
+  } catch (error) { return responseError(res, error); }
+});
+
+router.post('/artifacts/sheets/revoke', async (req: AuthRequest, res) => {
+  try { return res.json({ success: true, revoked: await revokeGoogleSheetsConnection(phone(req)) }); }
+  catch (error) { return responseError(res, error); }
+});
+
+router.post('/artifacts/sheets/read', async (req: AuthRequest, res) => {
+  try { return res.json({ success: true, source: await readGoogleSheet(phone(req), { spreadsheetId: req.body?.spreadsheetId, range: req.body?.range }) }); }
+  catch (error) { return responseError(res, error); }
+});
+
+router.get('/artifacts/notion', async (req: AuthRequest, res) => {
+  try { return res.json({ success: true, source: await getNotionConnectionStatus(phone(req)) }); }
+  catch (error) { return responseError(res, error); }
+});
+
+router.post('/artifacts/notion/connect', async (req: AuthRequest, res) => {
+  try { return res.json({ success: true, provider: 'notion', ...(await startNotionConnection(phone(req))) }); }
+  catch (error) { return responseError(res, error); }
+});
+
+router.get('/artifacts/notion/callback', async (req: AuthRequest, res) => {
+  const state = typeof req.query.state === 'string' ? req.query.state : '';
+  const code = typeof req.query.code === 'string' ? req.query.code : '';
+  if (!state || !code) return res.status(400).json({ success: false, code: 'NOTION_OAUTH_CALLBACK_INVALID', error: 'Notion authorization did not return a valid state and code.' });
+  try {
+    const completed = await completeNotionConnection(phone(req), state, code);
+    if (req.accepts('html')) return res.redirect(302, '/connect?notion=connected');
+    return res.json({ success: true, ...completed });
+  } catch (error) { return responseError(res, error); }
+});
+
+router.post('/artifacts/notion/search', async (req: AuthRequest, res) => {
+  try { return res.json({ success: true, source: await searchNotion(phone(req), req.body?.query) }); }
+  catch (error) { return responseError(res, error); }
+});
+
+router.post('/artifacts/notion/revoke', async (req: AuthRequest, res) => {
+  try { return res.json({ success: true, ...(await revokeNotionConnection(phone(req))) }); }
+  catch (error) { return responseError(res, error); }
+});
+
+router.get('/artifacts/microsoft/:kind', async (req: AuthRequest, res) => {
+  try { return res.json({ success: true, source: await getMicrosoftSourceStatus(phone(req), req.params.kind) }); }
+  catch (error) { return responseError(res, error); }
+});
+
+router.post('/artifacts/microsoft/:kind/connect', async (req: AuthRequest, res) => {
+  try { return res.json({ success: true, ...(await startMicrosoftConnection(phone(req), req.params.kind)) }); }
+  catch (error) { return responseError(res, error); }
+});
+
+router.get('/artifacts/microsoft/:kind/callback', async (req: AuthRequest, res) => {
+  const state = typeof req.query.state === 'string' ? req.query.state : '';
+  const code = typeof req.query.code === 'string' ? req.query.code : '';
+  if (!state || !code) return res.status(400).json({ success: false, code: 'MICROSOFT_OAUTH_CALLBACK_INVALID', error: 'Microsoft authorization did not return a valid state and code.' });
+  try {
+    const completed = await completeMicrosoftConnection(phone(req), req.params.kind, state, code);
+    if (req.accepts('html')) return res.redirect(302, `/connect?${encodeURIComponent(String(req.params.kind || 'microsoft'))}=connected`);
+    return res.json({ success: true, ...completed });
+  } catch (error) { return responseError(res, error); }
+});
+
+router.post('/artifacts/microsoft/:kind/list', async (req: AuthRequest, res) => {
+  try { return res.json({ success: true, source: await listMicrosoftSource(phone(req), req.params.kind, req.body?.query) }); }
+  catch (error) { return responseError(res, error); }
+});
+
+router.post('/artifacts/microsoft/:kind/revoke', async (req: AuthRequest, res) => {
+  try { return res.json({ success: true, ...(await revokeMicrosoftConnection(phone(req), req.params.kind)) }); }
   catch (error) { return responseError(res, error); }
 });
 

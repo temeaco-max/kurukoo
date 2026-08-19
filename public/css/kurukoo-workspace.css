@@ -196,3 +196,12 @@ body.dark .chat-template-shell{background:#171b18;color:#edf1ec}.dark .chat-temp
   .chat-template-shell .workspace-header-actions { gap: 6px; }
   .chat-template-shell .workspace-header-actions .workspace-icon-button { width: 40px; height: 40px; }
 }
+
+/* Owner-scoped external source controls share the Connect workspace card language. */
+.workspace-source-form{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(160px,.9fr) auto;gap:10px;align-items:end;margin-top:16px;padding:14px;border:1px solid var(--chat-border,#e7e1d9);border-radius:12px;background:var(--chat-panel-soft,#fbfaf8)}
+.workspace-source-form label{display:grid;gap:6px;color:var(--chat-muted,#777068);font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+.workspace-source-form input{width:100%;min-height:40px;box-sizing:border-box;border:1px solid var(--chat-border,#dcd6ce);border-radius:9px;background:#fff;color:var(--chat-charcoal,#252824);font:500 13px/1.25 Inter,system-ui,sans-serif;padding:9px 10px;text-transform:none;letter-spacing:normal}
+.workspace-source-form input::placeholder{color:#9c958d}.workspace-source-form .workspace-button{min-height:40px;padding:9px 13px;white-space:nowrap}
+.workspace-page [data-google-sheets-source] .workspace-data-card h3{overflow-wrap:anywhere}.workspace-page [data-google-sheets-source] .workspace-data-card-footer>span{display:flex;gap:12px;flex-wrap:wrap}
+@media(max-width:760px){.workspace-source-form{grid-template-columns:1fr}.workspace-source-form .workspace-button{width:100%}}
+@media(max-width:560px){.workspace-page [data-google-sheets-source] .workspace-data-card-footer>span{flex-direction:column;align-items:flex-start;gap:2px}}

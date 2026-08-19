@@ -10,7 +10,7 @@
   const stateClass = (item) => item?.uiState === 'PRODUCTION_ACTIVE' ? 'available' : 'gated';
   const actionFor = (item) => {
     if (!item || item.uiState === 'NOT_IMPLEMENTED') return null;
-    if (item.id === 'google_drive') return { href: '/login?return=%2Fconnect', label: 'Connect in workspace' };
+    if (['google_drive', 'google_sheets', 'notion', 'outlook', 'onedrive'].includes(item.id)) return { href: '/login?return=%2Fconnect', label: 'Connect in workspace' };
     if (['whatsapp', 'telegram'].includes(item.id)) return { href: '/login?return=%2Fconnect', label: 'View connection settings' };
     return { href: '/help', label: 'View activation checklist' };
   };

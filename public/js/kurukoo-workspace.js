@@ -175,6 +175,91 @@
     catch (_) { button.disabled = false; button.textContent = 'Could not start Drive connection'; }
   };
 
+  const loadGoogleSheetsSource = async () => {
+    const panel = qs('[data-google-sheets-source]'); if (!panel) return;
+    const state = qs('[data-sheets-state]'); const copy = qs('[data-sheets-copy]'); const note = qs('[data-sheets-note]');
+    const form = qs('[data-sheets-form]'); const connect = qs('[data-sheets-connect]'); const revoke = qs('[data-sheets-revoke]');
+    try {
+      const payload = await api('/api/artifacts/sheets'); const source = payload.source || {};
+      if (state) state.textContent = source.connected ? 'Sheets connected' : source.configured && source.enabled ? 'Ready to connect' : source.configured ? 'Sheets disabled' : 'Setup pending';
+      if (copy) copy.textContent = source.connected ? 'Choose a spreadsheet ID and an A1 range. Reads are bounded previews and spreadsheet values are not saved as Kurukoo artifacts.' : source.configured && source.enabled ? 'Google Sheets is ready for your owner authorization. No spreadsheet data can be read until you connect it.' : source.configured ? 'Google Sheets credentials are present, but this source integration is disabled. No spreadsheet data can be read.' : 'Google Sheets is not configured for this deployment. Your spreadsheets remain outside Kurukoo.';
+      if (form) form.hidden = !source.connected;
+      if (connect) { connect.hidden = Boolean(source.connected); connect.disabled = !source.configured || !source.enabled; connect.textContent = source.configured && source.enabled ? 'Connect Google Sheets' : source.configured ? 'Sheets disabled' : 'Sheets not configured'; }
+      if (revoke) revoke.hidden = !source.connected;
+      if (note) note.textContent = source.reason || (source.connected ? 'Revoking removes Kurukoo’s encrypted connection tokens; it does not change your spreadsheet.' : '');
+    } catch (_) {
+      if (state) state.textContent = 'Unavailable'; if (copy) copy.textContent = 'Google Sheets source status is unavailable for this signed-in session.';
+    }
+  };
+
+  const renderGoogleSheetsPreview = (source) => {
+    const list = qs('[data-sheets-results]'); if (!list) return; clear(list);
+    const rows = Array.isArray(source?.values) ? source.values : [];
+    rows.slice(0, 12).forEach((row, index) => {
+      const values = Array.isArray(row) ? row.slice(0, 8).map((cell) => String(cell ?? '')).join(' · ') : '';
+      list.appendChild(makeDataCard({ eyebrow: `Row ${index + 1}`, title: values || 'Blank row', detail: index === 0 ? `${source.range || 'Selected range'} · Bounded preview only` : '', state: index === 0 && source.truncated ? 'Preview truncated' : undefined }));
+    });
+    setEmpty('[data-sheets-empty]', rows.length === 0);
+  };
+
+  const readGoogleSheetsSource = async (button) => {
+    const id = qs('[data-sheets-id]')?.value?.trim(); const range = qs('[data-sheets-range]')?.value?.trim();
+    if (!id || !range) { const note = qs('[data-sheets-note]'); if (note) note.textContent = 'Enter a spreadsheet ID and an A1 range before reading.'; return; }
+    button.disabled = true;
+    try { const payload = await api('/api/artifacts/sheets/read', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ spreadsheetId: id, range }) }); renderGoogleSheetsPreview(payload.source); const note = qs('[data-sheets-note]'); if (note) note.textContent = payload.source?.truncated ? 'The provider confirmed the range. This compact preview is truncated to Kurukoo’s safety limit.' : 'The provider confirmed the requested bounded range.'; }
+    catch (_) { const note = qs('[data-sheets-note]'); if (note) note.textContent = 'Kurukoo could not confirm this spreadsheet range. Check the owner connection, ID, range, and provider access.'; }
+    finally { button.disabled = false; }
+  };
+
+  const connectGoogleSheetsSource = async (button) => {
+    button.disabled = true;
+    try { const payload = await api('/api/artifacts/sheets/connect', { method: 'POST' }); if (!payload.authorizationUrl) throw new Error('Authorization unavailable'); window.location.assign(payload.authorizationUrl); }
+    catch (_) { button.disabled = false; button.textContent = 'Could not start Sheets connection'; }
+  };
+
+  const revokeGoogleSheetsSource = async (button) => {
+    button.disabled = true;
+    try { await api('/api/artifacts/sheets/revoke', { method: 'POST' }); await loadGoogleSheetsSource(); renderGoogleSheetsPreview({ values: [] }); }
+    catch (_) { button.disabled = false; button.textContent = 'Could not revoke'; }
+  };
+
+  const loadNotionSource = async () => {
+    const panel = qs('[data-notion-source]'); if (!panel) return;
+    const state = qs('[data-notion-state]'); const copy = qs('[data-notion-copy]'); const note = qs('[data-notion-note]'); const form = qs('[data-notion-form]'); const connect = qs('[data-notion-connect]'); const revoke = qs('[data-notion-revoke]');
+    try {
+      const payload = await api('/api/artifacts/notion'); const source = payload.source || {};
+      if (state) state.textContent = source.connected ? 'Notion connected' : source.configured && source.enabled ? 'Ready to connect' : source.configured ? 'Notion disabled' : 'Setup pending';
+      if (copy) copy.textContent = source.connected ? 'Search only the pages you chose to share. Results are a bounded in-memory preview, not a background workspace mirror.' : source.configured && source.enabled ? 'Notion is ready for your owner authorization. No workspace data can be searched until you connect it.' : source.configured ? 'Notion credentials are present, but this source integration is disabled. No workspace data can be searched.' : 'Notion is not configured for this deployment. Your pages remain outside Kurukoo.';
+      if (form) form.hidden = !source.connected;
+      if (connect) { connect.hidden = Boolean(source.connected); connect.disabled = !source.configured || !source.enabled; connect.textContent = source.configured && source.enabled ? 'Connect Notion' : source.configured ? 'Notion disabled' : 'Notion not configured'; }
+      if (revoke) revoke.hidden = !source.connected;
+      if (note) note.textContent = source.reason || (source.connected ? 'Revoking removes Kurukoo’s encrypted connection tokens and attempts provider revocation; it does not delete Notion pages.' : '');
+    } catch (_) { if (state) state.textContent = 'Unavailable'; if (copy) copy.textContent = 'Notion source status is unavailable for this signed-in session.'; }
+  };
+
+  const renderNotionPreview = (source) => {
+    const list = qs('[data-notion-results]'); if (!list) return; clear(list); const items = Array.isArray(source?.items) ? source.items : [];
+    items.slice(0, 12).forEach((item) => list.appendChild(makeDataCard({ eyebrow: item.object === 'data_source' ? 'Shared data source' : 'Shared page', title: String(item.title || 'Untitled shared item'), detail: item.lastEditedAt ? `Last edited ${new Date(item.lastEditedAt).toLocaleString()}` : 'Confirmed by Notion', action: item.url ? { label: 'Open in Notion', href: item.url } : undefined, state: source.hasMore ? 'More results available' : undefined })));
+    setEmpty('[data-notion-empty]', items.length === 0);
+  };
+
+  const searchNotionSource = async (button) => {
+    button.disabled = true; const query = qs('[data-notion-query]')?.value?.trim() || '';
+    try { const payload = await api('/api/artifacts/notion/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }) }); renderNotionPreview(payload.source); const note = qs('[data-notion-note]'); if (note) note.textContent = payload.source?.hasMore ? 'Notion confirmed a bounded result set. Refine the title search to narrow it.' : 'Notion confirmed the shared-page search result.'; }
+    catch (_) { const note = qs('[data-notion-note]'); if (note) note.textContent = 'Kurukoo could not confirm this Notion search. Check your connection, shared pages, and provider access.'; }
+    finally { button.disabled = false; }
+  };
+
+  const connectNotionSource = async (button) => { button.disabled = true; try { const payload = await api('/api/artifacts/notion/connect', { method: 'POST' }); if (!payload.authorizationUrl) throw new Error('Authorization unavailable'); window.location.assign(payload.authorizationUrl); } catch (_) { button.disabled = false; button.textContent = 'Could not start Notion connection'; } };
+  const revokeNotionSource = async (button) => { button.disabled = true; try { const result = await api('/api/artifacts/notion/revoke', { method: 'POST' }); await loadNotionSource(); renderNotionPreview({ items: [] }); const note = qs('[data-notion-note]'); if (note) note.textContent = result.providerRevocationConfirmed ? 'Kurukoo connection tokens were removed and Notion confirmed revocation.' : 'Kurukoo connection tokens were removed. Notion did not confirm provider revocation; review the connection in Notion if needed.'; } catch (_) { button.disabled = false; button.textContent = 'Could not revoke'; } };
+
+  const microsoftKind = () => qs('[data-microsoft-kind]')?.value === 'onedrive' ? 'onedrive' : 'outlook';
+  const renderMicrosoftPreview = (source) => { const list = qs('[data-microsoft-results]'); if (!list) return; clear(list); const items = Array.isArray(source?.items) ? source.items : []; items.slice(0, 12).forEach((item) => list.appendChild(makeDataCard({ eyebrow: item.kind === 'message' ? 'Basic message metadata' : item.kind === 'folder' ? 'Folder' : 'File', title: String(item.title || 'Unnamed item'), detail: item.detail || 'Confirmed by Microsoft Graph', action: item.url ? { label: 'Open in Microsoft', href: item.url } : undefined, state: source.hasMore ? 'More results available' : undefined }))); setEmpty('[data-microsoft-empty]', items.length === 0); };
+  const loadMicrosoftSource = async () => { const state = qs('[data-microsoft-state]'); const copy = qs('[data-microsoft-copy]'); const note = qs('[data-microsoft-note]'); const connect = qs('[data-microsoft-connect]'); const revoke = qs('[data-microsoft-revoke]'); const kind = microsoftKind(); try { const payload = await api(`/api/artifacts/microsoft/${kind}`); const source = payload.source || {}; if (state) state.textContent = source.connected ? `${kind === 'outlook' ? 'Outlook' : 'OneDrive'} connected` : source.configured && source.enabled ? 'Ready to connect' : source.configured ? 'Microsoft disabled' : 'Setup pending'; if (copy) copy.textContent = source.connected ? (kind === 'outlook' ? 'Outlook may list only bounded basic message metadata; message bodies are never requested.' : 'OneDrive may list a bounded folder view; files are not imported or synchronized.') : source.configured && source.enabled ? 'Microsoft is ready for owner authorization. No source content is read until you connect this selected source.' : source.configured ? 'Microsoft credentials are present but this selected source is disabled. No content can be read.' : 'Microsoft Graph is not configured for this deployment. Your mailbox and files remain outside Kurukoo.'; if (connect) { connect.hidden = Boolean(source.connected); connect.disabled = !source.configured || !source.enabled; connect.textContent = source.configured && source.enabled ? `Connect ${kind === 'outlook' ? 'Outlook' : 'OneDrive'}` : source.configured ? 'Microsoft source disabled' : 'Microsoft not configured'; } if (revoke) revoke.hidden = !source.connected; if (note) note.textContent = source.reason || (source.connected ? 'Removing this connection deletes Kurukoo’s encrypted tokens. Review Microsoft account permissions separately if you also want to remove application consent.' : ''); } catch (_) { if (state) state.textContent = 'Unavailable'; if (copy) copy.textContent = 'Microsoft source status is unavailable for this signed-in session.'; } };
+  const connectMicrosoftSource = async (button) => { button.disabled = true; const kind = microsoftKind(); try { const payload = await api(`/api/artifacts/microsoft/${kind}/connect`, { method: 'POST' }); if (!payload.authorizationUrl) throw new Error('Authorization unavailable'); window.location.assign(payload.authorizationUrl); } catch (_) { button.disabled = false; button.textContent = 'Could not start Microsoft connection'; } };
+  const listMicrosoftSource = async (button) => { button.disabled = true; const kind = microsoftKind(); const query = qs('[data-microsoft-query]')?.value?.trim() || ''; try { const payload = await api(`/api/artifacts/microsoft/${kind}/list`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }) }); renderMicrosoftPreview(payload.source); const note = qs('[data-microsoft-note]'); if (note) note.textContent = payload.source?.hasMore ? 'Microsoft confirmed a bounded first page. Refine the search or browse Microsoft directly for more.' : 'Microsoft confirmed the bounded source list.'; } catch (_) { const note = qs('[data-microsoft-note]'); if (note) note.textContent = 'Kurukoo could not confirm this Microsoft list. Check the selected connection, permissions, and provider access.'; } finally { button.disabled = false; } };
+  const revokeMicrosoftSource = async (button) => { button.disabled = true; const kind = microsoftKind(); try { await api(`/api/artifacts/microsoft/${kind}/revoke`, { method: 'POST' }); renderMicrosoftPreview({ items: [] }); await loadMicrosoftSource(); const note = qs('[data-microsoft-note]'); if (note) note.textContent = 'Kurukoo removed its encrypted connection tokens. Microsoft provider consent was not asserted; review your Microsoft account permissions if needed.'; } catch (_) { button.disabled = false; button.textContent = 'Could not remove connection'; } };
+
   const loadConnectedResources = () => {
     if (document.getElementById('connected-resource-runtime')) return;
     const script = document.createElement('script'); script.id = 'connected-resource-runtime'; script.src = '/js/connected-resources.js?v=2'; script.defer = true; document.head.appendChild(script);
@@ -199,13 +284,23 @@
   if (workspaceSidebar && localStorage.getItem('kurukoo_workspace_collapsed') === '1') workspaceSidebar.classList.add('is-collapsed');
   qs('#workspace-open')?.addEventListener('click', () => workspaceSidebar?.classList.add('open'));
   qs('[data-artifact-connect]')?.addEventListener('click', (event) => connectArtifactDrive(event.currentTarget));
+  qs('[data-sheets-connect]')?.addEventListener('click', (event) => connectGoogleSheetsSource(event.currentTarget));
+  qs('[data-sheets-revoke]')?.addEventListener('click', (event) => revokeGoogleSheetsSource(event.currentTarget));
+  qs('[data-sheets-read]')?.addEventListener('click', (event) => readGoogleSheetsSource(event.currentTarget));
+  qs('[data-notion-connect]')?.addEventListener('click', (event) => connectNotionSource(event.currentTarget));
+  qs('[data-notion-revoke]')?.addEventListener('click', (event) => revokeNotionSource(event.currentTarget));
+  qs('[data-notion-search]')?.addEventListener('click', (event) => searchNotionSource(event.currentTarget));
+  qs('[data-microsoft-kind]')?.addEventListener('change', () => { renderMicrosoftPreview({ items: [] }); loadMicrosoftSource(); });
+  qs('[data-microsoft-connect]')?.addEventListener('click', (event) => connectMicrosoftSource(event.currentTarget));
+  qs('[data-microsoft-revoke]')?.addEventListener('click', (event) => revokeMicrosoftSource(event.currentTarget));
+  qs('[data-microsoft-list]')?.addEventListener('click', (event) => listMicrosoftSource(event.currentTarget));
   workspaceSidebar?.addEventListener('click', (event) => { if (event.target.closest('a')) workspaceSidebar.classList.remove('open'); });
 
   qsa('[data-proactive-dismiss], [data-proactive-response]').forEach((button) => button.addEventListener('click', () => { qs('[data-proactive-card]')?.setAttribute('hidden', ''); localStorage.setItem('kurukoo_proactive_dismissed', '1'); }));
   if (localStorage.getItem('kurukoo_proactive_dismissed') === '1') qs('[data-proactive-card]')?.setAttribute('hidden', '');
 
   const params = new URLSearchParams(window.location.search); const prompt = params.get('prompt'); if (prompt && input) window.requestAnimationFrame(() => seedPrompt(prompt));
-  if (section === 'requests') loadRequests(); if (section === 'reminders') loadReminders(); if (section === 'points') loadPoints(); if (section === 'safety') loadSafety(); if (section === 'daily-picks') loadDailyPicks(); if (section === 'connect') loadArtifacts();
+  if (section === 'requests') loadRequests(); if (section === 'reminders') loadReminders(); if (section === 'points') loadPoints(); if (section === 'safety') loadSafety(); if (section === 'daily-picks') loadDailyPicks(); if (section === 'connect') { loadArtifacts(); loadGoogleSheetsSource(); loadNotionSource(); loadMicrosoftSource(); }
 
   loadConnectedResources();
 })();

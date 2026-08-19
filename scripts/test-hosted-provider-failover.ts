@@ -13,6 +13,10 @@ const resetProviders = () => {
   delete process.env.GEMINI_API_KEY;
   delete process.env.API_KEY;
   delete process.env.GROQ_API_KEY;
+  delete process.env.OPENROUTER_API_KEY;
+  delete process.env.OPENROUTER_MODEL;
+  delete process.env.OPENROUTER_API_BASE;
+  delete process.env.FF_TEST_HOSTED_OPENROUTER;
   delete process.env.FF_TEST_HOSTED_GEMINI;
   delete process.env.FF_TEST_HOSTED_MISTRAL;
   delete process.env.FF_TEST_HOSTED_GROQ;
@@ -35,6 +39,37 @@ resetProviders();
 process.env.GROQ_API_KEY = 'configured-groq-key';
 process.env.FF_TEST_HOSTED_GROQ = 'true';
 assert.deepEqual(resolveHostedProviderCandidates('auto'), ['groq'], 'Configured Groq must be eligible when it is the only usable hosted provider.');
+
+resetProviders();
+process.env.OPENROUTER_API_KEY = 'configured-openrouter-key';
+process.env.OPENROUTER_MODEL = 'openai/gpt-5-mini';
+assert.deepEqual(resolveHostedProviderCandidates('auto'), [], 'OpenRouter credentials and an explicit model must remain ineligible until its feature flag is enabled.');
+process.env.FF_TEST_HOSTED_OPENROUTER = 'true';
+assert.deepEqual(resolveHostedProviderCandidates('auto'), ['openrouter'], 'Configured and explicitly enabled OpenRouter must become an eligible hosted candidate.');
+globalThis.fetch = async (url: string | URL | Request, init?: RequestInit) => {
+  assert.equal(String(url), 'https://openrouter.ai/api/v1/chat/completions', 'OpenRouter must use the documented OpenAI-compatible chat-completions endpoint.');
+  const headers = new Headers(init?.headers);
+  assert.equal(headers.get('authorization'), 'Bearer configured-openrouter-key');
+  assert.equal(headers.get('x-openrouter-metadata'), 'enabled');
+  const request = JSON.parse(String(init?.body));
+  assert.equal(request.model, 'openai/gpt-5-mini', 'OpenRouter must never silently select an unspecified default model.');
+  return json(200, { id: 'gen_test_123', model: 'openai/gpt-5-mini', choices: [{ message: { content: 'OpenRouter provided a bounded hosted response.' } }], usage: { prompt_tokens: 10, completion_tokens: 9, total_tokens: 19, cost: 0.0001 }, openrouter_metadata: { endpoints: { available: [{ provider: 'MockUpstream', selected: true }] } } });
+};
+try {
+  const response = await queryUnifiedAI('Explain the verified fallback in one sentence.', { provider: 'openrouter', conversational: true });
+  assert.equal(response.provider, 'OpenRouter');
+  assert.equal(response.model, 'openai/gpt-5-mini');
+  assert.match(response.text, /OpenRouter provided/i);
+  const diagnostic = getLastAiRoutingDiagnostic();
+  assert.equal(diagnostic?.requestedProvider, 'openrouter');
+  assert.deepEqual(diagnostic?.attemptedProviders, ['openrouter']);
+  assert.equal(diagnostic?.actualProvider, 'OpenRouter:MockUpstream', 'Diagnostics must retain OpenRouter returned provider attribution when the provider exposes it.');
+  assert.equal(diagnostic?.actualModel, 'openai/gpt-5-mini');
+  assert.equal(diagnostic?.executionMode, 'hosted_provider');
+  assert.equal(diagnostic?.success, true);
+} finally {
+  globalThis.fetch = originalFetch;
+}
 
 resetProviders();
 process.env.MISTRAL_API_KEY = 'configured-mistral-key';
@@ -73,4 +108,4 @@ assert.equal(fallbackDiagnostic?.actualProvider, 'Kurukoo Template', 'Fallback d
 assert.equal(fallbackDiagnostic?.executionMode, 'deterministic_fallback', 'Fallback diagnostics must record deterministic execution.');
 assert.equal(fallbackDiagnostic?.success, false, 'Fallback diagnostics must never report model success.');
 
-console.log('Hosted provider failover regression passed: Gemini/Mistral/Groq configuration discovery, Mistral-to-Groq selected-provider attribution, and deterministic fallback are all explicit.');
+console.log('Hosted provider failover regression passed: Gemini/Mistral/Groq/OpenRouter feature-gated configuration discovery, selected-provider attribution, and deterministic fallback are all explicit.');
