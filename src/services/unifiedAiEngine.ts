@@ -88,7 +88,7 @@ export interface AiRoutingDiagnostic {
   attemptedProviders: string[];
   actualProvider: string;
   actualModel: string;
-  executionMode: 'hosted_provider' | 'local_pipeline' | 'hf_serverless' | 'deterministic_fallback' | 'local_intent';
+  executionMode: 'hosted_provider' | 'local_pipeline' | 'deterministic_fallback' | 'local_intent';
   fallbackReason: string | null;
   success: boolean;
   recordedAt: string;
@@ -309,7 +309,7 @@ export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions =
     await recordAiUsage(options.phone, kind, (memoryTokens || 0) + tokenEst + Math.ceil((safeResponse.text || '').length / 4));
     const runtime = safeResponse.provider === 'SmolLM2' || safeResponse.provider === 'Kurukoo Template' ? getSmolLM2RuntimeStatus() : null;
     const deterministic = safeResponse.provider === 'Kurukoo Template';
-    rememberAiRoutingDiagnostic({ requestedProvider: preferred, requestedModel: requestedModelFor(route as AIProvider), attemptedProviders, actualProvider: actual?.provider || safeResponse.provider, actualModel: actual?.model || safeResponse.model, executionMode: deterministic ? 'deterministic_fallback' : runtime?.executionMode === 'local_pipeline' ? 'local_pipeline' : runtime?.executionMode === 'hf_serverless' ? 'hf_serverless' : 'hosted_provider', fallbackReason: deterministic ? (runtime?.lastFailure || 'provider_or_quality_fallback') : null, success: !deterministic });
+    rememberAiRoutingDiagnostic({ requestedProvider: preferred, requestedModel: requestedModelFor(route as AIProvider), attemptedProviders, actualProvider: actual?.provider || safeResponse.provider, actualModel: actual?.model || safeResponse.model, executionMode: deterministic ? 'deterministic_fallback' : runtime?.executionMode === 'local_pipeline' ? 'local_pipeline' : 'hosted_provider', fallbackReason: deterministic ? (runtime?.lastFailure || 'provider_or_quality_fallback') : null, success: !deterministic });
     return { ...safeResponse, quotaRemaining: quota.remaining };
   };
 

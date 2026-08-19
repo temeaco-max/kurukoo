@@ -25,8 +25,8 @@ jobs:
       - run: npm run test:routes
       - name: Test Hugging Face Jobs training backend contract
         run: npm run test:huggingface-jobs-backend
-      - name: Test hosted inference provider fallback contracts
-        run: npm run test:hosted-provider-resolution && npm run test:hosted-provider-failover && npm run test:smollm2-hosted-fallback
+      - name: Test hosted provider routing and retired Hugging Face serverless boundary
+        run: npm run test:hosted-provider-resolution && npm run test:hosted-provider-failover && npm run test:smollm2-serverless-deprecation
       - name: Test progressive identity contract
         run: npx tsx scripts/test-progressive-identity.ts
       - name: Test food request identity and context resume

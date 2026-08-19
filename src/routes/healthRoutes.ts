@@ -88,7 +88,7 @@ router.get('/readyz', async (_req, res) => {
     const db = await getDb(); db.exec('SELECT 1');
     const runtime = runtimeSnapshot(); const capability = capabilitySnapshot();
     const requireModel = process.env.KURUKOO_CLOUD_RUN_REQUIRE_MODEL === 'true';
-    const modelReady = !requireModel || runtime.model.localEnabled || runtime.model.hostedConfigured;
+    const modelReady = !requireModel || runtime.model.localEnabled;
     const capabilityReady = capability.registry.state === 'healthy' && runtime.capability_runtime.invalid.valid;
     const persistentStateRequired = process.env.KURUKOO_PERSISTENT_STATE_REQUIRED !== 'false';
     const statePath = String(process.env.DB_PATH || '').trim();
