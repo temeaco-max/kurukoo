@@ -35,7 +35,12 @@
         <a href="/app/agents"><%= icon('chat') %><span>Agents</span></a>
         <a href="/app/capabilities"><%= icon('work') %><span>Capabilities</span></a>
         <a href="/app/opportunities"><%= icon('discover') %><span>Opportunities</span></a>
-        <a href="/app/wallet"><%= icon('points') %><span>Wallet &amp; Points</span></a>
+        <a href="/app/wallet"><%= icon('points') %><span>Wallet</span></a>
+        <a href="/app/points"><%= icon('points') %><span>Points</span></a>
+        <a href="/app/top-up"><%= icon('points') %><span>Top Up</span></a>
+        <a href="/app/subscriptions"><%= icon('saved') %><span>Subscriptions</span></a>
+        <a href="/app/checkout"><%= icon('request') %><span>Checkout</span></a>
+        <a href="/app/confirmations"><%= icon('success') %><span>Confirmations</span></a>
         <a href="/app/artifacts"><%= icon('saved') %><span>Artifacts</span></a>
         <a href="/app/prayer"><%= icon('chat') %><span>Prayer</span></a>
         <a href="/app/call"><%= icon('mic') %><span>Call</span></a>
@@ -43,7 +48,8 @@
       </nav>
       <div class="k-app-divider"></div>
       <nav class="k-app-nav" aria-label="Account">
-        <a href="/memory"><%= icon('saved') %><span>Memory</span></a>
+        <a href="/app/memory"><%= icon('saved') %><span>Memory</span></a>
+        <a href="/app/notifications"><%= icon('notification') %><span>Notifications</span></a>
         <a href="/settings"><%= icon('settings') %><span>Settings</span></a>
         <a href="/help"><%= icon('help') %><span>Help</span></a>
       </nav>
@@ -58,14 +64,15 @@
         </div>
 
         <% if (section === 'agent') { %>
-          <section class="k-app-grid two">
-            <article class="k-app-card"><span class="k-app-card-label">Conversation</span><h2>One place to ask, coordinate and continue.</h2><p>Chat remains the source of truth for requests, reminders, safety, memory, agents and actions.</p><a href="/chat" class="k-app-card-action">Open Web Chat →</a></article>
-            <article class="k-app-card"><span class="k-app-card-label">Continuity</span><h2>Keep active work alive.</h2><p>Interruption, authentication, pause/resume and cross-channel continuation remain owned by the canonical context layer.</p><a href="/requests" class="k-app-card-action">View Requests →</a></article>
-          </section>
+          <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label">Conversation</span><h2>One place to ask, coordinate and continue.</h2><p>Chat remains the source of truth for requests, reminders, safety, memory, agents and actions.</p><a href="/chat" class="k-app-card-action">Open Web Chat →</a></article><article class="k-app-card"><span class="k-app-card-label">Continuity</span><h2>Keep active work alive.</h2><p>Interruption, authentication, pause/resume and cross-channel continuation remain owned by the canonical context layer.</p><a href="/requests" class="k-app-card-action">View Requests →</a></article></section>
         <% } else if (section === 'connect') { %>
           <section class="k-app-grid three"><article class="k-app-card"><span class="k-app-card-label">Storage</span><h2>Google Drive</h2><p>User-owned Drive is the preferred durable home for artifacts. OAuth and feature flags determine live availability.</p><a href="/connect" class="k-app-card-action">Open Connect →</a></article><article class="k-app-card"><span class="k-app-card-label">Channels</span><h2>WhatsApp · Telegram · Push</h2><p>Pairing and notifications use the same Kurukoo identity and conversation.</p><a href="/channels" class="k-app-card-action">View readiness →</a></article><article class="k-app-card"><span class="k-app-card-label">Sources</span><h2>Sheets · Notion · Microsoft</h2><p>Bounded owner-authorized source reads are available without creating background mirrors.</p><a href="/connect" class="k-app-card-action">Manage sources →</a></article></section>
-        <% } else if (section === 'wallet') { %>
-          <section class="k-app-grid three"><article class="k-app-card"><span class="k-app-card-label">Points</span><h2>Points economy</h2><p>Closed-loop Points are governed separately from cash payment rails.</p><a href="/points" class="k-app-card-action">Open Points →</a></article><article class="k-app-card"><span class="k-app-card-label">Top Up</span><h2>Verified payment path</h2><p>No payment is claimed until the configured payment adapter produces evidence.</p><a href="/top-up" class="k-app-card-action">Open Top Up →</a></article><article class="k-app-card"><span class="k-app-card-label">Subscription</span><h2>Plans</h2><p>Plan changes remain gated by configured pricing and payment infrastructure.</p><a href="/subscription" class="k-app-card-action">Review plans →</a></article></section>
+        <% } else if (section === 'wallet' || section === 'points' || section === 'top-up' || section === 'subscriptions') { %>
+          <section class="k-app-grid three"><article class="k-app-card"><span class="k-app-card-label">Wallet</span><h2>Money controls</h2><p>Wallet state is separate from provider success and always reflects canonical economic evidence.</p><a href="/app/wallet" class="k-app-card-action">Wallet →</a></article><article class="k-app-card"><span class="k-app-card-label">Points</span><h2>Closed-loop utility</h2><p>Points remain independent from cash payment rails and can be governed without a payment provider.</p><a href="/app/points" class="k-app-card-action">Points →</a></article><article class="k-app-card"><span class="k-app-card-label">Billing</span><h2>Top Up &amp; Subscriptions</h2><p>These surfaces remain ready even when the live payment provider is disabled or awaiting verification.</p><div><a href="/app/top-up" class="k-app-card-action">Top Up →</a> · <a href="/app/subscriptions" class="k-app-card-action">Subscriptions →</a></div></article></section>
+        <% } else if (section === 'checkout' || section === 'confirmations') { %>
+          <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label">Economic truth</span><h2>Explicit confirmation before irreversible action.</h2><p>Checkout and confirmations use canonical request state, payment policy and evidence. UI never turns intent into claimed success.</p><a href="/requests" class="k-app-card-action">View Requests →</a></article><article class="k-app-card"><span class="k-app-card-label">Recovery</span><h2>Continue, retry or recover.</h2><p>Failed, pending, cancelled and completed states remain visible and resumable without losing the originating conversation.</p><a href="/chat" class="k-app-card-action">Continue in Chat →</a></article></section>
+        <% } else if (section === 'memory' || section === 'notifications') { %>
+          <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label"><%= section === 'memory' ? 'Memory Profile' : 'Notifications' %></span><h2><%= section === 'memory' ? 'One owner-scoped memory authority.' : 'Continuation without fragmentation.' %></h2><p><%= selected.description %></p><a href="/chat" class="k-app-card-action">Continue in Chat →</a></article><article class="k-app-card"><span class="k-app-card-label">Cross-client</span><h2>Same state across Web, PWA and native.</h2><p>Durable state comes from the canonical OS; clients keep only cache, device and rendering state locally.</p><a href="/app/agent" class="k-app-card-action">Open Agent →</a></article></section>
         <% } else if (section === 'agents') { %>
           <section class="k-app-card"><span class="k-app-card-label">Agent Runtime</span><h2>First-class agents, one runtime.</h2><p>Agent goals, actions, budgets, retries, pause/resume, evidence and recovery remain governed by the same canonical runtime. Use Chat to create or control an agent goal.</p><a href="/chat?prompt=Show%20me%20my%20agents" class="k-app-primary">Manage agents in Chat</a></section>
         <% } else if (section === 'capabilities') { %>
