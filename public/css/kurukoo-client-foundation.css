@@ -39,11 +39,14 @@
 .k-app-identity strong { font-family: var(--k-font-heading); font-size: 13px; }
 .k-app-identity small { color: var(--k-muted); font-size: 10px; }
 .k-app-ask, .k-app-primary { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 16px; border-radius: 15px; background: var(--k-primary); color: #fff; text-decoration: none; font-weight: 700; }
+.k-app-ask:hover, .k-app-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(36,34,31,.10); }
+.k-app-ask:focus-visible, .k-app-primary:focus-visible, .k-app-nav a:focus-visible, .k-mobile-tabbar a:focus-visible { outline: 3px solid color-mix(in srgb, var(--k-primary) 32%, transparent); outline-offset: 3px; }
 .k-app-sidebar { position: fixed; z-index: 30; top: 68px; bottom: 0; left: 0; width: 248px; overflow: auto; padding: 18px 14px 24px; background: var(--k-surface); border-right: 1px solid var(--k-border); }
 .k-app-new { display: flex; align-items: center; justify-content: center; min-height: 44px; margin-bottom: 14px; border-radius: 14px; background: var(--k-surface-soft); color: var(--k-ink); text-decoration: none; font-weight: 700; }
 .k-app-nav { display: grid; gap: 3px; }
 .k-app-nav a { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 10px 11px; border-radius: 11px; color: var(--k-muted); text-decoration: none; font-size: 14px; }
 .k-app-nav a:hover, .k-app-nav a.active { background: var(--k-surface-soft); color: var(--k-ink); }
+.k-app-nav a.active { box-shadow: inset 3px 0 0 var(--k-primary); }
 .k-app-icon { width: 20px; height: 20px; flex: 0 0 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .k-app-divider { height: 1px; margin: 14px 0; background: var(--k-border); }
 .k-app-main { margin-left: 248px; min-width: 0; min-height: calc(100dvh - 68px); padding: 34px 0 72px; }
@@ -56,10 +59,12 @@
 .k-app-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .k-app-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .k-app-card { background: var(--k-surface); border: 1px solid var(--k-border); border-radius: 18px; padding: 20px; box-shadow: 0 6px 24px rgba(36, 34, 31, .04); }
+.k-app-card:hover { border-color: color-mix(in srgb, var(--k-primary) 22%, var(--k-border)); box-shadow: 0 12px 30px rgba(36,34,31,.07); }
 .k-app-card-label { display: block; margin-bottom: 8px; color: var(--k-primary); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .k-app-card h2 { margin: 0 0 8px; font: 700 22px/1.16 var(--k-font-heading); }
 .k-app-card p { margin: 0 0 16px; color: var(--k-muted); line-height: 1.55; }
-.k-app-card-action { color: var(--k-ink); font-weight: 700; text-decoration: none; }
+.k-app-card-action { color: var(--k-ink); font-weight: 700; text-decoration: none; text-underline-offset: 3px; }
+.k-app-card-action:hover { color: var(--k-primary); }
 .k-app-status-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
 .k-status { display: inline-flex; align-items: center; min-height: 32px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--k-border); background: var(--k-surface); font-size: 11px; font-weight: 700; color: var(--k-muted); }
 .k-status[data-state="success"] { color: var(--k-success); border-color: color-mix(in srgb, var(--k-success) 28%, var(--k-border)); }
@@ -94,6 +99,26 @@
 .workspace-page .workspace-avatar { background: var(--k-ink); }
 .workspace-page .workspace-notice { background: var(--k-surface-soft); border-color: var(--k-border); color: var(--k-ink); }
 
+/* App surface completion: make every registered surface feel intentional even when its live integration is pending. */
+.k-app-page { background: var(--k-cream); }
+.k-app-page .k-app-container { padding-bottom: 20px; }
+.k-app-page .k-app-card { min-height: 164px; transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.k-app-page .k-app-card:hover { transform: translateY(-2px); }
+.k-app-page .k-app-card h2 { max-width: 760px; }
+.k-app-page .k-app-card > div:has(.k-app-card-action) { margin-top: auto; }
+.k-app-page .k-app-card-action, .k-app-page .k-app-primary { margin-top: 4px; }
+.k-app-page .k-app-status-row { padding-top: 2px; }
+.k-app-page .k-status::before { content: ''; width: 6px; height: 6px; margin-right: 7px; border-radius: 50%; background: currentColor; opacity: .7; }
+.k-app-page .k-app-nav { padding-bottom: 2px; }
+.k-app-page .k-app-sidebar::-webkit-scrollbar { width: 8px; }
+.k-app-page .k-app-sidebar::-webkit-scrollbar-thumb { background: var(--k-border); border-radius: 999px; }
+.k-app-page .k-app-header { box-shadow: 0 1px 0 rgba(36,34,31,.02); }
+.k-app-page .k-app-title-row > div { min-width: 0; }
+.k-app-page .k-app-title-row p { font-size: 15px; }
+.k-app-page .k-app-primary { transition: transform .16s ease, box-shadow .16s ease; }
+.k-app-page .k-app-card-action:focus-visible { outline: 3px solid color-mix(in srgb, var(--k-primary) 28%, transparent); outline-offset: 3px; }
+.k-app-page :where(a,button,input,textarea,select):focus-visible { outline: 3px solid color-mix(in srgb, var(--k-primary) 28%, transparent); outline-offset: 3px; }
+
 .k-mobile-tabbar { display: none; }
 .k-mobile-tabbar a { min-height: 56px; min-width: 56px; display: grid; place-items: center; gap: 2px; text-decoration: none; color: var(--k-muted); font-size: 10px; font-weight: 700; }
 .k-mobile-tabbar a[aria-current="page"] { color: var(--k-primary); }
@@ -118,7 +143,11 @@
   .explore-search-container .btn { min-height: 44px; }
   .categories-grid { grid-template-columns: 1fr; gap: 14px; margin-top: 32px; }
   .explore-category-card { padding: 22px 18px; }
+  .k-app-page .k-app-card { min-height: 0; }
+  .k-app-page .k-app-title-row h1 { font-size: clamp(30px, 9vw, 40px); }
+  .k-app-page .k-app-card h2 { font-size: 20px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .001ms !important; animation-duration: .001ms !important; }
+  .k-app-page .k-app-card:hover, .k-app-page .k-app-primary:hover { transform: none; }
 }
