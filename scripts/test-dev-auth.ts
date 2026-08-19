@@ -60,6 +60,13 @@ try {
   assert.notEqual(productionAttempt.status, 200, 'development code must be rejected in production');
   process.env.NODE_ENV = 'test';
 
+  // Chat/runtime tests may mutate process-level feature state. Reassert the
+  // isolated Admin credentials immediately before the Admin-boundary assertion
+  // so this regression tests the credentials it intentionally owns.
+  process.env.ADMIN_USERNAME = 'admin';
+  process.env.ADMIN_PASSWORD = 'admin-password-for-test';
+  assert.equal(process.env.ADMIN_USERNAME, 'admin');
+  assert.equal(process.env.ADMIN_PASSWORD, 'admin-password-for-test');
   const adminLogin = await fetch(`${base}/api/admin/auth`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: 'admin', password: 'admin-password-for-test' }) });
   const adminData = await json(adminLogin);
   assert.equal(adminLogin.status, 200);
