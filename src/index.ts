@@ -79,8 +79,8 @@ app.use(express.static(path.join(process.cwd(),'public'),{index:false,fallthroug
 app.use(express.json({limit:process.env.CHAT_ATTACHMENT_BODY_LIMIT||'35mb',verify:(req,_res,buf)=>{(req as any).rawBody=Buffer.from(buf);}}));
 app.use('/',systemRoutes); app.use('/',authChallengePublicRoutes); app.use('/',mcpAppRoutes);
 app.use('/api',channelRoutes); app.use('/api',circleRoutes); app.use('/api/economic-requests',economicRequestRouter); app.use('/api/admin/platform',adminPlatformRoutes);
-// Keep the public Admin login boundary ahead of Admin routers that install a global authenticateAdmin middleware.
-app.use('/api/admin',adminRoutes); app.use('/api/admin',adminFcmRoutes); app.use('/api/admin',adminDisputeRoutes);
+// Canonical dispute routes must remain ahead of legacy Admin handlers; auth is scoped per protected endpoint so /auth remains public.
+app.use('/api/admin',adminDisputeRoutes); app.use('/api/admin',adminRoutes); app.use('/api/admin',adminFcmRoutes);
 app.use('/api',paymentRoutes); app.use('/api',userRoutes); app.use('/api/auth',authRoutes);
 app.use('/api/chat',...prayerChatMiddleware);
 app.use('/api/chat',chatRouter);
