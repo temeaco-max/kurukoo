@@ -10,6 +10,8 @@ import json
 import os
 import pathlib
 import sys
+import platform
+from importlib import metadata
 from dataclasses import asdict, dataclass
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -30,6 +32,9 @@ LR = float(os.environ.get("KURUKOO_TRAIN_LR", "2e-4"))
 USE_4BIT = os.environ.get("KURUKOO_TRAIN_4BIT", "true").lower() == "true"
 ENABLE = os.environ.get("KURUKOO_ENABLE_TRAINING", "false").lower() == "true"
 SEED = int(os.environ.get("KURUKOO_TRAIN_SEED", "42"))
+MIN_CUDA_MEMORY_GIB = max(1, int(os.environ.get("KURUKOO_TRAIN_MIN_CUDA_MEMORY_GIB", "16")))
+ALLOW_FULL_CPU = os.environ.get("KURUKOO_ALLOW_FULL_CPU_TRAINING", "false").lower() == "true"
+FULL_CORPUS_MIN_ROWS = max(1000, int(os.environ.get("KURUKOO_FULL_CORPUS_MIN_ROWS", "1000")))
 
 @dataclass(frozen=True)
 class TrainingManifest:
@@ -45,6 +50,11 @@ class TrainingManifest:
     four_bit_requested: bool
     training_enabled: bool
     status: str
+    seed: int
+    hardware: dict
+    libraries: dict
+    dataset_rows: int
+    blocker: dict | None = None
 
 
 def sha256(path: pathlib.Path) -> str:
@@ -76,6 +86,29 @@ def assert_explicitly_accepted(rows):
         raise RuntimeError(f"Training corpus contains non-approved candidates; curate first. Rejected examples: {len(rejected)}")
     if not rows:
         raise RuntimeError("Training dataset is empty; no explicitly accepted examples are available")
+
+
+def runtime_metadata(torch=None):
+    libraries = {}
+    for package in ("torch", "transformers", "peft", "datasets", "accelerate", "safetensors"):
+        try:
+            libraries[package] = metadata.version(package)
+        except metadata.PackageNotFoundError:
+            libraries[package] = None
+    hardware = {"platform": platform.platform(), "python": sys.version.split()[0], "cudaAvailable": False, "cudaDevices": [], "minRequiredCudaMemoryGiB": MIN_CUDA_MEMORY_GIB}
+    if torch is not None:
+        hardware["torchVersion"] = getattr(torch, "__version__", None)
+        hardware["cudaAvailable"] = bool(torch.cuda.is_available())
+        if torch.cuda.is_available():
+            for index in range(torch.cuda.device_count()):
+                props = torch.cuda.get_device_properties(index)
+                hardware["cudaDevices"].append({"index": index, "name": props.name, "memoryGiB": round(props.total_memory / (1024 ** 3), 2)})
+    return hardware, libraries
+
+
+def write_manifest(payload):
+    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    (OUTPUT.parent / "training-manifest.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
 def row_to_text(row, tokenizer):
@@ -116,26 +149,11 @@ def main():
         except RuntimeError as exc:
             raise SystemExit(str(exc)) from exc
     dataset_hash = sha256(DATASET)
-    manifest = TrainingManifest(
-        base_model=BASE_MODEL,
-        dataset=str(DATASET),
-        dataset_sha256=dataset_hash,
-        output=str(OUTPUT),
-        max_length=MAX_LENGTH,
-        epochs=EPOCHS,
-        batch_size=BATCH,
-        gradient_accumulation=GRAD_ACCUM,
-        learning_rate=LR,
-        four_bit_requested=USE_4BIT,
-        training_enabled=ENABLE,
-        status="training_disabled" if not ENABLE else "training_requested",
-    )
-    print(json.dumps(asdict(manifest), indent=2))
-
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    (OUTPUT.parent / "training-manifest.json").write_text(json.dumps(asdict(manifest), indent=2) + "\n", encoding="utf-8")
-
     if not ENABLE:
+        hardware, libraries = runtime_metadata()
+        manifest = TrainingManifest(base_model=BASE_MODEL, dataset=str(DATASET), dataset_sha256=dataset_hash, output=str(OUTPUT), max_length=MAX_LENGTH, epochs=EPOCHS, batch_size=BATCH, gradient_accumulation=GRAD_ACCUM, learning_rate=LR, four_bit_requested=USE_4BIT, training_enabled=False, status="training_disabled", seed=SEED, hardware=hardware, libraries=libraries, dataset_rows=len(rows))
+        print(json.dumps(asdict(manifest), indent=2))
+        write_manifest(asdict(manifest))
         print("Training is disabled. No model weights were created or promoted.")
         return 0
 
@@ -146,6 +164,19 @@ def main():
         from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
     except Exception as exc:
         raise SystemExit(f"Training dependencies are unavailable: {exc}")
+
+    hardware, libraries = runtime_metadata(torch)
+    minimum_satisfied = any(float(device.get("memoryGiB", 0)) >= MIN_CUDA_MEMORY_GIB for device in hardware["cudaDevices"])
+    if len(rows) >= FULL_CORPUS_MIN_ROWS and not ALLOW_FULL_CPU and not minimum_satisfied:
+        blocker = {"code": "insufficient_gpu_for_full_corpus_training", "reason": "A full Kurukoo Student v1 run is intentionally blocked without a CUDA GPU meeting the configured memory floor.", "requiredGpuMemoryGiB": MIN_CUDA_MEMORY_GIB, "observedCudaDevices": hardware["cudaDevices"], "cpuOverrideEnv": "KURUKOO_ALLOW_FULL_CPU_TRAINING=true", "expectedArtifact": str(OUTPUT / "artifact-manifest.json"), "trainingCommand": "KURUKOO_ENABLE_TRAINING=true KURUKOO_TRAIN_DATASET=<accepted-train.jsonl> KURUKOO_TRAIN_OUTPUT=<artifact-dir> python3 ml/train_smollm2_qlora.py"}
+        manifest = TrainingManifest(base_model=BASE_MODEL, dataset=str(DATASET), dataset_sha256=dataset_hash, output=str(OUTPUT), max_length=MAX_LENGTH, epochs=EPOCHS, batch_size=BATCH, gradient_accumulation=GRAD_ACCUM, learning_rate=LR, four_bit_requested=USE_4BIT, training_enabled=True, status="blocked_hardware", seed=SEED, hardware=hardware, libraries=libraries, dataset_rows=len(rows), blocker=blocker)
+        print(json.dumps(asdict(manifest), indent=2))
+        write_manifest(asdict(manifest))
+        return 3
+
+    manifest = TrainingManifest(base_model=BASE_MODEL, dataset=str(DATASET), dataset_sha256=dataset_hash, output=str(OUTPUT), max_length=MAX_LENGTH, epochs=EPOCHS, batch_size=BATCH, gradient_accumulation=GRAD_ACCUM, learning_rate=LR, four_bit_requested=USE_4BIT, training_enabled=True, status="training_requested", seed=SEED, hardware=hardware, libraries=libraries, dataset_rows=len(rows))
+    print(json.dumps(asdict(manifest), indent=2))
+    write_manifest(asdict(manifest))
 
     if not torch.cuda.is_available() and USE_4BIT:
         print("CUDA is unavailable; falling back to non-4-bit LoRA training.")
