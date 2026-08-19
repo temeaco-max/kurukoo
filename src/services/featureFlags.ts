@@ -45,6 +45,7 @@ export const FEATURE_REGISTRY: Record<string, FeatureDefinition> = {
     mobile_money: { description: 'Mobile-money payment adapter', lifecycle: 'pilot', defaultEnabled: false },
     hosted_gemini: { description: 'Gemini hosted AI execution', lifecycle: 'pilot', defaultEnabled: false, requires: ['GEMINI_API_KEY'], providerPrerequisites: ['approved model, quota, privacy and retention review'], risk: 'medium', killSwitch: true, adminVisible: true },
     hosted_mistral: { description: 'Mistral hosted AI execution', lifecycle: 'pilot', defaultEnabled: false, requires: ['MISTRAL_API_KEY'], providerPrerequisites: ['approved model, quota, privacy and retention review'], risk: 'medium', killSwitch: true, adminVisible: true },
+    mistral_tts: { description: 'Mistral Voxtral text-to-speech execution', lifecycle: 'pilot', defaultEnabled: false, requires: ['MISTRAL_TTS_CONFIGURATION'], dependencies: ['hosted_mistral'], providerPrerequisites: ['approved Voxtral TTS model, saved voice profile, quota, privacy and retention review'], risk: 'high', killSwitch: true, adminVisible: true },
     hosted_groq: { description: 'Groq hosted AI execution', lifecycle: 'pilot', defaultEnabled: false, requires: ['GROQ_API_KEY'], providerPrerequisites: ['approved model, quota, privacy and retention review'], risk: 'medium', killSwitch: true, adminVisible: true },
     hosted_openrouter: { description: 'OpenRouter hosted AI execution', lifecycle: 'pilot', defaultEnabled: false, requires: ['OPENROUTER_CONFIGURATION'], providerPrerequisites: ['approved explicit model, bounded spend, privacy and retention review'], risk: 'medium', killSwitch: true, adminVisible: true },
     huggingface_jobs: { description: 'Hugging Face remote training Jobs', lifecycle: 'pilot', defaultEnabled: false, requires: ['HUGGINGFACE_TOKEN'], providerPrerequisites: ['scoped token, approved GPU budget, benchmark and registry review'], risk: 'high', killSwitch: true, adminVisible: true },
@@ -104,6 +105,7 @@ function hasRequirement(requirement: string): boolean {
     }
     if (requirement === 'GEMINI_API_KEY') return Boolean(process.env.GEMINI_API_KEY || process.env.API_KEY);
     if (requirement === 'MISTRAL_API_KEY') return Boolean(process.env.MISTRAL_API_KEY);
+    if (requirement === 'MISTRAL_TTS_CONFIGURATION') return Boolean(process.env.MISTRAL_API_KEY && process.env.MISTRAL_TTS_MODEL && process.env.MISTRAL_TTS_VOICE_ID);
     if (requirement === 'GROQ_API_KEY') return Boolean(process.env.GROQ_API_KEY);
     if (requirement === 'OPENROUTER_CONFIGURATION') return Boolean(process.env.OPENROUTER_API_KEY && process.env.OPENROUTER_MODEL);
     if (requirement === 'HUGGINGFACE_TOKEN') return Boolean(process.env.HF_TOKEN || process.env.HUGGINGFACE_API_KEY || process.env.HF_API_KEY);

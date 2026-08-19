@@ -41,6 +41,8 @@ jobs:
         run: npm run test:microsoft-graph-source
       - name: Test canonical external integration readiness contract
         run: npm run test:external-integration-readiness
+      - name: Test Mistral Voxtral TTS contract
+        run: npm run test:mistral-tts
       - name: Test remote MCP app contract
         run: npx tsx scripts/test-mcp-app.ts
       - name: Test Pulse privacy contract

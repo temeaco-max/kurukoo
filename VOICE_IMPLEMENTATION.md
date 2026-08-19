@@ -19,6 +19,13 @@ KURUKOO_VOICE_MODEL=gemini-2.5-flash-native-audio-live
 KURUKOO_VOICE_EXPERIMENTAL_BROWSER_SPEECH=false
 KURUKOO_VOICE_TTS_PROVIDER=disabled
 KURUKOO_VOICE_TTS_MODEL=
+# Optional Mistral Voxtral TTS: an externally managed saved voice only; user audio is never used as a clone source at this boundary.
+MISTRAL_API_KEY=owner-managed-server-secret
+MISTRAL_TTS_MODEL=approved-voxtral-model
+MISTRAL_TTS_VOICE_ID=approved-saved-voice-id
+MISTRAL_TTS_RESPONSE_FORMAT=mp3
+FF_HOSTED_MISTRAL=false
+FF_MISTRAL_TTS=false
 KURUKOO_VOICE_MAX_SESSION_SECONDS=900
 KURUKOO_VOICE_IDLE_TIMEOUT_SECONDS=120
 KURUKOO_VOICE_MAX_CONCURRENT_SESSIONS=2
@@ -74,11 +81,11 @@ Conversation content is treated as untrusted. A spoken request cannot override t
 
 The existing `/chat` microphone button opens the realtime voice session. The chat displays text status for connecting, listening, thinking, speaking, interruption, error, and disconnection. It uses the existing SVG microphone icon and preserves a 44px control target. A visible **End voice** control allows immediate cleanup. The user may always return to text.
 
-Audio uses browser microphone capture, 16 kHz signed PCM input to the supported Gemini Live boundary, and 24 kHz PCM output playback. Starting new microphone audio stops queued assistant playback for barge-in. Browser Speech APIs are an experimental, turn-based pilot only; they are not represented as server transcription. Server TTS is unavailable until a separately configured adapter is implemented. If microphone permission, device access, provider availability, quota, network, autoplay, or browser support fails, the control returns a plain-language text fallback.
+Audio uses browser microphone capture, 16 kHz signed PCM input to the supported Gemini Live boundary, and 24 kHz PCM output playback. Starting new microphone audio stops queued assistant playback for barge-in. Browser Speech APIs are an experimental, turn-based pilot only; they are not represented as server transcription. Server speech uses one explicitly selected provider only. The repository includes both the pre-existing Gemini path and a canonical Mistral Voxtral TTS adapter. Mistral requires an approved model and externally managed saved `voice_id`, a Mistral key, both `hosted_mistral` and `mistral_tts` flags, a bounded 300-word/2,000-character input, non-stream base64 audio validation, and provider/model attribution in private response headers. It never uploads a user artifact as a voice-clone source and never returns synthetic fallback audio under Mistral attribution. If microphone permission, device access, provider availability, moderation, quota, network, autoplay, or browser support fails, the control returns a plain-language text fallback.
 
 ## Free-tier development and production requirements
 
-The implementation is designed for bounded Gemini Live development access where it is available; it does not promise a permanent free production tier. Kurukoo makes no production commitment to free-tier processing of private conversations until privacy, retention, quota, regional processing, and provider-terms decisions are explicit. Quotas, preview model availability, rate limits, and token behavior are controlled by Gemini and must be verified by the owner before production release. Mistral Voxtral transcription and Mistral TTS are not active in this repository; their readiness remains unavailable until a verified adapter is connected through this same voice boundary. The explicit upgrade path is to adjust the configured model/provider and session limits or add a future provider adapter—without changing chat, conversations, Economic Requests, skills, reminders, memory, or cards.
+The implementation is designed for bounded Gemini Live development access where it is available; it does not promise a permanent free production tier. Kurukoo makes no production commitment to free-tier processing of private conversations until privacy, retention, quota, regional processing, and provider-terms decisions are explicit. Quotas, preview model availability, rate limits, and token behavior are controlled by providers and must be verified by the owner before production release. Mistral Voxtral transcription and Mistral TTS both have canonical repository adapters and deterministic contracts, but neither is production-active or live-verified merely because a secret is configured. Mistral TTS can be selected only after its explicit model, saved voice, key and dual flags are configured; its live evidence must include actual returned audio, attribution, moderation/timeout recovery, and text fallback. The explicit upgrade path is to adjust the configured model/provider and session limits or add a future provider adapter—without changing chat, conversations, Economic Requests, skills, reminders, memory, or cards.
 
 Browser voice is distinct from the existing IVR and call-placeholder surfaces. It does not activate WhatsApp voice, telephone calling, Telegram voice, SMS, USSD, remote peer calling, or a payment/dispatch integration.
 
@@ -86,3 +93,4 @@ Browser voice is distinct from the existing IVR and call-placeholder surfaces. I
 
 [1]: https://ai.google.dev/gemini-api/docs/live-api/ephemeral-tokens "Gemini Live API ephemeral tokens"
 [2]: https://ai.google.dev/gemini-api/docs/live-api "Gemini Live API overview"
+[3]: https://docs.mistral.ai/studio-api/audio/text_to_speech "Mistral Text-to-Speech API"

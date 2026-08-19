@@ -98,12 +98,14 @@ router.post('/tts', optionalAuthenticateUser, sessionRateLimit, async (req: Auth
   if (!text) return res.status(400).json({ error: 'text is required' });
   if (isGuest) return res.status(403).json({ error: 'Sign in to use server voice.' });
   try {
-    const { mime, data } = await synthesizeSpeech(text);
-    res.set({ 'Content-Type': mime, 'Content-Length': String(data.length), 'Cache-Control': 'private, max-age=300' });
+    const { mime, data, provider, model } = await synthesizeSpeech(text);
+    res.set({ 'Content-Type': mime, 'Content-Length': String(data.length), 'Cache-Control': 'private, max-age=300', 'X-Kurukoo-Tts-Provider': provider, 'X-Kurukoo-Tts-Model': model.slice(0, 120) });
     res.send(data);
-  } catch (error) {
-    console.warn('[Voice] tts_failed', { guest: isGuest });
-    res.status(502).json({ error: 'Text-to-speech is unavailable right now.' });
+  } catch (error: any) {
+    const code = String(error?.code || 'TTS_REQUEST_FAILED');
+    const unavailable = code === 'MISTRAL_NOT_CONFIGURED' || code === 'MISTRAL_TTS_DISABLED' || code === 'MISTRAL_DISABLED' || code === 'GEMINI_NOT_CONFIGURED';
+    console.warn('[Voice] tts_failed', { code, guest: isGuest });
+    res.status(unavailable ? 503 : 502).json({ error: unavailable ? 'Text-to-speech is not enabled for this deployment. You can continue by typing.' : 'Text-to-speech is unavailable right now. You can continue by typing.', code });
   }
 });
 

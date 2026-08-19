@@ -4,6 +4,7 @@ import { getProfile } from './memoryProfile.js';
 import { getGenAIClient } from './geminiService.js';
 import { getVoiceToolDeclarations } from './voiceToolRegistry.js';
 import { getMistralStatus } from './mistralService.js';
+import { getTtsStatus, isTtsEnabled } from './serverTtsService.js';
 
 export interface VoiceSessionRecord {
   id: string;
@@ -42,14 +43,26 @@ export function getVoiceStatus() {
     model: current.model,
     capability: 'live',
     tts: (() => {
-      const provider = process.env.KURUKOO_VOICE_TTS_PROVIDER || 'disabled';
-      const model = process.env.KURUKOO_VOICE_TTS_MODEL || process.env.GEMINI_TTS_MODEL || undefined;
-      const available = current.enabled && provider !== 'disabled' && Boolean(model) && configuredKey();
+      const tts = getTtsStatus();
+      const mistralTts = mistral.capabilities.find(capability => capability.capability === 'tts');
+      const model = tts.provider === 'mistral' ? mistralTts?.model : tts.provider === 'gemini' ? (process.env.KURUKOO_VOICE_TTS_MODEL || process.env.GEMINI_TTS_MODEL || undefined) : undefined;
+      const executionEnabled = tts.executionEnabled;
+      const available = tts.provider === 'mistral' ? Boolean(mistralTts?.available) : isTtsEnabled();
       return {
-        provider,
+        provider: tts.provider,
         model,
+        configured: tts.configured,
+        executionEnabled,
         available,
-        note: available ? 'Server TTS is enabled and configured.' : 'Server TTS is unavailable until it is explicitly enabled and configured.',
+        note: available
+          ? `Server TTS is independently verified and selected through the ${tts.provider} provider.`
+          : executionEnabled && tts.provider === 'mistral'
+            ? 'Mistral TTS execution is enabled but provider reachability is not independently verified; complete a controlled smoke test before presenting it as available.'
+            : tts.provider === 'mistral'
+              ? (mistralTts?.note || 'Mistral TTS is unavailable until its saved voice, feature gates, and provider availability are verified.')
+              : tts.provider === 'gemini'
+                ? 'Gemini server TTS is unavailable until its selected provider configuration is present.'
+                : 'Server TTS is unavailable because no explicit provider is selected and configured.',
       };
     })(),
     optionalMistral: {

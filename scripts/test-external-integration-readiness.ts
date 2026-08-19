@@ -6,7 +6,7 @@ const originalEnv = { ...process.env };
 const keys = [
   'KURUKOO_GOOGLE_DRIVE_CLIENT_ID', 'KURUKOO_GOOGLE_DRIVE_CLIENT_SECRET', 'KURUKOO_GOOGLE_DRIVE_REDIRECT_URI', 'KURUKOO_NOTION_CLIENT_ID', 'KURUKOO_NOTION_CLIENT_SECRET', 'KURUKOO_NOTION_REDIRECT_URI', 'FF_TEST_NOTION', 'KURUKOO_MICROSOFT_CLIENT_ID', 'KURUKOO_MICROSOFT_CLIENT_SECRET', 'KURUKOO_MICROSOFT_REDIRECT_URI', 'FF_TEST_OUTLOOK', 'FF_TEST_ONEDRIVE', 'KURUKOO_GOOGLE_SHEETS_CLIENT_ID', 'KURUKOO_GOOGLE_SHEETS_CLIENT_SECRET', 'KURUKOO_GOOGLE_SHEETS_REDIRECT_URI', 'KURUKOO_STORAGE_ENCRYPTION_KEY', 'FF_TEST_GOOGLE_DRIVE', 'FF_TEST_GOOGLE_SHEETS',
   'WHATSAPP_TOKEN', 'WHATSAPP_PHONE_NUMBER_ID', 'WHATSAPP_VERIFY_TOKEN', 'WHATSAPP_APP_SECRET', 'FF_WHATSAPP',
-  'GEMINI_API_KEY', 'MISTRAL_API_KEY', 'GROQ_API_KEY', 'OPENROUTER_API_KEY', 'OPENROUTER_MODEL', 'FF_TEST_HOSTED_OPENROUTER', 'HF_TOKEN', 'HUGGINGFACE_API_KEY', 'HF_API_KEY',
+  'GEMINI_API_KEY', 'MISTRAL_API_KEY', 'MISTRAL_TTS_MODEL', 'MISTRAL_TTS_VOICE_ID', 'FF_TEST_HOSTED_MISTRAL', 'FF_TEST_MISTRAL_TTS', 'GROQ_API_KEY', 'OPENROUTER_API_KEY', 'OPENROUTER_MODEL', 'FF_TEST_HOSTED_OPENROUTER', 'HF_TOKEN', 'HUGGINGFACE_API_KEY', 'HF_API_KEY',
 ];
 for (const key of keys) delete process.env[key];
 process.env.NODE_ENV = 'test';
@@ -41,6 +41,10 @@ try {
   assert.equal(notion?.readiness.CREDENTIAL_READY, false, 'Notion must report absent public OAuth configuration truthfully.');
   assert.equal(notion?.uiState, 'CREDENTIALS_REQUIRED');
   for (const sourceId of ['outlook', 'onedrive']) { const source = baseline.find((item) => item.id === sourceId); assert.ok(source?.readiness.IMPLEMENTED && source.readiness.CONTRACT_TESTED && source.readiness.MOCK_VERIFIED, `${sourceId} must expose its canonical owner-scoped lifecycle and deterministic contract proof.`); assert.equal(source?.readiness.CREDENTIAL_READY, false); assert.equal(source?.uiState, 'CREDENTIALS_REQUIRED'); }
+  const mistralTts = baseline.find((item) => item.id === 'mistral_tts');
+  assert.ok(mistralTts?.readiness.IMPLEMENTED && mistralTts.readiness.CONTRACT_TESTED && mistralTts.readiness.MOCK_VERIFIED, 'Mistral TTS must expose its canonical saved-voice lifecycle and deterministic contract proof.');
+  assert.equal(mistralTts?.readiness.CREDENTIAL_READY, false, 'Mistral TTS must require an explicit API key, model and saved voice profile.');
+  assert.equal(mistralTts?.uiState, 'CREDENTIALS_REQUIRED');
   const openRouter = baseline.find((item) => item.id === 'openrouter');
   assert.ok(openRouter?.readiness.IMPLEMENTED && openRouter.readiness.CONTRACT_TESTED && openRouter.readiness.MOCK_VERIFIED, 'OpenRouter must expose its canonical hosted adapter and deterministic contract proof.');
   assert.equal(openRouter?.readiness.CREDENTIAL_READY, false, 'OpenRouter must require both a key and an explicit approved model.');
@@ -80,6 +84,13 @@ try {
   assert.equal(outlookFlagDisabled?.readiness.CREDENTIAL_READY, true); assert.equal(outlookFlagDisabled?.uiState, 'DISABLED');
   assert.equal(oneDriveFlagDisabled?.readiness.CREDENTIAL_READY, true); assert.equal(oneDriveFlagDisabled?.uiState, 'DISABLED');
   process.env.FF_TEST_OUTLOOK = 'true'; process.env.FF_TEST_ONEDRIVE = 'true';
+  process.env.MISTRAL_API_KEY = 'mistral-key';
+  process.env.MISTRAL_TTS_MODEL = 'voxtral-mini-tts-2603';
+  process.env.MISTRAL_TTS_VOICE_ID = 'saved-voice';
+  const mistralTtsFlagDisabled = getExternalIntegrationReadiness().find((item) => item.id === 'mistral_tts');
+  assert.equal(mistralTtsFlagDisabled?.readiness.CREDENTIAL_READY, true, 'Mistral TTS model and voice configuration can be detected while feature gates remain disabled.');
+  assert.equal(mistralTtsFlagDisabled?.uiState, 'DISABLED', 'Mistral TTS credentials must not enable external speech generation alone.');
+  process.env.FF_TEST_HOSTED_MISTRAL = 'true'; process.env.FF_TEST_MISTRAL_TTS = 'true';
   process.env.OPENROUTER_API_KEY = 'openrouter-key';
   process.env.OPENROUTER_MODEL = 'openai/gpt-5-mini';
   const openRouterFlagDisabled = getExternalIntegrationReadiness().find((item) => item.id === 'openrouter');
@@ -97,6 +108,7 @@ try {
   const configuredNotion = configured.find((item) => item.id === 'notion');
   const configuredOutlook = configured.find((item) => item.id === 'outlook');
   const configuredOneDrive = configured.find((item) => item.id === 'onedrive');
+  const configuredMistralTts = configured.find((item) => item.id === 'mistral_tts');
   const configuredOpenRouter = configured.find((item) => item.id === 'openrouter');
   const configuredWhatsApp = configured.find((item) => item.id === 'whatsapp');
   assert.equal(configuredDrive?.readiness.CREDENTIAL_READY, true, 'Drive configuration must be detected without exposing credential contents.');
@@ -108,6 +120,8 @@ try {
   assert.equal(configuredNotion?.uiState, 'LIVE_VERIFICATION_REQUIRED', 'Enabled Notion credentials must still require a real owner/provider evidence run.');
   assert.equal(configuredOutlook?.readiness.FEATURE_FLAG_STATE, 'ENABLED'); assert.equal(configuredOutlook?.uiState, 'LIVE_VERIFICATION_REQUIRED');
   assert.equal(configuredOneDrive?.readiness.FEATURE_FLAG_STATE, 'ENABLED'); assert.equal(configuredOneDrive?.uiState, 'LIVE_VERIFICATION_REQUIRED');
+  assert.equal(configuredMistralTts?.readiness.FEATURE_FLAG_STATE, 'ENABLED', 'Mistral TTS must require the explicit dedicated feature flag in addition to hosted Mistral.');
+  assert.equal(configuredMistralTts?.uiState, 'LIVE_VERIFICATION_REQUIRED', 'Enabled Mistral TTS credentials remain unverified until actual provider audio evidence exists.');
   assert.equal(configuredOpenRouter?.readiness.FEATURE_FLAG_STATE, 'ENABLED', 'OpenRouter must require explicit hosted-provider activation in addition to configuration.');
   assert.equal(configuredOpenRouter?.uiState, 'LIVE_VERIFICATION_REQUIRED', 'Enabled OpenRouter configuration must remain unverified until independent provider evidence exists.');
   assert.equal(configuredWhatsApp?.readiness.CREDENTIAL_READY, true, 'WhatsApp configuration must be detected through the canonical channel readiness boundary.');
