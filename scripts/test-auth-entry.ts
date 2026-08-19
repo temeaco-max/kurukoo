@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { isPlausibleConversationalName } from '../src/services/conversationalAuthService.js';
 
 const root = process.cwd();
 const read = (file: string) => fs.readFileSync(path.join(root, file), 'utf8');
@@ -22,4 +23,18 @@ assert(authRoutes.includes("const AUTH_COOKIE = 'kurukoo_auth'"), 'browser auth 
 assert(authRoutes.includes('httpOnly: true') && authRoutes.includes("sameSite: 'lax'"), 'auth cookie must be HttpOnly and same-site');
 assert(authRoutes.includes("router.post('/logout'") && authRoutes.includes('clearCookie'), 'logout must clear the canonical browser session');
 assert(authCss.includes('@media(max-width:480px)'), 'auth layout must include a mobile breakpoint');
+
+for (const value of ['Tunde', 'Tunde Charles', 'My name is Tunde', "I'm Tunde", 'Call me Tunde']) {
+  assert(isPlausibleConversationalName(value), `identity input must be accepted: ${value}`);
+}
+for (const value of [
+  'rice and ikeja',
+  'rice and yam delivered to me in ikeja',
+  'i would like rice. the area is ikeja',
+  'find me a plumber in Ikeja',
+  'please get food for me',
+]) {
+  assert(!isPlausibleConversationalName(value), `task/location text must not be accepted as identity: ${value}`);
+}
+
 console.log('Auth entry contract passed.');
