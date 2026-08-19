@@ -178,7 +178,7 @@
     "test:seo-admin": "tsx scripts/test-seo-admin-routes.ts",
     "test:composition": "tsx scripts/test-composition-routes.ts",
     "test:task": "node scripts/test-task-routes.mjs",
-    "test:route-sequence": "npm run test:composition && npm run test:public-routes && npm run test:public-runtime && npm run test:country-experience && npm run test:conversation-workspace && npm run test:skill-mode-routing && npm run test:voice && npm run test:phone-otp && npm run test:webrtc-boundary && npm run test:connected-resource-command-ledger && npm run test:fcm-boundary && npm run test:reminder-safety-coordinator && npm run test:qr && npm run test:agent-runtime && npm run test:coordinator && npm run test:canonical-multicontext && npm run test:agent-control && npm run test:stripe-payment && npm run test:channel-usage && npm run test:whatsapp-parity && npm run test:whatsapp-webhook-boundary && npm run test:whatsapp-linked-device && npm run test:whatsapp-linked-session-chat && npm run test:telegram-linked-session-chat && npm run test:network-chat && npm run test:opportunity-truth && npm run test:topics && npm run test:attachment-boundary && npm run test:fresh-database && npm run test:pilot-readiness && npm run test:discovery-routes && npm run test:presence-routes && npm run test:content-routes && npm run test:trust && npm run test:trust-score && npm run test:dispute-lifecycle && npm run test:circle && npm run test:order && npm run test:admin && npm run test:seo-admin && npm run test:task && npm run test:provider-entities && npm run test:local-repair-outcome && npm run test:multi-party && npm run test:execution-boundary && npm run test:native-assistance && npm run test:auth-entry && npm run test:dev-auth && npm run test:economic-lifecycle",
+    "test:route-sequence": "npm run test:composition && npm run test:public-routes && npm run test:public-runtime && npm run test:country-experience && npm run test:conversation-workspace && npm run test:skill-mode-routing && npm run test:voice && npm run test:phone-otp && npm run test:webrtc-boundary && npm run test:connected-resource-command-ledger && npm run test:fcm-boundary && npm run test:reminder-safety-coordinator && npm run test:qr && npm run test:agent-runtime && npm run test:coordinator && npm run test:canonical-multicontext && npm run test:agent-control && npm run test:stripe-payment && npm run test:channel-usage && npm run test:whatsapp-parity && npm run test:whatsapp-webhook-boundary && npm run test:whatsapp-linked-device && npm run test:whatsapp-linked-session-chat-contract && npm run test:telegram-linked-session-chat && npm run test:network-chat && npm run test:opportunity-truth && npm run test:topics && npm run test:attachment-boundary && npm run test:fresh-database && npm run test:pilot-readiness && npm run test:discovery-routes && npm run test:presence-routes && npm run test:content-routes && npm run test:trust && npm run test:trust-score && npm run test:dispute-lifecycle && npm run test:circle && npm run test:order && npm run test:admin && npm run test:seo-admin && npm run test:task && npm run test:provider-entities && npm run test:local-repair-outcome && npm run test:multi-party && npm run test:execution-boundary && npm run test:native-assistance && npm run test:auth-entry && npm run test:dev-auth && npm run test:economic-lifecycle",
     "test:routes": "node scripts/run-test-suite.mjs test:route-sequence",
     "test:contact-sync-boundary": "tsx scripts/test-contact-sync-boundary.ts",
     "test:trusted-contact-consent": "tsx scripts/test-trusted-contact-consent.ts",
@@ -197,7 +197,9 @@
     "test:pilot-readiness": "tsx scripts/test-pilot-readiness.ts",
     "test:whatsapp-webhook-boundary": "tsx scripts/test-whatsapp-webhook-boundary.ts",
     "test:whatsapp-linked-device": "tsx scripts/test-whatsapp-linked-device.ts",
-    "test:whatsapp-linked-session-chat": "tsx scripts/test-whatsapp-linked-session-chat.ts",
+    "test:whatsapp-linked-session-chat": "tsx scripts/test-whatsapp-linked-session-chat-contract.ts",
+    "test:whatsapp-linked-session-chat-real": "tsx scripts/test-whatsapp-linked-session-chat.ts",
+    "test:smollm2-local": "tsx scripts/test-smollm2-local.ts",
     "test:progressive-trust": "tsx scripts/test-progressive-trust.ts",
     "test:email-otp": "tsx scripts/test-email-otp.ts",
     "test:phone-otp": "tsx scripts/test-phone-otp.ts",
@@ -223,9 +225,7 @@
     "sql.js": "^1.12.0",
     "teleproto": "^1.228.5"
   },
-  "overrides": {
-    "sharp": "0.35.3"
-  },
+  "overrides": { "sharp": "0.35.3" },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/compression": "^1.8.1",
