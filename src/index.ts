@@ -2,41 +2,20 @@
 import crypto from 'node:crypto';
 import dotenv from 'dotenv';
 dotenv.config();
-
 const production = process.env.NODE_ENV === 'production';
 const databaseMode = String(process.env.KURUKOO_DATABASE_MODE || 'sqljs').trim().toLowerCase();
 const jobMode = String(process.env.KURUKOO_JOB_MODE || 'in_process').trim().toLowerCase();
 const applicationWorkers = Number(process.env.KURUKOO_WORKERS || 1);
 const persistentStateRequired = process.env.KURUKOO_PERSISTENT_STATE_REQUIRED !== 'false';
 const magicLinkEnabled = String(process.env.KURUKOO_MAGIC_LINK_AUTH || 'true').toLowerCase() !== 'false';
-
-if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-  if (production) throw new Error('[Kurukoo Startup] JWT_SECRET must be configured with at least 32 characters in production.');
-  process.env.JWT_SECRET = crypto.randomBytes(32).toString('hex');
-  console.warn('[Kurukoo Startup] JWT_SECRET is absent; using an ephemeral development-only secret. Configure JWT_SECRET before deployment.');
-}
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) { if (production) throw new Error('[Kurukoo Startup] JWT_SECRET must be configured with at least 32 characters in production.'); process.env.JWT_SECRET = crypto.randomBytes(32).toString('hex'); console.warn('[Kurukoo Startup] JWT_SECRET is absent; using an ephemeral development-only secret. Configure JWT_SECRET before deployment.'); }
 if (production && databaseMode === 'sqljs' && applicationWorkers > 1) throw new Error('[Kurukoo Startup] SQL.js is single-process. KURUKOO_WORKERS must remain 1 until an approved multi-process database adapter is active.');
 if (production && databaseMode === 'postgres' && !process.env.DATABASE_URL) throw new Error('[Kurukoo Startup] KURUKOO_DATABASE_MODE=postgres requires DATABASE_URL.');
 if (production && jobMode === 'distributed' && !process.env.KURUKOO_REDIS_URL) throw new Error('[Kurukoo Startup] KURUKOO_JOB_MODE=distributed requires KURUKOO_REDIS_URL.');
 if (production && persistentStateRequired && String(process.env.DB_PATH || '').startsWith('/tmp/')) throw new Error('[Kurukoo Startup] Persistent state is required; DB_PATH may not be under /tmp in production.');
-if (production && magicLinkEnabled) {
-  const publicBaseUrl = String(process.env.KURUKOO_PUBLIC_BASE_URL || '').trim();
-  if (!publicBaseUrl.startsWith('https://')) throw new Error('[Kurukoo Startup] KURUKOO_PUBLIC_BASE_URL must be configured as an HTTPS origin when magic-link authentication is enabled in production.');
-  if (String(process.env.KURUKOO_AUTH_CHALLENGE_DEBUG || '').toLowerCase() === 'true') throw new Error('[Kurukoo Startup] KURUKOO_AUTH_CHALLENGE_DEBUG must be false in production.');
-}
-
+if (production && magicLinkEnabled) { const publicBaseUrl = String(process.env.KURUKOO_PUBLIC_BASE_URL || '').trim(); if (!publicBaseUrl.startsWith('https://')) throw new Error('[Kurukoo Startup] KURUKOO_PUBLIC_BASE_URL must be configured as an HTTPS origin when magic-link authentication is enabled in production.'); if (String(process.env.KURUKOO_AUTH_CHALLENGE_DEBUG || '').toLowerCase() === 'true') throw new Error('[Kurukoo Startup] KURUKOO_AUTH_CHALLENGE_DEBUG must be false in production.'); }
 const mcpEnabled = process.env.KURUKOO_MCP_ENABLED === 'true';
-if (production && mcpEnabled) {
-  const issuer = String(process.env.KURUKOO_MCP_ISSUER || '').trim();
-  const clientId = String(process.env.KURUKOO_MCP_CLIENT_ID || '').trim();
-  const redirects = String(process.env.KURUKOO_MCP_REDIRECT_URIS || '').split(',').map(v => v.trim()).filter(Boolean);
-  if (!issuer.startsWith('https://')) throw new Error('[Kurukoo Startup] KURUKOO_MCP_ISSUER must be an HTTPS public origin when MCP is enabled in production.');
-  if (!clientId) throw new Error('[Kurukoo Startup] KURUKOO_MCP_CLIENT_ID must be configured when MCP is enabled in production.');
-  if (!redirects.length || redirects.some(uri => !uri.startsWith('https://'))) throw new Error('[Kurukoo Startup] KURUKOO_MCP_REDIRECT_URIS must contain exact HTTPS redirect URIs when MCP is enabled in production.');
-  const oauthSecret = String(process.env.KURUKOO_MCP_OAUTH_SECRET || process.env.JWT_SECRET || '').trim();
-  if (oauthSecret.length < 32) throw new Error('[Kurukoo Startup] KURUKOO_MCP_OAUTH_SECRET or JWT_SECRET must be at least 32 characters when MCP is enabled in production.');
-}
-
+if (production && mcpEnabled) { const issuer = String(process.env.KURUKOO_MCP_ISSUER || '').trim(); const clientId = String(process.env.KURUKOO_MCP_CLIENT_ID || '').trim(); const redirects = String(process.env.KURUKOO_MCP_REDIRECT_URIS || '').split(',').map(v => v.trim()).filter(Boolean); if (!issuer.startsWith('https://')) throw new Error('[Kurukoo Startup] KURUKOO_MCP_ISSUER must be an HTTPS public origin when MCP is enabled in production.'); if (!clientId) throw new Error('[Kurukoo Startup] KURUKOO_MCP_CLIENT_ID must be configured when MCP is enabled in production.'); if (!redirects.length || redirects.some(uri => !uri.startsWith('https://'))) throw new Error('[Kurukoo Startup] KURUKOO_MCP_REDIRECT_URIS must contain exact HTTPS redirect URIs when MCP is enabled in production.'); const oauthSecret = String(process.env.KURUKOO_MCP_OAUTH_SECRET || process.env.JWT_SECRET || '').trim(); if (oauthSecret.length < 32) throw new Error('[Kurukoo Startup] KURUKOO_MCP_OAUTH_SECRET or JWT_SECRET must be at least 32 characters when MCP is enabled in production.'); }
 import express from 'express';
 import compression from 'compression';
 import path from 'node:path';
@@ -49,6 +28,9 @@ import userRoutes from './routes/userRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import authChallengePublicRoutes from './routes/authChallengePublicRoutes.js';
 import chatRouter from './routes/chatRouter.js';
+import prayerRoutes from './routes/prayerRoutes.js';
+import capabilityPortfolioRoutes from './routes/capabilityPortfolioRoutes.js';
+import { prayerChatFastPath } from './services/prayerChatSurface.js';
 import orderRoutes from './routes/orderRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import reminderRoutes from './routes/reminderRoutes.js';
@@ -76,95 +58,26 @@ import telegramLinkedDeviceRoutes from './routes/telegramLinkedDeviceRoutes.js';
 import topicRoutes from './routes/topicRoutes.js';
 import connectionRoutes from './routes/connectionRoutes.js';
 import mcpAppRoutes from './routes/mcpAppRoutes.js';
+import { ensureCapabilityPortfolioRegistration } from './services/capabilityPortfolioFoundation.js';
 import { observabilityMiddleware } from './middleware/observability.js';
 import { startBackgroundServices, stopBackgroundServices } from './startup/backgroundServices.js';
-
+ensureCapabilityPortfolioRegistration();
 if (process.env.NODE_ENV !== 'production' && !process.env.KURUKOO_PAY_PROVIDER) process.env.KURUKOO_PAY_PROVIDER = 'sandbox';
 if (!process.env.CREDIT_ECONOMY_ENABLED) process.env.CREDIT_ECONOMY_ENABLED = 'true';
 if (process.env.NODE_ENV === 'production' && process.env.KURUKOO_PAY_PROVIDER === 'sandbox') delete process.env.KURUKOO_PAY_PROVIDER;
 console.log(`[Kurukoo Startup] Environment initialized. PORT=${process.env.PORT || 3000}, Pay Provider=${process.env.KURUKOO_PAY_PROVIDER || 'unconfigured'}, DB=${databaseMode}, Jobs=${jobMode}, Workers=${applicationWorkers}, MCP=${mcpEnabled ? 'enabled' : 'disabled'}`);
-
 const app = express();
-app.set('view engine', 'ejs');
-app.set('views', path.join(process.cwd(), 'views'));
-app.disable('x-powered-by');
-app.use(observabilityMiddleware);
-app.use((_req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'camera=(), microphone=(self), geolocation=(self), payment=()');
-  if (process.env.NODE_ENV === 'production') res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  next();
-});
-app.use(compression({ threshold: 1024 }));
-app.use(express.static(path.join(process.cwd(), 'public'), {
-  index: false,
-  fallthrough: true,
-  setHeaders: (res, filePath) => {
-    const lower = filePath.toLowerCase();
-    if (lower.endsWith('.html') || lower.endsWith('/sw.js') || lower.endsWith('/manifest.json')) { res.setHeader('Cache-Control', 'no-cache, must-revalidate'); return; }
-    if (/\.(?:css|js|svg|png|jpe?g|webp|woff2?)$/.test(lower)) res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
-  },
-}));
-app.use(express.json({ limit: process.env.CHAT_ATTACHMENT_BODY_LIMIT || '35mb', verify: (req, _res, buf) => { (req as any).rawBody = Buffer.from(buf); } }));
-
-app.use('/', systemRoutes);
-app.use('/', authChallengePublicRoutes);
-app.use('/', mcpAppRoutes);
-app.use('/api', channelRoutes);
-app.use('/api', circleRoutes);
-app.use('/api/economic-requests', economicRequestRouter);
-app.use('/api/admin', adminRoutes);
-app.use('/api', paymentRoutes);
-app.use('/api', userRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/chat', chatRouter);
-app.use('/api/voice', voiceRouter);
-app.use('/api', artifactRoutes);
-app.use('/api/qr', qrRouter);
-app.use('/api/agent', agentRouter);
-app.use('/api/fcm', fcmRouter);
-app.use('/api/whatsapp-linked-device', whatsappLinkedDeviceRoutes);
-app.use('/api/telegram-linked-device', telegramLinkedDeviceRoutes);
-app.use('/api', topicRoutes);
-app.use('/api', connectionRoutes);
-app.use('/api', orderRoutes);
-app.use('/api', cartRoutes);
-app.use('/api', reminderRoutes);
-app.use('/api', notificationRoutes);
-app.use('/api', safetyRoutes);
-app.use('/api', trustedContactConsentRoutes);
-app.use('/api', taskRoutes);
-app.use('/api', trustRoutes);
-app.use('/api/webrtc', webrtcRoutes);
-app.use('/', healthRoutes);
-app.use('/', presenceRoutes);
-app.use('/', discoveryRoutes);
-app.use('/', contentRoutes);
-app.use('/', publicRoutes);
-app.use('/api/pricing', pricingRoutes);
-app.use('/api', subscriptionRoutes);
-
-const port = Number(process.env.PORT || 3000);
-const host = (process.env.HOST && process.env.HOST !== 'localhost' && process.env.HOST !== '127.0.0.1') ? process.env.HOST : '0.0.0.0';
-export { app };
-
-if (process.env.KURUKOO_DISABLE_LISTEN !== 'true') {
-  const server = app.listen(port, host, () => {
-    console.log(`[Kurukoo] HTTP server listening on ${host}:${port}`);
-    if (process.env.KURUKOO_WORKERS !== '0') void startBackgroundServices();
-  });
-  server.on('error', (error) => { console.error('[Kurukoo] HTTP server error:', error); process.exitCode = 1; });
-  let shuttingDown = false;
-  const shutdown = (signal: string) => {
-    if (shuttingDown) return;
-    shuttingDown = true;
-    console.log(`[Kurukoo] Graceful shutdown requested (${signal})`);
-    stopBackgroundServices();
-    server.close((error) => { if (error) { console.error('[Kurukoo] HTTP server shutdown error:', error); process.exitCode = 1; } });
-    setTimeout(() => { console.error('[Kurukoo] Graceful shutdown timeout; forcing exit'); process.exitCode = 1; }, 10_000).unref();
-  };
-  process.once('SIGTERM', () => shutdown('SIGTERM'));
-  process.once('SIGINT', () => shutdown('SIGINT'));
-}
+app.set('view engine', 'ejs'); app.set('views', path.join(process.cwd(), 'views')); app.disable('x-powered-by'); app.use(observabilityMiddleware);
+app.use((_req,res,next)=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','SAMEORIGIN');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');res.setHeader('Permissions-Policy','camera=(self), microphone=(self), geolocation=(self), payment=()');if(production)res.setHeader('Strict-Transport-Security','max-age=31536000; includeSubDomains');next();});
+app.use(compression({threshold:1024}));
+app.use(express.static(path.join(process.cwd(),'public'),{index:false,fallthrough:true,setHeaders:(res,filePath)=>{const lower=filePath.toLowerCase();if(lower.endsWith('.html')||lower.endsWith('/sw.js')||lower.endsWith('/manifest.json')){res.setHeader('Cache-Control','no-cache, must-revalidate');return;}if(/\.(?:css|js|svg|png|jpe?g|webp|woff2?)$/.test(lower))res.setHeader('Cache-Control','public, max-age=604800, stale-while-revalidate=86400');}}));
+app.use(express.json({limit:process.env.CHAT_ATTACHMENT_BODY_LIMIT||'35mb',verify:(req,_res,buf)=>{(req as any).rawBody=Buffer.from(buf);}}));
+app.use('/',systemRoutes); app.use('/',authChallengePublicRoutes); app.use('/',mcpAppRoutes);
+app.use('/api',channelRoutes); app.use('/api',circleRoutes); app.use('/api/economic-requests',economicRequestRouter); app.use('/api/admin',adminRoutes); app.use('/api',paymentRoutes); app.use('/api',userRoutes); app.use('/api/auth',authRoutes);
+app.use('/api/chat',prayerChatFastPath);
+app.use('/api/chat',chatRouter);
+app.use('/api/prayer',prayerRoutes);
+app.use('/api/capabilities',capabilityPortfolioRoutes);
+app.use('/api/voice',voiceRouter); app.use('/api',artifactRoutes); app.use('/api/qr',qrRouter); app.use('/api/agent',agentRouter); app.use('/api/fcm',fcmRouter); app.use('/api/whatsapp-linked-device',whatsappLinkedDeviceRoutes); app.use('/api/telegram-linked-device',telegramLinkedDeviceRoutes); app.use('/api',topicRoutes); app.use('/api',connectionRoutes); app.use('/api',orderRoutes); app.use('/api',cartRoutes); app.use('/api',reminderRoutes); app.use('/api',notificationRoutes); app.use('/api',safetyRoutes); app.use('/api',trustedContactConsentRoutes); app.use('/api',taskRoutes); app.use('/api',trustRoutes); app.use('/api/webrtc',webrtcRoutes); app.use('/',healthRoutes); app.use('/',presenceRoutes); app.use('/',discoveryRoutes); app.use('/',contentRoutes); app.use('/',publicRoutes); app.use('/api/pricing',pricingRoutes); app.use('/api',subscriptionRoutes);
+const port=Number(process.env.PORT||3000);const host=(process.env.HOST&&process.env.HOST!=='localhost'&&process.env.HOST!=='127.0.0.1')?process.env.HOST:'0.0.0.0';export{app};
+if(process.env.KURUKOO_DISABLE_LISTEN!=='true'){const server=app.listen(port,host,()=>{console.log(`[Kurukoo] HTTP server listening on ${host}:${port}`);if(process.env.KURUKOO_WORKERS!=='0')void startBackgroundServices();});server.on('error',error=>{console.error('[Kurukoo] HTTP server error:',error);process.exitCode=1;});let shuttingDown=false;const shutdown=(signal:string)=>{if(shuttingDown)return;shuttingDown=true;console.log(`[Kurukoo] Graceful shutdown requested (${signal})`);stopBackgroundServices();server.close(error=>{if(error){console.error('[Kurukoo] HTTP server shutdown error:',error);process.exitCode=1;}});setTimeout(()=>{console.error('[Kurukoo] Graceful shutdown timeout; forcing exit');process.exitCode=1;},10000).unref();};process.once('SIGTERM',()=>shutdown('SIGTERM'));process.once('SIGINT',()=>shutdown('SIGINT'));}
