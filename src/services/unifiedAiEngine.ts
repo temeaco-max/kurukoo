@@ -5,7 +5,7 @@ import { classifyWithFastText, type FastTextResult } from './fastTextService.js'
 import { withMemoryContext, logAiAudit } from './livingMemoryEngine.js';
 import { checkAiQuota, recordAiUsage, type QuotaKind } from './aiQuotaService.js';
 import { queryMistral } from './mistralService.js';
-import { hasConfiguredSecret, resolveHostedAIProvider, type HostedAIProvider } from './providerCapabilities.js';
+import { resolveHostedAIProvider, type HostedAIProvider } from './providerCapabilities.js';
 
 export type AIProvider = 'auto' | 'gemini' | 'mistral' | 'smollm2' | 'groq' | 'local_intent';
 export interface ConversationalContextHint {
@@ -15,7 +15,6 @@ export interface ConversationalContextHint {
   preserveContextIds?: string[];
   activeContexts?: Array<{ contextId: string; type: string; state?: string; pendingFields?: string[] }>;
 }
-
 export interface UnifiedAIOptions {
   provider?: AIProvider;
   systemPrompt?: string;
