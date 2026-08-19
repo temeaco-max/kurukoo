@@ -1,0 +1,92 @@
+/* Canonical cross-client Web/PWA foundation.
+ * Native clients consume the same semantic tokens through their platform theme.
+ * Surface-specific CSS must not redefine these brand/system tokens.
+ */
+:root {
+  --k-cream: var(--cream, #F7F2EC);
+  --k-primary: var(--terracotta, #B95D3C);
+  --k-accent: var(--electric-blue, #3C6F91);
+  --k-ink: var(--charcoal, #24221F);
+  --k-surface: var(--white, #FFFFFF);
+  --k-surface-soft: var(--gray-100, #F0EAE2);
+  --k-border: var(--gray-200, #E6DED5);
+  --k-muted: var(--gray-600, #6D665F);
+  --k-success: var(--success, #2E8060);
+  --k-warning: var(--warning, #B87928);
+  --k-danger: var(--danger, #B5483D);
+  --k-info: var(--info, #3C6F91);
+  --k-radius-sm: var(--border-radius-sm, 8px);
+  --k-radius: var(--border-radius, 10px);
+  --k-radius-lg: var(--border-radius-lg, 20px);
+  --k-space-1: var(--space-1, 4px);
+  --k-space-2: var(--space-2, 8px);
+  --k-space-3: var(--space-3, 12px);
+  --k-space-4: var(--space-4, 16px);
+  --k-space-5: var(--space-5, 20px);
+  --k-space-6: var(--space-6, 24px);
+  --k-space-8: var(--space-8, 32px);
+  --k-font-body: var(--font-body, 'Inter', system-ui, sans-serif);
+  --k-font-heading: var(--font-heading, 'Space Grotesk', 'Inter', system-ui, sans-serif);
+  --k-content-max: var(--container-max-width, 1280px);
+}
+
+.k-app-shell {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background: var(--k-cream);
+  color: var(--k-ink);
+  font-family: var(--k-font-body);
+}
+
+.k-app-main { min-width: 0; min-height: 0; }
+.k-app-container { width: min(var(--k-content-max), calc(100% - 32px)); margin: 0 auto; }
+.k-app-card { background: var(--k-surface); border: 1px solid var(--k-border); border-radius: var(--k-radius-lg); padding: var(--k-space-6); }
+.k-status { display: inline-flex; align-items: center; gap: var(--k-space-2); min-height: 32px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--k-border); background: var(--k-surface); font-size: 12px; font-weight: 700; }
+.k-status[data-state="success"] { color: var(--k-success); border-color: color-mix(in srgb, var(--k-success) 28%, var(--k-border)); }
+.k-status[data-state="warning"] { color: var(--k-warning); border-color: color-mix(in srgb, var(--k-warning) 28%, var(--k-border)); }
+.k-status[data-state="danger"] { color: var(--k-danger); border-color: color-mix(in srgb, var(--k-danger) 28%, var(--k-border)); }
+.k-status[data-state="info"] { color: var(--k-info); border-color: color-mix(in srgb, var(--k-info) 28%, var(--k-border)); }
+
+.k-mobile-tabbar {
+  display: none;
+}
+
+.k-mobile-tabbar a {
+  min-height: 56px;
+  min-width: 56px;
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  text-decoration: none;
+  color: var(--k-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.k-mobile-tabbar a[aria-current="page"] { color: var(--k-primary); }
+.k-mobile-tabbar svg { width: 20px; height: 20px; }
+
+@media (max-width: 767px) {
+  .k-app-container { width: min(100% - 24px, 680px); }
+  .k-app-card { padding: 18px; border-radius: 16px; }
+  .k-mobile-tabbar {
+    position: sticky;
+    bottom: 0;
+    z-index: 50;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    padding: 6px max(8px, env(safe-area-inset-left)) max(6px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-right));
+    background: color-mix(in srgb, var(--k-surface) 94%, transparent);
+    border-top: 1px solid var(--k-border);
+    backdrop-filter: blur(16px);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .k-app-container { width: min(100% - 40px, 900px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .001ms !important; animation-duration: .001ms !important; }
+}
