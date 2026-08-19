@@ -48,10 +48,7 @@
 .k-status[data-state="danger"] { color: var(--k-danger); border-color: color-mix(in srgb, var(--k-danger) 28%, var(--k-border)); }
 .k-status[data-state="info"] { color: var(--k-info); border-color: color-mix(in srgb, var(--k-info) 28%, var(--k-border)); }
 
-.k-mobile-tabbar {
-  display: none;
-}
-
+.k-mobile-tabbar { display: none; }
 .k-mobile-tabbar a {
   min-height: 56px;
   min-width: 56px;
@@ -63,24 +60,83 @@
   font-size: 10px;
   font-weight: 700;
 }
-
 .k-mobile-tabbar a[aria-current="page"] { color: var(--k-primary); }
-.k-mobile-tabbar svg { width: 20px; height: 20px; }
+.k-mobile-tabbar svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Authenticated Web App: inherit the mobile product language without copying its native layout. */
+.workspace-page {
+  background: var(--k-cream);
+  color: var(--k-ink);
+  font-family: var(--k-font-body);
+}
+.workspace-page h1,
+.workspace-page h2,
+.workspace-page h3,
+.workspace-page strong { font-family: var(--k-font-heading); }
+.workspace-page .workspace-shell { background: var(--k-cream); }
+.workspace-page .workspace-sidebar,
+.workspace-page .workspace-header,
+.workspace-page .workspace-hero-card,
+.workspace-page .metric-card,
+.workspace-page .balance-card,
+.workspace-page .workspace-panel,
+.workspace-page .workspace-data-card,
+.workspace-page .settings-grid a,
+.workspace-page .memory-grid article { background: var(--k-surface); border-color: var(--k-border); }
+.workspace-page .workspace-sidebar { color: var(--k-ink); }
+.workspace-page .workspace-brand,
+.workspace-page .workspace-nav a.active,
+.workspace-page .workspace-nav-button:hover,
+.workspace-page .workspace-text-action,
+.workspace-page .workspace-panel a { color: var(--k-ink); }
+.workspace-page .workspace-nav a:hover,
+.workspace-page .workspace-nav a.active,
+.workspace-page .workspace-nav-button:hover,
+.workspace-page .workspace-nav-more:hover,
+.workspace-page .workspace-nav-more.is-open { background: var(--k-surface-soft); }
+.workspace-page .workspace-new { background: var(--k-surface-soft); color: var(--k-ink); }
+.workspace-page .workspace-button { background: var(--k-primary); color: #fff; border-radius: 15px; }
+.workspace-page .workspace-button.secondary { background: var(--k-surface); color: var(--k-ink); border-color: var(--k-border); }
+.workspace-page .workspace-button.danger { background: var(--k-danger); }
+.workspace-page .status-pill { border-color: var(--k-border); background: var(--k-surface-soft); color: var(--k-muted); }
+.workspace-page .empty-icon { background: var(--k-surface-soft); }
+.workspace-page .workspace-kicker,
+.workspace-page .workspace-eyebrow,
+.workspace-page .metric-card span,
+.workspace-page .balance-card span,
+.workspace-page .metric-card small,
+.workspace-page .balance-card small,
+.workspace-page .workspace-header p,
+.workspace-page .workspace-hero-card p,
+.workspace-page .workspace-data-card p,
+.workspace-page .workspace-account small { color: var(--k-muted); }
+.workspace-page .workspace-nav-icon .k-icon,
+.workspace-page .empty-icon .k-icon { color: currentColor; }
+.workspace-page .workspace-account { border-top-color: var(--k-border); }
+.workspace-page .workspace-avatar { background: var(--k-ink); }
+.workspace-page .workspace-notice { background: var(--k-surface-soft); border-color: var(--k-border); color: var(--k-ink); }
+.workspace-page .workspace-tabs button.active { background: var(--k-ink); }
+.workspace-page .workspace-content { max-width: var(--k-content-max); }
 
 @media (max-width: 767px) {
   .k-app-container { width: min(100% - 24px, 680px); }
   .k-app-card { padding: 18px; border-radius: 16px; }
   .k-mobile-tabbar {
-    position: sticky;
+    position: fixed;
+    left: 0;
+    right: 0;
     bottom: 0;
-    z-index: 50;
+    z-index: 100;
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     padding: 6px max(8px, env(safe-area-inset-left)) max(6px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-right));
     background: color-mix(in srgb, var(--k-surface) 94%, transparent);
     border-top: 1px solid var(--k-border);
     backdrop-filter: blur(16px);
+    box-shadow: 0 -8px 24px rgba(36, 34, 31, 0.06);
   }
+  body.workspace-page { padding-bottom: 74px; }
+  .workspace-page .workspace-content { padding-bottom: 88px; }
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
