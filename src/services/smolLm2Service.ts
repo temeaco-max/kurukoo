@@ -13,7 +13,7 @@ let localPipelinePromise: Promise<any> | null = null;
 let hfClient: HfInference | null = null;
 let localBusy = false;
 let lastInferenceSource: 'local' | 'huggingface' | 'fallback' = 'fallback';
-let lastInferenceFailure: 'local_inference_failed' | 'local_model_fallback' | 'huggingface_request_failed' | 'no_model_boundary_configured' | null = null;
+let lastInferenceFailure: 'local_inference_failed' | 'local_model_fallback' | 'huggingface_request_failed' | 'huggingface_no_inference_provider' | 'huggingface_auth_failed' | 'no_model_boundary_configured' | null = null;
 
 export function getSmolLM2RuntimeStatus(): { model: string; source: 'local' | 'huggingface' | 'fallback'; available: boolean; dtype: string; localEnabled: boolean; hostedConfigured: boolean; readiness: 'available' | 'fallback'; lastFailure: string | null; requestedStage: string; selectedStage: string; registrySource: 'environment_base' | 'registry'; registryFallbackReason?: string } {
   const localEnabled = process.env.KURUKOO_SMOLLM2_LOCAL === 'true';
@@ -76,16 +76,16 @@ export async function querySmolLM2(prompt: string, systemPrompt?: string): Promi
       await acquireLocal();
       try {
         let generator;
-      try {
-        generator = await getLocalPipeline(getModelName());
-      } catch (primaryError) {
-        if (getFallbackModelName() === getModelName()) throw primaryError;
-        console.warn('[SmolLM2] Primary local checkpoint unavailable; trying bounded fallback checkpoint.');
-        localPipeline = null;
-        localPipelinePromise = null;
-        lastInferenceFailure = 'local_model_fallback';
-        generator = await getLocalPipeline(getFallbackModelName());
-      }
+        try {
+          generator = await getLocalPipeline(getModelName());
+        } catch (primaryError) {
+          if (getFallbackModelName() === getModelName()) throw primaryError;
+          console.warn('[SmolLM2] Primary local checkpoint unavailable; trying bounded fallback checkpoint.');
+          localPipeline = null;
+          localPipelinePromise = null;
+          lastInferenceFailure = 'local_model_fallback';
+          generator = await getLocalPipeline(getFallbackModelName());
+        }
         const output = await generator(input, { max_new_tokens: Number(process.env.SMOLLM2_MAX_NEW_TOKENS || 192), temperature: 0.2, do_sample: true, return_full_text: false });
         const first = Array.isArray(output) ? output[0] : output;
         const text = typeof first === 'object' && first && 'generated_text' in first ? String(first.generated_text || '').trim() : '';
@@ -110,7 +110,20 @@ export async function querySmolLM2(prompt: string, systemPrompt?: string): Promi
         const cleaned = sanitizeGeneratedText(response.generated_text);
         if (cleaned && !containsInternalGeneration(cleaned)) { lastInferenceSource = 'huggingface'; lastInferenceFailure = null; return cleaned; }
       }
-    } catch (err: any) { if (!lastInferenceFailure) lastInferenceFailure = 'huggingface_request_failed'; console.warn('[SmolLM2] HF serverless inference failed:', err?.message || err); }
+    } catch (err: any) {
+      const message = String(err?.message || err || '');
+      const normalized = message.toLowerCase();
+      if (normalized.includes('no inference provider available')) {
+        lastInferenceFailure = 'huggingface_no_inference_provider';
+      } else if (normalized.includes('invalid username or password') || normalized.includes('unauthorized') || normalized.includes('401')) {
+        lastInferenceFailure = 'huggingface_auth_failed';
+      } else {
+        lastInferenceFailure = 'huggingface_request_failed';
+      }
+      // These are expected provider-boundary states and should not produce a
+      // stack trace or repeatedly noisy error output in normal operation.
+      if (lastInferenceFailure === 'huggingface_request_failed') console.warn('[SmolLM2] HF hosted inference failed:', message);
+    }
   } else if (!process.env.KURUKOO_SMOLLM2_LOCAL || process.env.KURUKOO_SMOLLM2_LOCAL !== 'true') {
     lastInferenceFailure = 'no_model_boundary_configured';
   }
