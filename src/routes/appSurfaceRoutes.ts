@@ -9,6 +9,7 @@ const router = express.Router();
 const surfaceMap = new Map([
   ['agent', { title: 'Agent', eyebrow: 'Your Kurukoo relationship', description: 'Conversation is the universal control surface for requests, reminders, memory, agents and coordinated work.', cta: '/chat', ctaLabel: 'Open Chat' }],
   ['discover', { title: 'Discover', eyebrow: 'Find what is useful', description: 'Nearby Pulse, opportunities, Topics and network signals appear here with their evidence and availability state.', cta: '/discover', ctaLabel: 'Open Discover' }],
+  ['topics', { title: 'Topics', eyebrow: 'Community context', description: 'Browse and share moderated community questions, reports and experiences without turning community content into a provider, offer or payment claim.', cta: '/topics', ctaLabel: 'Open Topics' }],
   ['requests', { title: 'Requests', eyebrow: 'Work in motion', description: 'Economic Requests, orders, sourcing and confirmations remain owned by the canonical lifecycle and can always return to the originating conversation.', cta: '/requests', ctaLabel: 'Open Requests' }],
   ['tasks', { title: 'Tasks', eyebrow: 'Contribute to the network', description: 'Tasks, reminders, evidence and agent work use the same identity, policy and execution boundaries.', cta: '/tasks', ctaLabel: 'Open Tasks' }],
   ['connect', { title: 'Connect', eyebrow: 'Bring your tools together', description: 'Connect user-owned storage, communication channels, devices and external sources without creating parallel identity or memory.', cta: '/connect', ctaLabel: 'Open Connect' }],
