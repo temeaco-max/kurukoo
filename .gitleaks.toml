@@ -1,0 +1,22 @@
+title = "Kurukoo Gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Synthetic JWT values used only by deterministic test fixtures; these are not credentials."
+regexTarget = "secret"
+regexes = [
+  '''execution-boundary-test-secret-0123456789''',
+  '''mcp-test-secret-012345678901234567890123456789''',
+  '''fcm-boundary-test-secret-0123456789''',
+  '''topics_convergence_test_secret_32_chars''',
+  '''reminder-safety-coordinator-test-secret-0123456789''',
+]
+paths = [
+  '''^scripts/test-execution-boundary\\.ts$''',
+  '''^scripts/test-mcp-app\\.ts$''',
+  '''^scripts/test-fcm-boundary\\.ts$''',
+  '''^scripts/test-topics-convergence\\.ts$''',
+  '''^scripts/test-reminder-safety-coordinator\\.ts$''',
+]
