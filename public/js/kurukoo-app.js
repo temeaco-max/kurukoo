@@ -127,7 +127,13 @@
 
   async function loadConnect() {
     const cards = Array.from(root.querySelectorAll('.k-app-card')); if (!cards.length) return;
-    const providers = [{ name: 'Google Drive', url: '/api/artifacts', connect: '/api/artifacts/drive/connect', state: (p) => p.storage, kind: 'drive' }, { name: 'Google Sheets', url: '/api/artifacts/sheets', connect: '/api/artifacts/sheets/connect', state: (p) => p.source, kind: 'sheets' }, { name: 'Notion', url: '/api/artifacts/notion', connect: '/api/artifacts/notion/connect', state: (p) => p.source, kind: 'notion' }];
+    const providers = [
+      { name: 'Google Drive', url: '/api/artifacts', connect: '/api/artifacts/drive/connect', state: (p) => p.storage },
+      { name: 'Google Sheets', url: '/api/artifacts/sheets', connect: '/api/artifacts/sheets/connect', state: (p) => p.source },
+      { name: 'Notion', url: '/api/artifacts/notion', connect: '/api/artifacts/notion/connect', state: (p) => p.source },
+      { name: 'Microsoft Outlook', url: '/api/artifacts/microsoft/outlook', connect: '/api/artifacts/microsoft/outlook/connect', state: (p) => p.source },
+      { name: 'Microsoft OneDrive', url: '/api/artifacts/microsoft/onedrive', connect: '/api/artifacts/microsoft/onedrive/connect', state: (p) => p.source },
+    ];
     for (let i = 0; i < Math.min(providers.length, cards.length); i++) {
       const provider = providers[i]; const card = cards[i];
       try {
