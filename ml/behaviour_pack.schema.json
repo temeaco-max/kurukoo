@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Kurukoo Behaviour Pack",
+  "type": "object",
+  "required": ["schemaVersion", "packVersion", "sourceCommit", "constitution", "agentRuntime", "skills", "capabilities", "agentTools", "behaviourFamilies", "truthBoundary", "safetyBoundary"],
+  "properties": {
+    "schemaVersion": {"type":"string"},
+    "packVersion": {"type":"string"},
+    "generatedAt": {"type":"string"},
+    "sourceCommit": {"type":"string"},
+    "sourceOfTruth": {"type":"array", "items":{"type":"string"}},
+    "constitution": {"type":"object"},
+    "agentRuntime": {"type":"object"},
+    "skills": {"type":"array", "items":{"type":"object"}},
+    "capabilities": {"type":"array", "items":{"type":"object"}},
+    "agentTools": {"type":"array", "items":{"type":"object"}},
+    "behaviourFamilies": {"type":"array", "items":{"type":"object"}},
+    "truthBoundary": {"type":"object"},
+    "safetyBoundary": {"type":"object"},
+    "activationStates": {"type":"object"},
+    "coverage": {"type":"object"}
+  }
+}

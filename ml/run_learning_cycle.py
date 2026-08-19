@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Run Kurukoo's guarded teacher -> curation -> training handoff.
 
-External credentials, quotas and compute are deployment concerns. This runner does
-not invent them. It executes every available stage and writes a machine-readable
-status so an absent provider, empty accepted corpus or unavailable training runtime
-is explicit rather than silently treated as success.
+The learning cycle starts from the OS itself: a versioned Behaviour Pack is compiled
+from the canonical registries, then an OS-driven scenario dataset is compiled from
+that pack before teacher generation/curation. External credentials, quotas and
+compute remain deployment concerns; absent providers are recorded explicitly.
 """
 from __future__ import annotations
 
@@ -12,11 +12,11 @@ import json
 import os
 import pathlib
 import subprocess
-import sys
 from datetime import datetime, timezone
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 STATUS = ROOT / "artifacts" / "learning-cycle" / "latest.json"
+
 
 def run(cmd: list[str], env: dict[str, str] | None = None) -> tuple[int, str]:
     print("$", " ".join(cmd))
@@ -42,8 +42,12 @@ def main() -> int:
     stages: list[dict] = []
 
     commands = [
+        ("behaviour_pack_compilation", ["npx", "tsx", "scripts/compile-kurukoo-behaviour-pack.ts"]),
+        ("behaviour_pack_validation", ["npx", "tsx", "scripts/test-kurukoo-behaviour-pack.ts"]),
+        ("os_driven_scenario_compilation", ["npx", "tsx", "scripts/compile-kurukoo-scenarios.ts"]),
+        ("os_driven_scenario_validation", ["npx", "tsx", "scripts/test-kurukoo-scenario-compiler.ts"]),
         ("scenario_generation", ["npm", "run", "scenario-lab:generate"]),
-        ("teacher_candidate_generation", ["npm", "run", "ml:teacher-candidates"]),
+        ("behaviour_teacher_candidate_generation", ["python3", "ml/teachers/run_behaviour_teacher.py"]),
         ("teacher_candidate_import", ["npm", "run", "ml:import-teacher-candidates"]),
         ("teacher_evaluation", ["npm", "run", "benchmark:teacher"]),
         ("deterministic_golden_seed", ["npm", "run", "ml:seed-golden"]),
@@ -55,6 +59,8 @@ def main() -> int:
         if code != 0:
             break
 
+    pack = load_json(ROOT / "ml" / "behaviour" / "latest.json")
+    scenario_manifest = load_json(ROOT / "ml" / "datasets" / "kurukoo-os-v1.manifest.json")
     corpus_manifest = load_json(ROOT / "ml" / "datasets" / "kurukoo-accepted-v1.manifest.json")
     accepted = int((corpus_manifest or {}).get("acceptedRows", 0))
     training_requested = os.environ.get("KURUKOO_ENABLE_TRAINING", "false").lower() == "true"
@@ -87,11 +93,13 @@ def main() -> int:
         final_status = "incomplete"
 
     final = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "startedAt": started,
         "completedAt": datetime.now(timezone.utc).isoformat(),
         "providerMode": os.environ.get("KURUKOO_TEACHER_PROVIDER", "auto"),
         "freeFirst": os.environ.get("KURUKOO_TEACHER_FREE_FIRST", "true").lower() == "true",
+        "behaviourPack": {"packVersion": (pack or {}).get("packVersion"), "packHash": (pack or {}).get("packHash")},
+        "scenarioCompiler": {"datasetVersion": (scenario_manifest or {}).get("datasetVersion"), "manifestHash": (scenario_manifest or {}).get("manifestHash"), "exampleCount": (scenario_manifest or {}).get("exampleCount")},
         "acceptedRows": accepted,
         "trainingRequested": training_requested,
         "stages": stages,
