@@ -1,4 +1,4 @@
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -29,6 +29,50 @@ const log = (line) => {
 };
 fs.writeFileSync(logFile, '');
 
+function killProcessTree(child, signal = 'SIGTERM') {
+  if (!child.pid) return;
+  try {
+    if (process.platform !== 'win32') process.kill(-child.pid, signal);
+    else child.kill(signal);
+  } catch {
+    try { child.kill(signal); } catch {}
+  }
+}
+
+function runCommand(scriptName) {
+  return new Promise((resolve) => {
+    const startedAt = Date.now();
+    const npmExecutable = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+    const child = spawn(npmExecutable, ['run', scriptName], {
+      stdio: 'inherit',
+      env: process.env,
+      detached: process.platform !== 'win32',
+      windowsHide: true,
+    });
+    let settled = false;
+    let timedOut = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve({ ...result, elapsedMs: Date.now() - startedAt });
+    };
+    const timer = setTimeout(() => {
+      if (settled) return;
+      timedOut = true;
+      log(`[Suite ${suiteName}] ${scriptName} exceeded ${timeoutMs}ms; terminating process group.`);
+      killProcessTree(child, 'SIGTERM');
+      setTimeout(() => {
+        if (!settled) killProcessTree(child, 'SIGKILL');
+      }, 10_000).unref();
+    }, timeoutMs);
+    timer.unref();
+
+    child.once('error', (error) => finish({ error, signal: null, status: null, timedOut }));
+    child.once('close', (status, signal) => finish({ error: null, signal, status, timedOut }));
+  });
+}
+
 let firstFailure = 0;
 for (let index = 0; index < commands.length; index += 1) {
   const command = commands[index];
@@ -37,28 +81,15 @@ for (let index = 0; index < commands.length; index += 1) {
     log(`UNSUPPORTED ${command}`);
     process.exit(2);
   }
-  const startedAt = Date.now();
-  log(`[Suite ${suiteName}] ${index + 1}/${commands.length}: ${match[1]}`);
-  const result = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', match[1]], {
-    stdio: 'inherit',
-    env: process.env,
-    timeout: timeoutMs,
-    killSignal: 'SIGTERM',
-  });
-  const elapsedMs = Date.now() - startedAt;
-  if (result.error || result.signal) {
-    const timedOut = result.error?.code === 'ETIMEDOUT';
-    firstFailure ||= 1;
-    log(`FAIL ${match[1]} after ${elapsedMs}ms${timedOut ? ` (timeout ${timeoutMs}ms)` : ''}`);
+  const scriptName = match[1];
+  log(`[Suite ${suiteName}] ${index + 1}/${commands.length}: ${scriptName}`);
+  const result = await runCommand(scriptName);
+  if (result.error || result.signal || result.status !== 0) {
+    firstFailure ||= typeof result.status === 'number' && result.status > 0 ? result.status : 1;
+    log(`FAIL ${scriptName} after ${result.elapsedMs}ms${result.timedOut ? ` (timeout ${timeoutMs}ms)` : result.signal ? ` (signal ${result.signal})` : ` with exit code ${result.status ?? 1}`}`);
     process.exit(firstFailure);
   }
-  const code = typeof result.status === 'number' ? result.status : 1;
-  if (code !== 0) {
-    firstFailure ||= code;
-    log(`FAIL ${match[1]} after ${elapsedMs}ms with exit code ${code}`);
-    process.exit(firstFailure);
-  }
-  log(`[Suite ${suiteName}] ${match[1]} passed in ${elapsedMs}ms.`);
+  log(`[Suite ${suiteName}] ${scriptName} passed in ${result.elapsedMs}ms.`);
 }
 
 log(`PASS ${suiteName} passed ${commands.length} commands.`);
