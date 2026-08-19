@@ -47,7 +47,26 @@ function renderApp(req: express.Request, res: express.Response, section = 'agent
 router.get('/app', optionalAuthenticateUser, (req, res) => renderApp(req, res, 'agent'));
 for (const section of surfaceMap.keys()) router.get(`/app/${section}`, optionalAuthenticateUser, (req, res) => renderApp(req, res, section));
 
-// Compatibility aliases converge legacy browser application entry points on the canonical authenticated Web App.
+const completedLegacyToCanonical: Record<string, string> = {
+  '/requests': '/app/requests',
+  '/points': '/app/points',
+  '/tasks': '/app/tasks',
+  '/top-up': '/app/top-up',
+  '/subscription': '/app/subscriptions',
+  '/memory': '/app/memory',
+  '/safety': '/app/safety',
+  '/call': '/app/call',
+  '/connect': '/app/connect',
+  '/confirmation': '/app/confirmations',
+};
+for (const [legacyPath, canonicalPath] of Object.entries(completedLegacyToCanonical)) {
+  router.get(legacyPath, optionalAuthenticateUser, (req, res) => {
+    const authReq = req as AuthRequest;
+    if (!authReq.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent(req.path)}`);
+    return res.redirect(302, canonicalPath);
+  });
+}
+
 router.get('/web', (_req, res) => res.redirect(302, '/app'));
 router.get('/workspace', (_req, res) => res.redirect(302, '/app'));
 
