@@ -1,0 +1,93 @@
+(() => {
+  'use strict';
+  if (!document.body?.classList.contains('k-app-page')) return;
+  const section = document.body.dataset.appSection || document.querySelector('[data-app-section]')?.dataset.appSection || (location.pathname.match(/^\/app\/([^/?#]+)/)?.[1] || '');
+  const api = async (url, options = {}) => {
+    const response = await fetch(url, { credentials: 'same-origin', ...options, headers: { Accept: 'application/json', ...(options.headers || {}) } });
+    const type = response.headers.get('content-type') || '';
+    const payload = type.includes('application/json') ? await response.json() : { message: await response.text() };
+    if (!response.ok) throw new Error(payload.error || payload.message || `Request failed (${response.status})`);
+    return payload;
+  };
+  const live = (message) => {
+    let node = document.querySelector('[data-kurukoo-app-live]');
+    if (!node) { node = document.createElement('div'); node.className = 'k-sr-only'; node.setAttribute('aria-live', 'polite'); document.body.appendChild(node); }
+    node.textContent = message;
+  };
+  const btn = (label, handler) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'k-app-primary'; b.textContent = label; b.addEventListener('click', handler); return b; };
+  const box = () => { const a = document.createElement('article'); a.className = 'k-app-card'; return a; };
+
+  async function subscriptions() {
+    const host = document.querySelector('.k-app-main .k-app-card');
+    if (!host) return;
+    host.innerHTML = '<span class="k-app-card-label">Subscriptions</span><h2>Plans and entitlements stay evidence-gated.</h2><p class="k-muted">Loading current entitlement and canonical pricing…</p>';
+    try {
+      const [balance, pricing] = await Promise.all([api('/api/points/balance'), api('/api/pricing/ng')]);
+      host.innerHTML = '<span class="k-app-card-label">Subscriptions</span><h2>Plans and entitlements stay evidence-gated.</h2>';
+      const current = box();
+      current.style.padding = '14px';
+      const tier = document.createElement('strong');
+      tier.textContent = `Current tier: ${balance.tier || 'Base'}`;
+      const note = document.createElement('p'); note.className = 'k-muted'; note.textContent = 'Changing a subscription never treats a client payment reference as settlement proof. The server verifies the actual payment boundary.';
+      current.append(tier, note);
+      host.appendChild(current);
+      const list = document.createElement('div'); list.className = 'k-action-row'; list.style.flexDirection = 'column'; list.style.alignItems = 'stretch'; list.style.marginTop = '14px';
+      (Array.isArray(pricing) ? pricing : []).forEach((plan) => {
+        const row = box(); row.style.padding = '14px';
+        const title = document.createElement('strong'); title.textContent = String(plan.plan || 'Plan');
+        const detail = document.createElement('p'); detail.className = 'k-muted'; detail.textContent = `${plan.currency || 'NGN'} ${(Number(plan.monthly_price_minor || 0) / 100).toFixed(2)} / month · ${plan.credits_per_month || 0} credits`;
+        row.append(title, detail);
+        if (String(plan.plan) !== String(balance.tier || 'Base')) row.appendChild(btn('Request this plan', async (event) => {
+          event.currentTarget.disabled = true;
+          try {
+            const result = await api('/api/subscription/upgrade', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plan: String(plan.plan), country: 'ng' }) });
+            live(result.message || 'Subscription action processed.');
+            await subscriptions();
+          } catch (error) { event.currentTarget.disabled = false; live(error.message); }
+        }));
+        list.appendChild(row);
+      });
+      if (!list.children.length) { const empty = document.createElement('p'); empty.className = 'k-muted'; empty.textContent = 'No active pricing plans are available for this deployment.'; list.appendChild(empty); }
+      host.appendChild(list);
+      const chat = document.createElement('a'); chat.href = '/chat'; chat.className = 'k-app-card-action'; chat.textContent = 'Continue in Chat →'; host.appendChild(chat);
+    } catch (error) {
+      host.innerHTML = '<span class="k-app-card-label">Subscriptions</span><h2>Subscription catalogue unavailable</h2><p class="k-muted"></p>';
+      host.querySelector('p').textContent = error.message || 'Unable to load subscriptions right now.';
+    }
+  }
+
+  async function microsoft() {
+    const host = document.querySelector('.k-app-main .k-app-card');
+    if (!host) return;
+    const wrapper = host.querySelector('.k-app-grid.three') || host;
+    const targets = [['Outlook Calendar', 'calendar'], ['OneDrive', 'drive']];
+    for (const [label, kind] of targets) {
+      try {
+        const state = await api(`/api/artifacts/microsoft/${encodeURIComponent(kind)}`);
+        const card = box();
+        card.style.padding = '14px';
+        card.innerHTML = `<span class="k-app-card-label">Microsoft</span><h3>${label}</h3>`;
+        const source = state.source || {};
+        const connected = Boolean(source.connected || source.status === 'connected');
+        const pill = document.createElement('span'); pill.className = `k-status${connected ? ' k-status--ready' : ''}`; pill.textContent = connected ? 'Connected' : 'Not connected'; card.appendChild(pill);
+        if (!connected) card.appendChild(btn(`Connect ${label}`, async (event) => {
+          event.currentTarget.disabled = true;
+          try {
+            const result = await api(`/api/artifacts/microsoft/${encodeURIComponent(kind)}/connect`, { method: 'POST' });
+            if (result.authorizationUrl) location.assign(result.authorizationUrl); else live(`${label} connection is not currently available.`);
+          } catch (error) { event.currentTarget.disabled = false; live(error.message); }
+        }));
+        const grid = wrapper.classList.contains('k-app-grid') ? wrapper : null;
+        if (grid) grid.appendChild(card); else host.appendChild(card);
+      } catch (error) {
+        const card = box(); card.style.padding = '14px'; card.innerHTML = `<span class="k-app-card-label">Microsoft</span><h3>${label}</h3>`; const p = document.createElement('p'); p.className = 'k-muted'; p.textContent = 'Unavailable for this deployment.'; card.appendChild(p); const grid = wrapper.classList.contains('k-app-grid') ? wrapper : null; if (grid) grid.appendChild(card); else host.appendChild(card);
+      }
+    }
+  }
+
+  const boot = () => {
+    if (section === 'subscriptions') subscriptions();
+    if (section === 'connect') microsoft();
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else setTimeout(boot, 0);
+})();
