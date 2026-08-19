@@ -23,6 +23,8 @@ jobs:
       - run: npm run lint
       - run: npm run build
       - run: npm run test:routes
+      - name: Test Hugging Face Jobs training backend contract
+        run: npm run test:huggingface-jobs-backend
       - name: Test progressive identity contract
         run: npx tsx scripts/test-progressive-identity.ts
       - name: Test remote MCP app contract

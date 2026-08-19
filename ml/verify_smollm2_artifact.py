@@ -25,6 +25,7 @@ EVAL = os.environ.get("KURUKOO_SMOLLM2_EVAL_SUMMARY")
 MIN_NATURALNESS = float(os.environ.get("KURUKOO_SMOLLM2_MIN_NATURALNESS", "0.80"))
 MIN_CONTEXT = float(os.environ.get("KURUKOO_SMOLLM2_MIN_CONTEXT_RETENTION", "0.80"))
 MAX_PREMATURE_ACTION = float(os.environ.get("KURUKOO_SMOLLM2_MAX_PREMATURE_ACTION", "0.15"))
+EXPECTED_PACK_HASH = os.environ.get("KURUKOO_TRAIN_EXPECTED_PACK_SHA256", "e0883f4a630d57f7cf7b78415fa0a7bf017189c3adfe04cef4bbdb5267969715").strip()
 
 
 def sha256(path: pathlib.Path) -> str:
@@ -61,6 +62,18 @@ def main():
     dataset_hash = sha256(DATASET)
     if manifest.get("dataset_sha256") != dataset_hash:
         return fail("artifact was trained against a different dataset hash")
+    if manifest.get("trainingBackend") == "huggingface":
+        remote = manifest.get("remoteTraining") or {}
+        required_remote = ("trainingBackend", "jobId", "behaviourPackHash", "datasetHash", "gpu", "trainingStartedAt", "trainingCompletedAt", "trainingDurationSeconds", "artifactRepository", "artifactPayloadSha256", "baseModelRevision", "tokenizerRevision")
+        missing_remote = [key for key in required_remote if remote.get(key) in (None, "", {})]
+        if missing_remote:
+            return fail("remote artifact manifest is missing provenance: " + ", ".join(missing_remote))
+        if remote.get("trainingBackend") != "huggingface" or remote.get("datasetHash") != dataset_hash or remote.get("behaviourPackHash") != EXPECTED_PACK_HASH:
+            return fail("remote artifact provenance does not match the canonical training contract")
+        if not isinstance(remote.get("gpu"), dict) or not remote["gpu"].get("cudaDevices"):
+            return fail("remote artifact manifest does not prove CUDA hardware")
+        if not isinstance(manifest.get("artifactUri"), str) or not manifest.get("artifactUri").startswith("hf://") or not isinstance(manifest.get("artifactHash"), str):
+            return fail("remote artifact manifest is missing immutable artifact identity")
 
     required = ["adapter_config.json", "adapter_model.safetensors"]
     missing = [name for name in required if not (ARTIFACT / name).exists()]

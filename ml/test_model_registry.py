@@ -41,7 +41,7 @@ def evaluation(**overrides: float) -> dict:
         "cost": 0.001,
     }
     scores.update(overrides)
-    return {"passed": True, "scores": scores, "source": "isolated-regression"}
+    return {"passed": True, "scores": scores, "source": "isolated-regression", "comparison": {"studentBeatsBase": True, "heldOutDatasetHash": "isolated-held-out-test-hash", "benchmarkVersion": "kurukoo-student-comparison-v1", "baseScores": {"truthfulness": 0.90}, "studentScores": {"truthfulness": 1.0}, "examinerResults": [{"provider": "isolated-regression", "model": "deterministic"}]}}
 
 
 def main() -> int:
@@ -68,13 +68,16 @@ def main() -> int:
         missing = root / "missing.json"
         missing.write_text(json.dumps({"passed": True, "scores": {"truthfulness": 1.0}}))
         expect_blocked(lambda: registry.promote(argparse.Namespace(model_id="candidate-1", stage="shadow", evaluation=str(missing))), "incomplete evaluation promotion")
+        no_comparison = root / "no-comparison.json"
+        no_comparison.write_text(json.dumps({"passed": True, "scores": evaluation()["scores"]}))
+        expect_blocked(lambda: registry.promote(argparse.Namespace(model_id="candidate-1", stage="shadow", evaluation=str(no_comparison))), "non-comparative evaluation promotion")
         good = root / "good.json"
         good.write_text(json.dumps(evaluation()))
         registry.promote(argparse.Namespace(model_id="candidate-1", stage="shadow", evaluation=str(good)))
         index = json.loads(registry.INDEX.read_text())
         assert index["models"][0]["stage"] == "shadow"
         assert index["models"][0]["productionEnabled"] is False
-    print("Model-registry promotion regression passed: feasibility probes are rejected and explicit metrics and thresholds gate candidate advancement.")
+    print("Model-registry promotion regression passed: feasibility probes are rejected and explicit metrics, held-out base-versus-student superiority, and thresholds gate candidate advancement.")
     return 0
 
 

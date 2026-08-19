@@ -24,6 +24,7 @@ OUTPUT = pathlib.Path(os.environ.get(
     str(ROOT / "artifacts" / "smollm2-kurukoo-lora"),
 ))
 BASE_MODEL = os.environ.get("KURUKOO_SMOLLM2_BASE_MODEL", "HuggingFaceTB/SmolLM2-1.7B-Instruct")
+BASE_MODEL_REVISION = os.environ.get("KURUKOO_SMOLLM2_BASE_MODEL_REVISION", "").strip() or None
 MAX_LENGTH = max(256, min(int(os.environ.get("KURUKOO_TRAIN_MAX_LENGTH", "1024")), 4096))
 EPOCHS = max(1, min(int(os.environ.get("KURUKOO_TRAIN_EPOCHS", "3")), 10))
 BATCH = max(1, min(int(os.environ.get("KURUKOO_TRAIN_BATCH_SIZE", "2")), 16))
@@ -40,6 +41,7 @@ RUN_KIND = os.environ.get("KURUKOO_TRAIN_RUN_KIND", "student_candidate").strip()
 @dataclass(frozen=True)
 class TrainingManifest:
     base_model: str
+    base_model_revision: str | None
     dataset: str
     dataset_sha256: str
     output: str
@@ -134,6 +136,7 @@ def row_to_text(row, tokenizer):
 def main():
     print("Kurukoo SmolLM2 training entrypoint")
     print(f"base model: {BASE_MODEL}")
+    print(f"base model revision: {BASE_MODEL_REVISION or 'provider default'}")
     print(f"dataset: {DATASET}")
 
     if not DATASET.exists():
@@ -153,7 +156,7 @@ def main():
     dataset_hash = sha256(DATASET)
     if not ENABLE:
         hardware, libraries = runtime_metadata()
-        manifest = TrainingManifest(base_model=BASE_MODEL, dataset=str(DATASET), dataset_sha256=dataset_hash, output=str(OUTPUT), max_length=MAX_LENGTH, epochs=EPOCHS, batch_size=BATCH, gradient_accumulation=GRAD_ACCUM, learning_rate=LR, four_bit_requested=USE_4BIT, training_enabled=False, status="training_disabled", seed=SEED, hardware=hardware, libraries=libraries, dataset_rows=len(rows), run_kind=RUN_KIND)
+        manifest = TrainingManifest(base_model=BASE_MODEL, base_model_revision=BASE_MODEL_REVISION, dataset=str(DATASET), dataset_sha256=dataset_hash, output=str(OUTPUT), max_length=MAX_LENGTH, epochs=EPOCHS, batch_size=BATCH, gradient_accumulation=GRAD_ACCUM, learning_rate=LR, four_bit_requested=USE_4BIT, training_enabled=False, status="training_disabled", seed=SEED, hardware=hardware, libraries=libraries, dataset_rows=len(rows), run_kind=RUN_KIND)
         print(json.dumps(asdict(manifest), indent=2))
         write_manifest(asdict(manifest))
         print("Training is disabled. No model weights were created or promoted.")
@@ -171,12 +174,12 @@ def main():
     minimum_satisfied = any(float(device.get("memoryGiB", 0)) >= MIN_CUDA_MEMORY_GIB for device in hardware["cudaDevices"])
     if len(rows) >= FULL_CORPUS_MIN_ROWS and not ALLOW_FULL_CPU and not minimum_satisfied:
         blocker = {"code": "insufficient_gpu_for_full_corpus_training", "reason": "A full Kurukoo Student v1 run is intentionally blocked without a CUDA GPU meeting the configured memory floor.", "requiredGpuMemoryGiB": MIN_CUDA_MEMORY_GIB, "observedCudaDevices": hardware["cudaDevices"], "cpuOverrideEnv": "KURUKOO_ALLOW_FULL_CPU_TRAINING=true", "expectedArtifact": str(OUTPUT / "artifact-manifest.json"), "trainingCommand": "KURUKOO_ENABLE_TRAINING=true KURUKOO_TRAIN_DATASET=<accepted-train.jsonl> KURUKOO_TRAIN_OUTPUT=<artifact-dir> python3 ml/train_smollm2_qlora.py"}
-        manifest = TrainingManifest(base_model=BASE_MODEL, dataset=str(DATASET), dataset_sha256=dataset_hash, output=str(OUTPUT), max_length=MAX_LENGTH, epochs=EPOCHS, batch_size=BATCH, gradient_accumulation=GRAD_ACCUM, learning_rate=LR, four_bit_requested=USE_4BIT, training_enabled=True, status="blocked_hardware", seed=SEED, hardware=hardware, libraries=libraries, dataset_rows=len(rows), run_kind=RUN_KIND, blocker=blocker)
+        manifest = TrainingManifest(base_model=BASE_MODEL, base_model_revision=BASE_MODEL_REVISION, dataset=str(DATASET), dataset_sha256=dataset_hash, output=str(OUTPUT), max_length=MAX_LENGTH, epochs=EPOCHS, batch_size=BATCH, gradient_accumulation=GRAD_ACCUM, learning_rate=LR, four_bit_requested=USE_4BIT, training_enabled=True, status="blocked_hardware", seed=SEED, hardware=hardware, libraries=libraries, dataset_rows=len(rows), run_kind=RUN_KIND, blocker=blocker)
         print(json.dumps(asdict(manifest), indent=2))
         write_manifest(asdict(manifest))
         return 3
 
-    manifest = TrainingManifest(base_model=BASE_MODEL, dataset=str(DATASET), dataset_sha256=dataset_hash, output=str(OUTPUT), max_length=MAX_LENGTH, epochs=EPOCHS, batch_size=BATCH, gradient_accumulation=GRAD_ACCUM, learning_rate=LR, four_bit_requested=USE_4BIT, training_enabled=True, status="training_requested", seed=SEED, hardware=hardware, libraries=libraries, dataset_rows=len(rows), run_kind=RUN_KIND)
+    manifest = TrainingManifest(base_model=BASE_MODEL, base_model_revision=BASE_MODEL_REVISION, dataset=str(DATASET), dataset_sha256=dataset_hash, output=str(OUTPUT), max_length=MAX_LENGTH, epochs=EPOCHS, batch_size=BATCH, gradient_accumulation=GRAD_ACCUM, learning_rate=LR, four_bit_requested=USE_4BIT, training_enabled=True, status="training_requested", seed=SEED, hardware=hardware, libraries=libraries, dataset_rows=len(rows), run_kind=RUN_KIND)
     print(json.dumps(asdict(manifest), indent=2))
     write_manifest(asdict(manifest))
 
@@ -186,7 +189,8 @@ def main():
     else:
         use_4bit = USE_4BIT
 
-    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, use_fast=True)
+    revision_kwargs = {"revision": BASE_MODEL_REVISION} if BASE_MODEL_REVISION else {}
+    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, use_fast=True, **revision_kwargs)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -210,7 +214,7 @@ def main():
         model_kwargs["quantization_config"] = quant_config
         model_kwargs["device_map"] = "auto"
 
-    model = AutoModelForCausalLM.from_pretrained(BASE_MODEL, **model_kwargs)
+    model = AutoModelForCausalLM.from_pretrained(BASE_MODEL, **model_kwargs, **revision_kwargs)
     if use_4bit:
         model = prepare_model_for_kbit_training(model)
 

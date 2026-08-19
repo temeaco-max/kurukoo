@@ -160,13 +160,13 @@ Run curation with:
 npm run ml:curate
 ```
 
-The curator never assigns approval. On the current regenerated corpus, all 25,506 rows were synthetic but unreviewed, so the accepted corpus contains zero rows and training is correctly blocked. This is intentional: generated data is not automatically trusted training data.
+The curator never assigns approval. The current canonical Corpus v2 contains 36,012 reconciled accepted rows: 28,849 train, 3,600 validation, and 3,563 test. The accepted train split is synthetic-only, preserves the candidate → review → curation boundary, excludes production user data, and has SHA-256 `b8ec82700f5817ec23702d21b2f8f869ffef393f5b7109ffd1bb83e20f05ff02`. Its Behaviour Pack hash is `e0883f4a630d57f7cf7b78415fa0a7bf017189c3adfe04cef4bbdb5267969715`.
 
-The 17 August 2026 structural scenario run generated 24,000 provider-outcome trajectories across 205 skills and 46 families, with 943,188 turns and horizons 5, 10, 20, 40, 80 and 81. Structural coverage passed, but this is not a model-quality or promotion result. The actual cached SmolLM2-1.7B baseline was also probed on the critical conversational benchmark; its measured outputs remain advisory and are not promoted as Kurukoo-trained behavior.
+The OS-driven portion contributes 24,000 deterministic scenarios compiled from 205 skills, 14 behaviour families, four lifecycle states, and three variants. Structural coverage and anti-leakage checks passed. This is data readiness evidence, not a model-quality, benchmark, registry, or promotion result.
 
-A real training run requires an explicitly curated non-empty accepted corpus and `KURUKOO_ENABLE_TRAINING=true`. The trainer now rejects uncurated rows, records the accepted dataset hash and training parameters, and never changes production runtime selection.
+A real training run requires the existing explicitly curated non-empty accepted corpus and `KURUKOO_ENABLE_TRAINING=true`. The trainer rejects uncurated rows, records the accepted dataset hash and training parameters, and never changes production runtime selection.
 
-No Kurukoo-trained adapter has been produced or promoted in the current run.
+No Kurukoo-trained adapter has been produced, benchmark-proven, registered, shadowed, canaried, or promoted in the current run.
 
 ## Control Room curation workflow
 
@@ -176,11 +176,38 @@ A candidate can enter the accepted corpus only when a reviewer has explicitly re
 
 The accepted-corpus gate now fails closed for empty accepted data and for missing configurable composition coverage. The default coverage dimensions are skill, actor, market, locale, scenario type, natural conversation, adversarial cases, and long-horizon cases. Override minimums for an offline run with `--coverage '{"skill":2,"actor":1}'` or `KURUKOO_MIN_COVERAGE_JSON`. This gate prepares a corpus; it never launches training from the admin UI. Training remains an explicit offline operation and model promotion remains a separate registry decision.
 
-The current state remains truthful: the repository-side queue and review lifecycle are ready, but no candidate is accepted merely because it was generated or scored. Until a human-curated corpus satisfies the configured coverage minimums, the accepted corpus and student-model training remain blocked.
+The current state remains truthful: the repository-side queue and review lifecycle are ready, and Corpus v2 has passed explicit curation. Generation or scoring alone remains insufficient for any new candidate. Training execution, held-out base-versus-student evaluation, registry review, shadow, canary, and production activation remain separately guarded.
 
 
 ## Real teacher batch proving — 17 August 2026
 
 A bounded real-provider batch was generated through the existing teacher adapter using the configured OpenAI-compatible endpoint and catalog model `claude-haiku-4-5` (selected only because Mistral and Gemini credential variables were absent). The adapter now honors `OPENAI_API_BASE`; it does not assume the public OpenAI endpoint when a configured compatible endpoint is present. Two candidates were generated from a deterministic stratified sample and imported into the existing Control Room queue as `pending`, `reviewed=false`, and `accepted=false`.
 
-One candidate was explicitly marked `needs_rewrite`, producing a new linked pending version with preserved scenario identity and provenance. The other passed a first review, a second review, and an explicit acceptance with reviewer scores. The accepted record is still not training-ready: the current one-example batch does not satisfy the required composition dimensions, and the curator rejects incomplete or below-threshold quality evidence. The measured result is therefore a valid curation proof, not a model-training result.
+One candidate was explicitly marked `needs_rewrite`, producing a new linked pending version with preserved scenario identity and provenance. The other passed a first review, a second review, and an explicit acceptance with reviewer scores. This bounded historical batch is a valid curation proof, not a model-training result; it does not override the independently reconciled Corpus v2 state.
+
+## Managed Hugging Face GPU training
+
+`KURUKOO_TRAINING_BACKEND=local_cuda` remains the default and preserves the local CUDA guard. The only additional backend is `huggingface`, which packages the exact accepted Corpus v2, current Behaviour Pack, canonical trainer, and reproducibility metadata for a managed Hugging Face Job. It does not introduce a second training algorithm or a second model runtime.
+
+> API teacher credentials provide teacher generation, critique, and evaluation. They do **not** provide managed GPU training compute. A separate Hugging Face Jobs-capable credential and positive provider credit balance are required for the remote path. Hugging Face Jobs are pay-as-you-go and require explicit hardware selection, timeout, and durable output persistence. [1] [2]
+
+| Operation | Command and required conditions |
+|---|---|
+| Canonical preflight | `npm run ml:remote-preflight`. It verifies the accepted-split SHA-256, Behaviour Pack SHA-256, curation status, synthetic-only and production-data boundaries, and split-leakage evidence. It does not contact a provider or create a billable job. |
+| Local CUDA training | `KURUKOO_ENABLE_TRAINING=true KURUKOO_TRAINING_BACKEND=local_cuda python3 ml/train_smollm2_qlora.py`. The existing guard still blocks full-corpus training without a CUDA GPU meeting the configured 16 GiB floor. |
+| Remote submission | Set `HF_TOKEN` as an injected secret, `KURUKOO_HF_ARTIFACT_REPO=<private-owner/kurukoo-student-v1>`, `KURUKOO_HF_MAX_ESTIMATED_COST_USD=<strict-cap>`, `KURUKOO_REMOTE_TRAINING_LAUNCH_APPROVED=true`, and `KURUKOO_ENABLE_TRAINING=true`; then run `npm run ml:remote-launch`. The approval flag and a positive cost cap are both mandatory because this creates a billable managed GPU job. |
+| Status and monitoring | `npm run ml:remote-status -- --job-id <job-id>`. The job state record captures the provider job ID, selected flavour, CUDA evidence, configured timeout, cost estimate, and terminal stage. |
+| Failure cleanup | `npm run ml:remote-cancel -- --job-id <job-id> --reason <reason>`. The backend records the cleanup event and never treats a cancelled, errored, deleted, or unknown job as trained. |
+| Artifact retrieval | After a confirmed `COMPLETED` job, run `npm run ml:remote-retrieve -- --job-id <job-id>`. Retrieval synchronizes the provider output receipt, resolves the immutable private model-repository revision, downloads a local cache, and verifies the adapter payload SHA-256, corpus hash, pack hash, CUDA evidence, and candidate-only manifest. |
+
+At launch, the backend discovers provider hardware and filters it by the existing VRAM floor. It chooses the lowest reported hourly-cost GPU that meets the requirement; it does not hard-code T4, A10G, A100, H100, or H200. The provider exposes Job hardware discovery, status, logs, metrics, cancellation, encrypted secrets, timeouts, and writable durable volumes through its supported Jobs API. [1] [2] [3]
+
+The remote Job invokes only `ml/train_smollm2_qlora.py`. Before invocation, the managed entrypoint recomputes the staged corpus and Behaviour Pack hashes. It persists the adapter to the configured **private** Hugging Face model repository and writes a retrieval receipt containing an immutable repository revision, artifact payload SHA-256, base-model and tokenizer revision, GPU details, software metadata, duration, and estimated cost. No token, teacher key, production user data, or raw secret is written to Git, logs, corpus rows, model cards, registry entries, or receipts.
+
+A completed training job is still only a `trained_candidate`. It must first pass verifier checks and an independent held-out base-versus-student evaluation. The registry now rejects promotion unless the evaluation includes the held-out dataset hash, benchmark version, independent examiner evidence, base and student scorecards, and an explicit `studentBeatsBase=true` conclusion. Candidate → shadow → canary → production remains the only lifecycle, and no remote run can skip it.
+
+## References
+
+[1]: https://huggingface.co/docs/huggingface_hub/en/guides/jobs "Hugging Face Hub — Run and manage Jobs"
+[2]: https://huggingface.co/docs/hub/en/jobs-configuration "Hugging Face Hub — Jobs configuration"
+[3]: https://huggingface.co/docs/hub/en/jobs-manage "Hugging Face Hub — Manage Jobs"
