@@ -66,4 +66,4 @@ export const MOBILE_PRIMARY_NAVIGATION = ['agent', 'discover', 'requests', 'task
 
 export function getClientSurface(id: string): ClientSurface | undefined { return CLIENT_SURFACES.find(surface => surface.id === id); }
 export function getClientSurfaces(family: ClientFamily): ClientSurface[] { return CLIENT_SURFACES.filter(surface => surface.family === family); }
-export function assertClientSurfaceOwnership(id: string, family: ClientFamily): ClientSurface { const surface = getClientSurface(id); if (!surface) throw new Error(`Unknown Kurukoo client surface: ${id}`); if (surface.family !== family) throw new Error(`Client surface ${id} belongs to ${family}, not ${family}`); return surface; }
+export function assertClientSurfaceOwnership(id: string, family: ClientFamily): ClientSurface { const surface = getClientSurface(id); if (!surface) throw new Error(`Unknown Kurukoo client surface: ${id}`); if (surface.family !== family) throw new Error(`Client surface ${id} belongs to ${surface.family}, not ${family}`); return surface; }
