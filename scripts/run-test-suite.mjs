@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import path from 'node:path';
 
 const suiteName = process.argv[2];
 if (!suiteName) {
@@ -19,17 +20,25 @@ const configuredTimeout = Number(process.env.KURUKOO_TEST_COMMAND_TIMEOUT_MS || 
 const timeoutMs = Number.isFinite(configuredTimeout) && configuredTimeout > 0
   ? Math.min(Math.floor(configuredTimeout), 600_000)
   : 180_000;
-let firstFailure = 0;
+const artifactDir = path.resolve('.artifacts');
+fs.mkdirSync(artifactDir, { recursive: true });
+const logFile = path.join(artifactDir, `${suiteName}.log`);
+const log = (line) => {
+  fs.appendFileSync(logFile, `${new Date().toISOString()} ${line}\n`);
+  console.log(line);
+};
+fs.writeFileSync(logFile, '');
 
+let firstFailure = 0;
 for (let index = 0; index < commands.length; index += 1) {
   const command = commands[index];
   const match = command.match(/^npm run ([A-Za-z0-9:_-]+)$/);
   if (!match) {
-    console.error(`Unsupported suite command: ${command}`);
+    log(`UNSUPPORTED ${command}`);
     process.exit(2);
   }
   const startedAt = Date.now();
-  console.log(`\n[Suite ${suiteName}] ${index + 1}/${commands.length}: ${match[1]}`);
+  log(`[Suite ${suiteName}] ${index + 1}/${commands.length}: ${match[1]}`);
   const result = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', match[1]], {
     stdio: 'inherit',
     env: process.env,
@@ -40,17 +49,17 @@ for (let index = 0; index < commands.length; index += 1) {
   if (result.error || result.signal) {
     const timedOut = result.error?.code === 'ETIMEDOUT';
     firstFailure ||= 1;
-    console.error(`\nSuite ${suiteName} stopped at ${match[1]} after ${elapsedMs}ms${timedOut ? ` (timeout ${timeoutMs}ms)` : ''}.`);
+    log(`FAIL ${match[1]} after ${elapsedMs}ms${timedOut ? ` (timeout ${timeoutMs}ms)` : ''}`);
     process.exit(firstFailure);
   }
   const code = typeof result.status === 'number' ? result.status : 1;
   if (code !== 0) {
     firstFailure ||= code;
-    console.error(`\nSuite ${suiteName} stopped at ${match[1]} after ${elapsedMs}ms with exit code ${code}.`);
+    log(`FAIL ${match[1]} after ${elapsedMs}ms with exit code ${code}`);
     process.exit(firstFailure);
   }
-  console.log(`[Suite ${suiteName}] ${match[1]} passed in ${elapsedMs}ms.`);
+  log(`[Suite ${suiteName}] ${match[1]} passed in ${elapsedMs}ms.`);
 }
 
-console.log(`\nSuite ${suiteName} passed ${commands.length} commands.`);
+log(`PASS ${suiteName} passed ${commands.length} commands.`);
 process.exit(0);
