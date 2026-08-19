@@ -24,7 +24,14 @@ export const CLIENT_SURFACES: readonly ClientSurface[] = [
   { id: 'web-agents', label: 'Agents', family: 'web', route: '/app/agents', primaryNavigation: 'agent', semanticOwners: ['agentRuntime', 'agentRouter'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-capabilities', label: 'Capability Portfolio', family: 'web', route: '/app/capabilities', primaryNavigation: 'secondary', semanticOwners: ['capabilityRegistry', 'capabilityPortfolio'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-opportunities', label: 'Opportunities', family: 'web', route: '/app/opportunities', primaryNavigation: 'secondary', semanticOwners: ['opportunityEngine', 'dailyPicks'], states: ['represented', 'implemented'], responsive: true },
-  { id: 'web-wallet', label: 'Wallet / Points / Top Up', family: 'web', route: '/app/wallet', primaryNavigation: 'secondary', semanticOwners: ['directWallet', 'payment', 'points', 'subscription'], states: ['represented', 'implemented'], responsive: true },
+  { id: 'web-wallet', label: 'Wallet', family: 'web', route: '/app/wallet', primaryNavigation: 'secondary', semanticOwners: ['directWallet', 'payment', 'points', 'subscription'], states: ['represented', 'implemented'], responsive: true },
+  { id: 'web-points', label: 'Points', family: 'web', route: '/app/points', primaryNavigation: 'secondary', semanticOwners: ['points'], states: ['represented', 'implemented'], responsive: true },
+  { id: 'web-top-up', label: 'Top Up', family: 'web', route: '/app/top-up', primaryNavigation: 'secondary', semanticOwners: ['topup', 'payment'], states: ['represented', 'implemented'], responsive: true },
+  { id: 'web-subscriptions', label: 'Subscriptions', family: 'web', route: '/app/subscriptions', primaryNavigation: 'secondary', semanticOwners: ['subscription'], states: ['represented', 'implemented'], responsive: true },
+  { id: 'web-checkout', label: 'Checkout', family: 'web', route: '/app/checkout', primaryNavigation: 'secondary', semanticOwners: ['checkout', 'economicRequest', 'payment'], states: ['represented', 'implemented'], responsive: true },
+  { id: 'web-confirmations', label: 'Confirmations', family: 'web', route: '/app/confirmations', primaryNavigation: 'secondary', semanticOwners: ['checkoutConfirmation', 'economicRequest'], states: ['represented', 'implemented'], responsive: true },
+  { id: 'web-memory', label: 'Memory', family: 'web', route: '/app/memory', primaryNavigation: 'secondary', semanticOwners: ['memoryProfile'], states: ['represented', 'implemented'], responsive: true },
+  { id: 'web-notifications', label: 'Notifications', family: 'web', route: '/app/notifications', primaryNavigation: 'secondary', semanticOwners: ['notificationService', 'notificationQueue'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-artifacts', label: 'Artifact History', family: 'web', route: '/app/artifacts', primaryNavigation: 'secondary', semanticOwners: ['artifactService', 'storageRouter'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-prayer', label: 'Prayer Companion', family: 'web', route: '/app/prayer', primaryNavigation: 'agent', semanticOwners: ['prayerAgent', 'agentRuntime', 'voiceService', 'artifactService'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-call', label: 'Kurukoo Call', family: 'web', route: '/app/call', primaryNavigation: 'secondary', semanticOwners: ['voiceService', 'webrtcSignalling', 'deviceLinks'], states: ['represented', 'implemented', 'external_activation'], responsive: true },
@@ -37,17 +44,6 @@ export const CLIENT_SURFACES: readonly ClientSurface[] = [
 
 export const MOBILE_PRIMARY_NAVIGATION = ['agent', 'discover', 'requests', 'tasks', 'connect'] as const;
 
-export function getClientSurface(id: string): ClientSurface | undefined {
-  return CLIENT_SURFACES.find(surface => surface.id === id);
-}
-
-export function getClientSurfaces(family: ClientFamily): ClientSurface[] {
-  return CLIENT_SURFACES.filter(surface => surface.family === family);
-}
-
-export function assertClientSurfaceOwnership(id: string, family: ClientFamily): ClientSurface {
-  const surface = getClientSurface(id);
-  if (!surface) throw new Error(`Unknown Kurukoo client surface: ${id}`);
-  if (surface.family !== family) throw new Error(`Client surface ${id} belongs to ${surface.family}, not ${family}`);
-  return surface;
-}
+export function getClientSurface(id: string): ClientSurface | undefined { return CLIENT_SURFACES.find(surface => surface.id === id); }
+export function getClientSurfaces(family: ClientFamily): ClientSurface[] { return CLIENT_SURFACES.filter(surface => surface.family === family); }
+export function assertClientSurfaceOwnership(id: string, family: ClientFamily): ClientSurface { const surface = getClientSurface(id); if (!surface) throw new Error(`Unknown Kurukoo client surface: ${id}`); if (surface.family !== family) throw new Error(`Client surface ${id} belongs to ${surface.family}, not ${family}`); return surface; }
