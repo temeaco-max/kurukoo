@@ -29,6 +29,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-kurukoo-smollm2-360m-
       - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Prewarm real local SmolLM2 checkpoint
+        shell: bash
+        env:
+          SMOLLM2_MODEL: HuggingFaceTB/SmolLM2-360M-Instruct
+          SMOLLM2_DTYPE: q4
+        run: |
+          set -euo pipefail
+          timeout 600 node --input-type=module <<'NODE'
+          import { pipeline } from '@huggingface/transformers';
+          const model = process.env.SMOLLM2_MODEL;
+          const dtype = process.env.SMOLLM2_DTYPE;
+          await pipeline('text-generation', model, { dtype, device: 'cpu' });
+          console.log(`Prewarmed ${model} with dtype=${dtype}.`);
+          NODE
       - run: npm run lint
       - run: npm run build
       - name: Run broad route contracts
