@@ -7,7 +7,7 @@ import jwt from 'jsonwebtoken';
 
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kurukoo-fcm-boundary-'));
 process.env.DB_PATH = path.join(tempDir, 'fcm.sqlite');
-process.env.JWT_SECRET = 'fcm-boundary-test-secret-0123456789';
+process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.KURUKOO_DISABLE_LISTEN = 'true';
 process.env.FCM_SERVICE_ACCOUNT_JSON = '';
 
