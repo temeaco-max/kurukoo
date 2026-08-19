@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title><%= selected.title %> · Kurukoo</title>
+  <meta name="description" content="<%= selected.description %>">
+  <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/site.css?v=1.2.1">
+  <link rel="stylesheet" href="/css/kurukoo-client-foundation.css?v=2">
+  <link rel="stylesheet" href="/css/kurukoo-workspace.css?v=5">
+</head>
+<body class="k-app-page workspace-page">
+  <% const icon = (name) => `<svg class="k-app-icon" aria-hidden="true"><use href="/icons/kurukoo-icons.svg#${name}"></use></svg>`; %>
+  <div class="k-app-shell">
+    <header class="k-app-header">
+      <a href="/" class="k-app-brand"><img src="/assets/brand/logo-icon.png" alt="Kurukoo" width="34" height="34"><span>Kurukoo</span></a>
+      <div class="k-app-header-actions">
+        <span class="k-app-identity"><strong><%= displayName %></strong><small><%= phone %></small></span>
+        <a class="k-app-ask" href="/chat">Ask</a>
+      </div>
+    </header>
+
+    <aside class="k-app-sidebar" aria-label="Kurukoo application navigation">
+      <a class="k-app-new" href="/chat">＋ New conversation</a>
+      <nav class="k-app-nav" aria-label="Primary">
+        <a class="<%= section === 'agent' ? 'active' : '' %>" href="/app/agent"><%= icon('chat') %><span>Agent</span></a>
+        <a class="<%= section === 'discover' ? 'active' : '' %>" href="/app/discover"><%= icon('discover') %><span>Discover</span></a>
+        <a class="<%= section === 'requests' ? 'active' : '' %>" href="/app/requests"><%= icon('request') %><span>Requests</span></a>
+        <a class="<%= section === 'tasks' ? 'active' : '' %>" href="/app/tasks"><%= icon('work') %><span>Tasks</span></a>
+        <a class="<%= section === 'connect' ? 'active' : '' %>" href="/app/connect"><%= icon('settings') %><span>Connect</span></a>
+      </nav>
+      <div class="k-app-divider"></div>
+      <nav class="k-app-nav" aria-label="Workspace">
+        <a href="/app/agents"><%= icon('chat') %><span>Agents</span></a>
+        <a href="/app/capabilities"><%= icon('work') %><span>Capabilities</span></a>
+        <a href="/app/opportunities"><%= icon('discover') %><span>Opportunities</span></a>
+        <a href="/app/wallet"><%= icon('points') %><span>Wallet &amp; Points</span></a>
+        <a href="/app/artifacts"><%= icon('saved') %><span>Artifacts</span></a>
+        <a href="/app/prayer"><%= icon('chat') %><span>Prayer</span></a>
+        <a href="/app/call"><%= icon('mic') %><span>Call</span></a>
+        <a href="/app/safety"><%= icon('safety') %><span>Safety</span></a>
+      </nav>
+      <div class="k-app-divider"></div>
+      <nav class="k-app-nav" aria-label="Account">
+        <a href="/memory"><%= icon('saved') %><span>Memory</span></a>
+        <a href="/settings"><%= icon('settings') %><span>Settings</span></a>
+        <a href="/help"><%= icon('help') %><span>Help</span></a>
+      </nav>
+    </aside>
+
+    <main class="k-app-main">
+      <div class="k-app-container">
+        <div class="k-app-eyebrow"><%= selected.eyebrow %></div>
+        <div class="k-app-title-row">
+          <div><h1><%= selected.title %></h1><p><%= selected.description %></p></div>
+          <a class="k-app-primary" href="<%= selected.cta %>"><%= selected.ctaLabel %></a>
+        </div>
+
+        <% if (section === 'agent') { %>
+          <section class="k-app-grid two">
+            <article class="k-app-card"><span class="k-app-card-label">Conversation</span><h2>One place to ask, coordinate and continue.</h2><p>Chat remains the source of truth for requests, reminders, safety, memory, agents and actions.</p><a href="/chat" class="k-app-card-action">Open Web Chat →</a></article>
+            <article class="k-app-card"><span class="k-app-card-label">Continuity</span><h2>Keep active work alive.</h2><p>Interruption, authentication, pause/resume and cross-channel continuation remain owned by the canonical context layer.</p><a href="/requests" class="k-app-card-action">View Requests →</a></article>
+          </section>
+        <% } else if (section === 'connect') { %>
+          <section class="k-app-grid three"><article class="k-app-card"><span class="k-app-card-label">Storage</span><h2>Google Drive</h2><p>User-owned Drive is the preferred durable home for artifacts. OAuth and feature flags determine live availability.</p><a href="/connect" class="k-app-card-action">Open Connect →</a></article><article class="k-app-card"><span class="k-app-card-label">Channels</span><h2>WhatsApp · Telegram · Push</h2><p>Pairing and notifications use the same Kurukoo identity and conversation.</p><a href="/channels" class="k-app-card-action">View readiness →</a></article><article class="k-app-card"><span class="k-app-card-label">Sources</span><h2>Sheets · Notion · Microsoft</h2><p>Bounded owner-authorized source reads are available without creating background mirrors.</p><a href="/connect" class="k-app-card-action">Manage sources →</a></article></section>
+        <% } else if (section === 'wallet') { %>
+          <section class="k-app-grid three"><article class="k-app-card"><span class="k-app-card-label">Points</span><h2>Points economy</h2><p>Closed-loop Points are governed separately from cash payment rails.</p><a href="/points" class="k-app-card-action">Open Points →</a></article><article class="k-app-card"><span class="k-app-card-label">Top Up</span><h2>Verified payment path</h2><p>No payment is claimed until the configured payment adapter produces evidence.</p><a href="/top-up" class="k-app-card-action">Open Top Up →</a></article><article class="k-app-card"><span class="k-app-card-label">Subscription</span><h2>Plans</h2><p>Plan changes remain gated by configured pricing and payment infrastructure.</p><a href="/subscription" class="k-app-card-action">Review plans →</a></article></section>
+        <% } else if (section === 'agents') { %>
+          <section class="k-app-card"><span class="k-app-card-label">Agent Runtime</span><h2>First-class agents, one runtime.</h2><p>Agent goals, actions, budgets, retries, pause/resume, evidence and recovery remain governed by the same canonical runtime. Use Chat to create or control an agent goal.</p><a href="/chat?prompt=Show%20me%20my%20agents" class="k-app-primary">Manage agents in Chat</a></section>
+        <% } else if (section === 'capabilities') { %>
+          <section class="k-app-card"><span class="k-app-card-label">Capability Portfolio</span><h2>Many roles. One identity.</h2><p>A user can be a barber, contributor, delivery worker, seller and buyer at the same time without creating separate accounts or memories.</p><a href="/chat?prompt=Show%20me%20my%20capabilities" class="k-app-primary">Open Capability Portfolio</a></section>
+        <% } else if (section === 'opportunities') { %>
+          <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label">Proactive Opportunity Engine</span><h2>Useful ideas without noise.</h2><p>Quiet-user engagement, daily picks and network opportunities are surfaced only when relevant and clearly labelled.</p><a href="/daily-picks" class="k-app-card-action">Open Daily Picks →</a></article><article class="k-app-card"><span class="k-app-card-label">Truth boundary</span><h2>No invented opportunity.</h2><p>Availability, provider status, price and fulfilment remain evidence-gated.</p><a href="/discover" class="k-app-card-action">Explore the network →</a></article></section>
+        <% } else if (section === 'artifacts') { %>
+          <section class="k-app-card"><span class="k-app-card-label">ArtifactService</span><h2>Your files, recordings and transcripts.</h2><p>Artifact metadata is owner-scoped; Google Drive is preferred for durable user-owned storage, with managed fallback only when appropriate.</p><a href="/connect" class="k-app-primary">Open Artifact History</a></section>
+        <% } else if (section === 'prayer') { %>
+          <section class="k-app-card"><span class="k-app-card-label">Prayer Companion</span><h2>A first-class Kurukoo agent.</h2><p>Prayer requests can become personalized written prayers, routines, reminders and voice experiences through the existing Agent Runtime and voice/artifact boundaries.</p><a href="/chat?prompt=I%20would%20like%20a%20prayer" class="k-app-primary">Start a prayer conversation</a></section>
+        <% } else if (section === 'call') { %>
+          <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label">AI voice</span><h2>Talk to Kurukoo.</h2><p>Realtime AI voice uses the canonical conversation and tool boundary.</p><a href="/chat?voice=1" class="k-app-primary">Open AI voice</a></article><article class="k-app-card"><span class="k-app-card-label">Kurukoo Call</span><h2>Realtime peer communication.</h2><p>WebRTC calling uses the canonical identity and signalling layer; production relay/provider readiness remains externally gated.</p><a href="/call" class="k-app-card-action">Open Call →</a></article></section>
+        <% } else if (section === 'safety') { %>
+          <section class="k-app-card"><span class="k-app-card-label">Safety</span><h2>Explicit, consent-bound safety support.</h2><p>Manage check-ins, trusted contacts and safety continuity without implying emergency-service delivery.</p><a href="/safety" class="k-app-primary">Open Safety →</a></section>
+        <% } else if (section === 'discover') { %>
+          <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label">Nearby Pulse</span><h2>Local presence with consent and truth.</h2><p>Presence and availability are surfaced from the canonical Pulse/network boundary rather than guessed from stale UI state.</p><a href="/discover" class="k-app-card-action">Open Discover →</a></article><article class="k-app-card"><span class="k-app-card-label">Opportunities</span><h2>Find useful things.</h2><p>Explore products, providers, Topics and opportunities without leaving the same Kurukoo relationship.</p><a href="/daily-picks" class="k-app-card-action">Open Opportunities →</a></article></section>
+        <% } else { %>
+          <section class="k-app-card"><span class="k-app-card-label"><%= selected.eyebrow %></span><h2><%= selected.title %> remains connected to the same Kurukoo OS.</h2><p><%= selected.description %></p><a href="<%= selected.cta %>" class="k-app-primary"><%= selected.ctaLabel %></a></section>
+        <% } %>
+
+        <section class="k-app-status-row">
+          <span class="k-status" data-state="success">OS connected</span>
+          <span class="k-status" data-state="info"><%= surfaces.length %> Web surfaces</span>
+          <span class="k-status">External integrations: <%= enabledIntegrations %>/<%= integrationCount %> implemented</span>
+        </section>
+      </div>
+    </main>
+  </div>
+  <nav class="k-mobile-tabbar" aria-label="Kurukoo application navigation">
+    <a href="/app/agent" aria-current="<%= section === 'agent' ? 'page' : 'false' %>"><span><%= icon('chat') %></span><span>Agent</span></a>
+    <a href="/app/discover" aria-current="<%= section === 'discover' ? 'page' : 'false' %>"><span><%= icon('discover') %></span><span>Discover</span></a>
+    <a href="/app/requests" aria-current="<%= section === 'requests' ? 'page' : 'false' %>"><span><%= icon('request') %></span><span>Requests</span></a>
+    <a href="/app/tasks" aria-current="<%= section === 'tasks' ? 'page' : 'false' %>"><span><%= icon('work') %></span><span>Tasks</span></a>
+    <a href="/app/connect" aria-current="<%= section === 'connect' ? 'page' : 'false' %>"><span><%= icon('settings') %></span><span>Connect</span></a>
+  </nav>
+</body>
+</html>
