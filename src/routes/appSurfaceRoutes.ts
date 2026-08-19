@@ -15,40 +15,33 @@ const surfaceMap = new Map([
   ['agents', { title: 'Agents', eyebrow: 'Agent runtime', description: 'Review first-class agents, goals, controls and current runtime states. Agent execution remains bounded by canonical policy and evidence.', cta: '/chat?prompt=Show%20me%20my%20agents', ctaLabel: 'Manage in Chat' }],
   ['capabilities', { title: 'Capabilities', eyebrow: 'Capability portfolio', description: 'Use multiple capabilities—provider, contributor, delivery, buyer, seller and more—under one identity and one canonical execution fabric.', cta: '/chat?prompt=Show%20me%20my%20capabilities', ctaLabel: 'Open Capability Portfolio' }],
   ['opportunities', { title: 'Opportunities', eyebrow: 'Proactive opportunity engine', description: 'Useful opportunities and quiet-user engagement are surfaced without interrupting active work or inventing offers.', cta: '/daily-picks', ctaLabel: 'Open Opportunities' }],
-  ['wallet', { title: 'Wallet & money', eyebrow: 'Economic layer', description: 'Wallet, Points, Top Up, subscriptions and payment states are presented independently of whether external payment rails are currently active.', cta: '/top-up', ctaLabel: 'Open money controls' }],
+  ['wallet', { title: 'Wallet & money', eyebrow: 'Economic layer', description: 'Wallet, Points, Top Up, subscriptions and payment states are presented independently of whether external payment rails are currently active.', cta: '/app/wallet', ctaLabel: 'Open money controls' }],
+  ['points', { title: 'Points', eyebrow: 'Kurukoo economy', description: 'Points remain a closed-loop utility/economy surface distinct from cash payment rails and external settlement.', cta: '/points', ctaLabel: 'Open Points' }],
+  ['top-up', { title: 'Top Up', eyebrow: 'Add funds', description: 'Top-up UI is available as a truthful payment surface; provider evidence determines whether a transaction can actually complete.', cta: '/top-up', ctaLabel: 'Open Top Up' }],
+  ['subscriptions', { title: 'Subscriptions', eyebrow: 'Plans and entitlements', description: 'Plans and entitlement states are presented independently of live billing activation and never claim a successful charge without provider evidence.', cta: '/subscription', ctaLabel: 'Open Subscriptions' }],
+  ['checkout', { title: 'Checkout', eyebrow: 'Confirm economic action', description: 'Checkout remains bound to canonical economic requests, payment policy and explicit confirmation.', cta: '/checkout', ctaLabel: 'Open Checkout' }],
+  ['confirmations', { title: 'Confirmations', eyebrow: 'Know what happened', description: 'Confirmation surfaces summarize canonical lifecycle, evidence and recovery rather than inferred success.', cta: '/confirmation', ctaLabel: 'Open Confirmations' }],
+  ['memory', { title: 'Memory', eyebrow: 'Your Kurukoo memory', description: 'Memory Profile is the canonical owner-scoped memory authority shared by all clients.', cta: '/memory', ctaLabel: 'Open Memory' }],
   ['artifacts', { title: 'Artifacts', eyebrow: 'Your files and recordings', description: 'Artifacts are owner-scoped. Connected user-owned storage is preferred; managed storage is bounded fallback/staging.', cta: '/connect', ctaLabel: 'Open Artifact History' }],
   ['prayer', { title: 'Prayer Companion', eyebrow: 'First-class agent', description: 'Prayer support can compose personalized prayers, preserve continuity and use the existing voice, reminder and artifact boundaries when enabled.', cta: '/chat?prompt=I%20would%20like%20a%20prayer', ctaLabel: 'Open Prayer Companion' }],
   ['call', { title: 'Kurukoo Call', eyebrow: 'Realtime communication', description: 'AI voice and peer calling remain part of the same Kurukoo relationship. Provider credentials and realtime infrastructure determine activation.', cta: '/call', ctaLabel: 'Open Call' }],
-  ['notifications', { title: 'Notifications', eyebrow: 'Stay connected', description: 'Notifications return relevant continuation, request and reminder context while preserving the same conversation identity.', cta: '/connect', ctaLabel: 'Open Connect' }],
+  ['notifications', { title: 'Notifications', eyebrow: 'Stay connected', description: 'Notifications return relevant continuation, request and reminder context while preserving the same conversation identity.', cta: '/notifications', ctaLabel: 'Open Notifications' }],
   ['safety', { title: 'Safety', eyebrow: 'Safety and check-ins', description: 'Safety context, trusted contacts and check-ins are explicit, consent-bound and never represented as emergency-service fulfilment.', cta: '/safety', ctaLabel: 'Open Safety' }],
 ]);
 
 function renderApp(req: express.Request, res: express.Response, section = 'agent') {
   const authReq = req as AuthRequest;
   if (!authReq.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent(req.path)}`);
-
   const selected = surfaceMap.get(section) ?? surfaceMap.get('agent')!;
   const surfaces = getClientSurfaces('web');
   const readiness = getPilotReadiness();
   const integrations = getExternalIntegrationReadiness();
   const enabledIntegrations = integrations.filter((item: any) => item.implementation?.state === 'IMPLEMENTED' || item.implementation?.implemented === true).length;
-
-  return res.render('app', {
-    selected,
-    section,
-    displayName: authReq.user.name || authReq.user.phone,
-    phone: authReq.user.phone,
-    surfaces,
-    readiness,
-    enabledIntegrations,
-    integrationCount: integrations.length,
-  });
+  return res.render('app', { selected, section, displayName: authReq.user.name || authReq.user.phone, phone: authReq.user.phone, surfaces, readiness, enabledIntegrations, integrationCount: integrations.length });
 }
 
 router.get('/app', optionalAuthenticateUser, (req, res) => renderApp(req, res, 'agent'));
-for (const section of surfaceMap.keys()) {
-  router.get(`/app/${section}`, optionalAuthenticateUser, (req, res) => renderApp(req, res, section));
-}
+for (const section of surfaceMap.keys()) router.get(`/app/${section}`, optionalAuthenticateUser, (req, res) => renderApp(req, res, section));
 
 // Compatibility aliases converge legacy browser application entry points on the canonical authenticated Web App.
 router.get('/web', (_req, res) => res.redirect(302, '/app'));
