@@ -50,7 +50,7 @@ jobs:
 
   fasttext:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -59,7 +59,18 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
       - name: Install FastText CLI
-        run: sudo apt-get update -qq && sudo apt-get install -y fasttext
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if timeout 240 sudo apt-get -o Acquire::Retries=3 update -qq && \
+               timeout 240 sudo apt-get -o Acquire::Retries=3 install -y --no-install-recommends fasttext; then
+              exit 0
+            fi
+            echo "FastText installation attempt ${attempt}/3 failed; retrying shortly." >&2
+            sleep $((attempt * 15))
+          done
+          echo "FastText installation failed after bounded retries." >&2
+          exit 1
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run fasttext:build
       - name: Verify FastText model
