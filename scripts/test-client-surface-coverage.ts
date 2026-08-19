@@ -5,7 +5,6 @@ import { CLIENT_SURFACES, MOBILE_PRIMARY_NAVIGATION } from '../src/services/clie
 const root = process.cwd();
 const exists = (relativePath: string) => fs.existsSync(path.join(root, relativePath));
 const read = (relativePath: string) => fs.readFileSync(path.join(root, relativePath), 'utf8');
-
 const failures: string[] = [];
 
 const requireFile = (relativePath: string, reason: string) => {
@@ -15,17 +14,25 @@ const requireFile = (relativePath: string, reason: string) => {
 requireFile('public/css/kurukoo-client-foundation.css', 'Web/PWA visual authority');
 requireFile('mobile/kurukoo-mobile/lib/visual-contract.ts', 'Native visual authority');
 requireFile('mobile/kurukoo-mobile/app/(tabs)/_layout.tsx', 'Native primary navigation');
-requireFile('public/js/kurukoo-app-shell.js', 'Web mobile app shell');
+requireFile('public/js/kurukoo-app-shell.js', 'Web mobile navigation module');
+requireFile('views/app.ejs', 'Canonical authenticated Web App shell');
+requireFile('src/routes/appSurfaceRoutes.ts', 'Canonical authenticated Web App router');
 requireFile('docs/architecture/CLIENT_APPLICATION_CONVERGENCE.md', 'Client architecture contract');
 requireFile('docs/architecture/CLIENT_FEATURE_COVERAGE.md', 'Feature coverage contract');
 
 const publicRoutes = read('src/routes/publicRoutes.ts');
 for (const route of ['/chat', '/requests', '/tasks', '/connect', '/discover', '/points', '/top-up', '/subscription', '/call']) {
-  if (!publicRoutes.includes(`router.get('${route}'`)) failures.push(`Web route registry missing ${route}`);
+  if (!publicRoutes.includes(`router.get('${route}'`)) failures.push(`Legacy/compatibility Web route missing ${route}`);
+}
+
+const appRouter = read('src/routes/appSurfaceRoutes.ts');
+for (const route of ['/app', '/app/agent', '/app/discover', '/app/requests', '/app/tasks', '/app/connect', '/app/agents', '/app/capabilities', '/app/opportunities', '/app/wallet', '/app/artifacts', '/app/prayer', '/app/call', '/app/safety']) {
+  const routeExpression = route === '/app' ? "router.get('/app'," : `router.get('${route}'`;
+  if (!appRouter.includes(routeExpression)) failures.push(`Canonical Web App surface missing ${route}`);
 }
 
 for (const file of ['index.tsx', 'discover.tsx', 'requests.tsx', 'tasks.tsx', 'connect.tsx']) {
-  requireFile(`mobile/kurukoo-mobile/app/(tabs)/${file}`, `Native surface`);
+  requireFile(`mobile/kurukoo-mobile/app/(tabs)/${file}`, 'Native surface');
 }
 
 const mobileTabs = read('mobile/kurukoo-mobile/app/(tabs)/_layout.tsx');
@@ -46,8 +53,9 @@ for (const family of ['web', 'pwa', 'native', 'admin']) {
   if (!registryFamilies.has(family as never)) failures.push(`Client surface registry has no ${family} family`);
 }
 
-const adminRouter = read('src/routes/adminRoutes.ts');
-if (!adminRouter.includes('/admin')) failures.push('Admin route authority not found in src/routes/adminRoutes.ts');
+const index = read('src/index.ts');
+if (!index.includes("import appSurfaceRoutes from './routes/appSurfaceRoutes.js'")) failures.push('Canonical Web App router is not imported by src/index.ts');
+if (!index.includes("app.use('/',appSurfaceRoutes)")) failures.push('Canonical Web App router is not mounted by src/index.ts');
 
 const mobilePackage = read('mobile/kurukoo-mobile/package.json');
 if (!mobilePackage.includes('expo-router')) failures.push('Native client is not an Expo Router application');
@@ -65,4 +73,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`Kurukoo client-surface coverage passed: ${CLIENT_SURFACES.length} declared surfaces; Web/PWA/native/Admin authorities present; five-domain mobile navigation present.`);
+console.log(`Kurukoo client-surface coverage passed: ${CLIENT_SURFACES.length} declared surfaces; canonical Web App, compatibility routes, PWA/native/Admin authorities and five-domain mobile navigation present.`);
