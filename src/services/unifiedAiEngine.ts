@@ -5,7 +5,7 @@ import { classifyWithFastText, type FastTextResult } from './fastTextService.js'
 import { withMemoryContext, logAiAudit } from './livingMemoryEngine.js';
 import { checkAiQuota, recordAiUsage, type QuotaKind } from './aiQuotaService.js';
 import { queryMistral } from './mistralService.js';
-import { hasConfiguredSecret } from './providerCapabilities.js';
+import { hasConfiguredSecret, resolveHostedAIProvider, type HostedAIProvider } from './providerCapabilities.js';
 
 export type AIProvider = 'auto' | 'gemini' | 'mistral' | 'smollm2' | 'groq' | 'local_intent';
 export interface ConversationalContextHint {
@@ -217,13 +217,7 @@ export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions =
     };
   }
 
-  const configuredHostedProvider = process.env.KURUKOO_AI_HOSTED_PROVIDER === 'mistral' && process.env.MISTRAL_API_KEY
-    ? 'mistral'
-    : process.env.KURUKOO_AI_HOSTED_PROVIDER === 'gemini' && (process.env.GEMINI_API_KEY || process.env.API_KEY)
-      ? 'gemini'
-      : process.env.GROQ_API_KEY
-        ? 'groq'
-        : 'none';
+  const configuredHostedProvider: HostedAIProvider = resolveHostedAIProvider();
   const route =
     preferred === 'gemini'
       ? 'gemini'
@@ -355,6 +349,26 @@ export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions =
     }
   }
 
+  if (route === 'gemini') {
+    try {
+      const result = cleanThinking(await queryGemini(prompt, { systemInstruction: systemPrompt }));
+      const response: AIResponse = {
+        provider: 'Gemini',
+        model: 'configured-gemini',
+        text: result.text,
+        thought: result.thought,
+        latencyMs: Date.now() - started,
+        cost: 'configured',
+        intent: classification?.intent,
+        confidence: classification?.confidence,
+        memoryTokens,
+      };
+      return afterSuccess(response);
+    } catch {
+      /* continue to the next explicitly available hosted boundary */
+    }
+  }
+
   if (route === 'mistral') {
     try {
       const result = cleanThinking(await queryMistral(prompt, { systemInstruction: systemPrompt }));
@@ -375,7 +389,7 @@ export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions =
     }
   }
 
-  if (process.env.GROQ_API_KEY) {
+  if (route === 'groq') {
     try {
       const result = cleanThinking(await queryGroq(prompt, { systemPrompt }));
       const response: AIResponse = {
@@ -435,15 +449,38 @@ export async function* streamUnifiedAI(
     return;
   }
 
-  const useMistral = options.provider === 'mistral'
-    || (options.provider !== 'smollm2' && !simple && process.env.KURUKOO_AI_HOSTED_PROVIDER === 'mistral' && hasConfiguredSecret(process.env.MISTRAL_API_KEY));
-  const route = useMistral
-    ? 'mistral'
-    : options.provider === 'groq' || (!simple && options.provider !== 'smollm2' && process.env.GROQ_API_KEY)
-      ? 'groq'
-      : 'smollm2';
+  const hostedProvider = resolveHostedAIProvider(options.provider);
+  const useGemini = hostedProvider === 'gemini' && options.provider !== 'smollm2' && (!simple || options.provider === 'gemini');
+  const useMistral = hostedProvider === 'mistral' && options.provider !== 'smollm2' && (!simple || options.provider === 'mistral');
+  const useGroq = hostedProvider === 'groq' && options.provider !== 'smollm2' && (!simple || options.provider === 'groq');
+  const route = options.provider === 'gemini' || useGemini
+    ? 'gemini'
+    : options.provider === 'mistral' || useMistral
+      ? 'mistral'
+      : options.provider === 'groq' || useGroq
+        ? 'groq'
+        : 'smollm2';
 
   const { systemPrompt } = await resolveSystemPrompt(prompt, options, classification, route);
+
+  if (route === 'gemini') {
+    try {
+      const result = cleanThinking(await queryGemini(prompt, { systemInstruction: systemPrompt }));
+      yield {
+        type: 'metadata',
+        provider: 'Gemini',
+        model: 'configured-gemini',
+        cost: 'configured',
+        intent: classification?.intent,
+        confidence: classification?.confidence,
+      };
+      yield { type: 'text', content: result.text };
+      await recordAiUsage(options.phone, kind, estimatePromptTokens(prompt, systemPrompt) + Math.ceil(result.text.length / 4));
+      return;
+    } catch {
+      /* fall through to the non-streaming router/fallback */
+    }
+  }
 
   if (route === 'mistral') {
     try {
@@ -457,16 +494,14 @@ export async function* streamUnifiedAI(
         confidence: classification?.confidence,
       };
       yield { type: 'text', content: result.text };
+      await recordAiUsage(options.phone, kind, estimatePromptTokens(prompt, systemPrompt) + Math.ceil(result.text.length / 4));
       return;
     } catch {
-      const result = fallback(classification);
-      yield { type: 'metadata', provider: result.provider, model: result.model, cost: result.cost, intent: result.intent, confidence: result.confidence };
-      yield { type: 'text', content: result.text };
-      return;
+      /* fall through to the non-streaming router/fallback */
     }
   }
 
-  if (options.provider === 'groq' || (!simple && options.provider !== 'smollm2' && process.env.GROQ_API_KEY)) {
+  if (route === 'groq') {
     try {
       yield {
         type: 'metadata',
