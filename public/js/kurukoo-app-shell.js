@@ -1,14 +1,14 @@
 (() => {
   const path = window.location.pathname || '/';
   const routes = [
-    { label: 'Agent', href: '/chat', icon: 'chat' },
-    { label: 'Discover', href: '/discover', icon: 'discover' },
-    { label: 'Requests', href: '/requests', icon: 'request' },
-    { label: 'Tasks', href: '/tasks', icon: 'work' },
-    { label: 'Connect', href: '/connect', icon: 'settings' },
+    { label: 'Agent', href: '/app/agent', icon: 'chat' },
+    { label: 'Discover', href: '/app/discover', icon: 'discover' },
+    { label: 'Requests', href: '/app/requests', icon: 'request' },
+    { label: 'Tasks', href: '/app/tasks', icon: 'work' },
+    { label: 'Connect', href: '/app/connect', icon: 'settings' },
   ];
 
-  const current = (href) => path === href || (href !== '/chat' && path.startsWith(`${href}/`));
+  const current = (href) => path === href || (href !== '/app/agent' && path.startsWith(`${href}/`));
 
   const createTabBar = () => {
     if (document.querySelector('.k-mobile-tabbar')) return;
@@ -26,6 +26,26 @@
     document.body.appendChild(nav);
   };
 
+  const wireExploreSearch = () => {
+    const input = document.getElementById('explore-search');
+    const button = document.getElementById('explore-search-btn');
+    if (!input || !button || input.dataset.kurukooSearchBound === 'true') return;
+    const filter = () => {
+      const query = String(input.value || '').toLowerCase().trim();
+      document.querySelectorAll('.explore-category-card').forEach((card) => {
+        const name = String(card.getAttribute('data-name') || '');
+        card.hidden = Boolean(query && !name.includes(query));
+      });
+    };
+    input.addEventListener('input', filter);
+    button.addEventListener('click', () => {
+      const query = String(input.value || '').trim();
+      if (query) window.location.assign(`/chat?prompt=${encodeURIComponent(query)}`);
+      else input.focus();
+    });
+    input.dataset.kurukooSearchBound = 'true';
+  };
+
   const loadFoundation = () => {
     if (document.querySelector('link[data-kurukoo-client-foundation]')) return;
     const link = document.createElement('link');
@@ -38,6 +58,7 @@
   const boot = () => {
     loadFoundation();
     if (document.body.classList.contains('workspace-page')) createTabBar();
+    wireExploreSearch();
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
