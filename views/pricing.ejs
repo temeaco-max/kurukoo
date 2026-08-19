@@ -2,50 +2,47 @@
 <%- include('_partials/nav') %>
 
 <main class="container page-container">
-    <section class="section-heading">
+    <section class="page-header-center">
         <span class="eyebrow">Access &amp; Economic Requests</span>
-        <h1>Start with a conversation</h1>
-        <p class="lead">Web Chat is the active entry point. Kurukoo records a request and presents only the next action supported by the relevant provider, identity, and payment boundary.</p>
+        <h1 class="page-title">Start with a conversation</h1>
+        <p class="page-desc">Web Chat is the active entry point. Kurukoo records a request and presents only the next action supported by the relevant provider, identity, and payment boundary.</p>
     </section>
 
     <section class="access-grid" aria-label="Current access and economic boundaries">
         <article class="access-card">
+            <span class="public-status public-status--ready">Available now</span>
             <h2>Web Chat access</h2>
             <p>There is no published paid subscription or self-service upgrade in this deployment. You can begin a request in Web Chat without choosing a plan.</p>
             <a href="/chat" class="btn btn-primary">Start in Web Chat</a>
         </article>
 
         <article class="access-card">
+            <span class="public-status public-status--setup">Product concept</span>
             <h2>Points</h2>
             <p>Points are an internal application concept. Where a request flow uses them, the applicable balance and action are shown in the product rather than promised on this public page.</p>
+            <a href="/points" class="text-link">View Points in your workspace →</a>
         </article>
 
         <article class="access-card">
+            <span class="public-status public-status--pending">Integration dependent</span>
             <h2>Payment &amp; escrow</h2>
             <p>Economic Requests can model a payment and escrow lifecycle, but a payment service provider is not configured for this deployment. No public page should imply that a charge, payout, or escrow release can be completed here.</p>
+            <a href="/help" class="text-link">Understand request states →</a>
         </article>
 
         <article class="access-card">
+            <span class="public-status public-status--pending">Request dependent</span>
             <h2>Providers &amp; businesses</h2>
             <p>Provider and business participation is assessed through the request and onboarding flows. Verification, matching, lead access, and catalogue availability are not granted by selecting a public plan.</p>
+            <a href="/partners" class="text-link">Explore participation →</a>
         </article>
     </section>
 
     <section class="access-note">
         <h2>How an eligible request proceeds</h2>
         <p>Describe the need in Web Chat. Kurukoo evaluates the request, preserves the conversation through any required sign-in step, and presents a provider, quote, payment, or fulfilment action only when the necessary integration and data are available.</p>
+        <div class="public-action-row" style="margin-top:18px"><a href="/chat" class="btn btn-primary">Start a request</a><a href="/how-it-works" class="btn btn-outline">See how it works</a></div>
     </section>
 </main>
-
-<style>
-.access-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin: 48px 0; }
-.access-card { padding: 28px; background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--border-radius); }
-.access-card h2 { margin-bottom: 12px; font-size: 1.25rem; }
-.access-card p { color: var(--gray-600); margin-bottom: 20px; }
-.access-note { padding: 36px; background: var(--gray-50); border-radius: var(--border-radius-lg); margin-bottom: 48px; }
-.access-note h2 { margin-bottom: 12px; }
-.access-note p { max-width: 760px; color: var(--gray-600); }
-@media (max-width: 720px) { .access-grid { grid-template-columns: 1fr; } .access-card, .access-note { padding: 24px; } }
-</style>
 
 <%- include('_partials/footer') %>
