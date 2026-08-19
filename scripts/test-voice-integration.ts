@@ -50,8 +50,8 @@ async function main() {
   assert.match(service, /authTokens\.create/);
   assert.match(service, /lockAdditionalFields/);
   assert.doesNotMatch(service, /GOOGLE_API_KEY/);
-  assert.match(index, /app\.use\('\/api\/voice', voiceRouter\)/);
-  assert.match(index, /app\.use\('\/api', artifactRoutes\)/);
+  assert.match(index, /app\.use\('\/api\/voice',\s*voiceRouter\)/);
+  assert.match(index, /app\.use\('\/api',\s*artifactRoutes\)/);
   console.log('Voice integration contract passed: ephemeral session boundary, shared conversation identity, restricted tools, canonical owner-scoped artifact persistence, bounded Voxtral transcription route, and no permanent credential response.');
 }
 
