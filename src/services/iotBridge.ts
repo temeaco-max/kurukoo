@@ -52,7 +52,7 @@ async function subscribeConfiguredStateTopics(): Promise<void> {
         const topics: string[] = rows.map((row: any[]) => {
             try { const metadata = JSON.parse(String(row[0] || '{}')); return String(metadata.stateTopic || '').trim(); }
             catch { return ''; }
-        }).filter((topic): topic is string => Boolean(topic)).slice(0, 200);
+        }).filter((topic: string): topic is string => Boolean(topic)).slice(0, 200);
         for (const topic of topics) {
             if (subscriptions.has(topic)) continue;
             await new Promise<void>((resolve, reject) => client!.subscribe(topic, { qos: 1 }, error => error ? reject(error) : resolve()));
