@@ -23,6 +23,8 @@ requireFile('src/routes/topicRoutes.ts', 'Topics route authority');
 requireFile('views/topics/index.ejs', 'Topics list frontend');
 requireFile('views/topics/detail.ejs', 'Topic detail frontend');
 requireFile('public/js/kurukoo-topics.js', 'Topics frontend behavior module');
+requireFile('public/admin/index.html', 'Admin control room shell');
+requireFile('public/js/kurukoo-admin.js', 'Admin control room behavior');
 requireFile('docs/architecture/CLIENT_APPLICATION_CONVERGENCE.md', 'Client architecture contract');
 requireFile('docs/architecture/CLIENT_FEATURE_COVERAGE.md', 'Feature coverage contract');
 
@@ -53,6 +55,11 @@ if (!app.includes("section === 'topics'")) failures.push('Authenticated Web App 
 if (!app.includes('href="/topics"')) failures.push('Authenticated Web App Topics surface does not connect to canonical Topics frontend');
 for (const route of ['/app/reminders', '/app/saved', '/app/cart']) if (!appRouter.includes(`['${route.replace('/app/', '')}'`)) failures.push(`Authenticated Web App surface map missing ${route}`);
 
+const admin = read('public/admin/index.html');
+for (const section of ['providers', 'compliance', 'settings']) if (!admin.includes(`/admin/?section=${section}`)) failures.push(`Admin navigation missing ${section} section`);
+const adminJs = read('public/js/kurukoo-admin.js');
+for (const section of ['providers', 'compliance', 'settings']) if (!adminJs.includes(`section === '${section}'`)) failures.push(`Admin implementation missing ${section} panel`);
+
 for (const file of ['index.tsx', 'discover.tsx', 'requests.tsx', 'tasks.tsx', 'connect.tsx']) requireFile(`mobile/kurukoo-mobile/app/(tabs)/${file}`, 'Native surface');
 
 const mobileTabs = read('mobile/kurukoo-mobile/app/(tabs)/_layout.tsx');
@@ -73,7 +80,7 @@ if (!mobilePackage.includes('expo-camera')) failures.push('Native client is miss
 if (!mobilePackage.includes('expo-notifications')) failures.push('Native client is missing push/notification capability');
 
 const surfaceIds = new Set(CLIENT_SURFACES.map(surface => surface.id));
-for (const required of ['web-marketing', 'web-how-it-works', 'web-explore', 'web-discover-public', 'web-topics-public', 'web-network', 'web-channels', 'web-resources', 'web-help', 'web-partners', 'web-advertise', 'web-chat', 'web-topics', 'web-requests', 'web-reminders', 'web-saved', 'web-cart', 'web-tasks', 'web-connect', 'web-agents', 'web-capabilities', 'web-opportunities', 'web-wallet', 'web-points', 'web-top-up', 'web-subscriptions', 'web-checkout', 'web-confirmations', 'web-memory', 'web-notifications', 'web-artifacts', 'web-prayer', 'web-call', 'web-safety', 'pwa-shell', 'native-ios', 'native-android', 'admin-control-room']) if (!surfaceIds.has(required)) failures.push(`Client surface registry missing ${required}`);
+for (const required of ['web-marketing', 'web-how-it-works', 'web-explore', 'web-discover-public', 'web-topics-public', 'web-network', 'web-channels', 'web-resources', 'web-help', 'web-partners', 'web-advertise', 'web-chat', 'web-topics', 'web-requests', 'web-reminders', 'web-saved', 'web-cart', 'web-tasks', 'web-connect', 'web-agents', 'web-capabilities', 'web-opportunities', 'web-wallet', 'web-points', 'web-top-up', 'web-subscriptions', 'web-checkout', 'web-confirmations', 'web-memory', 'web-notifications', 'web-artifacts', 'web-prayer', 'web-call', 'web-safety', 'pwa-shell', 'native-ios', 'native-android', 'admin-control-room', 'admin-providers', 'admin-compliance', 'admin-settings']) if (!surfaceIds.has(required)) failures.push(`Client surface registry missing ${required}`);
 
 if (failures.length) { console.error('Kurukoo client-surface coverage failed:'); failures.forEach(failure => console.error(`- ${failure}`)); process.exit(1); }
-console.log(`Kurukoo client-surface coverage passed: ${CLIENT_SURFACES.length} declared client surfaces and ${CLIENT_FEATURE_ENTRYPOINTS.length} historical capability entrypoints; public teaching, Resources, authenticated Web App, Topics/community, PWA/native/Admin authorities and five-domain mobile navigation present.`);
+console.log(`Kurukoo client-surface coverage passed: ${CLIENT_SURFACES.length} declared client surfaces and ${CLIENT_FEATURE_ENTRYPOINTS.length} historical capability entrypoints; public teaching, Resources, authenticated Web App, Topics/community, Admin operator sections, PWA/native authorities and five-domain mobile navigation present.`);
