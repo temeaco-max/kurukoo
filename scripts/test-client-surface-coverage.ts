@@ -22,9 +22,11 @@ requireFile('docs/architecture/CLIENT_APPLICATION_CONVERGENCE.md', 'Client archi
 requireFile('docs/architecture/CLIENT_FEATURE_COVERAGE.md', 'Feature coverage contract');
 
 const publicRoutes = read('src/routes/publicRoutes.ts');
-for (const route of ['/chat', '/requests', '/tasks', '/connect', '/discover', '/points', '/top-up', '/subscription', '/call']) {
-  if (!publicRoutes.includes(`router.get('${route}'`)) failures.push(`Legacy/compatibility Web route missing ${route}`);
-}
+const topicRoutes = read('src/routes/topicRoutes.ts');
+const publicRouteExpectations = ['/chat', '/requests', '/tasks', '/connect', '/discover', '/points', '/top-up', '/subscription', '/call', '/how-it-works', '/explore', '/network', '/channels', '/help', '/partners', '/advertise', '/about', '/contact', '/pricing', '/blog', '/careers', '/api-docs'];
+for (const route of publicRouteExpectations) if (!publicRoutes.includes(`router.get('${route}'`)) failures.push(`Public/compatibility Web route missing ${route}`);
+if (!topicRoutes.includes("router.get('/topics'")) failures.push('Topics public/API route missing');
+if (!topicRoutes.includes("router.get('/topics/:slug'")) failures.push('Topic detail route missing');
 
 const appRouter = read('src/routes/appSurfaceRoutes.ts');
 if (!appRouter.includes("router.get('/app', optionalAuthenticateUser")) failures.push('Canonical Web App root route missing');
@@ -32,12 +34,12 @@ if (!appRouter.includes('for (const section of surfaceMap.keys())')) failures.pu
 for (const route of CLIENT_SURFACES.filter(s => s.family === 'web' && s.route.startsWith('/app/')).map(s => s.route.replace('/app/', ''))) {
   if (!appRouter.includes(`['${route}'`)) failures.push(`Canonical Web App surface ${route} missing from surface map`);
 }
+
 const app = read('views/app.ejs');
 if (!app.includes('href="/app/topics"')) failures.push('Authenticated Web App navigation is missing Topics');
 if (!app.includes("section === 'topics'")) failures.push('Authenticated Web App has no Topics representation');
 if (!app.includes('href="/topics"')) failures.push('Authenticated Web App Topics surface does not connect to canonical Topics frontend');
-const topicIds = new Set(CLIENT_SURFACES.map(surface => surface.id));
-if (!topicIds.has('web-topics')) failures.push('Client surface registry missing web-topics');
+for (const route of ['/app/reminders', '/app/saved', '/app/cart']) if (!appRouter.includes(`['${route.replace('/app/', '')}'`)) failures.push(`Authenticated Web App surface map missing ${route}`);
 
 for (const file of ['index.tsx', 'discover.tsx', 'requests.tsx', 'tasks.tsx', 'connect.tsx']) requireFile(`mobile/kurukoo-mobile/app/(tabs)/${file}`, 'Native surface');
 
@@ -58,7 +60,7 @@ if (!mobilePackage.includes('expo-camera')) failures.push('Native client is miss
 if (!mobilePackage.includes('expo-notifications')) failures.push('Native client is missing push/notification capability');
 
 const surfaceIds = new Set(CLIENT_SURFACES.map(surface => surface.id));
-for (const required of ['web-marketing', 'web-chat', 'web-discover', 'web-topics', 'web-requests', 'web-tasks', 'web-connect', 'web-agents', 'web-capabilities', 'web-opportunities', 'web-wallet', 'web-artifacts', 'web-prayer', 'web-call', 'pwa-shell', 'native-ios', 'native-android', 'admin-control-room']) if (!surfaceIds.has(required)) failures.push(`Client surface registry missing ${required}`);
+for (const required of ['web-marketing', 'web-how-it-works', 'web-explore', 'web-discover-public', 'web-topics-public', 'web-network', 'web-channels', 'web-resources', 'web-help', 'web-partners', 'web-advertise', 'web-chat', 'web-topics', 'web-requests', 'web-reminders', 'web-saved', 'web-cart', 'web-tasks', 'web-connect', 'web-agents', 'web-capabilities', 'web-opportunities', 'web-wallet', 'web-points', 'web-top-up', 'web-subscriptions', 'web-checkout', 'web-confirmations', 'web-memory', 'web-notifications', 'web-artifacts', 'web-prayer', 'web-call', 'web-safety', 'pwa-shell', 'native-ios', 'native-android', 'admin-control-room']) if (!surfaceIds.has(required)) failures.push(`Client surface registry missing ${required}`);
 
 if (failures.length) { console.error('Kurukoo client-surface coverage failed:'); failures.forEach(failure => console.error(`- ${failure}`)); process.exit(1); }
-console.log(`Kurukoo client-surface coverage passed: ${CLIENT_SURFACES.length} declared surfaces; canonical Web App routing, Topics/community frontend, compatibility routes, PWA/native/Admin authorities and five-domain mobile navigation present.`);
+console.log(`Kurukoo client-surface coverage passed: ${CLIENT_SURFACES.length} declared surfaces; public teaching, authenticated Web App, Topics/community, compatibility routes, PWA/native/Admin authorities and five-domain mobile navigation present.`);
