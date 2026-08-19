@@ -3,20 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#F7F2EC">
     <title>You are Offline — Kurukoo</title>
     <link rel="stylesheet" href="/css/site.css?v=1.2.0">
-    <link rel="stylesheet" href="/css/offline.css?v=1.0.0">
+    <link rel="stylesheet" href="/css/offline.css?v=1.1.0">
+    <link rel="stylesheet" href="/css/kurukoo-screen-set-convergence.css?v=2">
+    <link rel="stylesheet" href="/css/kurukoo-final-screen-refinement.css?v=1">
 </head>
-<body class="offline-page">
-    <div class="offline-card">
-        <div class="offline-icon">📡</div>
-        <h1>You're Offline</h1>
-        <p>Don't worry—Kurukoo still works for the basics. Connect to the internet to use all features.</p>
+<body class="offline-page k-public-page k-route-offline k-screen-set-platform" aria-live="polite">
+    <main class="offline-card" aria-labelledby="offline-title">
+        <div class="offline-context"><span class="offline-icon" aria-hidden="true">⌁</span><span class="k-state-chip k-state-chip--setup">Offline</span></div>
+        <p class="offline-eyebrow">Platform state</p>
+        <h1 id="offline-title">Your connection is unavailable.</h1>
+        <p>Kurukoo has kept this page available locally. Reconnect to resume live conversation, discovery, notifications and provider actions.</p>
+        <div class="offline-boundary" role="status"><strong>What still works</strong><span>Previously loaded context and this recovery screen.</span><strong>What is paused</strong><span>Live requests, external integrations and network-dependent actions.</span></div>
         <div class="actions">
-            <button class="btn-primary" id="retry-button" type="button">Try Reconnecting</button>
-            <a href="/web" class="btn-secondary">Open Kurukoo</a>
+            <button class="btn-primary" id="retry-button" type="button">Try reconnecting</button>
+            <a href="/chat" class="btn-secondary">Open Kurukoo Chat</a>
         </div>
-    </div>
+    </main>
     <script src="/js/offline.js?v=1.0.0" defer></script>
 </body>
 </html>
