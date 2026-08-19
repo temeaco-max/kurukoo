@@ -12,6 +12,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      KURUKOO_TEST_COMMAND_TIMEOUT_MS: 600000
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,6 +21,13 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
+      - name: Cache local Hugging Face model artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: ${{ runner.os }}-kurukoo-smollm2-360m-${{ hashFiles('package-lock.json', 'scripts/test-whatsapp-linked-session-chat.ts', 'scripts/test-smollm2-local.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-kurukoo-smollm2-360m-
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run lint
       - run: npm run build
