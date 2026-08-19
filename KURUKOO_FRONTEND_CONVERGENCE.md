@@ -1,51 +1,125 @@
-# Kurukoo Frontend Convergence — Conversation Workspace
+# Kurukoo Frontend Convergence — One OS, public web, authenticated Web App, PWA, native clients
 
-This document records the frontend interpretation of the current Blueprint and product-system map.
+This document is the frontend interpretation of the current Blueprint, Product System Map, Client Application Convergence contract and client-surface registry. It is an implementation contract, not a historical roadmap.
 
-## Conversation is the product surface
+## 1. Product/client structure
 
-The Web Chat is the primary authenticated workspace. The sidebar is supporting navigation, not a competing dashboard. Users can start with a request, reminder, safety check-in, sourcing task, discovery request or other intent and remain in the same conversation.
+Kurukoo is one OS with multiple clients:
 
-## Workspace navigation
+```text
+KURUKOO OS
+├── Web App
+│   ├── public marketing/frontend website
+│   └── authenticated Web App
+├── PWA
+├── iOS
+├── Android
+└── Admin Control Room
+```
 
-The workspace exposes:
+The Web App and PWA share the browser implementation and canonical API/state boundary. iOS/Android use native presentation and device capabilities, but all clients consume the same canonical identity, Memory Profile, conversation, capabilities, agent runtime, Economic Requests, artifacts, payments, notifications and external-integration readiness.
 
-- Conversation history
-- Reminders
-- Safety & check-ins
-- Saved context
-- Points
-- Channels
-- Settings
-- Help
-- Logout
+The Admin Control Room is an operational client, not a second consumer application.
 
-Reminders and safety links seed natural-language chat requests rather than opening parallel mini-apps.
+## 2. Two consumer visual systems
 
-## Identity
+There are intentionally two consumer visual compositions:
 
-Authentication remains phone/OTP-first. The workspace retains JWT as the signed identity mechanism and uses the HttpOnly session cookie in the browser. Logout ends the session without deleting the Memory Profile or conversation history.
+- **Web visual system:** public marketing + authenticated Web App at desktop/tablet/mobile browser sizes.
+- **Mobile visual system:** PWA + iOS + Android.
 
-## Channels
+They share brand, semantic tokens, statuses, evidence language and product semantics. They may differ in navigation, geometry and interaction mechanics. A mobile screen set must never be injected into a Web page, and Web styling must not silently become the native mobile visual system.
 
-Web Chat is the only active channel in the current deployment. WhatsApp, USSD and SMS are represented as doors into the same Kurukoo relationship but are explicitly marked not connected until their adapters are configured. The public Channels page follows the same rule.
+## 3. Public Web layer
 
-## Iconography
+The marketing/public layer teaches and exposes Kurukoo without pretending that externally gated functionality is live. Core public surfaces include:
 
-`public/icons/kurukoo-icons.svg` is the shared semantic icon layer for the workspace. The Kurukoo favicon/brand asset is used for the assistant and workspace identity. Emoji are not used as the primary PWA/public-site icon system.
+`/` · `/how-it-works` · `/explore` · `/discover` · `/topics` · `/network` · `/channels` · `/resources` · `/blog` · `/partners` · `/advertise` · `/pricing` · `/about` · `/contact` · `/careers` · `/api-docs` · legal/support surfaces.
 
-## Advertising placements
+Public content should explain capabilities and hand operational work to Chat/Discover/Topics/other canonical surfaces.
 
-The current workspace includes a reserved, hidden sponsored context slot (`pwa-context`). Future approved ads can be injected there by the existing ad system. Ads must remain clearly labelled, frequency-capped and excluded from safety, payment and dispute critical paths.
+## 4. Authenticated Web App
 
-## Ordering and fulfilment cards
+After authentication the browser enters `/app` and uses the canonical authenticated application shell. The primary domains are:
 
-Product/fulfilment UI must remain request-linked. Existing storefront cards are the place for offers, requirements, delivery selection and execution evidence. A future catalogue/cart surface may only be introduced when backed by structured inventory and quote semantics; the frontend must not simulate stock, confirmed pricing or payment.
+**Agent · Discover · Requests · Tasks · Connect**
 
-## Global navigation
+Secondary representations include:
 
-Public navigation now uses the Blueprint hierarchy: How it works, What you can ask, Discover, Network, Channels, Resources and About. `Start chatting` is the universal primary CTA. Legacy channel-first marketing language such as `Chat on WhatsApp`, `*7000#`, `Start a Free Trial` and `Ask Anything` must not be reintroduced into shared public navigation/footer surfaces.
+Agents · Capability Portfolio · Topics · Reminders · Saved · Cart · Opportunities · Wallet · Points · Top Up · Subscriptions · Checkout · Confirmations · Memory · Notifications · Artifacts · Prayer Companion · Kurukoo Call · Safety.
 
-## Truthfulness
+These are representations of canonical OS state, not parallel engines. Chat remains the universal conversational control surface for actions, interruptions, recovery and continuation.
 
-The frontend must distinguish configured capabilities from future integration boundaries. A channel card, provider card, quote, execution reference or availability statement is not itself evidence that an external system is live. The UI should use conditional wording until the corresponding connector/evidence boundary is active.
+## 5. Topics
+
+Topics is a durable community-content primitive, not a forum clone or fulfilment engine.
+
+Public Topics:
+- browse/filter public context;
+- create Topic after authentication;
+- moderation boundary;
+- replies and reports;
+- Chat handoff.
+
+Authenticated Web App has a dedicated Topics representation that links back to `/topics`, while Discover may surface Topic-derived community context. Topic content never becomes provider/price/payment/fulfilment truth by itself.
+
+## 6. Resources
+
+Resources is the educational library and is separate from transactional Help.
+
+`/resources` and `/resources/:slug` are backed by the canonical `contentManager` store using `type='resource'`. The frontend API is `/api/resources` and `/api/resources/:slug`. Resources are linked into Chat so a guide can become a conversational continuation.
+
+Do not create a separate resource database or resource application.
+
+## 7. Historical capability breadth
+
+Historical product features are preserved as explicit entrypoints into existing surfaces through `src/services/clientFeatureEntryPoints.ts`. The inventory includes 30 known entrypoints such as food, groceries, errands, logistics, mobility, repairs, solar, automotive, health, Money Circle, safety/security, gigs, classifieds, advertising, contributors, sports, community/circles, price checks, government services, exam results, airtime/data, universal remote, events, local sellers and prayer.
+
+These are intentionally **not** 30 separate apps. Their entrypoint surface is Explore, Discover, Topics, Tasks, Connect, Wallet/Safety or direct Chat as appropriate.
+
+## 8. Conversation-first rule
+
+Chat remains the universal control surface for:
+
+- requests and Economic Requests;
+- reminders/routines;
+- memory changes;
+- safety/check-ins;
+- provider/capability participation;
+- agent goals;
+- prayer;
+- voice;
+- corrections, interruption, pause/resume and recovery;
+- external integration actions.
+
+A page may represent state and provide entry/continuation actions, but must not create a second request/agent/identity architecture.
+
+## 9. Visual system rules
+
+Shared web/PWA authority begins with `public/css/kurukoo-client-foundation.css` and the canonical icon/token/component layers. Feature/page CSS may exist only where it owns a real composition that cannot be represented by the shared authority.
+
+Mobile/native visual authority is the mobile design/visual contract under `mobile/kurukoo-mobile`.
+
+No new CSS file should be created merely to solve a page-local problem that belongs in shared tokens/components.
+
+## 10. Truthfulness
+
+UI representation is not external evidence. A provider card, Topics post, quote placeholder, payment control, channel card or Call page must not claim live availability, payment, fulfilment, external delivery or provider success until the relevant canonical service and external evidence boundary establishes it.
+
+Feature flags control activation; they do not excuse incomplete repository implementation.
+
+## 11. Future-agent rule
+
+When adding a feature, update all of the following as applicable:
+
+1. canonical skill/capability/agent owner;
+2. conversation path or Chat handoff;
+3. public teaching surface if users need to discover it;
+4. authenticated Web/PWA representation;
+5. native representation when device/mobile relevant;
+6. Admin/operator representation when operationally required;
+7. externalIntegrationReadiness/feature-flag state if externally gated;
+8. client surface/feature registry;
+9. deterministic contract test.
+
+Historical features may be retired only when explicitly classified as deprecated/removed in current product truth. Otherwise, they must be reconciled into their canonical existing surface rather than silently disappearing.
