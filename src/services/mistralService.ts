@@ -1,8 +1,9 @@
 import { hasConfiguredSecret, unknownLimits, type ProviderCapabilityStatus, type ProviderReadiness } from './providerCapabilities.js';
 import { buildConversationTurnContract, buildConversationalSystemDirective } from './conversationTurnContractService.js';
+import { getFeatureFlag } from './featureFlags.js';
 
 export class MistralProviderError extends Error {
-  readonly code: 'MISTRAL_NOT_CONFIGURED' | 'MISTRAL_REQUEST_FAILED' | 'MISTRAL_EMPTY_RESPONSE';
+  readonly code: 'MISTRAL_NOT_CONFIGURED' | 'MISTRAL_DISABLED' | 'MISTRAL_REQUEST_FAILED' | 'MISTRAL_EMPTY_RESPONSE';
 
   constructor(code: MistralProviderError['code'], message: string, options?: { cause?: unknown }) {
     super(message, options);
@@ -50,9 +51,11 @@ function rememberConnection(key: string, reachable: boolean, note: string): void
 function connectionVerified(key: string): boolean {
   return Boolean(lastConnection && lastConnection.keyMarker === keyMarker(key) && lastConnection.reachable);
 }
+function mistralEnabled(): boolean { return getFeatureFlag(process.env.KURUKOO_DEFAULT_COUNTRY || 'ng', 'hosted_mistral'); }
 function apiKey(): string {
   const value = String(process.env.MISTRAL_API_KEY || '').trim();
   if (!hasConfiguredSecret(value)) throw new MistralProviderError('MISTRAL_NOT_CONFIGURED', 'Mistral is not configured for this deployment.');
+  if (!mistralEnabled()) throw new MistralProviderError('MISTRAL_DISABLED', 'Mistral external execution is disabled by feature flag.');
   return value;
 }
 
@@ -62,7 +65,8 @@ export function getMistralModel(): string {
 
 export function getMistralStatus(): ProviderReadiness {
   const configured = hasConfiguredSecret(process.env.MISTRAL_API_KEY);
-  const verified = configured && connectionVerified(String(process.env.MISTRAL_API_KEY || '').trim());
+  const enabled = mistralEnabled();
+  const verified = configured && enabled && connectionVerified(String(process.env.MISTRAL_API_KEY || '').trim());
   const text: ProviderCapabilityStatus = {
     configured,
     available: verified,
@@ -74,6 +78,8 @@ export function getMistralStatus(): ProviderReadiness {
       : { status: 'unavailable', note: 'MISTRAL_API_KEY is not configured.' },
     note: !configured
       ? 'Optional hosted text generation is not configured.'
+      : !enabled
+        ? 'Mistral credentials are present, but external execution is disabled by feature flag.'
       : verified
         ? 'Mistral models endpoint was independently verified in this process; routing policy must still select it.'
         : 'Mistral credentials are present, but provider availability is unverified until the protected connection test succeeds.',
@@ -130,6 +136,7 @@ export async function testMistralConnection(): Promise<{ configured: boolean; re
     rememberConnection('', false, 'Mistral API key is not configured.');
     return { configured: false, reachable: false, status: 0, note: 'Mistral API key is not configured.' };
   }
+  if (!mistralEnabled()) return { configured: true, reachable: false, status: 0, note: 'Mistral external execution is disabled by feature flag.' };
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), Number(process.env.MISTRAL_TIMEOUT_MS || 15_000));
   try {

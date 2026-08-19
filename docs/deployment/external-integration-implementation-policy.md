@@ -1,0 +1,82 @@
+# External Integration Implementation and Activation Policy
+
+**Status:** Locked repository policy.
+
+**Owner:** Kurukoo canonical service boundaries.
+
+**Purpose:** Separate repository implementation completeness from external activation evidence for every planned integration.
+
+## Non-negotiable rule
+
+Kurukoo must implement the canonical adapter or interface, state lifecycle, user and operator readiness UX, authorization boundary, unavailable/error/recovery behaviour, feature flag, deterministic contract, observability projection, configuration documentation and activation checklist **before** an external provider is available. The absence of a credential, device, webhook, provider approval, OAuth client, GPU or account is never a reason to replace an integration with a fake success state or a misleading connect button.
+
+A provider credential is configuration evidence only. It is not proof of a delivered message, authorized file operation, completed payment, verified provider, connected device, trained model, fulfilled dispatch or production activation.
+
+## Required readiness dimensions
+
+Every integration in `externalIntegrationReadiness` reports the same dimensions.
+
+| Dimension | Meaning |
+|---|---|
+| `IMPLEMENTED` | A canonical repository adapter or explicit non-implementation state exists. |
+| `CONTRACT_TESTED` | Deterministic repository tests cover the lifecycle boundary. |
+| `MOCK_VERIFIED` | Local deterministic fixtures or mocks verify expected request, response and unavailable behaviour. |
+| `CREDENTIAL_READY` | Required configuration is present without exposing values. This is not live evidence. |
+| `LIVE_VERIFIED` | Independently observed provider evidence has been recorded through the canonical boundary. |
+| `FEATURE_FLAG_STATE` | The effective feature state from the canonical flag registry. |
+| `PRODUCTION_ACTIVE` | The integration has approved live evidence and is explicitly active. |
+
+Until independent evidence is introduced, `LIVE_VERIFIED=false` and `PRODUCTION_ACTIVE=false` by design. No implementation may infer either state from environment variables, a UI click, a mock result or a provider name.
+
+## Canonical projection and UI
+
+`src/services/externalIntegrationReadiness.ts` is the read-only readiness projection. It composes existing adapters, pilot readiness and the feature registry; it does not create a new execution architecture or call an external provider. The public `/channels` page uses the projection for all source, channel, AI, payment, infrastructure and operation cards. The authenticated operator endpoint is `GET /api/admin/external-integrations`.
+
+The UI must render the current user state, all readiness dimensions, canonical boundary, recovery guidance and activation checklist. Unregistered source adapters are shown as **Not implemented**, with no fake connect action. Implemented adapters with missing secrets are shown as **Credentials required**. Configured but unverified adapters are shown as **Live verification required**. A provider is not shown as production-active until evidence is independently recorded.
+
+## Current integration inventory
+
+| Category | Integrations | Current repository policy |
+|---|---|---|
+| Owner sources | Google Drive, Google Sheets, Notion, Outlook, OneDrive | Drive has a canonical owner-scoped adapter and managed fallback. The others are explicitly unimplemented, not falsely connectable. |
+| Channels | WhatsApp, Telegram, SMS, USSD, email, FCM, voice | Canonical channel/voice boundaries, unavailable states and deterministic contracts exist. External delivery remains disabled until evidence. |
+| Payments | Stripe, mobile money | Canonical payment and failure boundaries exist. Sandbox is never settlement proof. |
+| AI and training | MCP, Gemini, Mistral, Groq, OpenRouter, Hugging Face | Provider-neutral routing and diagnostics remain canonical. Hugging Face Jobs is separate from hosted inference availability. |
+| Infrastructure | WebRTC, MQTT/IoT, voice | Foundations remain fail-closed until relay/broker/provider and real-device evidence exist. |
+| Operations | External dispatch, provider verification, maps/geolocation | Canonical request, evidence and privacy boundaries exist; operations activate only through approved provider evidence and consent. |
+
+## Activation lifecycle
+
+1. Implement and contract-test the canonical adapter while the integration is disabled.
+2. Render its truthful unavailable, error, retry and recovery states in the relevant user and operator surfaces.
+3. Configure credentials through deployment secrets only; do not commit values or expose them to browser state, logs or telemetry.
+4. Enable the explicit feature flag only after the configuration review.
+5. Run a controlled provider smoke test using a test account, test device or approved non-billing preflight where applicable.
+6. Verify the inbound webhook, callback, device receipt, artifact identifier, signed payment event, broker acknowledgement or other independent evidence through the canonical boundary.
+7. Verify idempotency, retry, cancellation/revocation and user-visible recovery.
+8. Record live evidence through the applicable canonical service, then approve production activation.
+
+## Per-domain evidence requirements
+
+| Integration family | Minimum live evidence before production activation |
+|---|---|
+| Drive and object storage | Owner authorization, provider file ID, open, reference-only deletion, separately confirmed external deletion and revocation. |
+| Messaging and email | Signed callback, controlled send/receive, duplicate/replay handling, delivery-failure handling and logout/revocation where relevant. |
+| FCM and voice | Authenticated device/session, provider acceptance, physical-device receipt or real audio result, timeout/disconnect and text fallback. |
+| Payments and KYC | Test and production configuration, signed webhook, reconciliation, retry/idempotency, refund/dispute process and operator escalation. |
+| Hosted AI | Actual selected provider/model diagnostics, success/failure classification, quota/timeout handling, retention review and canonical fallback evidence. |
+| Hugging Face Jobs | Scoped token, cost approval, remote GPU preflight, job lifecycle, immutable artifact, benchmark against base model and registry review. |
+| WebRTC and MQTT | Approved relay/broker, owner/device identity, consent, authorization, real device lifecycle, reconnect/revocation and operational monitoring. |
+| Dispatch and verification | Explicit connector authorization, attributable provider evidence, cancellation/escalation and no claimed completion without evidence. |
+
+## Configuration rules
+
+All external integration flags default to `false` in `.env.example`. Credentials and feature flags are separate. The required configuration variables and prerequisites remain documented in `.env.example`, `external-adapter-readiness.md`, the canonical feature registry and each adapter’s activation checklist.
+
+## Contract coverage
+
+`npm run test:external-integration-readiness` verifies all 25 registered planned integrations, all required readiness dimensions, unavailable states, credential-ready-but-unverified states, feature-flag state, the public Channels projection and the authenticated admin audit boundary. It runs in the all-domain suite and CI.
+
+## Live verification
+
+When a real credential becomes available, do not change a readiness boolean manually. Enable the relevant flag, perform the controlled smoke test, observe independent provider evidence, and use the existing adapter and canonical evidence path to record the result. Until that happens, the integration must remain disabled or live-verification-required and the UI must say so.

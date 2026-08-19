@@ -13,6 +13,9 @@ const resetProviders = () => {
   delete process.env.GEMINI_API_KEY;
   delete process.env.API_KEY;
   delete process.env.GROQ_API_KEY;
+  delete process.env.FF_TEST_HOSTED_GEMINI;
+  delete process.env.FF_TEST_HOSTED_MISTRAL;
+  delete process.env.FF_TEST_HOSTED_GROQ;
 };
 const json = (status: number, value: unknown) => new Response(JSON.stringify(value), { status, headers: { 'content-type': 'application/json' } });
 
@@ -20,19 +23,24 @@ const { queryUnifiedAI, resolveHostedProviderCandidates, getLastAiRoutingDiagnos
 
 resetProviders();
 process.env.GEMINI_API_KEY = 'configured-gemini-key';
+process.env.FF_TEST_HOSTED_GEMINI = 'true';
 assert.deepEqual(resolveHostedProviderCandidates('auto'), ['gemini'], 'Configured Gemini must be eligible when it is the only usable hosted provider.');
 
 resetProviders();
 process.env.MISTRAL_API_KEY = 'configured-mistral-key';
+process.env.FF_TEST_HOSTED_MISTRAL = 'true';
 assert.deepEqual(resolveHostedProviderCandidates('auto'), ['mistral'], 'Configured Mistral must be eligible when it is the only usable hosted provider.');
 
 resetProviders();
 process.env.GROQ_API_KEY = 'configured-groq-key';
+process.env.FF_TEST_HOSTED_GROQ = 'true';
 assert.deepEqual(resolveHostedProviderCandidates('auto'), ['groq'], 'Configured Groq must be eligible when it is the only usable hosted provider.');
 
 resetProviders();
 process.env.MISTRAL_API_KEY = 'configured-mistral-key';
 process.env.GROQ_API_KEY = 'configured-groq-key';
+process.env.FF_TEST_HOSTED_MISTRAL = 'true';
+process.env.FF_TEST_HOSTED_GROQ = 'true';
 globalThis.fetch = async (url: string | URL | Request) => {
   const target = String(url);
   if (target.includes('api.mistral.ai')) return json(503, { error: 'simulated Mistral outage' });

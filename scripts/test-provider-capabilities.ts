@@ -4,6 +4,7 @@ process.env.MISTRAL_API_KEY = '';
 process.env.GEMINI_API_KEY = '';
 process.env.API_KEY = '';
 process.env.KURUKOO_VOICE_ENABLED = 'false';
+process.env.FF_TEST_HOSTED_MISTRAL = 'false';
 
 const { getMistralStatus, queryMistral, transcribeMistralAudio, testMistralConnection } = await import('../src/services/mistralService.js');
 const { getVoiceStatus } = await import('../src/services/voiceService.js');
@@ -22,6 +23,7 @@ await assert.rejects(() => transcribeMistralAudio({ data: Buffer.from('audio'), 
 
 const previousFetch = globalThis.fetch;
 process.env.MISTRAL_API_KEY = 'test-mistral-key';
+process.env.FF_TEST_HOSTED_MISTRAL = 'true';
 process.env.KURUKOO_MISTRAL_TRANSCRIPTION_ENABLED = 'true';
 globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
   assert.equal(init?.method, 'POST');

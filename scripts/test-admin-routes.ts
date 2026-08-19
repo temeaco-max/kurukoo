@@ -15,6 +15,7 @@ const paths = [
   '/api/admin/content',
   '/api/admin/stats',
   '/api/admin/pilot-readiness',
+  '/api/admin/external-integrations',
   '/api/admin/ads',
   '/api/admin/operator/state',
   '/api/admin/operator/chat',
@@ -57,6 +58,8 @@ async function main() {
   assert.match(src, /autonomous: process\.env\.KURUKOO_AGENT_AUTONOMOUS/, 'admin stats must expose the effective autonomy gate');
   assert.match(src, /teacherEnabled: process\.env\.KURUKOO_COORDINATOR_TEACHER_ENABLED/, 'admin stats must expose teacher-mode state');
   assert.match(src, /recentLearningArtifacts/, 'admin stats must expose candidate learning artifacts');
+  assert.match(src, /router\.get\('\/external-integrations',\s*authenticateAdmin/, 'external integration readiness must remain on the protected admin boundary');
+  assert.match(src, /getExternalIntegrationReadiness/, 'admin integration readiness must reuse the canonical projection');
   assert.match(src, /authenticateAdmin/, 'adminRoutes must use authenticateAdmin');
   assert.match(src, /operatorSession: true/, 'operator Chat must issue an explicit operator session claim');
   assert.match(src, /testActor: true/, 'Test As must issue an explicit actor claim');

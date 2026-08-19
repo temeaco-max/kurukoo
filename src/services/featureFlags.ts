@@ -31,12 +31,18 @@ export const FEATURE_REGISTRY: Record<string, FeatureDefinition> = {
     whatsapp: { description: 'WhatsApp channel', lifecycle: 'pilot', defaultEnabled: false, markets: ['ng', 'gb', 'ca'], requires: ['WHATSAPP_TOKEN', 'WHATSAPP_PHONE_NUMBER_ID', 'WHATSAPP_APP_SECRET'] },
     telegram: { description: 'Telegram channel', lifecycle: 'pilot', defaultEnabled: false, requires: ['TELEGRAM_BOT_TOKEN'] },
     sms: { description: 'SMS channel', lifecycle: 'pilot', defaultEnabled: false, requires: ['SMS_PROVIDER'] },
+    email: { description: 'Signed outbound and inbound email transport', lifecycle: 'pilot', defaultEnabled: false, requires: ['EMAIL_TRANSPORT'], providerPrerequisites: ['configured sender, provider credentials, signed inbound callback and delivery evidence'], risk: 'medium', killSwitch: true, adminVisible: true },
     voice: { description: 'Voice interaction', lifecycle: 'pilot', defaultEnabled: false },
+    google_drive: { description: 'Owner-scoped Google Drive artifact persistence', lifecycle: 'pilot', defaultEnabled: false, requires: ['GOOGLE_DRIVE_OAUTH'], providerPrerequisites: ['registered OAuth client, exact callback URI, owner authorization and drive.file scope evidence'], risk: 'medium', killSwitch: true, adminVisible: true },
     fcm: { description: 'External push delivery', lifecycle: 'pilot', defaultEnabled: false, requires: ['FIREBASE_ADMIN_CREDENTIALS'] },
     agent_runtime: { description: 'Bounded agent runtime', lifecycle: 'production-capable', defaultEnabled: false },
     autonomous_low_risk: { description: 'Low-risk autonomous execution within explicit user permissions', lifecycle: 'pilot', defaultEnabled: false, requires: ['agent_runtime'] },
     stripe_payments: { description: 'Stripe payment collection', lifecycle: 'pilot', defaultEnabled: false, requires: ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET'] },
     mobile_money: { description: 'Mobile-money payment adapter', lifecycle: 'pilot', defaultEnabled: false },
+    hosted_gemini: { description: 'Gemini hosted AI execution', lifecycle: 'pilot', defaultEnabled: false, requires: ['GEMINI_API_KEY'], providerPrerequisites: ['approved model, quota, privacy and retention review'], risk: 'medium', killSwitch: true, adminVisible: true },
+    hosted_mistral: { description: 'Mistral hosted AI execution', lifecycle: 'pilot', defaultEnabled: false, requires: ['MISTRAL_API_KEY'], providerPrerequisites: ['approved model, quota, privacy and retention review'], risk: 'medium', killSwitch: true, adminVisible: true },
+    hosted_groq: { description: 'Groq hosted AI execution', lifecycle: 'pilot', defaultEnabled: false, requires: ['GROQ_API_KEY'], providerPrerequisites: ['approved model, quota, privacy and retention review'], risk: 'medium', killSwitch: true, adminVisible: true },
+    huggingface_jobs: { description: 'Hugging Face remote training Jobs', lifecycle: 'pilot', defaultEnabled: false, requires: ['HUGGINGFACE_TOKEN'], providerPrerequisites: ['scoped token, approved GPU budget, benchmark and registry review'], risk: 'high', killSwitch: true, adminVisible: true },
     topics: { description: 'Public/shared Topic surface', lifecycle: 'production-capable', defaultEnabled: true },
     advertising: { description: 'Public advertising placements and campaign management', lifecycle: 'production-capable', defaultEnabled: true },
     contributor_tasks: { description: 'Contributor task and evidence workflow', lifecycle: 'production-capable', defaultEnabled: true },
@@ -76,6 +82,16 @@ function hasRequirement(requirement: string): boolean {
     if (requirement === 'SMS_PROVIDER') {
         return Boolean(process.env.SMS_PROVIDER || process.env.SMS_API_KEY);
     }
+    if (requirement === 'GOOGLE_DRIVE_OAUTH') {
+        return Boolean(process.env.KURUKOO_GOOGLE_DRIVE_CLIENT_ID && process.env.KURUKOO_GOOGLE_DRIVE_CLIENT_SECRET && process.env.KURUKOO_GOOGLE_DRIVE_REDIRECT_URI && (process.env.KURUKOO_STORAGE_ENCRYPTION_KEY || process.env.MEMORY_ENCRYPTION_KEY || process.env.JWT_SECRET));
+    }
+    if (requirement === 'EMAIL_TRANSPORT') {
+        return Boolean((process.env.RESEND_API_KEY && process.env.EMAIL_FROM) || process.env.EMAIL_WEBHOOK_URL);
+    }
+    if (requirement === 'GEMINI_API_KEY') return Boolean(process.env.GEMINI_API_KEY || process.env.API_KEY);
+    if (requirement === 'MISTRAL_API_KEY') return Boolean(process.env.MISTRAL_API_KEY);
+    if (requirement === 'GROQ_API_KEY') return Boolean(process.env.GROQ_API_KEY);
+    if (requirement === 'HUGGINGFACE_TOKEN') return Boolean(process.env.HF_TOKEN || process.env.HUGGINGFACE_API_KEY || process.env.HF_API_KEY);
     if (requirement === 'NUMBER_MASKING_PROVIDER') {
         return Boolean(process.env.NUMBER_MASKING_PROVIDER || process.env.TWILIO_ACCOUNT_SID || process.env.AFTERA_PROVIDER_KEY);
     }

@@ -32,6 +32,7 @@ import { issueUserToken, upsertProfile } from './authRoutes.js';
 import { getConfiguredTestName, getConfiguredTestPhone, getDevelopmentTestAuthStatus } from '../services/devTestAuthService.js';
 import { getProfile, updateProfile } from '../services/memoryProfile.js';
 import { getPilotReadiness } from '../services/pilotReadiness.js';
+import { getExternalIntegrationReadiness } from '../services/externalIntegrationReadiness.js';
 import { createAdCampaign, getAdCampaigns, updateAdCampaign } from '../services/adManager.js';
 import { testMistralConnection } from '../services/mistralService.js';
 import { getNotificationQueueStats } from '../services/pushNotifications.js';
@@ -550,6 +551,11 @@ router.get('/countries', authenticateAdmin, (_req: AuthRequest, res) => {
 router.get('/pilot-readiness', authenticateAdmin, async (_req: AuthRequest, res) => {
   try { res.json(getPilotReadiness()); }
   catch { res.status(500).json({ error: 'Unable to read pilot readiness' }); }
+});
+
+router.get('/external-integrations', authenticateAdmin, (_req: AuthRequest, res) => {
+  try { res.json({ success: true, integrations: getExternalIntegrationReadiness() }); }
+  catch { res.status(500).json({ success: false, error: 'Unable to read external integration readiness.' }); }
 });
 
 router.post('/providers/mistral/test', authenticateAdmin, async (_req: AuthRequest, res) => {

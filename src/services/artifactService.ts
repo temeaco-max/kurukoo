@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { getDb, saveDb } from '../database.js';
+import { getFeatureFlagStatus } from './featureFlags.js';
 
 export type ArtifactKind = 'voice' | 'image' | 'video' | 'document' | 'other';
 export type ArtifactStorageProvider = 'google_drive' | 'kurukoo_managed';
@@ -95,7 +96,9 @@ function driveConfig() {
   const clientId = String(process.env.KURUKOO_GOOGLE_DRIVE_CLIENT_ID || '').trim();
   const clientSecret = String(process.env.KURUKOO_GOOGLE_DRIVE_CLIENT_SECRET || '').trim();
   const redirectUri = String(process.env.KURUKOO_GOOGLE_DRIVE_REDIRECT_URI || '').trim();
-  return { clientId, clientSecret, redirectUri, configured: Boolean(clientId && clientSecret && redirectUri) };
+  const configured = Boolean(clientId && clientSecret && redirectUri);
+  const feature = getFeatureFlagStatus(process.env.KURUKOO_DEFAULT_COUNTRY || 'ng', 'google_drive');
+  return { clientId, clientSecret, redirectUri, configured, enabled: feature.enabled, available: configured && feature.enabled, featureFlagState: feature.status };
 }
 function stateHash(value: string): string { return crypto.createHash('sha256').update(value).digest('hex'); }
 function safeErrorCode(error: unknown): string { return String((error as { code?: string })?.code || 'ARTIFACT_STORAGE_FAILED').slice(0, 80); }
@@ -118,6 +121,7 @@ async function refreshDriveConnection(connection: DriveConnection): Promise<Driv
   if (connection.expiresAt > Date.now() + 60_000) return connection;
   const config = driveConfig();
   if (!config.configured) throw Object.assign(new Error('Google Drive connection needs deployment OAuth configuration.'), { code: 'DRIVE_OAUTH_NOT_CONFIGURED' });
+  if (!config.enabled) throw Object.assign(new Error('Google Drive persistence is disabled by feature flag.'), { code: 'DRIVE_FEATURE_DISABLED' });
   const response = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ client_id: config.clientId, client_secret: config.clientSecret, refresh_token: connection.refreshToken, grant_type: 'refresh_token' }) });
   if (!response.ok) {
     const db = await ensureSchema(); db.run('UPDATE artifact_storage_connections SET status=?, updated_at=CURRENT_TIMESTAMP WHERE phone=? AND provider=?', ['reauthorization_required', connection.phone, 'google_drive']); saveDb();
@@ -156,15 +160,21 @@ async function uploadManaged(id: string, data: Buffer): Promise<string> {
   return target;
 }
 
-export async function getDriveConnectionStatus(phone: string): Promise<{ configured: boolean; connected: boolean; provider: 'google_drive'; scope: string; reason?: string }> {
+export async function getDriveConnectionStatus(phone: string): Promise<{ configured: boolean; enabled: boolean; connected: boolean; provider: 'google_drive'; scope: string; featureFlagState: string; reason?: string }> {
   const config = driveConfig();
-  const connection = config.configured ? await readConnection(phone) : null;
-  return { configured: config.configured, connected: Boolean(connection), provider: 'google_drive', scope: DRIVE_SCOPE, ...(config.configured ? (connection ? {} : { reason: 'No active Google Drive connection exists for this owner.' }) : { reason: 'Google Drive OAuth deployment credentials are not configured.' }) };
+  const connection = config.available ? await readConnection(phone) : null;
+  const reason = !config.configured
+    ? 'Google Drive OAuth deployment credentials are not configured.'
+    : !config.enabled
+      ? 'Google Drive persistence is configured but disabled by feature flag; managed owner-scoped storage remains active.'
+      : connection ? undefined : 'No active Google Drive connection exists for this owner.';
+  return { configured: config.configured, enabled: config.enabled, connected: Boolean(connection), provider: 'google_drive', scope: DRIVE_SCOPE, featureFlagState: config.featureFlagState, ...(reason ? { reason } : {}) };
 }
 
 export async function startGoogleDriveConnection(phone: string): Promise<{ authorizationUrl: string; expiresAt: string }> {
   const config = driveConfig();
   if (!config.configured) throw Object.assign(new Error('Google Drive connection is unavailable until its OAuth client, secret, and exact callback URI are configured.'), { code: 'DRIVE_OAUTH_NOT_CONFIGURED' });
+  if (!config.enabled) throw Object.assign(new Error('Google Drive connection is disabled until its feature flag is explicitly enabled.'), { code: 'DRIVE_FEATURE_DISABLED' });
   const state = crypto.randomBytes(32).toString('base64url'); const expiresAt = Date.now() + 10 * 60_000;
   const db = await ensureSchema(); db.run('DELETE FROM artifact_oauth_states WHERE expires_at < ?', [Date.now()]); db.run('INSERT INTO artifact_oauth_states (state_hash, phone, provider, expires_at) VALUES (?, ?, ?, ?)', [stateHash(state), phone, 'google_drive', expiresAt]); saveDb();
   const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
@@ -173,7 +183,7 @@ export async function startGoogleDriveConnection(phone: string): Promise<{ autho
 }
 
 export async function completeGoogleDriveConnection(phone: string, state: string, code: string): Promise<{ connected: true; provider: 'google_drive'; scope: string }> {
-  const config = driveConfig(); if (!config.configured) throw Object.assign(new Error('Google Drive OAuth is not configured.'), { code: 'DRIVE_OAUTH_NOT_CONFIGURED' });
+  const config = driveConfig(); if (!config.configured) throw Object.assign(new Error('Google Drive OAuth is not configured.'), { code: 'DRIVE_OAUTH_NOT_CONFIGURED' }); if (!config.enabled) throw Object.assign(new Error('Google Drive OAuth is disabled by feature flag.'), { code: 'DRIVE_FEATURE_DISABLED' });
   const db = await ensureSchema(); const hash = stateHash(state); const stmt = db.prepare('SELECT phone, expires_at FROM artifact_oauth_states WHERE state_hash=? AND provider=? LIMIT 1'); stmt.bind([hash, 'google_drive']); const row = stmt.step() ? stmt.getAsObject() as Record<string, unknown> : null; stmt.free();
   if (!row || String(row.phone) !== phone || Number(row.expires_at || 0) < Date.now()) throw Object.assign(new Error('Google Drive authorization state is invalid or expired.'), { code: 'DRIVE_OAUTH_STATE_INVALID' });
   db.run('DELETE FROM artifact_oauth_states WHERE state_hash=?', [hash]); saveDb();
@@ -202,7 +212,7 @@ export async function createArtifact(input: { phone: string; filename: string; m
   let storageProvider: ArtifactStorageProvider = 'kurukoo_managed'; let durability: ArtifactDurability = 'managed_fallback'; let externalFileId: string | undefined; let externalUrl: string | undefined; let managedPath: string | undefined;
   try { const drive = await uploadToDrive(phone, filename, mimeType, data); storageProvider = 'google_drive'; durability = 'external_verified'; externalFileId = drive.id; externalUrl = drive.url || `https://drive.google.com/open?id=${encodeURIComponent(drive.id)}`; }
   catch (error) {
-    const code = safeErrorCode(error); if (code !== 'DRIVE_NOT_CONNECTED' && code !== 'DRIVE_OAUTH_NOT_CONFIGURED' && code !== 'DRIVE_REAUTHORIZATION_REQUIRED') throw error;
+    const code = safeErrorCode(error); if (code !== 'DRIVE_NOT_CONNECTED' && code !== 'DRIVE_OAUTH_NOT_CONFIGURED' && code !== 'DRIVE_FEATURE_DISABLED' && code !== 'DRIVE_REAUTHORIZATION_REQUIRED') throw error;
     managedPath = await uploadManaged(id, data);
   }
   const record: ArtifactRecord = { id, phone, kind, filename, mimeType, bytes: data.length, storageProvider, durability, externalFileId, externalUrl, managedPath, transcript: input.transcript?.slice(0, 20_000), transcriptStatus: input.transcriptStatus || 'not_requested', createdAt: nowIso() };

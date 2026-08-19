@@ -421,6 +421,8 @@ def stage_remote_input(config: BackendConfig, evidence: dict[str, Any]) -> pathl
 def launch_remote(config: BackendConfig, provider: JobsProvider) -> dict[str, Any]:
     if config.backend != "huggingface":
         raise BackendError("launch_remote requires KURUKOO_TRAINING_BACKEND=huggingface")
+    if os.environ.get("FF_HUGGINGFACE_JOBS", "false").lower() != "true":
+        raise BackendError("remote launch requires FF_HUGGINGFACE_JOBS=true")
     if os.environ.get("KURUKOO_REMOTE_TRAINING_LAUNCH_APPROVED", "false").lower() != "true":
         raise BackendError("remote launch requires KURUKOO_REMOTE_TRAINING_LAUNCH_APPROVED=true")
     if config.max_estimated_cost_usd is None:

@@ -177,9 +177,11 @@ def test_launch_requires_explicit_cost_bounded_approval() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         config = make_config(pathlib.Path(tmp))
         provider = FakeProvider()
-        with isolated_env({"KURUKOO_REMOTE_TRAINING_LAUNCH_APPROVED": "false", "KURUKOO_HF_MAX_ESTIMATED_COST_USD": "3"}):
+        with isolated_env({"FF_HUGGINGFACE_JOBS": "false", "KURUKOO_REMOTE_TRAINING_LAUNCH_APPROVED": "true", "KURUKOO_HF_MAX_ESTIMATED_COST_USD": "3"}):
+            assert_blocked(lambda: backend.launch_remote(config, provider), "feature-disabled remote launch")
+        with isolated_env({"FF_HUGGINGFACE_JOBS": "true", "KURUKOO_REMOTE_TRAINING_LAUNCH_APPROVED": "false", "KURUKOO_HF_MAX_ESTIMATED_COST_USD": "3"}):
             assert_blocked(lambda: backend.launch_remote(config, provider), "unapproved remote launch")
-        with isolated_env({"KURUKOO_REMOTE_TRAINING_LAUNCH_APPROVED": "true", "KURUKOO_HF_MAX_ESTIMATED_COST_USD": "3"}):
+        with isolated_env({"FF_HUGGINGFACE_JOBS": "true", "KURUKOO_REMOTE_TRAINING_LAUNCH_APPROVED": "true", "KURUKOO_HF_MAX_ESTIMATED_COST_USD": "3"}):
             record = backend.launch_remote(config, provider)
         assert record["status"] == "submitted"
         assert record["job"]["jobId"] == "job-1"
@@ -192,7 +194,7 @@ def test_monitor_cancel_and_verified_artifact_retrieval() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         config = make_config(pathlib.Path(tmp))
         provider = FakeProvider()
-        with isolated_env({"KURUKOO_REMOTE_TRAINING_LAUNCH_APPROVED": "true", "KURUKOO_HF_MAX_ESTIMATED_COST_USD": "3"}):
+        with isolated_env({"FF_HUGGINGFACE_JOBS": "true", "KURUKOO_REMOTE_TRAINING_LAUNCH_APPROVED": "true", "KURUKOO_HF_MAX_ESTIMATED_COST_USD": "3"}):
             backend.launch_remote(config, provider)
         provider.stage = "RUNNING"
         running = backend.monitor_job(config, provider, "job-1")
@@ -202,7 +204,7 @@ def test_monitor_cancel_and_verified_artifact_retrieval() -> None:
         assert provider.cancelled is True
 
         provider.stage = "SCHEDULING"
-        with isolated_env({"KURUKOO_REMOTE_TRAINING_LAUNCH_APPROVED": "true", "KURUKOO_HF_MAX_ESTIMATED_COST_USD": "3"}):
+        with isolated_env({"FF_HUGGINGFACE_JOBS": "true", "KURUKOO_REMOTE_TRAINING_LAUNCH_APPROVED": "true", "KURUKOO_HF_MAX_ESTIMATED_COST_USD": "3"}):
             backend.launch_remote(config, provider)
         provider.stage = "COMPLETED"
         backend.monitor_job(config, provider, "job-1")
@@ -229,7 +231,7 @@ def test_feasibility_only_manifest_is_never_retrieved_as_candidate() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         config = make_config(pathlib.Path(tmp))
         provider = FakeProvider()
-        with isolated_env({"KURUKOO_REMOTE_TRAINING_LAUNCH_APPROVED": "true", "KURUKOO_HF_MAX_ESTIMATED_COST_USD": "3"}):
+        with isolated_env({"FF_HUGGINGFACE_JOBS": "true", "KURUKOO_REMOTE_TRAINING_LAUNCH_APPROVED": "true", "KURUKOO_HF_MAX_ESTIMATED_COST_USD": "3"}):
             backend.launch_remote(config, provider)
         provider.stage = "COMPLETED"
         backend.monitor_job(config, provider, "job-1")

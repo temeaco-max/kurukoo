@@ -6,6 +6,7 @@ import { withMemoryContext, logAiAudit } from './livingMemoryEngine.js';
 import { checkAiQuota, recordAiUsage, type QuotaKind } from './aiQuotaService.js';
 import { queryMistral } from './mistralService.js';
 import { hasConfiguredSecret } from './providerCapabilities.js';
+import { getFeatureFlag } from './featureFlags.js';
 
 export type AIProvider = 'auto' | 'gemini' | 'mistral' | 'smollm2' | 'groq' | 'local_intent';
 export interface ConversationalContextHint {
@@ -53,10 +54,11 @@ type HostedProvider = Extract<AIProvider, 'mistral' | 'gemini' | 'groq'>;
 const HOSTED_PROVIDER_ORDER: HostedProvider[] = ['mistral', 'gemini', 'groq'];
 
 function configuredHostedProviders(): HostedProvider[] {
+  const country = process.env.KURUKOO_DEFAULT_COUNTRY || 'ng';
   const available: Record<HostedProvider, boolean> = {
-    mistral: hasConfiguredSecret(process.env.MISTRAL_API_KEY),
-    gemini: hasConfiguredSecret(process.env.GEMINI_API_KEY) || hasConfiguredSecret(process.env.API_KEY),
-    groq: hasConfiguredSecret(process.env.GROQ_API_KEY),
+    mistral: hasConfiguredSecret(process.env.MISTRAL_API_KEY) && getFeatureFlag(country, 'hosted_mistral'),
+    gemini: (hasConfiguredSecret(process.env.GEMINI_API_KEY) || hasConfiguredSecret(process.env.API_KEY)) && getFeatureFlag(country, 'hosted_gemini'),
+    groq: hasConfiguredSecret(process.env.GROQ_API_KEY) && getFeatureFlag(country, 'hosted_groq'),
   };
   return HOSTED_PROVIDER_ORDER.filter(provider => available[provider]);
 }

@@ -151,9 +151,9 @@
     const state = qs('[data-artifact-storage-state]'); const copy = qs('[data-artifact-storage-copy]'); const connect = qs('[data-artifact-connect]'); const note = qs('[data-artifact-action-note]');
     try {
       const payload = await api('/api/artifacts'); const artifacts = Array.isArray(payload.artifacts) ? payload.artifacts : []; const storage = payload.storage || {};
-      if (state) state.textContent = storage.connected ? 'Drive connected' : storage.configured ? 'Managed fallback' : 'Drive setup pending';
-      if (copy) copy.textContent = storage.connected ? 'New eligible artifacts are saved to your connected Google Drive and recorded here.' : storage.configured ? 'Google Drive is available to connect. Until you connect it, saved artifacts use Kurukoo managed fallback storage.' : 'Google Drive is not configured for this deployment. Saved artifacts use Kurukoo managed fallback storage when available.';
-      if (connect) { connect.hidden = Boolean(storage.connected); connect.disabled = !storage.configured; connect.textContent = storage.configured ? 'Connect Google Drive' : 'Drive not configured'; }
+      if (state) state.textContent = storage.connected ? 'Drive connected' : storage.configured && storage.enabled ? 'Managed fallback' : storage.configured ? 'Drive disabled' : 'Drive setup pending';
+      if (copy) copy.textContent = storage.connected ? 'New eligible artifacts are saved to your connected Google Drive and recorded here.' : storage.configured && storage.enabled ? 'Google Drive is available to connect. Until you connect it, saved artifacts use Kurukoo managed fallback storage.' : storage.configured ? 'Google Drive credentials are present, but the external storage feature is disabled. Saved artifacts use Kurukoo managed fallback storage.' : 'Google Drive is not configured for this deployment. Saved artifacts use Kurukoo managed fallback storage when available.';
+      if (connect) { connect.hidden = Boolean(storage.connected); connect.disabled = !storage.configured || !storage.enabled; connect.textContent = storage.configured && storage.enabled ? 'Connect Google Drive' : storage.configured ? 'Drive disabled' : 'Drive not configured'; }
       if (note) note.textContent = storage.connected ? 'External files are deleted only when you explicitly request it.' : storage.reason || '';
       clear(list);
       artifacts.forEach((artifact) => {

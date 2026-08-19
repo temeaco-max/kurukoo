@@ -10,6 +10,7 @@ process.env.KURUKOO_MANAGED_ARTIFACT_STORAGE_DIR = root;
 process.env.KURUKOO_GOOGLE_DRIVE_CLIENT_ID = 'test-client-id';
 process.env.KURUKOO_GOOGLE_DRIVE_CLIENT_SECRET = 'test-client-secret';
 process.env.KURUKOO_GOOGLE_DRIVE_REDIRECT_URI = 'https://example.test/api/artifacts/drive/callback';
+process.env.FF_TEST_GOOGLE_DRIVE = 'true';
 
 const originalFetch = globalThis.fetch;
 const { completeGoogleDriveConnection, createArtifact, deleteArtifactReference, getArtifact, getDriveConnectionStatus, listArtifacts, readManagedArtifact, revokeGoogleDriveConnection, setArtifactTranscript, startGoogleDriveConnection } = await import('../src/services/artifactService.js');
@@ -30,6 +31,7 @@ try {
   const phoneA = '+2348030001111'; const phoneB = '+2348030002222';
   const initial = await getDriveConnectionStatus(phoneA);
   assert.equal(initial.configured, true);
+  assert.equal(initial.enabled, true);
   assert.equal(initial.connected, false);
 
   const authorization = await startGoogleDriveConnection(phoneA);

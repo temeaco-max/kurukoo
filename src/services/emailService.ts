@@ -1,5 +1,7 @@
 import { getDb, saveDb } from '../database.js';
 
+import { getFeatureFlag } from './featureFlags.js';
+
 interface EmailResult {
     ok: boolean;
     provider: 'resend' | 'smtp-webhook' | 'disabled';
@@ -53,6 +55,7 @@ export async function sendEmail(
     if (!recipient || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) throw new Error('Invalid email recipient');
     if (!subject.trim() || !body.trim()) throw new Error('Email subject and body are required');
 
+    const emailEnabled = getFeatureFlag(process.env.KURUKOO_DEFAULT_COUNTRY || 'ng', 'email');
     const resendKey = required('RESEND_API_KEY');
     const from = required('EMAIL_FROM');
     const webhook = required('EMAIL_WEBHOOK_URL');
@@ -61,7 +64,9 @@ export async function sendEmail(
     let result: EmailResult;
 
     try {
-        if (resendKey && from) {
+        if (!emailEnabled) {
+            result = { ok: false, provider: 'disabled', error: 'Email delivery is disabled by feature flag' };
+        } else if (resendKey && from) {
             const payload: Record<string, unknown> = {
                 from,
                 to: [recipient],

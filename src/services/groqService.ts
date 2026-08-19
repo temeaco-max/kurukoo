@@ -1,3 +1,5 @@
+import { getFeatureFlag } from './featureFlags.js';
+
 let dailyCalls = 0;
 let lastResetDate = new Date().toDateString();
 let activeRequests = 0;
@@ -34,10 +36,12 @@ async function acquireSlot(): Promise<void> {
 }
 
 function releaseSlot() { activeRequests = Math.max(0, activeRequests - 1); }
+function groqEnabled(): boolean { return getFeatureFlag(process.env.KURUKOO_DEFAULT_COUNTRY || 'ng', 'hosted_groq'); }
 
 export async function queryGroq(prompt: string, options?: GroqOptions): Promise<string> {
     resetCounter();
     if (dailyCalls >= 1000) throw new Error('Groq daily rate limit reached');
+    if (!groqEnabled()) throw new Error('Groq external execution is disabled by feature flag');
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) throw new Error('GROQ_API_KEY is not configured');
     await acquireSlot();
@@ -65,6 +69,7 @@ export async function queryGroq(prompt: string, options?: GroqOptions): Promise<
 export async function* streamGroq(prompt: string, options?: GroqOptions): AsyncGenerator<string> {
     resetCounter();
     if (dailyCalls >= 1000) throw new Error('Groq daily rate limit reached');
+    if (!groqEnabled()) throw new Error('Groq external execution is disabled by feature flag');
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) throw new Error('GROQ_API_KEY is not configured');
     await acquireSlot();
