@@ -92,6 +92,31 @@ jobs:
       - name: Verify FastText model
         run: npm run fasttext:test
 
+  mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: mobile/kurukoo-mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: mobile/kurukoo-mobile/pnpm-lock.yaml
+      - name: Install mobile dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck mobile client
+        run: pnpm check
+      - name: Test mobile client
+        run: pnpm test
+      - name: Build mobile server bundle
+        run: pnpm build
+
   secret-scan:
     runs-on: ubuntu-latest
     timeout-minutes: 5
