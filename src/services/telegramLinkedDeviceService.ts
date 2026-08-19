@@ -39,6 +39,7 @@ function apiCredentials(): { apiId: number; apiHash: string } | null {
 function authDirectory(): string {
   const directory = path.resolve(process.env.KURUKOO_TELEGRAM_LINKED_DEVICE_AUTH_DIR || '.data/telegram-linked-device');
   fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+  try { fs.chmodSync(directory, 0o700); } catch {}
   return directory;
 }
 
@@ -47,9 +48,32 @@ function authFile(): string {
   return path.join(authDirectory(), `${ownerHash}.json`);
 }
 
+function encryptionKey(): Buffer {
+  const source = String(process.env.KURUKOO_STORAGE_ENCRYPTION_KEY || process.env.MEMORY_ENCRYPTION_KEY || process.env.JWT_SECRET || '').trim();
+  if (source.length < 32) throw new Error('Telegram linked-device session encryption requires KURUKOO_STORAGE_ENCRYPTION_KEY, MEMORY_ENCRYPTION_KEY, or a 32+ character JWT_SECRET.');
+  return crypto.createHash('sha256').update(source).digest();
+}
+
+function encryptSession(session: string): string {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', encryptionKey(), iv);
+  const ciphertext = Buffer.concat([cipher.update(session, 'utf8'), cipher.final()]);
+  return `v1.${iv.toString('base64url')}.${cipher.getAuthTag().toString('base64url')}.${ciphertext.toString('base64url')}`;
+}
+
+function decryptSession(value: string): string {
+  const [version, iv, tag, ciphertext] = String(value || '').split('.');
+  if (version !== 'v1' || !iv || !tag || !ciphertext) throw new Error('Stored Telegram linked-device session is invalid.');
+  const decipher = crypto.createDecipheriv('aes-256-gcm', encryptionKey(), Buffer.from(iv, 'base64url'));
+  decipher.setAuthTag(Buffer.from(tag, 'base64url'));
+  return Buffer.concat([decipher.update(Buffer.from(ciphertext, 'base64url')), decipher.final()]).toString('utf8');
+}
+
 function readSession(): string {
   try {
-    const parsed = JSON.parse(fs.readFileSync(authFile(), 'utf8')) as { session?: string };
+    const parsed = JSON.parse(fs.readFileSync(authFile(), 'utf8')) as { session?: string; encryptedSession?: string };
+    const stored = String(parsed.encryptedSession || '').trim();
+    if (stored) return decryptSession(stored);
     return String(parsed.session || '');
   } catch {
     return '';
@@ -59,11 +83,12 @@ function readSession(): string {
 function saveSession(client: any): void {
   const session = String(client?.session?.save?.() || '');
   if (!session) return;
-  fs.writeFileSync(authFile(), JSON.stringify({ session, savedAt: new Date().toISOString() }), { mode: 0o600 });
+  fs.writeFileSync(authFile(), JSON.stringify({ encryptedSession: encryptSession(session), version: 1, savedAt: new Date().toISOString() }), { mode: 0o600 });
+  try { fs.chmodSync(authFile(), 0o600); } catch {}
 }
 
 export function isTelegramLinkedDeviceConfigured(): boolean {
-  return enabled() && Boolean(ownerPhone()) && Boolean(apiCredentials());
+  return enabled() && Boolean(ownerPhone()) && Boolean(apiCredentials()) && Boolean(String(process.env.KURUKOO_STORAGE_ENCRYPTION_KEY || process.env.MEMORY_ENCRYPTION_KEY || process.env.JWT_SECRET || '').trim());
 }
 
 export function isTelegramLinkedDeviceOwner(phone: string): boolean {
@@ -149,7 +174,7 @@ async function completeLogin(client: any, configuredOwner: string): Promise<void
 }
 
 export async function startTelegramLinkedDevice(): Promise<void> {
-  if (!isTelegramLinkedDeviceConfigured()) throw new Error('Telegram linked-device connector is not activated for this deployment.');
+  if (!isTelegramLinkedDeviceConfigured()) throw new Error('Telegram linked-device connector is not activated for this deployment; owner, API credentials, and session-encryption secret are required.');
   if (runtime && ['connecting', 'scan_with_telegram', 'connected'].includes(runtime.state)) return;
   const credentials = apiCredentials();
   if (!credentials) throw new Error('Telegram API ID and API hash are required.');
