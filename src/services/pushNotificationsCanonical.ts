@@ -18,11 +18,16 @@ export async function markNotificationRead(notificationId: number, phone: string
   return markLegacyNotificationRead(phone, notificationId);
 }
 
-async function sendSingleFcmMessage(phone: string, title: string, body: string, link?: string) {
+async function sendSingleFcmMessage(phone: string, title: string, body: string, link?: string): Promise<{ accepted: boolean; providerReference?: string; failureReason?: string }> {
   const profile = await getProfile(phone, 'pushNotifications.fcmCanonical').catch(() => null) as any;
   const token = profile?.fcm_token ? String(profile.fcm_token).trim() : '';
   if (!token) return { accepted: false, failureReason: 'device_token_missing' };
-  return sendFirebaseFcmMessage({ token, title, body, link });
+  const result = await sendFirebaseFcmMessage({ token, title, body, link });
+  return {
+    accepted: Boolean((result as any).accepted),
+    providerReference: (result as any).providerReference,
+    failureReason: (result as any).failureReason,
+  };
 }
 
 async function invalidateStoredFcmToken(phone: string): Promise<void> {
