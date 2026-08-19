@@ -10,10 +10,7 @@ body.k-public-page .request-boundaries-grid{display:grid;grid-template-columns:r
 body.k-public-page .how-process-summary{margin:0 0 42px}
 body.k-public-page .how-it-works-grid{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:52px}
 body.k-public-page .request-boundaries-grid{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:20px}
-body.k-public-page .step-card{
-  position:relative;padding:22px;border:1px solid var(--k-border);border-radius:var(--k-radius);background:var(--k-surface);
-  box-shadow:0 2px 10px rgba(36,34,31,.025)
-}
+body.k-public-page .step-card{position:relative;padding:22px;border:1px solid var(--k-border);border-radius:var(--k-radius);background:var(--k-surface);box-shadow:0 2px 10px rgba(36,34,31,.025)}
 body.k-public-page .step-card:hover{border-color:#D8C9BE;box-shadow:var(--k-shadow)}
 body.k-public-page .step-number{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:9px;background:#FBF2ED;color:var(--k-accent);font:600 12px/1 'Space Grotesk',sans-serif;margin-bottom:18px}
 body.k-public-page .step-card h3{font-size:18px;margin-bottom:8px}
@@ -84,5 +81,36 @@ body.k-public-page .about-help-set__help-list{border:1px solid var(--k-border);b
 body.k-public-page .about-help-set__help-list a{padding:16px;border-bottom:1px solid #F0EAE4}
 body.k-public-page .about-help-set__support{border:1px solid var(--k-border);border-radius:var(--k-radius);padding:16px;margin-top:14px}
 
-@media(max-width:900px){body.k-public-page .how-process-summary,body.k-public-page .network-role-pathways__grid{grid-template-columns:1fr 1fr}body.k-public-page .request-boundaries-grid,body.k-public-page .network-grid{grid-template-columns:repeat(2,minmax(0,1fr))}body.k-public-page .public-split-hero,body.k-public-page .public-narrative-card,body.k-public-page .public-help-grid{grid-template-columns:1fr}body.k-public-page .about-help-set{grid-template-columns:1fr}.about-help-set__about{padding-right:0;padding-bottom:30px;border-right:0;border-bottom:1px solid var(--k-border)}}
-@media(max-width:620px){body.k-public-page .how-process-summary,body.k-public-page .how-it-works-grid,body.k-public-page .request-boundaries-grid,body.k-public-page .network-role-pathways__grid,body.k-public-page .network-grid{grid-template-columns:1fr}body.k-public-page .step-card,body.k-public-page .network-card{padding:18px}body.k-public-page .cta-box,body.k-public-page .vision-box{padding:24px}body.k-public-page .public-composition{padding:34px 0 60px}body.k-public-page .public-help-hero{align-items:flex-start;flex-direction:column}body.k-public-page .public-help-grid{padding-bottom:58px}body.k-public-page .public-help-contact .btn{width:100%}}
+/* Commerce, contact, legal and developer secondary surfaces */
+body.k-public-page .access-grid,body.k-public-page .contact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:42px 0}
+body.k-public-page .access-card,body.k-public-page .contact-card{padding:26px;border:1px solid var(--k-border);border-radius:var(--k-radius);background:#fff;box-shadow:0 2px 10px rgba(36,34,31,.025)}
+body.k-public-page .access-card h2,body.k-public-page .contact-card h2{font-size:20px;margin:0 0 9px}
+body.k-public-page .access-card p,body.k-public-page .contact-card p{color:var(--k-muted);font-size:14px;line-height:1.65;margin-bottom:18px}
+body.k-public-page .access-note{padding:26px;border:1px solid var(--k-border);border-left:3px solid var(--k-accent);border-radius:var(--k-radius);background:#FBF8F4;margin:0 0 70px}
+body.k-public-page .access-note h2{font-size:21px;margin:0 0 8px}
+body.k-public-page .access-note p{max-width:800px;color:var(--k-muted);font-size:14px;line-height:1.65;margin:0}
+body.k-public-page .contact-hero{padding:62px 0 30px}
+body.k-public-page .contact-title{font:600 clamp(36px,5vw,56px)/1.02 'Space Grotesk',sans-serif;letter-spacing:-.045em;margin:0 0 12px}
+body.k-public-page .contact-subtitle{max-width:680px;margin:0 auto;color:var(--k-muted);font-size:16px;line-height:1.65}
+body.k-public-page .contact-card--muted{background:#FBF8F4}
+body.k-public-page .public-legal-shell{display:grid;grid-template-columns:210px minmax(0,760px);gap:44px;padding:52px 0 90px;align-items:start}
+body.k-public-page .public-legal-nav{position:sticky;top:90px;border:1px solid var(--k-border);border-radius:var(--k-radius);background:#fff;padding:10px}
+body.k-public-page .public-legal-nav a{display:block;padding:10px 11px;border-radius:8px;color:var(--k-muted);font-size:13px;font-weight:600}
+body.k-public-page .public-legal-nav a:hover,body.k-public-page .public-legal-nav a[aria-current='page']{background:#FBF2ED;color:var(--k-accent)}
+body.k-public-page .public-legal-content{min-width:0}
+body.k-public-page .public-legal-content h1{font-size:clamp(34px,4vw,48px);line-height:1.04;letter-spacing:-.045em;margin:0 0 14px}
+body.k-public-page .public-legal-content h2{font-size:24px;margin:34px 0 9px}
+body.k-public-page .public-legal-content p,body.k-public-page .public-legal-content li{color:var(--k-muted);font-size:14px;line-height:1.75}
+body.k-public-page .public-legal-content a{color:var(--k-accent);text-underline-offset:3px}
+body.k-public-page .public-doc-shell{max-width:1000px;margin:0 auto;padding:54px 0 90px}
+body.k-public-page .public-doc-shell>header{padding-bottom:26px;border-bottom:1px solid var(--k-border);margin-bottom:28px}
+body.k-public-page .public-doc-shell h1{font-size:clamp(34px,4vw,50px);line-height:1.04;letter-spacing:-.045em;margin:0 0 10px}
+body.k-public-page .public-doc-shell .doc-meta{color:var(--k-muted);font-size:13px}
+body.k-public-page .public-doc-shell pre,body.k-public-page .public-doc-shell code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+body.k-public-page .public-doc-shell pre{overflow:auto;padding:18px;border-radius:var(--k-radius);background:#24221F;color:#F7F2EC;font-size:12px;line-height:1.6}
+body.k-public-page .public-doc-shell .doc-section{padding:20px 0;border-bottom:1px solid var(--k-border)}
+body.k-public-page .public-doc-shell .doc-section h2{font-size:21px;margin:0 0 8px}
+body.k-public-page .public-doc-shell .doc-section p,body.k-public-page .public-doc-shell .doc-section li{color:var(--k-muted);font-size:14px;line-height:1.7}
+
+@media(max-width:900px){body.k-public-page .how-process-summary,body.k-public-page .network-role-pathways__grid{grid-template-columns:1fr 1fr}body.k-public-page .request-boundaries-grid,body.k-public-page .network-grid{grid-template-columns:repeat(2,minmax(0,1fr))}body.k-public-page .public-split-hero,body.k-public-page .public-narrative-card,body.k-public-page .public-help-grid{grid-template-columns:1fr}body.k-public-page .about-help-set{grid-template-columns:1fr}.about-help-set__about{padding-right:0;padding-bottom:30px;border-right:0;border-bottom:1px solid var(--k-border)}body.k-public-page .public-legal-shell{grid-template-columns:1fr}.public-legal-nav{position:static!important} }
+@media(max-width:620px){body.k-public-page .how-process-summary,body.k-public-page .how-it-works-grid,body.k-public-page .request-boundaries-grid,body.k-public-page .network-role-pathways__grid,body.k-public-page .network-grid,body.k-public-page .access-grid,body.k-public-page .contact-grid{grid-template-columns:1fr}body.k-public-page .step-card,body.k-public-page .network-card,body.k-public-page .access-card,body.k-public-page .contact-card{padding:18px}body.k-public-page .cta-box,body.k-public-page .vision-box{padding:24px}body.k-public-page .public-composition{padding:34px 0 60px}body.k-public-page .public-help-hero{align-items:flex-start;flex-direction:column}body.k-public-page .public-help-grid{padding-bottom:58px}body.k-public-page .public-help-contact .btn{width:100%}body.k-public-page .public-legal-shell{padding-top:32px}body.k-public-page .public-doc-shell{padding:34px 0 60px}}
