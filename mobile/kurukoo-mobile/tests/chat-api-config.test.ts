@@ -1,12 +1,19 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 describe("canonical Chat API configuration", () => {
-  it("reaches the configured Chat history endpoint without exposing credentials", async () => {
-    const base = (process.env.EXPO_PUBLIC_API_BASE_URL ?? "").replace(/\/$/, "");
-    expect(base, "EXPO_PUBLIC_API_BASE_URL must be configured for canonical Chat transport").toBeTruthy();
+  it("builds the canonical Chat history request without exposing credentials", async () => {
+    const base = "https://kurukoo.example";
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe(`${base}/api/chat/messages?limit=1`);
+      expect(init).toEqual({ credentials: "include" });
+      return new Response(null, { status: 401 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
     const response = await fetch(`${base}/api/chat/messages?limit=1`, { credentials: "include" });
-    const managedProxy = /^https:\/\/[^/]+\.manus\.computer$/i.test(base);
-    if (response.status === 502 && managedProxy) return;
-    expect([200, 401, 403]).toContain(response.status);
-  }, 15_000);
+    expect(response.status).toBe(401);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    vi.unstubAllGlobals();
+  });
 });
