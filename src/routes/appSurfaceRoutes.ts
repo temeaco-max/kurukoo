@@ -50,4 +50,8 @@ for (const section of surfaceMap.keys()) {
   router.get(`/app/${section}`, optionalAuthenticateUser, (req, res) => renderApp(req, res, section));
 }
 
+// Compatibility aliases converge legacy browser application entry points on the canonical authenticated Web App.
+router.get('/web', (_req, res) => res.redirect(302, '/app'));
+router.get('/workspace', (_req, res) => res.redirect(302, '/app'));
+
 export default router;
