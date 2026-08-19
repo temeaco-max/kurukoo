@@ -1,17 +1,6 @@
 export type ClientFamily = 'web' | 'pwa' | 'native' | 'admin';
 export type SurfaceState = 'represented' | 'implemented' | 'contract_tested' | 'external_activation' | 'device_verification';
-
-export interface ClientSurface {
-  id: string;
-  label: string;
-  family: ClientFamily;
-  route: string;
-  primaryNavigation: 'agent' | 'discover' | 'requests' | 'tasks' | 'connect' | 'marketing' | 'workspace' | 'admin' | 'secondary';
-  semanticOwners: string[];
-  states: SurfaceState[];
-  responsive: boolean;
-  nativeOnly?: boolean;
-}
+export interface ClientSurface { id: string; label: string; family: ClientFamily; route: string; primaryNavigation: 'agent' | 'discover' | 'requests' | 'tasks' | 'connect' | 'marketing' | 'workspace' | 'admin' | 'secondary'; semanticOwners: string[]; states: SurfaceState[]; responsive: boolean; nativeOnly?: boolean; }
 
 export const CLIENT_SURFACES: readonly ClientSurface[] = [
   { id: 'web-marketing', label: 'Marketing website', family: 'web', route: '/', primaryNavigation: 'marketing', semanticOwners: ['publicRoutes', 'marketing-content'], states: ['represented', 'implemented', 'contract_tested'], responsive: true },
@@ -21,7 +10,7 @@ export const CLIENT_SURFACES: readonly ClientSurface[] = [
   { id: 'web-topics-public', label: 'Topics', family: 'web', route: '/topics', primaryNavigation: 'marketing', semanticOwners: ['topicRoutes', 'topicService', 'community-context'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-network', label: 'Network', family: 'web', route: '/network', primaryNavigation: 'marketing', semanticOwners: ['publicRoutes', 'provider-discovery'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-channels', label: 'Channels', family: 'web', route: '/channels', primaryNavigation: 'marketing', semanticOwners: ['externalIntegrationReadiness', 'pilotReadiness'], states: ['represented', 'implemented', 'contract_tested'], responsive: true },
-  { id: 'web-resources', label: 'Resources', family: 'web', route: '/resources', primaryNavigation: 'marketing', semanticOwners: ['contentRoutes', 'seoService'], states: ['represented', 'implemented'], responsive: true },
+  { id: 'web-resources', label: 'Resources', family: 'web', route: '/resources', primaryNavigation: 'marketing', semanticOwners: ['contentRoutes', 'contentManager', 'seoService'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-help', label: 'Help', family: 'web', route: '/help', primaryNavigation: 'marketing', semanticOwners: ['contentRoutes', 'support'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-partners', label: 'Partners', family: 'web', route: '/partners', primaryNavigation: 'marketing', semanticOwners: ['partnerRoutes', 'provider-network'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-advertise', label: 'Advertise', family: 'web', route: '/advertise', primaryNavigation: 'marketing', semanticOwners: ['adManager', 'publicRoutes'], states: ['represented', 'implemented'], responsive: true },
@@ -60,10 +49,12 @@ export const CLIENT_SURFACES: readonly ClientSurface[] = [
   { id: 'native-ios', label: 'iOS application', family: 'native', route: 'native://ios', primaryNavigation: 'agent', semanticOwners: ['canonical API', 'native device adapters', 'clientSurfaceRegistry'], states: ['represented', 'implemented', 'device_verification'], responsive: false, nativeOnly: true },
   { id: 'native-android', label: 'Android application', family: 'native', route: 'native://android', primaryNavigation: 'agent', semanticOwners: ['canonical API', 'native device adapters', 'clientSurfaceRegistry'], states: ['represented', 'implemented', 'device_verification'], responsive: false, nativeOnly: true },
   { id: 'admin-control-room', label: 'Admin Control Room', family: 'admin', route: '/admin', primaryNavigation: 'admin', semanticOwners: ['adminRoutes', 'audit', 'externalIntegrationReadiness'], states: ['represented', 'implemented'], responsive: true },
+  { id: 'admin-providers', label: 'Admin Providers', family: 'admin', route: '/admin/?section=providers', primaryNavigation: 'admin', semanticOwners: ['adminRoutes', 'providerEntity', 'trust/readiness'], states: ['represented', 'implemented'], responsive: true },
+  { id: 'admin-compliance', label: 'Admin Compliance', family: 'admin', route: '/admin/?section=compliance', primaryNavigation: 'admin', semanticOwners: ['adminRoutes', 'trust/readiness', 'privacyBridge'], states: ['represented', 'implemented'], responsive: true },
+  { id: 'admin-settings', label: 'Admin Settings', family: 'admin', route: '/admin/?section=settings', primaryNavigation: 'admin', semanticOwners: ['adminRoutes', 'featureFlags', 'externalIntegrationReadiness'], states: ['represented', 'implemented'], responsive: true },
 ];
 
 export const MOBILE_PRIMARY_NAVIGATION = ['agent', 'discover', 'requests', 'tasks', 'connect'] as const;
-
 export function getClientSurface(id: string): ClientSurface | undefined { return CLIENT_SURFACES.find(surface => surface.id === id); }
 export function getClientSurfaces(family: ClientFamily): ClientSurface[] { return CLIENT_SURFACES.filter(surface => surface.family === family); }
 export function assertClientSurfaceOwnership(id: string, family: ClientFamily): ClientSurface { const surface = getClientSurface(id); if (!surface) throw new Error(`Unknown Kurukoo client surface: ${id}`); if (surface.family !== family) throw new Error(`Client surface ${id} belongs to ${surface.family}, not ${family}`); return surface; }
