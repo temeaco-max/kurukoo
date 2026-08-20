@@ -1,0 +1,20 @@
+name: Kurukoo OS visual contract
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/platform-convergence-frames
+      - main
+
+jobs:
+  visual-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx tsx scripts/test-kurukoo-os-visual.ts
