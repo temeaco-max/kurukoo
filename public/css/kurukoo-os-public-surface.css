@@ -1,0 +1,42 @@
+/* Kurukoo OS public/editorial composition. Business content remains in the existing EJS templates. */
+body.k-public-page .navbar{background:rgba(255,255,255,.96)!important;border-bottom:1px solid var(--os-border)!important;box-shadow:0 1px 0 rgba(36,34,31,.02);backdrop-filter:blur(12px)}
+body.k-public-page .navbar-inner{min-height:72px!important}
+body.k-public-page .nav-links{gap:4px!important}
+body.k-public-page .nav-link,body.k-public-page .nav-user-btn{border-radius:10px!important;color:var(--os-muted)!important}
+body.k-public-page .nav-link:hover,body.k-public-page .nav-user-btn:hover{background:#f3efe9!important;color:var(--os-ink)!important}
+body.k-public-page .nav-chat-btn,body.k-public-page .btn-primary{background:var(--os-accent)!important;border-color:var(--os-accent)!important;border-radius:11px!important;box-shadow:0 4px 16px rgba(230,106,71,.14)}
+body.k-public-page .home-page{background:var(--os-bg)}
+body.k-public-page .home-hero{padding-top:clamp(48px,7vw,96px);padding-bottom:clamp(44px,6vw,78px)}
+body.k-public-page .home-hero__grid{grid-template-columns:minmax(0,1.02fr) minmax(360px,.98fr);gap:clamp(32px,5vw,80px);align-items:center}
+body.k-public-page .home-hero__copy h1,body.k-public-page .section-heading h2,body.k-public-page .home-roles h2,body.k-public-page .public-split-hero h1{font-family:"Space Grotesk",Inter,sans-serif;letter-spacing:-.05em}
+body.k-public-page .eyebrow{color:var(--os-accent)!important}
+body.k-public-page .home-chat-card,.home-role-path,body.k-public-page .storefront-demo,body.k-public-page .network-mini-card,body.k-public-page .home-daily-picks,body.k-public-page .channel-item,body.k-public-page .home-feature-list article,body.k-public-page .home-managed-ad,body.k-public-page .home-explore-card,body.k-public-page .home-pick-card,body.k-public-page .home-process-strip .container>div{background:var(--os-surface)!important;border:1px solid var(--os-border)!important;border-radius:var(--os-radius)!important;box-shadow:var(--os-shadow)!important}
+body.k-public-page .home-chat-card{overflow:hidden}
+body.k-public-page .home-role-path,body.k-public-page .network-mini-card,body.k-public-page .channel-item,body.k-public-page .home-feature-list article{transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+body.k-public-page .home-role-path:hover,body.k-public-page .network-mini-card:hover,body.k-public-page .channel-item:hover,body.k-public-page .home-feature-list article:hover{transform:translateY(-2px);box-shadow:var(--os-shadow-hover)!important;border-color:#d8cabe!important}
+body.k-public-page .home-role-path>a,body.k-public-page .home-role-path b,body.k-public-page .text-link{color:var(--os-accent)!important}
+body.k-public-page .home-process-strip{background:transparent!important}
+body.k-public-page .home-process-strip .container{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+body.k-public-page .home-process-strip .container>div{padding:18px!important}
+body.k-public-page .storefront-demo{padding:0!important}
+body.k-public-page .storefront-demo__controls{background:#f1ede7!important;border-bottom:1px solid var(--os-border)!important}
+body.k-public-page .storefront-demo__controls button.is-active{background:#fff!important;color:var(--os-ink)!important;box-shadow:0 4px 12px rgba(36,34,31,.06)}
+body.k-public-page .storefront-demo__conversation,body.k-public-page .storefront-demo__explain{background:#fff!important;border-color:var(--os-border)!important}
+body.k-public-page .storefront-demo__offer{border:1px solid var(--os-border)!important;border-radius:14px!important;background:#fbfaf7!important}
+body.k-public-page .home-pulse .home-split,body.k-public-page .home-roles__layout,body.k-public-page .home-living__layout{gap:18px!important}
+body.k-public-page .home-daily-picks{padding:18px!important}
+body.k-public-page .home-pick-card{overflow:hidden;display:block;text-decoration:none;color:var(--os-ink);padding-bottom:14px}
+body.k-public-page .home-pick-card img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:#eee9e2}
+body.k-public-page .home-pick-card strong,body.k-public-page .home-pick-card small{display:block;padding-inline:12px}
+body.k-public-page .home-pick-card strong{padding-top:11px;font-size:13px}
+body.k-public-page .home-pick-card small{padding-top:4px;color:var(--os-muted);font-size:11px;line-height:1.45}
+body.k-public-page .sponsored-badge{display:inline-flex;min-height:24px;align-items:center;border:1px solid #e8d3c8;border-radius:999px;background:var(--os-accent-soft);color:var(--os-accent);font-size:10px;font-weight:800;padding:4px 8px;margin:10px 10px 0}
+body.k-public-page .home-memory-core{border-color:var(--os-border)!important;background:#fff!important;box-shadow:var(--os-shadow)!important}
+body.k-public-page .home-memory-node{border-color:var(--os-border)!important;background:#fff!important;box-shadow:0 5px 16px rgba(36,34,31,.05)!important}
+body.k-public-page footer{border-top:1px solid var(--os-border)!important;background:#f2eee8!important}
+body.k-public-page .public-legal-nav,body.k-public-page .public-legal-content,body.k-public-page .public-doc-shell,body.k-public-page .public-help-principles,body.k-public-page .public-help-contact,body.k-public-page .contact-card,body.k-public-page .access-card,body.k-public-page .network-card{background:#fff!important;border:1px solid var(--os-border)!important;border-radius:var(--os-radius)!important;box-shadow:var(--os-shadow)!important}
+body.k-public-page .public-legal-content,body.k-public-page .public-doc-shell{padding:clamp(22px,4vw,40px)!important}
+body.k-public-page .public-detail-card,body.k-public-page .public-narrative-card{background:#fff!important;border-color:var(--os-border)!important;border-radius:var(--os-radius)!important;box-shadow:var(--os-shadow)!important}
+body.k-public-page input,body.k-public-page select,body.k-public-page textarea{border-color:var(--os-border)!important;border-radius:12px!important;background:#fff!important}
+@media(max-width:900px){body.k-public-page .home-hero__grid{grid-template-columns:1fr}body.k-public-page .home-process-strip .container{grid-template-columns:1fr}body.k-public-page .home-daily-picks{order:2}}
+@media(max-width:640px){body.k-public-page .home-hero{padding-top:36px}body.k-public-page .home-role-path,body.k-public-page .network-mini-card,body.k-public-page .channel-item{border-radius:15px!important}}
