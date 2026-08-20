@@ -4,7 +4,8 @@ import fs from 'node:fs';
 const source = fs.readFileSync(new URL('../src/services/conversationalGenerationService.ts', import.meta.url), 'utf8');
 const unified = fs.readFileSync(new URL('../src/services/unifiedAiEngine.ts', import.meta.url), 'utf8');
 
-assert.match(source, /const conversationProvider = input\.provider && input\.provider !== 'auto' \? input\.provider : strongerProvider\(input\.provider\);/);
+assert.match(source, /const decision = chooseInferenceProvider\(\{ task: generationMode === 'present' \? 'presentation' : skillPack \? 'skill_intake' : 'conversation', prompt: input\.prompt, preferred: input\.provider \}\);/);
+assert.match(source, /const conversationProvider = decision\.provider;/);
 assert.match(source, /provider: conversationProvider,/);
 assert.match(source, /function strongerProvider\(preferred: AIProvider \| undefined\)/);
 assert.match(source, /return resolveConfiguredHostedProvider\(\) \|\| 'smollm2';/);

@@ -10,7 +10,7 @@ assert.ok(candidate, 'unknown-intent candidate was not queued');
 assert.equal(candidate.status, 'pending');
 assert.doesNotMatch(String(candidate.query), /should-not-persist/, 'candidate text must be privacy-redacted');
 
-const accepted = await reviewUnknownIntentCandidate(Number(candidate.id), 'ci-reviewer', 'accepted', { label: 'find_worker', text: query });
+const accepted = await reviewUnknownIntentCandidate(Number(candidate.id), 'accepted', 'ci-reviewer', { label: 'find_worker', text: query });
 assert.equal(accepted.automaticTraining, false);
 assert.ok(accepted.trainingLineageId, 'accepted review must record training lineage');
 const acceptedRows = await listUnknownIntentFeedback(250);

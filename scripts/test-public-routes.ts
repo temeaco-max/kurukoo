@@ -1,12 +1,10 @@
 import publicRouter from '../src/routes/publicRoutes.js';
-
-const expected = [
+import appSurfaceRouter from '../src/routes/appSurfaceRoutes.js';
+const expectedPublic = [
     '/',
     '/explore',
     '/explore/:slug',
     '/p/:providerSlug',
-    '/web',
-    '/workspace',
     '/requests',
     '/reminders',
     '/saved',
@@ -61,7 +59,13 @@ const expected = [
 
 const stack = (publicRouter as any).stack || [];
 const routes = stack.filter((layer: any) => layer.route).map((layer: any) => layer.route.path);
-const missing = expected.filter(path => !routes.includes(path));
+const missing = expectedPublic.filter(path => !routes.includes(path));
 if (missing.length) throw new Error(`Public route module is missing: ${missing.join(', ')}`);
-if (routes.length !== expected.length) { const unexpected = routes.filter((route: string) => !expected.includes(route)); throw new Error(`Public route module has unexpected routes: ${unexpected.join(', ')}`); }
-console.log(`Public route module contract passed: ${routes.length} routes.`);
+if (routes.length !== expectedPublic.length) { const unexpected = routes.filter((route: string) => !expectedPublic.includes(route)); throw new Error(`Public route module has unexpected routes: ${unexpected.join(', ')}`); }
+const appRoutes = ((appSurfaceRouter as any).stack || []).filter((layer: any) => layer.route).map((layer: any) => layer.route.path);
+const canonicalAppPaths = ['/web', '/workspace'];
+const missingCanonicalAppPaths = canonicalAppPaths.filter(path => !appRoutes.includes(path));
+if (missingCanonicalAppPaths.length) throw new Error(`App-surface route module is missing: ${missingCanonicalAppPaths.join(', ')}`);
+const duplicatedCanonicalPaths = canonicalAppPaths.filter(path => routes.includes(path));
+if (duplicatedCanonicalPaths.length) throw new Error(`Canonical app-surface paths must not be duplicated in public routes: ${duplicatedCanonicalPaths.join(', ')}`);
+console.log(`Public route module contract passed: ${routes.length} public routes and ${canonicalAppPaths.length} app-surface redirects.`);

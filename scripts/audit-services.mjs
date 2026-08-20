@@ -47,7 +47,7 @@ const alignment = {
   chatHasStreaming: /text\/event-stream/.test(chatRouter),
   chatHasHistory: /listChatConversations|listChatMessages/.test(chatRouter),
   legacyBoundaryAbsent: !fs.existsSync(legacyAppPath) && !/legacyApp|registerLegacyRoutes/.test(index),
-  channelRouterWiredAtCompositionRoot: /app\.use\('\/api', channelRoutes\)/.test(index),
+  channelRouterWiredAtCompositionRoot: /app\.use\('\/api',\s*channelRoutes\)/.test(index),
   emailWebhookRoutePresent: /\/webhook\/email/.test(channelRoutes),
   rawWebhookCapturePresent: /rawBody/.test(index) && /verify:/.test(index),
 };

@@ -9,6 +9,7 @@ import { drainPendingExecutionRequests } from '../services/executionConnector.js
 import { isWhatsAppLinkedDeviceConfigured, startWhatsAppLinkedDevice, stopWhatsAppLinkedDevice } from '../services/whatsappLinkedDeviceService.js';
 import { markAgentWorkerCycleCompleted, markAgentWorkerCycleFailed, markAgentWorkerCycleStarted, markAgentWorkerStarted, markAgentWorkerStopped, notifyGoalIfNeeded, recordAgentWorkerRun, reenterDueDeferredGoals, runDueAgentGoals } from '../services/agentRuntime.js';
 import { runRecurringSubscriptionBillingPass } from '../services/commercialBillingService.js';
+import { processDiscoverWatches } from '../services/discoverExperience.js';
 
 const backgroundTimers: Array<ReturnType<typeof setInterval> | ReturnType<typeof setTimeout>> = [];
 let backgroundServicesStarted = false;
@@ -27,6 +28,14 @@ export async function startBackgroundServices(): Promise<void> {
     backgroundTimers.push(setInterval(logHeartbeat, 5 * 60 * 1000));
 
     backgroundTimers.push(setInterval(() => runRecurringSubscriptionBillingPass().then(result => { if (result.attempted) console.log(`[CommercialBilling] attempted=${result.attempted} renewed=${result.renewed} failed=${result.failed}`); }).catch(error => console.error('Error running recurring subscription billing pass:', error)), 60 * 60 * 1000));
+
+    const discoverWatchIntervalMs = Math.max(60_000, Math.min(60 * 60_000, Number(process.env.KURUKOO_DISCOVER_WATCH_INTERVAL_SEC || 300) * 1000));
+    const runDiscoverWatchCycle = async () => {
+        const result = await processDiscoverWatches(100);
+        if (result.changed || result.notified) console.log(`[DiscoverWatch] checked=${result.checked} changed=${result.changed} notified=${result.notified}`);
+    };
+    backgroundTimers.push(setTimeout(() => runDiscoverWatchCycle().catch(error => console.error('Error running initial Discover Watch pass:', error)), 5_000));
+    backgroundTimers.push(setInterval(() => runDiscoverWatchCycle().catch(error => console.error('Error running Discover Watch pass:', error)), discoverWatchIntervalMs));
 
     if (isFcmConfigured()) {
         const runFcmCycle = async () => { await requeueDueFcmFailures(); await drainFcmQueue(); };

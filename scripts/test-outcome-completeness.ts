@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import { buildOutcomeCompletenessMatrix, summarizeOutcomeCompleteness } from '../src/services/outcomeCompleteness.js';
+import { getCatalogueStats } from '../src/services/skillCatalogueConvergence.js';
 
 const rows = await buildOutcomeCompletenessMatrix('ng');
 const summary = summarizeOutcomeCompleteness(rows);
-assert.equal(summary.skillCount, 205, 'the outcome matrix must cover all 205 canonical skills');
+assert.equal(summary.skillCount, getCatalogueStats().total, 'the outcome matrix must cover every canonical core and extension skill');
 assert.equal(summary.missingImplementationCount, 0, 'every canonical skill must have a canonical flow definition');
 assert.equal(summary.familyCount, 46, 'the outcome matrix must cover all canonical skill families');
 assert.ok(rows.every((row) => row.canonicalOwner.length > 0), 'every skill must name a canonical owner');

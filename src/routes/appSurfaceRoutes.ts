@@ -47,6 +47,6 @@ router.get('/app', optionalAuthenticateUser, (req, res) => renderApp(req, res, '
 for (const section of surfaceMap.keys()) router.get(`/app/${section}`, optionalAuthenticateUser, (req, res) => renderApp(req, res, section));
 const completedLegacyToCanonical: Record<string, string> = { '/requests': '/app/requests', '/points': '/app/points', '/tasks': '/app/tasks', '/top-up': '/app/top-up', '/subscription': '/app/subscriptions', '/memory': '/app/memory', '/safety': '/app/safety', '/call': '/app/call', '/connect': '/app/connect', '/confirmation': '/app/confirmations' };
 for (const [legacyPath, canonicalPath] of Object.entries(completedLegacyToCanonical)) router.get(legacyPath, optionalAuthenticateUser, (req, res) => { const authReq = req as AuthRequest; if (!authReq.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent(req.path)}`); return res.redirect(302, canonicalPath); });
-router.get('/web', (_req, res) => res.redirect(302, '/app'));
-router.get('/workspace', (_req, res) => res.redirect(302, '/app'));
+router.get('/web', optionalAuthenticateUser, (req, res) => { const authReq = req as AuthRequest; return res.redirect(302, authReq.user?.phone ? '/app/requests' : '/login?return=%2Fweb'); });
+router.get('/workspace', optionalAuthenticateUser, (req, res) => { const authReq = req as AuthRequest; return res.redirect(302, authReq.user?.phone ? '/app/requests' : '/login?return=%2Fworkspace'); });
 export default router;

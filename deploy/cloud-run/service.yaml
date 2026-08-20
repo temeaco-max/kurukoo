@@ -59,6 +59,9 @@ spec:
               value: /tmp/huggingface
             - name: KURUKOO_SMOLLM2_CACHE_DIR
               value: /tmp/huggingface
+            # Cloud Run container storage is ephemeral. Production state requires an approved persistent-store deployment and cutover; SQL.js single-writer storage is not a multi-instance production adapter.
+            - name: KURUKOO_PERSISTENT_STATE_REQUIRED
+              value: "true"
             - name: KURUKOO_WORKERS
               value: "0"
             - name: KURUKOO_EXTERNAL_EXECUTION_ENABLED
