@@ -39,6 +39,15 @@
     if (chips[2]) { const m = chips[2].textContent?.match(/(\d+)\/(\d+)/); chips[2].textContent = m ? `Connections active · ${m[1]}/${m[2]}` : 'Connections'; }
     row.dataset.kPolished = '1';
   };
+  const sanitizeProductCopy = () => {
+    document.querySelectorAll('.k-app-main .k-app-card,.k-app-main .k-app-title-row').forEach((root) => {
+      root.querySelectorAll('h1,h2,h3,p,span,a').forEach((el) => {
+        const text = el.textContent || '';
+        if (text.includes('Add Points in sandbox development.')) el.textContent = 'Add Kurukoo Points';
+        else if (text.includes('Credit sandbox Points')) el.textContent = 'Add Points';
+      });
+    });
+  };
   const discoverShortcuts = () => {
     if (section() !== 'discover' || document.querySelector('[data-discover-quick-actions]')) return;
     const title = document.querySelector('.k-app-title-row'); if (!title) return;
@@ -102,7 +111,7 @@
       hub.innerHTML='<div class="k-app-card"><span class="k-app-card-label">Discover</span><h2>Discover is still available through Chat.</h2><p>We could not load the feed right now, so nothing has been invented or substituted.</p><a class="k-app-primary" href="/chat">Ask Kurukoo</a></div>';
     }
   };
-  const run = () => { injectStyle(); normalizeLinks(); activeNav(); accountShortcut(); status(); discoverShortcuts(); renderDiscoverHub(); };
+  const run = () => { injectStyle(); normalizeLinks(); activeNav(); accountShortcut(); status(); sanitizeProductCopy(); discoverShortcuts(); renderDiscoverHub(); };
   const boot = () => { run(); requestAnimationFrame(run); setTimeout(run, 150); const main=document.querySelector('.k-app-main'); if(main){const observer=new MutationObserver(()=>requestAnimationFrame(run)); observer.observe(main,{childList:true,subtree:true}); setTimeout(()=>observer.disconnect(),3500);} };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, {once:true}); else boot();
 })();
