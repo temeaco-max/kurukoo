@@ -1,0 +1,35 @@
+name: Kurukoo OS visual convergence
+
+on:
+  push:
+    branches:
+      - feature/platform-convergence-frames
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: ${{ !contains(github.event.head_commit.message, '[os-visual]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply visual migration
+        run: node scripts/apply-os-visual-convergence.mjs
+      - name: Commit visual migration
+        run: |
+          if git diff --quiet; then
+            echo 'No visual migration changes required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add views/app.ejs views/workspace.ejs public/chat/index.html public/discover/index.html public/admin/index.html public/settings.html public/dashboard.html
+          git commit -m 'feat(ui): apply OS visual layer [os-visual]'
+          git push
