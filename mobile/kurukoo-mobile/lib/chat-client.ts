@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getApiBaseUrl } from "@/constants/oauth";
 import * as Auth from "@/lib/_core/auth";
 import { queueChatMessage } from "@/lib/offline-queue";
@@ -9,10 +10,17 @@ export type ChatStreamEvent =
   | { type: "done"; fullReply?: string; conversationId?: string; assistantMessageId?: number | string; diagnostics?: Record<string, unknown>; cardData?: unknown }
   | { type: "error"; error?: string; message?: string }
   | { type: string; [key: string]: unknown };
+const PENDING_CONTEXT_KEY = "kurukoo.mobile.pending-conversation.v1";
 function endpoint(path: string) { return `${getApiBaseUrl()}${path}`; }
 async function requestHeaders(): Promise<Record<string, string>> { const token = await Auth.getSessionToken(); return token ? { Authorization: `Bearer ${token}` } : {}; }
 async function parseJsonResponse<T>(response: Response): Promise<T> { const payload = await response.json().catch(() => ({})); if (!response.ok) { const error = new Error(typeof payload?.error === "string" ? payload.error : `Chat request failed (${response.status})`); (error as Error & { status?: number }).status = response.status; throw error; } return payload as T; }
-export async function loadChatMessages(conversationId?: string): Promise<{ messages: ChatMessage[]; conversationId?: string }> { const query = new URLSearchParams({ limit: "50" }); if (conversationId) query.set("conversationId", conversationId); const response = await fetch(endpoint(`/api/chat/messages?${query.toString()}`), { credentials: "include", headers: await requestHeaders() }); if (response.status === 401) return { messages: [], conversationId }; const payload = await parseJsonResponse<{ messages?: ChatMessage[]; conversationId?: string }>(response); return { messages: Array.isArray(payload.messages) ? payload.messages : [], conversationId: payload.conversationId ?? conversationId }; }
+export async function setPendingConversationContext(conversationId: string): Promise<void> { if (conversationId) await AsyncStorage.setItem(PENDING_CONTEXT_KEY, conversationId); }
+export async function loadChatMessages(conversationId?: string): Promise<{ messages: ChatMessage[]; conversationId?: string }> {
+  const effectiveConversationId = conversationId || (await AsyncStorage.getItem(PENDING_CONTEXT_KEY)) || undefined;
+  const query = new URLSearchParams({ limit: "50" }); if (effectiveConversationId) query.set("conversationId", effectiveConversationId);
+  const response = await fetch(endpoint(`/api/chat/messages?${query.toString()}`), { credentials: "include", headers: await requestHeaders() }); if (response.status === 401) return { messages: [], conversationId: effectiveConversationId };
+  const payload = await parseJsonResponse<{ messages?: ChatMessage[]; conversationId?: string }>(response); if (effectiveConversationId) await AsyncStorage.removeItem(PENDING_CONTEXT_KEY); return { messages: Array.isArray(payload.messages) ? payload.messages : [], conversationId: payload.conversationId ?? effectiveConversationId };
+}
 export async function streamChatMessage(input: { message: string; conversationId?: string; contextAction?: Record<string, string | undefined>; onEvent: (event: ChatStreamEvent) => void; signal?: AbortSignal }): Promise<{ conversationId?: string; assistantMessageId?: number | string; reply: string; diagnostics?: Record<string, unknown>; cardData?: unknown; queued?: boolean }> {
   const headers: Record<string, string> = { "Content-Type": "application/json" }; Object.assign(headers, await requestHeaders()); let response: Response;
   try { response = await fetch(endpoint("/api/chat/stream"), { method: "POST", credentials: "include", headers, signal: input.signal, body: JSON.stringify({ message: input.message.trim(), conversationId: input.conversationId, channel: "mobile", contextAction: input.contextAction }) }); }
