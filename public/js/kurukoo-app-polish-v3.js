@@ -13,6 +13,7 @@
     const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = '/css/kurukoo-app-polish.css?v=1'; link.dataset.kurukooPolishV3 = '';
     document.head.appendChild(link);
     const extra = document.createElement('link'); extra.rel = 'stylesheet'; extra.href = '/css/kurukoo-app-polish-v2.css?v=1'; extra.dataset.kurukooPolishV3 = 'extra'; document.head.appendChild(extra);
+    const discoverCss = document.createElement('link'); discoverCss.rel = 'stylesheet'; discoverCss.href = '/css/kurukoo-app-discover.css?v=1'; discoverCss.dataset.kurukooPolishV3 = 'discover'; document.head.appendChild(discoverCss);
   };
   const normalizeLinks = () => document.querySelectorAll('.k-app-main a[href],.k-app-header a[href]').forEach((anchor) => {
     const raw = anchor.getAttribute('href'); if (!raw || raw.startsWith('#') || raw.startsWith('http') || raw.startsWith('mailto:') || raw.startsWith('tel:')) return;
