@@ -11,14 +11,19 @@ const foundation = read('public/css/kurukoo-client-foundation.css');
 const polish = read('public/css/kurukoo-app-polish-v2.css');
 const polishJs = read('public/js/kurukoo-app-polish-v3.js');
 const fcm = read('public/js/fcm-client.js');
+const uiConvergence = read('public/js/kurukoo-ui-convergence.js');
 
-for (const route of ['/app/agent','/app/discover','/app/requests','/app/tasks','/app/connect','/app/points','/app/top-up','/app/subscriptions','/app/checkout','/app/confirmations','/app/memory','/app/notifications']) {
-  assert.ok(routes.includes(`router.get('${route}'`) || routes.includes(`['${route.replace('/app/','')}'])`), `Missing canonical app route: ${route}`);
+const requiredSections = ['agent','discover','requests','tasks','connect','points','top-up','subscriptions','checkout','confirmations','memory','notifications'];
+for (const section of requiredSections) {
+  assert.ok(routes.includes(`['${section}',`), `Missing canonical surface-map section: ${section}`);
 }
+assert.ok(routes.includes("for (const section of surfaceMap.keys()) router.get(`/app/${section}`"), 'Canonical App route loop is missing.');
 for (const marker of ['k-app-shell','k-app-sidebar','k-app-main','k-mobile-tabbar','kurukoo-client-foundation.css','/chat']) assert.ok(app.includes(marker), `App view missing: ${marker}`);
 for (const token of ['--k-cream','--k-primary','--k-font-body','--k-font-heading','--k-space-4','44px']) assert.ok(foundation.includes(token), `Visual system token missing: ${token}`);
 for (const marker of ['k-app-quick-actions','k-app-quick-action','k-app-profile-link']) assert.ok(polish.includes(marker), `Polish style missing: ${marker}`);
-for (const marker of ['normalizeLinks','activeNav','addDiscoverQuickActions','MutationObserver','/app/discover']) assert.ok(polishJs.includes(marker), `Polish behavior missing: ${marker}`);
+for (const marker of ['normalizeLinks','activeNav','discoverShortcuts','MutationObserver','/app/discover']) assert.ok(polishJs.includes(marker), `Polish behavior missing: ${marker}`);
 assert.ok(fcm.includes('/js/kurukoo-app-polish-v3.js?v=1'), 'FCM/App boot path must load final app polish layer.');
+assert.ok(fcm.includes('/js/kurukoo-ui-convergence.js?v=1'), 'Shared UI convergence behavior must load in App.');
+assert.ok(uiConvergence.includes('document.body.classList.contains(\'k-app-page\')'), 'Shared UI convergence must know the canonical App shell to avoid duplicate workspace chrome.');
 
-console.log(JSON.stringify({ passed: true, checks: 6 }, null, 2));
+console.log(JSON.stringify({ passed: true, checks: requiredSections.length + 7 }, null, 2));
