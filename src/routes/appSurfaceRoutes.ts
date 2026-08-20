@@ -4,6 +4,7 @@ import { getExternalIntegrationReadiness } from '../services/externalIntegration
 import { getPilotReadiness } from '../services/pilotReadiness.js';
 import { getClientSurfaces } from '../services/clientSurfaceRegistry.js';
 import { PLATFORM_FEATURE_VISUAL_CONTRACTS } from '../services/platformFeatureVisualRegistry.js';
+import { getDriveConnectionStatus, listArtifacts, startGoogleDriveConnection } from '../services/artifactService.js';
 import economicDispatchRoutes from './economicDispatchRoutes.js';
 
 const router = express.Router();
@@ -28,14 +29,14 @@ const surfaceMap = new Map([
   ['checkout', { title: 'Checkout', eyebrow: 'Confirm economic action', description: 'Checkout remains bound to canonical economic requests, payment policy and explicit confirmation.', cta: '/app/checkout', ctaLabel: 'Open Checkout' }],
   ['confirmations', { title: 'Confirmations', eyebrow: 'Know what happened', description: 'Confirmation surfaces summarize canonical lifecycle, evidence and recovery rather than inferred success.', cta: '/app/confirmations', ctaLabel: 'Open Confirmations' }],
   ['memory', { title: 'Memory', eyebrow: 'Your Kurukoo memory', description: 'Memory Profile is the canonical owner-scoped memory authority shared by all clients.', cta: '/app/memory', ctaLabel: 'Open Memory' }],
-  ['artifacts', { title: 'Artifacts', eyebrow: 'Your files and recordings', description: 'Artifacts are owner-scoped. Connected user-owned storage is preferred; managed storage is bounded fallback/staging.', cta: '/app/connect', ctaLabel: 'Open Artifact History' }],
+  ['artifacts', { title: 'Artifacts', eyebrow: 'Your files and recordings', description: 'Artifacts are owner-scoped and stored in your connected Google Drive when available, with managed fallback when it is not.', cta: '/app/artifacts', ctaLabel: 'Open Artifacts' }],
   ['prayer', { title: 'Prayer Companion', eyebrow: 'First-class agent', description: 'Prayer support can compose personalized prayers, preserve continuity and use the existing voice, reminder and artifact boundaries when enabled.', cta: '/chat?prompt=I%20would%20like%20a%20prayer', ctaLabel: 'Open Prayer Companion' }],
   ['call', { title: 'Kurukoo Call', eyebrow: 'Realtime communication', description: 'AI voice and peer calling remain part of the same Kurukoo relationship. Provider credentials and realtime infrastructure determine activation.', cta: '/app/call', ctaLabel: 'Open Call' }],
   ['notifications', { title: 'Notifications', eyebrow: 'Stay connected', description: 'Notifications return relevant continuation, request and reminder context while preserving the same conversation identity.', cta: '/chat?prompt=Show%20me%20my%20notifications', ctaLabel: 'Review with Kurukoo' }],
   ['safety', { title: 'Safety', eyebrow: 'Safety and check-ins', description: 'Safety context, trusted contacts and check-ins are explicit, consent-bound and never represented as emergency-service fulfilment.', cta: '/app/safety', ctaLabel: 'Open Safety' }],
 ]);
 
-function renderApp(req: express.Request, res: express.Response, section = 'agent') {
+async function renderApp(req: express.Request, res: express.Response, section = 'agent') {
   const authReq = req as AuthRequest;
   if (!authReq.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent(req.path)}`);
   const selected = surfaceMap.get(section) ?? surfaceMap.get('agent')!;
@@ -43,13 +44,19 @@ function renderApp(req: express.Request, res: express.Response, section = 'agent
   const readiness = getPilotReadiness();
   const integrations = getExternalIntegrationReadiness();
   const enabledIntegrations = integrations.filter((item: any) => item.implementation?.state === 'IMPLEMENTED' || item.implementation?.implemented === true).length;
-  return res.render('app', { selected, section, displayName: authReq.user.name || authReq.user.phone, phone: authReq.user.phone, surfaces, readiness, integrations, enabledIntegrations, integrationCount: integrations.length, visualFeatures: PLATFORM_FEATURE_VISUAL_CONTRACTS.filter(feature => !feature.audience.includes('admin')) });
+  const artifacts = section === 'artifacts' ? await listArtifacts(authReq.user.phone) : [];
+  const artifactStorage = section === 'artifacts' ? await getDriveConnectionStatus(authReq.user.phone) : null;
+  return res.render('app', { selected, section, displayName: authReq.user.name || authReq.user.phone, phone: authReq.user.phone, surfaces, readiness, integrations, enabledIntegrations, integrationCount: integrations.length, visualFeatures: PLATFORM_FEATURE_VISUAL_CONTRACTS.filter(feature => !feature.audience.includes('admin')), artifacts, artifactStorage });
 }
 
 router.get('/api/platform/feature-visuals', (_req, res) => res.json({ success: true, features: PLATFORM_FEATURE_VISUAL_CONTRACTS.filter(feature => !feature.audience.includes('admin')) }));
 router.use('/api', economicDispatchRoutes);
-router.get('/app', optionalAuthenticateUser, (req, res) => renderApp(req, res, 'agent'));
-for (const section of surfaceMap.keys()) router.get(`/app/${section}`, optionalAuthenticateUser, (req, res) => renderApp(req, res, section));
+router.get('/app', optionalAuthenticateUser, (req, res) => void renderApp(req, res, 'agent'));
+router.get('/app/artifacts/connect', optionalAuthenticateUser, async (req: AuthRequest, res) => {
+  if (!req.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent('/app/artifacts')}`);
+  try { const { authorizationUrl } = await startGoogleDriveConnection(req.user.phone); return res.redirect(302, authorizationUrl); } catch { return res.redirect(302, '/app/artifacts?drive=unavailable'); }
+});
+for (const section of surfaceMap.keys()) router.get(`/app/${section}`, optionalAuthenticateUser, (req, res) => void renderApp(req, res, section));
 const completedLegacyToCanonical: Record<string, string> = { '/requests': '/app/requests', '/points': '/app/points', '/tasks': '/app/tasks', '/top-up': '/app/top-up', '/subscription': '/app/subscriptions', '/memory': '/app/memory', '/safety': '/app/safety', '/call': '/app/call', '/connect': '/app/connect', '/confirmation': '/app/confirmations' };
 for (const [legacyPath, canonicalPath] of Object.entries(completedLegacyToCanonical)) router.get(legacyPath, optionalAuthenticateUser, (req, res) => { const authReq = req as AuthRequest; if (!authReq.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent(req.path)}`); return res.redirect(302, canonicalPath); });
 router.get('/web', (_req, res) => res.redirect(302, '/app'));
