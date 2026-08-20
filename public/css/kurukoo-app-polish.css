@@ -15,3 +15,9 @@
 @media(max-width:767px){.k-app-header{min-height:60px}.k-app-brand span{font-size:18px}.k-app-header-actions{gap:6px}.k-app-ask{min-height:42px;padding-inline:14px}.k-app-main{padding-top:18px}.k-app-container{width:min(100% - 20px,680px)}.k-app-title-row{margin-bottom:18px}.k-app-title-row h1{font-size:clamp(28px,8vw,36px)}.k-app-title-row p{font-size:14px}.k-app-card{border-radius:16px;padding:18px}.k-mobile-tabbar{padding-top:7px}.k-mobile-tabbar a{min-height:52px}.k-status{min-height:30px}.k-app-nav[aria-label="Workspace"]::before,.k-app-nav[aria-label="Account"]::before,.k-app-nav[aria-label="Primary"]::before{display:none}}
 @media(max-width:420px){.k-app-brand span{display:none}.k-app-ask{padding-inline:12px}.k-app-container{width:calc(100% - 16px)}.k-app-card h2{font-size:20px}.k-app-status-row{gap:6px}.k-status{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.k-app-nav a,.k-app-ask,.k-app-primary,.k-app-card-action::after,.k-app-card .k-surface{transition:none}.k-app-nav a:hover,.k-app-ask:hover,.k-app-primary:hover,.k-app-card .k-surface:hover{transform:none}}
+
+/* Kurukoo OS dashboard owns the accessible command-bar DOM. */
+body.k-app-page .k-app-header::before,
+body.k-app-page .k-app-header::after{display:none!important}
+body.k-app-page .os-app-command{font:500 12px Inter,system-ui,sans-serif}
+body.k-app-page .os-app-command kbd{font-family:Inter,system-ui,sans-serif}
