@@ -6,6 +6,12 @@
 
 Kurukoo can help directly, preserve context, discover options, coordinate participants, prepare an Economic Request or continue work over time. External fulfilment remains conditional on availability, authorization, evidence, configured providers and real-world confirmation.
 
+## Discover truth
+
+**Discover is Kurukoo's opportunity and activity surface, not merely a map.** It composes the existing Discovery Network/Pulse, Topics, Opportunities, approved advertising placements, canonical skill catalogue and Chat/agent handoff into six views: **For You, Nearby, Today/Daily Picks, Topics, Opportunities and Explore Kurukoo**. Discover items can be opened in exact Chat context and, where appropriate, watched, followed or saved. A watch is an owner-scoped persistent interest that is designed to become the bridge to bounded background/agent monitoring rather than a duplicate task system.
+
+The map is only a presentation layer. Discover never invents nearby providers, availability, offers or source evidence. Sparse and empty areas remain useful through Explore Kurukoo, Ask Kurukoo, Topics and watch/follow/save actions. Sponsored Discover placements come only from the existing approved `adManager` campaigns targeting `public_discovery` and are explicitly disclosed.
+
 ## Integrated control-plane truth
 
 The Admin Control Room is the operator surface over the same canonical platform used by Web, PWA, iOS and Android. It does not own a parallel provider registry, conversation store, payment state, notification queue or fulfilment engine. Its platform projection reads client surfaces, readiness, integration activation, notifications, trust/evidence, economic state and scale-transition prerequisites. Admin mutations re-enter owning domain services; dispute resolution follows the canonical dispute → escrow → Economic Request lifecycle. The legacy Admin dashboard redirects to `/admin/` so there is one canonical Admin home.
@@ -17,6 +23,10 @@ User → Conversation → Intent/AI → Canonical Skill
      → Native Assistance OR Economic Request OR canonical capability
      → Shared Memory / Presence / Network / Agent / Notification services
      → truthful result → continued conversation
+
+Discover → existing Topics / Nearby / Opportunities / Ads / Skills
+         → Chat / Watch / Follow / Save
+         → canonical agent or Economic Request when the user chooses to act
 ```
 
 Category-specific behaviour belongs in configuration, skill metadata and shared capability services. It must not create a separate economic engine unless a genuinely new architectural boundary is proven.
@@ -27,7 +37,7 @@ The repository is currently a single-process `sql.js` launch architecture. Real 
 
 ## PWA and native-client truth
 
-The PWA is the reference application experience for native iOS and Android clients. Public web remains the discovery/SEO/resources/marketing layer; the installed application remains the conversation-first personal workspace with requests, reminders, saved items, notifications, Discover, tasks, Points, safety, memory and account state. Future native clients inherit the same product interaction model and design system.
+The PWA is the reference application experience for native iOS and Android clients. Public web remains the discovery/SEO/resources/marketing layer; the installed application remains the conversation-first personal workspace with requests, reminders, saved items, notifications, Discover, tasks, Points, safety, memory and account state. Future native clients inherit the same product interaction model and design system. Native Discover consumes the same canonical `/api/discover/home` experience rather than maintaining a separate discovery catalogue.
 
 ## Conversational intelligence truth
 

@@ -1,0 +1,25 @@
+name: AI Convergence
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ai-convergence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx tsx scripts/audit-canonical-skill-catalogue.ts
+      - run: npx tsx scripts/test-ai-runtime-controls.ts
+      - run: npx tsx scripts/test-fasttext.ts
+      - run: npx tsx scripts/test-fasttext-router.ts
+      - run: npx tsx scripts/test-ai-inference-policy.ts
+      - run: npx tsx scripts/test-conversational-generation.ts

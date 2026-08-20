@@ -13,6 +13,7 @@ import { ensureTrustScoreSchema, recalculateAllTrustScores } from './trustScore.
 import { releaseExpiredDurableJobLeases } from './durableJobQueue.js';
 import { expireProviderVerifications } from './providerVerificationLifecycle.js';
 import { purgeOldWebhookEvents } from './channelWebhookDeduplication.js';
+import { processDiscoverWatches } from './discoverExperience.js';
 
 let started = false;
 const timers: NodeJS.Timeout[] = [];
@@ -75,6 +76,7 @@ export function startBackgroundWorkers(): void {
   const providerVerificationMs = process.env.KURUKOO_PROVIDER_VERIFICATION_INTERVAL_SEC ? Math.max(300_000, Number(process.env.KURUKOO_PROVIDER_VERIFICATION_INTERVAL_SEC) * 1000) : 24 * 60 * 60 * 1000;
   const leaseMs = process.env.KURUKOO_JOB_LEASE_SWEEP_INTERVAL_SEC ? Math.max(30_000, Number(process.env.KURUKOO_JOB_LEASE_SWEEP_INTERVAL_SEC) * 1000) : 60_000;
   const webhookPurgeMs = process.env.KURUKOO_WEBHOOK_DEDUP_PURGE_INTERVAL_SEC ? Math.max(300_000, Number(process.env.KURUKOO_WEBHOOK_DEDUP_PURGE_INTERVAL_SEC) * 1000) : 24 * 60 * 60 * 1000;
+  const discoverWatchMs = process.env.KURUKOO_DISCOVER_WATCH_INTERVAL_SEC ? Math.max(60_000, Number(process.env.KURUKOO_DISCOVER_WATCH_INTERVAL_SEC) * 1000) : 5 * 60 * 1000;
 
   timers.push(setInterval(() => { void safe('orchestration', async () => { const result = await runOrchestrationPass(); if (result.matched || result.quoted || result.released) console.log(`[Worker:orchestration] matched=${result.matched} quoted=${result.quoted} released=${result.released} failed=${result.failed}`); }); }, orchMs));
   timers.push(setInterval(() => { void safe('deferred', async () => { const r = await processDueDeferred(); await expireDeferredIntentions(); if (r.checked || r.matched) console.log(`[Worker:deferred] checked=${r.checked} matched=${r.matched} notified=${r.notified} quoted=${r.quoted}`); }); }, deferredMs));
@@ -87,6 +89,7 @@ export function startBackgroundWorkers(): void {
   timers.push(setInterval(() => { void safe('provider-verification-expiry', async () => { const expired = await expireProviderVerifications(); if (expired) console.log(`[Worker:provider-verification] expired=${expired}`); }); }, providerVerificationMs));
   timers.push(setInterval(() => { void safe('durable-job-leases', async () => { const released = await releaseExpiredDurableJobLeases(); if (released) console.log(`[Worker:durable-jobs] releasedExpiredLeases=${released}`); }); }, leaseMs));
   timers.push(setInterval(() => { void safe('webhook-dedup-purge', async () => { const deleted = await purgeOldWebhookEvents(30); if (deleted) console.log(`[Worker:webhook-dedup] deleted=${deleted}`); }); }, webhookPurgeMs));
+  timers.push(setInterval(() => { void safe('discover-watches', async () => { const result = await processDiscoverWatches(100); if (result.changed) console.log(`[Worker:discover-watches] checked=${result.checked} changed=${result.changed} notified=${result.notified}`); }); }, discoverWatchMs));
   for (const t of timers) t.unref?.();
   setTimeout(() => {
     void safe('orchestration:boot', () => runOrchestrationPass());
@@ -98,7 +101,8 @@ export function startBackgroundWorkers(): void {
     void safe('provider-verification:boot', async () => { await expireProviderVerifications(); });
     void safe('durable-job-leases:boot', async () => { await releaseExpiredDurableJobLeases(); });
     void safe('webhook-dedup:boot', async () => { await purgeOldWebhookEvents(30); });
+    void safe('discover-watches:boot', async () => { await processDiscoverWatches(100); });
   }, 15_000).unref?.();
-  console.log(`[Workers] Started orchestration=${Math.round(orchMs / 1000)}s deferred=${Math.round(deferredMs / 1000)}s reminders=${Math.round(reminderMs / 1000)}s safety=${Math.round(safetyMs / 1000)}s memory=${Math.round(memoryMs / 1000)}s purge=${Math.round(purgeMs / 1000)}s trust=${Math.round(trustMs / 1000)}s fcm=${Math.round(fcmMs / 1000)}s providerVerification=${Math.round(providerVerificationMs / 1000)}s durableJobLeases=${Math.round(leaseMs / 1000)}s webhookDedup=${Math.round(webhookPurgeMs / 1000)}s`);
+  console.log(`[Workers] Started orchestration=${Math.round(orchMs / 1000)}s deferred=${Math.round(deferredMs / 1000)}s reminders=${Math.round(reminderMs / 1000)}s safety=${Math.round(safetyMs / 1000)}s memory=${Math.round(memoryMs / 1000)}s purge=${Math.round(purgeMs / 1000)}s trust=${Math.round(trustMs / 1000)}s fcm=${Math.round(fcmMs / 1000)}s providerVerification=${Math.round(providerVerificationMs / 1000)}s durableJobLeases=${Math.round(leaseMs / 1000)}s webhookDedup=${Math.round(webhookPurgeMs / 1000)}s discoverWatches=${Math.round(discoverWatchMs / 1000)}s`);
 }
 export function stopBackgroundWorkers(): void { for (const t of timers) clearInterval(t); timers.length = 0; started = false; }

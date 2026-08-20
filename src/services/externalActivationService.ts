@@ -2,6 +2,7 @@ import { getExternalIntegrationOperationalStatus } from './externalIntegrationOp
 import { stripeStatus } from './stripePayment.js';
 import { getDriveConnectionStatus } from './artifactService.js';
 import { testMistralConnection, getMistralModel } from './mistralService.js';
+import { probeFirebaseFcmConnection } from './firebaseCloudMessaging.js';
 
 export interface ExternalActivationResult {
   provider: string;
@@ -66,6 +67,17 @@ async function resend(): Promise<ExternalActivationResult> {
   return response.ok ? { provider: 'email', configured: true, activated: true, verified: true, detail: `Resend API authenticated; ${Array.isArray(body?.data) ? body.data.length : 0} sender domains visible.` } : { provider: 'email', configured: true, activated: false, verified: false, detail: String(body?.message || `Resend verification failed (${response.status}).`) };
 }
 
+async function fcm(): Promise<ExternalActivationResult> {
+  try {
+    const probe = await probeFirebaseFcmConnection();
+    return probe.reachable
+      ? { provider: 'fcm', configured: true, activated: true, verified: true, detail: probe.detail, externalReference: probe.projectId }
+      : { provider: 'fcm', configured: probe.configured, activated: false, verified: probe.configured, detail: probe.detail };
+  } catch (error) {
+    return { provider: 'fcm', configured: true, activated: false, verified: false, detail: error instanceof Error ? error.message.slice(0, 200) : 'FCM activation probe failed.' };
+  }
+}
+
 async function mistral(): Promise<ExternalActivationResult> {
   const key = String(process.env.MISTRAL_API_KEY || '').trim();
   if (!key) return { provider: 'mistral', configured: false, activated: false, verified: false, detail: 'MISTRAL_API_KEY is not configured.' };
@@ -80,7 +92,7 @@ async function mistral(): Promise<ExternalActivationResult> {
 }
 
 export async function activateConfiguredExternalProviders(): Promise<{ generatedAt: string; results: ExternalActivationResult[]; readiness: ReturnType<typeof getExternalIntegrationOperationalStatus> }> {
-  const results = await Promise.all([telegram(), whatsapp(), stripe(), resend(), mistral()]);
+  const results = await Promise.all([telegram(), whatsapp(), stripe(), resend(), fcm(), mistral()]);
   return { generatedAt: new Date().toISOString(), results, readiness: getExternalIntegrationOperationalStatus() };
 }
 

@@ -35,7 +35,21 @@ jobs:
         run: npx tsx scripts/audit-platform-convergence.ts
       - name: Run platform runtime foundation contract
         run: npx tsx scripts/test-platform-foundations.ts
-      - name: Run broad route contracts
+      - name: Economic category convergence
+        run: npx tsx scripts/test-economic-category-convergence.ts
+      - name: Canonical skill catalogue integrity
+        run: npx tsx scripts/audit-canonical-skill-catalogue.ts
+      - name: Unknown-intent learning loop contract
+        run: npx tsx scripts/test-unknown-intent-review.ts
+      - name: AI runtime controls contract
+        run: npx tsx scripts/test-ai-runtime-controls.ts
+      - name: Discover experience contract
+        run: npx tsx scripts/test-discover-experience.ts
+      - name: Bin-day end-to-end contract
+        run: npx tsx scripts/test-bin-day-outcome.ts
+      - name: Catalogue inventory matcher contract
+        run: npx tsx scripts/test-catalogue-inventory-matcher.ts
+      - name: Broad route contracts
         run: npm run test:routes
       - name: Upload route-suite diagnostic log
         if: always()

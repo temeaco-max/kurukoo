@@ -6,6 +6,7 @@ interface FirebaseServiceAccount { project_id?: string; client_email?: string; p
 export interface FcmReadiness { configured: boolean; projectId?: string; reason: string; }
 export interface FirebaseWebConfigResponse { success: true; configured: boolean; reason: string; config?: { apiKey: string; authDomain: string; projectId: string; storageBucket: string; messagingSenderId: string; appId: string; vapidKey: string; }; }
 export interface FcmSendResult { attempted: boolean; accepted: boolean; providerReference?: string; failureReason?: string; }
+export interface FcmActivationProbe { configured: boolean; reachable: boolean; projectId?: string; detail: string; }
 let cachedAccessToken: { token: string; expiresAt: number } | null = null;
 
 function readServiceAccount(): FirebaseServiceAccount | null {
@@ -61,6 +62,20 @@ async function getAccessToken(account: FirebaseServiceAccount): Promise<string> 
   if (!data.access_token) throw new Error('oauth_token_missing');
   cachedAccessToken = { token: data.access_token, expiresAt: Date.now() + Math.max(60, Number(data.expires_in || 3600) - 60) * 1000 };
   return data.access_token;
+}
+
+export async function probeFirebaseFcmConnection(): Promise<FcmActivationProbe> {
+  const account = readServiceAccount();
+  if (!account?.project_id || !account.client_email || !account.private_key) {
+    return { configured: false, reachable: false, detail: 'FCM service-account configuration is absent or invalid.' };
+  }
+  try {
+    await getAccessToken(account);
+    return { configured: true, reachable: true, projectId: account.project_id, detail: 'Firebase service-account credentials successfully exchanged for an FCM OAuth access token. This proves provider authentication, not delivery to a physical device.' };
+  } catch (error) {
+    cachedAccessToken = null;
+    return { configured: true, reachable: false, projectId: account.project_id, detail: error instanceof Error ? error.message.slice(0, 200) : 'FCM provider authentication failed.' };
+  }
 }
 
 async function sendOneFcmToken(accessToken: string, account: FirebaseServiceAccount, token: string, input: { title: string; body: string; link?: string }): Promise<{ accepted: boolean; providerReference?: string; failureReason?: string }> {

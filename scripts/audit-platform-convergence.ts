@@ -11,6 +11,7 @@ import { getDurableJobStats } from '../src/services/durableJobQueue.js';
 import { listProviderVerifications } from '../src/services/providerVerificationLifecycle.js';
 import { attachmentSecurityReadiness, inspectAttachmentSecurity } from '../src/services/attachmentSecurityBoundary.js';
 import { getScaleTransitionReport } from '../src/services/scaleTransition.js';
+import { matchCatalogueInventory } from '../src/services/catalogueInventoryMatcher.js';
 
 const requiredFiles = [
   'src/services/canonicalChatTurnService.ts',
@@ -30,17 +31,24 @@ const requiredFiles = [
   'src/services/providerVerificationLifecycle.ts',
   'src/services/attachmentSecurityBoundary.ts',
   'src/services/artifactService.ts',
+  'src/services/catalogueInventoryMatcher.ts',
+  'src/services/discoveryNetwork.ts',
+  'src/services/discoverExperience.ts',
+  'src/services/adManager.ts',
+  'src/services/topicService.ts',
+  'src/routes/discoveryRoutes.ts',
   'src/routes/providerVerificationRoutes.ts',
   'src/routes/healthRoutes.ts',
   'src/routes/publicRoutes.ts',
   'scripts/runtime-smoke.ts',
+  'scripts/test-discover-experience.ts',
 ];
 
 for (const file of requiredFiles) assert.ok(fs.existsSync(path.join(process.cwd(), file)), `missing canonical owner: ${file}`);
 
 const skills = getAllConvergedSkillNames();
 const localExtensions = getLocalSkillExtensions();
-assert.ok(skills.length >= 239, `converged catalogue unexpectedly shrank: ${skills.length}`);
+assert.ok(skills.length >= 241, `converged catalogue unexpectedly shrank: ${skills.length}`);
 assert.equal(new Set(skills).size, skills.length, 'skill ids must remain unique');
 
 const contractFailures: Array<{ skill: string; issue: string }> = [];
@@ -79,11 +87,14 @@ const providerVerifications = await listProviderVerifications(undefined, 1);
 const attachmentReadiness = attachmentSecurityReadiness();
 const attachmentProbe = inspectAttachmentSecurity({ data: Buffer.from('safe synthetic attachment'), mimeType: 'text/plain', filename: 'probe.txt' });
 assert.equal(attachmentProbe.state, 'accepted', `attachment security probe unexpectedly failed: ${attachmentProbe.reason || attachmentProbe.state}`);
+const inventoryProbe = await matchCatalogueInventory({ query: '' });
+assert.deepEqual(inventoryProbe, [], 'empty inventory query must not return provider inventory');
 const scale = getScaleTransitionReport();
 
 const report = {
   generatedAt: new Date().toISOString(),
   catalogue: {
+    canonicalMinimum: 241,
     convergedSkills: skills.length,
     localExtensions: localExtensions.length,
     deviceRepairSkills: skills.filter(skill => /(?:phone|laptop|tablet|console|tv|smartwatch|earbuds|speaker|appliance|bicycle|motorbike|vehicle)_/.test(skill)).length,
@@ -95,9 +106,11 @@ const report = {
   durableJobs,
   providerVerification: { recordsObserved: providerVerifications.length },
   attachmentSecurity: { readiness: attachmentReadiness, syntheticProbe: attachmentProbe },
+  inventory: { emptyQuerySafe: true },
+  discover: { experience: 'for_you+nearby+today+topics+opportunities+explore', persistentActions: ['watch','follow','save'], sponsoredPlacementBoundary: 'adManager.public_discovery', mapIsPresentationLayer: true, sparseAreaRecovery: ['ask_kurukoo','explore_capabilities','topics','watch'] },
   scale,
   canonicalOwners: requiredFiles,
-  externalActivationBoundary: 'live payment, external channels, physical providers, connected devices, durable production infrastructure and deployment evidence remain activation gates; no audit result promotes simulation to production truth',
+  externalRuntimeBoundary: 'provider/device/infrastructure credentials and live deployment evidence are runtime configuration; repository audits never convert simulation into a production claim',
 };
 const outputDir = path.join(process.cwd(), 'data', 'audits');
 fs.mkdirSync(outputDir, { recursive: true });

@@ -1,6 +1,7 @@
 import express, { Router } from 'express';
 import { optionalAuthenticateUser, type AuthRequest } from '../middleware/auth.js';
 import { getDiscoveryNetworkReadiness, inviteContributorToDiscoveryEntity, queryDiscoveryEntities, type DiscoveryEntity } from '../services/discoveryNetwork.js';
+import { getDiscoverHome, recordDiscoverAction, removeDiscoverAction, type DiscoverAction, type DiscoverItemType } from '../services/discoverExperience.js';
 
 type DiscoveryLayer = 'place' | 'business' | 'service' | 'event' | 'provider' | 'agent' | 'community_context' | 'mobile' | 'stationary' | 'events' | 'deals' | 'tasks';
 const EARTH_RADIUS_METRES = 6_371_000;
@@ -129,7 +130,26 @@ export function createDiscoveryRouter(): Router {
     return { result, groups, layers };
   };
 
-  router.get('/api/discover/readiness', (_req, res) => res.json({ success: true, ...getDiscoveryNetworkReadiness(), activation: 'repository_ready_external_provider_activation_required' }));
+  router.get('/api/discover/readiness', (_req, res) => res.json({ success: true, ...getDiscoveryNetworkReadiness(), experience: 'for_you+nearby+today+topics+opportunities+explore', actionBoundary: 'watch_follow_save_chat', activation: 'repository_ready_external_provider_activation_required' }));
+  router.get('/api/discover/home', optionalAuthenticateUser, async (req: AuthRequest, res) => {
+    try {
+      const latitude = Number(req.query.lat); const longitude = Number(req.query.lng);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return res.status(400).json({ success: false, error: 'lat and lng are required numbers' });
+      const home = await getDiscoverHome({ latitude, longitude, radiusMetres: Number(req.query.radius || 10_000), limit: Number(req.query.limit || 60), conversationId: typeof req.query.conversationId === 'string' ? req.query.conversationId : undefined }, req.user?.phone);
+      res.setHeader('Cache-Control', req.user?.phone ? 'private, max-age=30' : 'public, max-age=30, stale-while-revalidate=60');
+      return res.json({ success: true, ...home });
+    } catch (error) { return res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unable to build Discover' }); }
+  });
+  router.post('/api/discover/items/:type/:id/actions', optionalAuthenticateUser, async (req: AuthRequest, res) => {
+    const phone = req.user?.phone; if (!phone) return res.status(401).json({ success: false, error: 'Authenticated user is required' });
+    try { return res.status(201).json({ success: true, ...(await recordDiscoverAction(phone, String(req.params.type) as DiscoverItemType, String(req.params.id), String(req.body?.action || '') as DiscoverAction)) }); }
+    catch (error) { return res.status(422).json({ success: false, error: error instanceof Error ? error.message : 'Unable to record Discover action' }); }
+  });
+  router.delete('/api/discover/items/:type/:id/actions/:action', optionalAuthenticateUser, async (req: AuthRequest, res) => {
+    const phone = req.user?.phone; if (!phone) return res.status(401).json({ success: false, error: 'Authenticated user is required' });
+    try { return res.json(await removeDiscoverAction(phone, String(req.params.type) as DiscoverItemType, String(req.params.id), String(req.params.action) as DiscoverAction)); }
+    catch (error) { return res.status(422).json({ success: false, error: error instanceof Error ? error.message : 'Unable to remove Discover action' }); }
+  });
 
   router.get('/api/discover/entities', async (req, res, next) => {
     try {

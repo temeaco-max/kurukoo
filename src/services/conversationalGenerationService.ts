@@ -1,4 +1,4 @@
-import { queryUnifiedAI, resolveConfiguredHostedProvider, type AIProvider, type AIResponse, type ConversationalContextHint } from './unifiedAiEngine.js';
+import { queryUnifiedAI, resolveConfiguredHostedProvider, getLastAiRoutingDiagnostic, type AIProvider, type AIResponse, type ConversationalContextHint } from './unifiedAiEngine.js';
 import { assessConversationQuality, type ConversationQualityAssessment } from './conversationQualityService.js';
 import { buildConversationTurnContract, buildConversationalSystemDirective, type ConversationTurnContract } from './conversationTurnContractService.js';
 import { buildConversationContextPack } from './conversationContextPackService.js';
@@ -7,10 +7,12 @@ import { buildConnectedResourceContext } from './connectedResourceService.js';
 import { getFeatureFlag } from './featureFlags.js';
 import { buildRuntimeSkillInstruction, resolveRuntimeSkillBehaviour } from './skillBehaviourRuntime.js';
 import { chooseInferenceProvider } from './aiInferencePolicy.js';
+import { recordAiUsageEvent } from './aiCostTelemetry.js';
+import { recordAiProviderFailure, recordAiProviderSuccess, type AiProvider } from './aiProviderHealth.js';
 
 export type ConversationGenerationMode = 'generate' | 'present' | 'deterministic';
 export interface ConversationalGenerationInput {
-  owner?: 'conversationalGenerationService'; prompt: string; phone?: string; threadId?: string; provider?: AIProvider; systemPrompt?: string; contextHint?: ConversationalContextHint; activeContextIds?: string[]; activeGoals?: string[]; knownFacts?: string[]; pendingFields?: string[]; pausedGoals?: string[]; currentGoal?: string; priorAssistantReplies?: string[]; canonicalAction?: string; cardType?: string; generationMode?: ConversationGenerationMode; seedResponse?: AIResponse; canonicalOutcomeGuidance?: CapabilityConversationGuidance; canonicalOutcome?: CanonicalOutcomeLike;
+  owner?: 'conversationalGenerationService'; prompt: string; phone?: string; agentId?: string; threadId?: string; provider?: AIProvider; systemPrompt?: string; contextHint?: ConversationalContextHint; activeContextIds?: string[]; activeGoals?: string[]; knownFacts?: string[]; pendingFields?: string[]; pausedGoals?: string[]; currentGoal?: string; priorAssistantReplies?: string[]; canonicalAction?: string; cardType?: string; generationMode?: ConversationGenerationMode; seedResponse?: AIResponse; canonicalOutcomeGuidance?: CapabilityConversationGuidance; canonicalOutcome?: CanonicalOutcomeLike;
 }
 export interface ConversationalGenerationResult extends AIResponse { contract: ConversationTurnContract; quality: ConversationQualityAssessment; escalated: boolean; attemptCount: number; contextTurns: number; generationMode: ConversationGenerationMode; }
 const ACTION_RESPONSE_RE = /\b(?:book|order|hire|find (?:someone|me)|arrange|schedule|pay|cancel|subscribe|dispatch|send|confirm|create|set (?:a )?reminder|proceed|go ahead)\b/i;
@@ -58,5 +60,15 @@ export async function generateConversationalResponse(input: ConversationalGenera
     if (needsRepair && contract.mode !== 'control') { const provider = strongerProvider(conversationProvider); try { const repaired = await queryUnifiedAI(input.prompt, { provider, systemPrompt: [contextualSystemPrompt || input.systemPrompt || '', buildRepairInstruction(contract, assessment)].filter(Boolean).join('\n\n'), phone: input.phone, threadId: input.threadId, conversational: true, contextHint: input.contextHint }); const repairedAssessment = assess(input, contract, repaired.text); attempts += 1; if (!responseViolatesActionPosture(repaired.text, contract) && (repairedAssessment.score >= assessment.score || repairedAssessment.conversational)) { response = repaired; assessment = repairedAssessment; escalated = repaired.provider !== base.provider || repaired.model !== base.model; } } catch {} }
     if (responseViolatesActionPosture(response.text, contract) && contract.mode !== 'control') { const provider = strongerProvider(conversationProvider); try { const strictRepair = await queryUnifiedAI(input.prompt, { provider, systemPrompt: [contextualSystemPrompt || input.systemPrompt || '', buildStrictRepairInstruction(contract)].filter(Boolean).join('\n\n'), phone: input.phone, threadId: input.threadId, conversational: true, contextHint: input.contextHint }); const strictAssessment = assess(input, contract, strictRepair.text); attempts += 1; if (!responseViolatesActionPosture(strictRepair.text, contract) && strictAssessment.conversational) { response = strictRepair; assessment = strictAssessment; escalated = true; } } catch {} }
   }
+  const routing = getLastAiRoutingDiagnostic();
+  if (routing) {
+    const providers = ['mistral','gemini','groq','openrouter'] as AiProvider[];
+    for (const provider of providers) {
+      if (!routing.attemptedProviders.includes(provider)) continue;
+      if (routing.actualProvider.toLowerCase().startsWith(provider)) recordAiProviderSuccess(provider, response.latencyMs);
+      else recordAiProviderFailure(provider, routing.fallbackReason || 'provider_fallback', response.latencyMs);
+    }
+  }
+  await recordAiUsageEvent({ requestId: input.threadId ? `${input.threadId}:${Date.now()}` : undefined, phone: input.phone, agentId: input.agentId, provider: response.provider, model: response.model, inputTokens: Math.ceil((contextualSystemPrompt.length + input.prompt.length) / 4), outputTokens: Math.ceil((response.text || '').length / 4), latencyMs: response.latencyMs, success: response.provider !== 'Kurukoo Template', escalationReason: decision.escalationReason });
   return { ...response, contract, quality: assessment, escalated, attemptCount: attempts, contextTurns: contextPack.turns, generationMode };
 }

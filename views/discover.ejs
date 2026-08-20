@@ -1,64 +1,26 @@
-<%- include('_partials/head', { pageStyles: ['/css/kurukoo-public-pages.css?v=4','/css/kurukoo-discover.css?v=2'] }) %>
+<%- include('_partials/head', { pageStyles: ['/css/kurukoo-public-pages.css?v=4','/css/kurukoo-discover.css?v=3'] }) %>
 <%- include('_partials/nav') %>
 
 <main class="frontend-discover-page">
   <section class="frontend-discover container" aria-labelledby="discover-title">
     <header class="frontend-discover__header">
-      <div class="frontend-discover__intro">
-        <span class="eyebrow">Nearby pulse</span>
-        <h1 id="discover-title">Find what could help next.</h1>
-        <p>Explore places, services, events and opportunities around you. Discovery is a starting point—not proof that an entity is a Kurukoo provider or available.</p>
-      </div>
+      <div class="frontend-discover__intro"><span class="eyebrow">Discover</span><h1 id="discover-title">See what could matter to you today.</h1><p>Explore things to do, things to buy, people and businesses nearby, conversations worth joining, opportunities and things Kurukoo can do for you. Every item can lead back into Chat.</p></div>
       <div class="frontend-discover__header-actions">
-        <form class="frontend-discover__search" id="discover-search-form" role="search" action="/discover" method="get">
-          <label class="sr-only" for="discover-search">Search nearby places, services and opportunities</label>
-          <svg class="k-icon" aria-hidden="true"><use href="/icons/kurukoo-icons.svg#discover"></use></svg>
-          <input id="discover-search" name="q" type="search" placeholder="What are you looking for nearby?" autocomplete="off">
-          <button class="discover-search-submit" type="submit">Search</button>
-        </form>
-        <div class="discover-intent-chips" role="list" aria-label="Discovery intents">
-          <button class="discover-intent-chip is-active" type="button" data-intent="all" aria-pressed="true">All nearby</button>
-          <button class="discover-intent-chip" type="button" data-intent="service" aria-pressed="false">Services</button>
-          <button class="discover-intent-chip" type="button" data-intent="place" aria-pressed="false">Places</button>
-          <button class="discover-intent-chip" type="button" data-intent="event" aria-pressed="false">Events</button>
-          <button class="discover-intent-chip" type="button" data-intent="opportunity" aria-pressed="false">Opportunities</button>
-        </div>
+        <form class="frontend-discover__search" id="discover-search-form" role="search"><label class="sr-only" for="discover-search">Search Discover</label><svg class="k-icon" aria-hidden="true"><use href="/icons/kurukoo-icons.svg#discover"></use></svg><input id="discover-search" type="search" placeholder="What are you looking for?" autocomplete="off"><button class="discover-search-submit" type="submit">Explore</button></form>
+        <div class="discover-intent-chips" role="list" aria-label="Discovery views"><button class="discover-intent-chip is-active" type="button" data-view="all" aria-pressed="true">All</button><button class="discover-intent-chip" type="button" data-view="nearby" aria-pressed="false">Nearby</button><button class="discover-intent-chip" type="button" data-view="topics" aria-pressed="false">Topics</button><button class="discover-intent-chip" type="button" data-view="opportunities" aria-pressed="false">Opportunities</button><button class="discover-intent-chip" type="button" data-view="explore" aria-pressed="false">What Kurukoo can do</button></div>
       </div>
     </header>
 
-    <div class="discover-trust-strip" role="note">
-      <span class="discover-trust-strip__icon" aria-hidden="true"><svg class="k-icon"><use href="/icons/kurukoo-icons.svg#discover"></use></svg></span>
-      <span><strong>Map is a presentation layer.</strong> Results are source-attributed, approximate and freshness-aware. Open a result in Chat to decide what happens next.</span>
-      <a href="/help#discover">How discovery works</a>
-    </div>
+    <div class="discover-trust-strip" role="note"><span class="discover-trust-strip__icon" aria-hidden="true"><svg class="k-icon"><use href="/icons/kurukoo-icons.svg#discover"></use></svg></span><span><strong>Discovery is a starting point, not proof.</strong> Results are source-attributed and freshness-aware. Open the exact context in Chat before asking Kurukoo to act.</span><a href="/help#discover">How it works</a></div>
+
+    <section class="discover-feed" aria-labelledby="discover-feed-title"><div class="discover-feed__heading"><div><span class="eyebrow">Your discovery feed</span><h2 id="discover-feed-title">What could be useful next</h2></div><span class="discover-feed__density" data-density>Preparing your view…</span></div><div class="discover-sparse" data-sparse hidden><div><strong>There is not much attributed here yet.</strong><p data-sparse-copy>Ask Kurukoo directly, explore its capabilities, follow a topic or create a watch for something you want us to notice.</p></div><a class="btn btn-primary" href="/chat?prompt=Help%20me%20find%20something%20useful%20nearby">Ask Kurukoo</a></div><div class="discover-section-grid" data-discover-sections></div></section>
 
     <div class="discover-workspace" data-discover-state="loading">
-      <aside class="discover-control-panel" aria-label="Discover controls">
-        <div class="discover-control-panel__heading"><div><span class="eyebrow">Your view</span><h2>Refine nearby</h2></div><button class="discover-clear" type="button" data-discover-clear>Clear</button></div>
-        <fieldset class="discover-filter-group"><legend>Show</legend>
-          <label class="discover-filter-option"><input type="checkbox" data-layer="service" aria-label="Show services" checked><span class="discover-filter-option__dot discover-filter-option__dot--service"></span><span>Services</span><small data-count="service">—</small></label>
-          <label class="discover-filter-option"><input type="checkbox" data-layer="place" aria-label="Show places" checked><span class="discover-filter-option__dot discover-filter-option__dot--place"></span><span>Places</span><small data-count="place">—</small></label>
-          <label class="discover-filter-option"><input type="checkbox" data-layer="event" aria-label="Show events" checked><span class="discover-filter-option__dot discover-filter-option__dot--event"></span><span>Events</span><small data-count="event">—</small></label>
-          <label class="discover-filter-option"><input type="checkbox" data-layer="business" aria-label="Show businesses" checked><span class="discover-filter-option__dot discover-filter-option__dot--business"></span><span>Businesses</span><small data-count="business">—</small></label>
-        </fieldset>
-        <fieldset class="discover-filter-group"><legend>Distance</legend><div class="discover-segmented" role="group" aria-label="Search radius"><button type="button" data-radius="3000">3 km</button><button class="is-active" type="button" data-radius="10000">10 km</button><button type="button" data-radius="25000">25 km</button></div></fieldset>
-        <div class="discover-control-panel__footer"><button class="discover-refresh" type="button" data-discover-refresh><svg class="k-icon" aria-hidden="true"><use href="/icons/kurukoo-icons.svg#refresh"></use></svg><span>Refresh results</span></button><span class="discover-last-updated" data-last-updated>Waiting for location</span></div>
-      </aside>
-
-      <section class="discover-map-column" aria-label="Discovery map and results">
-        <div class="discover-map-card">
-          <div class="discover-map-card__header"><div><span class="discover-map-card__eyebrow">Approximate area</span><strong data-area-label>Near you</strong></div><span class="discover-map-card__status" data-map-status>Preparing discovery…</span></div>
-          <div id="discover-map" class="discover-map-box" role="application" aria-label="Approximate discovery network map"></div>
-          <div class="discover-map-card__legend" aria-label="Map legend"><span><i class="discover-legend-dot discover-legend-dot--service"></i>Service</span><span><i class="discover-legend-dot discover-legend-dot--place"></i>Place</span><span><i class="discover-legend-dot discover-legend-dot--event"></i>Event</span><span><i class="discover-legend-dot discover-legend-dot--business"></i>Business</span></div>
-        </div>
-        <div class="discover-results-header"><div><span class="eyebrow">Nearby results</span><h2><span data-result-count>0</span> possibilities to explore</h2></div><label class="discover-sort" for="discover-sort"><span>Sort</span><select id="discover-sort" data-discover-sort><option value="distance">Closest first</option><option value="freshness">Recently refreshed</option><option value="lifecycle">Most ready</option></select></label></div>
-        <div id="discover-list" class="discover-result-list" aria-live="polite" aria-busy="true"></div>
-      </section>
+      <aside class="discover-control-panel" aria-label="Nearby controls"><div class="discover-control-panel__heading"><div><span class="eyebrow">Nearby</span><h2>Refine your local view</h2></div><button class="discover-clear" type="button" data-discover-clear>Clear</button></div><fieldset class="discover-filter-group"><legend>Show</legend><label class="discover-filter-option"><input type="checkbox" data-layer="service" checked><span class="discover-filter-option__dot discover-filter-option__dot--service"></span><span>Services</span></label><label class="discover-filter-option"><input type="checkbox" data-layer="place" checked><span class="discover-filter-option__dot discover-filter-option__dot--place"></span><span>Places</span></label><label class="discover-filter-option"><input type="checkbox" data-layer="event" checked><span class="discover-filter-option__dot discover-filter-option__dot--event"></span><span>Events</span></label><label class="discover-filter-option"><input type="checkbox" data-layer="business" checked><span class="discover-filter-option__dot discover-filter-option__dot--business"></span><span>Businesses</span></label></fieldset><fieldset class="discover-filter-group"><legend>Distance</legend><div class="discover-segmented" role="group" aria-label="Search radius"><button type="button" data-radius="3000">3 km</button><button class="is-active" type="button" data-radius="10000">10 km</button><button type="button" data-radius="25000">25 km</button></div></fieldset><div class="discover-control-panel__footer"><button class="discover-refresh" type="button" data-discover-refresh><svg class="k-icon" aria-hidden="true"><use href="/icons/kurukoo-icons.svg#refresh"></use></svg><span>Refresh</span></button><span class="discover-last-updated" data-last-updated>Waiting for location</span></div></aside>
+      <section class="discover-map-column" aria-label="Nearby discovery map and results"><div class="discover-map-card"><div class="discover-map-card__header"><div><span class="discover-map-card__eyebrow">Nearby network</span><strong data-area-label>Approximate area</strong></div><span class="discover-map-card__status" data-map-status>Preparing…</span></div><div id="discover-map" class="discover-map-box" role="application" aria-label="Approximate nearby discovery map"></div><div class="discover-map-card__legend" aria-label="Map legend"><span><i class="discover-legend-dot discover-legend-dot--service"></i>Service</span><span><i class="discover-legend-dot discover-legend-dot--place"></i>Place</span><span><i class="discover-legend-dot discover-legend-dot--event"></i>Event</span><span><i class="discover-legend-dot discover-legend-dot--business"></i>Business</span></div></div><div class="discover-results-header"><div><span class="eyebrow">Nearby results</span><h2><span data-result-count>0</span> possibilities</h2></div><label class="discover-sort" for="discover-sort"><span>Sort</span><select id="discover-sort" data-discover-sort><option value="distance">Closest first</option><option value="freshness">Recently refreshed</option><option value="lifecycle">Most ready</option></select></label></div><div id="discover-list" class="discover-result-list" aria-live="polite" aria-busy="true"></div></section>
     </div>
 
-    <section class="discover-next-step" aria-labelledby="discover-next-step-title"><div><span class="eyebrow">Keep the context</span><h2 id="discover-next-step-title">Found something worth exploring?</h2><p>Open the exact discovery context in Chat. Kurukoo will help you clarify the need before any provider, invitation or fulfilment step is proposed.</p></div><a class="btn btn-primary" href="/chat?prompt=Help%20me%20explore%20what%20I%20found%20nearby">Continue in Chat</a></section>
-    <p class="discover-disclaimer">Privacy: location is coarse for discovery and map coordinates are fuzzed. Discovered entities are not Kurukoo users or providers until they claim, onboard and pass the appropriate verification lifecycle.</p>
+    <section class="discover-next-step" aria-labelledby="discover-next-step-title"><div><span class="eyebrow">Keep the context</span><h2 id="discover-next-step-title">Found something worth doing?</h2><p>Open the exact discovery context in Chat. Kurukoo can answer, compare, book, buy, remind, negotiate or hand the work to an agent according to the capability and evidence available.</p></div><a class="btn btn-primary" href="/chat?prompt=Help%20me%20decide%20what%20to%20do">Continue in Chat</a></section><p class="discover-disclaimer">Privacy: discovery uses coarse location and public map coordinates are fuzzed. A discovered entity is not automatically a Kurukoo provider, offer or availability claim.</p>
   </section>
 </main>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script><script src="/js/kurukoo-discover-map.js?v=2" defer></script>
-<%- include('_partials/footer') %>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script><script src="/js/kurukoo-discover-experience.js?v=1" defer></script><script src="/js/kurukoo-discover-map.js?v=3" defer></script><%- include('_partials/footer') %>
