@@ -30,6 +30,7 @@ jobs:
       - name: Platform frame contracts
         run: |
           npx tsx scripts/test-platform-convergence-frames.ts
+          npx tsx scripts/test-os-weave-contract.ts
           npx tsx scripts/test-ai-router-free-first.ts
           npx tsx scripts/test-skill-interaction-convergence.ts
           npx tsx scripts/test-platform-feature-visual-coverage.ts
@@ -44,6 +45,8 @@ jobs:
           npx tsx scripts/test-discover-category-commerce.ts
           npx tsx scripts/test-order-lead-points.ts
           npx tsx scripts/test-economic-lifecycle.ts
+      - name: Web build
+        run: npm run build
       - name: Mobile contract and platform exports
         working-directory: mobile/kurukoo-mobile
         run: |
