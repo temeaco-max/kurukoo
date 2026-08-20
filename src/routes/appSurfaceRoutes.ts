@@ -5,8 +5,8 @@ import { getPilotReadiness } from '../services/pilotReadiness.js';
 import { getClientSurfaces } from '../services/clientSurfaceRegistry.js';
 import { PLATFORM_FEATURE_VISUAL_CONTRACTS } from '../services/platformFeatureVisualRegistry.js';
 import { getDriveConnectionStatus, listArtifacts, startGoogleDriveConnection } from '../services/artifactService.js';
+import { getArtifactWorkspaceRecords, normalizeArtifactDriveLocation } from '../services/artifactDriveEnhancer.js';
 import economicDispatchRoutes from './economicDispatchRoutes.js';
-
 const router = express.Router();
 const surfaceMap = new Map([
   ['agent', { title: 'Agent', eyebrow: 'Your Kurukoo relationship', description: 'Conversation is the universal control surface for requests, reminders, memory, agents and coordinated work.', cta: '/chat', ctaLabel: 'Open Chat' }],
@@ -34,29 +34,9 @@ const surfaceMap = new Map([
   ['notifications', { title: 'Notifications', eyebrow: 'Stay connected', description: 'Notifications return relevant continuation, request and reminder context while preserving the same conversation identity.', cta: '/chat?prompt=Show%20me%20my%20notifications', ctaLabel: 'Review with Kurukoo' }],
   ['safety', { title: 'Safety', eyebrow: 'Safety and check-ins', description: 'Safety context, trusted contacts and check-ins are explicit, consent-bound and never represented as emergency-service fulfilment.', cta: '/app/safety', ctaLabel: 'Open Safety' }],
 ]);
-
-async function renderApp(req: express.Request, res: express.Response, section = 'agent') {
-  const authReq = req as AuthRequest; if (!authReq.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent(req.path)}`);
-  const selected = surfaceMap.get(section) ?? surfaceMap.get('agent')!; const surfaces = getClientSurfaces('web'); const readiness = getPilotReadiness(); const integrations = getExternalIntegrationReadiness();
-  const enabledIntegrations = integrations.filter((item: any) => item.implementation?.state === 'IMPLEMENTED' || item.implementation?.implemented === true).length;
-  return res.render('app', { selected, section, displayName: authReq.user.name || authReq.user.phone, phone: authReq.user.phone, surfaces, readiness, integrations, enabledIntegrations, integrationCount: integrations.length, visualFeatures: PLATFORM_FEATURE_VISUAL_CONTRACTS.filter(feature => !feature.audience.includes('admin')) });
-}
-
-router.get('/api/platform/feature-visuals', (_req, res) => res.json({ success: true, features: PLATFORM_FEATURE_VISUAL_CONTRACTS.filter(feature => !feature.audience.includes('admin')) }));
-router.use('/api', economicDispatchRoutes);
-router.get('/app', optionalAuthenticateUser, (req, res) => void renderApp(req, res, 'agent'));
-router.get('/app/artifacts/connect', optionalAuthenticateUser, async (req: AuthRequest, res) => {
-  if (!req.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent('/app/artifacts')}`);
-  try { const { authorizationUrl } = await startGoogleDriveConnection(req.user.phone); return res.redirect(302, authorizationUrl); } catch { return res.redirect(302, '/app/artifacts?drive=unavailable'); }
-});
-router.get('/app/artifacts', optionalAuthenticateUser, async (req: AuthRequest, res) => {
-  if (!req.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent('/app/artifacts')}`);
-  try { const artifacts = await listArtifacts(req.user.phone); const artifactStorage = await getDriveConnectionStatus(req.user.phone); return res.render('artifacts', { displayName: req.user.name || req.user.phone, phone: req.user.phone, artifacts, artifactStorage, selected: surfaceMap.get('artifacts') }); }
-  catch { return res.render('artifacts', { displayName: req.user.name || req.user.phone, phone: req.user.phone, artifacts: [], artifactStorage: { connected: false, reason: 'Artifact storage status is temporarily unavailable.' }, selected: surfaceMap.get('artifacts') }); }
-});
+async function renderApp(req: express.Request, res: express.Response, section = 'agent') { const authReq = req as AuthRequest; if (!authReq.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent(req.path)}`); const selected = surfaceMap.get(section) ?? surfaceMap.get('agent')!; const surfaces = getClientSurfaces('web'); const readiness = getPilotReadiness(); const integrations = getExternalIntegrationReadiness(); const enabledIntegrations = integrations.filter((item: any) => item.implementation?.state === 'IMPLEMENTED' || item.implementation?.implemented === true).length; return res.render('app', { selected, section, displayName: authReq.user.name || authReq.user.phone, phone: authReq.user.phone, surfaces, readiness, integrations, enabledIntegrations, integrationCount: integrations.length, visualFeatures: PLATFORM_FEATURE_VISUAL_CONTRACTS.filter(feature => !feature.audience.includes('admin')) }); }
+router.get('/api/platform/feature-visuals', (_req, res) => res.json({ success: true, features: PLATFORM_FEATURE_VISUAL_CONTRACTS.filter(feature => !feature.audience.includes('admin')) })); router.use('/api', economicDispatchRoutes); router.get('/app', optionalAuthenticateUser, (req, res) => void renderApp(req, res, 'agent'));
+router.get('/app/artifacts/connect', optionalAuthenticateUser, async (req: AuthRequest, res) => { if (!req.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent('/app/artifacts')}`); try { const { authorizationUrl } = await startGoogleDriveConnection(req.user.phone); return res.redirect(302, authorizationUrl); } catch { return res.redirect(302, '/app/artifacts?drive=unavailable'); } });
+router.get('/app/artifacts', optionalAuthenticateUser, async (req: AuthRequest, res) => { if (!req.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent('/app/artifacts')}`); try { const base = await listArtifacts(req.user.phone); await Promise.all(base.filter((artifact) => artifact.storageProvider === 'google_drive').slice(0, 50).map((artifact) => normalizeArtifactDriveLocation(req.user!.phone, artifact.id).catch(() => undefined))); const records = await getArtifactWorkspaceRecords(req.user.phone); const metadata = new Map(records.map((record: any) => [String(record.id), record])); const artifacts = base.map((artifact: any) => { const record = metadata.get(String(artifact.id)); return { ...artifact, externalUrl: artifact.externalUrl || record?.web_view_link, webContentLink: record?.web_content_link || undefined, thumbnailUrl: record?.thumbnail_url || undefined, driveFolderId: record?.drive_folder_id || undefined }; }); const artifactStorage = await getDriveConnectionStatus(req.user.phone); return res.render('artifacts', { displayName: req.user.name || req.user.phone, phone: req.user.phone, artifacts, artifactStorage, selected: surfaceMap.get('artifacts') }); } catch { return res.render('artifacts', { displayName: req.user.name || req.user.phone, phone: req.user.phone, artifacts: [], artifactStorage: { connected: false, reason: 'Artifact storage status is temporarily unavailable.' }, selected: surfaceMap.get('artifacts') }); } });
 for (const section of surfaceMap.keys()) { if (section === 'artifacts') continue; router.get(`/app/${section}`, optionalAuthenticateUser, (req, res) => void renderApp(req, res, section)); }
-const completedLegacyToCanonical: Record<string, string> = { '/requests': '/app/requests', '/points': '/app/points', '/tasks': '/app/tasks', '/top-up': '/app/top-up', '/subscription': '/app/subscriptions', '/memory': '/app/memory', '/safety': '/app/safety', '/call': '/app/call', '/connect': '/app/connect', '/confirmation': '/app/confirmations' };
-for (const [legacyPath, canonicalPath] of Object.entries(completedLegacyToCanonical)) router.get(legacyPath, optionalAuthenticateUser, (req, res) => { const authReq = req as AuthRequest; if (!authReq.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent(req.path)}`); return res.redirect(302, canonicalPath); });
-router.get('/web', (_req, res) => res.redirect(302, '/app'));
-router.get('/workspace', (_req, res) => res.redirect(302, '/app'));
-export default router;
+const completedLegacyToCanonical: Record<string, string> = { '/requests': '/app/requests', '/points': '/app/points', '/tasks': '/app/tasks', '/top-up': '/app/top-up', '/subscription': '/app/subscriptions', '/memory': '/app/memory', '/safety': '/app/safety', '/call': '/app/call', '/connect': '/app/connect', '/confirmation': '/app/confirmations' }; for (const [legacyPath, canonicalPath] of Object.entries(completedLegacyToCanonical)) router.get(legacyPath, optionalAuthenticateUser, (req, res) => { const authReq = req as AuthRequest; if (!authReq.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent(req.path)}`); return res.redirect(302, canonicalPath); }); router.get('/web', (_req, res) => res.redirect(302, '/app')); router.get('/workspace', (_req, res) => res.redirect(302, '/app')); export default router;
