@@ -55,9 +55,19 @@
     [['Today','#today'],['Nearby','#nearby'],['Topics','/app/topics'],['Opportunities','/app/opportunities'],['Products','#products'],['Ask Kurukoo','/chat']].forEach(([label,href],i)=>{const a=document.createElement('a');a.href=href;a.className=`k-app-quick-action${i===5?' primary':''}`;a.textContent=label;nav.appendChild(a)});
     title.insertAdjacentElement('afterend',nav);
   };
-  const getLocation = () => new Promise((resolve) => {
+  const getLocation = async () => {
+    if (!navigator.geolocation) return null;
+    try {
+      if (navigator.permissions?.query) {
+        const permission = await navigator.permissions.query({ name: 'geolocation' });
+        if (permission.state !== 'granted') return null;
+      } else return null;
+      return await new Promise((resolve) => navigator.geolocation.getCurrentPosition((pos) => resolve({lat:pos.coords.latitude,lng:pos.coords.longitude}), () => resolve(null), {enableHighAccuracy:false,maximumAge:300000,timeout:5000}));
+    } catch { return null; }
+  };
+  const requestLocation = () => new Promise((resolve) => {
     if (!navigator.geolocation) return resolve(null);
-    navigator.geolocation.getCurrentPosition((pos) => resolve({lat:pos.coords.latitude,lng:pos.coords.longitude}), () => resolve(null), {enableHighAccuracy:false,maximumAge:300000,timeout:5000});
+    navigator.geolocation.getCurrentPosition((pos) => resolve({lat:pos.coords.latitude,lng:pos.coords.longitude}), () => resolve(null), {enableHighAccuracy:false,maximumAge:300000,timeout:8000});
   });
   const linkForItem = (item) => {
     const action = item?.chatAction || item?.action || {};
@@ -92,10 +102,13 @@
         const arr = Array.isArray(items) ? items.filter(Boolean).slice(0,6) : [];
         const group = document.createElement('section'); group.className='k-app-discover-group'; group.id=id;
         const head=document.createElement('div'); head.className='k-app-discover-group-head'; head.innerHTML=`<div><span class="k-app-card-label">${label}</span><h3>${label === 'Today' ? 'Fresh and time-sensitive' : label}</h3></div>`;
-        if (label === 'Nearby' && !location) { const ask=document.createElement('span'); ask.className='k-status'; ask.textContent='Location permission needed'; head.appendChild(ask); }
         group.appendChild(head);
         if (!arr.length) {
-          const empty=document.createElement('div'); empty.className='k-app-discover-empty'; empty.textContent = label === 'Nearby' ? 'Enable location to see local providers, places and offers.' : 'Nothing to show here yet. Ask Kurukoo what you need.'; group.appendChild(empty);
+          const empty=document.createElement('div'); empty.className='k-app-discover-empty';
+          if (label === 'Nearby' && !location) {
+            empty.innerHTML='<span>Local providers, places and offers appear here when you enable location.</span><button type="button" class="k-app-card-action" data-enable-location>Enable location</button>';
+          } else empty.textContent = 'Nothing to show here yet. Ask Kurukoo what you need.';
+          group.appendChild(empty);
         } else {
           const grid=document.createElement('div'); grid.className='k-app-grid two';
           arr.forEach((item) => { const card=document.createElement('article'); card.className='k-app-card k-app-discover-item'; const titleText=String(item.title||item.name||item.type||'Kurukoo item'); const detail=String(item.detail||item.subtitle||item.description||'').slice(0,220); const sponsored=item.sponsored===true; card.innerHTML=`<span class="k-app-card-label">${sponsored ? 'Sponsored' : label}</span><h2>${titleText}</h2><p>${detail || 'Open this in Kurukoo to see what you can do next.'}</p><a class="k-app-card-action" href="${linkForItem(item)}">${item.ctaText||item.actions?.[0]||'Open'}</a>`; grid.appendChild(card); });
@@ -104,6 +117,7 @@
         wrap.appendChild(group);
       }
       hub.replaceChildren(wrap);
+      hub.querySelector('[data-enable-location]')?.addEventListener('click', async (event) => { event.currentTarget.disabled = true; const granted = await requestLocation(); if (!granted) { event.currentTarget.textContent = 'Location unavailable'; event.currentTarget.disabled = false; return; } hub.remove(); await renderDiscoverHub(); });
       if (!rendered) {
         const fallback=document.createElement('div'); fallback.className='k-app-card'; fallback.innerHTML='<span class="k-app-card-label">Explore Kurukoo</span><h2>Ask Kurukoo what you need.</h2><p>Discover becomes richer as your local network grows; the conversation remains available even when a nearby feed is sparse.</p><a class="k-app-primary" href="/chat">Ask Kurukoo</a>'; hub.appendChild(fallback);
       }
