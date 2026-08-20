@@ -1,5 +1,7 @@
 name: PR diagnostics
 on:
+  pull_request:
+    types: [opened, synchronize, reopened]
   push:
     branches: [feature/platform-convergence-frames]
   workflow_dispatch:
@@ -15,7 +17,6 @@ jobs:
         with: { node-version: 22 }
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Capture TypeScript errors
-        id: tsc
         shell: bash
         run: |
           set +e
@@ -25,7 +26,6 @@ jobs:
           cat /tmp/tsc.txt
           exit 0
       - name: Capture bin-day errors
-        id: binday
         shell: bash
         run: |
           set +e
@@ -36,15 +36,12 @@ jobs:
           exit 0
       - name: Report diagnostics on PR
         uses: actions/github-script@v7
-        env:
-          TSC_OUTPUT: ${{ steps.tsc.outputs.stdout }}
         with:
           script: |
             const fs = require('fs');
             const tsc = fs.readFileSync('/tmp/tsc.txt', 'utf8').slice(-12000);
             const binday = fs.readFileSync('/tmp/binday.txt', 'utf8').slice(-12000);
             const body = `## Temporary convergence diagnostics\n\n### TypeScript\n\n\`\`\`text\n${tsc}\n\`\`\`\n\n### Bin-day contract\n\n\`\`\`text\n${binday}\n\`\`\``;
-            const prs = await github.rest.pulls.list({owner: context.repo.owner, repo: context.repo.repo, head: `${context.repo.owner}:feature/platform-convergence-frames`, state: 'open'});
-            for (const pr of prs.data) {
-              await github.rest.issues.createComment({owner: context.repo.owner, repo: context.repo.repo, issue_number: pr.number, body});
+            if (context.eventName === 'pull_request') {
+              await github.rest.issues.createComment({owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body});
             }
