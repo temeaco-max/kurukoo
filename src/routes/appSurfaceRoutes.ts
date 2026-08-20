@@ -8,7 +8,6 @@ import { getDriveConnectionStatus, listArtifacts, startGoogleDriveConnection } f
 import economicDispatchRoutes from './economicDispatchRoutes.js';
 
 const router = express.Router();
-
 const surfaceMap = new Map([
   ['agent', { title: 'Agent', eyebrow: 'Your Kurukoo relationship', description: 'Conversation is the universal control surface for requests, reminders, memory, agents and coordinated work.', cta: '/chat', ctaLabel: 'Open Chat' }],
   ['discover', { title: 'Discover', eyebrow: 'Your opportunity and activity surface', description: 'See what is useful, interesting, available, discussable or actionable today: nearby activity, Daily Picks, Topics, Opportunities and things Kurukoo can do.', cta: '/app/discover', ctaLabel: 'Open Discover' }],
@@ -37,16 +36,10 @@ const surfaceMap = new Map([
 ]);
 
 async function renderApp(req: express.Request, res: express.Response, section = 'agent') {
-  const authReq = req as AuthRequest;
-  if (!authReq.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent(req.path)}`);
-  const selected = surfaceMap.get(section) ?? surfaceMap.get('agent')!;
-  const surfaces = getClientSurfaces('web');
-  const readiness = getPilotReadiness();
-  const integrations = getExternalIntegrationReadiness();
+  const authReq = req as AuthRequest; if (!authReq.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent(req.path)}`);
+  const selected = surfaceMap.get(section) ?? surfaceMap.get('agent')!; const surfaces = getClientSurfaces('web'); const readiness = getPilotReadiness(); const integrations = getExternalIntegrationReadiness();
   const enabledIntegrations = integrations.filter((item: any) => item.implementation?.state === 'IMPLEMENTED' || item.implementation?.implemented === true).length;
-  const artifacts = section === 'artifacts' ? await listArtifacts(authReq.user.phone) : [];
-  const artifactStorage = section === 'artifacts' ? await getDriveConnectionStatus(authReq.user.phone) : null;
-  return res.render('app', { selected, section, displayName: authReq.user.name || authReq.user.phone, phone: authReq.user.phone, surfaces, readiness, integrations, enabledIntegrations, integrationCount: integrations.length, visualFeatures: PLATFORM_FEATURE_VISUAL_CONTRACTS.filter(feature => !feature.audience.includes('admin')), artifacts, artifactStorage });
+  return res.render('app', { selected, section, displayName: authReq.user.name || authReq.user.phone, phone: authReq.user.phone, surfaces, readiness, integrations, enabledIntegrations, integrationCount: integrations.length, visualFeatures: PLATFORM_FEATURE_VISUAL_CONTRACTS.filter(feature => !feature.audience.includes('admin')) });
 }
 
 router.get('/api/platform/feature-visuals', (_req, res) => res.json({ success: true, features: PLATFORM_FEATURE_VISUAL_CONTRACTS.filter(feature => !feature.audience.includes('admin')) }));
@@ -56,7 +49,12 @@ router.get('/app/artifacts/connect', optionalAuthenticateUser, async (req: AuthR
   if (!req.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent('/app/artifacts')}`);
   try { const { authorizationUrl } = await startGoogleDriveConnection(req.user.phone); return res.redirect(302, authorizationUrl); } catch { return res.redirect(302, '/app/artifacts?drive=unavailable'); }
 });
-for (const section of surfaceMap.keys()) router.get(`/app/${section}`, optionalAuthenticateUser, (req, res) => void renderApp(req, res, section));
+router.get('/app/artifacts', optionalAuthenticateUser, async (req: AuthRequest, res) => {
+  if (!req.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent('/app/artifacts')}`);
+  try { const artifacts = await listArtifacts(req.user.phone); const artifactStorage = await getDriveConnectionStatus(req.user.phone); return res.render('artifacts', { displayName: req.user.name || req.user.phone, phone: req.user.phone, artifacts, artifactStorage, selected: surfaceMap.get('artifacts') }); }
+  catch { return res.render('artifacts', { displayName: req.user.name || req.user.phone, phone: req.user.phone, artifacts: [], artifactStorage: { connected: false, reason: 'Artifact storage status is temporarily unavailable.' }, selected: surfaceMap.get('artifacts') }); }
+});
+for (const section of surfaceMap.keys()) { if (section === 'artifacts') continue; router.get(`/app/${section}`, optionalAuthenticateUser, (req, res) => void renderApp(req, res, section)); }
 const completedLegacyToCanonical: Record<string, string> = { '/requests': '/app/requests', '/points': '/app/points', '/tasks': '/app/tasks', '/top-up': '/app/top-up', '/subscription': '/app/subscriptions', '/memory': '/app/memory', '/safety': '/app/safety', '/call': '/app/call', '/connect': '/app/connect', '/confirmation': '/app/confirmations' };
 for (const [legacyPath, canonicalPath] of Object.entries(completedLegacyToCanonical)) router.get(legacyPath, optionalAuthenticateUser, (req, res) => { const authReq = req as AuthRequest; if (!authReq.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent(req.path)}`); return res.redirect(302, canonicalPath); });
 router.get('/web', (_req, res) => res.redirect(302, '/app'));
