@@ -60,7 +60,7 @@
   }
 
   function addWorkspaceChatDock() {
-    if (!document.body.classList.contains('workspace-page') || document.querySelector('.workspace-chat-dock')) return;
+    if (!document.body.classList.contains('workspace-page') || document.body.classList.contains('k-app-page') || document.querySelector('.workspace-chat-dock')) return;
     const dock = document.createElement('div');
     dock.className = 'workspace-chat-dock';
     dock.innerHTML = `
