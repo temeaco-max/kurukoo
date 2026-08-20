@@ -1,0 +1,50 @@
+name: PR diagnostics
+on:
+  push:
+    branches: [feature/platform-convergence-frames]
+  workflow_dispatch:
+jobs:
+  diagnostics:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Capture TypeScript errors
+        id: tsc
+        shell: bash
+        run: |
+          set +e
+          npx tsc --noEmit > /tmp/tsc.txt 2>&1
+          code=$?
+          echo "exit=$code" >> /tmp/tsc.txt
+          cat /tmp/tsc.txt
+          exit 0
+      - name: Capture bin-day errors
+        id: binday
+        shell: bash
+        run: |
+          set +e
+          npx tsx scripts/test-bin-day-outcome.ts > /tmp/binday.txt 2>&1
+          code=$?
+          echo "exit=$code" >> /tmp/binday.txt
+          cat /tmp/binday.txt
+          exit 0
+      - name: Report diagnostics on PR
+        uses: actions/github-script@v7
+        env:
+          TSC_OUTPUT: ${{ steps.tsc.outputs.stdout }}
+        with:
+          script: |
+            const fs = require('fs');
+            const tsc = fs.readFileSync('/tmp/tsc.txt', 'utf8').slice(-12000);
+            const binday = fs.readFileSync('/tmp/binday.txt', 'utf8').slice(-12000);
+            const body = `## Temporary convergence diagnostics\n\n### TypeScript\n\n\`\`\`text\n${tsc}\n\`\`\`\n\n### Bin-day contract\n\n\`\`\`text\n${binday}\n\`\`\``;
+            const prs = await github.rest.pulls.list({owner: context.repo.owner, repo: context.repo.repo, head: `${context.repo.owner}:feature/platform-convergence-frames`, state: 'open'});
+            for (const pr of prs.data) {
+              await github.rest.issues.createComment({owner: context.repo.owner, repo: context.repo.repo, issue_number: pr.number, body});
+            }
