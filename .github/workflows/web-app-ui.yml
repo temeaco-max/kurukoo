@@ -1,0 +1,24 @@
+name: Kurukoo Web App UI contract
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/platform-convergence-frames
+      - main
+
+jobs:
+  web-app-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run test:routes
+      - run: npx tsx scripts/test-web-app-shell.ts
