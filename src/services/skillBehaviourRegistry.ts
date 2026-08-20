@@ -2,6 +2,8 @@
 export interface SkillBehaviourPack {
   skill: string;
   aliases: string[];
+  mode?: 'economic' | 'information' | 'safety' | 'coordination';
+  commercial?: 'free' | 'transaction' | 'mixed' | 'quote';
   mission: string;
   required: string[];
   optional: string[];

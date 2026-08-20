@@ -40,7 +40,7 @@ export function chooseInferenceProvider(input: { task: InferenceTask; prompt: st
     return { provider: 'smollm2', reason: 'routine support with sufficient routing confidence', maxComplexity: 'low' };
   }
 
-  if (lowSignals.some(signalText => text === signalText || text.startsWith(`${signalText} `)) && input.task !== 'high_stakes') {
+  if (lowSignals.some(signalText => text === signalText || text.startsWith(`${signalText} `))) {
     return { provider: 'smollm2', reason: 'low-complexity conversational/support turn', maxComplexity: 'low' };
   }
 

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { classifyWithFastText, getFastTextRuntimeStatus } from '../src/services/fastTextService.js';
+import { classifyWithFastText, getFastTextRoutingSignal, getFastTextRuntimeStatus } from '../src/services/fastTextService.js';
 
 const cases = [
   ['hello', 'greeting'],
@@ -28,6 +28,20 @@ for (const [text, expected] of cases) {
 
 const uncertain = classifyWithFastText('the purple moon is talking to me');
 assert.ok(!uncertain || uncertain.confidence < 0.78, 'nonsense input should not produce an overconfident classification');
+
+const greetingSignal = getFastTextRoutingSignal('hello');
+assert.equal(greetingSignal.conversationAct, 'greeting', 'greeting must remain a deterministic conversation act');
+assert.equal(greetingSignal.skills.length, 0, 'greeting must not create a skill candidate');
+const confirmationSignal = getFastTextRoutingSignal('yes');
+assert.equal(confirmationSignal.conversationAct, 'confirmation', 'confirmation must remain a deterministic conversation act');
+assert.equal(confirmationSignal.skills.length, 0, 'confirmation must not create an economic request candidate');
+const repairSignal = getFastTextRoutingSignal('my macbook screen is damaged');
+assert.equal(repairSignal.selectedSkill, 'laptop_repairer', 'a strong device repair signal must choose the canonical skill only within its category');
+assert.equal(repairSignal.categories[0]?.category, 'repairs-maintenance', 'device repair must receive a repairs category signal');
+const multiGoalSignal = getFastTextRoutingSignal('I need a ride and food after that');
+assert.ok(multiGoalSignal.requiresSemanticReasoning, 'multi-goal requests must escalate for semantic arbitration rather than force one skill');
+const abstainedSignal = getFastTextRoutingSignal('the purple moon is talking to me');
+assert.ok(abstainedSignal.abstained, 'unsafe-to-route nonsense must abstain rather than force an economic skill');
 
 const status = getFastTextRuntimeStatus();
 assert.ok(['real', 'missing', 'invalid'].includes(status.modelState), 'FastText runtime state must be explicit');

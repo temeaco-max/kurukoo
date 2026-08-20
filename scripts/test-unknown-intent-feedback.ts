@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+import { getDb, saveDb } from '../src/database.js';
+import { getUnknownIntentFeedbackSummary, listUnknownIntentFeedback, recordUnknownIntentCandidate, reviewUnknownIntentCandidate } from '../src/services/unknownIntentFeedbackService.js';
+
+const raw = 'My email is alice@example.com and my number is +234 803 555 1234; api_key=very-secret. Need strange purple moon help.';
+const db = await getDb();
+db.run(`DELETE FROM unknown_intents WHERE normalized_query LIKE '%purple moon help%'`);
+saveDb();
+await recordUnknownIntentCandidate(raw, { category: 'general', skill: 'general_question', confidence: 0.31, provenance: 'test' });
+await recordUnknownIntentCandidate(raw, { category: 'general', skill: 'general_question', confidence: 0.31, provenance: 'test' });
+const candidates = await listUnknownIntentFeedback(200);
+const candidate: any = candidates.find((row: any) => String(row.normalized_query).includes('purple moon help'));
+assert.ok(candidate, 'redacted unknown-intent candidate must be listed for review');
+assert.ok(String(candidate.query).includes('<email>') && String(candidate.query).includes('<phone>') && String(candidate.query).includes('<credential>'), 'review candidate must redact email, phone, and credential text');
+assert.equal(Number(candidate.frequency), 2, 'duplicate unknown inputs must increment frequency instead of storing raw duplicates');
+const review = await reviewUnknownIntentCandidate(Number(candidate.id), 'accepted', 'test-reviewer', { label: 'general_question', text: raw });
+assert.equal(review.automaticTraining, false, 'review acceptance must not automatically train FastText');
+assert.ok(review.trainingLineageId?.startsWith('fasttext-review:'), 'accepted review must record training lineage');
+const summary = await getUnknownIntentFeedbackSummary();
+assert.equal(summary.trainingPolicy, 'reviewed_candidates_only_no_raw_traffic_auto_training');
+db.run(`DELETE FROM unknown_intents WHERE id=?`, [candidate.id]);
+saveDb();
+console.log('Unknown-intent feedback regression passed: privacy redaction, dedupe, reviewer decision, and no-auto-training boundary verified.');

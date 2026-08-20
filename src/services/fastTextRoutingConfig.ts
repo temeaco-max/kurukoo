@@ -1,0 +1,37 @@
+export const FASTTEXT_ROUTING_CONFIG = {
+  model: {
+    minimumConfidence: 0.57,
+    minimumMargin: 0.08,
+    lowMarginOverrideConfidence: 0.78,
+  },
+  fallback: {
+    minimumScore: 0.42,
+    minimumMargin: 0.08,
+    maximumConfidence: 0.95,
+    minimumConfidence: 0.67,
+  },
+  category: {
+    minimumScore: 0.34,
+    minimumMargin: 0.06,
+    topK: 3,
+  },
+  skill: {
+    minimumScore: 0.38,
+    minimumMargin: 0.08,
+    topK: 3,
+  },
+  cache: {
+    ttlMs: 5 * 60 * 1000,
+    maxEntries: 2000,
+  },
+  corpus: {
+    maxExamplesPerLabel: 24,
+    bootstrapWeightCapPerLabel: 2,
+  },
+  feedback: {
+    retentionDays: 30,
+    maximumNormalizedPhraseLength: 240,
+  },
+} as const;
+
+export type FastTextRoutingConfig = typeof FASTTEXT_ROUTING_CONFIG;

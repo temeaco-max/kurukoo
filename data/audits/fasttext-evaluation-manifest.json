@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-20T09:15:28.042Z",
+  "gitSha": "24b940662050aaf05619507126205b35e0accf89",
+  "model": {
+    "path": "/home/ubuntu/kurukoo-main/models/kurukoo_intent.bin",
+    "modelState": "real",
+    "executableAvailable": false,
+    "evaluated": false
+  },
+  "thresholds": {
+    "model": {
+      "minimumConfidence": 0.57,
+      "minimumMargin": 0.08,
+      "lowMarginOverrideConfidence": 0.78
+    },
+    "fallback": {
+      "minimumScore": 0.42,
+      "minimumMargin": 0.08,
+      "maximumConfidence": 0.95,
+      "minimumConfidence": 0.67
+    },
+    "category": {
+      "minimumScore": 0.34,
+      "minimumMargin": 0.06,
+      "topK": 3
+    },
+    "skill": {
+      "minimumScore": 0.38,
+      "minimumMargin": 0.08,
+      "topK": 3
+    },
+    "cache": {
+      "ttlMs": 300000,
+      "maxEntries": 2000
+    },
+    "corpus": {
+      "maxExamplesPerLabel": 24,
+      "bootstrapWeightCapPerLabel": 2
+    },
+    "feedback": {
+      "retentionDays": 30,
+      "maximumNormalizedPhraseLength": 240
+    }
+  },
+  "splitCounts": {
+    "train": 778,
+    "validation": 57,
+    "test": 57
+  },
+  "evaluationStatus": "model_unavailable_no_accuracy_claim",
+  "metrics": null,
+  "boundaryCases": [
+    {
+      "text": "hello",
+      "expectedConversationAct": "greeting",
+      "expectAbstain": false,
+      "actualConversationAct": "greeting",
+      "actualAbstain": false,
+      "passed": true
+    },
+    {
+      "text": "thanks",
+      "expectedConversationAct": "thanks",
+      "expectAbstain": false,
+      "actualConversationAct": "thanks",
+      "actualAbstain": false,
+      "passed": true
+    },
+    {
+      "text": "yes",
+      "expectedConversationAct": "confirmation",
+      "expectAbstain": false,
+      "actualConversationAct": "confirmation",
+      "actualAbstain": false,
+      "passed": true
+    },
+    {
+      "text": "no",
+      "expectedConversationAct": "rejection",
+      "expectAbstain": false,
+      "actualConversationAct": "rejection",
+      "actualAbstain": false,
+      "passed": true
+    },
+    {
+      "text": "the purple moon is talking to me",
+      "expectAbstain": true,
+      "actualConversationAct": null,
+      "actualAbstain": true,
+      "passed": true
+    },
+    {
+      "text": "I need a ride and food after that",
+      "expectAbstain": true,
+      "actualConversationAct": null,
+      "actualAbstain": true,
+      "passed": true
+    }
+  ],
+  "boundaryPassed": true,
+  "productionAccuracyClaimed": false,
+  "trainingUsesRawUserTraffic": false,
+  "provenance": {
+    "synthetic": true,
+    "teacherGenerated": false,
+    "candidateRequiresReview": true,
+    "productionUserData": false
+  }
+}

@@ -57,3 +57,10 @@ secrets/
 /artifacts/learning-cycle/
 /data/scenario-lab/teacher-evaluation*.json*
 /ml/teachers/__pycache__/
+
+# Reproducible FastText and convergence build outputs; retain committed audit manifests explicitly required for release review.
+/models/.intent_training_data.*
+/models/intent_training_curated.*
+/models/intent_training_skill_hints.txt
+/ml/datasets/kurukoo-core-v2.*
+/data/audits/skill-outcome-convergence.json

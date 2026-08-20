@@ -44,6 +44,11 @@ import { getTelegramLinkedDeviceStatus, startTelegramLinkedDevice, stopTelegramL
 import { getWhatsAppLinkedDeviceStatus } from '../services/whatsappLinkedDeviceService.js';
 import { listTrustedDevices, revokeTrustedDevice } from '../services/progressiveTrustService.js';
 import { listCurationCandidates, getCurationCandidate, reviewCurationCandidate, rewriteCurationCandidate, getCurationStats, getAcceptedCorpusGate, getCurationAudit } from '../services/curationService.js';
+import { getUnknownIntentFeedbackSummary, listUnknownIntentFeedback, reviewUnknownIntentCandidate } from '../services/unknownIntentFeedbackService.js';
+import { getAiUsageTelemetrySummary } from '../services/aiQuotaService.js';
+import { getProviderHealth, HOSTED_AI_PROVIDERS } from '../services/aiProviderHealthService.js';
+import { getAgentInferenceBudgetStatus } from '../services/agentInferenceBudgetService.js';
+import { listProviderCredentials, rotateProviderCredential, changeProviderCredentialStatus, testProviderCredential, listProviderCredentialAudit } from '../services/providerCredentialService.js';
 
 const router = Router();
 
@@ -1128,7 +1133,43 @@ router.post('/settings', authenticateAdmin, async (req: AuthRequest, res) => {
   }
 });
 
-// ── AI agents ───────────────────────────────────────────────────────────
+// ── Provider credentials (encrypted service boundary; never a raw environment editor) ──
+const credentialActor = (req: AuthRequest) => String(req.user?.phone || process.env.ADMIN_USERNAME || 'admin');
+router.get('/provider-credentials', authenticateAdmin, async (_req: AuthRequest, res) => {
+  try { res.json({ success: true, credentials: await listProviderCredentials(), policy: 'Secrets are encrypted at rest and never returned in plaintext.' }); }
+  catch { res.status(500).json({ success: false, error: 'Unable to load provider credential metadata' }); }
+});
+router.put('/provider-credentials/:provider', authenticateAdmin, async (req: AuthRequest, res) => {
+  try { res.json({ success: true, credential: await rotateProviderCredential({ provider: String(req.params.provider), secret: String(req.body?.secret || ''), actorId: credentialActor(req) }) }); }
+  catch (error: any) { res.status(400).json({ success: false, error: String(error?.message || 'Unable to rotate provider credential').slice(0, 240) }); }
+});
+router.post('/provider-credentials/:provider/disable', authenticateAdmin, async (req: AuthRequest, res) => {
+  try { res.json({ success: true, credential: await changeProviderCredentialStatus({ provider: String(req.params.provider), status: 'disabled', actorId: credentialActor(req) }) }); }
+  catch (error: any) { res.status(400).json({ success: false, error: String(error?.message || 'Unable to disable provider credential').slice(0, 240) }); }
+});
+router.post('/provider-credentials/:provider/revoke', authenticateAdmin, async (req: AuthRequest, res) => {
+  try { res.json({ success: true, credential: await changeProviderCredentialStatus({ provider: String(req.params.provider), status: 'revoked', actorId: credentialActor(req) }) }); }
+  catch (error: any) { res.status(400).json({ success: false, error: String(error?.message || 'Unable to revoke provider credential').slice(0, 240) }); }
+});
+router.post('/provider-credentials/:provider/test', authenticateAdmin, async (req: AuthRequest, res) => {
+  try { res.json({ success: true, credential: await testProviderCredential({ provider: String(req.params.provider), actorId: credentialActor(req) }), policy: 'A test result is not a claim that a provider integration is activated for production traffic.' }); }
+  catch (error: any) { res.status(400).json({ success: false, error: String(error?.message || 'Unable to test provider credential').slice(0, 240) }); }
+});
+router.get('/provider-credentials/:provider/audit', authenticateAdmin, async (req: AuthRequest, res) => {
+  try { res.json({ success: true, audit: await listProviderCredentialAudit(String(req.params.provider), Number(req.query.limit || 50)) }); }
+  catch (error: any) { res.status(400).json({ success: false, error: String(error?.message || 'Unable to load provider credential audit').slice(0, 240) }); }
+});
+
+// ── AI operations and agents ──────────────────────────────────────────────
+
+router.get('/ai/telemetry', authenticateAdmin, async (_req: AuthRequest, res) => {
+  try { res.json({ success: true, ...(await getAiUsageTelemetrySummary()), pricingPolicy: 'Unknown provider/model pricing is reported as null with cost_status=unavailable.' }); }
+  catch { res.status(500).json({ success: false, error: 'Unable to load AI usage telemetry' }); }
+});
+router.get('/ai/provider-health', authenticateAdmin, (_req: AuthRequest, res) => {
+  try { res.json({ success: true, providers: HOSTED_AI_PROVIDERS.map(provider => getProviderHealth(provider)), policy: 'Circuit state is advisory for routing and never represents provider verification or external availability.' }); }
+  catch { res.status(500).json({ success: false, error: 'Unable to load AI provider health' }); }
+});
 
 router.get('/ai-agents', authenticateAdmin, async (_req: AuthRequest, res) => {
   try {
@@ -1137,6 +1178,14 @@ router.get('/ai-agents', authenticateAdmin, async (_req: AuthRequest, res) => {
   } catch (e) {
     res.status(500).json({ error: 'Failed to fetch AI agents' });
   }
+});
+
+router.get('/ai-agents/:id/inference-budget', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const agent = await getAIAgentById(req.params.id);
+    if (!agent) return res.status(404).json({ success: false, error: 'Agent not found' });
+    res.json({ success: true, agentId: agent.id, ...(await getAgentInferenceBudgetStatus(agent.id, req.query.goalId ? String(req.query.goalId) : undefined)), policy: 'Budget exhaustion causes a bounded cooldown; hosted escalation limits force local inference rather than granting additional authority.' });
+  } catch { res.status(500).json({ success: false, error: 'Unable to load agent inference budget' }); }
 });
 
 router.get('/ai-agents/:id', authenticateAdmin, async (req: AuthRequest, res) => {
@@ -1297,5 +1346,20 @@ router.post('/curation/candidates/:exampleId/rewrite', authenticateAdmin, async 
   return res.status(201).json({ success: true, ...result });
 });
 router.get('/curation/candidates/:exampleId/audit', authenticateAdmin, async (req: AuthRequest, res) => res.json({ success: true, audit: await getCurationAudit(String(req.params.exampleId || '')) }));
+
+// ── FastText unknown / uncertain routing review ────────────────────────────
+router.get('/fasttext/unknown-intents', authenticateAdmin, async (req: AuthRequest, res) => {
+  try { res.json({ success: true, summary: await getUnknownIntentFeedbackSummary(), candidates: await listUnknownIntentFeedback(Number(req.query.limit || 50)), policy: 'Privacy-redacted candidates; accepted review decisions create lineage only and never auto-train.' }); }
+  catch { res.status(500).json({ success: false, error: 'Unable to load FastText feedback queue' }); }
+});
+router.post('/fasttext/unknown-intents/:id/decision', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const id = Number(req.params.id);
+    const decision = String(req.body?.decision || '');
+    const reviewer = String(req.user?.phone || process.env.ADMIN_USERNAME || 'admin');
+    const acceptedExample = req.body?.acceptedExample && typeof req.body.acceptedExample === 'object' ? { label: String(req.body.acceptedExample.label || ''), text: String(req.body.acceptedExample.text || '') } : undefined;
+    res.json({ success: true, ...(await reviewUnknownIntentCandidate(id, decision as 'accepted' | 'rejected', reviewer, acceptedExample) ) });
+  } catch (error: any) { res.status(error?.message?.includes('not found') ? 404 : 400).json({ success: false, error: error?.message || 'Unable to review FastText feedback candidate' }); }
+});
 
 export default router;

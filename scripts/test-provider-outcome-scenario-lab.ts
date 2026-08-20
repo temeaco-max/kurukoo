@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { getAllCatalogueSkillNames, getCatalogueStats } from '../src/services/skillCatalogueConvergence.js';
 
 const root = process.cwd();
 const outputDir = path.join(root, 'data', 'scenario-lab');
@@ -9,10 +10,15 @@ const trainingPath = path.join(root, 'ml', 'datasets', 'kurukoo-provider-outcome
 const resultPath = path.join(outputDir, 'provider-outcome-execution-results.jsonl');
 if (!fs.existsSync(manifestPath) || !fs.existsSync(scenarioPath) || !fs.existsSync(trainingPath)) throw new Error('Scenario laboratory artifacts are missing. Run npm run scenario-lab:generate first.');
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+const catalogue = getCatalogueStats();
+const canonicalSkills = getAllCatalogueSkillNames();
 const scenarios = fs.readFileSync(scenarioPath, 'utf8').trim().split('\n').filter(Boolean).map(line => JSON.parse(line));
 const training = fs.readFileSync(trainingPath, 'utf8').trim().split('\n').filter(Boolean).map(line => JSON.parse(line));
 if (manifest.generatedCount < 10000) throw new Error(`Expected at least 10,000 generated scenarios, got ${manifest.generatedCount}`);
-if (manifest.skillCount < 200 || manifest.coverage.skills < 200) throw new Error(`Expected the canonical skill universe, got ${manifest.skillCount}`);
+if (manifest.skillCount !== catalogue.total || manifest.coverage.skills !== catalogue.total) throw new Error(`Expected the ${catalogue.total}-skill converged catalogue, got ${manifest.skillCount}`);
+if (JSON.stringify(manifest.catalogue) !== JSON.stringify(catalogue)) throw new Error('Scenario manifest catalogue metadata is not derived from the canonical catalogue service.');
+const scenarioSkills = new Set(scenarios.map((scenario: any) => scenario.skill));
+if (scenarioSkills.size !== catalogue.total || canonicalSkills.some(skill => !scenarioSkills.has(skill))) throw new Error('Scenario laboratory does not cover every canonical skill.');
 if (manifest.familyCount < 40) throw new Error(`Expected broad family coverage, got ${manifest.familyCount}`);
 for (const market of ['ng', 'gb', 'ca']) if (!manifest.coverage.markets.some((value: string) => value === market || value.startsWith(`${market}-`))) throw new Error(`Missing market coverage: ${market}`);
 for (const channel of ['web_chat', 'pwa', 'whatsapp', 'telegram', 'sms', 'ussd', 'email', 'voice', 'linked_device', 'qr_context']) if (!manifest.coverage.channels.includes(channel)) throw new Error(`Missing channel coverage: ${channel}`);

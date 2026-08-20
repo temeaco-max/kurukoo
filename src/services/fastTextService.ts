@@ -3,7 +3,10 @@ import os from 'os';
 import path from 'path';
 import { execFileSync } from 'child_process';
 import { getDb } from '../database.js';
-import { getAllConvergedSkillNames } from './skillBehaviourConvergence.js';
+import { getAllConvergedSkillNames, getConvergedSkillBehaviour } from './skillBehaviourConvergence.js';
+import { getSkillCategoryConverged } from './skillCatalogueConvergence.js';
+import { FASTTEXT_ROUTING_CONFIG } from './fastTextRoutingConfig.js';
+import { recordUnknownIntentCandidate } from './unknownIntentFeedbackService.js';
 
 export interface FastTextResult {
   intent: string;
@@ -18,13 +21,10 @@ let trainingSet: { label: string; tokens: Set<string>; normalized: string }[] = 
 let trainingExact = new Map<string, string>();
 let fastTextReady = false;
 const classificationCache = new Map<string, { result: FastTextResult | null; expiresAt: number }>();
-const CACHE_TTL_MS = 5 * 60 * 1000;
-const MODEL_MIN_CONFIDENCE = 0.57;
-const MODEL_MARGIN_CONFIDENCE = 0.08;
-const FALLBACK_MIN_SCORE = 0.42;
+const { model: MODEL_ROUTING, fallback: FALLBACK_ROUTING, cache: CACHE_ROUTING } = FASTTEXT_ROUTING_CONFIG;
 const STOP_WORDS = new Set(['a','an','and','are','as','at','be','by','can','do','for','from','get','help','i','in','is','it','me','my','need','of','on','or','please','the','this','to','want','with','you']);
 function modelPath(): string { return path.join(process.cwd(), 'models', 'kurukoo_intent.bin'); }
-function trainingPath(): string { return path.join(process.cwd(), 'models', 'intent_training_data.txt'); }
+function trainingPath(): string { const merged = path.join(process.cwd(), 'models', '.intent_training_data.merged.txt'); return fs.existsSync(merged) ? merged : path.join(process.cwd(), 'models', 'intent_training_data.txt'); }
 function normalize(query: string): string { return query.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(); }
 function meaningfulTokens(query: string): string[] { return normalize(query).split(/\s+/).filter(token => token.length > 1 && !STOP_WORDS.has(token)); }
 function isRealBinaryModel(binPath: string): boolean { try { if (!fs.existsSync(binPath)) return false; const stats=fs.statSync(binPath); if(stats.size<100)return false; return !fs.readFileSync(binPath).subarray(0,32).toString('utf8').includes('DUMMY_FASTTEXT'); } catch { return false; } }
@@ -61,7 +61,7 @@ const blueprintRules: Array<[RegExp,string]> = [
   [/\b(ps5|ps4|xbox|nintendo switch|playstation).{0,40}\b(repair|broken|fix|not working|won't turn on)\b/i,'console_repairer'],
   [/\b(tv|television|smart tv).{0,40}\b(repair|broken|no picture|no sound|fix)\b/i,'tv_repairer'],
   [/\b(apple watch|galaxy watch|garmin|fitbit).{0,40}\b(repair|broken|fix|not working)\b/i,'smartwatch_repairer'],
-  [/\b(airpods|airpod|galaxy buds|wireless earbuds).{0,40}\b(repair|broken|not working|fix)\b/i,'earbuds_repairer'],
+  [/\b((airpods|airpod|galaxy buds|wireless earbuds).{0,40}\b(repair|broken|not working|fix)|(repair|broken|not working|fix).{0,40}\b(airpods|airpod|galaxy buds|wireless earbuds))\b/i,'earbuds_repairer'],
   [/\b(bluetooth speaker|bose speaker|jbl speaker|wireless speaker).{0,40}\b(repair|broken|no sound|fix)\b/i,'speaker_repairer'],
   [/\b(washing machine|fridge|refrigerator|oven|dishwasher).{0,40}\b(repair|broken|leak|fix|not working)\b/i,'appliance_repairer'],
   [/\b(bicycle|bike).{0,40}\b(repair|broken|fix|damaged|puncture)\b/i,'bicycle_repairer'],
@@ -69,6 +69,7 @@ const blueprintRules: Array<[RegExp,string]> = [
   [/\b(my car|my vehicle).{0,40}\b(broken down|won't start|tow|recovery)\b/i,'vehicle_recovery'],
   [/\b(plumber|electrician|mechanic|repair|fix|artisan|worker|painter|carpenter|tailor|cobbler|shoe maker)\b/i,'find_worker'],
   [/\b(pepper seller|pepper vendor|fruit seller|fruit vendor|vegetable seller|fish seller)\b/i,'find_worker'],
+  [/\b(help me pray|pray with me|prayer support|need a prayer)\b/i,'prayer'],
   [/\b(balance|points|wallet|credit)\b/i,'check_balance'],
   [/\b(football|basketball|tennis|league|team|club|tournament|watch party)\b/i,'sports_matchmaking'],
   [/\b(event coverage|cover this event|photograph.*event|film.*event)\b/i,'event_coverage'],
@@ -101,8 +102,104 @@ const blueprintRules: Array<[RegExp,string]> = [
 ];
 function skillFromLabel(label:string): string | undefined { const prefix='skill_route_'; if (!label.startsWith(prefix)) return undefined; const candidate=label.slice(prefix.length); return getAllConvergedSkillNames().includes(candidate) ? candidate : undefined; }
 function ruleClassify(q:string):FastTextResult|null { for(const [rule,intent] of conversationActRules) if(rule.test(q)) return {intent,confidence:.999,source:'rules'}; for(const [rule,intent] of blueprintRules) if(rule.test(q)) return {intent,confidence:.995,source:'rules', skill:getAllConvergedSkillNames().includes(intent) ? intent : undefined}; return null; }
-function classifyWithBinaryModel(query:string):FastTextResult|null { if(!fastTextReady)return null; const clean=normalize(query); if(!clean)return null; const inputPath=path.join(os.tmpdir(),`kurukoo-fasttext-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}.txt`); try { fs.writeFileSync(inputPath,`${clean}\n`,{mode:0o600}); const stdout=execFileSync('fasttext',['predict-prob',modelPath(),inputPath,'3'],{encoding:'utf8',timeout:2500}).trim(); const candidates=stdout.split(/\r?\n/).map(line=>{const match=line.match(/__label__([^\s]+)\s+([0-9.]+)/); return match?{label:match[1],confidence:Number(match[2])}:null;}).filter(Boolean) as Array<{label:string;confidence:number}>; if(!candidates.length)return null; const best=candidates[0]; if(!Number.isFinite(best.confidence)||best.confidence<MODEL_MIN_CONFIDENCE)return null; const second=candidates[1]; if(second && best.confidence-second.confidence<MODEL_MARGIN_CONFIDENCE && best.confidence<0.78)return null; const skill=skillFromLabel(best.label); return {intent:skill?skill:best.label,confidence:best.confidence,source:'fasttext',skill,alternateIntents:candidates.slice(1).map(candidate=>skillFromLabel(candidate.label)||candidate.label)}; } catch(err:any){console.warn('[FastText] prediction failed:',err?.message||err);return null;} finally{try{fs.unlinkSync(inputPath);}catch{}} }
-function classifyWithMemory(query:string):FastTextResult|null { if(!trainingSet.length)return null; const normalized=normalize(query); const exact=trainingExact.get(normalized); if(exact){const skill=skillFromLabel(exact); return {intent:skill||exact.replace(/^__label__/,''),confidence:.97,source:'fallback',skill};} const tokens=meaningfulTokens(normalized); if(!tokens.length)return null; const scored=new Map<string,number>(); for(const item of trainingSet){ let hits=0; let exactTokenHits=0; for(const token of tokens){ if(item.tokens.has(token)){hits+=1; exactTokenHits+=1;} else if([...item.tokens].some(t=>t.length>=4&&token.length>=4&&(t.includes(token)||token.includes(t)))) hits+=.35; } const phraseBoost=normalized.includes(item.normalized)?0.75:(item.normalized.includes(normalized)&&normalized.length>3?0.25:0); const candidate=(hits/Math.max(tokens.length,item.tokens.size*0.55))+phraseBoost; scored.set(item.label,Math.max(scored.get(item.label)||0,candidate)); } const ranked=[...scored.entries()].sort((a,b)=>b[1]-a[1]); if(!ranked.length||ranked[0][1]<FALLBACK_MIN_SCORE)return null; const best=ranked[0]; const second=ranked[1]; if(second && best[1]-second[1]<0.08 && best[1]<0.8)return null; const skill=skillFromLabel(best[0]); return{intent:skill||best[0],confidence:Math.min(.95,Math.max(.67,best[1])),source:'fallback',skill,alternateIntents:ranked.slice(1,3).map(([label])=>skillFromLabel(label)||label)}; }
+function classifyWithBinaryModel(query:string):FastTextResult|null { if(!fastTextReady)return null; const clean=normalize(query); if(!clean)return null; const inputPath=path.join(os.tmpdir(),`kurukoo-fasttext-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}.txt`); try { fs.writeFileSync(inputPath,`${clean}\n`,{mode:0o600}); const stdout=execFileSync('fasttext',['predict-prob',modelPath(),inputPath,'3'],{encoding:'utf8',timeout:2500}).trim(); const candidates=stdout.split(/\r?\n/).map(line=>{const match=line.match(/__label__([^\s]+)\s+([0-9.]+)/); return match?{label:match[1],confidence:Number(match[2])}:null;}).filter(Boolean) as Array<{label:string;confidence:number}>; if(!candidates.length)return null; const best=candidates[0]; if(!Number.isFinite(best.confidence)||best.confidence<MODEL_ROUTING.minimumConfidence)return null; const second=candidates[1]; if(second && best.confidence-second.confidence<MODEL_ROUTING.minimumMargin && best.confidence<MODEL_ROUTING.lowMarginOverrideConfidence)return null; const skill=skillFromLabel(best.label); return {intent:skill?skill:best.label,confidence:best.confidence,source:'fasttext',skill,alternateIntents:candidates.slice(1).map(candidate=>skillFromLabel(candidate.label)||candidate.label)}; } catch(err:any){console.warn('[FastText] prediction failed:',err?.message||err);return null;} finally{try{fs.unlinkSync(inputPath);}catch{}} }
+function classifyWithMemory(query:string):FastTextResult|null { if(!trainingSet.length)return null; const normalized=normalize(query); const exact=trainingExact.get(normalized); if(exact){const skill=skillFromLabel(exact); return {intent:skill||exact.replace(/^__label__/,''),confidence:.97,source:'fallback',skill};} const tokens=meaningfulTokens(normalized); if(!tokens.length)return null; const scored=new Map<string,number>(); for(const item of trainingSet){ let hits=0; let exactTokenHits=0; for(const token of tokens){ if(item.tokens.has(token)){hits+=1; exactTokenHits+=1;} else if([...item.tokens].some(t=>t.length>=4&&token.length>=4&&(t.includes(token)||token.includes(t)))) hits+=.35; } const phraseBoost=normalized.includes(item.normalized)?0.75:(item.normalized.includes(normalized)&&normalized.length>3?0.25:0); const candidate=(hits/Math.max(tokens.length,item.tokens.size*0.55))+phraseBoost; scored.set(item.label,Math.max(scored.get(item.label)||0,candidate)); } const ranked=[...scored.entries()].sort((a,b)=>b[1]-a[1]); if(!ranked.length||ranked[0][1]<FALLBACK_ROUTING.minimumScore)return null; const best=ranked[0]; const second=ranked[1]; if(second && best[1]-second[1]<FALLBACK_ROUTING.minimumMargin && best[1]<0.8)return null; const skill=skillFromLabel(best[0]); return{intent:skill||best[0],confidence:Math.min(FALLBACK_ROUTING.maximumConfidence,Math.max(FALLBACK_ROUTING.minimumConfidence,best[1])),source:'fallback',skill,alternateIntents:ranked.slice(1,3).map(([label])=>skillFromLabel(label)||label)}; }
 function correctKnownDomainCollision(query:string,result:FastTextResult|null):FastTextResult|null { if(/\b(help me stay safe|keep me safe|i(?:'|’)m not safe|i feel unsafe|i feel in danger|protect me|safety help|need help staying safe|immediate danger|life[- ]threatening)\b/i.test(query))return{intent:'emergency',confidence:.999,source:'rules'}; if(/\b(advertis(?:e|ing)?|advert|campaign|sponsored|promotion|promote)\b/i.test(query)&&result?.intent!=='advertising')return{intent:'advertising',confidence:.99,source:'rules'}; if(/\b(bin day|rubbish collection|bins? go out|waste collection)\b/i.test(query))return{intent:'bin_day',confidence:.995,source:'rules',skill:'bin_day'}; return result; }
-export function classifyWithFastText(query:string):FastTextResult|null { const q=query.trim();if(!q)return null;const key=normalize(q);const cached=classificationCache.get(key);if(cached&&cached.expiresAt>Date.now())return cached.result; const result=correctKnownDomainCollision(q,ruleClassify(q)||classifyWithBinaryModel(q)||classifyWithMemory(q)); if(classificationCache.size>2000)classificationCache.delete(classificationCache.keys().next().value as string);classificationCache.set(key,{result,expiresAt:Date.now()+CACHE_TTL_MS}); if(result)console.info(`[FastText] query="${q}" intent=${result.intent} confidence=${result.confidence.toFixed(3)} source=${result.source}${result.skill ? ` skill=${result.skill}` : ''}`); else getDb().then(db=>db.run(`INSERT INTO unknown_intents (query) VALUES (?)`,[q])).catch(()=>{}); return result; }
+export function classifyWithFastText(query:string):FastTextResult|null { const q=query.trim();if(!q)return null;const key=normalize(q);const cached=classificationCache.get(key);if(cached&&cached.expiresAt>Date.now())return cached.result; const result=correctKnownDomainCollision(q,ruleClassify(q)||classifyWithBinaryModel(q)||classifyWithMemory(q)); if(classificationCache.size>CACHE_ROUTING.maxEntries)classificationCache.delete(classificationCache.keys().next().value as string);classificationCache.set(key,{result,expiresAt:Date.now()+CACHE_ROUTING.ttlMs}); if(result)console.info(`[FastText] query="${q}" intent=${result.intent} confidence=${result.confidence.toFixed(3)} source=${result.source}${result.skill ? ` skill=${result.skill}` : ''}`); else recordUnknownIntentCandidate(q, { provenance: 'fasttext_no_result' }).catch(() => {}); return result; }
 export function classifyIntentFastText(query:string):string{return classifyWithFastText(query)?.intent||'unknown';}
+
+
+export interface FastTextCategoryCandidate { category: string; confidence: number; }
+export interface FastTextSkillCandidate { skill: string; category: string; confidence: number; }
+export interface FastTextRoutingSignal {
+  conversationAct?: string;
+  fastText: FastTextResult | null;
+  categories: FastTextCategoryCandidate[];
+  skills: FastTextSkillCandidate[];
+  selectedSkill?: string;
+  abstained: boolean;
+  categoryAmbiguous: boolean;
+  skillAmbiguous: boolean;
+  requiresSemanticReasoning: boolean;
+}
+
+function catalogueSimilarity(query: string, skill: string): number {
+  const normalized = normalize(query);
+  const queryTokens = new Set(meaningfulTokens(normalized));
+  if (!queryTokens.size) return 0;
+  const pack = getConvergedSkillBehaviour(skill);
+  const aliases = Array.from(new Set([skill.replace(/_/g, ' '), ...pack.aliases]))
+    .map(alias => normalize(alias))
+    .filter(Boolean);
+  let best = 0;
+  for (const alias of aliases) {
+    if (normalized.includes(alias) && alias.length >= 3) best = Math.max(best, 1);
+    const aliasTokens = new Set(meaningfulTokens(alias));
+    if (!aliasTokens.size) continue;
+    let overlap = 0;
+    for (const token of queryTokens) if (aliasTokens.has(token)) overlap += 1;
+    best = Math.max(best, overlap / Math.max(1, Math.min(queryTokens.size, aliasTokens.size)));
+  }
+  return best;
+}
+
+/**
+ * Returns a cheap, non-authoritative routing signal. Callers must use its
+ * ambiguity/abstention flags to decide whether semantic reasoning is needed;
+ * it never grants permission to mutate canonical state.
+ */
+export function getFastTextRoutingSignal(query: string): FastTextRoutingSignal {
+  const fastText = classifyWithFastText(query);
+  if (fastText?.source === 'rules' && !fastText.skill) {
+    return {
+      conversationAct: fastText.intent,
+      fastText,
+      categories: [],
+      skills: [],
+      abstained: false,
+      categoryAmbiguous: false,
+      skillAmbiguous: false,
+      requiresSemanticReasoning: false,
+    };
+  }
+
+  const allSkills = getAllConvergedSkillNames();
+  const scored = allSkills
+    .map(skill => ({ skill, category: getSkillCategoryConverged(skill), confidence: catalogueSimilarity(query, skill) }))
+    .filter((candidate): candidate is { skill: string; category: string; confidence: number } => Boolean(candidate.category));
+  const byCategory = new Map<string, number>();
+  for (const candidate of scored) byCategory.set(candidate.category, Math.max(byCategory.get(candidate.category) || 0, candidate.confidence));
+  if (fastText?.skill) {
+    const category = getSkillCategoryConverged(fastText.skill);
+    if (category) byCategory.set(category, Math.max(byCategory.get(category) || 0, fastText.confidence));
+  }
+  const categories = [...byCategory.entries()]
+    .map(([category, confidence]) => ({ category, confidence }))
+    .sort((a, b) => b.confidence - a.confidence)
+    .slice(0, FASTTEXT_ROUTING_CONFIG.category.topK);
+  const categoryAmbiguous = !categories.length
+    || categories[0].confidence < FASTTEXT_ROUTING_CONFIG.category.minimumScore
+    || (categories[1] && categories[0].confidence - categories[1].confidence < FASTTEXT_ROUTING_CONFIG.category.minimumMargin);
+  const plausibleCategories = categoryAmbiguous ? new Set(categories.map(candidate => candidate.category)) : new Set([categories[0].category]);
+  const skills = scored
+    .filter(candidate => plausibleCategories.has(candidate.category))
+    .map(candidate => ({ ...candidate, confidence: fastText?.skill === candidate.skill ? Math.max(candidate.confidence, fastText.confidence) : candidate.confidence }))
+    .filter(candidate => candidate.confidence >= FASTTEXT_ROUTING_CONFIG.skill.minimumScore)
+    .sort((a, b) => b.confidence - a.confidence)
+    .slice(0, FASTTEXT_ROUTING_CONFIG.skill.topK);
+  const skillAmbiguous = skills.length > 1
+    && skills[0].confidence - skills[1].confidence < FASTTEXT_ROUTING_CONFIG.skill.minimumMargin;
+  const multiStep = /\b(and then|and also|after that|afterwards|also need|plus)\b/i.test(query);
+  const selectedSkill = !multiStep && !categoryAmbiguous && !skillAmbiguous && skills[0] ? skills[0].skill : undefined;
+  if (!selectedSkill && fastText) recordUnknownIntentCandidate(query, { category: categories[0]?.category, skill: skills[0]?.skill, confidence: skills[0]?.confidence || fastText.confidence, provenance: multiStep ? 'fasttext_multi_step_abstention' : categoryAmbiguous || skillAmbiguous ? 'fasttext_ambiguous' : 'fasttext_weak_signal' }).catch(() => {});
+  return {
+    fastText,
+    categories,
+    skills,
+    selectedSkill,
+    abstained: !selectedSkill,
+    categoryAmbiguous,
+    skillAmbiguous,
+    requiresSemanticReasoning: categoryAmbiguous || skillAmbiguous || multiStep,
+  };
+}

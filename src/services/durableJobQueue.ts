@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { getDb, saveDb } from '../database.js';
+import { assertHighWritePersistence } from './highWritePersistence.js';
 
 export type DurableJobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'dead_letter' | 'cancelled';
 
@@ -22,6 +23,7 @@ export interface DurableJob {
 let schemaPromise: Promise<void> | null = null;
 
 async function ensureSchema(): Promise<void> {
+  assertHighWritePersistence('durable_jobs');
   if (schemaPromise) return schemaPromise;
   schemaPromise = (async () => {
     const db = await getDb();

@@ -1,6 +1,7 @@
 import { deductPoints, addPoints } from './pointsEngine.js';
 import { getDb, saveDb } from '../database.js';
 import { queryUnifiedAI } from './unifiedAiEngine.js';
+import { checkAgentInferenceBudget, recordAgentInferenceBudget } from './agentInferenceBudgetService.js';
 import { coordinatorEventForFirstClassAgent, internalCoordinator } from './internalCoordinator.js';
 import type { AgentToolName } from './agentToolRegistry.js';
 import fs from 'fs';
@@ -421,7 +422,7 @@ export async function cloneAIAgent(id: string, newId: string, newName: string): 
     return cloned;
 }
 
-export async function executeAgentTask(agentId: string, taskInput: string, userPhone?: string): Promise<{ success: boolean; result: string; tokensUsed: number; escalated: boolean; provider?: string; model?: string }> {
+export async function executeAgentTask(agentId: string, taskInput: string, userPhone?: string, goalId?: string): Promise<{ success: boolean; result: string; tokensUsed: number; escalated: boolean; provider?: string; model?: string }> {
     const agent = await getAIAgentById(agentId);
     if (!agent) {
         return { success: false, result: 'AI Agent not found', tokensUsed: 0, escalated: true };
@@ -455,10 +456,18 @@ export async function executeAgentTask(agentId: string, taskInput: string, userP
 
     // Generate through the existing provider-neutral conversational boundary. The agent persona remains the system contract;
     // model selection, memory budgeting, hosted escalation and truthful fallback remain unifiedAiEngine responsibilities.
-    const ai = await queryUnifiedAI(taskInput, { systemPrompt: agent.system_prompt, phone: userPhone, conversational: true });
+    const estimatedTokens = Math.floor(taskInput.length / 4) + 300;
+    const budget = await checkAgentInferenceBudget({ agentId, goalId, estimatedTokens });
+    if (!budget.allowed) {
+        await recordAgentInferenceBudget({ agentId, goalId, tokens: 0, usedHosted: false, exhaust: true });
+        return { success: false, result: `${budget.reason} No hosted inference or canonical action was attempted.`, tokensUsed: 0, escalated: true };
+    }
+    const ai = await queryUnifiedAI(taskInput, { systemPrompt: agent.system_prompt, phone: userPhone, conversational: true, provider: budget.forceLocal ? 'smollm2' : 'auto', agentId, skill: agent.skills[0], country: process.env.KURUKOO_DEFAULT_COUNTRY });
     const aiOutput = ai.text;
 
     const tokensUsed = Math.floor(taskInput.length / 4) + Math.floor(aiOutput.length / 4) + 30;
+    const usedHosted = !['SmolLM2', 'Kurukoo Template', 'FastText'].includes(ai.provider);
+    await recordAgentInferenceBudget({ agentId, goalId, tokens: tokensUsed, usedHosted });
     const db = await getDb();
     db.run(`UPDATE ai_agents SET tokens_used_today = COALESCE(tokens_used_today, 0) + ?, success_count = COALESCE(success_count, 0) + 1 WHERE id = ?`, [tokensUsed, agentId]);
     saveDb();

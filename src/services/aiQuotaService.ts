@@ -179,3 +179,80 @@ export async function getAiQuotaStatus(phone: string): Promise<QuotaDecision['re
   const decision = await checkAiQuota(phone, 'simple', 0);
   return { ...decision.remaining, day: utcDay() };
 }
+
+
+export interface AiUsageTelemetryInput {
+  requestId: string;
+  phone?: string;
+  agentId?: string;
+  skill?: string;
+  category?: string;
+  provider: string;
+  model: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  cachedTokens?: number;
+  estimatedCost?: number | null;
+  costStatus?: 'available' | 'unavailable';
+  latencyMs?: number;
+  success: boolean;
+  fallbackUsed: boolean;
+  escalationReason?: string;
+  country?: string;
+}
+
+async function ensureAiTelemetryTable(): Promise<void> {
+  const db = await getDb();
+  db.run(`CREATE TABLE IF NOT EXISTS ai_request_telemetry (
+    request_id TEXT PRIMARY KEY,
+    phone TEXT,
+    agent_id TEXT,
+    skill TEXT,
+    category TEXT,
+    provider TEXT NOT NULL,
+    model TEXT NOT NULL,
+    input_tokens INTEGER,
+    output_tokens INTEGER,
+    cached_tokens INTEGER NOT NULL DEFAULT 0,
+    estimated_cost REAL,
+    cost_status TEXT NOT NULL DEFAULT 'unavailable',
+    latency_ms INTEGER,
+    success INTEGER NOT NULL,
+    fallback_used INTEGER NOT NULL DEFAULT 0,
+    escalation_reason TEXT,
+    country TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  )`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_ai_request_telemetry_created ON ai_request_telemetry(created_at DESC)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_ai_request_telemetry_provider ON ai_request_telemetry(provider, model, created_at DESC)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_ai_request_telemetry_skill ON ai_request_telemetry(skill, created_at DESC)`);
+  saveDb();
+}
+
+export async function recordAiRequestTelemetry(input: AiUsageTelemetryInput): Promise<void> {
+  await ensureAiTelemetryTable();
+  const db = await getDb();
+  db.run(`INSERT OR IGNORE INTO ai_request_telemetry (request_id, phone, agent_id, skill, category, provider, model, input_tokens, output_tokens, cached_tokens, estimated_cost, cost_status, latency_ms, success, fallback_used, escalation_reason, country) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
+    input.requestId, input.phone || null, input.agentId || null, input.skill || null, input.category || null,
+    input.provider, input.model, Math.max(0, Math.floor(input.inputTokens || 0)), Math.max(0, Math.floor(input.outputTokens || 0)), Math.max(0, Math.floor(input.cachedTokens || 0)),
+    input.estimatedCost ?? null, input.costStatus || 'unavailable', Math.max(0, Math.floor(input.latencyMs || 0)), input.success ? 1 : 0, input.fallbackUsed ? 1 : 0,
+    input.escalationReason || null, input.country || null,
+  ]);
+  saveDb();
+}
+
+export async function getAiUsageTelemetrySummary(limit = 30) {
+  await ensureAiTelemetryTable();
+  const db = await getDb();
+  const aggregate = (group: string) => db.exec(`SELECT COALESCE(${group}, 'unattributed') AS key, COUNT(*) AS requests, SUM(CASE WHEN success=1 THEN 1 ELSE 0 END) AS successes, SUM(CASE WHEN fallback_used=1 THEN 1 ELSE 0 END) AS fallbacks, SUM(CASE WHEN estimated_cost IS NOT NULL THEN estimated_cost ELSE 0 END) AS known_cost, SUM(CASE WHEN estimated_cost IS NOT NULL THEN 1 ELSE 0 END) AS priced_requests, AVG(latency_ms) AS average_latency_ms FROM ai_request_telemetry GROUP BY ${group} ORDER BY requests DESC LIMIT ?`, [Math.max(1, Math.min(100, Math.floor(limit)) )])[0]?.values || [];
+  const mapRows = (rows: unknown[][]) => rows.map(row => ({ key: row[0], requests: Number(row[1]), successes: Number(row[2]), fallbacks: Number(row[3]), knownCost: Number(row[4]), pricedRequests: Number(row[5]), averageLatencyMs: Number(row[6] || 0) }));
+  const overall = db.exec(`SELECT COUNT(*) AS requests, SUM(CASE WHEN fallback_used=1 THEN 1 ELSE 0 END) AS fallbacks, SUM(CASE WHEN success=0 THEN 1 ELSE 0 END) AS failures, AVG(latency_ms) AS average_latency_ms FROM ai_request_telemetry`)[0]?.values?.[0] || [0, 0, 0, 0];
+  return {
+    overall: { requests: Number(overall[0]), fallbacks: Number(overall[1]), failures: Number(overall[2]), averageLatencyMs: Number(overall[3] || 0) },
+    byModel: mapRows(aggregate('model')),
+    bySkill: mapRows(aggregate('skill')),
+    byAgent: mapRows(aggregate('agent_id')),
+    byCountry: mapRows(aggregate('country')),
+    localVsHosted: mapRows(db.exec(`SELECT CASE WHEN provider IN ('SmolLM2', 'Kurukoo Template', 'FastText') THEN 'local' ELSE 'hosted' END AS key, COUNT(*) AS requests, SUM(CASE WHEN success=1 THEN 1 ELSE 0 END) AS successes, SUM(CASE WHEN fallback_used=1 THEN 1 ELSE 0 END) AS fallbacks, SUM(CASE WHEN estimated_cost IS NOT NULL THEN estimated_cost ELSE 0 END) AS known_cost, SUM(CASE WHEN estimated_cost IS NOT NULL THEN 1 ELSE 0 END) AS priced_requests, AVG(latency_ms) AS average_latency_ms FROM ai_request_telemetry GROUP BY key`)[0]?.values || []),
+  };
+}

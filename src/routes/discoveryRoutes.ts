@@ -50,6 +50,7 @@ function toSafeEntity(entity: DiscoveryEntity): Omit<DiscoveryEntity, 'latitude'
     detail: entity.detail,
     category: entity.category,
     source: entity.source,
+    sourceType: entity.sourceType,
     sourceUrl: entity.sourceUrl,
     distanceMetres: entity.distanceMetres,
     freshnessAt: entity.freshnessAt,
@@ -81,6 +82,7 @@ function toFeature(group: { cluster: boolean; entities: DiscoveryEntity[]; latit
       detail: group.cluster ? 'Zoom or open the list to review the attributed discovery items.' : primary.detail,
       category: group.cluster ? undefined : primary.category,
       source: group.cluster ? 'owned-cache' : primary.source,
+      sourceType: group.cluster ? undefined : primary.sourceType,
       freshnessAt: group.cluster ? undefined : primary.freshnessAt,
       evidenceLevel: group.cluster ? 'persisted_state' : primary.evidenceLevel,
       claimed: group.cluster ? false : primary.claimed,
@@ -148,7 +150,7 @@ export function createDiscoveryRouter(): Router {
       return res.json({
         type: 'FeatureCollection',
         features: groups.map((group) => toFeature(group, conversationId)),
-        meta: { radius: Number(req.query.radius || 5000), layers, generatedAt: result.generatedAt, provider: result.provider, hasMore: result.hasMore, approximateLocation: true, mapIsPresentationLayer: true },
+        meta: { radius: Number(req.query.radius || 5000), layers, generatedAt: result.generatedAt, provider: result.provider, hasMore: result.hasMore, readiness: result.readiness, approximateLocation: true, mapIsPresentationLayer: true },
       });
     } catch (error: any) {
       return res.status(Number(error?.status) || 500).json({ success: false, error: error instanceof Error ? error.message : 'Unable to query discovery network' });

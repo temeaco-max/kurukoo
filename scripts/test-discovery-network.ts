@@ -37,6 +37,10 @@ assert.equal(entity?.lifecycle, 'discovered');
 assert.equal(entity?.verified, false);
 assert.equal(entity?.available, false);
 assert.equal(entity?.source, 'owned-cache:test');
+assert.equal(entity?.sourceType, 'opportunity_signal', 'untyped cached entries must retain truthful opportunity provenance');
+const emptyArea = await queryDiscoveryEntities({ latitude: 0, longitude: 0, radiusMetres: 1, limit: 10 });
+assert.equal(emptyArea.readiness.state, 'no_verified_local_data', 'an empty area must expose a truthful sparse-discovery state rather than a broken map');
+assert.match(emptyArea.readiness.message, /Not much is live here yet/i);
 
 const selected = await getDiscoveryEntity(id);
 assert.ok(selected, 'exact discovery context should resolve by canonical entity id');
@@ -57,4 +61,4 @@ assert.equal(invitation.status, 'invited');
 assert.equal(invitation.entityId, id);
 assert.notEqual(invitation.id, '+2348022222222', 'invitation identity must not become a fake account');
 
-console.log('Discovery Network regression passed: canonical entity lookup, lifecycle truth, source attribution, bounded query, and attributable invitation without fake provider/user creation.');
+console.log('Discovery Network regression passed: canonical entity lookup, source provenance, sparse readiness, lifecycle truth, bounded query, and attributable invitation without fake provider/user creation.');

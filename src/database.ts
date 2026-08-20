@@ -151,7 +151,7 @@ function initTables(database: any) {
     CREATE TABLE IF NOT EXISTS livecast_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT, lat REAL, lng REAL);
     CREATE TABLE IF NOT EXISTS processed_transactions (id INTEGER PRIMARY KEY AUTOINCREMENT, tx_ref TEXT UNIQUE);
     CREATE TABLE IF NOT EXISTS referrals (id INTEGER PRIMARY KEY AUTOINCREMENT, referrer_phone TEXT, referred_phone TEXT, rewarded INTEGER DEFAULT 0, status TEXT DEFAULT 'pending', referral_code TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
-    CREATE TABLE IF NOT EXISTS unknown_intents (id INTEGER PRIMARY KEY AUTOINCREMENT, query TEXT);
+    CREATE TABLE IF NOT EXISTS unknown_intents (id INTEGER PRIMARY KEY AUTOINCREMENT, query TEXT, normalized_query TEXT, suggested_category TEXT, suggested_skill TEXT, confidence REAL, status TEXT NOT NULL DEFAULT 'pending', frequency INTEGER NOT NULL DEFAULT 1, provenance TEXT NOT NULL DEFAULT 'classifier_abstention', reviewer TEXT, reviewed_at TEXT, training_lineage_id TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, last_seen TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS sent_questions (id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT, question TEXT);
     CREATE TABLE IF NOT EXISTS compliance_events (id INTEGER PRIMARY KEY AUTOINCREMENT, event TEXT);
     CREATE TABLE IF NOT EXISTS community_posts (id INTEGER PRIMARY KEY AUTOINCREMENT, author TEXT, content TEXT);
@@ -259,10 +259,24 @@ function initTables(database: any) {
     'ALTER TABLE micro_tasks ADD COLUMN approved_at TEXT',
     'ALTER TABLE memory_profiles ADD COLUMN email_verified_at TEXT',
     'ALTER TABLE memory_profiles ADD COLUMN phone_verified_at TEXT',
+    'ALTER TABLE unknown_intents ADD COLUMN normalized_query TEXT',
+    'ALTER TABLE unknown_intents ADD COLUMN suggested_category TEXT',
+    'ALTER TABLE unknown_intents ADD COLUMN suggested_skill TEXT',
+    'ALTER TABLE unknown_intents ADD COLUMN confidence REAL',
+    "ALTER TABLE unknown_intents ADD COLUMN status TEXT NOT NULL DEFAULT 'pending'",
+    'ALTER TABLE unknown_intents ADD COLUMN frequency INTEGER NOT NULL DEFAULT 1',
+    "ALTER TABLE unknown_intents ADD COLUMN provenance TEXT NOT NULL DEFAULT 'classifier_abstention'",
+    'ALTER TABLE unknown_intents ADD COLUMN reviewer TEXT',
+    'ALTER TABLE unknown_intents ADD COLUMN reviewed_at TEXT',
+    'ALTER TABLE unknown_intents ADD COLUMN training_lineage_id TEXT',
+    'ALTER TABLE unknown_intents ADD COLUMN created_at TEXT',
+    'ALTER TABLE unknown_intents ADD COLUMN last_seen TEXT',
   ]) { try { database.run(migration); } catch { /* column already exists */ } }
   const skillFlowColumns = database.exec('PRAGMA table_info(skill_flows)')[0]?.values || [];
   if (!skillFlowColumns.some((column: unknown[]) => String(column[1]) === 'flow_mode')) database.run("ALTER TABLE skill_flows ADD COLUMN flow_mode TEXT NOT NULL DEFAULT 'economic'");
   database.run("CREATE INDEX IF NOT EXISTS idx_micro_tasks_source ON micro_tasks(source_type, source_id)");
+  database.run("CREATE INDEX IF NOT EXISTS idx_unknown_intents_review ON unknown_intents(status, last_seen DESC)");
+  database.run("CREATE INDEX IF NOT EXISTS idx_unknown_intents_normalized ON unknown_intents(normalized_query, status)");
   database.run("CREATE INDEX IF NOT EXISTS idx_messages_phone ON messages(phone)");
   database.run("CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at)");
   

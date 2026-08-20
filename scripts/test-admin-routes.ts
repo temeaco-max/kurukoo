@@ -11,7 +11,8 @@ const paths = [
   '/api/admin/analytics', '/api/admin/content', '/api/admin/stats', '/api/admin/pilot-readiness',
   '/api/admin/external-integrations', '/api/admin/ads', '/api/admin/operator/state',
   '/api/admin/operator/chat', '/api/admin/operator/actors', '/api/admin/operator/actors/:actorId/chat',
-  '/api/admin/operator/actors/:actorId/reset',
+  '/api/admin/operator/actors/:actorId/reset', '/api/admin/provider-credentials', '/api/admin/ai/telemetry',
+  '/api/admin/ai/provider-health', '/api/admin/ai-agents/:id/inference-budget',
 ];
 
 async function main() {
@@ -104,6 +105,13 @@ async function main() {
   assert.match(future, /fetch\('\/api\/admin\/future_plans'/, 'future roadmap page must use protected endpoint');
 
   assert.match(src, /getExternalIntegrationReadiness/, 'admin integration readiness must reuse canonical projection');
+  assert.match(src, /router\.get\('\/provider-credentials',\s*authenticateAdmin/, 'credential metadata must require admin authentication');
+  assert.match(src, /rotateProviderCredential/, 'credential rotation must reuse the encrypted credential service');
+  assert.match(src, /router\.post\('\/provider-credentials\/:provider\/revoke',\s*authenticateAdmin/, 'credential revocation must require admin authentication');
+  assert.match(src, /router\.get\('\/ai\/telemetry',\s*authenticateAdmin/, 'AI telemetry summary must require admin authentication');
+  assert.match(src, /getAiUsageTelemetrySummary/, 'AI telemetry must reuse the canonical quota/accounting service');
+  assert.match(src, /router\.get\('\/ai\/provider-health',\s*authenticateAdmin/, 'provider health must require admin authentication');
+  assert.match(src, /getAgentInferenceBudgetStatus/, 'agent budget visibility must reuse the canonical budget service');
   assert.match(src, /authenticateAdmin/, 'adminRoutes must use authenticateAdmin');
   assert.match(src, /operatorSession: true/, 'operator Chat must issue explicit operator claim');
   assert.match(src, /testActor: true/, 'Test As must issue explicit actor claim');

@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { getDb, saveDb } from '../database.js';
+import { assertHighWritePersistence } from './highWritePersistence.js';
 import { classifyMessageTier, ensureLivingMemorySchema } from './livingMemoryEngine.js';
 import { getProfile } from './memoryProfile.js';
 
@@ -59,6 +60,7 @@ export async function ensureChatSchema(db: any): Promise<void> {
 }
 
 async function dbReady(): Promise<any> {
+  assertHighWritePersistence('messages_conversations');
   const db = await getDb();
   await ensureChatSchema(db);
   return db;

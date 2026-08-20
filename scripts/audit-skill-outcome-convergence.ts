@@ -1,13 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { buildSkillOutcomeCoverage, getAllConvergedSkillNames, getConvergedSkillBehaviour } from '../src/services/skillBehaviourConvergence.js';
-import { getLocalSkillExtensions } from '../src/services/skillCatalogueConvergence.js';
-import { getKnownSkills } from '../src/services/skillFlows.js';
+import { getCatalogueStats, getLocalSkillExtensions } from '../src/services/skillCatalogueConvergence.js';
 
 const root = process.cwd();
 const output = path.join(root, 'data', 'audits', 'skill-outcome-convergence.json');
 const coverage = buildSkillOutcomeCoverage();
-const baseSkills = getKnownSkills();
+const catalogue = getCatalogueStats();
 const localSkills = getLocalSkillExtensions().map(x => x.skill);
 const missing: string[] = [];
 for (const skill of getAllConvergedSkillNames()) {
@@ -28,13 +27,16 @@ for (const skill of getAllConvergedSkillNames()) {
     aliases.set(key, current);
   }
 }
-const collisions = [...aliases.entries()].filter(([, skills]) => skills.length > 1).map(([alias, skills]) => ({ alias, skills: [...new Set(skills)] }));
+const collisions = [...aliases.entries()]
+  .map(([alias, skills]) => ({ alias, skills: [...new Set(skills)] }))
+  .filter(({ skills }) => skills.length > 1);
 const result = {
   generatedAt: new Date().toISOString(),
-  baseSkillCount: baseSkills.length,
-  localExtensionCount: localSkills.length,
-  totalSkillCount: getAllConvergedSkillNames().length,
-  targetReached: getAllConvergedSkillNames().length >= 205,
+  catalogue,
+  baseSkillCount: catalogue.core,
+  localExtensionCount: catalogue.extensions,
+  totalSkillCount: catalogue.total,
+  targetReached: getAllConvergedSkillNames().length === catalogue.total,
   completeContracts: missing.length === 0,
   missing,
   aliasCollisions: collisions,
@@ -42,5 +44,5 @@ const result = {
 };
 fs.mkdirSync(path.dirname(output), { recursive: true });
 fs.writeFileSync(output, JSON.stringify(result, null, 2));
-console.log(JSON.stringify({ baseSkillCount: result.baseSkillCount, localExtensionCount: result.localExtensionCount, totalSkillCount: result.totalSkillCount, completeContracts: result.completeContracts, aliasCollisions: collisions.length, output }, null, 2));
+console.log(JSON.stringify({ catalogue: result.catalogue, completeContracts: result.completeContracts, aliasCollisions: collisions.length, output }, null, 2));
 if (!result.targetReached || !result.completeContracts) process.exitCode = 1;

@@ -1,0 +1,100 @@
+export type ProviderHealthState = 'healthy' | 'degraded' | 'open' | 'half_open';
+export const HOSTED_AI_PROVIDERS = ['mistral', 'gemini', 'groq', 'openrouter'] as const;
+export type HostedAiProviderName = typeof HOSTED_AI_PROVIDERS[number];
+
+interface ProviderHealthRecord {
+  state: ProviderHealthState;
+  consecutiveFailures: number;
+  timeoutCount: number;
+  recentFailures: number[];
+  recentSuccesses: number[];
+  lastSuccessAt?: number;
+  lastFailureAt?: number;
+  openedAt?: number;
+  halfOpenProbeInFlight: boolean;
+}
+
+const WINDOW_MS = 5 * 60_000;
+const OPEN_COOLDOWN_MS = 30_000;
+const OPEN_FAILURE_THRESHOLD = 3;
+const DEGRADED_FAILURE_THRESHOLD = 2;
+const health = new Map<HostedAiProviderName, ProviderHealthRecord>();
+
+function recordFor(provider: HostedAiProviderName): ProviderHealthRecord {
+  const current = health.get(provider);
+  if (current) return current;
+  const created: ProviderHealthRecord = { state: 'healthy', consecutiveFailures: 0, timeoutCount: 0, recentFailures: [], recentSuccesses: [], halfOpenProbeInFlight: false };
+  health.set(provider, created);
+  return created;
+}
+function trim(record: ProviderHealthRecord, now: number) {
+  record.recentFailures = record.recentFailures.filter(at => now - at <= WINDOW_MS);
+  record.recentSuccesses = record.recentSuccesses.filter(at => now - at <= WINDOW_MS);
+}
+export interface ProviderHealthSnapshot {
+  provider: HostedAiProviderName;
+  state: ProviderHealthState;
+  consecutiveFailures: number;
+  timeoutCount: number;
+  rollingErrorRate: number;
+  lastSuccessAt: string | null;
+  lastFailureAt: string | null;
+  cooldownRemainingMs: number;
+  halfOpenProbeInFlight: boolean;
+}
+export function getProviderHealth(provider: HostedAiProviderName, now = Date.now()): ProviderHealthSnapshot {
+  const record = recordFor(provider);
+  trim(record, now);
+  if (record.state === 'open' && record.openedAt && now - record.openedAt >= OPEN_COOLDOWN_MS) record.state = 'half_open';
+  const total = record.recentFailures.length + record.recentSuccesses.length;
+  return {
+    provider,
+    state: record.state,
+    consecutiveFailures: record.consecutiveFailures,
+    timeoutCount: record.timeoutCount,
+    rollingErrorRate: total ? record.recentFailures.length / total : 0,
+    lastSuccessAt: record.lastSuccessAt ? new Date(record.lastSuccessAt).toISOString() : null,
+    lastFailureAt: record.lastFailureAt ? new Date(record.lastFailureAt).toISOString() : null,
+    cooldownRemainingMs: record.state === 'open' && record.openedAt ? Math.max(0, OPEN_COOLDOWN_MS - (now - record.openedAt)) : 0,
+    halfOpenProbeInFlight: record.halfOpenProbeInFlight,
+  };
+}
+export function mayAttemptProvider(provider: HostedAiProviderName, now = Date.now()): boolean {
+  const record = recordFor(provider);
+  const snapshot = getProviderHealth(provider, now);
+  if (snapshot.state === 'healthy' || snapshot.state === 'degraded') return true;
+  if (snapshot.state === 'open') return false;
+  if (record.halfOpenProbeInFlight) return false;
+  record.halfOpenProbeInFlight = true;
+  return true;
+}
+export function recordProviderSuccess(provider: HostedAiProviderName, now = Date.now()): void {
+  const record = recordFor(provider);
+  trim(record, now);
+  record.recentSuccesses.push(now);
+  record.lastSuccessAt = now;
+  record.consecutiveFailures = 0;
+  record.halfOpenProbeInFlight = false;
+  record.state = 'healthy';
+}
+export function recordProviderFailure(provider: HostedAiProviderName, options: { timeout?: boolean; now?: number } = {}): void {
+  const now = options.now || Date.now();
+  const record = recordFor(provider);
+  trim(record, now);
+  record.recentFailures.push(now);
+  record.lastFailureAt = now;
+  record.consecutiveFailures += 1;
+  if (options.timeout) record.timeoutCount += 1;
+  record.halfOpenProbeInFlight = false;
+  if (record.consecutiveFailures >= OPEN_FAILURE_THRESHOLD) {
+    record.state = 'open';
+    record.openedAt = now;
+  } else if (record.consecutiveFailures >= DEGRADED_FAILURE_THRESHOLD) record.state = 'degraded';
+}
+export function orderHealthyProviders<T extends HostedAiProviderName>(providers: T[]): T[] {
+  return [...providers].sort((left, right) => {
+    const rank = (provider: T) => ({ healthy: 0, degraded: 1, half_open: 2, open: 3 })[getProviderHealth(provider).state];
+    return rank(left) - rank(right);
+  });
+}
+export function resetProviderHealthForTest(): void { health.clear(); }

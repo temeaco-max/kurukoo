@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getAllConvergedSkillNames, getConvergedSkillBehaviour } from '../src/services/skillBehaviourConvergence.js';
+import { getCatalogueStats } from '../src/services/skillCatalogueConvergence.js';
 import { buildSkillExecutionContract } from '../src/services/skillExecutionContract.js';
 
 const datasetVersion = String(process.env.KURUKOO_DATASET_VERSION || 'kurukoo-core-v2');
@@ -75,7 +76,9 @@ function hashFile(filePath: string) {
 function writeJsonl(filePath: string, rows: unknown[]) { fs.writeFileSync(filePath, `${rows.map((row) => JSON.stringify(row)).join('\n')}\n`); }
 
 fs.mkdirSync(outputDir, { recursive: true });
+const catalogue = getCatalogueStats();
 const skills = getAllConvergedSkillNames();
+if (skills.length !== catalogue.total) throw new Error(`Training universe catalogue mismatch: expected ${catalogue.total}, found ${skills.length}`);
 const rows = skills.flatMap((skill, skillIndex) => variants.map((_, index) => createExample(skill, skillIndex, index)));
 const splitFor = (row: (typeof rows)[number]) => {
   const bucket = crypto.createHash('sha256').update(row.exampleId).digest().readUInt16BE(0) % 100;
@@ -103,6 +106,7 @@ const manifest = {
   fileSha256: Object.fromEntries(Object.entries(files).map(([key, filePath]) => [key, hashFile(filePath)])),
   evaluationSets: { golden: { count: goldenRows.length, status: 'candidate_requires_human_curation' }, adversarial: { count: adversarialRows.length, status: 'candidate_requires_human_curation' } },
   skillCount: skills.length,
+  catalogue,
   familyCount: new Set(rows.map((row) => row.labels.family)).size,
   variantCount: variants.length,
   actorCoverage: [...new Set(rows.map((row) => row.labels.actor))],

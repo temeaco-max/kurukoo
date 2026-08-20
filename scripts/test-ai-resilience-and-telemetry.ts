@@ -1,0 +1,43 @@
+import assert from 'node:assert/strict';
+import { getDb, saveDb } from '../src/database.js';
+import { getProviderHealth, mayAttemptProvider, recordProviderFailure, recordProviderSuccess, resetProviderHealthForTest } from '../src/services/aiProviderHealthService.js';
+import { LruCache } from '../src/services/lruCache.js';
+import { getAiUsageTelemetrySummary } from '../src/services/aiQuotaService.js';
+import { queryUnifiedAI } from '../src/services/unifiedAiEngine.js';
+
+resetProviderHealthForTest();
+assert.ok(mayAttemptProvider('mistral'), 'healthy providers should be callable');
+recordProviderFailure('mistral');
+recordProviderFailure('mistral');
+assert.equal(getProviderHealth('mistral').state, 'degraded', 'two consecutive failures should degrade a provider');
+recordProviderFailure('mistral', { timeout: true });
+assert.equal(getProviderHealth('mistral').state, 'open', 'three consecutive failures should open the circuit');
+assert.equal(mayAttemptProvider('mistral'), false, 'open providers must be skipped without waiting for an upstream timeout');
+getProviderHealth('mistral', Date.now() + 31_000);
+assert.ok(mayAttemptProvider('mistral'), 'half-open state must allow one controlled recovery probe');
+assert.equal(mayAttemptProvider('mistral'), false, 'half-open state must not allow concurrent probes');
+recordProviderSuccess('mistral');
+assert.equal(getProviderHealth('mistral').state, 'healthy', 'a successful controlled probe should close the circuit');
+
+const cache = new LruCache<string>(2);
+cache.set('a', 'A', 1_000); cache.set('b', 'B', 1_000);
+assert.equal(cache.get('a'), 'A', 'LRU read should return the cached value');
+cache.set('c', 'C', 1_000);
+assert.equal(cache.get('b'), undefined, 'LRU read must refresh recency so the least-recently-used item is evicted');
+assert.equal(cache.get('a'), 'A'); assert.equal(cache.get('c'), 'C');
+
+const phone = 'telemetry-test-user';
+await getAiUsageTelemetrySummary();
+const db = await getDb();
+db.run(`DELETE FROM ai_request_telemetry WHERE phone=?`, [phone]); saveDb();
+const response = await queryUnifiedAI('hello', { provider: 'local_intent', phone, agentId: 'agent-telemetry-test', skill: 'general_question', category: 'general', country: 'ng' });
+assert.equal(response.escalationReason, 'caller_preference');
+const rows = db.exec(`SELECT provider, model, estimated_cost, cost_status, escalation_reason, agent_id, skill, category, success, fallback_used FROM ai_request_telemetry WHERE phone=?`, [phone])[0]?.values || [];
+assert.equal(rows.length, 1, 'every local intent request must create one telemetry record');
+assert.equal(rows[0][2], null, 'unknown pricing must remain null rather than fabricated');
+assert.equal(rows[0][3], 'unavailable', 'unknown pricing must be explicitly marked unavailable');
+assert.equal(rows[0][4], 'caller_preference');
+const summary = await getAiUsageTelemetrySummary();
+assert.ok(summary.overall.requests >= 1, 'telemetry summary must aggregate recorded requests');
+db.run(`DELETE FROM ai_request_telemetry WHERE phone=?`, [phone]); saveDb();
+console.log('AI resilience and telemetry regression passed: circuit state, LRU recency, null-cost telemetry, and escalation reason verified.');

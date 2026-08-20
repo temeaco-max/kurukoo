@@ -96,13 +96,16 @@ function classify(skill: string, mode: string, variant: string, dependency: stri
   return { finalState: variant === 'normal' ? 'development_fixture_complete' : 'conversation_resumable', status: 'DEVELOPMENT_FIXTURE_COMPLETE' };
 }
 
-const { getEconomicCategory, getKnownSkills, getSkillCapabilities, getSkillFlow } = await import('../src/services/skillFlows.js');
-const skills = getKnownSkills();
+const { getAllCatalogueSkillNames, getCatalogueStats } = await import('../src/services/skillCatalogueConvergence.js');
+const { buildSkillExecutionContract } = await import('../src/services/skillExecutionContract.js');
+const catalogue = getCatalogueStats();
+const skills = getAllCatalogueSkillNames();
+if (skills.length !== catalogue.total) throw new Error(`Converged scenario catalogue mismatch: expected ${catalogue.total}, found ${skills.length}`);
 const executionLimit = Math.max(skills.length, Number(process.env.KURUKOO_SCENARIO_EXECUTION_LIMIT || 1000));
 const rows: any[] = [];
 for (let i = 0; i < skills.length; i += 1) {
   const skill = skills[i];
-  const flow = await getSkillFlow(skill);
+  const contract = buildSkillExecutionContract(skill);
   for (let variantIndex = 0; variantIndex < lifecycleVariants.length; variantIndex += 1) {
     for (let marketIndex = 0; marketIndex < markets.length; marketIndex += 1) {
       const variant = lifecycleVariants[variantIndex];
@@ -112,15 +115,15 @@ for (let i = 0; i < skills.length; i += 1) {
       const actor = pick(actors, `${key}:actor`);
       const providerType = pick(providerTypes, `${key}:provider`);
       const dependency = pick(externalDependencies, `${key}:dependency`);
-      const state = classify(skill, flow?.mode || 'economic', variant[0], dependency);
+      const state = classify(skill, contract.mode, variant[0], dependency);
       const horizon = trajectoryHorizons[stableIndex(`${key}:horizon`, trajectoryHorizons.length)];
       const trajectory = makeTrajectory(key, phrase(skill, variant[0], market), variant[0], horizon);
       const scenario = {
         scenarioId: `pol:${hash(key).slice(0, 20)}`,
         seed,
         skill,
-        family: getEconomicCategory(skill) || 'uncategorized',
-        mode: flow?.mode || 'economic',
+        family: contract.category || 'uncategorized',
+        mode: contract.mode,
         market: market.key,
         locale: market.locale,
         dialect: market.dialect,
@@ -137,8 +140,8 @@ for (let i = 0; i < skills.length; i += 1) {
         lifecycleVariant: variant[0],
         lifecycle: variant[1],
         canonicalServices: ['canonicalChatTurnService', 'intentRouter', 'contextArbitration', 'skillFlows', 'discoveryNetwork', 'agenticStorefront', 'executionConnector', 'pushNotifications'],
-        capabilities: getSkillCapabilities(skill),
-        requirementKeys: (flow?.requirements || []).map((requirement) => requirement.key),
+        capabilities: contract.capabilities,
+        requirementKeys: contract.requirements.map((requirement) => requirement.key),
         uiStates: uiStates.slice(0, 3 + stableIndex(key, uiStates.length - 2)),
         executionBoundary: pick(executionBoundaries, `${key}:boundary`),
         evidenceRequirements: ['owner_scoped_identity', 'provider_or_source_provenance', 'state_change_evidence'],
@@ -218,6 +221,7 @@ const manifest = {
   executedPassed: resultRows.filter((row) => row.status !== 'failed').length,
   executedFailed: resultRows.filter((row) => row.status === 'failed').length,
   skillCount: skills.length,
+  catalogue,
   familyCount: new Set(selected.map((row) => row.family)).size,
   coverage: {
     skills: skills.length,
@@ -240,7 +244,7 @@ const manifest = {
   fileSha256: { scenarios: crypto.createHash('sha256').update(jsonl).digest('hex'), training: crypto.createHash('sha256').update(fs.readFileSync(trainingPath)).digest('hex') },
   executionMode: shouldExecute ? 'isolated_stratified_canonical_route_probe' : 'generation_only',
   executionLimit: executedScenarioCount,
-  sourceOfTruth: ['src/services/skillFlows.ts', 'src/services/intentRouter.ts', 'src/services/canonicalChatTurnService.ts', 'src/services/discoveryNetwork.ts', 'src/services/agenticStorefront.ts', 'src/services/executionConnector.ts'],
+  sourceOfTruth: ['src/services/skillCatalogueConvergence.ts', 'src/services/skillExecutionContract.ts', 'src/services/intentRouter.ts', 'src/services/canonicalChatTurnService.ts', 'src/services/discoveryNetwork.ts', 'src/services/agenticStorefront.ts', 'src/services/executionConnector.ts'],
   normalRuntimeDependsOnUniverse: false,
   syntheticOnly: true,
   externalCapabilitiesClaimed: false,
