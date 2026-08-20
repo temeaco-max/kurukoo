@@ -147,6 +147,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Typecheck mobile client
         run: pnpm check
+      - name: Validate native platform coverage contract
+        run: pnpm test:platform-contract
       - name: Test mobile client
         run: pnpm test
       - name: Build mobile server bundle

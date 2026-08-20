@@ -1,5 +1,5 @@
 {
-  "name": "app-template",
+  "name": "kurukoo-mobile",
   "version": "1.0.0",
   "private": true,
   "main": "expo-router/entry",
@@ -13,7 +13,8 @@
     "lint": "expo lint",
     "format": "prettier --write .",
     "test": "vitest run",
-    "verify:ci": "pnpm check && pnpm test",
+    "test:platform-contract": "tsx scripts/test-platform-contract.ts",
+    "verify:ci": "pnpm check && pnpm test && pnpm test:platform-contract",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
     "android": "expo start --android",
     "ios": "expo start --ios",

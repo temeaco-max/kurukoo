@@ -14,105 +14,15 @@ import { getScaleTransitionReport } from '../src/services/scaleTransition.js';
 import { matchCatalogueInventory } from '../src/services/catalogueInventoryMatcher.js';
 
 const requiredFiles = [
-  'src/services/canonicalChatTurnService.ts',
-  'src/services/intentRouter.ts',
-  'src/services/skillFlows.ts',
-  'src/services/skillCatalogueConvergence.ts',
-  'src/services/skillBehaviourConvergence.ts',
-  'src/services/skillBehaviourRuntime.ts',
-  'src/services/skillExecutionContract.ts',
-  'src/services/capabilityRegistry.ts',
-  'src/services/universalCapabilityProtocol.ts',
-  'src/services/memoryProfile.ts',
-  'src/services/agentRuntime.ts',
-  'src/services/commercialLedger.ts',
-  'src/services/outcomeCompleteness.ts',
-  'src/services/durableJobQueue.ts',
-  'src/services/providerVerificationLifecycle.ts',
-  'src/services/attachmentSecurityBoundary.ts',
-  'src/services/artifactService.ts',
-  'src/services/catalogueInventoryMatcher.ts',
-  'src/services/discoveryNetwork.ts',
-  'src/services/discoverExperience.ts',
-  'src/services/adManager.ts',
-  'src/services/topicService.ts',
-  'src/routes/discoveryRoutes.ts',
-  'src/routes/providerVerificationRoutes.ts',
-  'src/routes/healthRoutes.ts',
-  'src/routes/publicRoutes.ts',
-  'scripts/runtime-smoke.ts',
-  'scripts/test-discover-experience.ts',
+  'src/services/canonicalChatTurnService.ts','src/services/intentRouter.ts','src/services/skillFlows.ts','src/services/skillCatalogueConvergence.ts','src/services/skillBehaviourConvergence.ts','src/services/skillBehaviourRuntime.ts','src/services/skillExecutionContract.ts','src/services/capabilityRegistry.ts','src/services/universalCapabilityProtocol.ts','src/services/memoryProfile.ts','src/services/agentRuntime.ts','src/services/commercialLedger.ts','src/services/outcomeCompleteness.ts','src/services/durableJobQueue.ts','src/services/providerVerificationLifecycle.ts','src/services/attachmentSecurityBoundary.ts','src/services/artifactService.ts','src/services/catalogueInventoryMatcher.ts','src/services/discoveryNetwork.ts','src/services/discoverExperience.ts','src/services/adManager.ts','src/services/topicService.ts','src/routes/discoveryRoutes.ts','src/routes/providerVerificationRoutes.ts','src/routes/healthRoutes.ts','src/routes/publicRoutes.ts','scripts/runtime-smoke.ts','scripts/test-discover-experience.ts',
+  'mobile/kurukoo-mobile/app/(tabs)/discover.tsx','mobile/kurukoo-mobile/lib/discover-contract.ts','mobile/kurukoo-mobile/lib/platform-contract.ts','mobile/kurukoo-mobile/lib/platform-client.ts','mobile/kurukoo-mobile/scripts/test-platform-contract.ts','mobile/kurukoo-mobile/eas.json','mobile/kurukoo-mobile/docs/platform-convergence.md',
 ];
+for(const file of requiredFiles)assert.ok(fs.existsSync(path.join(process.cwd(),file)),`missing canonical owner: ${file}`);
 
-for (const file of requiredFiles) assert.ok(fs.existsSync(path.join(process.cwd(), file)), `missing canonical owner: ${file}`);
-
-const skills = getAllConvergedSkillNames();
-const localExtensions = getLocalSkillExtensions();
-assert.ok(skills.length >= 241, `converged catalogue unexpectedly shrank: ${skills.length}`);
-assert.equal(new Set(skills).size, skills.length, 'skill ids must remain unique');
-
-const contractFailures: Array<{ skill: string; issue: string }> = [];
-for (const skill of skills) {
-  const pack = getConvergedSkillBehaviour(skill);
-  const contract = buildSkillExecutionContract(skill);
-  if (!pack.instructions.length) contractFailures.push({ skill, issue: 'missing behaviour instructions' });
-  if (!contract.requirements.length) contractFailures.push({ skill, issue: 'missing requirements' });
-  if (!contract.capabilities.length) contractFailures.push({ skill, issue: 'missing capabilities' });
-  if (!contract.completionEvidence.length) contractFailures.push({ skill, issue: 'missing completion evidence' });
-  if (!contract.failureModes.length) contractFailures.push({ skill, issue: 'missing failure/recovery' });
-  if (!contract.memoryKeys.length) contractFailures.push({ skill, issue: 'missing Memory Profile policy' });
-  if (!contract.truthBoundary.length) contractFailures.push({ skill, issue: 'missing truth boundary' });
-}
-assert.equal(contractFailures.length, 0, JSON.stringify(contractFailures.slice(0, 20)));
-
-const routingRegression = [
-  ['hello', 'greeting'],
-  ['thanks', 'thanks'],
-  ['remind me when my bins go out', 'bin_day'],
-  ['my iPhone 13 screen is broken', 'phone_repairer'],
-  ['I need my MacBook repaired', 'laptop_repairer'],
-  ['find a POS agent', 'pos_agent'],
-  ['help me pray', 'prayer'],
-] as const;
-for (const [text, expected] of routingRegression) {
-  const signal = classifyAiRoutingSignal(text);
-  assert.equal(signal.skill || signal.conversationAct, expected, `${text}: routing regression`);
-}
-
-const fasttext = getFastTextRuntimeStatus();
-const smollm2 = getSmolLM2RuntimeStatus();
-const integrations = getExternalIntegrationOperationalStatus();
-const durableJobs = await getDurableJobStats();
-const providerVerifications = await listProviderVerifications(undefined, 1);
-const attachmentReadiness = attachmentSecurityReadiness();
-const attachmentProbe = inspectAttachmentSecurity({ data: Buffer.from('safe synthetic attachment'), mimeType: 'text/plain', filename: 'probe.txt' });
-assert.equal(attachmentProbe.state, 'accepted', `attachment security probe unexpectedly failed: ${attachmentProbe.reason || attachmentProbe.state}`);
-const inventoryProbe = await matchCatalogueInventory({ query: '' });
-assert.deepEqual(inventoryProbe, [], 'empty inventory query must not return provider inventory');
-const scale = getScaleTransitionReport();
-
-const report = {
-  generatedAt: new Date().toISOString(),
-  catalogue: {
-    canonicalMinimum: 241,
-    convergedSkills: skills.length,
-    localExtensions: localExtensions.length,
-    deviceRepairSkills: skills.filter(skill => /(?:phone|laptop|tablet|console|tv|smartwatch|earbuds|speaker|appliance|bicycle|motorbike|vehicle)_/.test(skill)).length,
-  },
-  contracts: { skillsChecked: skills.length, failures: contractFailures.length },
-  routing: { regressionCases: routingRegression.length, fastTextModelState: fasttext.modelState, fastTextAvailable: fasttext.available },
-  inference: smollm2,
-  integrations,
-  durableJobs,
-  providerVerification: { recordsObserved: providerVerifications.length },
-  attachmentSecurity: { readiness: attachmentReadiness, syntheticProbe: attachmentProbe },
-  inventory: { emptyQuerySafe: true },
-  discover: { experience: 'for_you+nearby+today+topics+opportunities+explore', persistentActions: ['watch','follow','save'], sponsoredPlacementBoundary: 'adManager.public_discovery', mapIsPresentationLayer: true, sparseAreaRecovery: ['ask_kurukoo','explore_capabilities','topics','watch'] },
-  scale,
-  canonicalOwners: requiredFiles,
-  externalRuntimeBoundary: 'provider/device/infrastructure credentials and live deployment evidence are runtime configuration; repository audits never convert simulation into a production claim',
-};
-const outputDir = path.join(process.cwd(), 'data', 'audits');
-fs.mkdirSync(outputDir, { recursive: true });
-fs.writeFileSync(path.join(outputDir, 'platform-convergence.json'), `${JSON.stringify(report, null, 2)}\n`);
-console.log(JSON.stringify(report, null, 2));
+const skills=getAllConvergedSkillNames();const localExtensions=getLocalSkillExtensions();assert.ok(skills.length>=241,`converged catalogue unexpectedly shrank: ${skills.length}`);assert.equal(new Set(skills).size,skills.length,'skill ids must remain unique');
+const contractFailures:Array<{skill:string;issue:string}>=[];for(const skill of skills){const pack=getConvergedSkillBehaviour(skill);const contract=buildSkillExecutionContract(skill);if(!pack.instructions.length)contractFailures.push({skill,issue:'missing behaviour instructions'});if(!contract.requirements.length)contractFailures.push({skill,issue:'missing requirements'});if(!contract.capabilities.length)contractFailures.push({skill,issue:'missing capabilities'});if(!contract.completionEvidence.length)contractFailures.push({skill,issue:'missing completion evidence'});if(!contract.failureModes.length)contractFailures.push({skill,issue:'missing failure/recovery'});if(!contract.memoryKeys.length)contractFailures.push({skill,issue:'missing Memory Profile policy'});if(!contract.truthBoundary.length)contractFailures.push({skill,issue:'missing truth boundary'});}assert.equal(contractFailures.length,0,JSON.stringify(contractFailures.slice(0,20)));
+const routingRegression=[['hello','greeting'],['thanks','thanks'],['remind me when my bins go out','bin_day'],['my iPhone 13 screen is broken','phone_repairer'],['I need my MacBook repaired','laptop_repairer'],['find a POS agent','pos_agent'],['help me pray','prayer']] as const;for(const[text,expected]of routingRegression){const signal=classifyAiRoutingSignal(text);assert.equal(signal.skill||signal.conversationAct,expected,`${text}: routing regression`);}
+const fasttext=getFastTextRuntimeStatus();const smollm2=getSmolLM2RuntimeStatus();const integrations=getExternalIntegrationOperationalStatus();const durableJobs=await getDurableJobStats();const providerVerifications=await listProviderVerifications(undefined,1);const attachmentReadiness=attachmentSecurityReadiness();const attachmentProbe=inspectAttachmentSecurity({data:Buffer.from('safe synthetic attachment'),mimeType:'text/plain',filename:'probe.txt'});assert.equal(attachmentProbe.state,'accepted',`attachment security probe unexpectedly failed: ${attachmentProbe.reason||attachmentProbe.state}`);const inventoryProbe=await matchCatalogueInventory({query:''});assert.deepEqual(inventoryProbe,[],'empty inventory query must not return provider inventory');const scale=getScaleTransitionReport();
+const mobileContractSource=fs.readFileSync(path.join(process.cwd(),'mobile/kurukoo-mobile/lib/platform-contract.ts'),'utf8');for(const id of ['discover','chat-routing','notifications','agents','economic-requests','memory','provider-network','ai-runtime','safety','provider-credentials','admin-convergence'])assert.ok(mobileContractSource.includes(`id: \"${id}\"`),`mobile platform contract missing ${id}`);
+const report={generatedAt:new Date().toISOString(),catalogue:{canonicalMinimum:241,convergedSkills:skills.length,localExtensions:localExtensions.length,deviceRepairSkills:skills.filter(skill=>/(?:phone|laptop|tablet|console|tv|smartwatch|earbuds|speaker|appliance|bicycle|motorbike|vehicle)_/.test(skill)).length},contracts:{skillsChecked:skills.length,failures:contractFailures.length},routing:{regressionCases:routingRegression.length,fastTextModelState:fasttext.modelState,fastTextAvailable:fasttext.available},inference:smollm2,integrations,durableJobs,providerVerification:{recordsObserved:providerVerifications.length},attachmentSecurity:{readiness:attachmentReadiness,syntheticProbe:attachmentProbe},inventory:{emptyQuerySafe:true},discover:{experience:'for_you+nearby+today+topics+opportunities+explore',persistentActions:['watch','follow','save'],sponsoredPlacementBoundary:'adManager.public_discovery',mapIsPresentationLayer:true,sparseAreaRecovery:['ask_kurukoo','explore_capabilities','topics','watch']},mobile:{nativeFramework:'expo-router',iosAndroidShared:true,platformContract:'mobile/kurukoo-mobile/lib/platform-contract.ts',canonicalClient:'mobile/kurukoo-mobile/lib/platform-client.ts',buildProfiles:'mobile/kurukoo-mobile/eas.json'},scale,canonicalOwners:requiredFiles,externalRuntimeBoundary:'provider/device/infrastructure credentials and live deployment evidence are runtime configuration; repository audits never convert simulation into a production claim'};
+const outputDir=path.join(process.cwd(),'data','audits');fs.mkdirSync(outputDir,{recursive:true});fs.writeFileSync(path.join(outputDir,'platform-convergence.json'),`${JSON.stringify(report,null,2)}\n`);console.log(JSON.stringify(report,null,2));

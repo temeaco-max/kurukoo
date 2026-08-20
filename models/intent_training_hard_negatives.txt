@@ -1,0 +1,30 @@
+__label__pay_bill My iPhone bill is overdue
+__label__pay_bill I need to settle my phone bill not repair the handset
+__label__phone_repairer My iPhone 13 screen is smashed and I need it repaired
+__label__phone_repairer My Samsung screen is broken and the phone still turns on
+__label__order_food I want to buy a new phone from a seller
+__label__order_food I need someone to deliver groceries to my house
+__label__ride_request I need a driver to take me to the airport
+__label__ride_request Pick me up from home and take me to work tomorrow morning
+__label__find_worker I need someone to repair my washing machine
+__label__find_worker Find a plumber for a leaking pipe
+__label__hotel_booking Book me a hotel for two nights
+__label__general_question Which hotel is best for this area
+__label__restaurant_booking Book a table for four tonight
+__label__order_food I want dinner delivered from a restaurant
+__label__prayer I need a prayer for my family
+__label__general_question I need help understanding how Kurukoo works
+__label__reminder_set Remind me about my appointment tomorrow
+__label__bin_day When is my recycling collection
+__label__bin_day Remind me when the bins go out
+__label__seller Find someone selling fresh eggs near me
+__label__find_worker I need a technician to repair my laptop
+__label__general_question Where can I learn how to top up
+__label__top_up How do I add money to my Kurukoo wallet
+__label__check_balance How much is in my wallet right now
+__label__ride_request My bike should pick me up at 8am
+__label__delivery_request I need these documents delivered across town
+__label__sports_matchmaking Find people to play football with this weekend
+__label__emergency I am in danger and need urgent emergency help
+__label__topic_create I want to ask my neighbourhood a question
+__label__topic_reply I want to comment on a topic someone posted

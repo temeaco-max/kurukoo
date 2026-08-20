@@ -9,42 +9,8 @@ const limits = () => ({
 const day = () => new Date().toISOString().slice(0, 10);
 const cycle = () => new Date().toISOString().slice(0, 16);
 
-async function ensureSchema() {
-  const db = await getDb();
-  db.run(`CREATE TABLE IF NOT EXISTS agent_inference_budget_usage (
-    agent_id TEXT NOT NULL,
-    goal_id TEXT NOT NULL,
-    day TEXT NOT NULL,
-    cycle_bucket TEXT NOT NULL,
-    goal_tokens INTEGER NOT NULL DEFAULT 0,
-    cycle_tokens INTEGER NOT NULL DEFAULT 0,
-    hosted_escalations INTEGER NOT NULL DEFAULT 0,
-    cooldown_until TEXT,
-    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY(agent_id, goal_id, day, cycle_bucket)
-  )`);
-  db.run(`CREATE INDEX IF NOT EXISTS idx_agent_inference_budget_cooldown ON agent_inference_budget_usage(agent_id, cooldown_until)`);
-  saveDb();
-}
-
-export interface AgentInferenceBudgetDecision { allowed: boolean; forceLocal: boolean; reason?: string; limits: ReturnType<typeof limits>; }
-export async function checkAgentInferenceBudget(input: { agentId: string; goalId?: string; estimatedTokens: number }): Promise<AgentInferenceBudgetDecision> {
-  await ensureSchema();
-  const config = limits(); const db = await getDb(); const goalId = input.goalId || 'ad_hoc';
-  const row = db.exec(`SELECT SUM(goal_tokens) AS goal_tokens, SUM(CASE WHEN cycle_bucket=? THEN cycle_tokens ELSE 0 END) AS cycle_tokens, SUM(hosted_escalations) AS hosted_escalations, MAX(cooldown_until) AS cooldown_until FROM agent_inference_budget_usage WHERE agent_id=? AND goal_id=? AND day=?`, [cycle(), input.agentId, goalId, day()])[0]?.values?.[0] as any[] | undefined;
-  const goalTokens = Number(row?.[0] || 0); const cycleTokens = Number(row?.[1] || 0); const hostedEscalations = Number(row?.[2] || 0); const cooldownUntil = row?.[3] ? Date.parse(String(row[3])) : 0;
-  if (cooldownUntil > Date.now()) return { allowed: false, forceLocal: true, reason: 'Agent inference budget is cooling down after exhaustion.', limits: config };
-  if (goalTokens + input.estimatedTokens > config.perGoalTokens) return { allowed: false, forceLocal: true, reason: 'Per-goal inference budget reached; the goal will wait for its cooldown.', limits: config };
-  if (cycleTokens + input.estimatedTokens > config.perCycleTokens) return { allowed: false, forceLocal: true, reason: 'Per-cycle inference budget reached; the agent will retry after cooldown.', limits: config };
-  return { allowed: true, forceLocal: hostedEscalations >= config.maxHostedEscalations, reason: hostedEscalations >= config.maxHostedEscalations ? 'Hosted escalation limit reached; using bounded local inference.' : undefined, limits: config };
-}
-export async function recordAgentInferenceBudget(input: { agentId: string; goalId?: string; tokens: number; usedHosted: boolean; exhaust?: boolean }): Promise<void> {
-  await ensureSchema(); const db = await getDb(); const goalId = input.goalId || 'ad_hoc'; const config = limits();
-  const cooldown = input.exhaust ? new Date(Date.now() + config.cooldownSeconds * 1000).toISOString() : null;
-  db.run(`INSERT INTO agent_inference_budget_usage (agent_id, goal_id, day, cycle_bucket, goal_tokens, cycle_tokens, hosted_escalations, cooldown_until) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(agent_id, goal_id, day, cycle_bucket) DO UPDATE SET goal_tokens=goal_tokens+excluded.goal_tokens, cycle_tokens=cycle_tokens+excluded.cycle_tokens, hosted_escalations=hosted_escalations+excluded.hosted_escalations, cooldown_until=COALESCE(excluded.cooldown_until, cooldown_until), updated_at=CURRENT_TIMESTAMP`, [input.agentId, goalId, day(), cycle(), Math.max(0, Math.floor(input.tokens)), Math.max(0, Math.floor(input.tokens)), input.usedHosted ? 1 : 0, cooldown]);
-  saveDb();
-}
-export async function getAgentInferenceBudgetStatus(agentId: string, goalId?: string) {
-  await ensureSchema(); const db = await getDb(); const rows = db.exec(`SELECT goal_id, SUM(goal_tokens) AS goal_tokens, SUM(hosted_escalations) AS hosted_escalations, MAX(cooldown_until) AS cooldown_until FROM agent_inference_budget_usage WHERE agent_id=? AND day=? ${goalId ? 'AND goal_id=?' : ''} GROUP BY goal_id`, goalId ? [agentId, day(), goalId] : [agentId, day()])[0]?.values || [];
-  return { limits: limits(), day: day(), goals: rows.map((row: any[]) => ({ goalId: row[0], tokensUsed: Number(row[1] || 0), hostedEscalations: Number(row[2] || 0), cooldownUntil: row[3] || null })) };
-}
+async function ensureSchema() { const db=await getDb(); db.run(`CREATE TABLE IF NOT EXISTS agent_inference_budget_usage (agent_id TEXT NOT NULL, goal_id TEXT NOT NULL, day TEXT NOT NULL, cycle_bucket TEXT NOT NULL, goal_tokens INTEGER NOT NULL DEFAULT 0, cycle_tokens INTEGER NOT NULL DEFAULT 0, hosted_escalations INTEGER NOT NULL DEFAULT 0, cooldown_until TEXT, updated_at TEXT DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(agent_id, goal_id, day, cycle_bucket))`); db.run(`CREATE INDEX IF NOT EXISTS idx_agent_inference_budget_cooldown ON agent_inference_budget_usage(agent_id, cooldown_until)`); saveDb(); }
+export interface AgentInferenceBudgetDecision { allowed:boolean; forceLocal:boolean; reason?:string; limits:ReturnType<typeof limits>; }
+export async function checkAgentInferenceBudget(input:{agentId:string;goalId?:string;estimatedTokens:number}):Promise<AgentInferenceBudgetDecision>{await ensureSchema();const config=limits();const db=await getDb();const goalId=input.goalId||'ad_hoc';const row=db.exec(`SELECT SUM(goal_tokens) AS goal_tokens, SUM(CASE WHEN cycle_bucket=? THEN cycle_tokens ELSE 0 END) AS cycle_tokens, SUM(hosted_escalations) AS hosted_escalations, MAX(cooldown_until) AS cooldown_until FROM agent_inference_budget_usage WHERE agent_id=? AND goal_id=? AND day=?`,[cycle(),input.agentId,goalId,day()])[0]?.values?.[0] as any[]|undefined;const goalTokens=Number(row?.[0]||0);const cycleTokens=Number(row?.[1]||0);const hostedEscalations=Number(row?.[2]||0);const cooldownUntil=row?.[3]?Date.parse(String(row[3])):0;if(cooldownUntil>Date.now())return{allowed:false,forceLocal:true,reason:'Agent inference budget is cooling down after exhaustion.',limits:config};if(goalTokens+input.estimatedTokens>config.perGoalTokens)return{allowed:false,forceLocal:true,reason:'Per-goal inference budget reached; the goal will wait for its cooldown.',limits:config};if(cycleTokens+input.estimatedTokens>config.perCycleTokens)return{allowed:false,forceLocal:true,reason:'Per-cycle inference budget reached; the agent will retry after cooldown.',limits:config};return{allowed:true,forceLocal:hostedEscalations>=config.maxHostedEscalations,reason:hostedEscalations>=config.maxHostedEscalations?'Hosted escalation limit reached; using bounded local inference.':undefined,limits:config};}
+export async function recordAgentInferenceBudget(input:{agentId:string;goalId?:string;tokens:number;usedHosted:boolean;exhaust?:boolean}):Promise<void>{await ensureSchema();const db=await getDb();const goalId=input.goalId||'ad_hoc';const config=limits();const cooldown=input.exhaust?new Date(Date.now()+config.cooldownSeconds*1000).toISOString():null;db.run(`INSERT INTO agent_inference_budget_usage (agent_id, goal_id, day, cycle_bucket, goal_tokens, cycle_tokens, hosted_escalations, cooldown_until) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(agent_id, goal_id, day, cycle_bucket) DO UPDATE SET goal_tokens=goal_tokens+excluded.goal_tokens, cycle_tokens=cycle_tokens+excluded.cycle_tokens, hosted_escalations=hosted_escalations+excluded.hosted_escalations, cooldown_until=COALESCE(excluded.cooldown_until, cooldown_until), updated_at=CURRENT_TIMESTAMP`,[input.agentId,goalId,day(),cycle(),Math.max(0,Math.floor(input.tokens)),Math.max(0,Math.floor(input.tokens)),input.usedHosted?1:0,cooldown]);saveDb();}
+export async function getAgentInferenceBudgetStatus(agentId:string,goalId?:string){await ensureSchema();const db=await getDb();const rows=db.exec(`SELECT goal_id, SUM(goal_tokens) AS goal_tokens, SUM(hosted_escalations) AS hosted_escalations, MAX(cooldown_until) AS cooldown_until FROM agent_inference_budget_usage WHERE agent_id=? AND day=? ${goalId?'AND goal_id=?':''} GROUP BY goal_id`,goalId?[agentId,day(),goalId]:[agentId,day()])[0]?.values||[];return{limits:limits(),day:day(),goals:rows.map((row:any[])=>({goalId:row[0],tokensUsed:Number(row[1]||0),hostedEscalations:Number(row[2]||0),cooldownUntil:row[3]||null}))};}

@@ -2,193 +2,28 @@ import express, { Router } from 'express';
 import { optionalAuthenticateUser, type AuthRequest } from '../middleware/auth.js';
 import { getDiscoveryNetworkReadiness, inviteContributorToDiscoveryEntity, queryDiscoveryEntities, type DiscoveryEntity } from '../services/discoveryNetwork.js';
 import { getDiscoverHome, recordDiscoverAction, removeDiscoverAction, type DiscoverAction, type DiscoverItemType } from '../services/discoverExperience.js';
+import { recordAdClick, recordAdImpression } from '../services/adManager.js';
 
 type DiscoveryLayer = 'place' | 'business' | 'service' | 'event' | 'provider' | 'agent' | 'community_context' | 'mobile' | 'stationary' | 'events' | 'deals' | 'tasks';
 const EARTH_RADIUS_METRES = 6_371_000;
 const PUBLIC_LOCATION_FUZZ_METRES = 100;
+function fuzzCoordinate(value: number, metres: number, seed: string): number { let hash=0;for(let i=0;i<seed.length;i+=1)hash=((hash<<5)-hash+seed.charCodeAt(i))|0;const normalized=(Math.abs(hash)%10000)/10000;return value+((normalized*2-1)*metres)/EARTH_RADIUS_METRES*(180/Math.PI); }
+function publicLifecycle(entity:DiscoveryEntity):string{return entity.verified&&entity.available?'available':entity.lifecycle;}
+function layerMatches(entity:DiscoveryEntity,layers:Set<string>):boolean{if(!layers.size)return true;const sourceLayer=entity.source.includes(':')?entity.source.split(':').pop():entity.source;return layers.has(entity.entityType)||layers.has(String(sourceLayer))||(entity.entityType==='event'&&layers.has('events'));}
+function clusterEntities(entities:DiscoveryEntity[],enabled:boolean):Array<{cluster:boolean;entities:DiscoveryEntity[];latitude:number;longitude:number}>{if(!enabled)return entities.map((entity)=>({cluster:false,entities:[entity],latitude:entity.latitude,longitude:entity.longitude}));const groups=new Map<string,DiscoveryEntity[]>();for(const entity of entities){const key=`${Math.round(entity.latitude*100)}:${Math.round(entity.longitude*100)}`;const group=groups.get(key)||[];group.push(entity);groups.set(key,group);}return Array.from(groups.values()).map((group)=>({cluster:group.length>1,entities:group,latitude:group.reduce((sum,item)=>sum+item.latitude,0)/group.length,longitude:group.reduce((sum,item)=>sum+item.longitude,0)/group.length}));}
+function toSafeEntity(entity:DiscoveryEntity):Omit<DiscoveryEntity,'latitude'|'longitude'|'sourceRef'>&{approximateLocation:true;chatAction:Record<string,unknown>}{return{id:entity.id,entityType:entity.entityType,lifecycle:publicLifecycle(entity) as DiscoveryEntity['lifecycle'],name:entity.name,detail:entity.detail,category:entity.category,source:entity.source,sourceUrl:entity.sourceUrl,distanceMetres:entity.distanceMetres,freshnessAt:entity.freshnessAt,expiresAt:entity.expiresAt,evidenceLevel:entity.evidenceLevel,claimed:entity.claimed,verified:entity.verified,available:entity.available,approximateLocation:true,chatAction:{type:'open_discovery_entity',entityId:entity.id}};}
+function toFeature(group:{cluster:boolean;entities:DiscoveryEntity[];latitude:number;longitude:number},conversationId?:string):any{const primary=group.entities[0];const seed=group.entities.map((entity)=>entity.id).join('|');const publicLat=fuzzCoordinate(group.latitude,PUBLIC_LOCATION_FUZZ_METRES,`${seed}:lat`);const publicLng=fuzzCoordinate(group.longitude,PUBLIC_LOCATION_FUZZ_METRES,`${seed}:lng`);return{type:'Feature',id:group.cluster?`cluster:${seed}`:primary.id,geometry:{type:'Point',coordinates:[publicLng,publicLat]},properties:{entityId:group.cluster?undefined:primary.id,entityType:group.cluster?'cluster':primary.entityType,lifecycle:group.cluster?'discovered':publicLifecycle(primary),count:group.entities.length,name:group.cluster?`${group.entities.length} nearby discoveries`:primary.name,detail:group.cluster?'Zoom or open the list to review the attributed discovery items.':primary.detail,category:group.cluster?undefined:primary.category,source:group.cluster?'owned-cache':primary.source,freshnessAt:group.cluster?undefined:primary.freshnessAt,evidenceLevel:group.cluster?'persisted_state':primary.evidenceLevel,claimed:group.cluster?false:primary.claimed,verified:group.cluster?false:primary.verified,available:group.cluster?false:primary.available,approximateLocation:true,canInviteContributor:!group.cluster&&!primary.claimed,chatAction:group.cluster?{type:'open_discovery_network',context:conversationId?`conversation:${conversationId}`:undefined,entityIds:group.entities.map((entity)=>entity.id)}:{type:'open_discovery_entity',entityId:primary.id,context:conversationId?`conversation:${conversationId}`:undefined}}};}
 
-function fuzzCoordinate(value: number, metres: number, seed: string): number {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i += 1) hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
-  const normalized = (Math.abs(hash) % 10000) / 10000;
-  return value + ((normalized * 2 - 1) * metres) / EARTH_RADIUS_METRES * (180 / Math.PI);
-}
-
-function publicLifecycle(entity: DiscoveryEntity): string {
-  if (entity.verified && entity.available) return 'available';
-  return entity.lifecycle;
-}
-
-function layerMatches(entity: DiscoveryEntity, layers: Set<string>): boolean {
-  if (!layers.size) return true;
-  const sourceLayer = entity.source.includes(':') ? entity.source.split(':').pop() : entity.source;
-  return layers.has(entity.entityType) || layers.has(String(sourceLayer)) || (entity.entityType === 'event' && layers.has('events'));
-}
-
-function clusterEntities(entities: DiscoveryEntity[], enabled: boolean): Array<{ cluster: boolean; entities: DiscoveryEntity[]; latitude: number; longitude: number }> {
-  if (!enabled) return entities.map((entity) => ({ cluster: false, entities: [entity], latitude: entity.latitude, longitude: entity.longitude }));
-  const groups = new Map<string, DiscoveryEntity[]>();
-  for (const entity of entities) {
-    const key = `${Math.round(entity.latitude * 100)}:${Math.round(entity.longitude * 100)}`;
-    const group = groups.get(key) || [];
-    group.push(entity);
-    groups.set(key, group);
-  }
-  return Array.from(groups.values()).map((group) => ({
-    cluster: group.length > 1,
-    entities: group,
-    latitude: group.reduce((sum, item) => sum + item.latitude, 0) / group.length,
-    longitude: group.reduce((sum, item) => sum + item.longitude, 0) / group.length,
-  }));
-}
-
-function toSafeEntity(entity: DiscoveryEntity): Omit<DiscoveryEntity, 'latitude' | 'longitude' | 'sourceRef'> & { approximateLocation: true; chatAction: Record<string, unknown> } {
-  return {
-    id: entity.id,
-    entityType: entity.entityType,
-    lifecycle: publicLifecycle(entity) as DiscoveryEntity['lifecycle'],
-    name: entity.name,
-    detail: entity.detail,
-    category: entity.category,
-    source: entity.source,
-    sourceType: entity.sourceType,
-    sourceUrl: entity.sourceUrl,
-    distanceMetres: entity.distanceMetres,
-    freshnessAt: entity.freshnessAt,
-    expiresAt: entity.expiresAt,
-    evidenceLevel: entity.evidenceLevel,
-    claimed: entity.claimed,
-    verified: entity.verified,
-    available: entity.available,
-    approximateLocation: true,
-    chatAction: { type: 'open_discovery_entity', entityId: entity.id },
-  };
-}
-
-function toFeature(group: { cluster: boolean; entities: DiscoveryEntity[]; latitude: number; longitude: number }, conversationId?: string): any {
-  const primary = group.entities[0];
-  const seed = group.entities.map((entity) => entity.id).join('|');
-  const publicLat = fuzzCoordinate(group.latitude, PUBLIC_LOCATION_FUZZ_METRES, `${seed}:lat`);
-  const publicLng = fuzzCoordinate(group.longitude, PUBLIC_LOCATION_FUZZ_METRES, `${seed}:lng`);
-  return {
-    type: 'Feature',
-    id: group.cluster ? `cluster:${seed}` : primary.id,
-    geometry: { type: 'Point', coordinates: [publicLng, publicLat] },
-    properties: {
-      entityId: group.cluster ? undefined : primary.id,
-      entityType: group.cluster ? 'cluster' : primary.entityType,
-      lifecycle: group.cluster ? 'discovered' : publicLifecycle(primary),
-      count: group.entities.length,
-      name: group.cluster ? `${group.entities.length} nearby discoveries` : primary.name,
-      detail: group.cluster ? 'Zoom or open the list to review the attributed discovery items.' : primary.detail,
-      category: group.cluster ? undefined : primary.category,
-      source: group.cluster ? 'owned-cache' : primary.source,
-      sourceType: group.cluster ? undefined : primary.sourceType,
-      freshnessAt: group.cluster ? undefined : primary.freshnessAt,
-      evidenceLevel: group.cluster ? 'persisted_state' : primary.evidenceLevel,
-      claimed: group.cluster ? false : primary.claimed,
-      verified: group.cluster ? false : primary.verified,
-      available: group.cluster ? false : primary.available,
-      approximateLocation: true,
-      canInviteContributor: !group.cluster && !primary.claimed,
-      chatAction: group.cluster ? {
-        type: 'open_discovery_network',
-        context: conversationId ? `conversation:${conversationId}` : undefined,
-        entityIds: group.entities.map((entity) => entity.id),
-      } : {
-        type: 'open_discovery_entity',
-        entityId: primary.id,
-        context: conversationId ? `conversation:${conversationId}` : undefined,
-      },
-    },
-  };
-}
-
-export function createDiscoveryRouter(): Router {
-  const router = express.Router();
-
-  const queryNetwork = async (req: express.Request) => {
-    const latitude = Number(req.query.lat);
-    const longitude = Number(req.query.lng);
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) throw Object.assign(new Error('lat and lng are required numbers'), { status: 400 });
-    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) throw Object.assign(new Error('invalid coordinates'), { status: 400 });
-    const radiusMetres = req.query.radius === undefined ? 5000 : Number(req.query.radius);
-    if (!Number.isFinite(radiusMetres) || radiusMetres <= 0 || radiusMetres > 50000) throw Object.assign(new Error('radius must be between 1 and 50000 metres'), { status: 400 });
-    const layers = typeof req.query.layers === 'string' ? req.query.layers.split(',').filter(Boolean) as DiscoveryLayer[] : [];
-    const result = await queryDiscoveryEntities({
-      latitude,
-      longitude,
-      radiusMetres,
-      category: typeof req.query.category === 'string' ? req.query.category.trim().toLowerCase() : undefined,
-      layers,
-      limit: Number(req.query.limit || 100),
-      offset: Number(req.query.offset || 0),
-      cluster: req.query.cluster !== 'false',
-    });
-    const filtered = result.entities.filter((entity) => layerMatches(entity, new Set(layers)));
-    const groups = clusterEntities(filtered, req.query.cluster !== 'false');
-    return { result, groups, layers };
-  };
-
-  router.get('/api/discover/readiness', (_req, res) => res.json({ success: true, ...getDiscoveryNetworkReadiness(), experience: 'for_you+nearby+today+topics+opportunities+explore', actionBoundary: 'watch_follow_save_chat', activation: 'repository_ready_external_provider_activation_required' }));
-  router.get('/api/discover/home', optionalAuthenticateUser, async (req: AuthRequest, res) => {
-    try {
-      const latitude = Number(req.query.lat); const longitude = Number(req.query.lng);
-      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return res.status(400).json({ success: false, error: 'lat and lng are required numbers' });
-      const home = await getDiscoverHome({ latitude, longitude, radiusMetres: Number(req.query.radius || 10_000), limit: Number(req.query.limit || 60), conversationId: typeof req.query.conversationId === 'string' ? req.query.conversationId : undefined }, req.user?.phone);
-      res.setHeader('Cache-Control', req.user?.phone ? 'private, max-age=30' : 'public, max-age=30, stale-while-revalidate=60');
-      return res.json({ success: true, ...home });
-    } catch (error) { return res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unable to build Discover' }); }
-  });
-  router.post('/api/discover/items/:type/:id/actions', optionalAuthenticateUser, async (req: AuthRequest, res) => {
-    const phone = req.user?.phone; if (!phone) return res.status(401).json({ success: false, error: 'Authenticated user is required' });
-    try { return res.status(201).json({ success: true, ...(await recordDiscoverAction(phone, String(req.params.type) as DiscoverItemType, String(req.params.id), String(req.body?.action || '') as DiscoverAction)) }); }
-    catch (error) { return res.status(422).json({ success: false, error: error instanceof Error ? error.message : 'Unable to record Discover action' }); }
-  });
-  router.delete('/api/discover/items/:type/:id/actions/:action', optionalAuthenticateUser, async (req: AuthRequest, res) => {
-    const phone = req.user?.phone; if (!phone) return res.status(401).json({ success: false, error: 'Authenticated user is required' });
-    try { return res.json(await removeDiscoverAction(phone, String(req.params.type) as DiscoverItemType, String(req.params.id), String(req.params.action) as DiscoverAction)); }
-    catch (error) { return res.status(422).json({ success: false, error: error instanceof Error ? error.message : 'Unable to remove Discover action' }); }
-  });
-
-  router.get('/api/discover/entities', async (req, res, next) => {
-    try {
-      const { result, groups, layers } = await queryNetwork(req);
-      const conversationId = typeof req.query.conversationId === 'string' ? req.query.conversationId : undefined;
-      res.setHeader('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
-      return res.json({ success: true, entities: groups.flatMap((group) => group.cluster ? [] : group.entities.map(toSafeEntity)), meta: { ...result, layers, approximateLocation: true, mapIsPresentationLayer: true }, chatContext: conversationId ? `conversation:${conversationId}` : undefined });
-    } catch (error: any) {
-      return res.status(Number(error?.status) || 500).json({ success: false, error: error instanceof Error ? error.message : 'Unable to query discovery network' });
-    }
-  });
-
-  router.get('/api/discover/map', async (req, res, next) => {
-    try {
-      const { result, groups, layers } = await queryNetwork(req);
-      const conversationId = typeof req.query.conversationId === 'string' ? req.query.conversationId : undefined;
-      res.setHeader('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
-      return res.json({
-        type: 'FeatureCollection',
-        features: groups.map((group) => toFeature(group, conversationId)),
-        meta: { radius: Number(req.query.radius || 5000), layers, generatedAt: result.generatedAt, provider: result.provider, hasMore: result.hasMore, readiness: result.readiness, approximateLocation: true, mapIsPresentationLayer: true },
-      });
-    } catch (error: any) {
-      return res.status(Number(error?.status) || 500).json({ success: false, error: error instanceof Error ? error.message : 'Unable to query discovery network' });
-    }
-  });
-
-  router.post('/api/discover/entities/:id/invitations', optionalAuthenticateUser, async (req: AuthRequest, res) => {
-    const phone = req.user?.phone;
-    if (!phone) return res.status(401).json({ success: false, error: 'Authenticated inviter is required' });
-    try {
-      const invitation = await inviteContributorToDiscoveryEntity(String(req.params.id), phone, typeof req.body?.contributorPhone === 'string' ? req.body.contributorPhone : undefined);
-      return res.status(201).json({ success: true, invitation, lifecycle: 'invited', createsAccount: false });
-    } catch (error: any) {
-      return res.status(/not found/i.test(error?.message || '') ? 404 : 422).json({ success: false, error: error instanceof Error ? error.message : 'Unable to create attributable invitation' });
-    }
-  });
-
+export function createDiscoveryRouter():Router{const router=express.Router();const queryNetwork=async(req:express.Request)=>{const latitude=Number(req.query.lat);const longitude=Number(req.query.lng);if(!Number.isFinite(latitude)||!Number.isFinite(longitude))throw Object.assign(new Error('lat and lng are required numbers'),{status:400});if(latitude<-90||latitude>90||longitude<-180||longitude>180)throw Object.assign(new Error('invalid coordinates'),{status:400});const radiusMetres=req.query.radius===undefined?5000:Number(req.query.radius);if(!Number.isFinite(radiusMetres)||radiusMetres<=0||radiusMetres>50000)throw Object.assign(new Error('radius must be between 1 and 50000 metres'),{status:400});const layers=typeof req.query.layers==='string'?req.query.layers.split(',').filter(Boolean) as DiscoveryLayer[]:[];const result=await queryDiscoveryEntities({latitude,longitude,radiusMetres,category:typeof req.query.category==='string'?req.query.category.trim().toLowerCase():undefined,layers,limit:Number(req.query.limit||100),offset:Number(req.query.offset||0),cluster:req.query.cluster!=='false'});const filtered=result.entities.filter((entity)=>layerMatches(entity,new Set(layers)));const groups=clusterEntities(filtered,req.query.cluster!=='false');return{result,groups,layers};};
+  router.get('/api/discover/readiness',(_req,res)=>res.json({success:true,...getDiscoveryNetworkReadiness(),experience:'for_you+nearby+today+topics+opportunities+explore',actionBoundary:'watch_follow_save_chat',activation:'repository_ready'}));
+  router.get('/api/discover/home',optionalAuthenticateUser,async(req:AuthRequest,res)=>{try{const latitude=Number(req.query.lat);const longitude=Number(req.query.lng);if(!Number.isFinite(latitude)||!Number.isFinite(longitude))return res.status(400).json({success:false,error:'lat and lng are required numbers'});const home=await getDiscoverHome({latitude,longitude,radiusMetres:Number(req.query.radius||10000),limit:Number(req.query.limit||60),conversationId:typeof req.query.conversationId==='string'?req.query.conversationId:undefined},req.user?.phone);res.setHeader('Cache-Control',req.user?.phone?'private, max-age=30':'public, max-age=30, stale-while-revalidate=60');return res.json({success:true,...home});}catch(error){return res.status(500).json({success:false,error:error instanceof Error?error.message:'Unable to build Discover'});}});
+  router.post('/api/discover/items/:type/:id/actions',optionalAuthenticateUser,async(req:AuthRequest,res)=>{const phone=req.user?.phone;if(!phone)return res.status(401).json({success:false,error:'Authenticated user is required'});try{const result=await recordDiscoverAction(phone,String(req.params.type) as DiscoverItemType,String(req.params.id),String(req.body?.action||'') as DiscoverAction);return res.status(201).json({success:true,...result});}catch(error){return res.status(422).json({success:false,error:error instanceof Error?error.message:'Unable to record Discover action'});}});
+  router.delete('/api/discover/items/:type/:id/actions/:action',optionalAuthenticateUser,async(req:AuthRequest,res)=>{const phone=req.user?.phone;if(!phone)return res.status(401).json({success:false,error:'Authenticated user is required'});try{const result=await removeDiscoverAction(phone,String(req.params.type) as DiscoverItemType,String(req.params.id),String(req.params.action) as DiscoverAction);return res.json(result);}catch(error){return res.status(422).json({success:false,error:error instanceof Error?error.message:'Unable to remove Discover action'});}});
+  router.post('/api/discover/promotions/:id/impression',async(req,res)=>{const ok=await recordAdImpression(Number(req.params.id));return res.status(ok?204:404).end();});
+  router.post('/api/discover/promotions/:id/click',async(req,res)=>{const ok=await recordAdClick(Number(req.params.id));return res.status(ok?204:404).end();});
+  router.get('/api/discover/entities',async(req,res)=>{try{const{result,groups,layers}=await queryNetwork(req);const conversationId=typeof req.query.conversationId==='string'?req.query.conversationId:undefined;res.setHeader('Cache-Control','private, max-age=30, stale-while-revalidate=60');return res.json({success:true,entities:groups.flatMap((group)=>group.cluster?[]:group.entities.map(toSafeEntity)),meta:{...result,layers,approximateLocation:true,mapIsPresentationLayer:true},chatContext:conversationId?`conversation:${conversationId}`:undefined});}catch(error:any){return res.status(Number(error?.status)||500).json({success:false,error:error instanceof Error?error.message:'Unable to query discovery network'});}});
+  router.get('/api/discover/map',async(req,res)=>{try{const{result,groups,layers}=await queryNetwork(req);const conversationId=typeof req.query.conversationId==='string'?req.query.conversationId:undefined;res.setHeader('Cache-Control','private, max-age=30, stale-while-revalidate=60');return res.json({type:'FeatureCollection',features:groups.map((group)=>toFeature(group,conversationId)),meta:{radius:Number(req.query.radius||5000),layers,generatedAt:result.generatedAt,provider:result.provider,hasMore:result.hasMore,approximateLocation:true,mapIsPresentationLayer:true}});}catch(error:any){return res.status(Number(error?.status)||500).json({success:false,error:error instanceof Error?error.message:'Unable to query discovery network'});}});
+  router.post('/api/discover/entities/:id/invitations',optionalAuthenticateUser,async(req:AuthRequest,res)=>{const phone=req.user?.phone;if(!phone)return res.status(401).json({success:false,error:'Authenticated inviter is required'});try{const invitation=await inviteContributorToDiscoveryEntity(String(req.params.id),phone,typeof req.body?.contributorPhone==='string'?req.body.contributorPhone:undefined);return res.status(201).json({success:true,invitation,lifecycle:'invited',createsAccount:false});}catch(error:any){return res.status(/not found/i.test(error?.message||'')?404:422).json({success:false,error:error instanceof Error?error.message:'Unable to create attributable invitation'});}});
   return router;
 }
-
 export default createDiscoveryRouter();
