@@ -5,15 +5,17 @@ import path from 'node:path';
 process.env.NODE_ENV='production';
 process.env.KURUKOO_PAY_PROVIDER='sandbox';
 process.env.CREDIT_ECONOMY_ENABLED='true';
-process.env.FF_WEBRTC='false';
+process.env.FF_WEBRTC='true';
+process.env.STUN_SERVERS='stun:test.invalid';
 process.env.TRICKBRIDGE_BASE_URL='';
 process.env.DB_PATH=path.join(os.tmpdir(),`kurukoo-dispatch-${process.pid}-${Date.now()}.sqlite`);
 
 const { getDb } = await import('../src/database.js');
 const { createEconomicRequest } = await import('../src/services/skillFlows.js');
-const { addPoints, getPointsBalance } = await import('../src/services/pointsEngine.js');
+const { getPointsBalance } = await import('../src/services/pointsEngine.js');
 const { broadcastDispatch, acceptDispatchLead, markDispatchArrived, completeDispatch } = await import('../src/services/economicDispatchCoordinator.js');
 const { getProviderCommunicationSession } = await import('../src/services/providerCommunicationService.js');
+const { getRoomPeers } = await import('../src/services/webrtcSignalling.js');
 const { createServiceReview } = await import('../src/services/serviceReviewService.js');
 
 const db=await getDb();
@@ -34,6 +36,8 @@ assert.equal(await getPointsBalance(first.providerPhone),before-accepted.leadPoi
 const session=await getProviderCommunicationSession(String(accepted.communicationSessionId));
 assert.ok(session?.id,'acceptance creates one shared provider communication session');
 assert.equal(session?.mode,'webrtc_tracking','WebRTC/tracking is the default; PSTN masking is not required');
+assert.ok(session?.roomId,'WebRTC-enabled dispatch creates a shared room');
+assert.deepEqual(new Set(getRoomPeers(String(session?.roomId))),new Set([customer,first.providerPhone]),'both rider and customer must join the shared WebRTC room');
 const arrived=await markDispatchArrived({leadId:first.id,providerPhone:first.providerPhone});
 assert.equal(arrived.status,'arrived');
 const arrivedSession=await getProviderCommunicationSession(String(accepted.communicationSessionId));
@@ -44,6 +48,7 @@ const after=await getProviderCommunicationSession(String(accepted.communicationS
 assert.equal(after?.state,'completed','completion closes the shared communication session');
 const review=await createServiceReview({requestId:request.id,reviewerPhone:customer,providerPhone:first.providerPhone,rating:5,feedback:'Good trip'});
 assert.equal(review.rating,5);
-const skills=db.exec('SELECT rating,jobs_completed FROM skills WHERE phone=? AND skill=?',[first.providerPhone,'okada_rider']);
+const skills=db.exec('SELECT rating,jobs_completed,is_available FROM skills WHERE phone=? AND skill=?',[first.providerPhone,'okada_rider']);
 assert.equal(Number(skills[0].values[0][1]),5,'completion increments provider completed jobs');
-console.log(JSON.stringify({passed:true,offers:broadcast.offers.length,acceptedProvider:first.providerPhone,leadPoints:accepted.leadPoints,communicationMode:session?.mode,arrivalState:arrivedSession?.state,completionState:after?.state,reviewRating:review.rating},null,2));
+assert.equal(Number(skills[0].values[0][2]),1,'provider becomes available again after completion/review');
+console.log(JSON.stringify({passed:true,offers:broadcast.offers.length,acceptedProvider:first.providerPhone,leadPoints:accepted.leadPoints,communicationMode:session?.mode,roomPeers:getRoomPeers(String(session?.roomId)),arrivalState:arrivedSession?.state,completionState:after?.state,reviewRating:review.rating},null,2));
