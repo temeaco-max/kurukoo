@@ -45,7 +45,63 @@
     [['Today','#today'],['Nearby','#nearby'],['Topics','/app/topics'],['Opportunities','/app/opportunities'],['Products','#products'],['Ask Kurukoo','/chat']].forEach(([label,href],i)=>{const a=document.createElement('a');a.href=href;a.className=`k-app-quick-action${i===5?' primary':''}`;a.textContent=label;nav.appendChild(a)});
     title.insertAdjacentElement('afterend',nav);
   };
-  const run = () => { injectStyle(); normalizeLinks(); activeNav(); accountShortcut(); status(); discoverShortcuts(); };
-  const boot = () => { run(); requestAnimationFrame(run); setTimeout(run, 120); const main=document.querySelector('.k-app-main'); if(main){const observer=new MutationObserver(()=>requestAnimationFrame(run)); observer.observe(main,{childList:true,subtree:true}); setTimeout(()=>observer.disconnect(),3000);} };
+  const getLocation = () => new Promise((resolve) => {
+    if (!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition((pos) => resolve({lat:pos.coords.latitude,lng:pos.coords.longitude}), () => resolve(null), {enableHighAccuracy:false,maximumAge:300000,timeout:5000});
+  });
+  const linkForItem = (item) => {
+    const action = item?.chatAction || item?.action || {};
+    const prompt = action.prompt || item?.prompt;
+    if (prompt) return `/chat?prompt=${encodeURIComponent(String(prompt))}`;
+    return '/app/discover';
+  };
+  const renderDiscoverHub = async () => {
+    if (section() !== 'discover' || document.querySelector('[data-discover-hub]')) return;
+    const main = document.querySelector('.k-app-main .k-app-container'); const title = main?.querySelector('.k-app-title-row'); if (!main || !title) return;
+    const hub = document.createElement('section'); hub.dataset.discoverHub = ''; hub.setAttribute('aria-label','Discover content');
+    hub.innerHTML = '<div class="k-app-card"><span class="k-app-card-label">Discover</span><h2>What is useful, available or happening around you?</h2><p class="k-muted">Loading your Discover feed…</p></div>';
+    title.insertAdjacentElement('afterend', hub);
+    try {
+      const location = await getLocation();
+      let payload = null;
+      if (location) payload = await fetch(`/api/discover/home?lat=${encodeURIComponent(location.lat)}&lng=${encodeURIComponent(location.lng)}&radius=10000&limit=60`, {credentials:'same-origin',headers:{Accept:'application/json'}}).then(r=>r.ok?r.json():null);
+      else payload = await fetch('/api/proactive/feed',{credentials:'same-origin',headers:{Accept:'application/json'}}).then(r=>r.ok?r.json():null);
+      const sections = payload?.sections || {};
+      const commercial = payload?.commercial || {};
+      const groups = [
+        ['For You', sections.for_you || commercial.products || [], 'for-you'],
+        ['Today', [...(sections.today || []), ...(commercial.promotions || [])], 'today'],
+        ['Nearby', location ? (sections.nearby || []) : [], 'nearby'],
+        ['Topics', sections.topics || [], 'topics'],
+        ['Opportunities', sections.opportunities || (payload?.opportunities || []), 'opportunities'],
+        ['Products', commercial.products || [], 'products']
+      ];
+      const wrap = document.createElement('div'); wrap.className = 'k-app-discover-groups';
+      let rendered = 0;
+      for (const [label, items, id] of groups) {
+        const arr = Array.isArray(items) ? items.filter(Boolean).slice(0,6) : [];
+        const group = document.createElement('section'); group.className='k-app-discover-group'; group.id=id;
+        const head=document.createElement('div'); head.className='k-app-discover-group-head'; head.innerHTML=`<div><span class="k-app-card-label">${label}</span><h3>${label === 'Today' ? 'Fresh and time-sensitive' : label}</h3></div>`;
+        if (label === 'Nearby' && !location) { const ask=document.createElement('span'); ask.className='k-status'; ask.textContent='Location permission needed'; head.appendChild(ask); }
+        group.appendChild(head);
+        if (!arr.length) {
+          const empty=document.createElement('div'); empty.className='k-app-discover-empty'; empty.textContent = label === 'Nearby' ? 'Enable location to see local providers, places and offers.' : 'Nothing to show here yet. Ask Kurukoo what you need.'; group.appendChild(empty);
+        } else {
+          const grid=document.createElement('div'); grid.className='k-app-grid two';
+          arr.forEach((item) => { const card=document.createElement('article'); card.className='k-app-card k-app-discover-item'; const titleText=String(item.title||item.name||item.type||'Kurukoo item'); const detail=String(item.detail||item.subtitle||item.description||'').slice(0,220); const sponsored=item.sponsored===true; card.innerHTML=`<span class="k-app-card-label">${sponsored ? 'Sponsored' : label}</span><h2>${titleText}</h2><p>${detail || 'Open this in Kurukoo to see what you can do next.'}</p><a class="k-app-card-action" href="${linkForItem(item)}">${item.ctaText||item.actions?.[0]||'Open'}</a>`; grid.appendChild(card); });
+          group.appendChild(grid); rendered += arr.length;
+        }
+        wrap.appendChild(group);
+      }
+      hub.replaceChildren(wrap);
+      if (!rendered) {
+        const fallback=document.createElement('div'); fallback.className='k-app-card'; fallback.innerHTML='<span class="k-app-card-label">Explore Kurukoo</span><h2>Ask Kurukoo what you need.</h2><p>Discover becomes richer as your local network grows; the conversation remains available even when a nearby feed is sparse.</p><a class="k-app-primary" href="/chat">Ask Kurukoo</a>'; hub.appendChild(fallback);
+      }
+    } catch (error) {
+      hub.innerHTML='<div class="k-app-card"><span class="k-app-card-label">Discover</span><h2>Discover is still available through Chat.</h2><p>We could not load the feed right now, so nothing has been invented or substituted.</p><a class="k-app-primary" href="/chat">Ask Kurukoo</a></div>';
+    }
+  };
+  const run = () => { injectStyle(); normalizeLinks(); activeNav(); accountShortcut(); status(); discoverShortcuts(); renderDiscoverHub(); };
+  const boot = () => { run(); requestAnimationFrame(run); setTimeout(run, 150); const main=document.querySelector('.k-app-main'); if(main){const observer=new MutationObserver(()=>requestAnimationFrame(run)); observer.observe(main,{childList:true,subtree:true}); setTimeout(()=>observer.disconnect(),3500);} };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, {once:true}); else boot();
 })();
