@@ -103,7 +103,7 @@ app.use(express.json({limit:process.env.CHAT_ATTACHMENT_BODY_LIMIT||'35mb',verif
 app.use('/',systemRoutes); app.use('/',authChallengePublicRoutes); app.use('/',mcpAppRoutes);
 app.use('/api/v1',apiV1Bridge);
 app.use('/api',channelRoutes); app.use('/api',circleRoutes); app.use('/api/economic-requests',economicRequestRouter); app.use('/api/admin/platform',adminPlatformRoutes);
-app.use('/api/admin',adminDisputeRoutes); app.use('/api/admin',adminRoutes); app.use('/api/admin',adminFcmRoutes); app.use('/api/admin',adminClineRoutes); app.use('/api/admin',adminProviderVerificationRoutes);
+app.use('/api/admin',adminDisputeRoutes); app.use('/api/admin',adminRoutes); app.use('/api/admin',adminFcmRoutes); app.use('/api/admin/cline',adminClineRoutes); app.use('/api/admin',adminProviderVerificationRoutes);
 app.use('/api',stripeAgentPointsWebhookRoutes); app.use('/api',paymentRoutes); app.use('/api',userRoutes); app.use('/api/auth',authRoutes); app.use('/api',providerVerificationRoutes);
 app.use('/api/advertising',authenticatedAdvertisingRoutes);
 app.use('/api/chat',...prayerChatMiddleware); app.use('/api/chat',chatRouter); app.use('/api/prayer',prayerRoutes); app.use('/api/capabilities',capabilityPortfolioRoutes);
