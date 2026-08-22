@@ -11,6 +11,7 @@ The repository can prove code, ownership, buildability and deterministic contrac
 3. Fail-closed production defaults for autonomous/high-risk features and payments.
 4. Ordered owner actions that cannot be performed honestly by source code alone.
 5. Scale-transition readiness without pretending that PostgreSQL/Redis/object storage are active.
+6. Explicit Cloud Run persistence blocking when SQL.js remains the canonical owner.
 
 ## What the repository cannot complete alone
 
@@ -31,19 +32,22 @@ The repository can prove code, ownership, buildability and deterministic contrac
 2. A configured secret is **not** proof that a provider is live.
 3. A sandbox payment is **never** a production payment.
 4. SQL.js remains single-process; multiple workers require an approved shared persistence/rate-limit boundary.
-5. Chat and UI must never claim external fulfilment, verification or delivery without evidence.
+5. Cloud Run container-local storage is **not** durable canonical application storage.
+6. Cloud Storage FUSE must **not** be used as a transactional SQL.js database.
+7. Chat and UI must never claim external fulfilment, verification or delivery without evidence.
 
 ## Owner P0 sequence
 
 1. Rotate historically exposed credential types and review provider/GitHub audit logs.
 2. Protect `main` with required CI, PRs and review.
-3. Deploy one controlled production instance with persistent storage, HTTPS, strong authentication secrets and development-auth flags disabled.
-4. Keep payments disabled or configure one real adapter with verified webhooks; never enable sandbox payment in production.
-5. Activate one external channel only after its signature/challenge boundary is verified.
-6. Run the canonical repository truth gate plus the deployed core-journey runtime suite; fix truthfulness regressions before inviting users.
+3. For Cloud Run, provision the shared durable database and validate the persistence adapter **before** treating any Cloud Run service as a durable production deployment.
+4. Start with one Cloud Run instance/concurrency-1 as a conservative rollout profile only after the shared database owner is active; scale only after distributed coordination is validated.
+5. Keep payments disabled or configure one real adapter with verified webhooks; never enable sandbox payment in production.
+6. Activate one external channel only after its signature/challenge boundary is verified.
+7. Run the canonical repository truth gate plus the deployed core-journey runtime suite; fix truthfulness regressions before inviting users.
 
 ## Scale transition criteria
 
-Move beyond SQL.js + process-local limits only when concurrent multi-instance writes, sustained marketplace-scale traffic, distributed rate limiting/presence/agent workers, or stronger recovery/HA requirements justify it.
+Move beyond the initial Cloud Run single-instance profile only when concurrent multi-instance writes, sustained marketplace-scale traffic, distributed rate limiting/presence/agent workers, or stronger recovery/HA requirements justify it.
 
-Until then, the single-instance launch architecture remains the intentional low-cost path.
+The current SQL.js + local-file implementation is the low-cost development/single-process path, not the durable Cloud Run production path.
