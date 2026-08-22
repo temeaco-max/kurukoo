@@ -144,6 +144,14 @@ Kurukoo should support one identity with multiple roles/capabilities. A person c
 
 Contact synchronisation, where implemented, should support discovery, invitations and relationship management without creating a second identity database.
 
+### Implemented canonical boundary
+
+The canonical identity owner is `memory_profiles.phone`. The `identityContactService` composes that identity with roles, provider/contributor/agent attributes, presence, the existing Safety relationship, and communication capabilities. `person_contacts` is the owner-scoped contact relationship boundary; it is not a second user or profile table. Imported contacts remain unavailable until they resolve to an existing Memory Profile identity and are explicitly added by the owner.
+
+Profiles are relationship-filtered: existence in `memory_profiles` alone does not make a person discoverable. Phone numbers are not exposed as a public discovery mechanism, and removed or blocked relationships cannot message or call. The deterministic placeholder avatar is derived from the canonical identity and display name and is safe to reuse across profile, contacts, chat, and provider surfaces.
+
+Message and call actions must route into the existing Conversation/provider communication boundaries. The call affordance is truthful: it is available only when the relationship is authorized and `KURUKOO_WEBRTC_ENABLED=true`; otherwise the profile reports that realtime call transport is unavailable. Safety contacts remain owned by the existing Safety service and are represented only as a contact plus an active safety relationship. Memory Profile remains the owner of explainable relationship context; no social or contact-memory database is introduced.
+
 ### Follow / subscribe — future capability
 
 A relationship primitive may eventually support following/subscribing to people, contributors, providers, Topics, Opportunities or other eligible public/shared objects. Follow must not create a social-media subsystem; its effects should flow through existing Discover, Topics, Opportunities, Notifications and Memory/context surfaces.
