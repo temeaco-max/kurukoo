@@ -16,15 +16,6 @@ env:
   JWT_SECRET: 'kurukoo-runtime-os-proof-secret-32-characters'
   KURUKOO_WORKERS: '0'
 
-env:
-  NODE_ENV: test
-  PORT: 4320
-  HOST: 127.0.0.1
-  KURUKOO_DEV_AUTH: 'true'
-  KURUKOO_TEST_PHONE: '08030000000'
-  JWT_SECRET: 'kurukoo-runtime-os-proof-secret-32-characters'
-  KURUKOO_WORKERS: '0'
-
 jobs:
   runtime-proof:
     runs-on: ubuntu-latest
