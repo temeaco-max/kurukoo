@@ -21,6 +21,7 @@ jobs:
           cache-dependency-path: package-lock.json
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npx tsx scripts/test-client-surface-coverage.ts
+      - run: npx tsx scripts/test-os-shell-contract.ts
       - run: npx tsx scripts/test-mistral-bypass.ts
       - run: npm run lint
 
