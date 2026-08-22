@@ -8,6 +8,7 @@ import { getCapabilityRuntimeSnapshot } from '../services/capabilityFoundationIn
 import { getNetworkMetricSnapshot, metricsPrometheus } from '../services/observability.js';
 import { getExternalIntegrationOperationalStatus } from '../services/externalIntegrationOperationalStatus.js';
 import { migrationReadiness } from '../services/migrationRunner.js';
+import { getPersistenceReadiness } from '../services/persistenceReadiness.js';
 
 const router = Router();
 const startedAt = Date.now();
@@ -84,7 +85,7 @@ router.get('/health', async (_req, res) => {
       reminderCount = Number(db.exec("SELECT COUNT(*) FROM reminders WHERE status = 'scheduled'")[0]?.values[0]?.[0] || 0);
       safetyCount = Number(db.exec("SELECT COUNT(*) FROM safety_checkins WHERE status = 'active'")[0]?.values[0]?.[0] || 0);
     } catch {}
-    res.json({ status: 'ok', service: 'kurukoo', uptime_seconds: Math.floor((Date.now() - startedAt) / 1000), database: 'ok', active_requests: requestCount, scheduled_reminders: reminderCount, active_check_ins: safetyCount, observability: getNetworkMetricSnapshot(), migrations: migrationSnapshot(db), ...runtimeSnapshot(), ...capabilitySnapshot(), timestamp: new Date().toISOString() });
+    res.json({ status: 'ok', service: 'kurukoo', uptime_seconds: Math.floor((Date.now() - startedAt) / 1000), database: 'ok', persistence: getPersistenceReadiness(), active_requests: requestCount, scheduled_reminders: reminderCount, active_check_ins: safetyCount, observability: getNetworkMetricSnapshot(), migrations: migrationSnapshot(db), ...runtimeSnapshot(), ...capabilitySnapshot(), timestamp: new Date().toISOString() });
   } catch (error) {
     console.error('[Health] check failed:', error);
     res.status(503).json({ status: 'degraded', service: 'kurukoo', database: 'unavailable', timestamp: new Date().toISOString() });
@@ -94,17 +95,17 @@ router.get('/health', async (_req, res) => {
 router.get('/readyz', async (_req, res) => {
   try {
     const db = await getDb(); db.exec('SELECT 1');
-    const runtime = runtimeSnapshot(); const capability = capabilitySnapshot(); const migrations = migrationSnapshot(db);
+    const runtime = runtimeSnapshot(); const capability = capabilitySnapshot(); const migrations = migrationSnapshot(db); const persistence = getPersistenceReadiness();
     const requireModel = process.env.KURUKOO_CLOUD_RUN_REQUIRE_MODEL === 'true';
     const modelReady = !requireModel || runtime.model.localEnabled;
     const capabilityReady = capability.registry.state === 'healthy' && runtime.capability_runtime.invalid.valid;
     const persistentStateRequired = process.env.KURUKOO_PERSISTENT_STATE_REQUIRED !== 'false';
     const statePath = String(process.env.DB_PATH || '').trim();
-    const durableStateReady = !persistentStateRequired || Boolean(statePath && !statePath.startsWith('/tmp/'));
+    const durableStateReady = !persistentStateRequired || (persistence.durableCanonicalState && Boolean(statePath && !statePath.startsWith('/tmp/')));
     const migrationsRequired = process.env.KURUKOO_MIGRATIONS_REQUIRED === 'true';
     const migrationsReady = !migrationsRequired || migrations.ready;
-    const status = modelReady && capabilityReady && durableStateReady && migrationsReady ? 'ready' : 'not_ready';
-    res.status(status === 'ready' ? 200 : 503).json({ status, service: 'kurukoo', database: 'ok', model: runtime.model, model_required: requireModel, persistent_state_required: persistentStateRequired, durable_state_ready: durableStateReady, migrations, migrations_required: migrationsRequired, capabilities: capability, integrations_operational: runtime.integrations_operational, timestamp: new Date().toISOString() });
+    const status = modelReady && capabilityReady && durableStateReady && migrationsReady && persistence.state === 'READY' ? 'ready' : 'not_ready';
+    res.status(status === 'ready' ? 200 : 503).json({ status, service: 'kurukoo', database: 'ok', persistence, model: runtime.model, model_required: requireModel, persistent_state_required: persistentStateRequired, durable_state_ready: durableStateReady, migrations, migrations_required: migrationsRequired, capabilities: capability, integrations_operational: runtime.integrations_operational, timestamp: new Date().toISOString() });
   } catch (error) {
     console.error('[Readiness] check failed:', error);
     res.status(503).json({ status: 'not_ready', service: 'kurukoo', database: 'unavailable', timestamp: new Date().toISOString() });
