@@ -1,52 +1,164 @@
-# Kurukoo Current Product Truth
+# Kurukoo — Current Product Truth
 
-## Canonical definition
+**Authority:** This is the single current-state product truth document. Other matrices, audits, reports and snapshots are supporting evidence only; they must not override this document or canonical code/tests.
 
-**Kurukoo is a conversational operating system for coordinating everyday intentions with people, services, products, places and bounded agents.**
+**Last reconciled:** 22 August 2026
 
-Kurukoo can help directly, preserve context, discover options, coordinate participants, prepare an Economic Request or continue work over time. External fulfilment remains conditional on availability, authorization, evidence, configured providers and real-world confirmation.
+## 1. Truth hierarchy
 
-## Discover truth
+1. `BLUEPRINT.md` — product/architecture intent.
+2. `docs/architecture/CURRENT_PRODUCT_TRUTH.md` — current-state classification and ownership.
+3. Canonical production code — what is actually implemented.
+4. Behavioural/contract tests — repository/runtime evidence.
+5. Live/device/external-provider evidence — real-world activation evidence.
 
-**Discover is Kurukoo's opportunity and activity surface, not merely a map.** It composes the existing Discovery Network/Pulse, Topics, Opportunities, approved advertising placements, canonical skill catalogue and Chat/agent handoff into six views: **For You, Nearby, Today/Daily Picks, Topics, Opportunities and Explore Kurukoo**. Discover items can be opened in exact Chat context and, where appropriate, watched, followed or saved. A watch is an owner-scoped persistent interest that is designed to become the bridge to bounded background/agent monitoring rather than a duplicate task system.
+If two sources disagree, the lower source cannot silently upgrade the higher-level claim. Reconcile the contradiction explicitly.
 
-The map is only a presentation layer. Discover never invents nearby providers, availability, offers or source evidence. Sparse and empty areas remain useful through Explore Kurukoo, Ask Kurukoo, Topics and watch/follow/save actions. Sponsored Discover placements come only from the existing approved `adManager` campaigns targeting `public_discovery` and are explicitly disclosed.
+## 2. Verification model
 
-## Integrated control-plane truth
+Every capability has three independent verification dimensions:
 
-The Admin Control Room is the operator surface over the same canonical platform used by Web, PWA, iOS and Android. It does not own a parallel provider registry, conversation store, payment state, notification queue or fulfilment engine. Its platform projection reads client surfaces, readiness, integration activation, notifications, trust/evidence, economic state and scale-transition prerequisites. Admin mutations re-enter owning domain services; dispute resolution follows the canonical dispute → escrow → Economic Request lifecycle. The legacy Admin dashboard redirects to `/admin/` so there is one canonical Admin home.
+| Dimension | Meaning |
+|---|---|
+| Repository | Code, ownership, buildability and deterministic contract evidence exist on canonical `main`. |
+| Runtime | The deployed application actually completes the relevant user journey in a controlled environment. |
+| Real-world | External provider/device/person actually performs the outcome with evidence. |
 
-## Architecture rule
+Each dimension is classified as `VERIFIED`, `PARTIAL`, `UNVERIFIED`, `BLOCKED_EXTERNAL`, or `NOT_APPLICABLE`.
+
+**UNVERIFIED is a first-class state.** It means evidence has not been obtained recently enough to claim success. It is never converted to complete by documentation, a registry entry, a route, or the existence of a test alone.
+
+## 3. Product status vocabulary
+
+- `FOUNDATION`: architectural contract exists; capability is not represented as live.
+- `IMPLEMENTED`: canonical code exists and is wired, but the relevant verification dimension is not yet proven.
+- `VERIFIED`: the relevant verification dimension has direct evidence.
+- `PARTIAL`: some path is proven but a required portion remains incomplete.
+- `BLOCKED_EXTERNAL`: repository path is implemented, but external credentials/provider/device/contract activation is required.
+- `UNVERIFIED`: implementation or claim exists but current evidence is insufficient.
+- `SUPERSEDED`: replaced by a canonical owner; retain only when required for history/migration.
+- `NOT_IMPLEMENTED`: no usable implementation exists.
+
+Never use `COMPLETE`, `DONE`, `LIVE`, `READY`, `PRODUCTION`, or `VERIFIED` as a generic label without naming the verification dimension.
+
+## 4. Current canonical owners
+
+| Capability | Canonical owner | Current truth |
+|---|---|---|
+| Conversation | `canonicalChatTurnService` + `chatConversationService` | Implemented; runtime must still be live-verified on every release candidate. |
+| Context arbitration | `contextArbitration` | Implemented; repository-tested. |
+| Conversation memory context | `conversationContextPackService` + `memoryProfile` | Implemented and integrated into conversational generation; carries owner-scoped identity, preferences, stable facts and recent thread context with provenance safeguards. |
+| Identity | authenticated user + `memory_profiles` | Implemented; external identity-provider activation remains deployment-specific. |
+| Memory | `memoryProfile` + `livingMemoryEngine` | Implemented as a cross-OS capability; self-service/revocation and provenance exist. Broader product opportunities remain, but no second memory system should be created. |
+| Economic Request | canonical Economic Request lifecycle in `skillFlows` and related services | Implemented; real-world fulfilment is external/provider-dependent. |
+| Provider communication | request-scoped provider communication/session boundary | Implemented; WebRTC/PSTN activation is external. |
+| Agent runtime | `agentRuntime` / canonical Agent services | Implemented with bounded execution; autonomous external actions remain policy/provider dependent. |
+| Voice realtime | `voiceService` / `voiceRouter` | Implemented as optional Gemini Live capability; runtime availability is deployment-dependent. |
+| Voice TTS | `serverTtsService` + browser `public/js/kurukoo-speech-output.js` | Browser/device speech is now the zero-cost baseline and is injected into canonical `/chat`; hosted TTS is optional. |
+| Voice STT | browser/client voice input + server Mistral transcription adapter | Implemented adapters; provider/browser availability must be verified separately. |
+| Notifications | canonical notification/push services | Implemented; delivery is runtime/provider-dependent. |
+| Quick Ride | `quickRideDispatchService` + `economicDispatchCoordinator` | Merged to `main`; repository implementation exists. Provider dispatch/payment/FCM/WebRTC remain external activation boundaries. |
+| Discover | canonical discovery services | Implemented; source/availability claims remain evidence-bound. |
+| Topics | canonical Topic services | Implemented/foundation depending on deployment surface. |
+| Student model | `ml/` + canonical AI runtime | Training foundation exists; a Kurukoo-trained production adapter is **not** assumed until evaluation/registry evidence proves it. |
+
+## 5. Memory utilisation contract
+
+Memory is not a standalone page feature. It is a cross-OS capability.
+
+The repository already has a canonical identity/memory projection and a conversation context pack used by conversational generation. This is the correct foundation; do not replace it with an Agent-memory, voice-memory or social-memory subsystem.
+
+Approved uses, subject to provenance, consent and privacy policy:
+
+- identity and preferred name;
+- communication preferences;
+- recurring tasks/reminders and user-approved routines;
+- prior request context and continuation;
+- prior provider/outcome context where permitted;
+- saved preferences that reduce repeated clarification;
+- Agent goal continuity;
+- voice-session context;
+- proactive brief composition;
+- contextual composer defaults;
+- relevant Discover/Topic context.
+
+Memory must not be used to invent current availability, prices, provider verification, payment success, safety delivery, or external fulfilment. Canonical services remain authoritative.
+
+## 6. Voice contract
+
+Kurukoo uses the cheapest sufficient speech path:
 
 ```text
-User → Conversation → Intent/AI → Canonical Skill
-     → Native Assistance OR Economic Request OR canonical capability
-     → Shared Memory / Presence / Network / Agent / Notification services
-     → truthful result → continued conversation
-
-Discover → existing Topics / Nearby / Opportunities / Ads / Skills
-         → Chat / Watch / Follow / Save
-         → canonical agent or Economic Request when the user chooses to act
+response text
+  ↓
+Browser/device SpeechSynthesis (zero Kurukoo inference cost)
+  ↓
+optional hosted TTS adapter when consistent/richer voice is justified
+  ↓
+explicit realtime voice session when the user chooses realtime conversation
 ```
 
-Category-specific behaviour belongs in configuration, skill metadata and shared capability services. It must not create a separate economic engine unless a genuinely new architectural boundary is proven.
+There is no requirement for a persistent avatar. Voice presence is represented through lightweight semantic states such as `idle`, `listening`, `thinking`, `speaking`, `working`, and `needs-attention`.
 
-## Deployment truth
+Realtime voice must never be permanently connected simply because a user is logged in. Proactive speech requires explicit opt-in, attention policy and privacy/quiet-hour controls.
 
-The repository is currently a single-process `sql.js` launch architecture. Real external execution remains provider-dependent. FCM delivery, linked WhatsApp/Telegram sessions, Stripe settlement/reconciliation, routable private-number masking, provider onboarding/verification, production dispatch, production object storage, WebRTC relays and MQTT/IoT infrastructure remain separately evidence-gated. UI and Chat must never represent an unavailable external action as completed. The Admin scale-readiness projection also prevents multi-worker configuration from being treated as safe without approved durable persistence and shared coordination state.
+## 7. Audit architecture rule
 
-## PWA and native-client truth
+The repository must not maintain multiple competing completion authorities.
 
-The PWA is the reference application experience for native iOS and Android clients. Public web remains the discovery/SEO/resources/marketing layer; the installed application remains the conversation-first personal workspace with requests, reminders, saved items, notifications, Discover, tasks, Points, safety, memory and account state. Future native clients inherit the same product interaction model and design system. Native Discover consumes the same canonical `/api/discover/home` experience rather than maintaining a separate discovery catalogue.
+Focused tests may remain when they prove a concrete behaviour, such as accessibility, security, CSS integrity, voice boundaries or Economic Request lifecycle. They are evidence producers, not product truth authorities.
 
-## Conversational intelligence truth
+The following are **reports/evidence**, not authorities:
 
-`canonicalChatTurnService` remains the sole turn authority. It assembles bounded context, uses Brain/context arbitration, then passes decisions to deterministic routing and `unifiedAiEngine`. Canonical services own consequential state mutation. Local SmolLM2 remains advisory and provider-neutral fallback behaviour stays truthful when hosted AI is unavailable.
+- feature matrices;
+- page architecture matrices;
+- client coverage matrices;
+- dated visual audits;
+- generated completeness reports;
+- reconciliation snapshots;
+- historical phase audits.
 
-## Identity truth
+A report that is stale must be regenerated or marked historical; it must never be used to override current code/evidence.
 
-The guest authentication boundary rejects ordinary task, food, location, repair and request-shaped text as an identity name unless the user explicitly introduces a name. “My name is …”, “I’m …” and “Call me …” remain supported, preventing request text from silently becoming canonical Memory Profile identity state.
+The compatibility commands `audit:complete` and `audit:main-truth` now delegate to the canonical repository truth gate and no longer create independent completion/reconciliation claims.
 
-## Capability, agent and learning truth
+## 8. Branch/release policy
 
-The universal capability protocol is advisory and typed; canonical services own permissions, consent, state transition, evidence, execution and recovery. First-class agents reuse `aiAgentService`, `internalCoordinator`, `agentRuntime` and `unifiedAiEngine`. The student-model programme remains guarded by human curation, provenance, coverage, hardware and promotion gates. No trained production student activation is implied without independent evidence.
+`main` is the only canonical integration branch.
+
+Working branches are short-lived and must be classified as one of:
+
+- `ACTIVE`: contains current work intended for merge;
+- `REVIEW`: open PR under active review;
+- `HISTORICAL`: retained only until safely archived/deleted;
+- `SUPERSEDED`: no unique work remains;
+- `RELEASE`: temporary release candidate only.
+
+No parallel `integration/*`, `convergence-*`, `near-completion-*`, `final-*` or duplicate product architecture branches may become a second source of truth.
+
+Before closing a work item, compare it with current `main`, identify unique commits/files, merge useful work, close obsolete PRs, then delete the branch. If branch deletion is not available through the automation surface, record it as a GitHub maintenance action; do not pretend the branch has been deleted.
+
+## 9. Release gate
+
+A release candidate is not accepted because a document says complete. It must have:
+
+- repository verification for all claimed active capabilities;
+- runtime verification for the core journeys;
+- explicit external activation status for every provider/device boundary;
+- no unresolved contradiction in canonical docs;
+- no stale generated truth snapshot presented as current;
+- no open PR that is a competing version of the same architecture;
+- no known broken canonical Chat path.
+
+## 10. Core journeys that matter most
+
+Before adding breadth, prove these repeatedly:
+
+1. Conversation → authentication → memory → continuation.
+2. Conversation → Economic Request → evidence-bound outcome.
+3. Conversation → reminder/task → notification → continuation.
+4. Conversation → voice input/output → same canonical conversation.
+5. Conversation → Agent goal → bounded execution → outcome.
+6. Quick Ride → Economic Request → dispatch lifecycle → provider communication → review, with external activation explicitly separated.
+
+Kurukoo should spend more engineering time proving these journeys work than proving that the repository contains feature names.
