@@ -21,5 +21,6 @@ try {
   console.log(JSON.stringify({ passed: true, sessionId: session.id, trackingBridge: session.trackingBridgeId }, null, 2));
 } finally {
   db.run('DELETE FROM provider_communication_sessions WHERE customer_phone=? OR provider_phone=?', [customerPhone, providerPhone]);
+  db.run('DELETE FROM chat_conversations WHERE phone=?', [customerPhone]);
   saveDb(true);
 }
