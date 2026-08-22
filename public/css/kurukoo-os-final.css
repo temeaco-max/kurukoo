@@ -23,7 +23,7 @@ button,a{min-height:44px}
 :where(.card,.panel-card,.metric-card,.k-screen-card,.workspace-card,.workspace-panel,.surface-card,.k-card):hover{box-shadow:var(--ko-shadow-2)!important}
 
 /* Semantic state grammar */
-.ko-state{display:inline-flex!important;align-items:center!important;gap:6px!important;min-height:28px!important;padding:5px 9px!important;border-radius:999px!important;font:700 11px/1 Inter,system-ui,sans-serif!important}
+.ko-state{display:inline-flex!important;align-items:center!important;gap:6px!important;min-height:28px!important;padding:5px 9px!important;border-radius:999px!important;font:700 11px/1 Inter,system-ui,sans-serif}
 .ko-ready,.ko-verified,.ko-connected,.ko-completed{background:#E7F3ED!important;color:var(--ko-success)!important;border-color:#D4E8DC!important}
 .ko-pending,.ko-attention,.ko-needs-input,.ko-draft{background:#F8ECD8!important;color:var(--ko-warning)!important;border-color:#ECDDBF!important}
 .ko-unavailable,.ko-setup,.ko-saved{background:#F1ECE7!important;color:var(--ko-muted)!important;border-color:var(--ko-border)!important}
@@ -96,7 +96,7 @@ button,a{min-height:44px}
 /* Responsive/adaptive */
 @media(max-width:900px){.k-context-band,.ko-context{grid-template-columns:auto minmax(0,1fr)!important}.k-context-band>a,.ko-context-action{grid-column:2!important}.k-legal-layout{grid-template-columns:1fr}.k-legal-nav{position:static;display:flex;gap:6px;overflow:auto}.k-legal-nav a{flex:0 0 auto}.kurukoo-chat-page .chat-content{padding-inline:18px!important}.kurukoo-chat-page .composer-wrap{padding-inline:14px!important}}
 @media(max-width:560px){.ko-context{grid-template-columns:auto minmax(0,1fr)!important}.ko-context-action{grid-column:2!important}.kurukoo-chat-page .chat-header{height:58px!important}.kurukoo-chat-page .inspector-header{height:58px!important}.kurukoo-chat-page .composer{border-radius:14px!important}.k-screen-grid{grid-template-columns:1fr!important}.k-evidence-grid{grid-template-columns:1fr!important}}
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.ko-skeleton{animation:none!important}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}.ko-skeleton{animation:none!important}}
 @media(forced-colors:active){a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid currentColor!important}}
 
 /* Current-main token reconciliation: legacy surfaces consume this authority rather than inventing parallel palettes. */
@@ -125,3 +125,76 @@ button,a{min-height:44px}
 
 /* Features dark evidence boundary retains its intentional light heading hierarchy over the shared ink heading token. */
 .k-public-page .public-feature-boundary h2{color:#F7F2EC!important}
+
+/* Authenticated OS convergence: keep the client shell quiet and usage-based. */
+.k-app-page .k-app-header{gap:18px}
+.k-app-page .k-app-header-actions{gap:8px}
+.k-app-page .k-app-sidebar{background:var(--ko-surface)!important;border-right-color:var(--ko-border)!important}
+.k-app-page .k-app-nav{gap:2px}
+.k-app-page .k-app-nav a{min-height:44px;border-radius:10px;color:var(--ko-muted);font-size:13px}
+.k-app-page .k-app-nav a:hover{background:var(--ko-surface-2);color:var(--ko-ink)}
+.k-app-page .k-app-nav a.active{background:#F3E4DE;color:var(--ko-primary);font-weight:700}
+.k-app-page .k-app-nav .k-app-icon{width:18px;height:18px}
+.k-app-page .k-app-new{background:var(--ko-surface-2);border:1px solid var(--ko-border);color:var(--ko-ink);box-shadow:none}
+.k-app-page .k-app-ask,.k-app-page .k-app-primary{min-height:44px;border-radius:12px;background:var(--ko-primary);box-shadow:none}
+.k-app-page .k-app-ask:hover,.k-app-page .k-app-primary:hover{background:var(--ko-primary-strong)}
+.k-app-page .k-app-title-row h1{font-weight:600}
+.k-app-page .k-app-card{border-radius:14px;box-shadow:var(--ko-shadow)!important}
+.k-app-page .k-app-card:hover{box-shadow:var(--ko-shadow-2)!important}
+.k-app-page .k-app-card-action{display:inline-flex;align-items:center;min-height:44px;color:var(--ko-primary);border-radius:8px}
+.k-app-page .k-app-card-action:hover{background:#F3E4DE}
+.k-app-page .k-app-sidebar .k-app-divider{background:var(--ko-border)}
+.k-app-page .k-app-title-row p,.k-app-page .k-app-card p{color:var(--ko-muted)}
+
+/* Shared profile / presence geometry for people, providers and agents. */
+:is(.ko-profile-card,.k-profile-card,.provider-card,.profile-card){border-color:var(--ko-border)!important;background:var(--ko-surface)!important;box-shadow:var(--ko-shadow)!important;border-radius:14px!important}
+:is(.ko-avatar,.k-avatar,.profile-avatar,.provider-avatar){border-radius:12px!important;box-shadow:none!important}
+:is(.ko-profile-meta,.k-profile-meta,.profile-meta,.provider-meta){color:var(--ko-muted)!important}
+:is(.ko-presence,.k-presence,.profile-presence,.provider-presence){font-size:11px!important;font-weight:700!important}
+
+/* Message/call/voice actions are contextual controls, never decorative global chrome. */
+:is(.ko-communication-actions,.communication-actions,.provider-actions,.profile-actions,.message-actions){display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+:is(.ko-communication-actions,.communication-actions,.provider-actions,.profile-actions) :where(button,a),
+:is(.message-actions) :where(button,a){min-width:44px;min-height:44px;border-radius:10px!important}
+:is(.ko-communication-actions,.communication-actions,.provider-actions,.profile-actions) .message-action,
+:is(.ko-communication-actions,.communication-actions,.provider-actions,.profile-actions) [data-action="message"]{background:var(--ko-surface)!important;border:1px solid var(--ko-border)!important;color:var(--ko-ink)!important}
+:is(.ko-communication-actions,.communication-actions,.provider-actions,.profile-actions) .call-action,
+:is(.ko-communication-actions,.communication-actions,.provider-actions,.profile-actions) [data-action="call"]{background:var(--ko-primary)!important;border:1px solid var(--ko-primary)!important;color:#fff!important}
+:is(.ko-communication-actions,.communication-actions,.provider-actions,.profile-actions) .voice-action,
+:is(.ko-communication-actions,.communication-actions,.provider-actions,.profile-actions) [data-action="voice"]{background:#F3E4DE!important;border:1px solid #E8CEC4!important;color:var(--ko-primary)!important}
+:is(.ko-communication-actions,.communication-actions,.provider-actions,.profile-actions) :where([disabled],[aria-disabled="true"],[data-disabled="true"]){background:var(--ko-surface-2)!important;border-color:var(--ko-border)!important;color:var(--ko-muted)!important;opacity:.55!important;cursor:not-allowed!important;transform:none!important}
+:is(.ko-communication-actions,.communication-actions,.provider-actions,.profile-actions) .action-unavailable::after{content:attr(data-unavailable-reason);display:block;flex:1 0 100%;color:var(--ko-muted);font-size:11px;line-height:1.4}
+
+/* Common lifecycle containers: text + indicator + colour, never colour alone. */
+:is(.ko-lifecycle,.lifecycle-state,.platform-state,.connection-state,.request-state,.task-state){display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:5px 9px;border:1px solid var(--ko-border);border-radius:999px;background:var(--ko-surface-2);color:var(--ko-muted);font-size:11px;font-weight:700}
+:is(.ko-lifecycle,.lifecycle-state,.platform-state,.connection-state,.request-state,.task-state)[data-state="pending"],
+:is(.ko-lifecycle,.lifecycle-state,.platform-state,.connection-state,.request-state,.task-state)[data-state="waiting"],
+:is(.ko-lifecycle,.lifecycle-state,.platform-state,.connection-state,.request-state,.task-state)[data-state="approval-required"],
+:is(.ko-lifecycle,.lifecycle-state,.platform-state,.connection-state,.request-state,.task-state)[data-state="needs-attention"]{background:#F8ECD8!important;color:var(--ko-warning)!important;border-color:#ECDDBF!important}
+:is(.ko-lifecycle,.lifecycle-state,.platform-state,.connection-state,.request-state,.task-state)[data-state="working"],
+:is(.ko-lifecycle,.lifecycle-state,.platform-state,.connection-state,.request-state,.task-state)[data-state="listening"]{background:#E8EFF4!important;color:var(--ko-info)!important;border-color:#D7E3EB!important}
+:is(.ko-lifecycle,.lifecycle-state,.platform-state,.connection-state,.request-state,.task-state)[data-state="completed"],
+:is(.ko-lifecycle,.lifecycle-state,.platform-state,.connection-state,.request-state,.task-state)[data-state="success"],
+:is(.ko-lifecycle,.lifecycle-state,.platform-state,.connection-state,.request-state,.task-state)[data-state="verified"]{background:#E7F3ED!important;color:var(--ko-success)!important;border-color:#D4E8DC!important}
+:is(.ko-lifecycle,.lifecycle-state,.platform-state,.connection-state,.request-state,.task-state)[data-state="blocked"],
+:is(.ko-lifecycle,.lifecycle-state,.platform-state,.connection-state,.request-state,.task-state)[data-state="failed"]{background:#FBEDEA!important;color:var(--ko-danger)!important;border-color:#EBCFC9!important}
+:is(.ko-lifecycle,.lifecycle-state,.platform-state,.connection-state,.request-state,.task-state)[data-state="offline"],
+:is(.ko-lifecycle,.lifecycle-state,.platform-state,.connection-state,.request-state,.task-state)[data-state="unavailable"]{background:#F1ECE7!important;color:var(--ko-muted)!important}
+
+/* Loading / empty / unavailable / error surfaces share the same calm evidence container. */
+:is(.ko-loading,.loading-state,.skeleton-state,.ko-empty,.empty-state,.ko-unavailable,.unavailable-state,.ko-error,.error-state){border:1px solid var(--ko-border);border-radius:14px;background:var(--ko-surface);color:var(--ko-muted)}
+:is(.ko-empty,.empty-state){padding:24px;text-align:center}
+:is(.ko-empty,.empty-state) h2,:is(.ko-empty,.empty-state) h3{margin-top:0;color:var(--ko-ink)!important}
+:is(.ko-empty,.empty-state) p{max-width:520px;margin:6px auto 0;color:var(--ko-muted)}
+:is(.ko-error,.error-state){padding:16px;background:#FBEDEA;border-color:#EBCFC9;color:var(--ko-danger)}
+:is(.ko-unavailable,.unavailable-state){padding:16px;background:#F1ECE7;color:var(--ko-muted)}
+:is(.ko-loading,.loading-state){padding:16px}
+
+@media(max-width:767px){
+ .k-app-page .k-app-main{padding-bottom:92px}
+ .k-app-page .k-app-title-row{gap:12px}
+ .k-app-page .k-app-card{padding:18px}
+ .k-app-page .k-app-header-actions .k-app-identity{display:none}
+ :is(.ko-communication-actions,.communication-actions,.provider-actions,.profile-actions){width:100%}
+ :is(.ko-communication-actions,.communication-actions,.provider-actions,.profile-actions) :where(button,a){flex:1 1 0}
+}

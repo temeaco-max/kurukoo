@@ -6,6 +6,9 @@ import { KURUKOO_OS_COMPONENTS } from '../src/services/kurukooOsComponentRegistr
 
 const shellRuntime = readFileSync(resolve(process.cwd(), 'public/js/kurukoo-desk-system.js'), 'utf8');
 const componentCss = readFileSync(resolve(process.cwd(), 'public/css/kurukoo-os-components.css'), 'utf8');
+const finalCss = readFileSync(resolve(process.cwd(), 'public/css/kurukoo-os-final.css'), 'utf8');
+const providerCss = readFileSync(resolve(process.cwd(), 'public/css/provider-communication.css'), 'utf8');
+const presenceRuntime = readFileSync(resolve(process.cwd(), 'public/js/kurukoo-agent-presence.js'), 'utf8');
 const icons = readFileSync(resolve(process.cwd(), 'public/icons/kurukoo-icons.svg'), 'utf8');
 
 for (const required of [
@@ -20,6 +23,16 @@ assert.ok(componentCss.includes('.kos-activity-card'));
 assert.ok(componentCss.includes('.kos-object-list'));
 assert.ok(componentCss.includes('.kos-opportunity-card'));
 assert.ok(componentCss.includes('.kos-context-drawer'));
+assert.ok(componentCss.includes('data-ko-state="approval-required"'));
+assert.ok(componentCss.includes('data-agent-presence="listening"'));
+assert.ok(finalCss.includes('.k-app-page .k-app-nav'));
+assert.ok(finalCss.includes('.ko-communication-actions'));
+assert.ok(finalCss.includes('[data-state="approval-required"]'));
+assert.ok(finalCss.includes('.ko-empty,.empty-state'));
+assert.ok(providerCss.includes('var(--ko-primary'));
+assert.ok(providerCss.includes('min-height:44px'));
+assert.ok(providerCss.includes('button[disabled]'));
+assert.ok(presenceRuntime.includes("'listening'"));
 assert.match(icons, /symbol id="search"/);
 assert.match(icons, /symbol id="user"/);
 assert.ok(CHAT_SIDEBAR_FOUNDATION.some((item) => item.id === 'cart' && item.targetPlacement === 'header'));
@@ -28,4 +41,4 @@ assert.ok(KURUKOO_OS_COMPONENTS.some((item) => item.id === 'conversation-continu
 assert.ok(KURUKOO_OS_COMPONENTS.some((item) => item.id === 'pulse-timeline'));
 assert.ok(KURUKOO_OS_COMPONENTS.some((item) => item.id === 'context-inspector'));
 
-console.log('OS shell contract passed: canonical header controls, Chat-to-Desk parity, reusable components and canonical search/account icons are present.');
+console.log('OS shell contract passed: canonical header controls, shared state/presence vocabulary, communication geometry and reusable OS components are present.');
