@@ -9,6 +9,9 @@ const required = [
   "economic-requests",
   "memory",
   "provider-network",
+  "commerce-network",
+  "catalogue",
+  "provider-communications",
   "ai-runtime",
   "safety",
   "provider-credentials",
@@ -18,6 +21,9 @@ const required = [
 assertMobileContractComplete(required);
 assert.equal(new Set(MOBILE_PLATFORM_CONTRACTS.map((item) => item.id)).size, MOBILE_PLATFORM_CONTRACTS.length);
 assert.ok(MOBILE_PLATFORM_CONTRACTS.some((item) => item.id === "discover" && item.status === "implemented"));
+assert.ok(MOBILE_PLATFORM_CONTRACTS.some((item) => item.id === "commerce-network" && item.canonicalOwner.includes("pointsEngine")));
+assert.ok(MOBILE_PLATFORM_CONTRACTS.some((item) => item.id === "catalogue" && item.canonicalOwner.includes("catalogueSourceRegistry")));
+assert.ok(MOBILE_PLATFORM_CONTRACTS.some((item) => item.id === "provider-communications" && item.canonicalOwner.includes("providerCommunicationService")));
 assert.ok(MOBILE_PLATFORM_CONTRACTS.every((item) => item.canonicalOwner.length > 0));
 assert.ok(MOBILE_PLATFORM_CONTRACTS.filter((item) => item.status === "admin_only").every((item) => item.nativeRoute === null));
 assert.ok(MOBILE_PLATFORM_CONTRACTS.find((item) => item.id === "discover")?.api.includes("/api/discover/home"));
