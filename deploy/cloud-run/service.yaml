@@ -9,7 +9,10 @@ spec:
     metadata:
       annotations:
         autoscaling.knative.dev/minScale: "0"
-        autoscaling.knative.dev/maxScale: "3"
+        # SQL.js remains single-process only. This cap removes replica-level split-brain risk,
+        # but it does not make container-local storage durable. Startup remains blocked below
+        # until a shared durable persistence adapter is implemented and activated.
+        autoscaling.knative.dev/maxScale: "1"
         run.googleapis.com/startup-cpu-boost: "true"
     spec:
       containerConcurrency: 1
@@ -24,7 +27,7 @@ spec:
               memory: 4Gi
           startupProbe:
             httpGet:
-              path: /health
+              path: /readyz
               port: 8080
             periodSeconds: 10
             timeoutSeconds: 5
@@ -41,6 +44,16 @@ spec:
               value: "8080"
             - name: HOST
               value: "0.0.0.0"
+            - name: KURUKOO_CLOUD_RUN
+              value: "true"
+            - name: KURUKOO_DATABASE_MODE
+              value: "sqljs"
+            - name: KURUKOO_PERSISTENT_STATE_REQUIRED
+              value: "true"
+            - name: KURUKOO_JOB_MODE
+              value: "in_process"
+            - name: KURUKOO_WORKERS
+              value: "1"
             - name: KURUKOO_SMOLLM2_LOCAL
               value: "true"
             - name: KURUKOO_CLOUD_RUN_REQUIRE_MODEL
@@ -59,8 +72,6 @@ spec:
               value: /tmp/huggingface
             - name: KURUKOO_SMOLLM2_CACHE_DIR
               value: /tmp/huggingface
-            - name: KURUKOO_WORKERS
-              value: "0"
             - name: KURUKOO_EXTERNAL_EXECUTION_ENABLED
               value: "false"
             - name: KURUKOO_COORDINATOR_TEACHER_ENABLED
