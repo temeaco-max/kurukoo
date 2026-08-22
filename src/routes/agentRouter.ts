@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticateAdmin, authenticateUser, type AuthRequest } from '../middleware/auth.js';
 import { agentRuntimeStatus, cancelAgentGoal, getAgentGoal, goalTimeline, listAgentGoalEvents, listAgentGoals, listAgentWorkerRuns, pauseAgentGoal, resumeAgentGoal } from '../services/agentRuntime.js';
+import { buildAgentBrief, enqueueAgentBriefNotification } from '../services/agentBriefService.js';
 
 const router = Router();
 
@@ -11,6 +12,31 @@ router.get('/status', authenticateAdmin, (_req, res) => res.json({ success: true
 router.get('/runs', authenticateAdmin, async (req, res) => {
   const parsed = Number(req.query.limit || 20);
   res.json({ success: true, runs: await listAgentWorkerRuns(Number.isFinite(parsed) ? parsed : 20) });
+});
+
+router.get('/brief', authenticateUser, async (req: AuthRequest, res) => {
+  const owner = phone(req); if (!owner) return res.status(401).json({ error: 'Authentication required' });
+  try {
+    const brief = await buildAgentBrief(owner);
+    const { ownerPhone: _ownerPhone, ...publicBrief } = brief;
+    res.json({ success: true, brief: publicBrief });
+  } catch (error) {
+    console.error('[Agent] brief generation failed:', error);
+    res.status(500).json({ error: 'Unable to prepare your Kurukoo brief' });
+  }
+});
+
+router.post('/brief/notify', authenticateUser, async (req: AuthRequest, res) => {
+  const owner = phone(req); if (!owner) return res.status(401).json({ error: 'Authentication required' });
+  try {
+    const brief = await buildAgentBrief(owner);
+    const delivery = await enqueueAgentBriefNotification(owner, brief);
+    const { ownerPhone: _ownerPhone, ...publicBrief } = brief;
+    res.json({ success: true, brief: publicBrief, delivery });
+  } catch (error) {
+    console.error('[Agent] brief notification fallback failed:', error);
+    res.status(500).json({ error: 'Unable to prepare your Kurukoo brief notification' });
+  }
 });
 
 router.get('/goals', authenticateUser, async (req: AuthRequest, res) => {

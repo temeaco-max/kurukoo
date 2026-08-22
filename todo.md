@@ -107,3 +107,10 @@ The implementation is complete for the repository/runtime boundary. The remainin
 - [x] Add contract tests for authorization, state progression, idempotency, evidence, cancellation, and simulated participant failure.
 - [x] Update canonical architecture documentation and verify repository, runtime, and real-world status tiers.
 - [x] Open, verify, merge, and delete one short-lived pull-request branch from main.
+
+## Current-main validation follow-through
+
+- [x] Reproduce and isolate the current platform-convergence and economic-validation blockers.
+- [x] Apply only the smallest canonical correction required for the failing validation contracts.
+- [x] Re-run focused convergence, economic, dispatch, security, and build validation.
+- [x] Push the verified current-main correction and record repository, runtime, and real-world status tiers.

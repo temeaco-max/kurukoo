@@ -6,7 +6,7 @@
     activeStorefrontId: null,
     nativeAssistance: { reminders: [], checkIns: [] },
     lastCapabilityResult: null,
-    pinnedMessages: [], surfaceView: null, canonicalContextAction: null, notifiedNotificationIds: new Set(), notifiedTrustChallengeIds: new Set(), radarActive: localStorage.getItem('kurukoo_radar_enabled') !== '0', radarLive: false
+    pinnedMessages: [], surfaceView: null, canonicalContextAction: null, notifiedNotificationIds: new Set(), notifiedTrustChallengeIds: new Set(), radarActive: localStorage.getItem('kurukoo_radar_enabled') !== '0', radarLive: false, lastAgentBriefId: null
   };
   const $ = id => document.getElementById(id);
   const chatContent = $('chat-content'), scroll = $('chat-scroll'), input = $('message-input'), send = $('send-message'), stop = $('stop-generation');
@@ -1004,6 +1004,26 @@
     if (card.type === 'suggestions') return renderSuggestions(card.options, messageEl, card.sponsored);
     if (card.type === 'intent_suggestions') return renderSuggestions(card.suggestions, messageEl, card.sponsored);
     if (card.type === 'ai_metadata') return updateModelStatus(card);
+    if (card.type === 'agent_brief') {
+      const holder = makeElement('section', 'provider-card agent-brief-card');
+      holder.setAttribute('aria-label', 'Kurukoo brief');
+      holder.appendChild(makeElement('strong', '', 'What matters now'));
+      const list = makeElement('div', 'inspector-list');
+      const items = Array.isArray(card.items) ? card.items.filter(item => item?.attention !== 'SILENT').slice(0, 6) : [];
+      if (!items.length) list.appendChild(makeElement('div', 'deferred', 'No active items need attention.'));
+      items.forEach(item => {
+        const row = makeElement('div', 'inspector-list-row');
+        row.appendChild(makeElement('span', '', String(item.summary || 'Kurukoo update')));
+        if (item.approvalRequired) row.appendChild(makeElement('small', '', 'Review required'));
+        list.appendChild(row);
+      });
+      const followUp = makeElement('button', 'text-btn', 'Go through these updates');
+      followUp.type = 'button';
+      followUp.addEventListener('click', () => { if (input) { input.value = 'What have I got going on?'; input.dispatchEvent(new Event('input', { bubbles: true })); input.focus(); } });
+      holder.append(list, followUp, makeElement('span', 'escrow-badge', 'Updates are read-only. Any consequential action still requires the existing approval boundary.'));
+      messageEl.querySelector('.bubble')?.appendChild(holder);
+      return;
+    }
     if (card.type === 'emergency') {
       const holder = makeElement('section', 'emergency-chat-card'); holder.setAttribute('aria-label', 'Emergency assistance');
       const heading = makeChildren('div', 'emergency-chat-card__heading', [makeIcon('safety', 'Emergency'), makeElement('strong', '', 'Emergency mode')]);
@@ -1710,7 +1730,7 @@
     } catch {}
     state.messages = []; state.activeStorefrontId = null; chatContent.replaceChildren();
     const ds = $('deferred-status'); if (ds) ds.hidden = true;
-    renderWelcome(); refreshHistory();
+    renderWelcome(); void loadAgentBrief(); refreshHistory();
   });
 
   $('surface-header-back')?.addEventListener('click', () => leaveWorkspaceSurface());
@@ -1746,6 +1766,27 @@
     const contextBanner = $('qr-context-banner');
     if (contextBanner && contextParts.length) { contextBanner.textContent = `${contextParts.join(' · ')}. Kurukoo will keep this context with the conversation.`; contextBanner.hidden = false; }
     if (prompt && input) { input.value = prompt.slice(0, 12000); input.dispatchEvent(new Event('input', { bubbles: true })); }
+  }
+
+  async function loadAgentBrief() {
+    try {
+      const response = await fetch('/api/agent/brief', { credentials: 'same-origin' });
+      if (!response.ok) return;
+      const data = await response.json(); const brief = data?.brief;
+      if (!brief?.id || state.lastAgentBriefId === brief.id) return;
+      state.lastAgentBriefId = brief.id;
+      window.KurukooAgentPresence?.set?.(brief.presence || 'idle', 'agent-brief');
+      const visible = Array.isArray(brief.items) ? brief.items.filter(item => item?.attention !== 'SILENT') : [];
+      if (!visible.length) return;
+      const storageKey = `kurukoo_agent_brief_seen_${brief.id}`;
+      if (sessionStorage.getItem(storageKey) === '1') return;
+      sessionStorage.setItem(storageKey, '1');
+      const message = createMessage('assistant', String(brief.presentation?.text || 'Kurukoo has an update for you.'), null, null, false);
+      renderCard({ type: 'agent_brief', ...brief }, message);
+      state.messages.push({ role: 'assistant', text: String(brief.presentation?.text || ''), id: null });
+      if (brief.presentation?.shouldSpeak) speakAssistantResponse(String(brief.presentation.text || ''), null);
+      scroll.scrollTop = scroll.scrollHeight;
+    } catch {}
   }
 
   function renderWelcome() {
@@ -1806,7 +1847,7 @@
       await Promise.all([loadPoints(), loadMemory(), loadNotifications(), loadTaskContext(), loadReminders(), loadSafety(), loadAgentGoal()]);
     loadProactiveInspector();
     loadNearbyInspector(state.surfaceView);
-      if (!state.conversationId) renderWelcome();
+      if ($('welcome')) await loadAgentBrief();
     }
   });
 

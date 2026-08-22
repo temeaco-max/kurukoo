@@ -33,8 +33,7 @@ function detectAct(text: string): string | null {
 function normalizeFastTextSkill(intent: string | undefined): string | null {
   if (!intent) return null;
   const prefix = 'skill_route_';
-  if (!intent.startsWith(prefix)) return null;
-  const candidate = intent.slice(prefix.length);
+  const candidate = intent.startsWith(prefix) ? intent.slice(prefix.length) : intent;
   return getAllConvergedSkillNames().includes(candidate) ? candidate : null;
 }
 

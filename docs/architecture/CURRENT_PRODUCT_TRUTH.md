@@ -54,6 +54,7 @@ Never use `COMPLETE`, `DONE`, `LIVE`, `READY`, `PRODUCTION`, or `VERIFIED` as a 
 | Economic Request | canonical Economic Request lifecycle in `skillFlows` and related services | Implemented; real-world fulfilment is external/provider-dependent. |
 | Provider communication | request-scoped provider communication/session boundary | Implemented; WebRTC/PSTN activation is external. |
 | Agent runtime | `agentRuntime` / canonical Agent services | Implemented with bounded execution; autonomous external actions remain policy/provider dependent. |
+| Agent Brief and attention | `agentBriefService` with existing request, task, reminder, notification, Memory Profile and Agent Runtime owners | Implemented as a deterministic, read-only projection; browser/device speech and notification delivery remain runtime/device dependent. |
 | Voice realtime | `voiceService` / `voiceRouter` | Implemented as optional Gemini Live capability; runtime availability is deployment-dependent. |
 | Voice TTS | `serverTtsService` + browser `public/js/kurukoo-speech-output.js` | Browser/device speech is now the zero-cost baseline and is injected into canonical `/chat`; hosted TTS is optional. |
 | Voice STT | browser/client voice input + server Mistral transcription adapter | Implemented adapters; provider/browser availability must be verified separately. |
@@ -89,7 +90,39 @@ Approved uses, subject to provenance, consent and privacy policy:
 
 Memory must not be used to invent current availability, prices, provider verification, payment success, safety delivery, or external fulfilment. Canonical services remain authoritative.
 
-## 7. Voice contract
+## 7. Agent Brief and attention contract
+
+`agentBriefService` is the canonical **read-only, deterministic** Agent Brief projection. It prepares a small structured view of what matters from existing owner-scoped state, rather than creating a second notification service, task engine, reminder engine, Agent Runtime, memory system, or event bus. Each brief item keeps a stable canonical reference, category, priority, urgency, timestamp where available, source, concise user-facing summary, available read-only action, approval requirement, expiry where applicable, privacy classification, and deterministic attention posture. The brief never persists generated prose as canonical truth.
+
+| Source concern | Existing canonical owner reused | Brief relationship |
+|---|---|---|
+| Requests and provider progress | `skillFlows` Economic Request lifecycle | The brief reads owner-scoped request status and links back to the exact request. It never declares a provider, payment, fulfilment, or completion state independently. Completed requests appear only within the bounded recent-completion window. |
+| Tasks | `microTasks` / `taskRoutes` | The brief reads assigned task state only. It does not assign, complete, or mutate tasks. Canonical task lifecycle timestamps support the same bounded recent-completion treatment. |
+| Reminders | `reminderService` | The brief projects due or near-term reminders without replacing reminder trigger delivery. |
+| Notifications | `pushNotifications` | Existing internal notification/FCM queue remains the fallback delivery owner and retains its own queue idempotency. Only unread user-relevant notification records are eligible for brief aggregation. |
+| Profile and Memory | `memoryProfile` and the existing Living Memory boundary | Existing encrypted profile preferences determine concise/detailed style, proactive voice, quiet hours, categories, and interruption sensitivity. The authenticated existing `/profile/update` boundary accepts a validated `proactive_brief` patch while preserving unrelated preferences. The brief does not create an Agent Preference identity store or an unbounded event memory. |
+| Long-running work | `agentRuntime` | The brief surfaces bounded goal states such as working, waiting, completed, blocked, and needs-user, without exposing traces or changing the goal. |
+| Conversation and context | `canonicalChatTurnService` and `contextArbitration` | “Anything important?” and equivalent brief questions resolve deterministically through the existing conversation owner; normal follow-up uses the same owner-scoped context and approval boundary. |
+| Safety and interaction policy | `capabilityInteractionPolicyService` and existing safety services | Existing capability policy supplies interruption semantics. A brief does not introduce a second safety engine. |
+
+The attention policy has exactly four deterministic outcomes. It derives from existing capability interaction semantics and the user’s existing profile preferences. Classification describes **presentation only**; it never authorizes execution, confirmation, payment, publishing, contact, dispatch, or any other consequential action.
+
+| Attention outcome | Meaning | Initial delivery posture |
+|---|---|---|
+| `IMMEDIATE` | An allowed critical safety interruption. | May visually interrupt and may speak only when voice and critical-interruption policy permit it. |
+| `NOTIFY` | A high-priority item that is useful without demanding a disruptive interruption. | Uses the existing notification queue as a fallback; the user can review in Chat. |
+| `NEXT_BRIEF` | A relevant update for the next suitable interaction. | Appears in the next prepared Chat brief. |
+| `SILENT` | An item excluded by privacy/visibility or category preference, or work that does not merit an interruption. | Not presented by the Agent Brief. |
+
+The Chat surface fetches the same structured brief when an authenticated user returns to an empty conversation, renders a lightweight card, and exposes a semantic Agent Presence state. Presence has no avatar and no live-audio requirement: `idle`, `thinking`, `speaking`, `working`, `waiting`, and `needs-attention` are the reusable visual states for Chat, proactive brief, future voice, and Agent workspace surfaces. `public/js/kurukoo-agent-presence.js` reuses the existing browser speech presence event; it does not establish a server session or a second presence authority.
+
+Proactive speech is deliberately cheap and bounded. The normal path is **structured brief → deterministic response text → browser `SpeechSynthesis`**. It neither opens a permanent Gemini Live connection nor calls a model merely to discover state. Gemini Live remains an explicit realtime conversation mode. If browser speech is unavailable, blocked, disabled in Memory Profile, or suppressed by quiet hours, the exact same brief remains available as text and can use the existing notification queue fallback. Hosted TTS remains optional and is not required for a brief.
+
+All brief retrieval is authenticated and owner-scoped. Items with restricted visibility are suppressed before presentation, already-read notification records and completions outside the seven-day recent-completion window are excluded, and summaries omit internal tool traces, technical logs, and model reasoning. Safety-relevant items can receive a higher attention posture, but they remain subject to authorization, privacy, local policy, and established emergency boundaries. Agent Brief rendering and conversation continuation cannot bypass an `approvalRequired` state.
+
+The cost model is intentionally bounded: aggregation reads small owner-scoped canonical lists, does not poll large datasets continuously, caches delivery identity through a narrow brief-delivery ledger, uses existing queue idempotency, and leaves language-model use to later conversational explanation rather than state discovery. Repository tests cover aggregation, duplicate suppression, read-notification suppression, bounded recent completion, attention, quiet hours, validated Memory Profile preference patches, owner privacy, Agent Runtime status, approval boundaries, browser speech wiring and unavailable fallback, notification fallback, and canonical conversation continuation. Live browser/device speech and external notification transport must still be verified separately for a deployment before being described as runtime or real-world verified.
+
+## 8. Voice contract
 
 Kurukoo uses the cheapest sufficient speech path:
 
@@ -107,7 +140,7 @@ There is no requirement for a persistent avatar. Voice presence is represented t
 
 Realtime voice must never be permanently connected simply because a user is logged in. Proactive speech requires explicit opt-in, attention policy and privacy/quiet-hour controls.
 
-## 8. Audit architecture rule
+## 9. Audit architecture rule
 
 The repository must not maintain multiple competing completion authorities.
 

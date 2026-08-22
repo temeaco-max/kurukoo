@@ -13,6 +13,24 @@ const router = Router();
 
 function sessionPhone(req: AuthRequest): string | null { return req.user?.phone ? String(req.user.phone) : null; }
 
+function asRecord(value: unknown): Record<string, unknown> | null { return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null; }
+
+export function sanitizeProactiveBriefPreferences(value: unknown): Record<string, unknown> | null {
+  const source = asRecord(value); if (!source) return null;
+  const patch: Record<string, unknown> = {};
+  if (typeof source.voice_enabled === 'boolean') patch.voice_enabled = source.voice_enabled;
+  if (source.style === 'concise' || source.style === 'detailed') patch.style = source.style;
+  if (source.interruption_sensitivity === 'minimal' || source.interruption_sensitivity === 'standard' || source.interruption_sensitivity === 'interruptive') patch.interruption_sensitivity = source.interruption_sensitivity;
+  if (typeof source.allow_critical_interruption === 'boolean') patch.allow_critical_interruption = source.allow_critical_interruption;
+  if (Array.isArray(source.notification_categories)) {
+    const allowed = new Set(['completed', 'pending', 'attention_required', 'upcoming_task', 'provider_update', 'important_notification', 'safety_event', 'agent_work_in_progress', 'agent_work_completed', 'waiting_for_user']);
+    patch.notification_categories = [...new Set(source.notification_categories.filter(item => typeof item === 'string' && allowed.has(item)))];
+  }
+  const quietHours = asRecord(source.quiet_hours);
+  if (quietHours && /^\d{2}:\d{2}$/.test(String(quietHours.start || '')) && /^\d{2}:\d{2}$/.test(String(quietHours.end || ''))) patch.quiet_hours = { start: String(quietHours.start), end: String(quietHours.end), ...(typeof quietHours.timeZone === 'string' ? { timeZone: quietHours.timeZone } : {}) };
+  return patch;
+}
+
 router.get('/profile', authenticateUser, async (req: AuthRequest, res) => {
   const phone = sessionPhone(req); if (!phone) return res.status(401).json({ error: 'Authentication required' });
   if (req.query.phone && String(req.query.phone) !== phone) return res.status(403).json({ error: 'Forbidden: You can only view your own profile' });
@@ -38,15 +56,21 @@ router.post('/profile/availability', authenticateUser, async (req: AuthRequest, 
 router.post('/profile/update', authenticateUser, async (req: AuthRequest, res) => {
   const phone = sessionPhone(req); if (!phone) return res.status(401).json({ error: 'Authentication required' });
   if (req.body?.phone && req.body.phone !== phone) return res.status(403).json({ error: 'Forbidden: You can only update your own profile' });
-  const { name, location, country, skills, operation_mode, hourly_rate, service_radius_km, transport_mode, pricing_model, payment_method, equipment, is_available } = req.body || {};
+  const { name, location, country, skills, operation_mode, hourly_rate, service_radius_km, transport_mode, pricing_model, payment_method, equipment, is_available, proactive_brief } = req.body || {};
   try {
     const db = await getDb();
+    const proactiveBriefPatch = proactive_brief === undefined ? undefined : sanitizeProactiveBriefPreferences(proactive_brief);
+    if (proactive_brief !== undefined && !proactiveBriefPatch) return res.status(400).json({ error: 'Invalid proactive brief preferences' });
+    const profile = proactiveBriefPatch ? await getProfile(phone, 'profile_update') : null;
+    const currentPreferences = asRecord(profile?.preferences) || {};
+    const currentBrief = asRecord(currentPreferences.proactive_brief) || {};
     await updateProfile(phone, 'profile_update', {
       name: typeof name === 'string' && name.trim() ? name.trim() : undefined,
       location: typeof location === 'string' && location.trim() ? location.trim() : undefined,
       country: typeof country === 'string' && country.trim() ? country.trim() : undefined,
       provenance: 'user_declared',
       source_ref: 'profile_update',
+      preferences: proactiveBriefPatch ? { ...currentPreferences, proactive_brief: { ...currentBrief, ...proactiveBriefPatch } } : undefined,
     });
     if (typeof is_available !== 'undefined') {
       const available = is_available ? 1 : 0;

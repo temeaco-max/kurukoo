@@ -216,7 +216,7 @@ function initTables(database: any) {
     CREATE TABLE IF NOT EXISTS scam_reports (id INTEGER PRIMARY KEY AUTOINCREMENT, reporter_phone TEXT, reported_phone TEXT, description TEXT, status TEXT DEFAULT 'pending', created_at TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS social_posts (id INTEGER PRIMARY KEY AUTOINCREMENT, platform TEXT, content TEXT, scheduled_time TEXT, status TEXT DEFAULT 'pending');
     CREATE TABLE IF NOT EXISTS partnerships (id INTEGER PRIMARY KEY AUTOINCREMENT, company TEXT, contact TEXT, status TEXT, next_action TEXT, due_date TEXT, notes TEXT);
-    CREATE TABLE IF NOT EXISTS micro_tasks (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, description TEXT, skill_tag TEXT, credits_reward INTEGER, status TEXT DEFAULT 'available', assigned_to TEXT, source_type TEXT, source_id TEXT, verification_kind TEXT, submitted_result TEXT, moderation_note TEXT, approved_by TEXT, approved_at TEXT);
+    CREATE TABLE IF NOT EXISTS micro_tasks (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, description TEXT, skill_tag TEXT, credits_reward INTEGER, status TEXT DEFAULT 'available', assigned_to TEXT, source_type TEXT, source_id TEXT, verification_kind TEXT, submitted_result TEXT, moderation_note TEXT, approved_by TEXT, approved_at TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS service_categories (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, options TEXT);
     CREATE TABLE IF NOT EXISTS success_stories (id INTEGER PRIMARY KEY AUTOINCREMENT, story_text TEXT, category TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, used INTEGER DEFAULT 0);
     CREATE TABLE IF NOT EXISTS badges (phone TEXT, badge_type TEXT, awarded_at DATETIME DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(phone, badge_type));
@@ -299,6 +299,8 @@ function initTables(database: any) {
     'ALTER TABLE micro_tasks ADD COLUMN moderation_note TEXT',
     'ALTER TABLE micro_tasks ADD COLUMN approved_by TEXT',
     'ALTER TABLE micro_tasks ADD COLUMN approved_at TEXT',
+    'ALTER TABLE micro_tasks ADD COLUMN created_at TEXT',
+    'ALTER TABLE micro_tasks ADD COLUMN updated_at TEXT',
     'ALTER TABLE memory_profiles ADD COLUMN phone_verified_at TEXT',
     'ALTER TABLE memory_profiles ADD COLUMN email_verified_at TEXT',
   ]) { try { database.run(migration); } catch { /* column already exists */ } }
@@ -308,7 +310,9 @@ function initTables(database: any) {
   }
   const skillFlowColumns = database.exec('PRAGMA table_info(skill_flows)')[0]?.values || [];
   if (!skillFlowColumns.some((column: unknown[]) => String(column[1]) === 'flow_mode')) database.run("ALTER TABLE skill_flows ADD COLUMN flow_mode TEXT NOT NULL DEFAULT 'economic'");
+  database.run("UPDATE micro_tasks SET created_at = COALESCE(created_at, approved_at), updated_at = COALESCE(updated_at, approved_at, created_at) WHERE created_at IS NULL OR updated_at IS NULL");
   database.run("CREATE INDEX IF NOT EXISTS idx_micro_tasks_source ON micro_tasks(source_type, source_id)");
+  database.run("CREATE INDEX IF NOT EXISTS idx_micro_tasks_assignee_updated ON micro_tasks(assigned_to, status, updated_at DESC)");
   database.run("CREATE INDEX IF NOT EXISTS idx_messages_phone ON messages(phone)");
   database.run("CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at)");
 
