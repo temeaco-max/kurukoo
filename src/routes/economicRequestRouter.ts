@@ -39,6 +39,7 @@ import {
   startKnownOfferEconomicRequest,
   getDeliveryCandidates,
   selectDeliveryCandidate,
+  type EconomicParticipant,
   type EconomicParticipantRole,
   type EconomicParticipantStatus,
 } from '../services/economicParticipants.js';
@@ -48,6 +49,7 @@ import {
   getExecutionRequestsForRequest,
 } from '../services/executionConnector.js';
 import { assertIdentityAllows } from '../services/progressiveIdentityService.js';
+import { isPhysicalExecutionAction } from '../services/physicalExecutionParticipant.js';
 
 const router = Router();
 
@@ -425,8 +427,9 @@ router.post('/:id/execution', authenticateUser, async (req: AuthRequest, res) =>
   if (!gate.allowed) return res.status(403).json({ ok: false, error: gate.reason, identity: gate.snapshot.cardData });
   const { providerPhone, capability, actionRequested, role, idempotencyKey } = req.body || {};
   if (!providerPhone || !capability || !actionRequested || !role || !idempotencyKey) return res.status(400).json({ ok: false, error: 'providerPhone, capability, actionRequested, role, and idempotencyKey are required' });
+  if (isPhysicalExecutionAction(actionRequested)) return res.status(409).json({ ok: false, error: 'Physical execution actions require the bounded physical-execution authorization contract.' });
   const participants = await getEconomicParticipants(req.params.id);
-  const participant = participants.find((p) => p.providerPhone === providerPhone && p.role === role);
+  const participant = participants.find((p: EconomicParticipant) => p.providerPhone === providerPhone && p.role === role);
   if (!participant) return res.status(400).json({ ok: false, error: 'Specified provider is not a registered participant on this request' });
   try {
     const actionId = `act_${Math.random().toString(36).substring(2, 10)}`;

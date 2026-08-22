@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { getDb, saveDb } from '../database.js';
 import { getEconomicRequest } from './skillFlows.js';
-import { getEconomicParticipants, type EconomicParticipantRole } from './economicParticipants.js';
+import { getEconomicParticipants, type EconomicParticipant, type EconomicParticipantRole } from './economicParticipants.js';
 import { generateProxyNumber, getPrivacyBridgeStatus } from './privacyBridge.js';
 
 export const EXECUTION_STATUSES = [
@@ -292,7 +292,7 @@ export async function authorizeProviderExecution(input: {
   const capability = cleanText(input.capability, 'Capability', 128);
   const actionRequested = cleanText(input.actionRequested, 'Action requested', 256);
   const participants = await getEconomicParticipants(request.id);
-  const participant = participants.find((item) => item.providerPhone === providerPhone && item.role === input.role);
+  const participant = participants.find((item: EconomicParticipant) => item.providerPhone === providerPhone && item.role === input.role);
   if (!participant) return { authorized: false, reason: 'Provider is not a participant on this Economic Request' };
   if (['declined', 'withdrawn'].includes(participant.status)) return { authorized: false, reason: 'Participant is not eligible for execution' };
 
@@ -449,7 +449,10 @@ export async function dispatchExecutionRequest(id: string): Promise<ExecutionReq
   if (Object.prototype.hasOwnProperty.call(execution.authorizationContext, 'physical_execution')) {
     const { validatePhysicalExecutionAuthorizationAtDispatch } = await import('./physicalExecutionParticipant.js');
     const physicalAuthorization = await validatePhysicalExecutionAuthorizationAtDispatch(execution);
-    if (!physicalAuthorization.valid) return updateExecutionStatus(id, 'failed', { failureReason: `Physical execution authorization failed: ${physicalAuthorization.reason}` });
+    if (!physicalAuthorization.valid) {
+      const status = /authorization has expired/i.test(physicalAuthorization.reason) ? 'expired' : 'failed';
+      return updateExecutionStatus(id, status, { failureReason: `Physical execution authorization failed: ${physicalAuthorization.reason}` });
+    }
   }
   const actionTimeAuthorization = await authorizeProviderExecution({
     requestId: execution.requestId,

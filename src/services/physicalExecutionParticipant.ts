@@ -84,6 +84,11 @@ interface StoredExecutionProfile {
 const PARTICIPANT_TYPES = new Set<string>(PHYSICAL_EXECUTION_PARTICIPANT_TYPES);
 const ACTIONS = new Set<string>(PHYSICAL_EXECUTION_ACTIONS);
 const COMMUNICATION_METHODS = new Set<string>(PHYSICAL_COMMUNICATION_METHODS);
+
+/** Shared canonical action classification; it does not add a second execution vocabulary. */
+export function isPhysicalExecutionAction(value: unknown): value is PhysicalExecutionAction {
+  return typeof value === 'string' && ACTIONS.has(value);
+}
 const EVIDENCE_METHODS = new Set<string>(PHYSICAL_EVIDENCE_METHODS);
 
 const PARTICIPANT_TYPE_PROVIDER_TYPES: Record<PhysicalExecutionParticipantType, readonly ProviderEntityType[]> = {

@@ -2,13 +2,19 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import type { AddressInfo } from 'node:net';
+import jwt from 'jsonwebtoken';
 
 const dbPath = path.join(os.tmpdir(), `kurukoo-physical-execution-${process.pid}-${Date.now()}.sqlite`);
 process.env.DB_PATH = dbPath;
 process.env.NODE_ENV = 'production';
-process.env.JWT_SECRET = 'physical-execution-test-secret';
+process.env.JWT_SECRET = 'physical-execution-test-secret-0123456789';
 process.env.KURUKOO_PAY_PROVIDER = 'sandbox';
 process.env.KURUKOO_EXTERNAL_EXECUTION_ENABLED = 'false';
+process.env.KURUKOO_PERSISTENT_STATE_REQUIRED = 'false';
+process.env.KURUKOO_MAGIC_LINK_AUTH = 'false';
+process.env.KURUKOO_EXTERNAL_AUTO_ACTIVATE = 'false';
+process.env.KURUKOO_DISABLE_LISTEN = 'true';
 
 const { getDb, saveDb } = await import('../src/database.js');
 const { createEconomicRequest, getEconomicRequest } = await import('../src/services/skillFlows.js');
@@ -163,7 +169,9 @@ const alterPhysicalAuthorization = async (executionId: string, mutate: (physical
 
 const expiredAtDispatch = await createBoundedPhysicalExecution({ requestId, actorPhone: ownerPhone, providerPhone: courierPhone, role: 'delivery_provider', capability: 'delivery', actionRequested: 'deliver_package', actionId: 'expired-at-dispatch', idempotencyKey: 'physical-expired-dispatch-idempotency', correlationId: 'physical-expired-dispatch-correlation', authorizationScope });
 await alterPhysicalAuthorization(expiredAtDispatch.id, (physical) => ({ ...physical, authorization_expires_at: new Date(Date.now() - 60_000).toISOString() }));
-assert.match((await dispatchExecutionRequest(expiredAtDispatch.id)).failureReason || '', /authorization has expired/i, 'expired physical authorization must fail closed before dispatch');
+const expiredDispatch = await dispatchExecutionRequest(expiredAtDispatch.id);
+assert.equal(expiredDispatch.status, 'expired', 'expired physical authorization must become the canonical expired terminal state.');
+assert.match(expiredDispatch.failureReason || '', /authorization has expired/i, 'expired physical authorization must fail closed before dispatch');
 
 const wrongActionAtDispatch = await createBoundedPhysicalExecution({ requestId, actorPhone: ownerPhone, providerPhone: courierPhone, role: 'delivery_provider', capability: 'delivery', actionRequested: 'deliver_package', actionId: 'wrong-action-at-dispatch', idempotencyKey: 'physical-wrong-action-dispatch-idempotency', correlationId: 'physical-wrong-action-dispatch-correlation', authorizationScope });
 await alterPhysicalAuthorization(wrongActionAtDispatch.id, (physical) => ({ ...physical, allowed_actions: [] }));
@@ -232,6 +240,24 @@ await assert.rejects(
 );
 assert.equal((await getEconomicRequest(requestId))?.status, 'requested', 'physical execution must not create a second Economic Request lifecycle or fake completion');
 assert.equal((await getExecutionRequest(execution.id))?.status, 'succeeded');
+
+db.run('UPDATE memory_profiles SET phone_verified_at=CURRENT_TIMESTAMP WHERE phone=?', [ownerPhone]);
+const { app } = await import('../src/index.js');
+const server = app.listen(0, '127.0.0.1');
+await new Promise<void>((resolve, reject) => { server.once('listening', resolve); server.once('error', reject); });
+try {
+  const token = jwt.sign({ phone: ownerPhone, role: 'user' }, process.env.JWT_SECRET!, { algorithm: 'HS256' });
+  const response = await fetch(`http://127.0.0.1:${(server.address() as AddressInfo).port}/api/economic-requests/${requestId}/execution`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ providerPhone: courierPhone, capability: 'delivery', actionRequested: 'deliver_package', role: 'delivery_provider', idempotencyKey: 'physical-route-bypass' }),
+  });
+  const payload = await response.json() as { error?: string };
+  assert.equal(response.status, 409, 'The generic execution route must reject physical action names that lack the bounded physical authorization envelope.');
+  assert.match(payload.error || '', /bounded physical-execution authorization contract/i);
+} finally {
+  await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+}
 
 saveDb(true);
 try { fs.rmSync(dbPath, { force: true }); } catch { /* best-effort isolated cleanup */ }

@@ -60,6 +60,7 @@ Never use `COMPLETE`, `DONE`, `LIVE`, `READY`, `PRODUCTION`, or `VERIFIED` as a 
 | Voice STT | browser/client voice input + server Mistral transcription adapter | Implemented adapters; provider/browser availability must be verified separately. |
 | Notifications | canonical notification/push services | Implemented; delivery is runtime/provider-dependent. |
 | Quick Ride | `quickRideDispatchService` + `economicDispatchCoordinator` | Merged to `main`; repository implementation exists. Provider dispatch/payment/FCM/WebRTC remain external activation boundaries. |
+| Physical execution participant | `physicalExecutionParticipant` + `executionConnector` + canonical Economic Request participants | Foundation implemented as a typed extension of existing provider capability, dispatch, connector, authorization, evidence, communication, and notification owners. Repository contracts are tested; provider, vehicle, robot, drone, telemetry, location, and delivery activation remain external/unverified. |
 | Discover | canonical discovery services | Implemented; source/availability claims remain evidence-bound. |
 | Topics | canonical Topic services | Implemented/foundation depending on deployment surface. |
 | Student model | `ml/` + canonical AI runtime | Training foundation exists; a Kurukoo-trained production adapter is **not** assumed until evaluation/registry evidence proves it. |
@@ -67,6 +68,26 @@ Never use `COMPLETE`, `DONE`, `LIVE`, `READY`, `PRODUCTION`, or `VERIFIED` as a 
 ## 5. Locked Agent / communication foundation
 
 `docs/architecture/KURUKOO_OS_AGENT_FOUNDATION.md` records the locked direction for one user-facing Kurukoo Agent, contextual messaging/calling, reusable Chat composition, lightweight voice presence, zero-cost Web Speech output, explicit realtime voice, opt-in proactive briefs, cross-OS Memory use, the canonical relationship/follow primitive, and future agent-to-agent/autonomous execution. It is subordinate to this document and does not itself assert that future capabilities are live.
+
+## 5.1 Physical execution foundation
+
+Physical coordination remains one canonical path rather than a delivery platform:
+
+```text
+user → Kurukoo Agent → canonical capability → Economic Request
+     → selected existing provider/participant → execution connector
+     → progress/evidence → reviewed outcome → existing memory/notification/continuation
+```
+
+`physicalExecutionParticipant` extends an existing verified provider skill declaration with a generic participant type (`human_driver`, `courier`, `delivery_provider`, `robot_taxi`, `autonomous_vehicle`, `drone`, or `robotic_delivery_system`), declared actions, service-area metadata, transport and payload constraints, bounded capacity, communication methods, evidence methods, and pricing metadata. It does not introduce a provider directory, a delivery/robot/drone order, a request lifecycle, an identity system, or an autonomous hardware integration. Matching reuses canonical capability discovery and filters only existing provider identity, availability, verification, capability, and declared physical constraints.
+
+Physical actions are explicitly bounded to the canonical Economic Request, selected participant, declared capability/action, authorized connector, expiry, destination binding, safety-policy reference, and a caller-supplied minor-unit ceiling. The standard generic execution HTTP route rejects physical action names so external input cannot bypass this bounded contract. Dispatch rechecks the immutable request/destination binding, expiry, safety reference, provider availability, participant membership, and connector authorization immediately before connector invocation. An expired authorization reaches canonical terminal state `expired`; other failed checks fail closed. No retry loop, fleet manager, real-time tracking infrastructure, or automatic payment path is added.
+
+Execution state remains the existing connector state machine, not a second persisted vocabulary: `pending` projects as **authorized**, `dispatched` as **assigned**, `acknowledged` as **accepted**, in-progress evidence may project **en route**, **arrived**, **picked up**, or **delivered**, and `succeeded` projects as **evidence pending** until canonical evidence review verifies suitable evidence. A participant or connector completion statement is only unverified or pending-review evidence; it cannot directly create a verified outcome. Cancellation, expiry, disappearance, revocation, destination change, malformed callbacks, duplicate idempotency keys, and unavailable connectors fail closed under existing canonical boundaries.
+
+Location remains request/context data. The physical authorization record retains a one-way destination binding rather than raw address or coordinate values, and it does not make participant or user location public. Existing request-scoped provider communication sessions remain the only intended message, call, voice, or real-time communication owner. `quickRideDispatchService` already shapes taxi/bike/keke input into the same Economic Request plus `economicDispatchCoordinator` flow; future robot taxis or autonomous vehicles differ through participant capability, constraints, connector authorization, and evidence rather than a transport subsystem.
+
+Future external agents remain constrained by `externalAgentCoordination`: an external agent is an Economic Request `external_platform` participant with a revocable, owner-scoped capability grant and canonical connector. It may relay to a future physical participant, but cannot become a second Kurukoo, recursively delegate unlimited work, alter destination or payment scope, or convert a callback claim into completion. The repository contract is **VERIFIED** through simulated participants and an authenticated local HTTP boundary. Deployment/runtime and real-world robot, drone, vehicle, courier, location, telemetry, call, payment, FCM, or OS-delivery claims remain **UNVERIFIED** or **BLOCKED_EXTERNAL** until independently activated and evidenced.
 
 ## 6. Memory utilisation contract
 
