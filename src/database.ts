@@ -176,9 +176,34 @@ function initTables(database: any) {
     CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, phone TEXT, order_type TEXT, provider_phone TEXT, amount INTEGER, status TEXT, idempotency_key TEXT UNIQUE, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS economic_requests (id TEXT PRIMARY KEY, phone TEXT NOT NULL, skill TEXT NOT NULL, category TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'requested', requirements_json TEXT NOT NULL DEFAULT '{}', capabilities_json TEXT NOT NULL DEFAULT '[]', provider_phone TEXT, quote_json TEXT, fulfillment_json TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE INDEX IF NOT EXISTS idx_economic_requests_phone_status ON economic_requests(phone, status);
-    CREATE TABLE IF NOT EXISTS internal_notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL, link TEXT, status TEXT NOT NULL DEFAULT 'unread', delivery_state TEXT NOT NULL DEFAULT 'queued', provider_reference TEXT, failure_reason TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+    CREATE TABLE IF NOT EXISTS internal_notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL, link TEXT, status TEXT NOT NULL DEFAULT 'unread', delivery_state TEXT NOT NULL DEFAULT 'queued', provider_reference TEXT, failure_reason TEXT, attempt_count INTEGER NOT NULL DEFAULT 0, max_attempts INTEGER NOT NULL DEFAULT 3, next_attempt_at TEXT, last_attempt_at TEXT, dead_lettered_at TEXT, context_id TEXT, conversation_id TEXT, available_action TEXT, surface TEXT, canonical_action TEXT, object_type TEXT, object_id TEXT, owner_scope TEXT, idempotency_key TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE INDEX IF NOT EXISTS idx_internal_notifications_phone_status ON internal_notifications(phone, status);
     CREATE INDEX IF NOT EXISTS idx_internal_notifications_delivery_state ON internal_notifications(delivery_state);
+    CREATE TABLE IF NOT EXISTS relationships (
+      id TEXT PRIMARY KEY,
+      actor_phone TEXT NOT NULL,
+      target_type TEXT NOT NULL,
+      target_id TEXT NOT NULL,
+      relationship_type TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','revoked','suppressed')),
+      notification_preference TEXT NOT NULL DEFAULT 'all' CHECK(notification_preference IN ('all','muted')),
+      visibility TEXT NOT NULL DEFAULT 'private' CHECK(visibility IN ('private','contextual')),
+      context_json TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      revoked_at TEXT,
+      UNIQUE(actor_phone, target_type, target_id, relationship_type)
+    );
+    CREATE INDEX IF NOT EXISTS idx_relationships_actor_status ON relationships(actor_phone, status, updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_relationships_target_status ON relationships(target_type, target_id, status, relationship_type);
+    CREATE INDEX IF NOT EXISTS idx_relationships_type_status ON relationships(relationship_type, status, updated_at DESC);
+    CREATE TABLE IF NOT EXISTS relationship_blocks (
+      blocker_phone TEXT NOT NULL,
+      blocked_phone TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY(blocker_phone, blocked_phone)
+    );
+    CREATE INDEX IF NOT EXISTS idx_relationship_blocks_blocked ON relationship_blocks(blocked_phone, blocker_phone);
     CREATE TABLE IF NOT EXISTS trust_score_ledger (id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT NOT NULL, score REAL NOT NULL, breakdown_json TEXT NOT NULL, reason TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE INDEX IF NOT EXISTS idx_trust_score_ledger_phone ON trust_score_ledger(phone, created_at DESC);
     CREATE TABLE IF NOT EXISTS ad_campaigns (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, desc TEXT, image_url TEXT, target_keyword TEXT, credits_budget INTEGER, credits_spent INTEGER DEFAULT 0, status TEXT DEFAULT 'active', campaign_type TEXT DEFAULT 'external', disclosure TEXT DEFAULT 'Sponsored', advertiser_name TEXT DEFAULT '', first_party INTEGER DEFAULT 0, cta_text TEXT DEFAULT 'Learn more', destination TEXT DEFAULT '/chat', placement TEXT DEFAULT 'public_discovery', category TEXT DEFAULT 'community', country TEXT DEFAULT 'NG', region TEXT DEFAULT '', start_at TEXT, expires_at TEXT, frequency_cap INTEGER DEFAULT 3, priority INTEGER DEFAULT 0, targeting TEXT DEFAULT '{}', impressions INTEGER DEFAULT 0, clicks INTEGER DEFAULT 0, created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP);
@@ -263,6 +288,7 @@ function initTables(database: any) {
     );
   `);
   for (const migration of [
+    "ALTER TABLE memory_profiles ADD COLUMN relationship_visibility TEXT NOT NULL DEFAULT 'private'",
     'ALTER TABLE micro_tasks ADD COLUMN source_type TEXT',
     'ALTER TABLE micro_tasks ADD COLUMN source_id TEXT',
     'ALTER TABLE micro_tasks ADD COLUMN verification_kind TEXT',

@@ -17,9 +17,9 @@ Every item can hand the exact context into canonical Chat. Discover does not exe
 
 ## Actions
 
-Discover supports persistent `watch`, `follow` and `save` actions through `discover_interests`. These are owner-scoped and do not themselves create a booking, payment, provider claim or completed outcome.
+Discover retains persistent `watch` and `save` actions through `discover_interests`. `follow` delegates to the canonical `relationshipService` and `relationships` primitive, which carries the owner-private actor → relationship → target lifecycle across eligible public/shared targets. None of these actions creates a booking, payment, provider claim, communication permission, completed outcome, or social feed.
 
-`watch` is intended to become the user-facing bridge to agent/background monitoring: price changes, availability, replies, event changes and other future conditions can be attached to the same persisted interest without creating a second task system.
+`watch` is intended to become the user-facing bridge to agent/background monitoring: price changes, availability, replies, event changes and other future conditions can be attached to the same persisted interest without creating a second task system. Follow updates use the existing internal notification service and are cancelled/suppressed when the actor unfollows or a target becomes unavailable.
 
 ## Ranking and truth
 
@@ -38,8 +38,8 @@ Providers ────┤
 Opportunities ┤
 Offers/Ads ───┤
 Skills ───────┤──> Discover composer ──> Chat / Watch / Follow / Save / Act
-Agents ───────┤
-Capabilities ─┘
+Agents ───────┤                              │
+Capabilities ─┘                              └──> canonical relationship service (Follow only) → existing Notifications / Context
 ```
 
 The composer is intentionally thin. It reuses existing authorities instead of introducing a new provider directory, marketplace, agent runtime, payment engine or social graph.

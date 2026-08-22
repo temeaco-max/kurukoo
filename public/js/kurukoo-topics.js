@@ -87,12 +87,52 @@
     }); return button;
   }
 
+  async function relationshipControls(topic) {
+    try { await api('/api/auth/me'); } catch { return null; }
+    const group = node('span', 'topic-relationship-actions');
+    const follow = node('button', 'btn btn-ghost', 'Follow'); follow.type = 'button';
+    const mute = node('button', 'btn btn-ghost', 'Mute updates'); mute.type = 'button'; mute.hidden = true;
+    let relationship = null;
+    try { relationship = (await api(`/api/relationships/topic/${encodeURIComponent(topic.id)}`)).relationship; } catch (error) { console.warn('Relationship state unavailable', error); }
+    const render = () => {
+      const following = Boolean(relationship);
+      const muted = relationship?.notificationPreference === 'muted';
+      follow.textContent = following ? 'Unfollow' : 'Follow';
+      mute.hidden = !following;
+      mute.textContent = muted ? 'Unmute updates' : 'Mute updates';
+      mute.setAttribute('aria-pressed', muted ? 'true' : 'false');
+    };
+    follow.addEventListener('click', async () => {
+      follow.disabled = true; mute.disabled = true;
+      try {
+        if (relationship) {
+          await api(`/api/relationships/topic/${encodeURIComponent(topic.id)}`, { method:'DELETE' }); relationship = null;
+        } else {
+          relationship = (await api('/api/relationships', { method:'POST', body:JSON.stringify({ targetType:'topic', targetId:topic.id, relationshipType:'follow' }) })).relationship;
+        }
+        render();
+      } catch (error) { window.alert(error instanceof Error ? error.message : 'Unable to update follow status'); }
+      finally { follow.disabled = false; mute.disabled = false; }
+    });
+    mute.addEventListener('click', async () => {
+      if (!relationship) return;
+      follow.disabled = true; mute.disabled = true;
+      try {
+        const nextPreference = relationship.notificationPreference === 'muted' ? 'all' : 'muted';
+        relationship = (await api(`/api/relationships/topic/${encodeURIComponent(topic.id)}/preferences`, { method:'PATCH', body:JSON.stringify({ relationshipType:'follow', notificationPreference:nextPreference }) })).relationship;
+        render();
+      } catch (error) { window.alert(error instanceof Error ? error.message : 'Unable to update notification preference'); }
+      finally { follow.disabled = false; mute.disabled = false; }
+    });
+    render(); group.append(follow, mute); return group;
+  }
+
   async function loadDetail() {
     const slug = root.dataset.topicSlug; const detail = byId('topic-detail'); if (!slug || !detail) return;
     try {
       const { topic } = await api(`/api/topics/${encodeURIComponent(slug)}`); detail.replaceChildren(); byId('topic-breadcrumb-title').textContent = topic.title;
       const meta = node('div', 'topic-meta'); meta.append(node('span', 'topic-tag', pretty(topic.type))); if (topic.category) meta.append(node('span', null, pretty(topic.category))); if (topic.city) meta.append(node('span', null, topic.city)); meta.append(node('span', null, `Published ${date(topic.publishedAt || topic.createdAt)}`));
-      const actionRow = node('div', 'topic-detail-actions'); const chat = node('a', 'btn btn-primary', 'Discuss with Kurukoo'); chat.href = `/chat?topic=${encodeURIComponent(topic.slug)}`; actionRow.append(chat, reportButton(topic));
+      const actionRow = node('div', 'topic-detail-actions'); const chat = node('a', 'btn btn-primary', 'Discuss with Kurukoo'); chat.href = `/chat?topic=${encodeURIComponent(topic.slug)}`; actionRow.append(chat); const controls = await relationshipControls(topic); if (controls) actionRow.append(controls); actionRow.append(reportButton(topic));
       detail.append(meta, node('h1', null, topic.title), node('p', 'topic-detail-body', topic.body), actionRow);
       if (Array.isArray(topic.relatedResources) && topic.relatedResources.length) {
         const resources = node('section', 'topic-related-resources'); resources.append(node('h2', null, 'Related Kurukoo resources'));

@@ -49,6 +49,7 @@ Never use `COMPLETE`, `DONE`, `LIVE`, `READY`, `PRODUCTION`, or `VERIFIED` as a 
 | Context arbitration | `contextArbitration` | Implemented; repository-tested. |
 | Conversation memory context | `conversationContextPackService` + `memoryProfile` | Implemented and integrated into conversational generation; carries owner-scoped identity, preferences, stable facts and recent thread context with provenance safeguards. |
 | Identity | authenticated user + `memory_profiles` | Implemented; external identity-provider activation remains deployment-specific. |
+| Relationships / Follow | `relationshipService` + `relationships`; Discover delegates Follow actions to this owner | Implemented as an owner-private, generic relationship primitive. It validates eligible public/shared targets, remains independent from authorization/contact/safety state, and reuses canonical notifications. Runtime verification remains required for each user journey. |
 | Memory | `memoryProfile` + `livingMemoryEngine` | Implemented as a cross-OS capability; self-service/revocation and provenance exist. Broader product opportunities remain, but no second memory system should be created. |
 | Economic Request | canonical Economic Request lifecycle in `skillFlows` and related services | Implemented; real-world fulfilment is external/provider-dependent. |
 | Provider communication | request-scoped provider communication/session boundary | Implemented; WebRTC/PSTN activation is external. |
@@ -64,7 +65,7 @@ Never use `COMPLETE`, `DONE`, `LIVE`, `READY`, `PRODUCTION`, or `VERIFIED` as a 
 
 ## 5. Locked Agent / communication foundation
 
-`docs/architecture/KURUKOO_OS_AGENT_FOUNDATION.md` records the locked future direction for one user-facing Kurukoo Agent, contextual messaging/calling, reusable Chat composition, lightweight voice presence, zero-cost Web Speech output, explicit realtime voice, opt-in proactive briefs, cross-OS Memory use, future relationship/follow primitives and future agent-to-agent/autonomous execution. It is subordinate to this document and does not itself assert that future capabilities are live.
+`docs/architecture/KURUKOO_OS_AGENT_FOUNDATION.md` records the locked direction for one user-facing Kurukoo Agent, contextual messaging/calling, reusable Chat composition, lightweight voice presence, zero-cost Web Speech output, explicit realtime voice, opt-in proactive briefs, cross-OS Memory use, the canonical relationship/follow primitive, and future agent-to-agent/autonomous execution. It is subordinate to this document and does not itself assert that future capabilities are live.
 
 ## 6. Memory utilisation contract
 

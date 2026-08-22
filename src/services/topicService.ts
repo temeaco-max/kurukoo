@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { getDb, saveDb } from '../database.js';
 import { ECONOMIC_CATEGORIES, getEconomicCategory, getKnownSkills } from './skillFlows.js';
 import { addRedirect } from './seoService.js';
+import { notifyRelationshipTargetUpdate, revokeRelationshipsForTarget } from './relationshipService.js';
 
 /**
  * Topics are a deliberately small durable-content authority. They are not a
@@ -248,7 +249,8 @@ export async function removeTopic(authorPhone: string, id: string) {
   if (!current) throw new Error('Topic not found');
   if (String(current.author_phone) !== authorPhone) throw new Error('Topic ownership is required');
   const statement = db.prepare(`UPDATE topics SET status='removed', updated_at=CURRENT_TIMESTAMP WHERE id=?`);
-  statement.bind([id]); statement.step(); statement.free(); saveDb();
+  statement.bind([id]); statement.step(); statement.free();
+  await revokeRelationshipsForTarget('topic', id, 'topic_removed');
   return { id, removed: true };
 }
 
@@ -424,7 +426,13 @@ export async function moderateTopic(id: string, input: TopicModerationInput) {
   const current = existingTopicById(db, id); if (!current) throw new Error('Topic not found');
   const statement = db.prepare(`UPDATE topics SET status=?, moderation_note=?, published_at=CASE WHEN ?='public' THEN COALESCE(published_at, CURRENT_TIMESTAMP) ELSE published_at END, updated_at=CURRENT_TIMESTAMP WHERE id=?`);
   statement.bind([decision, note, decision, id]); statement.step(); statement.free(); saveDb();
-  const updated = existingTopicById(db, id); return updated ? parseTopic(updated, true) : null;
+  const updated = existingTopicById(db, id);
+  if (decision === 'public' && updated) {
+    await notifyRelationshipTargetUpdate('topic', id, { title: 'A Topic you follow changed', body: 'A Topic you follow is available with a new status or moderated update.', link: `/topics/${encodeURIComponent(String(updated.slug))}`, signature: `topic:${id}:${String(updated.updated_at)}` });
+  } else if (decision !== 'public') {
+    await revokeRelationshipsForTarget('topic', id, 'topic_no_longer_public');
+  }
+  return updated ? parseTopic(updated, true) : null;
 }
 
 export async function listSubmittedReplies(limit = 100) {
@@ -444,7 +452,11 @@ export async function moderateReply(id: string, input: TopicModerationInput) {
   if (db.getRowsModified() !== 1) throw new Error('Reply not found');
   saveDb();
   const result = db.prepare(`SELECT id, topic_id, author_phone, body, status, moderation_note, created_at, updated_at FROM topic_replies WHERE id=? LIMIT 1`);
-  result.bind([id]); const row = result.step() ? result.getAsObject() : null; result.free(); return row ? parseReply(row, true) : null;
+  result.bind([id]); const row = result.step() ? result.getAsObject() : null; result.free();
+  if (row && decision === 'public') {
+    await notifyRelationshipTargetUpdate('topic', String((row as any).topic_id), { title: 'A Topic you follow changed', body: 'There is new moderated activity on a Topic you follow.', link: `/chat?prompt=${encodeURIComponent('Review the new moderated activity on a Topic I follow')}`, signature: `topic-reply:${String((row as any).topic_id)}:${String((row as any).updated_at)}` });
+  }
+  return row ? parseReply(row, true) : null;
 }
 
 export async function listTopicReports(limit = 100) {
