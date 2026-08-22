@@ -1005,6 +1005,23 @@
     if (card.type === 'intent_suggestions') return renderSuggestions(card.suggestions, messageEl, card.sponsored);
     if (card.type === 'ai_metadata') return updateModelStatus(card);
     if (card.type === 'agent_brief') {
+      const recoverBriefAction = item => {
+        const existing = item?.action;
+        if (existing?.canonicalAction && existing?.objectType && existing?.objectId) return existing;
+        const stableRef = String(item?.stableRef || '');
+        const match = stableRef.match(/^(economic_request|task|reminder|agent_goal|notification):(.+)$/);
+        if (!match) return null;
+        const [, objectType, objectId] = match;
+        const canonicalActionByType = {
+          economic_request: 'economic_request.open',
+          task: 'task.open',
+          reminder: 'reminder.open',
+          agent_goal: 'agent.goal.review',
+          notification: 'notification.open',
+        };
+        const canonicalAction = canonicalActionByType[objectType];
+        return canonicalAction ? { id: `open_${objectType}`, label: objectType === 'agent_goal' ? 'Open objective' : 'Open update', canonicalAction, objectType, objectId } : null;
+      };
       const holder = makeElement('section', 'provider-card agent-brief-card');
       holder.setAttribute('aria-label', 'Kurukoo brief');
       holder.appendChild(makeElement('strong', '', 'What matters now'));
@@ -1012,7 +1029,7 @@
       const items = Array.isArray(card.items) ? card.items.filter(item => item?.attention !== 'SILENT').slice(0, 6) : [];
       if (!items.length) list.appendChild(makeElement('div', 'deferred', 'No active items need attention.'));
       items.forEach(item => {
-        const action = item?.action;
+        const action = recoverBriefAction(item);
         const canResume = action?.canonicalAction && action?.objectType && action?.objectId;
         const row = makeElement(canResume ? 'button' : 'div', 'inspector-list-row');
         if (canResume) {
@@ -1027,7 +1044,8 @@
               objectType: String(action.objectType),
               objectId: String(action.objectId),
             };
-            void sendMessage(`Open ${String(action.label || 'this update')}.`);
+            const target = String(action.objectType || 'update').replaceAll('_', ' ');
+            void sendMessage(`Open this ${target}.`);
           });
         }
         row.appendChild(makeElement('span', '', String(item.summary || 'Kurukoo update')));

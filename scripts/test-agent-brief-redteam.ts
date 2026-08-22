@@ -23,6 +23,7 @@ const { createConversationGoal, getAgentGoal } = await import('../src/services/a
 const { sendFcmPush } = await import('../src/services/pushNotifications.js');
 const { buildAgentBrief, classifyAgentBriefAttention, enqueueAgentBriefNotification, resolveAgentBriefPreferences } = await import('../src/services/agentBriefService.js');
 const { processCanonicalChatTurn } = await import('../src/services/canonicalChatTurnService.js');
+const chatSurface = fs.readFileSync(path.resolve('public/js/kurukoo-primary-chat.js'), 'utf8');
 
 const ownerA = '+2348091000001';
 const ownerB = '+2348091000002';
@@ -72,6 +73,9 @@ assert.equal(briefA.items.some(item => /owner b|repair b|B_ONLY_MEMORY/i.test(`$
 assert.equal(briefB.items.some(item => /owner a|repair a/i.test(`${item.summary} ${item.stableRef}`)), false, 'Owner B must never receive Owner A canonical state.');
 assert.equal(briefA.items.some(item => /Sensitive provider communication|0800-PRIVATE|personal details/i.test(item.summary)), false, 'Sensitive provider communication must be filtered before server-side brief presentation.');
 assert.equal(briefA.presentation.text.includes('B_ONLY_MEMORY_NEVER_SURFACE'), false, 'Arbitrary sensitive Memory Profile data must not surface in brief text.');
+assert.match(chatSurface, /recoverBriefAction/, 'Persisted Agent Brief cards must recover registered actions from stable canonical references.');
+assert.match(chatSurface, /economic_request\.open[\s\S]*task\.open[\s\S]*reminder\.open[\s\S]*agent\.goal\.review[\s\S]*notification\.open/, 'Legacy brief action recovery must remain limited to registered canonical read-only continuations.');
+assert.match(chatSurface, /Open this \$\{target\}\./, 'Exact-item continuation should use a concise user-facing prompt without duplicating action labels.');
 const continuationExpectations = [
   { stableRef: `economic_request:${requestA.id}`, canonicalAction: 'economic_request.open', objectType: 'economic_request', objectId: requestA.id },
   { stableRef: `reminder:${reminderA.id}`, canonicalAction: 'reminder.open', objectType: 'reminder', objectId: reminderA.id },
@@ -117,6 +121,12 @@ const server = app.listen(0, '127.0.0.1');
 await new Promise<void>((resolve, reject) => { server.once('listening', resolve); server.once('error', reject); });
 const baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 try {
+  const chatAsset = await fetch(`${baseUrl}/js/kurukoo-primary-chat.js?v=21`);
+  assert.equal(chatAsset.headers.get('cache-control'), 'no-cache, must-revalidate', 'Mutable Chat runtime assets must require browser revalidation after deployment.');
+  const chatPage = await fetch(`${baseUrl}/chat/`);
+  assert.match(await chatPage.text(), /kurukoo-primary-chat\.js\?v=21/, 'The served Chat page must point to the current Agent Brief client version.');
+  const serviceWorker = await fetch(`${baseUrl}/sw.js`);
+  assert.match(await serviceWorker.text(), /kurukoo-primary-chat\.js\?v=21/, 'The offline shell must point to the current Agent Brief client version.');
   const guest = await fetch(`${baseUrl}/api/agent/brief`);
   assert.equal(guest.status, 401, 'Guests must receive only non-authenticated behavior from the brief route.');
   const responseA = await fetch(`${baseUrl}/api/agent/brief`, { headers: headers(ownerA) });
