@@ -10,9 +10,10 @@ User/channel → canonical Chat or Discover → conversation act / AI routing �
 
 | Capability | Must connect to | Canonical authority |
 |---|---|---|
+| Outcome Context | Economic Request, dispatch, provider communication, Points, journey events, notifications, web/mobile/Chat | `outcomeContextService`, `platformJourneyWeaver` |
 | Discover | Topics, Providers, Products, Offers, Opportunities, Agent Network, Ad Manager, Chat, Watch | `discoverExperience`, `discoverCommercialComposition`, `discoveryNetwork` |
 | Products | Provider/business/WhatsApp/store/affiliate sources, Discover, Chat cards, Economic Requests | `catalogueSourceRegistry`, `catalogueInventoryMatcher` |
-| Provider lead | Economic Request match, provider subscription, Points, Commercial Ledger, provider notification | `orderFinalizer`, `pointsEngine`, `commercialLedger` |
+| Provider lead | Economic Request match, provider subscription, Points, Commercial Ledger, provider notification | `economicDispatchCoordinator`, `orderFinalizer`, `pointsEngine`, `commercialLedger` |
 | POS/agent top-up | Agent identity, verified payment evidence, Points, commission, Commercial Ledger, Discover | `agentNetworkCommerce`, `stripe*webhook`, `pointsEngine` |
 | Provider communication | Economic Request, WebRTC messaging/voice/location, Trickbridge, notification, masked-PSTN fallback | `providerCommunicationService` |
 | Ride/delivery dispatch | broadcast, provider acceptance/lead charge, arrived, live location, pickup/drop-off, completion, review, next availability | `economicDispatchCoordinator`, `serviceReviewService` |
