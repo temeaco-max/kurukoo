@@ -1,0 +1,83 @@
+/* Chat Screen Convergence Phase 2 — scoped interaction geometry only.
+   This is not a second Chat renderer or visual system; it is a final Chat-only
+   contract layer over the existing canonical Chat stylesheet. */
+.chat-shell .icon-btn,
+.chat-shell .header-cart-link,
+.chat-shell .points-balance,
+.chat-shell .message-actions button,
+.chat-shell .message-action-btn,
+.chat-shell .composer-btn,
+.chat-shell .send-btn,
+.chat-shell .quick-actions button,
+.chat-shell .composer-quick-actions button,
+.chat-shell .suggestion-btn,
+.chat-shell .history-item,
+.chat-shell .workspace-link,
+.chat-shell .sidebar-link,
+.chat-shell .sidebar-more-toggle,
+.chat-shell .inspector-menu-link,
+.chat-shell .primary-btn {
+  min-height: 44px;
+}
+
+.chat-shell .icon-btn,
+.chat-shell .header-cart-link,
+.chat-shell .message-actions button,
+.chat-shell .message-action-btn,
+.chat-shell .composer-btn,
+.chat-shell .send-btn {
+  min-width: 44px;
+  width: auto;
+}
+
+.chat-shell .icon-btn,
+.chat-shell .message-action-btn,
+.chat-shell .composer-btn,
+.chat-shell .send-btn {
+  height: 44px;
+}
+
+.chat-shell .message-actions button,
+.chat-shell .message-action-btn {
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 10px;
+}
+
+.chat-shell .quick-actions button,
+.chat-shell .composer-quick-actions button,
+.chat-shell .suggestion-btn {
+  min-height: 44px;
+  padding-block: 10px;
+}
+
+@media (max-width: 760px) {
+  .chat-shell .icon-btn,
+  .chat-shell .header-cart-link,
+  .chat-shell .message-action-btn,
+  .chat-shell .composer-btn,
+  .chat-shell .send-btn,
+  .chat-shell .primary-btn {
+    min-height: 44px;
+    min-width: 44px;
+    height: 44px;
+  }
+
+  .chat-shell .message-actions button,
+  .chat-shell .message-action-btn,
+  .chat-shell .history-item,
+  .chat-shell .workspace-link,
+  .chat-shell .sidebar-link {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-shell .message-actions button,
+  .chat-shell .message-action-btn,
+  .chat-shell .composer-btn,
+  .chat-shell .send-btn {
+    transition: none;
+  }
+}
