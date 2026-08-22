@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import dotenv from 'dotenv';
+import { assertProductionPersistenceSafe } from './services/persistenceReadiness.js';
 dotenv.config();
 const production = process.env.NODE_ENV === 'production';
 const databaseMode = String(process.env.KURUKOO_DATABASE_MODE || 'sqljs').trim().toLowerCase();
@@ -8,6 +9,7 @@ const applicationWorkers = Number(process.env.KURUKOO_WORKERS || 1);
 const persistentStateRequired = process.env.KURUKOO_PERSISTENT_STATE_REQUIRED !== 'false';
 const magicLinkEnabled = String(process.env.KURUKOO_MAGIC_LINK_AUTH || 'true').toLowerCase() !== 'false';
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) { if (production) throw new Error('[Kurukoo Startup] JWT_SECRET must be configured with at least 32 characters in production.'); process.env.JWT_SECRET = crypto.randomBytes(32).toString('hex'); console.warn('[Kurukoo Startup] JWT_SECRET is absent; using an ephemeral development-only secret. Configure JWT_SECRET before deployment.'); }
+assertProductionPersistenceSafe(process.env);
 if (production && databaseMode === 'sqljs' && applicationWorkers > 1) throw new Error('[Kurukoo Startup] SQL.js is single-process. KURUKOO_WORKERS must remain 1 until an approved multi-process database adapter is active.');
 if (production && databaseMode === 'postgres' && !process.env.DATABASE_URL) throw new Error('[Kurukoo Startup] KURUKOO_DATABASE_MODE=postgres requires DATABASE_URL.');
 if (production && jobMode === 'distributed' && !process.env.KURUKOO_REDIS_URL) throw new Error('[Kurukoo Startup] KURUKOO_JOB_MODE=distributed requires KURUKOO_REDIS_URL.');
@@ -101,7 +103,7 @@ app.use(express.json({limit:process.env.CHAT_ATTACHMENT_BODY_LIMIT||'35mb',verif
 app.use('/',systemRoutes); app.use('/',authChallengePublicRoutes); app.use('/',mcpAppRoutes);
 app.use('/api/v1',apiV1Bridge);
 app.use('/api',channelRoutes); app.use('/api',circleRoutes); app.use('/api/economic-requests',economicRequestRouter); app.use('/api/admin/platform',adminPlatformRoutes);
-app.use('/api/admin',adminDisputeRoutes); app.use('/api/admin',adminRoutes); app.use('/api/admin',adminFcmRoutes); app.use('/api/admin/cline',adminClineRoutes); app.use('/api/admin',adminProviderVerificationRoutes);
+app.use('/api/admin',adminDisputeRoutes); app.use('/api/admin',adminRoutes); app.use('/api/admin',adminFcmRoutes); app.use('/api/admin',adminClineRoutes); app.use('/api/admin',adminProviderVerificationRoutes);
 app.use('/api',stripeAgentPointsWebhookRoutes); app.use('/api',paymentRoutes); app.use('/api',userRoutes); app.use('/api/auth',authRoutes); app.use('/api',providerVerificationRoutes);
 app.use('/api/advertising',authenticatedAdvertisingRoutes);
 app.use('/api/chat',...prayerChatMiddleware); app.use('/api/chat',chatRouter); app.use('/api/prayer',prayerRoutes); app.use('/api/capabilities',capabilityPortfolioRoutes);
