@@ -87,6 +87,72 @@
     }
   };
 
+  const loadTasks = async () => {
+    const list = qs('[data-tasks-list]');
+    if (!list) return [];
+    const taskStatus = (task) => String(task.status || 'available').toLowerCase();
+    const taskTitle = (task) => String(task.title || task.name || `Task ${task.id || ''}`).trim() || 'Task';
+    const taskContextHref = (task) => {
+      const sourceType = String(task.sourceType || task.source_type || '').toLowerCase();
+      const sourceId = task.sourceId || task.source_id;
+      if (sourceType === 'topic' && sourceId) return `/topics/${encodeURIComponent(String(sourceId))}`;
+      return `/chat?prompt=${encodeURIComponent(`Open my ${taskTitle(task)} context`)}`;
+    };
+    const taskDetail = (task) => {
+      const sourceType = String(task.sourceType || task.source_type || '').trim();
+      const sourceId = task.sourceId || task.source_id;
+      const source = sourceType ? `Source: ${humanize(sourceType)}${sourceId ? ` #${sourceId}` : ''}.` : '';
+      const body = task.description || task.instructions || (task.due_at || task.dueAt ? `Due ${formatDate(task.due_at || task.dueAt)}.` : 'Review the underlying work and evidence in its originating context.');
+      return [body, source].filter(Boolean).join(' ');
+    };
+    try {
+      const payload = await api('/api/tasks');
+      const tasks = Array.isArray(payload) ? payload : (Array.isArray(payload.tasks) ? payload.tasks : []);
+      const metricStatuses = { available: 'available', progress: 'in_progress', completed: 'completed' };
+      const order = { available: 0, in_progress: 1, completed: 3 };
+      const sortedTasks = [...tasks].sort((left, right) => (order[taskStatus(left)] ?? 2) - (order[taskStatus(right)] ?? 2));
+      clear(list);
+      qsa('[data-task-metric]').forEach((node) => {
+        const metric = node.getAttribute('data-task-metric');
+        node.textContent = String(tasks.filter((task) => taskStatus(task) === metricStatuses[metric]).length);
+      });
+      sortedTasks.forEach((task) => {
+        const status = taskStatus(task);
+        let action;
+        if (task.id && status === 'available') {
+          action = document.createElement('button');
+          action.type = 'button';
+          action.className = 'workspace-text-action';
+          action.textContent = 'Accept task';
+          action.setAttribute('aria-label', `Accept ${taskTitle(task)}`);
+          action.addEventListener('click', async () => {
+            action.disabled = true;
+            try { await api('/api/tasks/accept', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ taskId: task.id }) }); await loadTasks(); }
+            catch (_) { action.disabled = false; action.textContent = 'Could not accept — retry'; }
+          });
+        } else {
+          action = document.createElement('a');
+          action.className = 'workspace-text-action';
+          action.href = taskContextHref(task);
+          action.textContent = status === 'in_progress' ? 'Continue task context' : 'Open source context';
+          action.setAttribute('aria-label', `${action.textContent}: ${taskTitle(task)}`);
+        }
+        list.appendChild(makeDataCard({ eyebrow: humanize(task.category || task.kind || 'Task'), title: taskTitle(task), detail: taskDetail(task), state: humanize(status), action }));
+      });
+      list.setAttribute('aria-busy', 'false');
+      setEmpty('[data-tasks-empty]', tasks.length === 0);
+      setEmpty('[data-tasks-error]', false);
+      return tasks;
+    } catch (_) {
+      list.setAttribute('aria-busy', 'false');
+      clear(list);
+      qsa('[data-task-metric]').forEach((node) => { node.textContent = '—'; });
+      setEmpty('[data-tasks-empty]', false);
+      setEmpty('[data-tasks-error]', true);
+      return [];
+    }
+  };
+
   const cancelReminder = async (id, button) => {
     button.disabled = true;
     try { await api(`/api/reminders/${encodeURIComponent(id)}/cancel`, { method: 'POST' }); await loadReminders(); }
@@ -433,7 +499,7 @@
   if (localStorage.getItem('kurukoo_proactive_dismissed') === '1') qs('[data-proactive-card]')?.setAttribute('hidden', '');
 
   const params = new URLSearchParams(window.location.search); const prompt = params.get('prompt'); if (prompt && input) window.requestAnimationFrame(() => seedPrompt(prompt));
-  if (section === 'requests') loadRequests(); if (section === 'reminders') loadReminders(); if (section === 'points') loadPoints(); if (section === 'safety') loadSafety(); if (section === 'daily-picks') loadDailyPicks(); if (section === 'cart') loadCart(); if (section === 'confirmation') loadConfirmation(); if (section === 'connect') { loadArtifacts(); loadGoogleSheetsSource(); loadNotionSource(); loadMicrosoftSource(); }
+  if (section === 'requests') loadRequests(); if (section === 'tasks') loadTasks(); if (section === 'reminders') loadReminders(); if (section === 'points') loadPoints(); if (section === 'safety') loadSafety(); if (section === 'daily-picks') loadDailyPicks(); if (section === 'cart') loadCart(); if (section === 'confirmation') loadConfirmation(); if (section === 'connect') { loadArtifacts(); loadGoogleSheetsSource(); loadNotionSource(); loadMicrosoftSource(); }
 
   loadConnectedResources();
 })();

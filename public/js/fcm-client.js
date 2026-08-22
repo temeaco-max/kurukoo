@@ -142,7 +142,7 @@
   const loadAppAssets = () => {
     if (!document.body?.classList.contains('k-app-page')) return;
     const assets = [
-      ['kurukoo-app-convergence', '/js/kurukoo-app-convergence.js?v=3'],
+      ['kurukoo-app-convergence', '/js/kurukoo-app-convergence.js?v=tasks1'],
       ['kurukoo-app-extensions', '/js/kurukoo-app-extensions.js?v=1'],
     ];
 
@@ -151,7 +151,7 @@
       const script = document.createElement('script');
       script.src = src;
       script.defer = true;
-      script.dataset[marker] = '';
+      script.setAttribute(`data-${marker}`, '');
       document.head.appendChild(script);
     }
   };

@@ -6,7 +6,7 @@
 import { Router } from 'express';
 import { authenticateAdmin, authenticateUser, AuthRequest } from '../middleware/auth.js';
 import { bookAppointment } from '../services/appointmentService.js';
-import { createTopicVerificationTask, getAvailableTasks, acceptTask, completeTask, moderateTopicVerificationTask } from '../services/microTasks.js';
+import { createTopicVerificationTask, getAvailableTasks, acceptTask, completeTask, moderateTopicVerificationTask, TaskStateConflictError } from '../services/microTasks.js';
 
 const router = Router();
 
@@ -17,6 +17,12 @@ function sessionPhone(req: AuthRequest): string | null {
 function positiveInteger(value: unknown): number | null {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function taskStateError(res: any, error: unknown, fallback: string) {
+  const message = error instanceof Error ? error.message : fallback;
+  const status = error instanceof TaskStateConflictError ? error.statusCode : 500;
+  res.status(status).json({ error: message || fallback });
 }
 
 router.post('/admin/tasks/topic-verification', authenticateAdmin, async (req: AuthRequest, res) => {
@@ -81,10 +87,10 @@ router.post('/tasks/accept', authenticateUser, async (req: AuthRequest, res) => 
   const taskId = positiveInteger(req.body?.taskId ?? req.body?.task_id);
   if (!taskId) return res.status(400).json({ error: 'A positive taskId is required' });
   try {
-    await acceptTask(phone, taskId);
-    res.json({ success: true });
-  } catch {
-    res.status(500).json({ error: 'Failed to accept task' });
+    const task = await acceptTask(phone, taskId);
+    res.json({ success: true, task });
+  } catch (error) {
+    taskStateError(res, error, 'Failed to accept task');
   }
 });
 
@@ -100,8 +106,8 @@ router.post('/tasks/complete', authenticateUser, async (req: AuthRequest, res) =
   try {
     const response = await completeTask(phone, taskId, result);
     res.status((response as any).sourceType === 'topic' ? 201 : 200).json(response);
-  } catch {
-    res.status(500).json({ error: 'Failed to complete task' });
+  } catch (error) {
+    taskStateError(res, error, 'Failed to complete task');
   }
 });
 

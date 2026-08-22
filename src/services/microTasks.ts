@@ -55,20 +55,47 @@ export async function getAssignedTask(phone: string, taskId: number): Promise<Mi
     return task;
 }
 
-export async function getAvailableTasks(phone: string) {
+export async function getAvailableTasks(phone: string): Promise<MicroTask[]> {
+    const owner = String(phone || '').trim();
+    if (!owner) return [];
     const db = await getDb();
-    const stmt = db.prepare(`SELECT * FROM micro_tasks WHERE status = 'available'`);
-    const tasks = [];
-    while (stmt.step()) tasks.push(stmt.getAsObject());
+    const stmt = db.prepare(`
+        SELECT * FROM micro_tasks
+        WHERE (status = 'available' AND (assigned_to IS NULL OR assigned_to = ''))
+           OR assigned_to = ?
+        ORDER BY CASE status WHEN 'available' THEN 0 WHEN 'in_progress' THEN 1 WHEN 'completed' THEN 2 WHEN 'approved' THEN 3 ELSE 4 END, id DESC
+        LIMIT 50
+    `);
+    stmt.bind([owner]);
+    const tasks: MicroTask[] = [];
+    while (stmt.step()) tasks.push(rowToMicroTask(stmt.getAsObject()));
     stmt.free();
     return tasks;
 }
 
-export async function acceptTask(phone: string, taskId: number) {
+export class TaskStateConflictError extends Error {
+    statusCode = 409;
+}
+
+export async function acceptTask(phone: string, taskId: number): Promise<MicroTask> {
+    const owner = String(phone || '').trim();
+    if (!owner) throw new TaskStateConflictError('Authenticated task owner is required');
     const db = await getDb();
-    db.run(`UPDATE micro_tasks SET status = 'in_progress', assigned_to = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'available'`, [phone, taskId]);
+    db.run(`
+        UPDATE micro_tasks
+        SET status = 'in_progress', assigned_to = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND status = 'available' AND (assigned_to IS NULL OR assigned_to = '')
+    `, [owner, taskId]);
+    if (db.getRowsModified() !== 1) {
+        throw new TaskStateConflictError('Task is no longer available for acceptance');
+    }
+    const stmt = db.prepare(`SELECT * FROM micro_tasks WHERE id = ? AND assigned_to = ? AND status = 'in_progress' LIMIT 1`);
+    stmt.bind([taskId, owner]);
+    const task = stmt.step() ? rowToMicroTask(stmt.getAsObject()) : null;
+    stmt.free();
+    if (!task) throw new TaskStateConflictError('Task acceptance could not be confirmed');
     saveDb();
-    return true;
+    return task;
 }
 
 export async function completeTask(phone: string, taskId: number, result: string) {
@@ -85,12 +112,13 @@ export async function completeTask(phone: string, taskId: number, result: string
     stmt.free();
 
     if (reward > 0) {
-        db.run(`UPDATE micro_tasks SET status = 'completed', submitted_result = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [String(result || '').slice(0, 4000), taskId]);
+        db.run(`UPDATE micro_tasks SET status = 'completed', submitted_result = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND assigned_to = ? AND status = 'in_progress'`, [String(result || '').slice(0, 4000), taskId, phone]);
+        if (db.getRowsModified() !== 1) throw new TaskStateConflictError('Task is no longer in progress for this authenticated owner');
         if (sourceType !== 'topic') await addPoints(phone, reward, `Completed micro-task #${taskId}`);
         saveDb();
         return { success: true, reward, sourceType };
     }
-    return { success: false };
+    throw new TaskStateConflictError('Task is not eligible for completion');
 }
 
 export async function createTopicVerificationTask(input: {

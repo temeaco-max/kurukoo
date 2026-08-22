@@ -11,10 +11,10 @@
   <link rel="stylesheet" href="/css/kurukoo-client-foundation.css?v=2">
   <link rel="stylesheet" href="/css/kurukoo-workspace.css?v=5">
   <link rel="stylesheet" href="/css/kurukoo-os-final.css?v=2">
-  <link rel="stylesheet" href="/css/kurukoo-desktop-final.css?v=1">
-  <script src="/js/fcm-client.js" defer></script>
+  <link rel="stylesheet" href="/css/kurukoo-desktop-final.css?v=2">
+  <script src="/js/fcm-client.js?v=tasks1" defer></script>
 </head>
-<body class="k-app-page workspace-page k-app-section-<%= section %>">
+<body class="k-app-page workspace-page k-app-section-<%= section %>" data-workspace-section="<%= section %>" data-app-section="<%= section %>">
   <% const icon = (name) => `<svg class="k-app-icon" aria-hidden="true"><use href="/icons/kurukoo-icons.svg#${name}"></use></svg>`; %>
   <div class="k-app-shell">
     <header class="k-app-header">
@@ -78,6 +78,18 @@
           <section class="k-app-grid three"><article class="k-app-card"><span class="k-app-card-label">Wallet</span><h2>Money controls</h2><p>Wallet state is separate from provider success and always reflects canonical economic evidence.</p><a href="/wallet" class="k-app-card-action">Wallet →</a></article><article class="k-app-card"><span class="k-app-card-label">Points</span><h2>Closed-loop utility</h2><p>Points remain independent from cash payment rails and can be governed without a payment provider.</p><a href="/points" class="k-app-card-action">Points →</a></article><article class="k-app-card"><span class="k-app-card-label">Billing</span><h2>Top Up &amp; Subscriptions</h2><p>These surfaces remain ready even when the live payment provider is disabled or awaiting verification.</p><div><a href="/top-up" class="k-app-card-action">Top Up →</a> · <a href="/subscriptions" class="k-app-card-action">Subscriptions →</a></div></article></section>
         <% } else if (section === 'checkout' || section === 'confirmations') { %>
           <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label">Economic truth</span><h2>Explicit confirmation before irreversible action.</h2><p>Checkout and confirmations use canonical request state, payment policy and evidence. UI never turns intent into claimed success.</p><a href="/requests" class="k-app-card-action">View Requests →</a></article><article class="k-app-card"><span class="k-app-card-label">Recovery</span><h2>Continue, retry or recover.</h2><p>Failed, pending, cancelled and completed states remain visible and resumable without losing the originating conversation.</p><a href="/chat" class="k-app-card-action">Continue in Chat →</a></article></section>
+        <% } else if (section === 'tasks') { %>
+          <section class="k-app-grid three k-task-metrics" aria-label="Canonical task work summary" data-workspace-owned-surface="tasks">
+            <article class="k-app-card k-task-metric"><span class="k-app-card-label">Available work</span><strong data-task-metric="available">—</strong><p>Work shown here is currently available to this authenticated identity.</p></article>
+            <article class="k-app-card k-task-metric"><span class="k-app-card-label">In progress</span><strong data-task-metric="progress">—</strong><p>Accepted work remains linked to its source and accountable to the canonical task lifecycle.</p></article>
+            <article class="k-app-card k-task-metric"><span class="k-app-card-label">Completed</span><strong data-task-metric="completed">—</strong><p>Only work in the canonical completed state is counted here; review and payout are separate states.</p></article>
+          </section>
+          <section class="k-app-card k-task-workspace" aria-labelledby="task-workspace-title" data-workspace-owned-surface="tasks">
+            <div class="k-task-workspace-head"><div><span class="k-app-card-label">Task work queue</span><h2 id="task-workspace-title">Work that needs attention</h2><p>Review available and active tasks with source-aware continuation. Acceptance and completion remain explicit, canonical actions.</p></div><a class="k-app-primary" href="/chat?prompt=Show%20me%20my%20tasks">Continue in Chat</a></div>
+            <div class="k-app-data-list" data-tasks-list aria-live="polite" aria-busy="true"><div class="k-app-list-loading">Loading your canonical task summary…</div></div>
+            <div class="k-app-empty" data-tasks-empty hidden><span class="k-app-empty-mark" aria-hidden="true">K</span><div><h3>No task work is waiting</h3><p>No available, in-progress or completed task records are currently visible to this authenticated identity.</p><a class="k-app-card-action" href="/chat">Continue in Chat →</a></div></div>
+            <div class="k-app-empty" data-tasks-error hidden role="alert"><span class="k-app-empty-mark" aria-hidden="true">!</span><div><h3>Task state is unavailable</h3><p>The task authority could not be read. No task status is inferred locally; try again once the connection is restored.</p><a class="k-app-card-action" href="/tasks">Retry Tasks →</a></div></div>
+          </section>
         <% } else if (section === 'memory' || section === 'notifications') { %>
           <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label"><%= section === 'memory' ? 'Memory Profile' : 'Notifications' %></span><h2><%= section === 'memory' ? 'One owner-scoped memory authority.' : 'Continuation without fragmentation.' %></h2><p><%= selected.description %></p><a href="/chat" class="k-app-card-action">Continue in Chat →</a></article><article class="k-app-card"><span class="k-app-card-label">Cross-client</span><h2>Same state across Web, PWA and native.</h2><p>Durable state comes from the canonical OS; clients keep only cache, device and rendering state locally.</p><a href="/desk" class="k-app-card-action">Open Desk →</a></article></section>
         <% } else if (section === 'topics') { %>
@@ -122,6 +134,7 @@
     <a href="/tasks" aria-current="<%= section === 'tasks' ? 'page' : 'false' %>"><span><%= icon('work') %></span><span>Tasks</span></a>
     <a href="/connect" aria-current="<%= section === 'connect' ? 'page' : 'false' %>"><span><%= icon('settings') %></span><span>Connect</span></a>
   </nav>
+  <script src="/js/kurukoo-workspace.js?v=tasks1" defer></script>
   <script src="/js/kurukoo-app-shell.js?v=4" defer></script>
 </body>
 </html>
