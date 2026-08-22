@@ -69,10 +69,11 @@ async function inspectScreen(page, screen, viewport, index) {
     const layout = await page.evaluate(() => {
       const body = document.body;
       const viewportWidth = window.innerWidth;
-      const interactive = Array.from(document.querySelectorAll('button,a,input,textarea,select,[tabindex]')).filter((el) => {
+      const visible = (el) => {
         const style = getComputedStyle(el); const rect = el.getBoundingClientRect();
         return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
-      });
+      };
+      const interactive = Array.from(document.querySelectorAll('button,a,input,textarea,select,[tabindex]')).filter(visible);
       const touchIssues = interactive.filter((el) => {
         const rect = el.getBoundingClientRect();
         return rect.width < 40 || rect.height < 40;
@@ -102,7 +103,11 @@ async function inspectScreen(page, screen, viewport, index) {
     if (layout.iconOnlyWithoutLabel) routeResult.issues.push(`${layout.iconOnlyWithoutLabel} icon-only controls lack label/title`);
 
     routeResult.accessibility = await page.evaluate(() => {
-      const first = document.querySelector('button:visible,input:visible,textarea:visible,a:visible');
+      const visible = (el) => {
+        const style = getComputedStyle(el); const rect = el.getBoundingClientRect();
+        return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+      };
+      const first = Array.from(document.querySelectorAll('button,input,textarea,a')).find(visible);
       if (!first) return { focusChecked: false };
       first.focus();
       const style = getComputedStyle(first);
@@ -134,7 +139,6 @@ async function inspectScreen(page, screen, viewport, index) {
         const speechSupported = Boolean(window.KurukooSpeechOutput?.isSupported?.());
         let speakingObserved = false;
         if (speechSupported) {
-          const before = seen.size;
           window.KurukooSpeechOutput.speak('Kurukoo runtime visual proof.');
           const deadline = Date.now() + 5000;
           while (Date.now() < deadline && ![...seen].includes('speaking')) await new Promise((resolve) => setTimeout(resolve, 100));
@@ -151,7 +155,7 @@ async function inspectScreen(page, screen, viewport, index) {
 
     if (screen.id === 'contacts') {
       const contactApi = await page.evaluate(async () => {
-        try { const response = await fetch('/safety/contacts', { credentials: 'same-origin' }); return { status: response.status, json: await response.json().catch(() => null) }; }
+        try { const response = await fetch('/api/safety/contacts', { credentials: 'same-origin' }); return { status: response.status, json: await response.json().catch(() => null) }; }
         catch (error) { return { error: String(error) }; }
       });
       routeResult.contactsApi = contactApi;
