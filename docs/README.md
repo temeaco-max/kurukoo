@@ -2,18 +2,25 @@
 
 ## Current authorities
 
-The current repository and release authority is `main`. `README.md` provides the project overview and operating commands. `BLUEPRINT.md` is the product and architecture mandate. `BLUEPRINT_IMPLEMENTATION_ADDENDUM.md` records implementation clarifications. `BUILD_STATUS.md` is the current verification and release-status record. `SECURITY_AUDIT_STATUS.md` records current security posture and residual operational requirements. `CONTROLLED_PILOT.md` defines the controlled deployment profile.
+`main` is the only canonical integration branch.
 
-`CHAT_SURFACE_CONTRACT.md` is the canonical protected Chat UI contract. `KURUKOO_PRODUCT_SYSTEM_MAP.md` maps the current product authorities. `KURUKOO_REFERENCE.md` is the compact reference. Policies such as `CACHING.md`, `DATA_RETENTION_POLICY.md`, `POINTS_COMPLIANCE.md`, `ECOSYSTEM.md`, and `WHATSAPP_CONTINGENCY.md` remain at the root because they are active supporting policies.
+- `README.md` — project overview and operating commands.
+- `BLUEPRINT.md` — product and architecture intent.
+- `docs/architecture/CURRENT_PRODUCT_TRUTH.md` — **single current-state implementation/verification authority**.
+- `AGENTS.md` — engineering rules for all agents/contributors.
+
+`BUILD_STATUS.md`, `SECURITY_AUDIT_STATUS.md`, `CONTROLLED_PILOT.md`, matrices, registries and focused audits are supporting evidence or operational guidance. They must not override `CURRENT_PRODUCT_TRUTH.md` or canonical code/tests.
+
+`CHAT_SURFACE_CONTRACT.md` remains the protected UI contract for Chat. `KURUKOO_REFERENCE.md` is a compact reference and must defer to the canonical authorities above.
 
 ## Supporting documentation
 
-Current product, architecture, and integration references are grouped under `docs/product/`, `docs/architecture/`, and `docs/integrations/` where applicable. These documents must not contradict the root authorities or claim capabilities that the runtime cannot evidence.
+Current product, architecture and integration references are grouped under `docs/product/`, `docs/architecture/` and `docs/integrations/` where applicable. Supporting documents may explain implementation detail, but they must not introduce a competing current-state authority.
 
 ## Historical evidence
 
-Historical audits and convergence records are stored under `docs/audits/`. Browser, acceptance, and test evidence is stored under `docs/verification/`. Older product notes and one-off planning material are stored under `docs/history/`. Historical branch names and baseline commits in those documents are evidence only; they are not current branch or deployment instructions.
+Historical audits and convergence records are stored under `docs/audits/`. Browser, acceptance and test evidence is stored under `docs/verification/`. Older product notes and one-off planning material are stored under `docs/history/`. Historical branch names and baseline commits in those documents are evidence only; they are not current branch or deployment instructions.
 
 ## Source-of-truth rule
 
-When documents disagree, prefer the current runtime and tests, then `BLUEPRINT.md`, `BUILD_STATUS.md`, and `SECURITY_AUDIT_STATUS.md` for current architecture and release truth. Do not use historical audit records as operational instructions.
+When documents disagree, do not silently choose the document that sounds most complete. Check canonical code and behavioural evidence, then update `CURRENT_PRODUCT_TRUTH.md` to record the reconciled state. External provider/device activation remains a separate real-world verification dimension.
