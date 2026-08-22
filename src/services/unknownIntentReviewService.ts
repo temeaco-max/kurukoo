@@ -38,7 +38,7 @@ export async function listUnknownIntentReviewCandidates(status = 'pending', limi
   const db = await ensureReviewTable();
   const safeStatus = String(status || 'pending').slice(0, 40);
   const safeLimit = Math.max(1, Math.min(250, Math.floor(Number(limit) || 100)));
-  const stmt = db.prepare(`SELECT id,fingerprint,candidate_text,status,proposed_category,proposed_skill,reviewer_id,reviewer_note,created_at,reviewed_at FROM unknown_intent_review_queue WHERE status = ? ORDER BY id ASC LIMIT ?`);
+  const stmt = db.prepare(`SELECT id,fingerprint,candidate_text,status,proposed_category,proposed_skill,reviewer_id,reviewer_note,accepted_training_example,created_at,reviewed_at FROM unknown_intent_review_queue WHERE status = ? ORDER BY id ASC LIMIT ?`);
   stmt.bind([safeStatus, safeLimit]);
   const rows: any[] = [];
   while (stmt.step()) rows.push(stmt.getAsObject());
