@@ -29,7 +29,7 @@
     if (!response.ok) throw new Error(payload.error || payload.readiness?.activationRequirement || 'Call request failed.');
     return payload;
   };
-  function readRoomId() { const params = new URLSearchParams(window.location.search); return params.get('room') || params.get('roomId') || `call-${crypto.randomUUID()}`; }
+  function readRoomId() { const params = new URLSearchParams(window.location.search); const sessionId = params.get('session'); return params.get('room') || params.get('roomId') || (sessionId ? `provider-session:${sessionId}` : `call-${crypto.randomUUID()}`); }
   async function statusCheck() {
     if (!window.isSecureContext) throw new Error('Calling requires a secure HTTPS context.');
     if (!window.RTCPeerConnection || !navigator.mediaDevices?.getUserMedia) throw new Error('This browser does not support WebRTC calling.');

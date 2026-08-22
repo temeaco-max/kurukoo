@@ -448,6 +448,17 @@
     item.classList.toggle('active', active);
   }
 
+  function speakAssistantResponse(value, control) {
+    const text = String(value || '').trim();
+    const output = window.KurukooSpeechOutput;
+    const spoken = Boolean(text && output?.isSupported?.() && output.speak(text, { language: document.documentElement.lang || navigator.language }));
+    if (control) {
+      control.setAttribute('aria-pressed', spoken ? 'true' : 'false');
+      control.title = spoken ? 'Speaking response' : 'Browser speech output is unavailable';
+    }
+    return spoken;
+  }
+
   function createMessage(role, text = '', id = null, cardData = null, animate = true) {
     const wrap = document.createElement('article'); wrap.className = `message ${role}`; wrap.dataset.messageState = animate ? 'incoming' : 'history'; if (animate) wrap.classList.add('message-enter'); if (id) wrap.dataset.messageId = id;
 
@@ -464,7 +475,7 @@
     bubble.appendChild(md);
 
     const actions = makeElement('div', 'message-actions');
-    const buttons = role === 'assistant' ? [['pin', 'Pin', 'saved'], ['copy', 'Copy', 'copy'], ['regenerate', 'Retry', 'retry'], ['delete', 'Delete', 'trash']] : [['pin', 'Pin', 'saved'], ['copy', 'Copy', 'copy'], ['edit', 'Edit', 'edit'], ['delete', 'Delete', 'trash']];
+    const buttons = role === 'assistant' ? [['speak', 'Speak response', 'mic'], ['pin', 'Pin', 'saved'], ['copy', 'Copy', 'copy'], ['regenerate', 'Retry', 'retry'], ['delete', 'Delete', 'trash']] : [['pin', 'Pin', 'saved'], ['copy', 'Copy', 'copy'], ['edit', 'Edit', 'edit'], ['delete', 'Delete', 'trash']];
     buttons.forEach(([act, lab, iconName]) => {
       const btn = makeElement('button', 'message-action-btn');
       btn.type = 'button'; btn.dataset.action = act; btn.setAttribute('aria-label', lab); btn.title = lab;
@@ -480,6 +491,7 @@
       const button = event.target.closest('button'); if (!button) return; const action = button.dataset.action;
       if (action === 'pin') togglePinnedMessage(wrap.dataset.pinKey, { role, text });
       if (action === 'copy') await navigator.clipboard?.writeText(wrap.querySelector('.bubble').innerText);
+      if (action === 'speak') speakAssistantResponse(wrap.querySelector('.bubble')?.innerText || text, button);
       if (action === 'edit') { input.value = text; input.focus(); input.dispatchEvent(new Event('input')); }
       if (action === 'delete') {
         if (state.isGuest) { alert('Please sign in to delete messages.'); return; }
@@ -521,12 +533,16 @@
     bubble.appendChild(thinking);
 
     const actions = makeElement('div', 'message-actions');
-    [['copy', 'Copy', 'copy'], ['regenerate', 'Retry', 'retry'], ['delete', 'Delete', 'trash']].forEach(([act, lab, iconName]) => {
+    [['speak', 'Speak response', 'mic'], ['copy', 'Copy', 'copy'], ['regenerate', 'Retry', 'retry'], ['delete', 'Delete', 'trash']].forEach(([act, lab, iconName]) => {
       const btn = makeElement('button', 'message-action-btn'); btn.type = 'button'; btn.dataset.action = act; btn.setAttribute('aria-label', lab); btn.title = lab; btn.appendChild(makeIcon(iconName, lab)); actions.appendChild(btn);
     });
 
     body.append(bubble, actions);
     wrap.append(avatar, body);
+    actions.addEventListener('click', event => {
+      const button = event.target.closest('button');
+      if (button?.dataset.action === 'speak') speakAssistantResponse(wrap.querySelector('.bubble')?.innerText || '', button);
+    });
     chatContent.appendChild(wrap);
     wirePinGestures(wrap, 'assistant', 'Kurukoo is responding…');
     return wrap;
