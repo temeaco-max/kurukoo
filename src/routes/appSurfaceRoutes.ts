@@ -94,7 +94,10 @@ for (const resource of ['requests','tasks','reminders','opportunities','agents',
   });
 }
 
-for (const [legacy, canonical] of Object.entries(legacySurfaceAliases)) router.get(legacy, (_req, res) => res.redirect(308, canonical));
+for (const [legacy, canonical] of Object.entries(legacySurfaceAliases)) router.get(legacy, optionalAuthenticateUser, (req, res) => {
+  if (legacy === '/web' && !(req as AuthRequest).user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent(req.originalUrl || req.path)}`);
+  return res.redirect(308, canonical);
+});
 for (const section of surfaceMap.keys()) if (section !== 'desk') router.get(`/app/${section}`, optionalAuthenticateUser, (_req, res) => res.redirect(308, `/${section}`));
 
 export default router;
