@@ -2,6 +2,7 @@ import { getDb } from '../database.js';
 import { getEconomicRequest } from './skillFlows.js';
 import { getAgentNetworkSummary } from './agentNetworkCommerce.js';
 import { getPointsBalance } from './pointsEngine.js';
+import { listPlatformJourneyEvents } from './platformJourneyWeaver.js';
 
 export type OutcomeKind = 'economic_request' | 'dispatch' | 'product' | 'booking' | 'reminder' | 'agent_goal' | 'topic' | 'discovery' | 'generic';
 export type OutcomeState = 'draft' | 'needs_input' | 'requested' | 'awaiting_confirmation' | 'awaiting_match' | 'matched' | 'quoted' | 'payment_pending' | 'paid' | 'reserved' | 'in_fulfillment' | 'accepted' | 'arrived' | 'in_progress' | 'waiting' | 'fulfilled' | 'completed' | 'cancelled' | 'failed' | 'disputed' | 'unknown';
@@ -18,6 +19,7 @@ export interface OutcomeContext {
   communicationSessionId?: string;
   actions: Array<{ id: string; label: string; method: string; href?: string; requiresConfirmation?: boolean }>;
   facts: Record<string, unknown>;
+  timeline: Array<{ eventType: string; occurredAt: string; objectId?: string; points?: number; metadata?: Record<string, unknown> }>;
   points?: { enabled: boolean; balance: number };
   agentNetwork?: { activePosAgents: number; totalAgents: number; pendingAgents: number };
   generatedAt: string;
@@ -31,10 +33,7 @@ const STATE_ALIASES: Record<string, OutcomeState> = {
   arrived: 'arrived', in_progress: 'in_progress', waiting: 'waiting', fulfilled: 'fulfilled', completed: 'completed',
   cancelled: 'cancelled', canceled: 'cancelled', failed: 'failed', disputed: 'disputed',
 };
-
-function normalizeState(value: unknown): OutcomeState {
-  return STATE_ALIASES[String(value || '').toLowerCase()] || 'unknown';
-}
+function normalizeState(value: unknown): OutcomeState { return STATE_ALIASES[String(value || '').toLowerCase()] || 'unknown'; }
 
 function actionsFor(context: Pick<OutcomeContext, 'state' | 'requestId' | 'communicationSessionId'>): OutcomeContext['actions'] {
   const actions: OutcomeContext['actions'] = [];
@@ -61,6 +60,7 @@ export async function getOutcomeContext(input: { ownerPhone: string; requestId?:
   const comm = commRows[0]?.values?.[0];
   const communicationSessionId = comm?.[0] ? String(comm[0]) : undefined;
   const providerPhone = comm?.[1] ? String(comm[1]) : (request.providerId ? String(request.providerId) : undefined);
+  const events = await listPlatformJourneyEvents({ economicRequestId: requestId, phone: ownerPhone, limit: 50 });
   const context: OutcomeContext = {
     contextId: `economic:${requestId}`,
     kind: input.kind || 'economic_request', ownerPhone,
@@ -68,6 +68,7 @@ export async function getOutcomeContext(input: { ownerPhone: string; requestId?:
     state: normalizeState(request.status), skill: request.skill, requestId, providerPhone, communicationSessionId,
     actions: [],
     facts: { category: request.category, requirements: request.requirements, quote: request.quote || null, fulfillment: request.fulfillment || null, status: request.status },
+    timeline: events.map(event => ({ eventType: event.eventType, occurredAt: event.occurredAt, objectId: event.objectId, points: event.points, metadata: event.metadata })),
     points: { enabled: true, balance: await getPointsBalance(ownerPhone) },
     agentNetwork: await getAgentNetworkSummary(),
     generatedAt: new Date().toISOString(),
