@@ -48,6 +48,8 @@
   body.k-app-page .k-app-status-row .k-status{min-height:28px;border:1px solid var(--kd-border);border-radius:999px;background:var(--kd-surface-soft);padding:5px 9px;font-size:10px;font-weight:700;color:var(--kd-muted)}
   body.k-app-page.k-app-section-checkout .k-app-card:first-child,body.k-app-page.k-app-section-confirmations .k-app-card:first-child{border-color:#DCC9BE;box-shadow:0 10px 28px rgba(145,69,46,.08)}
   body.k-app-page.k-app-section-requests .k-app-grid,body.k-app-page.k-app-section-tasks .k-app-grid{align-items:start}
+  body.k-app-page.k-app-section-discover .k-discover-route-links{grid-template-columns:1fr;margin-top:16px}
+  body.k-app-page.k-app-section-discover .k-discover-route-links .k-app-card{min-height:0}
   body.k-app-page.k-app-section-memory .k-app-card,body.k-app-page.k-app-section-notifications .k-app-card,body.k-app-page.k-app-section-safety .k-app-card{background:linear-gradient(180deg,#fff 0%,#FCF9F5 100%)}
 
 

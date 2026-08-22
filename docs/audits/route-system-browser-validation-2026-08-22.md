@@ -65,3 +65,26 @@ The authenticated Chat surface rendered the canonical conversation-first composi
 The initial current-main audit found Requests on a generic lifecycle fallback and Connect with crowded provider controls. Those findings drove the route-owned implementations documented above. They are retained only as the discovery record for this completion pass, not as current implementation status.
 
 The shared notification bell continued to expose an unread count and accessible label throughout the before-and-after observations.
+
+## Current-Main Discover Responsive Observation
+
+The controlled authenticated Discover route rendered the shared header, canonical Nearby Pulse empty state, opportunity links and explicit Chat activation path. At the observed 1280px browser viewport, the route's outer `.k-app-grid.two` measured 905px with two 444.5px columns, but the nested Nearby and Opportunities cards each measured only 191px wide while their parent visual region measured 445px. The nearby activation button measured 145×75px and opportunity links met or exceeded the shared 44px target. The nested column compression is a repository-side responsive composition gap; it does not indicate provider availability, location activation, offer validity, or external delivery.
+
+| Evidence level | Result |
+|---|---|
+| Controlled browser layout | Shared shell and current Discover rendering observed; nested cards compress at the inspected intermediate content width. |
+| External system state | No location permission, Nearby Pulse activation, provider availability, source transport, or downstream delivery was initiated or verified. |
+
+
+The DOM measurement identifies the immediate layout mechanism: outer Discover cards measured 445px, but nested `.k-action-row` containers computed as `display: block` with a 145.25px computed width despite inline `flex-direction: column; align-items: stretch`. Nested opportunity surfaces therefore inherited a 145px content width. This is a shared action-row sizing conflict in the existing authenticated visual stack, not a lack of canonical Discover data.
+
+A second DOM inspection refines the root cause: Discover has an outer 905px two-column grid (two 445px cards) and a nested `.k-app-grid.two` inside the first 445px card. That nested grid is 399px wide, creating two 191.25px tracks for Nearby and Opportunities. The route’s browser-visible compression is therefore a nested two-column composition at insufficient available width. The correction should change only that Discover inner composition to a truthful single-column stack at this container width, while preserving the outer page grid and canonical source/action behavior.
+
+After the route-owned correction, the nested Discover grid measured one 905px track with its two cards at 905px wide. The continuation links measured 44px high (Open Chat, Explore Topics, Explore Nearby and Open Opportunities). Controlled browser rendering therefore verifies the repository-side nested-grid correction and preserves the existing external boundaries.
+
+## Current-Main Call and Capabilities Observations
+
+| Route | Controlled browser evidence | Boundary |
+|---|---|---|
+| Call | The shared authenticated shell rendered two readable 44px-aware voice and peer-communication cards. Copy explicitly distinguishes Web Voice as a Chat interface and names relay/provider readiness as an external dependency. | No microphone permission, voice session, WebRTC signalling, relay, peer connection, provider activation, or physical-device behavior was initiated or verified. |
+| Capabilities | The authenticated capability portfolio rendered its owner-scoped loading and explicit empty state without a generic card overwrite or misleading role claim. | No capability was registered, enabled, exercised, or observed across a provider/device boundary. |

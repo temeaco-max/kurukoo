@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="/css/kurukoo-client-foundation.css?v=2">
   <link rel="stylesheet" href="/css/kurukoo-workspace.css?v=5">
   <link rel="stylesheet" href="/css/kurukoo-os-final.css?v=routes1">
-  <link rel="stylesheet" href="/css/kurukoo-desktop-final.css?v=routes1">
+  <link rel="stylesheet" href="/css/kurukoo-desktop-final.css?v=routes2">
   <script src="/js/fcm-client.js?v=routes2" defer></script>
 </head>
 <body class="k-app-page workspace-page k-app-section-<%= section %>" data-workspace-section="<%= section %>" data-app-section="<%= section %>">
@@ -132,7 +132,7 @@
         <% } else if (section === 'safety') { %>
           <section class="k-app-card"><span class="k-app-card-label">Safety</span><h2>Explicit, consent-bound safety support.</h2><p>Manage check-ins, trusted contacts and safety continuity without implying emergency-service delivery.</p><a href="/safety" class="k-app-primary">Open Safety →</a></section>
         <% } else if (section === 'discover') { %>
-          <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label">Nearby Pulse</span><h2>Local presence with consent and truth.</h2><p>Presence and availability are surfaced from the canonical Pulse/network boundary rather than guessed from stale UI state.</p><a href="/discover" class="k-app-card-action">Open Discover →</a></article><article class="k-app-card"><span class="k-app-card-label">Opportunities</span><h2>Find useful things.</h2><p>Explore products, providers, Topics and opportunities without leaving the same Kurukoo relationship.</p><a href="/daily-picks" class="k-app-card-action">Open Opportunities →</a></article></section>
+          <section class="k-app-grid two k-discover-route-links"><article class="k-app-card"><span class="k-app-card-label">Nearby Pulse</span><h2>Local presence with consent and truth.</h2><p>Presence and availability are surfaced from the canonical Pulse/network boundary rather than guessed from stale UI state.</p><a href="/discover" class="k-app-card-action">Open Discover →</a></article><article class="k-app-card"><span class="k-app-card-label">Opportunities</span><h2>Find useful things.</h2><p>Explore products, providers, Topics and opportunities without leaving the same Kurukoo relationship.</p><a href="/daily-picks" class="k-app-card-action">Open Opportunities →</a></article></section>
         <% } else { %>
           <section class="k-app-card"><span class="k-app-card-label"><%= selected.eyebrow %></span><h2><%= selected.title %> remains connected to the same Kurukoo OS.</h2><p><%= selected.description %></p><a href="<%= selected.cta %>" class="k-app-primary"><%= selected.ctaLabel %></a></section>
         <% } %>
