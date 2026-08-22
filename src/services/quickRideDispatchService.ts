@@ -1,8 +1,7 @@
 import crypto from 'node:crypto';
 import { createEconomicRequest, getEconomicRequest } from './skillFlows.js';
 import { broadcastDispatch, type DispatchLead } from './economicDispatchCoordinator.js';
-
-export type RideVehicleType = 'bike' | 'keke' | 'taxi' | 'car' | 'motorbike' | 'tricycle';
+import { normalizeRideVehicle, validateRideDispatchFields, type RideVehicleType } from './rideDispatchContract.js';
 
 export interface QuickRideRequest {
   requestId: string;
@@ -27,24 +26,26 @@ export async function requestRide(input: {
   destinationLabel: string;
   destinationLatitude?: unknown;
   destinationLongitude?: unknown;
-  vehicleType?: RideVehicleType;
+  vehicleType?: RideVehicleType | string;
+  pickupAt?: string;
+  passengers?: number;
+  note?: string;
   maxProviders?: number;
 }): Promise<QuickRideRequest> {
   const ownerPhone = String(input.ownerPhone || '').trim();
   if (!ownerPhone || ownerPhone.startsWith('anon_')) throw new Error('Authenticated rider is required.');
-  const origin = {
-    latitude: coordinate(input.originLatitude, -90, 90),
-    longitude: coordinate(input.originLongitude, -180, 180),
-    label: input.originLabel ? String(input.originLabel).trim().slice(0, 180) : undefined,
-  };
+  const vehicleType = input.vehicleType ? normalizeRideVehicle(input.vehicleType) : 'any';
+  const origin = { latitude: coordinate(input.originLatitude, -90, 90), longitude: coordinate(input.originLongitude, -180, 180), label: input.originLabel ? String(input.originLabel).trim().slice(0, 180) : undefined };
   const destinationLabel = String(input.destinationLabel || '').trim().slice(0, 180);
   if (!destinationLabel) throw new Error('Destination is required.');
-  let destination: QuickRideRequest['destination'] = { label: destinationLabel };
+  const destination: QuickRideRequest['destination'] = { label: destinationLabel };
   if (input.destinationLatitude !== undefined || input.destinationLongitude !== undefined) {
     if (input.destinationLatitude === undefined || input.destinationLongitude === undefined) throw new Error('Destination latitude and longitude must be supplied together.');
     destination.latitude = coordinate(input.destinationLatitude, -90, 90);
     destination.longitude = coordinate(input.destinationLongitude, -180, 180);
   }
+  const validation = validateRideDispatchFields({ vehicleType, pickup: origin, destination, pickupAt: input.pickupAt, passengers: input.passengers, note: input.note });
+  if (!validation.valid) throw new Error(validation.error);
   const requestId = `ride_${crypto.randomUUID()}`;
   const request = await createEconomicRequest({
     id: requestId,
@@ -57,27 +58,14 @@ export async function requestRide(input: {
       destination: destination.label,
       destination_latitude: destination.latitude,
       destination_longitude: destination.longitude,
-      vehicle_type: input.vehicleType || 'any',
+      vehicle_type: vehicleType,
+      pickup_at: input.pickupAt,
+      passengers: input.passengers,
+      note: input.note,
       dispatch_mode: 'live_broadcast',
     },
   });
-  const result = await broadcastDispatch({
-    requestId: request.id,
-    ownerPhone,
-    skill: 'ride_request',
-    vehicleType: input.vehicleType,
-    location: origin.label || `${origin.latitude},${origin.longitude}`,
-    latitude: origin.latitude,
-    longitude: origin.longitude,
-    maxProviders: input.maxProviders,
-  });
+  const result = await broadcastDispatch({ requestId: request.id, ownerPhone, skill: 'ride_request', vehicleType, location: origin.label || `${origin.latitude},${origin.longitude}`, latitude: origin.latitude, longitude: origin.longitude, maxProviders: input.maxProviders });
   const fresh = await getEconomicRequest(request.id);
-  return {
-    requestId: request.id,
-    vehicleType: input.vehicleType,
-    origin,
-    destination,
-    offers: result.offers,
-    state: String(fresh?.status || request.status),
-  };
+  return { requestId: request.id, vehicleType, origin, destination, offers: result.offers, state: String(fresh?.status || request.status) };
 }
