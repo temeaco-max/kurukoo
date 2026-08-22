@@ -1,6 +1,14 @@
 (() => {
-  const allowed = new Set(['idle', 'thinking', 'speaking', 'working', 'waiting', 'needs-attention']);
-  const labels = { idle: 'Available', thinking: 'Thinking', speaking: 'Speaking', working: 'Working', waiting: 'Waiting', 'needs-attention': 'Needs attention' };
+  const allowed = new Set(['idle', 'listening', 'thinking', 'speaking', 'working', 'waiting', 'needs-attention']);
+  const labels = {
+    idle: 'Available',
+    listening: 'Listening',
+    thinking: 'Thinking',
+    speaking: 'Speaking',
+    working: 'Working',
+    waiting: 'Waiting',
+    'needs-attention': 'Needs attention',
+  };
   const state = { current: 'idle', beforeSpeech: 'idle' };
 
   function normalise(value) { return allowed.has(value) ? value : 'idle'; }

@@ -11,4 +11,34 @@
 .kos-shell-search,.kos-shell-notifications,.kos-shell-account{max-width:520px}.kos-shell-cart-badge{display:inline-flex;min-width:17px;height:17px;align-items:center;justify-content:center;padding:0 4px;border-radius:999px;background:var(--k-accent,#b95d3c);color:#fff;font-size:9px;font-weight:800}
 .kos-auth-left-rail-ad{margin:12px 8px 14px;padding:10px;border:1px solid var(--k-border,#e6ded5);border-radius:14px;background:var(--k-surface-soft,#f7f2ec);box-shadow:0 6px 18px rgba(36,34,31,.035)}
 .kos-auth-left-rail-ad[hidden]{display:none}.kos-auth-left-rail-ad-media{display:grid;grid-template-columns:42px minmax(0,1fr);gap:9px;align-items:center}.kos-auth-left-rail-ad-media img{width:42px;height:42px;object-fit:cover;border-radius:10px;background:var(--k-surface,#fff);border:1px solid var(--k-border,#e6ded5)}.kos-auth-left-rail-ad-copy{min-width:0}.kos-auth-left-rail-ad-copy strong{display:block;font:700 12px/1.25 var(--k-font-heading,'Space Grotesk'),Inter,sans-serif;color:var(--k-ink,#24221f);overflow-wrap:anywhere}.kos-auth-left-rail-ad-copy p{margin:4px 0 0;color:var(--k-muted,#6d665f);font-size:10px;line-height:1.35}.kos-auth-left-rail-ad-action{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}.kos-auth-left-rail-ad-action a{font-size:10px;font-weight:800;color:var(--k-ink,#24221f);text-decoration:none}.kos-auth-left-rail-ad-action a:hover{text-decoration:underline}.kos-auth-left-rail-ad-action .kos-sponsor-disclosure{min-height:18px;font-size:8px;padding:2px 6px}
+
+/* OS-wide semantic state vocabulary. Surface owners provide the meaning; this component owner supplies one visual treatment. */
+.ko-state,[data-ko-state]{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:5px 9px;border:1px solid transparent;border-radius:999px;font:700 11px/1 Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums}
+:where(.ko-state,[data-ko-state])::before{content:"";width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:currentColor}
+:where(.ko-state,[data-ko-state])[data-ko-state="pending"],:where(.ko-state,[data-ko-state])[data-ko-state="waiting"],:where(.ko-state,[data-ko-state])[data-ko-state="needs-attention"],:where(.ko-state,[data-ko-state])[data-ko-state="approval-required"]{background:#F8ECD8;border-color:#ECDDBF;color:var(--k-warning,#B87928)}
+:where(.ko-state,[data-ko-state])[data-ko-state="working"]{background:#E8EFF4;border-color:#D7E3EB;color:var(--k-info,#3C6F91)}
+:where(.ko-state,[data-ko-state])[data-ko-state="completed"],:where(.ko-state,[data-ko-state])[data-ko-state="success"],:where(.ko-state,[data-ko-state])[data-ko-state="verified"]{background:#E7F3ED;border-color:#D4E8DC;color:var(--k-success,#2E8060)}
+:where(.ko-state,[data-ko-state])[data-ko-state="blocked"],:where(.ko-state,[data-ko-state])[data-ko-state="failed"]{background:#FBEDEA;border-color:#EBCFC9;color:var(--k-danger,#B5483D)}
+:where(.ko-state,[data-ko-state])[data-ko-state="unavailable"],:where(.ko-state,[data-ko-state])[data-ko-state="offline"]{background:#F1ECE7;border-color:var(--k-border,#E6DED5);color:var(--k-muted,#6D665F)}
+
+/* Agent Presence remains a lightweight indicator: no avatar, no persistent animation, shared across contexts. */
+[data-agent-presence-label]{color:var(--k-muted,#6D665F)}
+[data-agent-presence-label][data-agent-presence="idle"]{color:var(--k-success,#2E8060)}
+[data-agent-presence-label][data-agent-presence="listening"]{color:var(--k-info,#3C6F91)}
+[data-agent-presence-label][data-agent-presence="thinking"],[data-agent-presence-label][data-agent-presence="working"]{color:var(--k-warning,#B87928)}
+[data-agent-presence-label][data-agent-presence="speaking"]{color:var(--k-accent,#B95D3C)}
+[data-agent-presence-label][data-agent-presence="waiting"]{color:var(--k-muted,#6D665F)}
+[data-agent-presence-label][data-agent-presence="needs-attention"]{color:var(--k-danger,#B5483D)}
+:is(.presence-pulse,.ko-presence-indicator)[data-agent-presence]{width:8px;height:8px;min-height:8px;border-radius:50%;box-shadow:none;animation:none;background:var(--k-muted,#6D665F)}
+:is(.presence-pulse,.ko-presence-indicator)[data-agent-presence="idle"]{background:var(--k-success,#2E8060)}
+:is(.presence-pulse,.ko-presence-indicator)[data-agent-presence="listening"]{background:var(--k-info,#3C6F91)}
+:is(.presence-pulse,.ko-presence-indicator)[data-agent-presence="thinking"],[data-agent-presence="working"]{background:var(--k-warning,#B87928)}
+:is(.presence-pulse,.ko-presence-indicator)[data-agent-presence="speaking"]{background:var(--k-accent,#B95D3C)}
+:is(.presence-pulse,.ko-presence-indicator)[data-agent-presence="waiting"]{background:var(--k-muted,#6D665F)}
+:is(.presence-pulse,.ko-presence-indicator)[data-agent-presence="needs-attention"]{background:var(--k-danger,#B5483D)}
+
+/* Communication actions use the same interaction geometry; availability is always truthful. */
+:where(.message-actions,.k-provider-session-actions,.ko-communication-actions) :where(button,a){min-height:44px}
+:where(.k-provider-session-actions,.ko-communication-actions) [disabled],:where(.ko-communication-actions,[data-communication-action]) [aria-disabled="true"]{opacity:.45;cursor:not-allowed;filter:none}
+
 @media(max-width:900px){.kos-context-drawer{inset:auto 12px 12px;width:calc(100vw - 24px);max-height:78vh}.kos-object-row{grid-template-columns:auto minmax(0,1fr)}.kos-object-row>:last-child{grid-column:2;justify-self:start}.kos-flow-row{grid-template-columns:8px minmax(0,1fr)}.kos-flow-time{grid-column:2}.kos-auth-left-rail-ad{display:none}}
