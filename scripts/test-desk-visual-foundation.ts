@@ -33,11 +33,14 @@ assert.equal(AUTHENTICATED_SHELL_BRAND_RULES.deskSpecificContentReferenceAllowed
 assert.equal(AUTHENTICATED_SHELL_BRAND_RULES.canonicalSearchName, 'Search Kurukoo');
 assert.equal(AUTHENTICATED_SHELL_BRAND_RULES.canonicalAgentActionLabel, 'Ask Agent');
 
-for (const id of ['welcome','today-flow','continue-conversation','active-requests','tasks-reminders','opportunity-radar','points','topics-for-you','guide-content','sponsored-provider','connected-channels','pulse','safety-check-in','activity-summary']) {
-  assert.match(deskRuntime, new RegExp(`data-desk-module=\\"${id}\\"`), `Desk runtime missing module: ${id}`);
-  assert.match(deskCss, new RegExp(`k-desk-module-${id}`), `Desk CSS missing module composition: ${id}`);
+assert.match(deskRuntime, /dataset\.deskModule = id/);
+for (const id of moduleIds) assert.match(deskRuntime, new RegExp(`'${id}'`), `Desk runtime missing module id: ${id}`);
+for (const id of moduleIds) assert.match(deskCss, new RegExp(`k-desk-module-${id}`), `Desk CSS missing module composition: ${id}`);
+
+for (const state of ['idle', 'listening', 'thinking', 'speaking', 'working', 'waiting', 'needs-attention']) {
+  assert.match(deskRuntime, new RegExp(`data-agent-presence=\\"${state}\\"|agentPresence.*${state}`), `Desk Agent Presence state missing: ${state}`);
+  assert.match(deskCss, new RegExp(`k-desk-presence[^}]*${state}`), `Desk Agent Presence styling missing: ${state}`);
 }
-for (const state of ['idle']) assert.match(deskRuntime, new RegExp(`data-agent-presence=\\"${state}\\"`), `Desk Agent Presence state missing: ${state}`);
 for (const state of ['empty', 'ready', 'unavailable']) assert.match(deskRuntime, new RegExp(`k-desk-state-${state}`), `Desk state treatment missing: ${state}`);
 assert.match(deskRuntime, /section !== 'desk'/, 'Desk-only composition must remain gated to /desk.');
 assert.match(deskRuntime, /fetch\('\/api\/points\/balance'/, 'Desk must reuse the canonical Points authority rather than inventing a balance.');
