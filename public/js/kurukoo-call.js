@@ -18,11 +18,21 @@
   const camera = document.getElementById('camera-state');
   const connection = document.getElementById('connection-state');
   const placeholder = document.getElementById('video-placeholder');
+  const providerContext = document.getElementById('provider-context');
+  const providerContextTitle = document.getElementById('provider-context-title');
+  const providerContextRequest = document.getElementById('provider-context-request');
+  const providerContextMessages = document.getElementById('provider-context-messages');
+  const providerMessageForm = document.getElementById('provider-message-form');
+  const providerMessageInput = document.getElementById('provider-message-input');
   const startButton = document.getElementById('start-call');
   const muteButton = document.getElementById('mute-call');
   const cameraButton = document.getElementById('camera-call');
   const endButton = document.getElementById('end-call');
   const setStatus = text => { if (status) status.textContent = text; };
+  const sessionIdFromUrl = () => new URLSearchParams(window.location.search).get('session');
+  const appendProviderMessage = message => { if (!providerContextMessages) return; const line = document.createElement('p'); line.className = 'k-provider-message'; line.textContent = `Participant: ${String(message.content || '')}`; providerContextMessages.appendChild(line); };
+  const renderProviderTranscript = messages => { if (!providerContextMessages) return; providerContextMessages.textContent = ''; for (const message of Array.isArray(messages) ? messages : []) appendProviderMessage(message); };
+  const loadProviderContext = async () => { const sessionId = sessionIdFromUrl(); if (!sessionId || !providerContext) return null; try { const result = await json(`/api/provider-communication/sessions/${encodeURIComponent(sessionId)}`); const session = result.session || {}; providerContext.hidden = false; if (providerContextTitle) providerContextTitle.textContent = `${result.role === 'provider' ? 'Customer' : 'Provider'}: ${result.role === 'provider' ? session.customerPhone : session.providerPhone}`; if (providerContextRequest) providerContextRequest.textContent = session.economicRequestId ? `Request context: ${session.economicRequestId}` : 'Request context: active provider communication'; const transcript = await json(`/api/provider-communication/sessions/${encodeURIComponent(sessionId)}/messages`); renderProviderTranscript(transcript.messages); return session; } catch { providerContext.hidden = true; return null; } };
   const json = async (url, options = {}) => {
     const response = await fetch(url, { credentials: 'same-origin', headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }, ...options });
     const payload = await response.json().catch(() => ({}));
@@ -46,7 +56,7 @@
     const pc=new RTCPeerConnection({ iceServers });
     pc.ontrack=event=>{const [stream]=event.streams;if(stream&&remoteVideo){remoteVideo.srcObject=stream;placeholder.hidden=true;}};
     pc.onicecandidate=async event=>{if(!event.candidate||!roomId)return;try{await sendSignal('ice',event.candidate,remotePeerId);}catch(error){setStatus(error.message);}};
-    pc.onconnectionstatechange=()=>{const state=pc.connectionState;if(connection)connection.textContent=state;if(state==='connected')setStatus('Call connected.');else if(state==='failed')setStatus('The call connection failed. Try again or use audio-only if your network blocks peer media.');else if(state==='disconnected')setStatus('The other participant may have disconnected.');};
+    pc.onconnectionstatechange=async()=>{const state=pc.connectionState;if(connection)connection.textContent=state;if(state==='connected'){setStatus('Call connected.');const sessionId=sessionIdFromUrl();if(sessionId)await json(`/api/provider-communication/sessions/${encodeURIComponent(sessionId)}/state`,{method:'POST',body:JSON.stringify({state:'connected'})}).catch(()=>undefined);}else if(state==='failed'){setStatus('The call connection failed. Try again or use audio-only if your network blocks peer media.');const sessionId=sessionIdFromUrl();if(sessionId)await json(`/api/provider-communication/sessions/${encodeURIComponent(sessionId)}/state`,{method:'POST',body:JSON.stringify({state:'failed'})}).catch(()=>undefined);}else if(state==='disconnected')setStatus('The other participant may have disconnected.');};
     return pc;
   }
   async function ensurePeerConnection(){if(!peerConnection)peerConnection=buildPeerConnection();if(localStream)for(const track of localStream.getTracks())if(!peerConnection.getSenders().some(sender=>sender.track===track))peerConnection.addTrack(track,localStream);}
@@ -60,6 +70,8 @@
   muteButton?.addEventListener('click',()=>{if(!localStream)return;muted=!muted;localStream.getAudioTracks().forEach(track=>{track.enabled=!muted;});mic.textContent=muted?'Muted':'On';});
   cameraButton?.addEventListener('click',()=>{if(!localStream)return;cameraEnabled=!cameraEnabled;localStream.getVideoTracks().forEach(track=>{track.enabled=cameraEnabled;});camera.textContent=cameraEnabled?'On':'Off';});
   startButton?.addEventListener('click',startCall);
-  endButton?.addEventListener('click',async()=>{intentionalHangup=true;await cleanup(true);setStatus('Call ended.');});
+  endButton?.addEventListener('click',async()=>{intentionalHangup=true;await cleanup(true);const sessionId=sessionIdFromUrl();if(sessionId)await json(`/api/provider-communication/sessions/${encodeURIComponent(sessionId)}/end`,{method:'POST'}).catch(()=>undefined);setStatus('Call ended.');});
+  providerMessageForm?.addEventListener('submit',async event=>{event.preventDefault();const text=String(providerMessageInput?.value||'').trim();const sessionId=sessionIdFromUrl();if(!text||!sessionId)return;try{const result=await json(`/api/provider-communication/sessions/${encodeURIComponent(sessionId)}/messages`,{method:'POST',body:JSON.stringify({content:text})});appendProviderMessage(result.message||{content:text});if(providerMessageInput)providerMessageInput.value='';}catch(error){setStatus(error.message||'Message could not be sent.');}});
   window.addEventListener('pagehide',()=>{if(roomId&&peerId){navigator.sendBeacon?.('/api/webrtc/leave',new Blob([JSON.stringify({roomId})],{type:'application/json'}));}});
+  void loadProviderContext();
 })();
