@@ -15,7 +15,7 @@ const skillFlows = read('src/services/skillFlows.ts');
 const featureRegistry = read('src/services/platformFeatureVisualRegistry.ts');
 
 const appSections = [
-  'agent','discover','topics','requests','reminders','saved','cart','tasks','connect','agents','capabilities','opportunities',
+  'discover','topics','requests','reminders','saved','cart','tasks','connect','agents','capabilities','opportunities',
   'wallet','points','top-up','subscriptions','checkout','confirmations','memory','artifacts','prayer','call','notifications','safety'
 ];
 

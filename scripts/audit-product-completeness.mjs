@@ -59,7 +59,7 @@ require(featureCoverage.includes('represented;'), 'Feature completion must disti
 require(featureCoverage.includes('live-verified;'), 'Feature completion must distinguish live verification from implementation.');
 
 const appSections = [
-  'agent','discover','topics','requests','reminders','saved','cart','tasks','connect','agents','capabilities','opportunities',
+  'discover','topics','requests','reminders','saved','cart','tasks','connect','agents','capabilities','opportunities',
   'wallet','points','top-up','subscriptions','checkout','confirmations','memory','artifacts','prayer','call','notifications','safety'
 ];
 for (const section of appSections) {
@@ -100,7 +100,7 @@ require(matrix.includes('46 families'), 'Page Architecture Matrix no longer reco
 require(matrix.includes('Cross-system feature inventory'), 'Page Architecture Matrix must cover features without standalone pages.');
 require(matrix.includes('capabilities that do not have a standalone page'), 'Matrix must explain representation through Chat/workspace/Admin for non-page features.');
 
-const richSections = ['agent','discover','topics','requests','reminders','saved','cart','tasks','connect','agents','capabilities','opportunities','wallet','points','top-up','subscriptions','checkout','confirmations','memory','artifacts','prayer','call','notifications','safety'];
+const richSections = ['discover','topics','requests','reminders','saved','cart','tasks','connect','agents','capabilities','opportunities','wallet','points','top-up','subscriptions','checkout','confirmations','memory','artifacts','prayer','call','notifications','safety'];
 const branchCount = (section) => (appTemplate.match(new RegExp(`section === ['\\\"]${section}['\\\"]`, 'g')) || []).length;
 for (const section of richSections) {
   require(branchCount(section) > 0, `Web App surface ${section} lacks a dedicated content composition branch; visual convergence must not replace it with a generic page.`);
@@ -109,10 +109,10 @@ for (const section of richSections) {
 for (const label of ['Control Room','Conversations','Providers','Economic','Moderation','Compliance','Notifications','Integrations','Agents','Users','Pricing','Referrals','Commissions','Partnerships','Scam & trust','Social','Creators','Celebrity','Analytics','Revenue','Marketing','Advertising','Content','Curation','Settings','SEO','Roadmap']) {
   require(adminAuth.includes(`'${label}'`), `Admin navigation lost operational module: ${label}`);
 }
-for (const bridge of ['Open site','Open Web App','Sign out']) require(adminAuth.includes(bridge), `Admin recovery/cross-plane bridge missing: ${bridge}`);
+for (const bridge of ['Open site','Open Web Chat','Sign out']) require(adminAuth.includes(bridge), `Admin recovery/cross-plane bridge missing: ${bridge}`);
 
 const reportPath = 'docs/architecture/KURUKOO_PRODUCT_COMPLETENESS_GATE.md';
-const report = `# Kurukoo Product Completeness Gate\n\nThis gate exists specifically to prevent visual convergence from reducing product completeness.\n\n## Non-negotiable rule\n\nVisual references govern presentation. They do not have authority to delete product information, user jobs, actions, states, navigation, SEO structure, capability representation, canonical data relationships or truth boundaries.\n\nA route is not complete because it visually matches a board. It is complete only when its real-world purpose, information architecture, interactions, states, canonical authority, navigation, accessibility, SEO (where applicable), and truth boundaries are represented.\n\n## Completion boundary\n\nEvery capability must be either:\n\n1. a complete standalone page; or\n2. represented through a canonical surface such as Chat, Agent, Requests, Tasks, Discover, Connect, Notifications, contextual cards or Admin.\n\nA capability may never disappear because a design reference does not show it.\n\n## Current registry boundary\n\nThe Page Architecture Matrix is the primary product/content contract. `CLIENT_FEATURE_COVERAGE.md` is the cross-client capability contract. `platformFeatureVisualRegistry.ts` is the feature-to-surface representation contract. The canonical skill/flow registry remains part of the completeness boundary.\n\nThe audit requires the repository's documented 205 skills across 46 families to remain covered, even when a skill is represented through Chat rather than a standalone page.\n`;
+const report = `# Kurukoo Product Completeness Gate\n\nThis gate exists specifically to prevent visual convergence from reducing product completeness.\n\n## Non-negotiable rule\n\nVisual references govern presentation. They do not have authority to delete product information, user jobs, actions, states, navigation, SEO structure, capability representation, canonical data relationships or truth boundaries.\n\nA route is not complete because it visually matches a board. It is complete only when its real-world purpose, information architecture, interactions, states, canonical authority, navigation, accessibility, SEO (where applicable), and truth boundaries are represented.\n\n## Completion boundary\n\nEvery capability must be either:\n\n1. a complete standalone page; or\n2. represented through a canonical surface such as Chat, Agent, Requests, Tasks, Discover, Connect, Notifications, contextual cards or Admin.\n\nA capability may never disappear because a design reference does not show it.\n\n## Current registry boundary\n\nThe Page Architecture Matrix is the primary product/content contract. CLIENT_FEATURE_COVERAGE.md is the cross-client capability contract. platformFeatureVisualRegistry.ts is the feature-to-surface representation contract. The canonical skill/flow registry remains part of the completeness boundary.\n\nThe audit requires the repository's documented 205 skills across 46 families to remain covered, even when a skill is represented through Chat rather than a standalone page.\n`;
 fs.writeFileSync(path.join(root, reportPath), report);
 
 if (failures.length) {
