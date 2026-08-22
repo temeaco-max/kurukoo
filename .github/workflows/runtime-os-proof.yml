@@ -36,7 +36,7 @@ jobs:
           server_pid=$!
           echo "$server_pid" > "$RUNNER_TEMP/kurukoo-runtime-os-proof.pid"
           for i in {1..180}; do
-            if curl --connect-timeout 2 --max-time 5 -fsS http://127.0.0.1:4320/api/health >/dev/null 2>&1; then
+            if curl --connect-timeout 2 --max-time 5 -fsS http://127.0.0.1:4320/health >/dev/null 2>&1; then
               echo "Kurukoo health endpoint ready after ${i}s"
               exit 0
             fi
