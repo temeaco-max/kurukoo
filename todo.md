@@ -99,3 +99,11 @@ The implementation is complete for the repository/runtime boundary. The remainin
 - [x] Reconcile the Contact support readiness continuation after live measurement found its muted channel link at 16px. The final authority now scopes only that existing secondary path to 44px while keeping Open Web Chat dominant and preserving all contact/channel-state language.
 - [x] Reconcile the native feature-compass overflow action after the Kurukoo OS inventory found the existing five-tab overflow Pressable at 38px. The existing tab owner now keeps its Agent/Discover/Requests/Tasks/Connect grammar and feature-compass route while resolving only that overflow action to 44px with focused visual-contract coverage.
 - [x] Reconcile canonical Chat Pin, Copy, Retry, and Delete message actions after rendered guest Chat measured the real message-mutating/clipboard/retry controls at 30px. The existing late Chat completion owner now resolves only those compact icon actions to 44×44px; browser proof preserves their `pin`, `copy`, `regenerate`, and `delete` datasets, labels, muted 15px icons, three-region Chat shell, and composer/inspector contracts.
+
+## Physical execution foundation
+
+- [x] Inspect current main and reuse canonical execution, provider, evidence, communication, and agent boundaries.
+- [x] Implement the smallest generic physical-execution participant/capability extension without a delivery-specific lifecycle.
+- [x] Add contract tests for authorization, state progression, idempotency, evidence, cancellation, and simulated participant failure.
+- [x] Update canonical architecture documentation and verify repository, runtime, and real-world status tiers.
+- [x] Open, verify, merge, and delete one short-lived pull-request branch from main.

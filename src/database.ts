@@ -140,6 +140,7 @@ function initTables(database: any) {
       service_radius_km REAL DEFAULT 10,
       transport_mode TEXT,
       pricing_model TEXT,
+      execution_profile_json TEXT NOT NULL DEFAULT '{}',
       payment_method TEXT,
       booking_mode TEXT DEFAULT 'instant',
       products TEXT,
@@ -297,6 +298,10 @@ function initTables(database: any) {
     'ALTER TABLE micro_tasks ADD COLUMN approved_by TEXT',
     'ALTER TABLE micro_tasks ADD COLUMN approved_at TEXT',
   ]) { try { database.run(migration); } catch { /* column already exists */ } }
+  const skillColumns = database.exec('PRAGMA table_info(skills)')[0]?.values || [];
+  if (!skillColumns.some((column: unknown[]) => String(column[1]) === 'execution_profile_json')) {
+    database.run("ALTER TABLE skills ADD COLUMN execution_profile_json TEXT NOT NULL DEFAULT '{}'");
+  }
   const skillFlowColumns = database.exec('PRAGMA table_info(skill_flows)')[0]?.values || [];
   if (!skillFlowColumns.some((column: unknown[]) => String(column[1]) === 'flow_mode')) database.run("ALTER TABLE skill_flows ADD COLUMN flow_mode TEXT NOT NULL DEFAULT 'economic'");
   database.run("CREATE INDEX IF NOT EXISTS idx_micro_tasks_source ON micro_tasks(source_type, source_id)");

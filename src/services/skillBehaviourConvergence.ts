@@ -1,5 +1,5 @@
 import { getKnownSkills, getEconomicCategory, getSkillRequirements, getSkillCapabilities } from './skillFlows.js';
-import { getAllCatalogueSkillNames, getSkillExtension, getSkillCategoryConverged } from './skillCatalogueConvergence.js';
+import { getAllCatalogueSkillNames, getLocalSkillExtensions as getCatalogueLocalSkillExtensions, getSkillExtension, getSkillCategoryConverged } from './skillCatalogueConvergence.js';
 import { SKILL_BEHAVIOUR_PACKS, buildSkillBehaviourInstruction, type SkillBehaviourPack } from './skillBehaviourRegistry.js';
 import { getCanonicalIdentityContext } from './memoryProfile.js';
 
@@ -79,6 +79,7 @@ export function getConvergedSkillBehaviour(skill: string): SkillBehaviourPack {
 }
 
 export function getAllConvergedSkillNames(): string[] { return getAllCatalogueSkillNames(); }
+export function getLocalSkillExtensions() { return getCatalogueLocalSkillExtensions(); }
 
 export function resolveConvergedSkillBehaviour(text: string, hints: string[] = []): SkillBehaviourPack | null {
   const haystack = `${text} ${hints.join(' ')}`.toLowerCase();

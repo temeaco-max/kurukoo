@@ -446,6 +446,19 @@ export async function dispatchExecutionRequest(id: string): Promise<ExecutionReq
   const execution = await getExecutionRequest(id);
   if (!execution) throw new Error('Execution request not found');
   if (['acknowledged', 'in_progress', 'succeeded', 'failed', 'cancelled', 'expired'].includes(execution.status)) return execution;
+  const actionTimeAuthorization = await authorizeProviderExecution({
+    requestId: execution.requestId,
+    providerPhone: execution.providerPhone,
+    role: execution.role,
+    capability: execution.capability,
+    actionRequested: execution.actionRequested,
+  });
+  if (!actionTimeAuthorization.authorized) {
+    return updateExecutionStatus(id, 'failed', { failureReason: `Action-time authorization failed: ${actionTimeAuthorization.reason}` });
+  }
+  if (actionTimeAuthorization.connectorId !== execution.connectorId) {
+    return updateExecutionStatus(id, 'failed', { failureReason: 'Authorized connector changed before dispatch' });
+  }
   const connector = getConnector(execution.connectorId);
   if (!connector) return updateExecutionStatus(id, 'failed', { failureReason: 'Registered connector is unavailable' });
   const dispatched = execution.status === 'pending'
