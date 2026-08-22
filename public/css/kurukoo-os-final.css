@@ -198,3 +198,6 @@ button,a{min-height:44px}
  :is(.ko-communication-actions,.communication-actions,.provider-actions,.profile-actions){width:100%}
  :is(.ko-communication-actions,.communication-actions,.provider-actions,.profile-actions) :where(button,a){flex:1 1 0}
 }
+
+/* Final compatibility bridge for public visual-completion aliases. */
+:root{--kc-accent:var(--ko-primary);--kc-accent-strong:var(--ko-primary-strong);--kc-ink:var(--ko-ink);--kc-muted:var(--ko-muted);--kc-surface:var(--ko-bg);--kc-border:var(--ko-border);--kc-raised:var(--ko-surface);--kc-success:var(--ko-success);--kc-warning:var(--ko-warning);--kc-danger:var(--ko-danger);--kc-radius:var(--ko-radius)}

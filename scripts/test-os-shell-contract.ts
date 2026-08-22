@@ -31,6 +31,7 @@ assert.ok(finalCss.includes('.k-app-page .k-app-nav'));
 assert.ok(finalCss.includes('.ko-communication-actions'));
 assert.ok(finalCss.includes('[data-state="approval-required"]'));
 assert.ok(finalCss.includes('.ko-empty,.empty-state'));
+assert.ok(finalCss.includes('--kc-accent:var(--ko-primary)'));
 assert.ok(pixelCss.includes('--kwa-ink:var(--ko-ink)'));
 assert.ok(pixelCss.includes('--kwa-accent:var(--ko-primary)'));
 assert.ok(pixelCss.includes('.k-app-ask{min-height:44px'));
@@ -52,4 +53,4 @@ assert.ok(KURUKOO_OS_COMPONENTS.some((item) => item.id === 'conversation-continu
 assert.ok(KURUKOO_OS_COMPONENTS.some((item) => item.id === 'pulse-timeline'));
 assert.ok(KURUKOO_OS_COMPONENTS.some((item) => item.id === 'context-inspector'));
 
-console.log('OS shell contract passed: canonical header controls, shared state/presence vocabulary, mobile IA, non-duplicated workspace navigation and canonical app refinement tokens are present.');
+console.log('OS shell contract passed: canonical header controls, shared state/presence vocabulary, mobile IA, non-duplicated workspace navigation and canonical visual token bridges are present.');
