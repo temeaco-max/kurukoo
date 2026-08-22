@@ -16,6 +16,15 @@ env:
   JWT_SECRET: 'kurukoo-runtime-os-proof-secret-32-characters'
   KURUKOO_WORKERS: '0'
 
+env:
+  NODE_ENV: test
+  PORT: 4320
+  HOST: 127.0.0.1
+  KURUKOO_DEV_AUTH: 'true'
+  KURUKOO_TEST_PHONE: '08030000000'
+  JWT_SECRET: 'kurukoo-runtime-os-proof-secret-32-characters'
+  KURUKOO_WORKERS: '0'
+
 jobs:
   runtime-proof:
     runs-on: ubuntu-latest
@@ -30,12 +39,24 @@ jobs:
       - run: npm install --no-save playwright
       - run: npx playwright install --with-deps chromium
       - name: Start Kurukoo locally
+        shell: bash
         run: |
           nohup npm run dev > "$RUNNER_TEMP/kurukoo-runtime-os-proof.log" 2>&1 &
-          for i in {1..60}; do
-            if curl -fsS http://127.0.0.1:4320/api/health >/dev/null 2>&1; then exit 0; fi
+          server_pid=$!
+          echo "$server_pid" > "$RUNNER_TEMP/kurukoo-runtime-os-proof.pid"
+          for i in {1..180}; do
+            if curl --connect-timeout 2 --max-time 5 -fsS http://127.0.0.1:4320/api/health >/dev/null 2>&1; then
+              echo "Kurukoo health endpoint ready after ${i}s"
+              exit 0
+            fi
+            if ! kill -0 "$server_pid" >/dev/null 2>&1; then
+              echo "Kurukoo process exited before health readiness"
+              cat "$RUNNER_TEMP/kurukoo-runtime-os-proof.log"
+              exit 1
+            fi
             sleep 1
           done
+          echo "Kurukoo health endpoint did not become ready within 180s"
           cat "$RUNNER_TEMP/kurukoo-runtime-os-proof.log"
           exit 1
       - name: Run authenticated runtime proof
