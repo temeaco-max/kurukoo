@@ -60,6 +60,9 @@ async function main() {
   assert.match(adminJs, /renderModules/, 'control room must render canonical admin module registry');
   assert.match(adminJs, /renderPilotReadiness/, 'control room must render canonical dependency readiness');
   assert.match(adminJs, /renderScaleTransition/, 'control room must render scale transition readiness');
+  assert.match(adminJs, /\/api\/admin\/platform\/config\/catalog/, 'settings must consume the mounted secret-safe configuration catalog');
+  assert.match(adminJs, /\/api\/admin\/platform\/config\/readiness/, 'settings must consume the mounted configuration readiness projection');
+  assert.match(adminJs, /Secret, credential and webhook values are never returned/, 'settings must disclose the secret-safe browser policy');
 
   assert.match(platformSrc, /router\.use\(authenticateAdmin\)/, 'platform projection must require admin authentication');
   assert.match(platformSrc, /router\.get\('\/overview'/, 'platform overview endpoint must exist');
@@ -67,6 +70,9 @@ async function main() {
   assert.match(platformSrc, /router\.get\('\/modules'/, 'module registry endpoint must exist');
   assert.match(platformSrc, /router\.get\('\/health'/, 'platform health endpoint must exist');
   assert.match(platformSrc, /router\.get\('\/scale-readiness'/, 'scale readiness endpoint must exist');
+  assert.match(platformSrc, /router\.get\('\/config\/catalog'/, 'configuration catalog endpoint must exist on the mounted platform router');
+  assert.match(platformSrc, /router\.get\('\/config\/readiness'/, 'configuration readiness endpoint must exist on the mounted platform router');
+  assert.match(platformSrc, /secretValues: 'never_returned'/, 'configuration catalog must declare that secret values are never returned');
   assert.match(platformSrc, /router\.get\('\/activation-matrix'/, 'external activation matrix endpoint must exist');
   assert.match(platformSrc, /getExternalIntegrationOperationalStatus/, 'activation matrix must reuse canonical operational status');
   assert.match(serviceSrc, /clientSurfaceRegistry/, 'admin platform service must reuse client surface registry');

@@ -132,12 +132,25 @@
       });
       return;
     }
-    if (section === 'compliance' || section === 'settings') {
-      await renderReadiness(section === 'compliance' ? 'Compliance & safety' : 'Platform settings', section === 'compliance' ? 'Canonical safety, trust, privacy and activation gates.' : 'Non-secret feature and activation state. Credential values are never exposed.', data => section === 'compliance' ? [
+    if (section === 'compliance') {
+      await renderReadiness('Compliance & safety', 'Canonical safety, trust, privacy and activation gates.', data => [
         ['Progressive trust', data.featureFlags?.progressiveTrust ? 'Enabled' : 'Disabled'], ['Channel evidence', data.featureFlags?.channelEvidence ? 'Enabled' : 'Disabled'], ['Push approval', data.featureFlags?.pushApproval ? 'Enabled' : 'Disabled'], ['Email OTP', data.featureFlags?.emailOtp ? 'Enabled' : 'Disabled'], ['Private number masking', data.featureFlags?.privateNumberMasking ? 'Enabled' : 'Disabled'], ['Privacy number bridge', data.privacyNumberMasking?.status ?? 'Unknown'], ['Delivery claims', data.deliveryClaims ?? 'Internal states only']
-      ] : [
-        ['Configured feature flags', Object.keys(data.featureFlags || {}).length], ['Trusted devices', `${data.trustedDevices?.active ?? 0} active / ${data.trustedDevices?.revoked ?? 0} revoked`], ['Trust challenges pending', data.trustChallenges?.pending ?? 0], ['Local model state', data.brain?.localModel?.mode ?? data.brain?.localModel?.executionMode ?? 'Unknown'], ['Context arbitration telemetry', data.brain?.contextArbitration ? 'Available' : 'Unavailable'], ['External delivery truth', 'Fail-closed'], ['Credentials', 'Never exposed in UI']
       ]);
+      return;
+    }
+    if (section === 'settings') {
+      panel.innerHTML = '<div class="card"><div class="k-section-heading"><div><p class="k-muted">Configuration metadata</p><h2>Platform settings</h2></div><span class="k-status" id="config-readiness-state">Loading…</span></div><p class="muted">Configuration is read from the server environment. Secret, credential and webhook values are never returned to the browser; activation and live delivery remain separate evidence-gated states.</p><div id="config-readiness-summary">Loading readiness…</div><div id="config-status-list" class="k-list">Loading configuration metadata…</div></div>';
+      try {
+        const [catalog, readiness] = await Promise.all([loadJson('/api/admin/platform/config/catalog'), loadJson('/api/admin/platform/config/readiness')]);
+        const readinessState = document.getElementById('config-readiness-state');
+        if (readinessState) readinessState.textContent = readiness.ready ? 'Required configuration ready' : `${readiness.requiredMissing?.length ?? 0} required values missing`;
+        const summaryNode = document.getElementById('config-readiness-summary');
+        if (summaryNode) summaryNode.innerHTML = renderList([['Configured', `${readiness.configuredCount ?? 0} / ${readiness.totalCount ?? 0}`], ['Required missing', readiness.requiredMissing?.length ?? 0], ['Optional missing', readiness.optionalMissing?.length ?? 0], ['Secret policy', 'Never exposed']]);
+        const list = document.getElementById('config-status-list');
+        if (list) list.innerHTML = (catalog.status || []).map(item => `<div class="k-row"><div><strong>${esc(item.key)}</strong><span class="admin-module-owner">${esc(item.subsystem)} · ${esc(item.description)}</span><span class="admin-module-owner">Depends on: ${esc((item.dependentFeatures || []).join(', ') || 'Platform')}</span></div><strong>${item.configured ? 'Configured' : item.required ? 'Required' : 'Optional'}</strong></div>`).join('');
+      } catch (error) {
+        panel.innerHTML = `<div class="card"><h2>Platform settings</h2><p class="admin-error">Configuration readiness unavailable: ${esc(error.message)}</p></div>`;
+      }
       return;
     }
     if (section === 'notifications') {
