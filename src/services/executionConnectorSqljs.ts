@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { getDb, saveDb } from '../database.js';
 import { getEconomicRequest } from './skillFlows.js';
 import { getEconomicParticipants, type EconomicParticipant, type EconomicParticipantRole } from './economicParticipants.js';
+export type { EconomicParticipantRole } from './economicParticipants.js';
 import { generateProxyNumber, getPrivacyBridgeStatus } from './privacyBridge.js';
 
 export const EXECUTION_STATUSES = [
