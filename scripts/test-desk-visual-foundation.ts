@@ -37,8 +37,8 @@ assert.match(deskRuntime, /dataset\.deskModule = id/);
 for (const id of moduleIds) assert.match(deskRuntime, new RegExp(`'${id}'`), `Desk runtime missing module id: ${id}`);
 for (const id of moduleIds) assert.match(deskCss, new RegExp(`k-desk-module-${id}`), `Desk CSS missing module composition: ${id}`);
 
-for (const state of ['idle', 'listening', 'thinking', 'speaking', 'working', 'waiting', 'needs-attention']) {
-  assert.match(deskRuntime, new RegExp(`data-agent-presence=\\"${state}\\"|agentPresence.*${state}`), `Desk Agent Presence state missing: ${state}`);
+assert.match(deskRuntime, /dataset\.agentPresence='idle'/, 'Desk Agent Presence default state missing: idle');
+for (const state of ['listening', 'thinking', 'speaking', 'working', 'waiting', 'needs-attention']) {
   assert.match(deskCss, new RegExp(`k-desk-presence[^}]*${state}`), `Desk Agent Presence styling missing: ${state}`);
 }
 for (const state of ['empty', 'ready', 'unavailable']) assert.match(deskRuntime, new RegExp(`k-desk-state-${state}`), `Desk state treatment missing: ${state}`);
