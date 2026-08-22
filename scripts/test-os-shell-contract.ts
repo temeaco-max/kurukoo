@@ -5,6 +5,7 @@ import { CHAT_SIDEBAR_FOUNDATION } from '../src/services/chatSidebarFoundation.j
 import { KURUKOO_OS_COMPONENTS } from '../src/services/kurukooOsComponentRegistry.js';
 
 const shellRuntime = readFileSync(resolve(process.cwd(), 'public/js/kurukoo-desk-system.js'), 'utf8');
+const appShellRuntime = readFileSync(resolve(process.cwd(), 'public/js/kurukoo-app-shell.js'), 'utf8');
 const componentCss = readFileSync(resolve(process.cwd(), 'public/css/kurukoo-os-components.css'), 'utf8');
 const finalCss = readFileSync(resolve(process.cwd(), 'public/css/kurukoo-os-final.css'), 'utf8');
 const providerCss = readFileSync(resolve(process.cwd(), 'public/css/provider-communication.css'), 'utf8');
@@ -33,6 +34,11 @@ assert.ok(providerCss.includes('var(--ko-primary'));
 assert.ok(providerCss.includes('min-height:44px'));
 assert.ok(providerCss.includes('button[disabled]'));
 assert.ok(presenceRuntime.includes("'listening'"));
+assert.ok(appShellRuntime.includes("{label:'Desk',href:'/app/desk'"));
+assert.ok(appShellRuntime.includes("{label:'Agent',href:'/app/agent'"));
+assert.ok(appShellRuntime.includes("{label:'Discover',href:'/app/discover'"));
+assert.ok(appShellRuntime.includes('const createSecondaryNav=()=>{}'));
+assert.ok(appShellRuntime.includes("['/desk','/app/desk']"));
 assert.match(icons, /symbol id="search"/);
 assert.match(icons, /symbol id="user"/);
 assert.ok(CHAT_SIDEBAR_FOUNDATION.some((item) => item.id === 'cart' && item.targetPlacement === 'header'));
@@ -41,4 +47,4 @@ assert.ok(KURUKOO_OS_COMPONENTS.some((item) => item.id === 'conversation-continu
 assert.ok(KURUKOO_OS_COMPONENTS.some((item) => item.id === 'pulse-timeline'));
 assert.ok(KURUKOO_OS_COMPONENTS.some((item) => item.id === 'context-inspector'));
 
-console.log('OS shell contract passed: canonical header controls, shared state/presence vocabulary, communication geometry and reusable OS components are present.');
+console.log('OS shell contract passed: canonical header controls, shared state/presence vocabulary, canonical mobile IA and non-duplicated workspace navigation are present.');
