@@ -67,7 +67,7 @@ try {
 
   const secondAuthorization = await startGoogleDriveConnection(phoneA);
   await completeGoogleDriveConnection(phoneA, new URL(secondAuthorization.authorizationUrl).searchParams.get('state')!, 'test-code');
-  const externalDelete = await createArtifact({ phone: phoneA, filename: 'photo.jpg', mimeType: 'image/jpeg', data: Buffer.from('image bytes') });
+  const externalDelete = await createArtifact({ phone: phoneA, filename: 'photo.jpg', mimeType: 'image/jpeg', data: Buffer.from([0xff, 0xd8, 0xff, 0xe0]) });
   const deleted = await deleteArtifactReference(phoneA, externalDelete.id, true);
   assert.deepEqual(deleted, { deleted: true, externalDeleted: true });
   assert.equal(externalDeleteCalls, 1, 'External deletion must happen only after explicit owner request.');
