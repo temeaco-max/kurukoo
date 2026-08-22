@@ -10,9 +10,9 @@
   <link rel="stylesheet" href="/css/site.css?v=1.2.1">
   <link rel="stylesheet" href="/css/kurukoo-client-foundation.css?v=2">
   <link rel="stylesheet" href="/css/kurukoo-workspace.css?v=5">
-  <link rel="stylesheet" href="/css/kurukoo-os-final.css?v=2">
-  <link rel="stylesheet" href="/css/kurukoo-desktop-final.css?v=2">
-  <script src="/js/fcm-client.js?v=tasks1" defer></script>
+  <link rel="stylesheet" href="/css/kurukoo-os-final.css?v=routes1">
+  <link rel="stylesheet" href="/css/kurukoo-desktop-final.css?v=routes1">
+  <script src="/js/fcm-client.js?v=routes2" defer></script>
 </head>
 <body class="k-app-page workspace-page k-app-section-<%= section %>" data-workspace-section="<%= section %>" data-app-section="<%= section %>">
   <% const icon = (name) => `<svg class="k-app-icon" aria-hidden="true"><use href="/icons/kurukoo-icons.svg#${name}"></use></svg>`; %>
@@ -73,11 +73,28 @@
         <% if (section === 'desk') { %>
           <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label">Conversation</span><h2>One place to ask, coordinate and continue.</h2><p>Chat remains the source of truth for requests, reminders, safety, memory, agents and actions.</p><a href="/chat" class="k-app-card-action">Open Web Chat →</a></article><article class="k-app-card"><span class="k-app-card-label">Continuity</span><h2>Keep active work alive.</h2><p>Interruption, authentication, pause/resume and cross-channel continuation remain owned by the canonical context layer.</p><a href="/requests" class="k-app-card-action">View Requests →</a></article></section>
         <% } else if (section === 'connect') { %>
-          <section class="k-app-grid three"><article class="k-app-card"><span class="k-app-card-label">Storage</span><h2>Google Drive</h2><p>User-owned Drive is the preferred durable home for artifacts. OAuth and feature flags determine live availability.</p><a href="/connect" class="k-app-card-action">Open Connect →</a></article><article class="k-app-card"><span class="k-app-card-label">Channels</span><h2>WhatsApp · Telegram · Push</h2><p>Pairing and notifications use the same Kurukoo identity and conversation.</p><a href="/channels" class="k-app-card-action">View readiness →</a></article><article class="k-app-card"><span class="k-app-card-label">Sources</span><h2>Sheets · Notion · Microsoft</h2><p>Bounded owner-authorized source reads are available without creating background mirrors.</p><a href="/connect" class="k-app-card-action">Manage sources →</a></article></section>
+          <section class="k-app-card k-connect-workspace" aria-labelledby="connect-workspace-title" data-workspace-owned-surface="connect">
+            <div class="k-connect-workspace-head"><div><span class="k-app-card-label">Connection readiness</span><h2 id="connect-workspace-title">Your authorized resources</h2><p>Connections remain owner-authorized and evidence-bound. This surface reports readiness; it does not claim data access, delivery, or action success before the canonical provider callback confirms it.</p></div><a class="k-app-primary" href="/channels">Channel readiness</a></div>
+            <div class="k-connect-resource-grid" data-connect-resource-grid aria-live="polite" aria-busy="true"><div class="k-app-list-loading">Loading canonical connection readiness…</div></div>
+            <div class="k-app-empty" data-connect-error hidden role="alert"><span class="k-app-empty-mark" aria-hidden="true">!</span><div><h3>Connection readiness is unavailable</h3><p>Kurukoo could not read the canonical connection authority. No provider state is inferred locally.</p><a class="k-app-card-action" href="/connect">Retry Connect →</a></div></div>
+          </section>
+          <section class="k-app-grid two k-connect-boundary-grid" data-workspace-owned-surface="connect"><article class="k-app-card"><span class="k-app-card-label">Channels</span><h2>WhatsApp · Telegram · Push</h2><p>Pairing, notification permissions, device delivery and linked-channel receipt remain separate provider and device states.</p><a href="/channels" class="k-app-card-action">View channel readiness →</a></article><article class="k-app-card"><span class="k-app-card-label">Source boundary</span><h2>Sheets · Notion · Microsoft</h2><p>Bounded owner-authorized reads preserve one identity and memory boundary without creating a background mirror.</p><a href="/chat?prompt=Help%20me%20manage%20my%20connected%20sources" class="k-app-card-action">Continue in Chat →</a></article></section>
         <% } else if (section === 'wallet' || section === 'points' || section === 'top-up' || section === 'subscriptions') { %>
           <section class="k-app-grid three"><article class="k-app-card"><span class="k-app-card-label">Wallet</span><h2>Money controls</h2><p>Wallet state is separate from provider success and always reflects canonical economic evidence.</p><a href="/wallet" class="k-app-card-action">Wallet →</a></article><article class="k-app-card"><span class="k-app-card-label">Points</span><h2>Closed-loop utility</h2><p>Points remain independent from cash payment rails and can be governed without a payment provider.</p><a href="/points" class="k-app-card-action">Points →</a></article><article class="k-app-card"><span class="k-app-card-label">Billing</span><h2>Top Up &amp; Subscriptions</h2><p>These surfaces remain ready even when the live payment provider is disabled or awaiting verification.</p><div><a href="/top-up" class="k-app-card-action">Top Up →</a> · <a href="/subscriptions" class="k-app-card-action">Subscriptions →</a></div></article></section>
         <% } else if (section === 'checkout' || section === 'confirmations') { %>
           <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label">Economic truth</span><h2>Explicit confirmation before irreversible action.</h2><p>Checkout and confirmations use canonical request state, payment policy and evidence. UI never turns intent into claimed success.</p><a href="/requests" class="k-app-card-action">View Requests →</a></article><article class="k-app-card"><span class="k-app-card-label">Recovery</span><h2>Continue, retry or recover.</h2><p>Failed, pending, cancelled and completed states remain visible and resumable without losing the originating conversation.</p><a href="/chat" class="k-app-card-action">Continue in Chat →</a></article></section>
+        <% } else if (section === 'requests') { %>
+          <section class="k-app-grid three k-request-metrics" aria-label="Canonical Economic Request summary" data-workspace-owned-surface="requests">
+            <article class="k-app-card k-request-metric"><span class="k-app-card-label">Work in motion</span><strong data-request-metric="open">—</strong><p>Canonical requests that remain active in sourcing, matching, quoting, payment, fulfilment or recovery.</p></article>
+            <article class="k-app-card k-request-metric"><span class="k-app-card-label">Needs your action</span><strong data-request-metric="action">—</strong><p>Only explicit confirmation or payment-pending states appear here; a request is not completed by display alone.</p></article>
+            <article class="k-app-card k-request-metric"><span class="k-app-card-label">Completed</span><strong data-request-metric="completed">—</strong><p>Only canonical completed requests are counted. Provider, payment and fulfilment evidence remain independently owned.</p></article>
+          </section>
+          <section class="k-app-card k-request-workspace" aria-labelledby="request-workspace-title" data-workspace-owned-surface="requests">
+            <div class="k-request-workspace-head"><div><span class="k-app-card-label">Economic Request lifecycle</span><h2 id="request-workspace-title">Your work in motion</h2><p>Review request state, explicit next actions and source-aware continuation without creating a parallel order or payment record.</p></div><a class="k-app-primary" href="/chat?prompt=Show%20me%20my%20requests">Continue in Chat</a></div>
+            <div class="k-app-data-list" data-requests-list aria-live="polite" aria-busy="true"><div class="k-app-list-loading">Loading canonical Economic Request state…</div></div>
+            <div class="k-app-empty" data-requests-empty hidden><span class="k-app-empty-mark" aria-hidden="true">K</span><div><h3>No Economic Requests yet</h3><p>Start in Chat when you are ready to source, compare, prepare, or continue a request. No provider availability, price, booking, payment, or fulfilment state is assumed here.</p><a class="k-app-card-action" href="/chat">Start in Chat →</a></div></div>
+            <div class="k-app-empty" data-requests-error hidden role="alert"><span class="k-app-empty-mark" aria-hidden="true">!</span><div><h3>Request state is unavailable</h3><p>Kurukoo could not read the canonical Economic Request authority. No request status is inferred locally.</p><a class="k-app-card-action" href="/requests">Retry Requests →</a></div></div>
+          </section>
         <% } else if (section === 'tasks') { %>
           <section class="k-app-grid three k-task-metrics" aria-label="Canonical task work summary" data-workspace-owned-surface="tasks">
             <article class="k-app-card k-task-metric"><span class="k-app-card-label">Available work</span><strong data-task-metric="available">—</strong><p>Work shown here is currently available to this authenticated identity.</p></article>
@@ -134,7 +151,7 @@
     <a href="/tasks" aria-current="<%= section === 'tasks' ? 'page' : 'false' %>"><span><%= icon('work') %></span><span>Tasks</span></a>
     <a href="/connect" aria-current="<%= section === 'connect' ? 'page' : 'false' %>"><span><%= icon('settings') %></span><span>Connect</span></a>
   </nav>
-  <script src="/js/kurukoo-workspace.js?v=tasks1" defer></script>
+  <script src="/js/kurukoo-workspace.js?v=routes1" defer></script>
   <script src="/js/kurukoo-app-shell.js?v=4" defer></script>
 </body>
 </html>

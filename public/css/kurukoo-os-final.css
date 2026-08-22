@@ -190,11 +190,42 @@ button,a{min-height:44px}
 :is(.ko-unavailable,.unavailable-state){padding:16px;background:#F1ECE7;color:var(--ko-muted)}
 :is(.ko-loading,.loading-state){padding:16px}
 
+/* Authenticated route-owned lifecycle workspaces: shared base and responsive resolution. */
+.k-app-page.k-app-section-requests .k-request-metrics{margin-bottom:14px}
+.k-app-page.k-app-section-requests .k-request-metric>strong{display:block;margin:4px 0 9px;color:var(--ko-ink);font:700 clamp(28px,8vw,38px)/1 "Space Grotesk",Inter,sans-serif;font-variant-numeric:tabular-nums}
+.k-app-page :is(.k-request-workspace,.k-connect-workspace){padding:18px}
+.k-app-page :is(.k-request-workspace-head,.k-connect-workspace-head){display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding-bottom:16px;border-bottom:1px solid var(--ko-border)}
+.k-app-page :is(.k-request-workspace-head,.k-connect-workspace-head)>div{min-width:0}
+.k-app-page :is(.k-request-workspace-head,.k-connect-workspace-head) h2{margin:0 0 7px;font:700 clamp(22px,4vw,26px)/1.15 "Space Grotesk",Inter,sans-serif}
+.k-app-page :is(.k-request-workspace-head,.k-connect-workspace-head) p{margin:0;color:var(--ko-muted);line-height:1.55}
+.k-app-page :is(.k-request-workspace-head,.k-connect-workspace-head) .k-app-primary{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-height:44px;padding-inline:13px;text-decoration:none}
+.k-app-page.k-app-section-requests .k-app-data-list{display:grid;gap:10px;margin-top:16px}
+.k-app-page :is(.k-request-workspace,.k-connect-workspace) .workspace-data-card{padding:16px;border:1px solid var(--ko-border);border-radius:14px;background:var(--ko-surface);box-shadow:0 6px 18px rgba(36,34,31,.04)}
+.k-app-page :is(.k-request-workspace,.k-connect-workspace) .workspace-data-card>span{display:block;color:var(--ko-primary);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.k-app-page :is(.k-request-workspace,.k-connect-workspace) .workspace-data-card h3{margin:6px 0;color:var(--ko-ink);font:700 18px/1.2 "Space Grotesk",Inter,sans-serif}
+.k-app-page :is(.k-request-workspace,.k-connect-workspace) .workspace-data-card p{margin:0;color:var(--ko-muted);line-height:1.5}
+.k-app-page :is(.k-request-workspace,.k-connect-workspace) .workspace-data-card-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:13px}
+.k-app-page :is(.k-request-workspace,.k-connect-workspace) .workspace-text-action{display:inline-flex;align-items:center;min-height:44px;padding:0 3px;border:0;background:transparent;color:var(--ko-primary);font:750 12px/1 Inter,system-ui,sans-serif;text-decoration:none;cursor:pointer}
+.k-app-page :is(.k-request-workspace,.k-connect-workspace) .workspace-text-action:hover{color:var(--ko-primary-strong)}
+.k-app-page :is(.k-request-workspace,.k-connect-workspace) .k-app-list-loading{padding:24px 0;color:var(--ko-muted);font-size:13px}
+.k-app-page :is(.k-request-workspace,.k-connect-workspace) .k-app-empty{display:flex;align-items:flex-start;gap:14px;margin-top:16px;padding:18px;border:1px dashed var(--ko-border);border-radius:14px;background:var(--ko-surface-2)}
+.k-app-page :is(.k-request-workspace,.k-connect-workspace) .k-app-empty-mark{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;border-radius:11px;background:var(--ko-surface);color:var(--ko-primary);font:800 12px/1 "Space Grotesk",Inter,sans-serif}
+.k-app-page :is(.k-request-workspace,.k-connect-workspace) .k-app-empty h3{margin:0 0 5px;color:var(--ko-ink)!important;font:700 17px/1.25 "Space Grotesk",Inter,sans-serif}
+.k-app-page :is(.k-request-workspace,.k-connect-workspace) .k-app-empty p{margin:0;color:var(--ko-muted);line-height:1.5}
+.k-app-page.k-app-section-connect .k-connect-resource-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:16px}
+.k-app-page.k-app-section-connect .k-connect-resource-card{display:flex;min-height:196px;flex-direction:column}
+.k-app-page.k-app-section-connect .k-connect-resource-card .workspace-data-card-footer{margin-top:auto}
+.k-app-page.k-app-section-connect .k-connect-boundary-grid{margin-top:16px}
+@media(min-width:700px) and (max-width:992px){.k-app-page.k-app-section-connect .k-connect-resource-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 @media(max-width:767px){
  .k-app-page .k-app-main{padding-bottom:92px}
  .k-app-page .k-app-title-row{gap:12px}
  .k-app-page .k-app-card{padding:18px}
  .k-app-page .k-app-header-actions .k-app-identity{display:none}
+ .k-app-page :is(.k-request-workspace-head,.k-connect-workspace-head){flex-direction:column}
+ .k-app-page :is(.k-request-workspace-head,.k-connect-workspace-head) .k-app-primary{width:100%}
+ .k-app-page :is(.k-request-workspace,.k-connect-workspace) .workspace-data-card-footer{align-items:flex-start;flex-direction:column}
  :is(.ko-communication-actions,.communication-actions,.provider-actions,.profile-actions){width:100%}
  :is(.ko-communication-actions,.communication-actions,.provider-actions,.profile-actions) :where(button,a){flex:1 1 0}
 }

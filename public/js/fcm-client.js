@@ -142,8 +142,8 @@
   const loadAppAssets = () => {
     if (!document.body?.classList.contains('k-app-page')) return;
     const assets = [
-      ['kurukoo-app-convergence', '/js/kurukoo-app-convergence.js?v=tasks1'],
-      ['kurukoo-app-extensions', '/js/kurukoo-app-extensions.js?v=1'],
+      ['kurukoo-app-convergence', '/js/kurukoo-app-convergence.js?v=routes2'],
+      ['kurukoo-app-extensions', '/js/kurukoo-app-extensions.js?v=routes1'],
     ];
 
     for (const [marker, src] of assets) {

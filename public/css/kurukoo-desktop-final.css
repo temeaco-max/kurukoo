@@ -76,6 +76,34 @@
   body.k-app-page.k-app-section-tasks .k-app-empty p{margin:0;color:var(--kd-muted);line-height:1.5}
   body.k-app-page.k-app-section-tasks .k-app-empty .k-app-card-action{display:inline-flex;align-items:center;min-height:44px;margin-top:8px;color:var(--kd-accent)}
 
+  /* Requests and Connect: route-owned authenticated compositions share the Task lifecycle vocabulary. */
+  body.k-app-page.k-app-section-requests .k-request-metrics{margin-bottom:16px}
+  body.k-app-page.k-app-section-requests .k-request-metric{min-height:154px}
+  body.k-app-page.k-app-section-requests .k-request-metric>strong{display:block;margin:3px 0 10px;color:var(--kd-ink);font:700 clamp(30px,3.6vw,40px)/1 "Space Grotesk",Inter,sans-serif;font-variant-numeric:tabular-nums}
+  body.k-app-page.k-app-section-requests .k-request-workspace,body.k-app-page.k-app-section-connect .k-connect-workspace{padding:24px}
+  body.k-app-page.k-app-section-requests .k-request-workspace-head,body.k-app-page.k-app-section-connect .k-connect-workspace-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding-bottom:18px;border-bottom:1px solid var(--kd-border)}
+  body.k-app-page.k-app-section-requests .k-request-workspace-head>div,body.k-app-page.k-app-section-connect .k-connect-workspace-head>div{min-width:0}
+  body.k-app-page.k-app-section-requests .k-request-workspace-head h2,body.k-app-page.k-app-section-connect .k-connect-workspace-head h2{margin:0 0 7px;font:700 26px/1.12 "Space Grotesk",Inter,sans-serif}
+  body.k-app-page.k-app-section-requests .k-request-workspace-head p,body.k-app-page.k-app-section-connect .k-connect-workspace-head p{max-width:700px;margin:0;color:var(--kd-muted);line-height:1.55}
+  body.k-app-page.k-app-section-requests .k-request-workspace-head .k-app-primary,body.k-app-page.k-app-section-connect .k-connect-workspace-head .k-app-primary{flex:0 0 auto}
+  body.k-app-page.k-app-section-requests .k-app-data-list{display:grid;gap:10px;margin-top:16px}
+  body.k-app-page.k-app-section-requests .workspace-data-card,body.k-app-page.k-app-section-connect .workspace-data-card{padding:16px 17px;border:1px solid var(--kd-border);border-radius:14px;background:var(--kd-surface);box-shadow:0 6px 18px rgba(36,34,31,.04)}
+  body.k-app-page.k-app-section-requests .workspace-data-card>span,body.k-app-page.k-app-section-connect .workspace-data-card>span{display:block;color:var(--kd-accent);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+  body.k-app-page.k-app-section-requests .workspace-data-card h3,body.k-app-page.k-app-section-connect .workspace-data-card h3{margin:6px 0;color:var(--kd-ink);font:700 18px/1.2 "Space Grotesk",Inter,sans-serif}
+  body.k-app-page.k-app-section-requests .workspace-data-card p,body.k-app-page.k-app-section-connect .workspace-data-card p{margin:0;color:var(--kd-muted);line-height:1.5}
+  body.k-app-page.k-app-section-requests .workspace-data-card-footer,body.k-app-page.k-app-section-connect .workspace-data-card-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:13px}
+  body.k-app-page :is(.k-request-workspace,.k-connect-workspace) .workspace-text-action{display:inline-flex;align-items:center;min-height:44px;padding:0 3px;border:0;background:transparent;color:var(--kd-accent);font:750 12px/1 Inter,system-ui,sans-serif;text-decoration:none;cursor:pointer}
+  body.k-app-page :is(.k-request-workspace,.k-connect-workspace) .workspace-text-action:hover{color:var(--kd-accent-strong)}
+  body.k-app-page :is(.k-request-workspace,.k-connect-workspace) .k-app-list-loading{padding:24px 0;color:var(--kd-muted);font-size:13px}
+  body.k-app-page.k-app-section-requests .k-app-empty,body.k-app-page.k-app-section-connect .k-app-empty{display:flex;align-items:flex-start;gap:14px;margin-top:16px;padding:18px;border:1px dashed var(--kd-border);border-radius:14px;background:var(--kd-surface-soft)}
+  body.k-app-page :is(.k-request-workspace,.k-connect-workspace) .k-app-empty-mark{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;border-radius:11px;background:var(--kd-surface);color:var(--kd-accent);font:800 12px/1 "Space Grotesk",Inter,sans-serif}
+  body.k-app-page :is(.k-request-workspace,.k-connect-workspace) .k-app-empty h3{margin:0 0 5px;color:var(--kd-ink);font:700 17px/1.25 "Space Grotesk",Inter,sans-serif}
+  body.k-app-page :is(.k-request-workspace,.k-connect-workspace) .k-app-empty p{margin:0;color:var(--kd-muted);line-height:1.5}
+  body.k-app-page.k-app-section-connect .k-connect-resource-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}
+  body.k-app-page.k-app-section-connect .k-connect-resource-card{display:flex;min-height:212px;flex-direction:column}
+  body.k-app-page.k-app-section-connect .k-connect-resource-card .workspace-data-card-footer{margin-top:auto}
+  body.k-app-page.k-app-section-connect .k-connect-boundary-grid{margin-top:16px}
+
   /* Shared desktop state/detail language */
   .k-context-band,.k-os-context,.k-evidence-row{border:1px solid var(--kd-border);border-radius:12px;background:var(--kd-surface-soft);box-shadow:none}
   .k-context-band{padding:12px 14px}

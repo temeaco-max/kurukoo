@@ -78,13 +78,81 @@
         action.textContent = 'Continue in chat';
         list.appendChild(makeDataCard({ eyebrow: humanize(request.category || 'Request'), title: humanize(request.skill || request.category || 'Request'), detail: requestSummary(request), state: humanize(request.status), action }));
       });
+      list.setAttribute('aria-busy', 'false');
       setEmpty('[data-requests-empty]', requests.length === 0);
+      setEmpty('[data-requests-error]', false);
       return requests;
     } catch (_) {
-      setEmpty('[data-requests-empty]', true);
+      list.setAttribute('aria-busy', 'false');
+      clear(list);
       qsa('[data-request-metric]').forEach((node) => { node.textContent = '—'; });
+      setEmpty('[data-requests-empty]', false);
+      setEmpty('[data-requests-error]', true);
       return [];
     }
+  };
+
+  const connectionDetail = (source, provider) => {
+    if (source?.connected || source?.status === 'connected') return `${provider} is connected for this authenticated identity. Provider access and data actions remain separately confirmed.`;
+    if (source?.configured && source?.enabled) return `${provider} is ready for your owner authorization. No external data is read until the provider confirms the connection.`;
+    if (source?.configured) return `${provider} is configured but disabled for this deployment. No external data is read.`;
+    return `${provider} is not configured for this deployment. Your external data remains outside Kurukoo.`;
+  };
+
+  const connectionState = (source) => {
+    if (source?.connected || source?.status === 'connected') return { label: 'Connected', state: 'connected' };
+    if (source?.configured && source?.enabled) return { label: 'Ready to connect', state: 'needs-input' };
+    if (source?.configured) return { label: 'Disabled for deployment', state: 'unavailable' };
+    return { label: 'Not configured', state: 'unavailable' };
+  };
+
+  const loadConnections = async () => {
+    const list = qs('[data-connect-resource-grid]');
+    if (!list) return [];
+    const providers = [
+      { name: 'Google Drive', endpoint: '/api/artifacts', connect: '/api/artifacts/drive/connect', source: 'storage' },
+      { name: 'Google Sheets', endpoint: '/api/artifacts/sheets', connect: '/api/artifacts/sheets/connect' },
+      { name: 'Notion', endpoint: '/api/artifacts/notion', connect: '/api/artifacts/notion/connect' },
+      { name: 'Outlook Calendar', endpoint: '/api/artifacts/microsoft/calendar', connect: '/api/artifacts/microsoft/calendar/connect' },
+      { name: 'OneDrive', endpoint: '/api/artifacts/microsoft/drive', connect: '/api/artifacts/microsoft/drive/connect' },
+    ];
+    clear(list);
+    let failures = 0;
+    const outcomes = await Promise.all(providers.map(async (provider) => {
+      try {
+        const payload = await api(provider.endpoint);
+        const source = payload[provider.source || 'source'] || {};
+        return { provider, source };
+      } catch (_) { failures += 1; return { provider, source: null }; }
+    }));
+    outcomes.forEach(({ provider, source }) => {
+      const card = document.createElement('article');
+      card.className = 'workspace-data-card k-connect-resource-card';
+      const eyebrow = document.createElement('span'); eyebrow.className = 'workspace-eyebrow'; eyebrow.textContent = 'Connection';
+      const heading = document.createElement('h3'); heading.textContent = provider.name;
+      const detail = document.createElement('p'); detail.textContent = source ? connectionDetail(source, provider.name) : `${provider.name} readiness is unavailable for this signed-in session. No connection state is inferred.`;
+      const footer = document.createElement('div'); footer.className = 'workspace-data-card-footer';
+      const state = source ? connectionState(source) : { label: 'Unavailable', state: 'unavailable' };
+      const status = document.createElement('span'); status.className = 'status-pill connection-state'; status.dataset.state = state.state; status.textContent = state.label;
+      footer.appendChild(status);
+      if (source && !(source.connected || source.status === 'connected') && source.configured && source.enabled) {
+        const action = document.createElement('button'); action.type = 'button'; action.className = 'workspace-text-action'; action.textContent = `Connect ${provider.name}`;
+        action.setAttribute('aria-label', `Connect ${provider.name}`);
+        action.addEventListener('click', async () => {
+          action.disabled = true;
+          try {
+            const payload = await api(provider.connect, { method: 'POST' });
+            if (payload.authorizationUrl) window.location.assign(payload.authorizationUrl);
+            else { action.disabled = false; action.textContent = 'Connection unavailable'; }
+          } catch (_) { action.disabled = false; action.textContent = 'Could not start connection'; }
+        });
+        footer.appendChild(action);
+      }
+      card.append(eyebrow, heading, detail, footer); list.appendChild(card);
+    });
+    list.setAttribute('aria-busy', 'false');
+    setEmpty('[data-connect-error]', failures === providers.length);
+    return outcomes;
   };
 
   const loadTasks = async () => {
@@ -499,7 +567,7 @@
   if (localStorage.getItem('kurukoo_proactive_dismissed') === '1') qs('[data-proactive-card]')?.setAttribute('hidden', '');
 
   const params = new URLSearchParams(window.location.search); const prompt = params.get('prompt'); if (prompt && input) window.requestAnimationFrame(() => seedPrompt(prompt));
-  if (section === 'requests') loadRequests(); if (section === 'tasks') loadTasks(); if (section === 'reminders') loadReminders(); if (section === 'points') loadPoints(); if (section === 'safety') loadSafety(); if (section === 'daily-picks') loadDailyPicks(); if (section === 'cart') loadCart(); if (section === 'confirmation') loadConfirmation(); if (section === 'connect') { loadArtifacts(); loadGoogleSheetsSource(); loadNotionSource(); loadMicrosoftSource(); }
+  if (section === 'requests') loadRequests(); if (section === 'tasks') loadTasks(); if (section === 'reminders') loadReminders(); if (section === 'points') loadPoints(); if (section === 'safety') loadSafety(); if (section === 'daily-picks') loadDailyPicks(); if (section === 'cart') loadCart(); if (section === 'confirmation') loadConfirmation(); if (section === 'connect') loadConnections();
 
   loadConnectedResources();
 })();
