@@ -8,7 +8,7 @@ process.env.KURUKOO_MCP_ENABLED = 'true';
 process.env.KURUKOO_MCP_ISSUER = 'https://kurukoo.test';
 process.env.KURUKOO_MCP_CLIENT_ID = 'chatgpt-test-client';
 process.env.KURUKOO_MCP_REDIRECT_URIS = 'https://chatgpt.test/oauth/callback';
-process.env.JWT_SECRET = 'mcp-test-jwt-secret-0123456789abcdef';
+process.env.JWT_SECRET = crypto.randomBytes(32).toString('hex');
 process.env.KURUKOO_MCP_OAUTH_SECRET = process.env.JWT_SECRET;
 process.env.DB_PATH = path.join(process.cwd(), 'tmp', `mcp-test-${process.pid}.sqlite`);
 
