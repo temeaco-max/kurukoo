@@ -1,0 +1,61 @@
+name: Runtime OS Proof
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NODE_ENV: test
+  PORT: 4320
+  HOST: 127.0.0.1
+  KURUKOO_DEV_AUTH: 'true'
+  KURUKOO_TEST_PHONE: '08030000000'
+  JWT_SECRET: 'kurukoo-runtime-os-proof-secret-32-characters'
+  KURUKOO_WORKERS: '0'
+
+jobs:
+  runtime-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm install --no-save playwright
+      - run: npx playwright install --with-deps chromium
+      - name: Start Kurukoo locally
+        run: |
+          nohup npm run dev > "$RUNNER_TEMP/kurukoo-runtime-os-proof.log" 2>&1 &
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:4320/api/health >/dev/null 2>&1; then exit 0; fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/kurukoo-runtime-os-proof.log"
+          exit 1
+      - name: Run authenticated runtime proof
+        env:
+          KURUKOO_E2E_BASE_URL: http://127.0.0.1:4320
+          KURUKOO_E2E_LOCAL_AUTH: 'true'
+          KURUKOO_E2E_FAIL_CONSOLE: 'true'
+          KURUKOO_E2E_VIEWPORTS: '1440x900,390x844'
+        run: node scripts/run-runtime-os-proof.mjs
+      - name: Upload runtime screenshots and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kurukoo-runtime-os-proof
+          path: artifacts/runtime-os-proof/
+          if-no-files-found: warn
+      - name: Upload runtime server log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kurukoo-runtime-os-proof-server-log
+          path: ${{ runner.temp }}/kurukoo-runtime-os-proof.log
+          if-no-files-found: ignore
