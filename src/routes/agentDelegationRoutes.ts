@@ -53,14 +53,14 @@ router.patch('/delegations/:id', authenticateUser, async (req: AuthRequest, res)
 });
 
 router.post('/delegations/:id/execute', authenticateUser, async (req: AuthRequest, res) => {
-  const phone = String(req.user?.phone || ''); const delegationId = String(req.params.id || ''); const task = String(req.body?.task || '').trim();
+  const phone = String(req.user?.phone || ''); const delegationId = String(req.params.id || ''); const task = String(req.body?.task || '').trim(); const action = req.body?.action ? String(req.body.action).trim().slice(0, 120) : undefined;
   if (!phone || !delegationId || !task) return res.status(400).json({ error: 'A delegated agent and task are required.' });
   if (task.length > 12000) return res.status(413).json({ error: 'Task is too large.' });
   try {
     const delegations = await listUserAgentDelegations(phone);
     const selected = delegations.find(item => String(item.id) === delegationId);
     if (!selected) return res.status(404).json({ error: 'Delegated agent not found.' });
-    res.json(await executeDelegatedAgentWithCanonicalRun(phone, delegationId, String(selected.skill || ''), task));
+    res.json(await executeDelegatedAgentWithCanonicalRun(phone, delegationId, String(selected.skill || ''), task, action));
   } catch (error) { res.status(500).json({ error: error instanceof Error ? error.message : 'Unable to execute delegated agent.' }); }
 });
 
