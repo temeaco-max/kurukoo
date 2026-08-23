@@ -1,243 +1,26 @@
-/**
- * Trust boundary: disputes, scam reports, escrow.
- * Identity is derived from the authenticated session. Resource ownership is
- * checked before reading or mutating user-owned disputes and escrow records.
- */
+/** Trust boundary: disputes, scam reports, escrow. */
 import { Router } from 'express';
 import { authenticateUser, authenticateAdmin, AuthRequest } from '../middleware/auth.js';
-import { getDb, saveDb } from '../database.js';
-import {
-  createDispute,
-  getDisputeStatus,
-  resolveDispute,
-  escalateDispute,
-} from '../services/disputeResolution.js';
-import { ensureEscrowSchema, releaseEscrow, refundEscrow } from '../services/escrow.js';
-import { getTrustScoreBreakdown, listTrustScoreLedger } from '../services/trustScore.js';
-
-const router = Router();
-
-function sessionPhone(req: AuthRequest): string | null {
-  return req.user?.phone ? String(req.user.phone) : null;
-}
-
-async function getDisputeOwner(disputeId: number): Promise<string | null> {
-  const db = await getDb();
-  const stmt = db.prepare(`SELECT phone FROM disputes WHERE id = ?`);
-  stmt.bind([disputeId]);
-  let phone: string | null = null;
-  if (stmt.step()) {
-    const row = stmt.getAsObject() as any;
-    phone = row?.phone ? String(row.phone) : null;
-  }
-  stmt.free();
-  return phone;
-}
-
-async function getEscrowParties(escrowId: number): Promise<{ buyer: string; provider: string } | null> {
-  const db = await getDb();
-  const stmt = db.prepare(`SELECT buyer_phone, provider_phone FROM escrow WHERE id = ?`);
-  stmt.bind([escrowId]);
-  let parties: { buyer: string; provider: string } | null = null;
-  if (stmt.step()) {
-    const row = stmt.getAsObject() as any;
-    if (row?.buyer_phone && row?.provider_phone) {
-      parties = { buyer: String(row.buyer_phone), provider: String(row.provider_phone) };
-    }
-  }
-  stmt.free();
-  return parties;
-}
-
-async function listBuyerEscrow(phone: string): Promise<Array<Record<string, unknown>>> {
-  const db = await getDb();
-  await ensureEscrowSchema(db);
-  const stmt = db.prepare(`
-    SELECT e.id, e.order_id, e.amount_minor, e.description, e.status, e.created_at, e.cooling_off_until
-    FROM escrow e
-    WHERE e.buyer_phone = ?
-    ORDER BY e.created_at DESC, e.id DESC
-  `);
-  stmt.bind([phone]);
-  const escrows: Array<Record<string, unknown>> = [];
-  while (stmt.step()) escrows.push(stmt.getAsObject() as Record<string, unknown>);
-  stmt.free();
-  return escrows;
-}
-
-function disputeFailureStatus(error: unknown): number {
-  const message = error instanceof Error ? error.message : '';
-  if (message === 'Order not found') return 404;
-  if (message.includes('Only the order buyer') || message.includes('ownership mismatch')) return 403;
-  if (message.includes('No held escrow') || message.includes('Invalid economic request transition')) return 409;
-  return 500;
-}
-
-async function openBuyerDispute(req: AuthRequest, res: any): Promise<void> {
-  const phone = sessionPhone(req);
-  if (!phone) {
-    res.status(401).json({ error: 'Authentication required' });
-    return;
-  }
-  const orderId = req.body?.order_id || req.body?.orderId;
-  const reason = req.body?.reason;
-  if (!orderId || !reason) {
-    res.status(400).json({ error: 'Missing order_id or reason' });
-    return;
-  }
-  try {
-    const opened = await createDispute(phone, String(orderId), String(reason));
-    res.json({
-      success: true,
-      disputeId: opened.disputeId,
-      escrowFrozen: opened.escrowFrozen,
-      economicRequestId: opened.economicRequestId,
-      message: 'Dispute submitted and held escrow frozen.',
-    });
-  } catch (error) {
-    res.status(disputeFailureStatus(error)).json({ error: error instanceof Error ? error.message : 'Failed to create dispute' });
-  }
-}
-
-router.get('/trust/score', authenticateUser, async (req: AuthRequest, res) => {
-  const phone = sessionPhone(req);
-  if (!phone) return res.status(401).json({ error: 'Authentication required' });
-  const breakdown = await getTrustScoreBreakdown(phone);
-  if (!breakdown) return res.status(404).json({ error: 'Trust Score is unavailable for this profile.' });
-  res.json({ score: breakdown.score, breakdown: { avgRating: breakdown.avgRating, completedJobs: breakdown.completedJobs, verifiedProvider: breakdown.verifiedProvider, disputesLost: breakdown.disputesLost, accountAgeDays: Number(breakdown.accountAgeDays.toFixed(2)) } });
-});
-
-router.get('/trust/ledger', authenticateUser, async (req: AuthRequest, res) => {
-  const phone = sessionPhone(req);
-  if (!phone) return res.status(401).json({ error: 'Authentication required' });
-  const limit = Number(req.query.limit || 25);
-  res.json({ entries: await listTrustScoreLedger(phone, limit) });
-});
-
-router.post('/dispute/create', authenticateUser, openBuyerDispute);
-router.post('/disputes', authenticateUser, openBuyerDispute);
-
-router.get('/escrow', authenticateUser, async (req: AuthRequest, res) => {
-  const phone = sessionPhone(req);
-  if (!phone) return res.status(401).json({ error: 'Authentication required' });
-  if (req.query.phone && String(req.query.phone) !== phone) {
-    return res.status(403).json({ error: 'You can only view your own escrow records' });
-  }
-  try {
-    res.json(await listBuyerEscrow(phone));
-  } catch {
-    res.status(500).json({ error: 'Failed to load escrow records' });
-  }
-});
-
-router.post('/scam_reports', authenticateUser, async (req: AuthRequest, res) => {
-  const reporter = sessionPhone(req);
-  if (!reporter) return res.status(401).json({ error: 'Authentication required' });
-  const reported_phone = req.body?.reported_phone;
-  const description = req.body?.description;
-  if (!reported_phone || !description) return res.status(400).json({ error: 'Missing reported_phone or description' });
-  try {
-    const db = await getDb();
-    db.run(
-      `INSERT INTO scam_reports (reporter_phone, reported_phone, description, status) VALUES (?, ?, ?, 'pending')`,
-      [reporter, String(reported_phone), String(description)]
-    );
-    saveDb();
-    res.json({ success: true, message: 'Scam report submitted successfully.' });
-  } catch (e) {
-    console.error('Failed to submit scam report:', e);
-    res.status(500).json({ error: 'Failed to submit scam report' });
-  }
-});
-
-router.get('/dispute/:id', authenticateUser, async (req: AuthRequest, res) => {
-  const phone = sessionPhone(req);
-  if (!phone) return res.status(401).json({ error: 'Authentication required' });
-  const disputeId = parseInt(req.params.id, 10);
-  if (isNaN(disputeId)) return res.status(400).json({ error: 'Invalid dispute ID' });
-  try {
-    const owner = await getDisputeOwner(disputeId);
-    if (!owner) return res.status(404).json({ error: 'Dispute not found' });
-    if (owner !== phone) return res.status(403).json({ error: 'Forbidden: not dispute owner' });
-    const status = await getDisputeStatus(disputeId);
-    res.json({ success: true, disputeId, status });
-  } catch {
-    res.status(500).json({ error: 'Failed to fetch dispute status' });
-  }
-});
-
-router.post('/dispute/:id/resolve', authenticateAdmin, async (req: AuthRequest, res) => {
-  const disputeId = parseInt(req.params.id, 10);
-  const resolution = req.body?.resolution;
-  if (isNaN(disputeId) || !resolution) return res.status(400).json({ error: 'Missing disputeId or resolution' });
-  try {
-    await resolveDispute(disputeId, String(resolution));
-    res.json({ success: true, message: 'Dispute resolved successfully.' });
-  } catch {
-    res.status(500).json({ error: 'Failed to resolve dispute' });
-  }
-});
-
-router.post('/dispute/:id/escalate', authenticateUser, async (req: AuthRequest, res) => {
-  const phone = sessionPhone(req);
-  if (!phone) return res.status(401).json({ error: 'Authentication required' });
-  const disputeId = parseInt(req.params.id, 10);
-  if (isNaN(disputeId)) return res.status(400).json({ error: 'Invalid dispute ID' });
-  try {
-    const owner = await getDisputeOwner(disputeId);
-    if (!owner) return res.status(404).json({ error: 'Dispute not found' });
-    if (owner !== phone) return res.status(403).json({ error: 'Forbidden: not dispute owner' });
-    await escalateDispute(disputeId);
-    res.json({ success: true, message: 'Dispute escalated to admin review.' });
-  } catch {
-    res.status(500).json({ error: 'Failed to escalate dispute' });
-  }
-});
-
-/**
- * Direct client escrow creation is deliberately disabled. The shared Economic
- * Request flow creates an internal ledger only after verified payment evidence
- * and a confirmed quote have been attached by a trusted payment adapter.
- */
-router.post('/escrow/create', authenticateUser, async (_req: AuthRequest, res) => {
-  res.status(409).json({
-    error: 'Direct escrow creation is disabled; use the verified Economic Request payment flow.',
-    payment_required: true,
-  });
-});
-
-router.post('/escrow/release', authenticateUser, async (req: AuthRequest, res) => {
-  const phone = sessionPhone(req);
-  if (!phone) return res.status(401).json({ error: 'Authentication required' });
-  const escrowId = parseInt(String(req.body?.escrow_id || ''), 10);
-  if (!Number.isInteger(escrowId)) return res.status(400).json({ error: 'escrow_id is required' });
-  try {
-    const parties = await getEscrowParties(escrowId);
-    if (!parties) return res.status(404).json({ error: 'Escrow not found' });
-    if (parties.buyer !== phone) return res.status(403).json({ error: 'Forbidden: only the buyer can release escrow' });
-    const success = await releaseEscrow(escrowId);
-    res.json({ success, message: success ? 'Escrow released to provider.' : 'Escrow is not eligible for release.' });
-  } catch {
-    res.status(500).json({ error: 'Failed to release escrow' });
-  }
-});
-
-router.post('/escrow/refund', authenticateUser, async (req: AuthRequest, res) => {
-  const phone = sessionPhone(req);
-  if (!phone) return res.status(401).json({ error: 'Authentication required' });
-  const escrowId = parseInt(String(req.body?.escrow_id || ''), 10);
-  if (!Number.isInteger(escrowId)) return res.status(400).json({ error: 'escrow_id is required' });
-  try {
-    const parties = await getEscrowParties(escrowId);
-    if (!parties) return res.status(404).json({ error: 'Escrow not found' });
-    if (parties.buyer !== phone && parties.provider !== phone) {
-      return res.status(403).json({ error: 'Forbidden: escrow party required' });
-    }
-    const success = await refundEscrow(escrowId);
-    res.json({ success, message: success ? 'Escrow refunded to buyer.' : 'Escrow is not eligible for refund.' });
-  } catch {
-    res.status(500).json({ error: 'Failed to refund escrow' });
-  }
-});
-
+import { getCanonicalStore } from '../services/canonicalStore.js';
+import { createDispute,getDisputeStatus,resolveDispute,escalateDispute } from '../services/disputeResolution.js';
+import { releaseEscrow,refundEscrow } from '../services/escrow.js';
+import { getTrustScoreBreakdown,listTrustScoreLedger } from '../services/trustScore.js';
+const router=Router();
+function sessionPhone(req:AuthRequest){return req.user?.phone?String(req.user.phone):null;}
+async function getDisputeOwner(disputeId:number){return String((await (await getCanonicalStore()).one<any>('SELECT phone FROM disputes WHERE id=?',[disputeId]))?.phone||'')||null;}
+async function getEscrowParties(escrowId:number){const row=await(await getCanonicalStore()).one<any>('SELECT buyer_phone,provider_phone FROM escrow WHERE id=?',[escrowId]);return row?.buyer_phone&&row?.provider_phone?{buyer:String(row.buyer_phone),provider:String(row.provider_phone)}:null;}
+async function listBuyerEscrow(phone:string){return(await(await getCanonicalStore()).all<any>(`SELECT e.id,e.order_id,e.amount_minor,e.description,e.status,e.created_at,e.cooling_off_until FROM escrow e WHERE e.buyer_phone=? ORDER BY e.created_at DESC,e.id DESC`,[phone]));}
+function disputeFailureStatus(error:unknown){const message=error instanceof Error?error.message:'';if(message==='Order not found')return 404;if(message.includes('Only the order buyer')||message.includes('ownership mismatch'))return 403;if(message.includes('No held escrow')||message.includes('Invalid economic request transition'))return 409;return 500;}
+async function openBuyerDispute(req:AuthRequest,res:any){const phone=sessionPhone(req);if(!phone)return void res.status(401).json({error:'Authentication required'});const orderId=req.body?.order_id||req.body?.orderId,reason=req.body?.reason;if(!orderId||!reason)return void res.status(400).json({error:'Missing order_id or reason'});try{const opened=await createDispute(phone,String(orderId),String(reason));res.json({success:true,disputeId:opened.disputeId,escrowFrozen:opened.escrowFrozen,economicRequestId:opened.economicRequestId,message:'Dispute submitted and held escrow frozen.'});}catch(error){res.status(disputeFailureStatus(error)).json({error:error instanceof Error?error.message:'Failed to create dispute'});}}
+router.get('/trust/score',authenticateUser,async(req:AuthRequest,res)=>{const phone=sessionPhone(req);if(!phone)return res.status(401).json({error:'Authentication required'});const breakdown=await getTrustScoreBreakdown(phone);if(!breakdown)return res.status(404).json({error:'Trust Score is unavailable for this profile.'});res.json({score:breakdown.score,breakdown:{avgRating:breakdown.avgRating,completedJobs:breakdown.completedJobs,verifiedProvider:breakdown.verifiedProvider,disputesLost:breakdown.disputesLost,accountAgeDays:Number(breakdown.accountAgeDays.toFixed(2))}});});
+router.get('/trust/ledger',authenticateUser,async(req:AuthRequest,res)=>{const phone=sessionPhone(req);if(!phone)return res.status(401).json({error:'Authentication required'});res.json({entries:await listTrustScoreLedger(phone,Number(req.query.limit||25))});});
+router.post('/dispute/create',authenticateUser,openBuyerDispute);router.post('/disputes',authenticateUser,openBuyerDispute);
+router.get('/escrow',authenticateUser,async(req:AuthRequest,res)=>{const phone=sessionPhone(req);if(!phone)return res.status(401).json({error:'Authentication required'});if(req.query.phone&&String(req.query.phone)!==phone)return res.status(403).json({error:'You can only view your own escrow records'});try{res.json(await listBuyerEscrow(phone));}catch{res.status(500).json({error:'Failed to load escrow records'});}});
+router.post('/scam_reports',authenticateUser,async(req:AuthRequest,res)=>{const reporter=sessionPhone(req);if(!reporter)return res.status(401).json({error:'Authentication required'});const reported_phone=req.body?.reported_phone,description=req.body?.description;if(!reported_phone||!description)return res.status(400).json({error:'Missing reported_phone or description'});try{const result=await(await getCanonicalStore()).run(`INSERT INTO scam_reports(reporter_phone,reported_phone,description,status) VALUES(?,?,?,'pending')`,[reporter,String(reported_phone),String(description)]);res.json({success:result.rowCount>0,message:'Scam report submitted successfully.'});}catch(e){console.error('Failed to submit scam report:',e);res.status(500).json({error:'Failed to submit scam report'});}});
+router.get('/dispute/:id',authenticateUser,async(req:AuthRequest,res)=>{const phone=sessionPhone(req);if(!phone)return res.status(401).json({error:'Authentication required'});const disputeId=parseInt(req.params.id,10);if(isNaN(disputeId))return res.status(400).json({error:'Invalid dispute ID'});try{const owner=await getDisputeOwner(disputeId);if(!owner)return res.status(404).json({error:'Dispute not found'});if(owner!==phone)return res.status(403).json({error:'Forbidden: not dispute owner'});res.json({success:true,disputeId,status:await getDisputeStatus(disputeId)});}catch{res.status(500).json({error:'Failed to fetch dispute status'});}});
+router.post('/dispute/:id/resolve',authenticateAdmin,async(req:AuthRequest,res)=>{const disputeId=parseInt(req.params.id,10),resolution=req.body?.resolution;if(isNaN(disputeId)||!resolution)return res.status(400).json({error:'Missing disputeId or resolution'});try{await resolveDispute(disputeId,String(resolution));res.json({success:true,message:'Dispute resolved successfully.'});}catch{res.status(500).json({error:'Failed to resolve dispute'});}});
+router.post('/dispute/:id/escalate',authenticateUser,async(req:AuthRequest,res)=>{const phone=sessionPhone(req);if(!phone)return res.status(401).json({error:'Authentication required'});const disputeId=parseInt(req.params.id,10);if(isNaN(disputeId))return res.status(400).json({error:'Invalid dispute ID'});try{const owner=await getDisputeOwner(disputeId);if(!owner)return res.status(404).json({error:'Dispute not found'});if(owner!==phone)return res.status(403).json({error:'Forbidden: not dispute owner'});await escalateDispute(disputeId);res.json({success:true,message:'Dispute escalated to admin review.'});}catch{res.status(500).json({error:'Failed to escalate dispute'});}});
+router.post('/escrow/create',authenticateUser,async(_req:AuthRequest,res)=>res.status(409).json({error:'Direct escrow creation is disabled; use the verified Economic Request payment flow.',payment_required:true}));
+router.post('/escrow/release',authenticateUser,async(req:AuthRequest,res)=>{const phone=sessionPhone(req);if(!phone)return res.status(401).json({error:'Authentication required'});const escrowId=parseInt(String(req.body?.escrow_id||''),10);if(!Number.isInteger(escrowId))return res.status(400).json({error:'escrow_id is required'});try{const parties=await getEscrowParties(escrowId);if(!parties)return res.status(404).json({error:'Escrow not found'});if(parties.buyer!==phone)return res.status(403).json({error:'Forbidden: only the buyer can release escrow'});const success=await releaseEscrow(escrowId);res.json({success,message:success?'Escrow released to provider.':'Escrow is not eligible for release.'});}catch{res.status(500).json({error:'Failed to release escrow'});}});
+router.post('/escrow/refund',authenticateUser,async(req:AuthRequest,res)=>{const phone=sessionPhone(req);if(!phone)return res.status(401).json({error:'Authentication required'});const escrowId=parseInt(String(req.body?.escrow_id||''),10);if(!Number.isInteger(escrowId))return res.status(400).json({error:'escrow_id is required'});try{const parties=await getEscrowParties(escrowId);if(!parties)return res.status(404).json({error:'Escrow not found'});if(parties.buyer!==phone&&parties.provider!==phone)return res.status(403).json({error:'Forbidden: escrow party required'});const success=await refundEscrow(escrowId);res.json({success,message:success?'Escrow refunded to buyer.':'Escrow is not eligible for refund.'});}catch{res.status(500).json({error:'Failed to refund escrow'});}});
 export default router;
