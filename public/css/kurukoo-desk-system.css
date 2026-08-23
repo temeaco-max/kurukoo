@@ -4,3 +4,15 @@
 @media (max-width:1100px){.k-desk-convergence{grid-template-columns:1fr}.k-desk-convergence-rail{position:static;grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:992px){.k-desk-drawer{width:min(420px,95vw)}.k-desk-drawer-backdrop{display:none}.k-desk-icon-button{width:36px;height:36px}.k-desk-convergence{grid-template-columns:1fr;gap:16px;margin-top:18px}.k-desk-convergence-main{grid-template-columns:1fr;gap:14px}.k-desk-convergence-main .k-desk-module.is-hero{grid-column:auto}.k-desk-convergence-rail{grid-template-columns:1fr;gap:14px}.k-desk-module{padding:17px;border-radius:15px}.k-desk-module h2{font-size:18px}.k-desk-activity-metrics{grid-template-columns:1fr 1fr 1fr}}
 @media (max-width:640px){.k-desk-activity-metrics{grid-template-columns:1fr}.k-desk-module-actions{display:grid}.k-desk-module-action{width:100%}.k-desk-presence{width:100%}}
+
+/* Search trigger: icon+label must not overflow the 38px icon-button box */
+.k-app-header-actions{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:nowrap}
+.k-desk-search-trigger{width:auto;min-width:38px;padding:0 12px;gap:8px;font-size:13px;font-weight:650;letter-spacing:-.01em}
+.k-desk-search-trigger span{white-space:nowrap;line-height:1}
+.k-desk-header-points{width:auto;min-width:38px;padding:0 10px;gap:4px}
+@media (max-width:900px){
+  .k-desk-search-trigger{width:36px;min-width:36px;padding:0}
+  .k-desk-search-trigger span{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  .k-desk-header-points{width:36px;min-width:36px;padding:0}
+  .k-desk-header-points .k-desk-header-value{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+}
