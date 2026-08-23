@@ -1,10 +1,2 @@
-import { getDb, saveDb } from '../database.js';
-
-export async function bookAppointment(phone: string, providerPhone: string, slotTime: string): Promise<number> {
-    const db = await getDb();
-    db.run(`INSERT INTO appointment_slots (client_phone, provider_phone, slot_time, status) VALUES (?, ?, ?, 'confirmed')`, [phone, providerPhone, slotTime]);
-    const res = db.exec(`SELECT last_insert_rowid() as id`);
-    const id = res[0]?.values[0][0] || 1;
-    saveDb();
-    return id;
-}
+import { getCanonicalStore } from './canonicalStore.js';
+export async function bookAppointment(phone:string,providerPhone:string,slotTime:string):Promise<number>{const db=await getCanonicalStore(),row=await db.insert<any>(`INSERT INTO appointment_slots(client_phone,provider_phone,slot_time,status) VALUES(?,?,?,'confirmed') RETURNING id`,[phone,providerPhone,slotTime]);const id=Number(row?.id||0);if(!id)throw new Error('Unable to create appointment');return id;}
