@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authenticateAdmin, authenticateUser, type AuthRequest } from '../middleware/auth.js';
 import { agentRuntimeStatus, cancelAgentGoal, getAgentGoal, goalTimeline, listAgentGoalEvents, listAgentGoals, listAgentWorkerRuns, pauseAgentGoal, resumeAgentGoal } from '../services/agentRuntime.js';
 import { buildAgentBrief, enqueueAgentBriefNotification } from '../services/agentBriefService.js';
-import { getAgentOperatingCapability, getAgentRunSummary, getKurukooAgentCard, listAgentOperatingCapabilities } from '../services/agentOperatingModel.js';
+import { getAgentExternalParticipant, getAgentOperatingCapability, getAgentRunSummary, getKurukooAgentCard, listAgentExternalParticipants, listAgentOperatingCapabilities } from '../services/agentOperatingModel.js';
 
 const router = Router();
 
@@ -29,6 +29,27 @@ router.get('/capabilities/:capability', authenticateUser, async (req, res) => {
   const capability = await getAgentOperatingCapability(String(req.params.capability || ''));
   if (!capability) return res.status(404).json({ error: 'Capability not found' });
   res.json({ success: true, capability });
+});
+
+/** Read-only external participant projection. Declaration is never treated as execution authority. */
+router.get('/external-participants', authenticateUser, async (req, res) => {
+  try {
+    const capability = typeof req.query.capability === 'string' ? req.query.capability : undefined;
+    const includeUnavailable = req.query.includeUnavailable === 'true';
+    res.json({ success: true, participants: await listAgentExternalParticipants({ capability, includeUnavailable }) });
+  } catch (error) {
+    res.status(400).json({ error: error instanceof Error ? error.message : 'Unable to list external participants.' });
+  }
+});
+
+router.get('/external-participants/:participantId', authenticateUser, async (req, res) => {
+  try {
+    const participant = await getAgentExternalParticipant(String(req.params.participantId || ''));
+    if (!participant) return res.status(404).json({ error: 'External participant not found' });
+    res.json({ success: true, participant });
+  } catch (error) {
+    res.status(400).json({ error: error instanceof Error ? error.message : 'Unable to read external participant.' });
+  }
 });
 
 router.get('/brief', authenticateUser, async (req: AuthRequest, res) => {
