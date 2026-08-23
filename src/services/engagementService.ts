@@ -1,9 +1,3 @@
-import { getDb } from '../database.js';
+import { getCanonicalStore } from './canonicalStore.js';
 import { queryGroq } from './groqService.js';
-
-export async function createSuccessStory(jobId: number) {
-    // Generate text via Groq
-    const story = await queryGroq(`Generate a short, anonymised success story for a completed job.`);
-    const db = await getDb();
-    await db.run('INSERT INTO success_stories (story_text, category) VALUES (?, ?)', [story, 'general']);
-}
+export async function createSuccessStory(jobId:number){const story=await queryGroq('Generate a short, anonymised success story for a completed job.');const db=await getCanonicalStore();await db.run('INSERT INTO success_stories(story_text,category) VALUES(?,?)',[story,'general']);}
