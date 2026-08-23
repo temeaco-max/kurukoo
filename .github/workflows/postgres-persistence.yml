@@ -1,0 +1,47 @@
+name: PostgreSQL persistence proof
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: kurukoo
+          POSTGRES_PASSWORD: kurukoo_ci
+          POSTGRES_DB: kurukoo_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kurukoo -d kurukoo_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      KURUKOO_TEST_POSTGRES_URL: postgres://kurukoo:kurukoo_ci@localhost:5432/kurukoo_ci
+      KURUKOO_POSTGRES_SSL: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run build
+      - name: Persistence boundary audit
+        run: node scripts/audit-persistence-boundary.mjs
+      - name: PostgreSQL shared-writer proof
+        run: npx tsx scripts/test-postgres-persistence.ts
+      - name: PostgreSQL domain runtime proof
+        run: npx tsx scripts/test-postgres-domain-runtime.ts
