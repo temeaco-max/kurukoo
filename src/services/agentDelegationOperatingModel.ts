@@ -20,12 +20,13 @@ function planJson(skill: string, task: string, action?: string): string {
 }
 
 async function recordEvent(goalId: string, action: string, result: string, detail: string, idempotencyKey: string) {
-  await getCanonicalStore().run(`INSERT INTO agent_goal_events(goal_id,action,tool,result,detail,idempotency_key) VALUES(?,?,?,?,?,?)`, [goalId, action, 'execute_capability', result, detail.slice(0, 1200), idempotencyKey]);
+  const store = await getCanonicalStore();
+  await store.run(`INSERT INTO agent_goal_events(goal_id,action,tool,result,detail,idempotency_key) VALUES(?,?,?,?,?,?)`, [goalId, action, 'execute_capability', result, detail.slice(0, 1200), idempotencyKey]);
 }
 
 export async function executeDelegatedAgentWithCanonicalRun(ownerPhone: string, delegationId: string, skill: string, task: string, requestedAction?: string): Promise<DelegatedAgentRunResult> {
   await ensureAgentRuntimeSchema();
-  const store = getCanonicalStore();
+  const store = await getCanonicalStore();
   const goalId = `delegated-goal-${randomUUID()}`;
   const normalizedSkill = String(skill || '').trim().toLowerCase().replace(/^skill\./, '');
   const capability = normalizedSkill ? `skill.${normalizedSkill}` : '';
