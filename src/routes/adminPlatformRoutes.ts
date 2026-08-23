@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authenticateAdmin, type AuthRequest } from '../middleware/auth.js';
 import { getAdminModules, getAdminPlatformOverview } from '../services/adminPlatformService.js';
 import { getScaleTransitionReport } from '../services/scaleTransition.js';
-import { getDb } from '../database.js';
+import { getCanonicalStore } from '../services/canonicalStore.js';
 import { getExternalIntegrationOperationalStatus } from '../services/externalIntegrationOperationalStatus.js';
 import { activateConfiguredExternalProviders, probeConfiguredExternalProviders } from '../services/externalActivationService.js';
 import { listAiProviderHealth } from '../services/aiProviderHealth.js';
@@ -79,7 +79,7 @@ router.get('/config/readiness', (_req: AuthRequest, res) => {
 
 router.get('/health', async (_req: AuthRequest, res) => {
   const checks: Record<string, 'ok' | 'degraded' | 'blocked'> = { database: 'blocked', adminAuthentication: 'ok', clientSurfaceRegistry: 'ok', platformProjection: 'blocked' };
-  try { const db = await getDb(); db.exec('SELECT 1'); checks.database = 'ok'; } catch { checks.database = 'blocked'; }
+  try { await (await getCanonicalStore()).one('SELECT 1'); checks.database = 'ok'; } catch { checks.database = 'blocked'; }
   try { await getAdminPlatformOverview(); checks.platformProjection = checks.database === 'ok' ? 'ok' : 'degraded'; } catch { checks.platformProjection = 'blocked'; }
   const status = Object.values(checks).includes('blocked') ? 503 : 200;
   res.status(status).json({ success: status === 200, contractVersion: 'admin-platform-health-v3', checkedAt: new Date().toISOString(), checks, deployment: { nodeEnv: process.env.NODE_ENV || 'development', databaseMode: process.env.KURUKOO_DATABASE_MODE || 'sqljs', jobMode: process.env.KURUKOO_JOB_MODE || 'in_process', workers: Number(process.env.KURUKOO_WORKERS || 1), externalPaymentConfigured: Boolean(process.env.KURUKOO_PAY_PROVIDER) }, externalIntegrations: getExternalIntegrationOperationalStatus(), aiProviderHealth: listAiProviderHealth(), aiUsage: await getAiUsageSummary(), scaleTransition: getScaleTransitionReport(), claims: 'Internal platform health plus current external integration and AI-provider connectivity projections.' });

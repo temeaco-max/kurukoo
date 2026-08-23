@@ -5,148 +5,15 @@
  */
 import { Router } from 'express';
 import { authenticateUser, AuthRequest } from '../middleware/auth.js';
-import { getDb } from '../database.js';
-import {
-  createMoneyCircle,
-  joinMoneyCircle,
-  recordContribution,
-  getCircleDetails,
-  processBuyingCircleDiscount,
-  broadcastSafetyCircleAlert,
-} from '../services/moneyCircle.js';
-
-const router = Router();
-
-function sessionPhone(req: AuthRequest): string | null {
-  return req.user?.phone ? String(req.user.phone) : null;
-}
-
-async function isCircleMember(circleId: number, phone: string): Promise<boolean> {
-  const db = await getDb();
-  const stmt = db.prepare(`SELECT 1 FROM circle_members WHERE circle_id = ? AND phone = ? LIMIT 1`);
-  stmt.bind([circleId, phone]);
-  const member = stmt.step();
-  stmt.free();
-  return member;
-}
-
-router.post('/circle/create', authenticateUser, async (req: AuthRequest, res) => {
-  const phone = sessionPhone(req);
-  if (!phone) return res.status(401).json({ error: 'Authentication required' });
-  if (req.body?.creator_phone && String(req.body.creator_phone) !== phone) {
-    return res.status(403).json({ error: 'Forbidden: creator_phone must match session' });
-  }
-  const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
-  const targetAmount = Number(req.body?.target_amount);
-  const mode = req.body?.mode || 'Standard';
-  if (!name || !Number.isFinite(targetAmount) || targetAmount <= 0) {
-    return res.status(400).json({ error: 'name and a positive target_amount are required' });
-  }
-  if (!['Standard', 'BuyingCircle', 'SafetyCircle'].includes(mode)) {
-    return res.status(400).json({ error: 'Invalid circle mode' });
-  }
-  try {
-    const circleId = await createMoneyCircle(name, phone, targetAmount, mode);
-    res.status(201).json({ success: true, circleId, message: `Money Circle "${name}" created successfully.` });
-  } catch {
-    res.status(500).json({ error: 'Failed to create Money Circle' });
-  }
-});
-
-router.post('/circle/join', authenticateUser, async (req: AuthRequest, res) => {
-  const phone = sessionPhone(req);
-  if (!phone) return res.status(401).json({ error: 'Authentication required' });
-  if (req.body?.phone && String(req.body.phone) !== phone) {
-    return res.status(403).json({ error: 'Forbidden: phone must match session' });
-  }
-  const circleId = Number(req.body?.circle_id);
-  if (!Number.isInteger(circleId) || circleId <= 0) return res.status(400).json({ error: 'Valid circle_id is required' });
-  try {
-    const success = await joinMoneyCircle(circleId, phone);
-    res.status(success ? 200 : 404).json(success
-      ? { success: true, message: `Joined circle ${circleId} successfully.` }
-      : { error: 'Money Circle not found' });
-  } catch {
-    res.status(500).json({ error: 'Failed to join Money Circle' });
-  }
-});
-
-router.post('/circle/contribute', authenticateUser, async (req: AuthRequest, res) => {
-  const phone = sessionPhone(req);
-  if (!phone) return res.status(401).json({ error: 'Authentication required' });
-  if (req.body?.phone && String(req.body.phone) !== phone) {
-    return res.status(403).json({ error: 'Forbidden: phone must match session' });
-  }
-  const circleId = Number(req.body?.circle_id);
-  const amount = Number(req.body?.amount);
-  if (!Number.isInteger(circleId) || circleId <= 0 || !Number.isFinite(amount) || amount <= 0) {
-    return res.status(400).json({ error: 'Valid circle_id and positive amount are required' });
-  }
-  try {
-    if (!(await isCircleMember(circleId, phone))) return res.status(403).json({ error: 'Join the circle before contributing' });
-    const success = await recordContribution(circleId, phone, amount);
-    res.json({ success, message: `Recorded contribution for circle ${circleId}.` });
-  } catch {
-    res.status(500).json({ error: 'Failed to record contribution' });
-  }
-});
-
-router.get('/circle/:id', authenticateUser, async (req: AuthRequest, res) => {
-  const phone = sessionPhone(req);
-  if (!phone) return res.status(401).json({ error: 'Authentication required' });
-  const circleId = Number(req.params.id);
-  if (!Number.isInteger(circleId) || circleId <= 0) return res.status(400).json({ error: 'Invalid circle ID' });
-  try {
-    if (!(await isCircleMember(circleId, phone))) return res.status(403).json({ error: 'Circle membership required' });
-    const details = await getCircleDetails(circleId);
-    if (!details) return res.status(404).json({ error: 'Money Circle not found' });
-    res.json({
-      success: true,
-      circle: {
-        ...details,
-        // Do not expose member phone numbers to every member.
-        members: Array.isArray(details.members)
-          ? details.members.map((member: any) => ({ role: member.role }))
-          : [],
-        contributions: Array.isArray(details.contributions)
-          ? details.contributions.map((entry: any) => ({ amount: entry.amount, created_at: entry.created_at }))
-          : [],
-      },
-    });
-  } catch {
-    res.status(500).json({ error: 'Failed to fetch Money Circle details' });
-  }
-});
-
-router.post('/circle/:id/buying-discount', authenticateUser, async (req: AuthRequest, res) => {
-  const phone = sessionPhone(req);
-  if (!phone) return res.status(401).json({ error: 'Authentication required' });
-  const circleId = Number(req.params.id);
-  if (!Number.isInteger(circleId) || circleId <= 0) return res.status(400).json({ error: 'Invalid circle ID' });
-  try {
-    if (!(await isCircleMember(circleId, phone))) return res.status(403).json({ error: 'Circle membership required' });
-    const result = await processBuyingCircleDiscount(circleId);
-    res.json(result);
-  } catch {
-    res.status(500).json({ error: 'Failed to process buying discount' });
-  }
-});
-
-router.post('/circle/:id/safety-alert', authenticateUser, async (req: AuthRequest, res) => {
-  const phone = sessionPhone(req);
-  if (!phone) return res.status(401).json({ error: 'Authentication required' });
-  if (req.body?.phone && String(req.body.phone) !== phone) {
-    return res.status(403).json({ error: 'Forbidden: phone must match session' });
-  }
-  const circleId = Number(req.params.id);
-  if (!Number.isInteger(circleId) || circleId <= 0) return res.status(400).json({ error: 'Invalid circle ID' });
-  try {
-    if (!(await isCircleMember(circleId, phone))) return res.status(403).json({ error: 'Circle membership required' });
-    const result = await broadcastSafetyCircleAlert(circleId, phone, String(req.body?.alert_type || req.body?.type || 'general'));
-    res.json(result);
-  } catch {
-    res.status(500).json({ error: 'Failed to broadcast safety alert' });
-  }
-});
-
+import { getCanonicalStore } from '../services/canonicalStore.js';
+import { createMoneyCircle, joinMoneyCircle, recordContribution, getCircleDetails, processBuyingCircleDiscount, broadcastSafetyCircleAlert } from '../services/moneyCircle.js';
+const router=Router();
+function sessionPhone(req:AuthRequest):string|null{return req.user?.phone?String(req.user.phone):null;}
+async function isCircleMember(circleId:number,phone:string):Promise<boolean>{const db=await getCanonicalStore();return Boolean(await db.one('SELECT 1 FROM circle_members WHERE circle_id=? AND phone=? LIMIT 1',[circleId,phone]));}
+router.post('/circle/create',authenticateUser,async(req:AuthRequest,res)=>{const phone=sessionPhone(req);if(!phone)return res.status(401).json({error:'Authentication required'});if(req.body?.creator_phone&&String(req.body.creator_phone)!==phone)return res.status(403).json({error:'Forbidden: creator_phone must match session'});const name=typeof req.body?.name==='string'?req.body.name.trim():'';const targetAmount=Number(req.body?.target_amount),mode=req.body?.mode||'Standard';if(!name||!Number.isFinite(targetAmount)||targetAmount<=0)return res.status(400).json({error:'name and a positive target_amount are required'});if(!['Standard','BuyingCircle','SafetyCircle'].includes(mode))return res.status(400).json({error:'Invalid circle mode'});try{const circleId=await createMoneyCircle(name,phone,targetAmount,mode);res.status(201).json({success:true,circleId,message:`Money Circle "${name}" created successfully.`});}catch{res.status(500).json({error:'Failed to create Money Circle'});}});
+router.post('/circle/join',authenticateUser,async(req:AuthRequest,res)=>{const phone=sessionPhone(req);if(!phone)return res.status(401).json({error:'Authentication required'});if(req.body?.phone&&String(req.body.phone)!==phone)return res.status(403).json({error:'Forbidden: phone must match session'});const circleId=Number(req.body?.circle_id);if(!Number.isInteger(circleId)||circleId<=0)return res.status(400).json({error:'Valid circle_id is required'});try{const success=await joinMoneyCircle(circleId,phone);res.status(success?200:404).json(success?{success:true,message:`Joined circle ${circleId} successfully.`}:{error:'Money Circle not found'});}catch{res.status(500).json({error:'Failed to join Money Circle'});}});
+router.post('/circle/contribute',authenticateUser,async(req:AuthRequest,res)=>{const phone=sessionPhone(req);if(!phone)return res.status(401).json({error:'Authentication required'});if(req.body?.phone&&String(req.body.phone)!==phone)return res.status(403).json({error:'Forbidden: phone must match session'});const circleId=Number(req.body?.circle_id),amount=Number(req.body?.amount);if(!Number.isInteger(circleId)||circleId<=0||!Number.isFinite(amount)||amount<=0)return res.status(400).json({error:'Valid circle_id and positive amount are required'});try{if(!(await isCircleMember(circleId,phone)))return res.status(403).json({error:'Join the circle before contributing'});const success=await recordContribution(circleId,phone,amount);res.json({success,message:`Recorded contribution for circle ${circleId}.`});}catch{res.status(500).json({error:'Failed to record contribution'});}});
+router.get('/circle/:id',authenticateUser,async(req:AuthRequest,res)=>{const phone=sessionPhone(req);if(!phone)return res.status(401).json({error:'Authentication required'});const circleId=Number(req.params.id);if(!Number.isInteger(circleId)||circleId<=0)return res.status(400).json({error:'Invalid circle ID'});try{if(!(await isCircleMember(circleId,phone)))return res.status(403).json({error:'Circle membership required'});const details=await getCircleDetails(circleId);if(!details)return res.status(404).json({error:'Money Circle not found'});res.json({success:true,circle:{...details,members:Array.isArray(details.members)?details.members.map((member:any)=>({role:member.role})):[],contributions:Array.isArray(details.contributions)?details.contributions.map((entry:any)=>({amount:entry.amount,created_at:entry.created_at})):[]}});}catch{res.status(500).json({error:'Failed to fetch Money Circle details'});}});
+router.post('/circle/:id/buying-discount',authenticateUser,async(req:AuthRequest,res)=>{const phone=sessionPhone(req);if(!phone)return res.status(401).json({error:'Authentication required'});const circleId=Number(req.params.id);if(!Number.isInteger(circleId)||circleId<=0)return res.status(400).json({error:'Invalid circle ID'});try{if(!(await isCircleMember(circleId,phone)))return res.status(403).json({error:'Circle membership required'});res.json(await processBuyingCircleDiscount(circleId));}catch{res.status(500).json({error:'Failed to process buying discount'});}});
+router.post('/circle/:id/safety-alert',authenticateUser,async(req:AuthRequest,res)=>{const phone=sessionPhone(req);if(!phone)return res.status(401).json({error:'Authentication required'});if(req.body?.phone&&String(req.body.phone)!==phone)return res.status(403).json({error:'Forbidden: phone must match session'});const circleId=Number(req.params.id);if(!Number.isInteger(circleId)||circleId<=0)return res.status(400).json({error:'Invalid circle ID'});try{if(!(await isCircleMember(circleId,phone)))return res.status(403).json({error:'Circle membership required'});res.json(await broadcastSafetyCircleAlert(circleId,phone,String(req.body?.alert_type||req.body?.type||'general')));}catch{res.status(500).json({error:'Failed to broadcast safety alert'});}});
 export default router;

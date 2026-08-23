@@ -1,150 +1,18 @@
-import {
-  getEconomicCategory,
-  getSkillCapabilities,
-  type EconomicCapability,
-  type EconomicRequestStatus,
-} from './skillFlows.js';
-import {
-  createEconomicRequest as createSqlJsEconomicRequest,
-  getEconomicRequest as getSqlJsEconomicRequest,
-  listEconomicRequestsForPhone as listSqlJsEconomicRequestsForPhone,
-  updateEconomicRequestRequirements as updateSqlJsEconomicRequestRequirements,
-  transitionEconomicRequest as transitionSqlJsEconomicRequest,
-} from './skillFlows.js';
+import { getEconomicCategory, getSkillCapabilities, type EconomicCapability, type EconomicRequestStatus } from './skillFlows.js';
 import { persistCoordinatorEvent } from './coordinatorStore.js';
-import { getCanonicalPersistenceMode } from './canonicalPersistence.js';
 import { getCanonicalStore } from './canonicalStore.js';
-
-export interface EconomicRequest {
-  id: string;
-  phone: string;
-  skill: string;
-  category: string;
-  status: EconomicRequestStatus;
-  requirements: Record<string, unknown>;
-  capabilities: EconomicCapability[];
-  providerPhone?: string | null;
-  quote?: Record<string, unknown> | null;
-  fulfillment?: Record<string, unknown> | null;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-type RequestPatch = { providerPhone?: string; quote?: Record<string, unknown>; fulfillment?: Record<string, unknown> };
-
-const TRANSITIONS: Record<EconomicRequestStatus, EconomicRequestStatus[]> = {
-  requested:['awaiting_match','abandoned','cancelled'], awaiting_match:['partially_matched','matched','abandoned','cancelled'],
-  partially_matched:['matched','quoting','abandoned','cancelled'], matched:['quoting','quoted','reserved','in_fulfillment','abandoned','cancelled'],
-  quoting:['quoted','abandoned','cancelled'], quoted:['awaiting_confirmation','reserved','abandoned','cancelled'],
-  awaiting_confirmation:['reserved','cancelled'], reserved:['payment_pending','paid','cancelled'], payment_pending:['paid','failed','cancelled'],
-  paid:['in_fulfillment','fulfilled','disputed','cancelled'], in_fulfillment:['fulfilled','disputed','failed','cancelled'], fulfilled:['completed','disputed'],
-  completed:['disputed'], cancelled:[], disputed:['completed','failed'], failed:['requested','cancelled'], abandoned:[],
-};
-
-function rowToRequest(row: any): EconomicRequest {
-  return {
-    id: String(row.id), phone: String(row.phone), skill: String(row.skill), category: String(row.category), status: String(row.status) as EconomicRequestStatus,
-    requirements: JSON.parse(String(row.requirements_json || '{}')),
-    capabilities: JSON.parse(String(row.capabilities_json || '[]')),
-    providerPhone: row.provider_phone ? String(row.provider_phone) : null,
-    quote: row.quote_json ? JSON.parse(String(row.quote_json)) : null,
-    fulfillment: row.fulfillment_json ? JSON.parse(String(row.fulfillment_json)) : null,
-    createdAt: row.created_at ? String(row.created_at) : undefined,
-    updatedAt: row.updated_at ? String(row.updated_at) : undefined,
-  };
-}
-
-async function ensurePostgresSchema() {
-  const store = await getCanonicalStore();
-  await store.run(`CREATE TABLE IF NOT EXISTS economic_requests (
-    id TEXT PRIMARY KEY,
-    phone TEXT NOT NULL,
-    skill TEXT NOT NULL,
-    category TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'requested',
-    requirements_json TEXT NOT NULL DEFAULT '{}',
-    capabilities_json TEXT NOT NULL DEFAULT '[]',
-    provider_phone TEXT,
-    quote_json TEXT,
-    fulfillment_json TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-  )`);
-  await store.run(`CREATE INDEX IF NOT EXISTS idx_economic_requests_phone_status ON economic_requests(phone,status)`);
-  return store;
-}
-
-function recordLifecycleEvent(current: EconomicRequest, status: EconomicRequestStatus, patch: RequestPatch) {
-  return persistCoordinatorEvent({
-    id:`economic-request:${current.id}:transition:${status}:${Date.now()}`,
-    type:'economic_request.state_changed',
-    occurredAt:new Date().toISOString(),
-    producer:'economicRequestPersistence',
-    correlationId:`economic_request:${current.id}`,
-    ownerPhone:current.phone.startsWith('anon_')?undefined:current.phone,
-    economicRequestId:current.id,
-    payload:{ requestId:current.id, fromStatus:current.status, toStatus:status, providerPhone:patch.providerPhone || current.providerPhone || undefined, hasQuote:Boolean(patch.quote || current.quote), hasFulfillment:Boolean(patch.fulfillment || current.fulfillment) },
-    sensitivity:current.phone.startsWith('anon_')?'public':'personal',
-    provenance:{source:'canonical_service',sourceId:current.id,evidenceLevel:'persisted_state'},
-    policy:{autonomousAllowed:false,confirmationRequired:'none'}, schemaVersion:1,
-  });
-}
-
-export function getAllowedEconomicTransitions(status: EconomicRequestStatus): EconomicRequestStatus[] { return [...(TRANSITIONS[status] || [])]; }
-
-export async function createEconomicRequest(input:{id:string;phone:string;skill:string;requirements:Record<string,unknown>;amount?:number}):Promise<EconomicRequest> {
-  if (getCanonicalPersistenceMode() !== 'postgres') {
-    return createSqlJsEconomicRequest(input);
-  }
-  const category = getEconomicCategory(input.skill) || 'classifieds-marketplace';
-  const capabilities = getSkillCapabilities(input.skill);
-  const store = await ensurePostgresSchema();
-  const requirements = JSON.stringify({ ...input.requirements, amount_minor: input.amount ?? null });
-  await store.run(`INSERT INTO economic_requests(id,phone,skill,category,status,requirements_json,capabilities_json) VALUES(?,?,?,?,?,?,?)`, [input.id,input.phone,input.skill,category,'requested',requirements,JSON.stringify(capabilities)]);
-  await persistCoordinatorEvent({id:`economic-request:${input.id}:created`,type:'economic_request.state_changed',occurredAt:new Date().toISOString(),producer:'economicRequestPersistence',correlationId:`economic_request:${input.id}`,ownerPhone:input.phone.startsWith('anon_')?undefined:input.phone,economicRequestId:input.id,payload:{requestId:input.id,skill:input.skill,category,status:'requested',capabilities},sensitivity:input.phone.startsWith('anon_')?'public':'personal',provenance:{source:'canonical_service',sourceId:input.id,evidenceLevel:'persisted_state'},policy:{autonomousAllowed:false,confirmationRequired:'none'},schemaVersion:1});
-  return (await getEconomicRequest(input.id))!;
-}
-
-export async function getEconomicRequest(id:string):Promise<EconomicRequest|null> {
-  if (getCanonicalPersistenceMode() !== 'postgres') return getSqlJsEconomicRequest(id);
-  const store = await ensurePostgresSchema();
-  const row = await store.one<any>(`SELECT * FROM economic_requests WHERE id=? LIMIT 1`,[id]);
-  return row ? rowToRequest(row) : null;
-}
-
-export async function listEconomicRequestsForPhone(phone:string, options:{includeClosed?:boolean;limit?:number}={}):Promise<EconomicRequest[]> {
-  if (getCanonicalPersistenceMode() !== 'postgres') return listSqlJsEconomicRequestsForPhone(phone, options);
-  const store = await ensurePostgresSchema(); const owner=String(phone||'').trim(); if(!owner) return [];
-  const limit=Math.max(1,Math.min(100,Math.floor(Number(options.limit)||50)));
-  const sql=options.includeClosed===true ? `SELECT * FROM economic_requests WHERE phone=? ORDER BY updated_at DESC LIMIT ?` : `SELECT * FROM economic_requests WHERE phone=? AND status NOT IN ('completed','fulfilled','cancelled','abandoned') ORDER BY updated_at DESC LIMIT ?`;
-  return (await store.all<any>(sql,[owner,limit])).map(rowToRequest);
-}
-
-export async function updateEconomicRequestRequirements(id:string,ownerPhone:string,patch:Record<string,unknown>):Promise<EconomicRequest> {
-  if (getCanonicalPersistenceMode() !== 'postgres') return updateSqlJsEconomicRequestRequirements(id,ownerPhone,patch);
-  const current=await getEconomicRequest(id); if(!current) throw new Error('Economic request not found'); if(current.phone!==ownerPhone) throw new Error('Economic request ownership is required');
-  if(!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('Requirements patch is required');
-  const safe=Object.fromEntries(Object.entries(patch).filter(([key,value])=>/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/.test(key)&&value!==undefined));
-  const store=await ensurePostgresSchema();
-  await store.run(`UPDATE economic_requests SET requirements_json=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,[JSON.stringify({...current.requirements,...safe}),id]);
-  await persistCoordinatorEvent({id:`economic-request:${id}:requirements`,type:'economic_request.state_changed',occurredAt:new Date().toISOString(),producer:'economicRequestPersistence',correlationId:`economic_request:${id}`,ownerPhone:ownerPhone.startsWith('anon_')?undefined:ownerPhone,economicRequestId:id,payload:{requestId:id,updatedKeys:Object.keys(safe)},sensitivity:ownerPhone.startsWith('anon_')?'public':'personal',provenance:{source:'canonical_service',sourceId:id,evidenceLevel:'persisted_state'},policy:{autonomousAllowed:false,confirmationRequired:'none'},schemaVersion:1});
-  return (await getEconomicRequest(id))!;
-}
-
-export async function transitionEconomicRequest(id:string,status:EconomicRequestStatus,patch:RequestPatch={}):Promise<EconomicRequest> {
-  if (getCanonicalPersistenceMode() !== 'postgres') return transitionSqlJsEconomicRequest(id,status,patch);
-  const current=await getEconomicRequest(id); if(!current) throw new Error('Economic request not found');
-  if(status!==current.status && !getAllowedEconomicTransitions(current.status).includes(status)) throw new Error(`Invalid economic request transition: ${current.status} -> ${status}`);
-  const store=await ensurePostgresSchema();
-  await store.transaction(async tx=>{
-    await tx.run(`UPDATE economic_requests SET status=?, provider_phone=COALESCE(?,provider_phone), quote_json=COALESCE(?,quote_json), fulfillment_json=COALESCE(?,fulfillment_json), updated_at=CURRENT_TIMESTAMP WHERE id=?`, [status,patch.providerPhone??null,patch.quote?JSON.stringify(patch.quote):null,patch.fulfillment?JSON.stringify(patch.fulfillment):null,id]);
-    await tx.run(`CREATE TABLE IF NOT EXISTS audit_logs (id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, action TEXT, details TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)`);
-    await tx.run(`INSERT INTO audit_logs(action,details) VALUES(?,?)`,['economic_request_transition',JSON.stringify({requestId:id,phone:current.phone,skill:current.skill,fromStatus:current.status,toStatus:status})]);
-  });
-  await recordLifecycleEvent(current,status,patch);
-  return (await getEconomicRequest(id))!;
-}
-
-export async function updateEconomicRequestStatus(id:string,status:EconomicRequestStatus,patch:{providerId?:string;quote?:Record<string,unknown>;fulfillment?:Record<string,unknown>}={}):Promise<EconomicRequest> {
-  return transitionEconomicRequest(id,status,{providerPhone:patch.providerId,quote:patch.quote,fulfillment:patch.fulfillment});
-}
+import { getCanonicalPersistenceMode } from './canonicalPersistence.js';
+export interface EconomicRequest{id:string;phone:string;skill:string;category:string;status:EconomicRequestStatus;requirements:Record<string,unknown>;capabilities:EconomicCapability[];providerPhone?:string|null;quote?:Record<string,unknown>|null;fulfillment?:Record<string,unknown>|null;createdAt?:string;updatedAt?:string;}
+type RequestPatch={providerPhone?:string;quote?:Record<string,unknown>;fulfillment?:Record<string,unknown>};
+const TRANSITIONS:Record<EconomicRequestStatus,EconomicRequestStatus[]>={requested:['awaiting_match','abandoned','cancelled'],awaiting_match:['partially_matched','matched','abandoned','cancelled'],partially_matched:['matched','quoting','abandoned','cancelled'],matched:['quoting','quoted','reserved','in_fulfillment','abandoned','cancelled'],quoting:['quoted','abandoned','cancelled'],quoted:['awaiting_confirmation','reserved','abandoned','cancelled'],awaiting_confirmation:['reserved','cancelled'],reserved:['payment_pending','paid','cancelled'],payment_pending:['paid','failed','cancelled'],paid:['in_fulfillment','fulfilled','disputed','cancelled'],in_fulfillment:['fulfilled','disputed','failed','cancelled'],fulfilled:['completed','disputed'],completed:['disputed'],cancelled:[],disputed:['completed','failed'],failed:['requested','cancelled'],abandoned:[]};
+function rowToRequest(row:any):EconomicRequest{return{id:String(row.id),phone:String(row.phone),skill:String(row.skill),category:String(row.category),status:String(row.status) as EconomicRequestStatus,requirements:JSON.parse(String(row.requirements_json||'{}')),capabilities:JSON.parse(String(row.capabilities_json||'[]')),providerPhone:row.provider_phone?String(row.provider_phone):null,quote:row.quote_json?JSON.parse(String(row.quote_json)):null,fulfillment:row.fulfillment_json?JSON.parse(String(row.fulfillment_json)):null,createdAt:row.created_at?String(row.created_at):undefined,updatedAt:row.updated_at?String(row.updated_at):undefined};}
+async function ensureSchema(){const store=await getCanonicalStore();const pg=getCanonicalPersistenceMode()==='postgres';await store.run(`CREATE TABLE IF NOT EXISTS economic_requests(id TEXT PRIMARY KEY,phone TEXT NOT NULL,skill TEXT NOT NULL,category TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'requested',requirements_json TEXT NOT NULL DEFAULT '{}',capabilities_json TEXT NOT NULL DEFAULT '[]',provider_phone TEXT,quote_json TEXT,fulfillment_json TEXT,created_at ${pg?'TIMESTAMPTZ':'TEXT'} DEFAULT CURRENT_TIMESTAMP,updated_at ${pg?'TIMESTAMPTZ':'TEXT'} DEFAULT CURRENT_TIMESTAMP)`);await store.run('CREATE INDEX IF NOT EXISTS idx_economic_requests_phone_status ON economic_requests(phone,status)');return store;}
+async function recordLifecycleEvent(current:EconomicRequest,status:EconomicRequestStatus,patch:RequestPatch){return persistCoordinatorEvent({id:`economic-request:${current.id}:transition:${status}:${Date.now()}`,type:'economic_request.state_changed',occurredAt:new Date().toISOString(),producer:'economicRequestPersistence',correlationId:`economic_request:${current.id}`,ownerPhone:current.phone.startsWith('anon_')?undefined:current.phone,economicRequestId:current.id,payload:{requestId:current.id,fromStatus:current.status,toStatus:status,providerPhone:patch.providerPhone||current.providerPhone||undefined,hasQuote:Boolean(patch.quote||current.quote),hasFulfillment:Boolean(patch.fulfillment||current.fulfillment)},sensitivity:current.phone.startsWith('anon_')?'public':'personal',provenance:{source:'canonical_service',sourceId:current.id,evidenceLevel:'persisted_state'},policy:{autonomousAllowed:false,confirmationRequired:'none'},schemaVersion:1});}
+export function getAllowedEconomicTransitions(status:EconomicRequestStatus):EconomicRequestStatus[]{return[...(TRANSITIONS[status]||[])];}
+export async function createEconomicRequest(input:{id:string;phone:string;skill:string;requirements:Record<string,unknown>;amount?:number}):Promise<EconomicRequest>{const category=getEconomicCategory(input.skill)||'classifieds-marketplace',capabilities=getSkillCapabilities(input.skill),store=await ensureSchema(),requirements=JSON.stringify({...input.requirements,amount_minor:input.amount??null});await store.run(`INSERT INTO economic_requests(id,phone,skill,category,status,requirements_json,capabilities_json) VALUES(?,?,?,?,?,?,?)`,[input.id,input.phone,input.skill,category,'requested',requirements,JSON.stringify(capabilities)]);await persistCoordinatorEvent({id:`economic-request:${input.id}:created`,type:'economic_request.state_changed',occurredAt:new Date().toISOString(),producer:'economicRequestPersistence',correlationId:`economic_request:${input.id}`,ownerPhone:input.phone.startsWith('anon_')?undefined:input.phone,economicRequestId:input.id,payload:{requestId:input.id,skill:input.skill,category,status:'requested',capabilities},sensitivity:input.phone.startsWith('anon_')?'public':'personal',provenance:{source:'canonical_service',sourceId:input.id,evidenceLevel:'persisted_state'},policy:{autonomousAllowed:false,confirmationRequired:'none'},schemaVersion:1});return(await getEconomicRequest(input.id))!;}
+export async function getEconomicRequest(id:string):Promise<EconomicRequest|null>{const store=await ensureSchema(),row=await store.one<any>('SELECT * FROM economic_requests WHERE id=? LIMIT 1',[id]);return row?rowToRequest(row):null;}
+export async function listEconomicRequestsForPhone(phone:string,options:{includeClosed?:boolean;limit?:number}={}):Promise<EconomicRequest[]>{const store=await ensureSchema(),owner=String(phone||'').trim();if(!owner)return[];const limit=Math.max(1,Math.min(100,Math.floor(Number(options.limit)||50))),sql=options.includeClosed===true?`SELECT * FROM economic_requests WHERE phone=? ORDER BY updated_at DESC LIMIT ?`:`SELECT * FROM economic_requests WHERE phone=? AND status NOT IN ('completed','fulfilled','cancelled','abandoned') ORDER BY updated_at DESC LIMIT ?`;return(await store.all<any>(sql,[owner,limit])).map(rowToRequest);}
+export const listEconomicRequests=listEconomicRequestsForPhone;
+export async function updateEconomicRequestRequirements(id:string,ownerPhone:string,patch:Record<string,unknown>):Promise<EconomicRequest>{const current=await getEconomicRequest(id);if(!current)throw new Error('Economic request not found');if(current.phone!==ownerPhone)throw new Error('Economic request ownership is required');if(!patch||typeof patch!=='object'||Array.isArray(patch))throw new Error('Requirements patch is required');const safe=Object.fromEntries(Object.entries(patch).filter(([key,value])=>/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/.test(key)&&value!==undefined)),store=await ensureSchema();await store.run(`UPDATE economic_requests SET requirements_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`,[JSON.stringify({...current.requirements,...safe}),id]);await persistCoordinatorEvent({id:`economic-request:${id}:requirements`,type:'economic_request.state_changed',occurredAt:new Date().toISOString(),producer:'economicRequestPersistence',correlationId:`economic_request:${id}`,ownerPhone:ownerPhone.startsWith('anon_')?undefined:ownerPhone,economicRequestId:id,payload:{requestId:id,updatedKeys:Object.keys(safe)},sensitivity:ownerPhone.startsWith('anon_')?'public':'personal',provenance:{source:'canonical_service',sourceId:id,evidenceLevel:'persisted_state'},policy:{autonomousAllowed:false,confirmationRequired:'none'},schemaVersion:1});return(await getEconomicRequest(id))!;}
+export async function transitionEconomicRequest(id:string,status:EconomicRequestStatus,patch:RequestPatch={}):Promise<EconomicRequest>{const current=await getEconomicRequest(id);if(!current)throw new Error('Economic request not found');if(status!==current.status&&!getAllowedEconomicTransitions(current.status).includes(status))throw new Error(`Invalid economic request transition: ${current.status} -> ${status}`);const store=await ensureSchema();await store.transaction(async tx=>{await tx.run(`UPDATE economic_requests SET status=?,provider_phone=COALESCE(?,provider_phone),quote_json=COALESCE(?,quote_json),fulfillment_json=COALESCE(?,fulfillment_json),updated_at=CURRENT_TIMESTAMP WHERE id=?`,[status,patch.providerPhone??null,patch.quote?JSON.stringify(patch.quote):null,patch.fulfillment?JSON.stringify(patch.fulfillment):null,id]);const pg=getCanonicalPersistenceMode()==='postgres';if(pg)await tx.run(`CREATE TABLE IF NOT EXISTS audit_logs(id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,action TEXT,details TEXT,created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP)`);else await tx.run(`CREATE TABLE IF NOT EXISTS audit_logs(id INTEGER PRIMARY KEY AUTOINCREMENT,action TEXT,details TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP)`);await tx.run(`INSERT INTO audit_logs(action,details) VALUES(?,?)`,['economic_request_transition',JSON.stringify({requestId:id,phone:current.phone,skill:current.skill,fromStatus:current.status,toStatus:status})]);});await recordLifecycleEvent(current,status,patch);return(await getEconomicRequest(id))!;}
+export async function updateEconomicRequestStatus(id:string,status:EconomicRequestStatus,patch:{providerId?:string;quote?:Record<string,unknown>;fulfillment?:Record<string,unknown>}={}):Promise<EconomicRequest>{return transitionEconomicRequest(id,status,{providerPhone:patch.providerId,quote:patch.quote,fulfillment:patch.fulfillment});}

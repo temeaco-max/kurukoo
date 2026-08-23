@@ -1,24 +1,5 @@
-import { getDb, saveDb } from '../database.js';
+import { getCanonicalStore } from './canonicalStore.js';
 import { ensureCommercialSchema } from './commercialLedger.js';
-
-export const COMMERCIAL_PRODUCTS = [
-  ['agent_service','Kurukoo delegated agent service','agent_subscription',0,'NGN','monthly'],
-  ['provider_base','Kurukoo Base provider plan','provider_subscription',500,'NGN','monthly'],
-  ['provider_plus','Kurukoo Plus provider plan','provider_subscription',1500,'NGN','monthly'],
-  ['provider_business','Kurukoo Business provider plan','provider_subscription',5000,'NGN','monthly'],
-  ['ad_funding','Sponsored placement campaign funding','advertising',0,'NGN','one_time'],
-  ['sports_match_fee','Sports match/meetup fee','sports_fee',0,'NGN','one_time'],
-  ['league_registration','League registration fee','sports_fee',0,'NGN','one_time'],
-  ['club_tournament_fee','Club/tournament fee','sports_fee',0,'NGN','one_time'],
-  ['sponsorship','Sponsored network placement','sponsorship',0,'NGN','one_time'],
-  ['money_circle_fee','Money Circle platform fee','money_circle_fee',0,'NGN','one_time'],
-  ['affiliate_commission','Verified affiliate commission','affiliate',0,'NGN','one_time'],
-] as const;
-
-export async function ensureCommercialCatalog(): Promise<void> {
-  await ensureCommercialSchema(); const db=await getDb();
-  for(const [code,name,type,price,currency,billing] of COMMERCIAL_PRODUCTS) db.run(`INSERT OR IGNORE INTO commercial_products(code,name,product_type,price_minor,currency,billing_period,metadata) VALUES(?,?,?,?,?,?,?)`,[code,name,type,price,currency,billing,JSON.stringify({source:'canonical-commercial-catalog',configuredPrice:price>0})]);
-  saveDb();
-}
-
-export async function getCommercialProduct(code:string):Promise<any|null>{await ensureCommercialCatalog();const db=await getDb();const stmt=db.prepare(`SELECT code,name,product_type,price_minor,currency,billing_period,active,metadata FROM commercial_products WHERE code=? LIMIT 1`);stmt.bind([code]);const row=stmt.step()?stmt.getAsObject():null;stmt.free();return row;}
+export const COMMERCIAL_PRODUCTS=[['agent_service','Kurukoo delegated agent service','agent_subscription',0,'NGN','monthly'],['provider_base','Kurukoo Base provider plan','provider_subscription',500,'NGN','monthly'],['provider_plus','Kurukoo Plus provider plan','provider_subscription',1500,'NGN','monthly'],['provider_business','Kurukoo Business provider plan','provider_subscription',5000,'NGN','monthly'],['ad_funding','Sponsored placement campaign funding','advertising',0,'NGN','one_time'],['sports_match_fee','Sports match/meetup fee','sports_fee',0,'NGN','one_time'],['league_registration','League registration fee','sports_fee',0,'NGN','one_time'],['club_tournament_fee','Club/tournament fee','sports_fee',0,'NGN','one_time'],['sponsorship','Sponsored network placement','sponsorship',0,'NGN','one_time'],['money_circle_fee','Money Circle platform fee','money_circle_fee',0,'NGN','one_time'],['affiliate_commission','Verified affiliate commission','affiliate',0,'NGN','one_time']] as const;
+export async function ensureCommercialCatalog():Promise<void>{await ensureCommercialSchema();const db=await getCanonicalStore();for(const [code,name,type,price,currency,billing] of COMMERCIAL_PRODUCTS)await db.run(`INSERT INTO commercial_products(code,name,product_type,price_minor,currency,billing_period,metadata) VALUES(?,?,?,?,?,?,?) ON CONFLICT(code) DO NOTHING`,[code,name,type,price,currency,billing,JSON.stringify({source:'canonical-commercial-catalog',configuredPrice:price>0})]);}
+export async function getCommercialProduct(code:string):Promise<any|null>{await ensureCommercialCatalog();return(await getCanonicalStore()).one<any>('SELECT code,name,product_type,price_minor,currency,billing_period,active,metadata FROM commercial_products WHERE code=? LIMIT 1',[code]);}
