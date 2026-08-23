@@ -33,35 +33,35 @@
     <aside class="k-app-sidebar" aria-label="Kurukoo application navigation">
       <a class="k-app-new" href="/chat">＋ New conversation</a>
       <nav class="k-app-nav" aria-label="Primary">
-        <a class="<%= section === 'desk' ? 'active' : '' %>" href="/desk"><%= icon('chat') %><span>Desk</span></a>
-        <a class="<%= section === 'discover' ? 'active' : '' %>" href="/discover"><%= icon('discover') %><span>Discover</span></a>
-        <a class="<%= section === 'requests' ? 'active' : '' %>" href="/requests"><%= icon('request') %><span>Requests</span></a>
-        <a class="<%= section === 'tasks' ? 'active' : '' %>" href="/tasks"><%= icon('work') %><span>Tasks</span></a>
-        <a class="<%= section === 'connect' ? 'active' : '' %>" href="/connect"><%= icon('settings') %><span>Connect</span></a>
+        <a class="<%= section === 'desk' ? 'active' : '' %>" href="/desk"><%- icon('chat') %><span>Desk</span></a>
+        <a class="<%= section === 'discover' ? 'active' : '' %>" href="/discover"><%- icon('discover') %><span>Discover</span></a>
+        <a class="<%= section === 'requests' ? 'active' : '' %>" href="/requests"><%- icon('request') %><span>Requests</span></a>
+        <a class="<%= section === 'tasks' ? 'active' : '' %>" href="/tasks"><%- icon('work') %><span>Tasks</span></a>
+        <a class="<%= section === 'connect' ? 'active' : '' %>" href="/connect"><%- icon('settings') %><span>Connect</span></a>
       </nav>
       <div class="k-app-divider"></div>
       <nav class="k-app-nav" aria-label="Workspace">
-        <a class="<%= section === 'agents' ? 'active' : '' %>" href="/agents"><%= icon('chat') %><span>Agents</span></a>
-        <a class="<%= section === 'capabilities' ? 'active' : '' %>" href="/capabilities"><%= icon('work') %><span>Capabilities</span></a>
-        <a class="<%= section === 'opportunities' ? 'active' : '' %>" href="/opportunities"><%= icon('discover') %><span>Opportunities</span></a>
-        <a class="<%= section === 'topics' ? 'active' : '' %>" href="/topics"><%= icon('discover') %><span>Topics</span></a>
-        <a class="<%= section === 'wallet' ? 'active' : '' %>" href="/wallet"><%= icon('points') %><span>Wallet</span></a>
-        <a class="<%= section === 'points' ? 'active' : '' %>" href="/points"><%= icon('points') %><span>Points</span></a>
-        <a class="<%= section === 'top-up' ? 'active' : '' %>" href="/top-up"><%= icon('points') %><span>Top Up</span></a>
-        <a class="<%= section === 'subscriptions' ? 'active' : '' %>" href="/subscriptions"><%= icon('saved') %><span>Subscriptions</span></a>
-        <a class="<%= section === 'checkout' ? 'active' : '' %>" href="/checkout"><%= icon('request') %><span>Checkout</span></a>
-        <a class="<%= section === 'confirmations' ? 'active' : '' %>" href="/confirmations"><%= icon('success') %><span>Confirmations</span></a>
-        <a class="<%= section === 'artifacts' ? 'active' : '' %>" href="/artifacts"><%= icon('saved') %><span>Artifacts</span></a>
-        <a class="<%= section === 'prayer' ? 'active' : '' %>" href="/prayer"><%= icon('chat') %><span>Prayer</span></a>
-        <a class="<%= section === 'call' ? 'active' : '' %>" href="/call"><%= icon('mic') %><span>Call</span></a>
-        <a class="<%= section === 'safety' ? 'active' : '' %>" href="/safety"><%= icon('safety') %><span>Safety</span></a>
+        <a class="<%= section === 'agents' ? 'active' : '' %>" href="/agents"><%- icon('chat') %><span>Agents</span></a>
+        <a class="<%= section === 'capabilities' ? 'active' : '' %>" href="/capabilities"><%- icon('work') %><span>Capabilities</span></a>
+        <a class="<%= section === 'opportunities' ? 'active' : '' %>" href="/opportunities"><%- icon('discover') %><span>Opportunities</span></a>
+        <a class="<%= section === 'topics' ? 'active' : '' %>" href="/topics"><%- icon('discover') %><span>Topics</span></a>
+        <a class="<%= section === 'wallet' ? 'active' : '' %>" href="/wallet"><%- icon('points') %><span>Wallet</span></a>
+        <a class="<%= section === 'points' ? 'active' : '' %>" href="/points"><%- icon('points') %><span>Points</span></a>
+        <a class="<%= section === 'top-up' ? 'active' : '' %>" href="/top-up"><%- icon('points') %><span>Top Up</span></a>
+        <a class="<%= section === 'subscriptions' ? 'active' : '' %>" href="/subscriptions"><%- icon('saved') %><span>Subscriptions</span></a>
+        <a class="<%= section === 'checkout' ? 'active' : '' %>" href="/checkout"><%- icon('request') %><span>Checkout</span></a>
+        <a class="<%= section === 'confirmations' ? 'active' : '' %>" href="/confirmations"><%- icon('success') %><span>Confirmations</span></a>
+        <a class="<%= section === 'artifacts' ? 'active' : '' %>" href="/artifacts"><%- icon('saved') %><span>Artifacts</span></a>
+        <a class="<%= section === 'prayer' ? 'active' : '' %>" href="/prayer"><%- icon('chat') %><span>Prayer</span></a>
+        <a class="<%= section === 'call' ? 'active' : '' %>" href="/call"><%- icon('mic') %><span>Call</span></a>
+        <a class="<%= section === 'safety' ? 'active' : '' %>" href="/safety"><%- icon('safety') %><span>Safety</span></a>
       </nav>
       <div class="k-app-divider"></div>
       <nav class="k-app-nav" aria-label="Account">
-        <a class="<%= section === 'memory' ? 'active' : '' %>" href="/memory"><%= icon('saved') %><span>Memory</span></a>
-        <a class="<%= section === 'notifications' ? 'active' : '' %>" href="/notifications"><%= icon('notification') %><span>Notifications</span></a>
-        <a href="/settings"><%= icon('settings') %><span>Settings</span></a>
-        <a href="/help"><%= icon('help') %><span>Help</span></a>
+        <a class="<%= section === 'memory' ? 'active' : '' %>" href="/memory"><%- icon('saved') %><span>Memory</span></a>
+        <a class="<%= section === 'notifications' ? 'active' : '' %>" href="/notifications"><%- icon('notification') %><span>Notifications</span></a>
+        <a href="/settings"><%- icon('settings') %><span>Settings</span></a>
+        <a href="/help"><%- icon('help') %><span>Help</span></a>
       </nav>
     </aside>
     <main class="k-app-main">
@@ -151,11 +151,11 @@
     </main>
   </div>
   <nav class="k-mobile-tabbar" aria-label="Kurukoo application navigation">
-    <a href="/desk" aria-current="<%= section === 'desk' ? 'page' : 'false' %>"><span><%= icon('chat') %></span><span>Desk</span></a>
-    <a href="/discover" aria-current="<%= section === 'discover' ? 'page' : 'false' %>"><span><%= icon('discover') %></span><span>Discover</span></a>
-    <a href="/requests" aria-current="<%= section === 'requests' ? 'page' : 'false' %>"><span><%= icon('request') %></span><span>Requests</span></a>
-    <a href="/tasks" aria-current="<%= section === 'tasks' ? 'page' : 'false' %>"><span><%= icon('work') %></span><span>Tasks</span></a>
-    <a href="/connect" aria-current="<%= section === 'connect' ? 'page' : 'false' %>"><span><%= icon('settings') %></span><span>Connect</span></a>
+    <a href="/desk" aria-current="<%= section === 'desk' ? 'page' : 'false' %>"><span><%- icon('chat') %></span><span>Desk</span></a>
+    <a href="/discover" aria-current="<%= section === 'discover' ? 'page' : 'false' %>"><span><%- icon('discover') %></span><span>Discover</span></a>
+    <a href="/requests" aria-current="<%= section === 'requests' ? 'page' : 'false' %>"><span><%- icon('request') %></span><span>Requests</span></a>
+    <a href="/tasks" aria-current="<%= section === 'tasks' ? 'page' : 'false' %>"><span><%- icon('work') %></span><span>Tasks</span></a>
+    <a href="/connect" aria-current="<%= section === 'connect' ? 'page' : 'false' %>"><span><%- icon('settings') %></span><span>Connect</span></a>
   </nav>
   <script src="/js/kurukoo-workspace.js?v=routes1" defer></script>
   <% if (section === 'requests') { %>
