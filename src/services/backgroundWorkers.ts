@@ -43,19 +43,20 @@ export async function processDueDeferred(): Promise<{ checked: number; matched: 
     const due = await getDueIntentions(50); let matched = 0; let notified = 0; let quoted = 0;
     for (const intention of due) {
       const phone = String(intention.phone || ''); const skill = String(intention.skill || intention.intent || '').trim();
-      if (!phone || !skill) { await incrementAttempt(phone || 'unknown', intention.id); continue; }
+      const intentionId = String(intention.id ?? '');
+      if (!phone || !skill || !intentionId) { await incrementAttempt(phone || 'unknown', intentionId || '0'); continue; }
       const match = await find_worker({ skill, location: intention.location ? String(intention.location) : undefined, max: 3, ownerPhone: phone });
       if (match.count > 0) {
         matched += 1; const top = match.providers[0]; const note = `Matched ${top.name} (${Number(top.rating || 0).toFixed(1)}★) on deferred re-check`;
         const progress = await progressLinkedEconomicRequest(intention.economic_request_id ? String(intention.economic_request_id) : null, top);
         if (progress === 'quoted') quoted += 1;
-        if (progress === 'matched_without_quote') await markPartiallyMatched(phone, intention.id, `${note}. A final provider quote is still required before any payment step.`);
-        else await resolveOpenIntention(phone, intention.id, 'provider_matched', note, `Open chat and continue with ${skill}`).catch(async () => { await markPartiallyMatched(phone, intention.id, note).catch(() => null); });
+        if (progress === 'matched_without_quote') await markPartiallyMatched(phone, intentionId, `${note}. A final provider quote is still required before any payment step.`);
+        else await resolveOpenIntention(phone, intentionId, 'provider_matched', note, `Open chat and continue with ${skill}`).catch(async () => { await markPartiallyMatched(phone, intentionId, note).catch(() => null); });
         const requestId = intention.economic_request_id ? String(intention.economic_request_id) : '';
-        const chatLink = `/chat?requestId=${encodeURIComponent(requestId || String(intention.id))}&prompt=${encodeURIComponent(`Continue with my ${skill} request`)}`;
-        const pushed = await sendFcmPush(phone, 'Kurukoo found a match', `A provider is available for "${skill}". Open Chat to review the next supported step.`, chatLink, { contextId: `request:${requestId || intention.id}`, conversationId: undefined, availableAction: 'review', canonicalAction: 'economic_request.review_match', objectType: 'economic_request', objectId: requestId || String(intention.id), ownerScope: phone, idempotencyKey: `deferred-match:${intention.id}:${requestId || 'open'}:${skill}`, surface: 'chat' }).catch(() => false);
+        const chatLink = `/chat?requestId=${encodeURIComponent(requestId || intentionId)}&prompt=${encodeURIComponent(`Continue with my ${skill} request`)}`;
+        const pushed = await sendFcmPush(phone, 'Kurukoo found a match', `A provider is available for "${skill}". Open Chat to review the next supported step.`, chatLink, { contextId: `request:${requestId || intentionId}`, conversationId: undefined, availableAction: 'review', canonicalAction: 'economic_request.review_match', objectType: 'economic_request', objectId: requestId || intentionId, ownerScope: phone, idempotencyKey: `deferred-match:${intentionId}:${requestId || 'open'}:${skill}`, surface: 'chat' }).catch(() => false);
         if (pushed) notified += 1;
-      } else await incrementAttempt(phone, intention.id);
+      } else await incrementAttempt(phone, intentionId);
     }
     return { checked: due.length, matched, notified, quoted };
   } finally { deferredPassActive = false; }
