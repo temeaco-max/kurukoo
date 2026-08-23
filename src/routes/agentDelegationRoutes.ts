@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { authenticateUser, type AuthRequest } from '../middleware/auth.js';
 import { processDirectPayment } from '../services/directWallet.js';
-import { ensureCommercialSchema, createUserAgentDelegation, executeUserAgentDelegation, listUserAgentDelegations, recordCommercialEvent, setUserAgentDelegationInstructions } from '../services/commercialLedger.js';
+import { ensureCommercialSchema, createUserAgentDelegation, listUserAgentDelegations, recordCommercialEvent, setUserAgentDelegationInstructions } from '../services/commercialLedger.js';
+import { executeDelegatedAgentWithCanonicalRun } from '../services/agentDelegationOperatingModel.js';
 import { getDb } from '../database.js';
 
 const router = Router();
@@ -55,8 +56,12 @@ router.post('/delegations/:id/execute', authenticateUser, async (req: AuthReques
   const phone = String(req.user?.phone || ''); const delegationId = String(req.params.id || ''); const task = String(req.body?.task || '').trim();
   if (!phone || !delegationId || !task) return res.status(400).json({ error: 'A delegated agent and task are required.' });
   if (task.length > 12000) return res.status(413).json({ error: 'Task is too large.' });
-  try { res.json(await executeUserAgentDelegation(phone, delegationId, task)); }
-  catch (error) { res.status(500).json({ error: error instanceof Error ? error.message : 'Unable to execute delegated agent.' }); }
+  try {
+    const delegations = await listUserAgentDelegations(phone);
+    const selected = delegations.find(item => String(item.id) === delegationId);
+    if (!selected) return res.status(404).json({ error: 'Delegated agent not found.' });
+    res.json(await executeDelegatedAgentWithCanonicalRun(phone, delegationId, String(selected.skill || ''), task));
+  } catch (error) { res.status(500).json({ error: error instanceof Error ? error.message : 'Unable to execute delegated agent.' }); }
 });
 
 export default router;
