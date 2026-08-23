@@ -124,10 +124,10 @@ try {
   )`);
   const task = await s.insert<any>(`INSERT INTO micro_tasks(title,description,credits_reward,status) VALUES(?,?,?, 'available') RETURNING id`, ['Runtime Task', 'Owner-bound task', 0]);
   const taskId = Number(task.id);
-  await assert.rejects(() => acceptTask(ownerB, taskId), /Authenticated task owner|no longer available/);
+  await assert.rejects(() => acceptTask(ownerB, taskId), /no longer available|Authenticated task owner/);
   const claimed = await acceptTask(ownerA, taskId);
   assert.equal(claimed.id, taskId);
-  assert.equal(await completeTask(ownerA, taskId, 'completed in PostgreSQL'), true).then;
+  assert.deepEqual(await completeTask(ownerA, taskId, 'completed in PostgreSQL'), { success: true, reward: 0, sourceType: null });
 
   // Commercial catalog/ledger idempotency and settlement/reversal.
   const product = await getCommercialProduct('provider_plus');
