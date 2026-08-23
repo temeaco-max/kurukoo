@@ -1,81 +1,10 @@
 import crypto from 'node:crypto';
-import { getDb, saveDb } from '../database.js';
-
-/*
- * Presence Trick-Bridge Service (§5)
- * Cost-effective continuous feel without continuous GPS/WebRTC relay costs.
- * Public coordinates are fuzzed and provider phone numbers are never exposed.
- */
-
-export interface TrickPresence {
-    providerId: string;
-    fuzzedLat: number;
-    fuzzedLng: number;
-    isLive: boolean;
-    lastConfirmed: string;
-    mode: 'mobile' | 'stationary';
-}
-
-function publicProviderId(phone: string): string {
-    return crypto.createHash('sha256').update(`kurukoo:provider:${phone}`).digest('hex').slice(0, 16);
-}
-
-function fuzzCoordinates(lat: number, lng: number): { lat: number; lng: number } {
-    const latOffset = (Math.random() - 0.5) * 0.0018;
-    const lngOffset = (Math.random() - 0.5) * 0.0018;
-    return { lat: Number((lat + latOffset).toFixed(5)), lng: Number((lng + lngOffset).toFixed(5)) };
-}
-
-export async function updateTrickPresence(phone: string, lat: number, lng: number, movementMeters: number = 50): Promise<{ success: boolean; fuzzed: { lat: number; lng: number } }> {
-    if (!phone || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
-        throw new Error('Invalid presence coordinates');
-    }
-    const db = await getDb();
-    const fuzzed = fuzzCoordinates(lat, lng);
-    const isStationary = movementMeters < 80;
-    db.run(
-        `UPDATE provider_presence SET last_lat = ?, last_lng = ?, fuzzed_lat = ?, fuzzed_lng = ?, last_confirmed = datetime('now'), updated_at = datetime('now'), operation_mode = ? WHERE phone = ?`,
-        [lat, lng, fuzzed.lat, fuzzed.lng, isStationary ? 'stationary' : 'mobile', phone]
-    );
-    saveDb();
-    return { success: true, fuzzed };
-}
-
-export async function getFuzzedTrickPresence(): Promise<TrickPresence[]> {
-    const db = await getDb();
-    const stmt = db.prepare(`
-        SELECT phone, fuzzed_lat, fuzzed_lng, is_live, last_confirmed, operation_mode
-        FROM provider_presence
-        WHERE is_live = 1 AND live_until > datetime('now')
-    `);
-    const results: TrickPresence[] = [];
-    while (stmt.step()) {
-        const row = stmt.getAsObject();
-        results.push({
-            providerId: publicProviderId(String(row.phone || '')),
-            fuzzedLat: (row.fuzzed_lat !== null && row.fuzzed_lat !== undefined) ? Number(row.fuzzed_lat) : 0,
-            fuzzedLng: (row.fuzzed_lng !== null && row.fuzzed_lng !== undefined) ? Number(row.fuzzed_lng) : 0,
-            isLive: row.is_live === 1,
-            lastConfirmed: row.last_confirmed as string,
-            mode: (row.operation_mode as 'mobile' | 'stationary') || 'stationary'
-        });
-    }
-    stmt.free();
-    return results;
-}
-
-export function validateHighValueTransportGate(intentConfirmed: boolean, activeJobOrDelivery: boolean): boolean {
-    return intentConfirmed || activeJobOrDelivery;
-}
-
-export async function checkStationaryNudges(): Promise<number> {
-    const db = await getDb();
-    const stmt = db.prepare(`
-        SELECT phone FROM provider_presence
-        WHERE operation_mode = 'stationary' AND is_live = 1 AND (last_confirmed < datetime('now', '-12 hours') OR last_confirmed IS NULL)
-    `);
-    let count = 0;
-    while (stmt.step()) count++;
-    stmt.free();
-    return count;
-}
+import { getCanonicalStore } from './canonicalStore.js';
+export interface TrickPresence{providerId:string;fuzzedLat:number;fuzzedLng:number;isLive:boolean;lastConfirmed:string;mode:'mobile'|'stationary';}
+const publicProviderId=(phone:string)=>crypto.createHash('sha256').update(`kurukoo:provider:${phone}`).digest('hex').slice(0,16);
+const fuzzCoordinates=(lat:number,lng:number)=>({lat:Number((lat+(Math.random()-.5)*.0018).toFixed(5)),lng:Number((lng+(Math.random()-.5)*.0018).toFixed(5))});
+const parseTime=(value:unknown)=>{const t=Date.parse(String(value||''));return Number.isFinite(t)?t:NaN;};
+export async function updateTrickPresence(phone:string,lat:number,lng:number,movementMeters=50){if(!phone||!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180)throw new Error('Invalid presence coordinates');const db=await getCanonicalStore(),fuzzed=fuzzCoordinates(lat,lng),isStationary=movementMeters<80;await db.run(`UPDATE provider_presence SET last_lat=?,last_lng=?,fuzzed_lat=?,fuzzed_lng=?,last_confirmed=?,updated_at=?,operation_mode=? WHERE phone=?`,[lat,lng,fuzzed.lat,fuzzed.lng,new Date().toISOString(),new Date().toISOString(),isStationary?'stationary':'mobile',phone]);return{success:true,fuzzed};}
+export async function getFuzzedTrickPresence():Promise<TrickPresence[]>{const db=await getCanonicalStore(),rows=await db.all<any>(`SELECT phone,fuzzed_lat,fuzzed_lng,is_live,last_confirmed,live_until,operation_mode FROM provider_presence WHERE is_live=1`),now=Date.now();return rows.filter(r=>{const t=parseTime(r.live_until);return !Number.isFinite(t)||t>now;}).map(r=>({providerId:publicProviderId(String(r.phone||'')),fuzzedLat:r.fuzzed_lat!=null?Number(r.fuzzed_lat):0,fuzzedLng:r.fuzzed_lng!=null?Number(r.fuzzed_lng):0,isLive:Boolean(r.is_live===true||Number(r.is_live)===1),lastConfirmed:String(r.last_confirmed||''),mode:(r.operation_mode as 'mobile'|'stationary')||'stationary'}));}
+export function validateHighValueTransportGate(intentConfirmed:boolean,activeJobOrDelivery:boolean){return intentConfirmed||activeJobOrDelivery;}
+export async function checkStationaryNudges(){const db=await getCanonicalStore(),rows=await db.all<any>(`SELECT phone,last_confirmed FROM provider_presence WHERE operation_mode='stationary' AND is_live=1`),cutoff=Date.now()-12*60*60*1000;return rows.filter(r=>{if(!r.last_confirmed)return true;const t=parseTime(r.last_confirmed);return !Number.isFinite(t)||t<cutoff;}).length;}

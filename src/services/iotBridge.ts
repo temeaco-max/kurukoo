@@ -1,6 +1,6 @@
 import mqtt, { type MqttClient } from 'mqtt';
 import { isFeatureEnabled } from './featureFlags.js';
-import { getDb, saveDb } from '../database.js';
+import { getCanonicalStore } from './canonicalStore.js';
 
 export interface MqttBridgeStatus {
     configured: boolean;
@@ -24,33 +24,32 @@ let status: MqttBridgeStatus = {
 };
 
 async function persistInboundState(topic: string, payload: Buffer): Promise<void> {
-    const db = await getDb();
-    const rows = db.exec(`SELECT id,phone,metadata_json FROM connected_resources WHERE protocol='mqtt' AND status='active'`)[0]?.values || [];
+    const store = await getCanonicalStore();
+    const rows = await store.all<any>(`SELECT id,phone,metadata_json FROM connected_resources WHERE protocol='mqtt' AND status='active'`);
     const receivedAt = new Date().toISOString();
     const bounded = payload.toString('utf8').slice(0, 10000);
     for (const row of rows) {
-        const id = String(row[0]);
-        const phone = String(row[1]);
+        const id = String(row.id);
+        const phone = String(row.phone);
         let metadata: Record<string, unknown> = {};
-        try { metadata = JSON.parse(String(row[2] || '{}')); } catch {}
+        try { metadata = JSON.parse(String(row.metadata_json || '{}')); } catch {}
         const stateTopic = String(metadata.stateTopic || '').trim();
         if (!stateTopic || stateTopic !== topic) continue;
         let state: unknown = bounded;
         try { state = JSON.parse(bounded); } catch {}
         metadata.lastState = state;
         metadata.lastStateAt = receivedAt;
-        db.run(`UPDATE connected_resources SET metadata_json=?,last_seen_at=CURRENT_TIMESTAMP WHERE id=? AND phone=? AND status='active'`, [JSON.stringify(metadata), id, phone]);
+        await store.run(`UPDATE connected_resources SET metadata_json=?,last_seen_at=CURRENT_TIMESTAMP WHERE id=? AND phone=? AND status='active'`, [JSON.stringify(metadata), id, phone]);
     }
-    if (rows.length) saveDb();
 }
 
 async function subscribeConfiguredStateTopics(): Promise<void> {
     if (!client?.connected) return;
     try {
-        const db = await getDb();
-        const rows = db.exec(`SELECT metadata_json FROM connected_resources WHERE protocol='mqtt' AND status='active'`)[0]?.values || [];
-        const topics: string[] = rows.map((row: any[]) => {
-            try { const metadata = JSON.parse(String(row[0] || '{}')); return String(metadata.stateTopic || '').trim(); }
+        const store = await getCanonicalStore();
+        const rows = await store.all<any>(`SELECT metadata_json FROM connected_resources WHERE protocol='mqtt' AND status='active'`);
+        const topics: string[] = rows.map((row: any) => {
+            try { const metadata = JSON.parse(String(row.metadata_json || '{}')); return String(metadata.stateTopic || '').trim(); }
             catch { return ''; }
         }).filter((topic: string): topic is string => Boolean(topic)).slice(0, 200);
         for (const topic of topics) {

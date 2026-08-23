@@ -1,7 +1,7 @@
 /** Canonical phone-rooted auth plus additive progressive identity. */
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
-import { getDb, saveDb } from '../database.js';
+import { getCanonicalStore } from '../services/canonicalStore.js';
 import { migrateGuestSessionToAccount } from '../services/guestSessionMigration.js';
 import { applyQrReferralAttribution } from '../services/qrContextService.js';
 import { ensureOtpSchema, isEmailOtpEnabled, normalizeOtpEmail, requestEmailOtp, requestPhoneOtp, verifyEmailOtp, verifyPhoneOtp } from '../services/otpAuthService.js';
@@ -9,17 +9,7 @@ import { authRateLimit } from '../middleware/rateLimit.js';
 import { authenticateUser, AuthRequest } from '../middleware/auth.js';
 import { developmentTestOtpLabel, getConfiguredTestName, getDevelopmentTestAuthStatus, isDevelopmentTestIdentity, verifyDevelopmentTestOtp } from '../services/devTestAuthService.js';
 import { registerTrustedDevice, getTrustedDeviceStatus } from '../services/progressiveTrustService.js';
-import {
-  createAuthChallenge,
-  consumeAuthChallengeToken,
-  isProvisionalEmailSubject,
-  isGuestSubject,
-  requestMagicLink,
-  requestPushLoginApproval,
-  progressiveAuthReadiness,
-  sanitizeReturnPath,
-  provisionalPhoneFromEmail,
-} from '../services/authChallengeService.js';
+import { consumeAuthChallengeToken, isProvisionalEmailSubject, isGuestSubject, requestMagicLink, requestPushLoginApproval, progressiveAuthReadiness, sanitizeReturnPath } from '../services/authChallengeService.js';
 import { assessProgressiveIdentity } from '../services/progressiveIdentityService.js';
 
 const router = Router();
@@ -50,17 +40,15 @@ function setAuthCookie(res: any, token: string, clearGuest = false): void {
 }
 
 export async function upsertProfile(phone: string, name?: string, email?: string, goal?: string): Promise<void> {
-  const db = await getDb();
-  const stmt = db.prepare('SELECT phone FROM memory_profiles WHERE phone = ?');
-  stmt.bind([phone]);
-  const exists = stmt.step();
-  stmt.free();
-  if (exists) {
-    db.run("UPDATE memory_profiles SET name=COALESCE(NULLIF(?, ''),name), email=COALESCE(NULLIF(?, ''),email) WHERE phone=?", [name || '', email || '', phone]);
-  } else {
-    db.run(`INSERT INTO memory_profiles (phone,name,location,country,subscription_tier,wallet_balance_minor,preferences,behavior_patterns,email,is_available) VALUES (?,?,'Ibadan','ng','Base',30,?,'{}',?,1)`, [phone, name || 'Kurukoo User', JSON.stringify({ goal: goal || 'buyer' }), email || '']);
-  }
-  saveDb();
+  const store = await getCanonicalStore();
+  await store.transaction(async tx => {
+    const exists = await tx.one('SELECT phone FROM memory_profiles WHERE phone = ?', [phone]);
+    if (exists) {
+      await tx.run("UPDATE memory_profiles SET name=COALESCE(NULLIF(?, ''),name), email=COALESCE(NULLIF(?, ''),email) WHERE phone=?", [name || '', email || '', phone]);
+    } else {
+      await tx.run(`INSERT INTO memory_profiles (phone,name,location,country,subscription_tier,wallet_balance_minor,preferences,behavior_patterns,email,is_available) VALUES (?,?,'Ibadan','ng','Base',30,?,'{}',?,1)`, [phone, name || 'Kurukoo User', JSON.stringify({ goal: goal || 'buyer' }), email || '']);
+    }
+  });
 }
 
 async function finalizeAuthenticatedSession(phone: string, res: any, options: { name?: string; email?: string; goal?: string; guestPhone?: string; deviceId?: string; credentialType?: string; pushCapable?: boolean; clearGuest?: boolean } = {}) {
@@ -110,17 +98,13 @@ router.post('/verify-email-otp', authRateLimit, async (req, res) => {
     const email = normalizeOtpEmail(String(req.body?.email || ''));
     const result = await verifyEmailOtp(email, String(req.body?.code || ''));
     if (!result.success || !result.email) return res.status(401).json(result);
-    const db = await getDb();
+    const store = await getCanonicalStore();
     let userPhone = result.phone || '';
-    if (!userPhone) {
-      const lookup = db.prepare('SELECT phone FROM memory_profiles WHERE lower(email) = lower(?) LIMIT 1'); lookup.bind([email]);
-      if (lookup.step()) userPhone = String(lookup.getAsObject().phone || '');
-      lookup.free();
-    }
+    if (!userPhone) userPhone = String((await store.one<any>('SELECT phone FROM memory_profiles WHERE lower(email) = lower(?) LIMIT 1', [email]))?.phone || '');
     if (!userPhone) userPhone = String(req.body?.phone || '').trim();
     if (!userPhone) return res.status(400).json({ success: false, message: 'Phone number is required to create a phone-first Kurukoo account.' });
     await upsertProfile(userPhone, req.body?.name, email, req.body?.goal);
-    db.run('UPDATE memory_profiles SET email_verified_at = CURRENT_TIMESTAMP WHERE phone = ?', [userPhone]); saveDb();
+    await store.run('UPDATE memory_profiles SET email_verified_at = CURRENT_TIMESTAMP WHERE phone = ?', [userPhone]);
     const resultSession = await finalizeAuthenticatedSession(userPhone, res, { name: req.body?.name, email, goal: req.body?.goal, guestPhone: req.body?.guestPhone, deviceId: req.body?.deviceId || req.headers['x-kurukoo-device-id'], credentialType: req.body?.credentialType || 'web', pushCapable: req.body?.pushCapable === true });
     res.json({ success: true, ...resultSession, email, emailVerified: true, message: 'Email verified. Your phone remains the primary Kurukoo channel identity.' });
   } catch (e: any) { console.error('verify-email-otp error:', e); res.status(500).json({ success: false, message: e.message || 'Email verification failed' }); }
@@ -138,10 +122,9 @@ router.post('/verify-otp', authRateLimit, async (req, res) => {
     const profileName = developmentResult?.testMode ? getConfiguredTestName() : req.body?.name;
     await upsertProfile(userPhone, profileName, req.body?.email, req.body?.goal);
     await ensureOtpSchema();
-    const db = await getDb();
-    db.run('UPDATE memory_profiles SET phone_verified_at = CURRENT_TIMESTAMP WHERE phone = ?', [userPhone]);
-    if (req.body?.email) db.run('UPDATE memory_profiles SET email = COALESCE(NULLIF(?, \'\'), email) WHERE phone = ?', [String(req.body.email).trim().toLowerCase(), userPhone]);
-    saveDb();
+    const store = await getCanonicalStore();
+    await store.run('UPDATE memory_profiles SET phone_verified_at = CURRENT_TIMESTAMP WHERE phone = ?', [userPhone]);
+    if (req.body?.email) await store.run('UPDATE memory_profiles SET email = COALESCE(NULLIF(?, \'\'), email) WHERE phone = ?', [String(req.body.email).trim().toLowerCase(), userPhone]);
     if (guestPhone.startsWith('anon_')) { try { await migrateGuestSessionToAccount(guestPhone, userPhone); await applyQrReferralAttribution(guestPhone, userPhone); } catch (migrationError) { console.error('Guest migration or QR attribution failed during verify-otp:', migrationError); } }
     const token = issueUserToken(userPhone);
     const deviceId = String(req.body?.deviceId || req.headers['x-kurukoo-device-id'] || '').trim();
@@ -185,12 +168,11 @@ router.post('/complete-challenge', authRateLimit, async (req, res) => {
     if (!consumed.success) return res.status(401).json(consumed);
     const challenge = consumed.challenge;
     if (challenge.purpose === 'push_reauth' && isProvisionalEmailSubject(challenge.phone)) return res.status(403).json({ success: false, message: 'Provisional identities cannot use push re-authentication' });
-    const db = await getDb();
     const email = challenge.email || undefined;
+    const store = await getCanonicalStore();
     if (isProvisionalEmailSubject(challenge.phone)) {
       await upsertProfile(challenge.phone, challenge.name, email, undefined);
-      db.run('UPDATE memory_profiles SET email_verified_at = CURRENT_TIMESTAMP WHERE phone = ?', [challenge.phone]);
-      saveDb();
+      await store.run('UPDATE memory_profiles SET email_verified_at = CURRENT_TIMESTAMP WHERE phone = ?', [challenge.phone]);
       const session = await finalizeAuthenticatedSession(challenge.phone, res, { name: challenge.name, email, guestPhone: challenge.guestPhone });
       return res.json({ success: true, ...session, provisional: true, returnPath: sanitizeReturnPath(challenge.returnPath) || '/chat', message: 'Email credential connected. Your identity remains provisional until you prove a phone or channel.' });
     }

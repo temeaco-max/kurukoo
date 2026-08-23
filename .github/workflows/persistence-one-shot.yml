@@ -1,0 +1,96 @@
+name: Persistence one-shot migration
+on:
+  push:
+    branches: [feat/postgres-application-integration]
+permissions:
+  contents: write
+jobs:
+  migrate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/postgres-application-integration
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Apply exact inspected migrations
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          root=Path('.')
+
+          # Safe import cleanup: only when getDb/saveDb occur exactly once and
+          # are the imported symbol itself, proving there is no call site.
+          for path in (root/'src').rglob('*.ts'):
+              text=path.read_text()
+              if "from '../database.js'" not in text and "from './database.js'" not in text:
+                  continue
+              get_count=len(re.findall(r'\bgetDb\b',text))
+              save_count=len(re.findall(r'\bsaveDb\b',text))
+              if get_count==1 or save_count==1:
+                  lines=text.splitlines()
+                  out=[]
+                  changed=False
+                  for line in lines:
+                      if "from '../database.js'" in line or "from './database.js'" in line:
+                          original=line
+                          if get_count==1: line=re.sub(r'\bgetDb\s*,?\s*','',line)
+                          if save_count==1: line=re.sub(r'\bsaveDb\s*,?\s*','',line)
+                          line=re.sub(r'\{\s*,','{',line); line=re.sub(r'\{\s*\}','',line)
+                          changed |= line!=original
+                      out.append(line)
+                  if changed: path.write_text('\n'.join(out)+'\n')
+
+          # Physical execution: exact helper and mutation already reviewed.
+          p=root/'src/services/physicalExecutionParticipant.ts'; text=p.read_text()
+          text=text.replace("import { getDb, saveDb } from '../database.js';","import { getCanonicalStore } from './canonicalStore.js';")
+          old='''async function findParticipantRow(providerPhone: string, capability: string): Promise<any | null> {
+  const db = await getDb();
+  const stmt = db.prepare(`
+    SELECT s.phone,s.skill,s.is_available AS skill_available,s.service_radius_km,s.transport_mode,s.pricing_model,s.execution_profile_json,
+           m.provider_type,m.verified_provider,m.is_available AS profile_available,m.country,m.primary_state,m.primary_lga,m.location
+    FROM skills s
+    JOIN memory_profiles m ON m.phone=s.phone
+    WHERE s.phone=? AND lower(s.skill)=lower(?)
+    LIMIT 1
+  `);
+  stmt.bind([providerPhone, capability]);
+  const row = stmt.step() ? stmt.getAsObject() : null;
+  stmt.free();
+  return row;
+}'''
+          new='''async function findParticipantRow(providerPhone: string, capability: string): Promise<any | null> {
+  const db = await getCanonicalStore();
+  return await db.one<any>(`SELECT s.phone,s.skill,s.is_available AS skill_available,s.service_radius_km,s.transport_mode,s.pricing_model,s.execution_profile_json,
+           m.provider_type,m.verified_provider,m.is_available AS profile_available,m.country,m.primary_state,m.primary_lga,m.location
+    FROM skills s JOIN memory_profiles m ON m.phone=s.phone
+    WHERE s.phone=? AND lower(s.skill)=lower(?) LIMIT 1`, [providerPhone, capability]);
+}'''
+          if old not in text: raise SystemExit('physical findParticipantRow pattern changed; refusing unsafe edit')
+          text=text.replace(old,new,1)
+          pattern=r'''  const db = await getDb\(\);\n  db\.run\(\n    `UPDATE skills SET execution_profile_json=\?, transport_mode=COALESCE\(\?,transport_mode\), pricing_model=COALESCE\(\?,pricing_model\) WHERE phone=\? AND lower\(skill\)=lower\(\?)`,\n    \[JSON\.stringify\(profile\), optionalText\(input\.transportMode, 'Transport mode', 80\), optionalText\(input\.pricingModel, 'Pricing model', 120\), providerPhone, capabilityName\],\n  \);\n  if \(db\.getRowsModified\(\) !== 1\) throw new Error\('Physical execution capability declaration could not be stored'\);\n  saveDb\(\);'''
+          replacement='''  const db = await getCanonicalStore();
+  const result = await db.run(
+    `UPDATE skills SET execution_profile_json=?, transport_mode=COALESCE(?,transport_mode), pricing_model=COALESCE(?,pricing_model) WHERE phone=? AND lower(skill)=lower(?)`,
+    [JSON.stringify(profile), optionalText(input.transportMode, 'Transport mode', 80), optionalText(input.pricingModel, 'Pricing model', 120), providerPhone, capabilityName],
+  );
+  if (result.rowCount !== 1) throw new Error('Physical execution capability declaration could not be stored');'''
+          text,n=re.subn(pattern,replacement,text,count=1)
+          if n!=1: raise SystemExit('physical declaration mutation pattern changed; refusing unsafe edit')
+          p.write_text(text)
+
+          (root/'.github/workflows/persistence-one-shot.yml').unlink()
+      - name: Validate changed tree
+        run: npm ci --ignore-scripts --no-audit --no-fund && npm run lint
+      - name: Commit and push
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src .github/workflows/persistence-one-shot.yml
+          git commit -m 'persistence: apply exact inspected edge migrations' || exit 0
+          git push origin HEAD:feat/postgres-application-integration

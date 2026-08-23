@@ -1,0 +1,7 @@
+import { getCanonicalStore } from './canonicalStore.js';
+import { getCanonicalPersistenceMode } from './canonicalPersistence.js';
+import type { StorefrontCard } from './agenticStorefront.js';
+
+async function ensureSchema(){const db=await getCanonicalStore(),pg=getCanonicalPersistenceMode()==='postgres';await db.run(`CREATE TABLE IF NOT EXISTS economic_request_action_events(idempotency_key TEXT PRIMARY KEY,phone TEXT NOT NULL,request_id TEXT NOT NULL,action TEXT NOT NULL,card_json TEXT NOT NULL,created_at ${pg?'TIMESTAMPTZ':'TEXT'} DEFAULT CURRENT_TIMESTAMP)`);await db.run('CREATE INDEX IF NOT EXISTS idx_economic_request_action_events_request ON economic_request_action_events(request_id,phone,created_at DESC)');return db;}
+export async function getStoredStorefrontAction(phone:string,requestId:string,key:string):Promise<StorefrontCard|null>{const db=await ensureSchema(),row=await db.one<any>('SELECT card_json FROM economic_request_action_events WHERE idempotency_key=? AND phone=? AND request_id=? LIMIT 1',[key,phone,requestId]);if(!row?.card_json)return null;try{return JSON.parse(String(row.card_json)) as StorefrontCard;}catch{return null;}}
+export async function storeStorefrontAction(phone:string,requestId:string,action:string,key:string,card:StorefrontCard):Promise<void>{const db=await ensureSchema();await db.run('INSERT INTO economic_request_action_events(idempotency_key,phone,request_id,action,card_json) VALUES(?,?,?,?,?) ON CONFLICT(idempotency_key) DO NOTHING',[key,phone,requestId,action,JSON.stringify(card)]);}

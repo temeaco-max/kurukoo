@@ -1,113 +1,14 @@
-import { getDb, saveDb } from '../database.js';
 import { emitProgressiveTrustEvent } from './progressiveTrustService.js';
+import { getCanonicalStore } from './canonicalStore.js';
+import { getCanonicalPersistenceMode } from './canonicalPersistence.js';
 
-/**
- * Privacy Bridge — Blueprint §41 (Privacy & Security) & §2153 (Number Masking).
- *
- * Masks personal phone numbers behind short-lived proxy numbers so that
- * customer and provider can transact without exchanging real numbers. The
- * real number is stored in the `privacy_bridge` table and looked up only for
- * routing calls/messages; it is never surfaced in the chat UI.
- *
- * Full Africa's Talking / Twilio number-masking integration is a Phase 2 task
- * (Blueprint §2546). Until then, proxy numbers are allocated from an internal
- * pool range and the mapping is persisted locally.
- */
-
-const PROXY_PREFIX = '+2348009'; // internal proxy number pool range
-
-export interface PrivacyBridgeStatus {
-    enabled: boolean;
-    configured: boolean;
-    externalActivationRequired: true;
-    note: string;
-}
-
-export function getPrivacyBridgeStatus(env: NodeJS.ProcessEnv = process.env): PrivacyBridgeStatus {
-    const enabled = env.FF_PRIVATE_NUMBER_MASKING === 'true';
-    const configured = Boolean(String(env.NUMBER_MASKING_PROVIDER || '').trim());
-    return {
-        enabled,
-        configured,
-        externalActivationRequired: true,
-        note: enabled && configured
-            ? 'Internal proxy mapping is available; provider number ownership, routing, consent, and delivery receipts remain external activation requirements.'
-            : 'Private-number mapping is disabled or not configured; no telephony capability is claimed.',
-    };
-}
-
-/** Mask a phone number for display (e.g. in chat cards): +234 803 *** ****.
- *  Never returns the real number. */
-export function maskPhoneNumber(phone: string): string {
-    if (!phone || phone.length < 6) return '***-****';
-    return phone.substring(0, 4) + '****' + phone.substring(phone.length - 3);
-}
-
-/** Allocate a fresh proxy number for a real number and persist the mapping. */
-export async function generateProxyNumber(realPhone: string, context = 'booking'): Promise<string> {
-    const normalizedPhone = String(realPhone || '').trim();
-    if (!normalizedPhone) throw new Error('A real phone number is required for a privacy mapping.');
-    const db = await getDb();
-    const existing = db.prepare(`SELECT proxy_phone FROM privacy_bridge WHERE real_phone = ? AND status = 'active' ORDER BY id DESC LIMIT 1`);
-    existing.bind([normalizedPhone]);
-    if (existing.step()) {
-        const current = String(existing.getAsObject().proxy_phone || '');
-        existing.free();
-        return current;
-    }
-    existing.free();
-    const res = db.exec(`SELECT MAX(id) as max_id FROM privacy_bridge`);
-    const maxId = Number(res[0]?.values?.[0]?.[0] || 0);
-    const proxyPhone = `${PROXY_PREFIX}${String(maxId + 1).padStart(7, '0')}`;
-    db.run(
-        `INSERT INTO privacy_bridge (real_phone, proxy_phone, context, status, expires_at) VALUES (?, ?, ?, 'active', datetime('now', '+24 hours'))`,
-        [normalizedPhone, proxyPhone, String(context || 'booking').slice(0, 80)]
-    );
-    saveDb();
-    await emitProgressiveTrustEvent('privacy.number_mapping.created', normalizedPhone, { context: String(context || 'booking').slice(0, 80), status: 'active', expiresInHours: 24 }, `proxy:${proxyPhone}`);
-    return proxyPhone;
-}
-
-/** Resolve a proxy number back to the real number (for routing only — never display). */
-export async function getRealNumber(proxyPhone: string): Promise<string | null> {
-    const db = await getDb();
-    const stmt = db.prepare(`SELECT real_phone FROM privacy_bridge WHERE proxy_phone = ? AND status = 'active' AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)`);
-    stmt.bind([proxyPhone]);
-    let real: string | null = null;
-    if (stmt.step()) real = stmt.getAsObject().real_phone as string;
-    stmt.free();
-    return real;
-}
-
-/** Find the active proxy number currently mapped to a real number. */
-export async function getProxyForPhone(realPhone: string): Promise<string | null> {
-    const db = await getDb();
-    const stmt = db.prepare(`SELECT proxy_phone FROM privacy_bridge WHERE real_phone = ? AND status = 'active' AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP) ORDER BY id DESC LIMIT 1`);
-    stmt.bind([realPhone]);
-    let proxy: string | null = null;
-    if (stmt.step()) proxy = stmt.getAsObject().proxy_phone as string;
-    stmt.free();
-    return proxy;
-}
-
-/** Release a proxy mapping (e.g. after a booking is completed). */
-export async function releaseProxyNumber(proxyPhone: string): Promise<boolean> {
-    const db = await getDb();
-    const ownerStmt = db.prepare(`SELECT real_phone FROM privacy_bridge WHERE proxy_phone = ? AND status = 'active' LIMIT 1`);
-    ownerStmt.bind([proxyPhone]);
-    const realPhone = ownerStmt.step() ? String(ownerStmt.getAsObject().real_phone || '') : '';
-    ownerStmt.free();
-    db.run(`UPDATE privacy_bridge SET status = 'released', released_at = CURRENT_TIMESTAMP WHERE proxy_phone = ? AND status = 'active'`, [proxyPhone]);
-    const changes = db.exec(`SELECT changes() as c`);
-    saveDb();
-    const released = ((changes[0]?.values[0][0] as number) || 0) > 0;
-    if (released && realPhone) await emitProgressiveTrustEvent('privacy.number_mapping.released', realPhone, { status: 'released' }, `proxy:${proxyPhone}`);
-    return released;
-}
-
-/** Rotate: release the current proxy for a real number and allocate a fresh one. */
-export async function rotateProxyNumber(realPhone: string, context = 'booking'): Promise<string> {
-    const existing = await getProxyForPhone(realPhone);
-    if (existing) await releaseProxyNumber(existing);
-    return generateProxyNumber(realPhone, context);
-}
+const PROXY_PREFIX = '+2348009';
+export interface PrivacyBridgeStatus { enabled:boolean; configured:boolean; externalActivationRequired:true; note:string; }
+export function getPrivacyBridgeStatus(env:NodeJS.ProcessEnv=process.env):PrivacyBridgeStatus { const enabled=env.FF_PRIVATE_NUMBER_MASKING==='true'; const configured=Boolean(String(env.NUMBER_MASKING_PROVIDER||'').trim()); return {enabled,configured,externalActivationRequired:true,note:enabled&&configured?'Internal proxy mapping is available; provider number ownership, routing, consent, and delivery receipts remain external activation requirements.':'Private-number mapping is disabled or not configured; no telephony capability is claimed.'}; }
+export function maskPhoneNumber(phone:string):string { if(!phone||phone.length<6)return '***-****'; return phone.substring(0,4)+'****'+phone.substring(phone.length-3); }
+async function ensureSchema(){const s=await getCanonicalStore();if(getCanonicalPersistenceMode()==='postgres')await s.run(`CREATE TABLE IF NOT EXISTS privacy_bridge(id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,real_phone TEXT NOT NULL,proxy_phone TEXT NOT NULL,context TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'active',created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,expires_at TIMESTAMPTZ,released_at TIMESTAMPTZ,UNIQUE(real_phone,proxy_phone))`);else await s.run(`CREATE TABLE IF NOT EXISTS privacy_bridge(id INTEGER PRIMARY KEY AUTOINCREMENT,real_phone TEXT NOT NULL,proxy_phone TEXT NOT NULL,context TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'active',created_at TEXT DEFAULT CURRENT_TIMESTAMP,expires_at TEXT,released_at TEXT,UNIQUE(real_phone,proxy_phone))`);return s;}
+export async function generateProxyNumber(realPhone:string,context='booking'):Promise<string>{const normalized=String(realPhone||'').trim();if(!normalized)throw new Error('A real phone number is required for a privacy mapping.');const s=await ensureSchema();const existing=await s.one<any>(`SELECT proxy_phone FROM privacy_bridge WHERE real_phone=? AND status='active' ORDER BY id DESC LIMIT 1`,[normalized]);if(existing?.proxy_phone)return String(existing.proxy_phone);const max=await s.one<any>('SELECT COALESCE(MAX(id),0) AS max_id FROM privacy_bridge');const proxy=`${PROXY_PREFIX}${String(Number(max?.max_id||0)+1).padStart(7,'0')}`;await s.run(`INSERT INTO privacy_bridge(real_phone,proxy_phone,context,status,expires_at) VALUES(?,?,?,'active',?)`,[normalized,proxy,String(context||'booking').slice(0,80),new Date(Date.now()+24*60*60*1000).toISOString()]);await emitProgressiveTrustEvent('privacy.number_mapping.created',normalized,{context:String(context||'booking').slice(0,80),status:'active',expiresInHours:24},`proxy:${proxy}`);return proxy;}
+export async function getRealNumber(proxyPhone:string):Promise<string|null>{const s=await ensureSchema();const row=await s.one<any>(`SELECT real_phone,expires_at FROM privacy_bridge WHERE proxy_phone=? AND status='active' ORDER BY id DESC LIMIT 1`,[proxyPhone]);if(!row)return null;if(row.expires_at&&new Date(String(row.expires_at)).getTime()<=Date.now())return null;return String(row.real_phone);}
+export async function getProxyForPhone(realPhone:string):Promise<string|null>{const s=await ensureSchema();const row=await s.one<any>(`SELECT proxy_phone,expires_at FROM privacy_bridge WHERE real_phone=? AND status='active' ORDER BY id DESC LIMIT 1`,[realPhone]);if(!row)return null;if(row.expires_at&&new Date(String(row.expires_at)).getTime()<=Date.now())return null;return String(row.proxy_phone);}
+export async function releaseProxyNumber(proxyPhone:string):Promise<boolean>{const s=await ensureSchema();const owner=await s.one<any>(`SELECT real_phone FROM privacy_bridge WHERE proxy_phone=? AND status='active' LIMIT 1`,[proxyPhone]);const result=await s.run(`UPDATE privacy_bridge SET status='released',released_at=? WHERE proxy_phone=? AND status='active'`,[new Date().toISOString(),proxyPhone]);const released=result.rowCount>0;if(released&&owner?.real_phone)await emitProgressiveTrustEvent('privacy.number_mapping.released',String(owner.real_phone),{status:'released'},`proxy:${proxyPhone}`);return released;}
+export async function rotateProxyNumber(realPhone:string,context='booking'):Promise<string>{const existing=await getProxyForPhone(realPhone);if(existing)await releaseProxyNumber(existing);return generateProxyNumber(realPhone,context);}
