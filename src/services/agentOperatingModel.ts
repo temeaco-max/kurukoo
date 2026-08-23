@@ -1,9 +1,10 @@
 import { listAgentTools, type AgentToolName } from './agentToolRegistry.js';
 import { listCapabilityRegistrations, validateCapabilityRegistry } from './capabilityRegistry.js';
 import { listUniversalCapabilities, type UniversalCapabilityDescriptor } from './universalCapabilityProtocol.js';
+import { discoverExternalAgentCapabilities, getExternalAgentParticipant, type ExternalAgentDiscoveryRecord, type ExternalAgentParticipantRegistration } from './externalAgentCoordination.js';
 import { getAgentGoal, listAgentGoalEvents, type AgentGoal, type AgentGoalEvent } from './agentRuntime.js';
 
-export const KURUKOO_AGENT_OPERATING_MODEL_VERSION = '1.0' as const;
+export const KURUKOO_AGENT_OPERATING_MODEL_VERSION = '1.1' as const;
 
 export type AgentOperatingRole =
   | 'conversation'
@@ -46,11 +47,24 @@ export interface AgentOperatingCapabilitySummary {
   continuationContext: string[];
 }
 
+export interface AgentExternalParticipantSummary {
+  participantId: string;
+  displayName: string;
+  protocol: ExternalAgentDiscoveryRecord['protocol'];
+  verificationState: ExternalAgentDiscoveryRecord['verificationState'];
+  agentVerified: boolean;
+  capabilities: ExternalAgentDiscoveryRecord['capability'][];
+  declarationOnly: true;
+  executionAuthorized: false;
+  outcomeVerified: false;
+}
+
 export interface AgentRunSummary {
   goal: AgentGoal;
   events: AgentGoalEvent[];
   correlatedObjectIds: string[];
-  delegated: false;
+  delegated: boolean;
+  executionPath: 'agent_runtime' | 'delegated_agent';
 }
 
 const OPERATING_ROLES: AgentOperatingRole[] = [
@@ -76,6 +90,7 @@ const CANONICAL_OWNERS = [
   'executionConnector',
   'providerCommunication',
   'providerVerification',
+  'externalAgentCoordination',
   'memoryProfile',
   'notificationQueue',
   'evidenceBoundary',
@@ -92,6 +107,31 @@ function summarizeDescriptor(descriptor: UniversalCapabilityDescriptor): AgentOp
     owner: [...descriptor.owner],
     continuationContext: [...descriptor.continuationContext],
   };
+}
+
+function summarizeExternalParticipant(discoveries: ExternalAgentDiscoveryRecord[]): AgentExternalParticipantSummary[] {
+  const grouped = new Map<string, AgentExternalParticipantSummary>();
+  for (const item of discoveries) {
+    const existing = grouped.get(item.participantId);
+    if (existing) {
+      existing.capabilities.push(item.capability);
+      existing.capabilities.sort((a, b) => a.capability.localeCompare(b.capability));
+      if (item.agentVerified) existing.agentVerified = true;
+      continue;
+    }
+    grouped.set(item.participantId, {
+      participantId: item.participantId,
+      displayName: item.displayName,
+      protocol: item.protocol,
+      verificationState: item.verificationState,
+      agentVerified: item.agentVerified,
+      capabilities: [item.capability],
+      declarationOnly: true,
+      executionAuthorized: false,
+      outcomeVerified: false,
+    });
+  }
+  return [...grouped.values()].sort((a, b) => a.displayName.localeCompare(b.displayName) || a.participantId.localeCompare(b.participantId));
 }
 
 export function getKurukooAgentCard(): KurukooAgentCard {
@@ -130,6 +170,29 @@ export async function getAgentOperatingCapability(capability: string): Promise<A
   return all.find(item => item.capability === normalized || item.capability === `skill.${normalized}`) || null;
 }
 
+export async function listAgentExternalParticipants(input: { capability?: string; includeUnavailable?: boolean } = {}): Promise<AgentExternalParticipantSummary[]> {
+  const discoveries = await discoverExternalAgentCapabilities(input);
+  return summarizeExternalParticipant(discoveries);
+}
+
+export async function getAgentExternalParticipant(participantId: string): Promise<AgentExternalParticipantSummary | null> {
+  const participant = await getExternalAgentParticipant(participantId);
+  if (!participant) return null;
+  const discoveries = await discoverExternalAgentCapabilities({ capability: undefined, includeUnavailable: true });
+  const matching = discoveries.filter(item => item.participantId === participant.participantId);
+  return summarizeExternalParticipant(matching)[0] || {
+    participantId: participant.participantId,
+    displayName: participant.manifest.displayName,
+    protocol: participant.manifest.protocol,
+    verificationState: participant.verificationState,
+    agentVerified: participant.verificationState === 'verified',
+    capabilities: [],
+    declarationOnly: true,
+    executionAuthorized: false,
+    outcomeVerified: false,
+  };
+}
+
 export async function getAgentRunSummary(phone: string, goalId: string): Promise<AgentRunSummary | null> {
   const goal = await getAgentGoal(phone, goalId);
   if (!goal) return null;
@@ -138,9 +201,18 @@ export async function getAgentRunSummary(phone: string, goalId: string): Promise
     goal.id,
     goal.conversationId,
     goal.economicRequestId,
-    ...events.map(event => event.detail?.match(/(?:request|execution|object|resource|notification)[:=]([A-Za-z0-9._:-]+)/i)?.[1]).filter(Boolean) as string[],
+    ...events.map(event => event.detail?.match(/(?:request|execution|object|resource|notification|delegation)[:=]([A-Za-z0-9._:-]+)/i)?.[1]).filter(Boolean) as string[],
   ].filter(Boolean) as string[])];
-  return { goal, events, correlatedObjectIds, delegated: false };
+  const delegated = String((goal as any).goalType || (goal as any).goal_type || '').toLowerCase() === 'delegated_agent'
+    || String((goal as any).source || '').toLowerCase() === 'network'
+    || events.some(event => /delegated_run_(?:started|completed|blocked|failed)/i.test(event.action));
+  return {
+    goal,
+    events,
+    correlatedObjectIds,
+    delegated,
+    executionPath: delegated ? 'delegated_agent' : 'agent_runtime',
+  };
 }
 
 export function validateAgentOperatingModel(): {
