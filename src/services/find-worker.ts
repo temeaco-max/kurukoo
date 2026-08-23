@@ -1,4 +1,4 @@
-import { getDb } from '../database.js';
+import { getCanonicalStore } from './canonicalStore.js';
 import { normalizeProviderEntityType, type ProviderEntityType } from './providerEntity.js';
 import { getActivePulseProviders } from './nearbyPulse.js';
 import { getActiveLocationConsent } from './progressiveTrustService.js';
@@ -33,15 +33,6 @@ function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number): num
     return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/**
- * Canonical provider discovery for Economic Requests.
- *
- * Static availability remains the baseline provider source. When an explicit
- * user location is supplied as coordinates, or an authenticated owner has an
- * active consented network location, the same lookup is enriched with verified
- * providers already live on Nearby Pulse. Pulse is presence evidence, not a
- * quote, booking, payment or fulfilment claim.
- */
 export async function find_worker(options: {
     skill: string;
     location?: string;
@@ -52,7 +43,7 @@ export async function find_worker(options: {
     radiusKm?: number;
     ownerPhone?: string;
 }): Promise<FindWorkerResult> {
-    const db = await getDb();
+    const store = await getCanonicalStore();
     const max = Math.min(25, Math.max(1, options.max ?? 5));
     const location = String(options.location || '').trim();
     const requestedSkill = String(options.skill || '').trim().toLowerCase();
@@ -74,7 +65,6 @@ export async function find_worker(options: {
     }
 
     const radiusKm = Math.min(50, Math.max(0.1, Number(options.radiusKm || 10)));
-
     const searchSkills = new Set<string>([requestedSkill]);
     if (requestedSkill === 'find_worker' && service) searchSkills.add(service.replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, ''));
     if (requestedSkill === 'repair') {
@@ -87,14 +77,13 @@ export async function find_worker(options: {
     const skillValues = Array.from(searchSkills).filter(Boolean).slice(0, 5);
     const skillPlaceholders = skillValues.map(() => '?').join(', ');
     const locationClause = location
-        ? `AND (
-            lower(COALESCE(p.location, '')) LIKE '%' || lower(?) || '%'
-            OR lower(COALESCE(p.primary_lga, '')) LIKE '%' || lower(?) || '%'
-            OR lower(COALESCE(p.primary_state, '')) LIKE '%' || lower(?) || '%'
-        )`
+        ? `AND (lower(COALESCE(p.location, '')) LIKE '%' || lower(?) || '%' OR lower(COALESCE(p.primary_lga, '')) LIKE '%' || lower(?) || '%' OR lower(COALESCE(p.primary_state, '')) LIKE '%' || lower(?) || '%')`
         : '';
 
-    const stmt = db.prepare(`
+    const bindParams: unknown[] = [...skillValues];
+    if (location) bindParams.push(location, location, location);
+    bindParams.push(max);
+    const rows = await store.all<any>(`
         SELECT s.phone, s.skill, s.rating, s.jobs_completed, s.hourly_rate,
                s.operation_mode, s.service_radius_km,
                s.verified_artist,
@@ -103,41 +92,26 @@ export async function find_worker(options: {
         LEFT JOIN memory_profiles p ON p.phone = s.phone
         WHERE lower(s.skill) IN (${skillPlaceholders})
           AND s.is_available = 1
-          AND (
-            COALESCE(p.verified_provider, 0) = 1
-            OR (
-              COALESCE(p.provider_type, 'human') = 'human'
-              AND COALESCE(s.verified_artist, 0) = 1
-            )
-          )
+          AND (COALESCE(p.verified_provider, 0) = 1 OR (COALESCE(p.provider_type, 'human') = 'human' AND COALESCE(s.verified_artist, 0) = 1))
           ${locationClause}
         ORDER BY s.rating DESC, s.jobs_completed DESC
         LIMIT ?
-    `);
-    const bindParams: unknown[] = [...skillValues];
-    if (location) bindParams.push(location, location, location);
-    bindParams.push(max);
-    stmt.bind(bindParams);
+    `, bindParams);
 
-    const providers: ProviderMatch[] = [];
-    while (stmt.step()) {
-        const r = stmt.getAsObject() as Record<string, unknown>;
-        providers.push({
-            phone: String(r.phone ?? ''),
-            name: String(r.name ?? 'Provider'),
-            business_name: undefined,
-            skill: String(r.skill ?? requestedSkill),
-            rating: Number(r.rating ?? 0),
-            jobs_completed: Number(r.jobs_completed ?? 0),
-            hourly_rate: Number(r.hourly_rate ?? 0),
-            operation_mode: String(r.operation_mode ?? 'stationary'),
-            service_radius_km: Number(r.service_radius_km ?? 0),
-            verified: Boolean(Number(r.verified_provider ?? 0) || Number(r.verified_artist ?? 0)),
-            provider_type: normalizeProviderEntityType(r.provider_type),
-            live_now: false,
-        });
-    }
-    stmt.free();
+    const providers: ProviderMatch[] = rows.map((r: any) => ({
+        phone: String(r.phone ?? ''),
+        name: String(r.name ?? 'Provider'),
+        business_name: undefined,
+        skill: String(r.skill ?? requestedSkill),
+        rating: Number(r.rating ?? 0),
+        jobs_completed: Number(r.jobs_completed ?? 0),
+        hourly_rate: Number(r.hourly_rate ?? 0),
+        operation_mode: String(r.operation_mode ?? 'stationary'),
+        service_radius_km: Number(r.service_radius_km ?? 0),
+        verified: Boolean(Number(r.verified_provider ?? 0) || Number(r.verified_artist ?? 0)),
+        provider_type: normalizeProviderEntityType(r.provider_type),
+        live_now: false,
+    }));
 
     if (hasCoordinates) {
         const liveProviders = await getActivePulseProviders();
@@ -157,16 +131,11 @@ export async function find_worker(options: {
                 existing.live_source = String(live.source) === 'mobile' ? 'mobile' : 'stationary';
                 continue;
             }
-
-            const profileStmt = db.prepare('SELECT name, provider_type, verified_provider FROM memory_profiles WHERE phone=? LIMIT 1');
-            profileStmt.bind([String(live.phone)]);
-            const profile = profileStmt.step() ? profileStmt.getAsObject() as Record<string, unknown> : {};
-            profileStmt.free();
-            if (Number(profile.verified_provider || 0) !== 1) continue;
-
+            const profile = await store.one<any>('SELECT name, provider_type, verified_provider FROM memory_profiles WHERE phone=? LIMIT 1', [String(live.phone)]);
+            if (Number(profile?.verified_provider || 0) !== 1) continue;
             const provider: ProviderMatch = {
                 phone: String(live.phone),
-                name: String(live.name || profile.name || 'Verified provider'),
+                name: String(live.name || profile?.name || 'Verified provider'),
                 business_name: undefined,
                 skill: liveSkill,
                 rating: 0,
@@ -175,7 +144,7 @@ export async function find_worker(options: {
                 operation_mode: String(live.source || 'mobile') === 'mobile' ? 'mobile' : 'stationary',
                 service_radius_km: radiusKm,
                 verified: true,
-                provider_type: normalizeProviderEntityType(profile.provider_type),
+                provider_type: normalizeProviderEntityType(profile?.provider_type),
                 distance_km: distance,
                 live_now: true,
                 live_source: String(live.source) === 'mobile' ? 'mobile' : 'stationary',
@@ -193,8 +162,6 @@ export async function find_worker(options: {
         return b.rating - a.rating || b.jobs_completed - a.jobs_completed;
     });
 
-    // Keep the canonical response intentionally compact; consent provenance is
-    // an internal matching input, not a new public location surface.
     void consentedLocation;
     return { providers: providers.slice(0, max), count: Math.min(providers.length, max) };
 }
