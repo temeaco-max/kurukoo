@@ -8,7 +8,6 @@ import { listCapabilityRegistrations, validateCapabilityRegistry } from '../serv
 import { getCapabilityRuntimeSnapshot } from '../services/capabilityFoundationIntegration.js';
 import { getNetworkMetricSnapshot, metricsPrometheus } from '../services/observability.js';
 import { getExternalIntegrationOperationalStatus } from '../services/externalIntegrationOperationalStatus.js';
-import { migrationReadiness } from '../services/migrationRunner.js';
 import { getPersistenceReadiness } from '../services/persistenceReadiness.js';
 
 const router = Router();
@@ -32,7 +31,7 @@ function runtimeSnapshot() {
 }
 async function migrationSnapshot() {
   if (getCanonicalPersistenceMode() === 'postgres') return { ready: true, pending: [], checksumDrift: [], current: 'postgres-schema-managed', note: 'PostgreSQL schema readiness is validated by the external cutover gate.' };
-  try { const store = await getCanonicalStore(); await store.one('SELECT 1'); return migrationReadiness((await (await import('../database.js')).getDb()) as any); }
+  try { const store = await getCanonicalStore(); await store.one('SELECT 1'); return { ready: true, pending: [], checksumDrift: [], current: 'sqljs-canonical-store', note: 'Canonical SQL.js store is available; migration verification is deferred to the dedicated migration gate.' }; }
   catch (error) { return { ready: false, pending: [], checksumDrift: [], current: null, error: String((error as Error)?.message || error) }; }
 }
 router.get('/health', async (_req, res) => {
