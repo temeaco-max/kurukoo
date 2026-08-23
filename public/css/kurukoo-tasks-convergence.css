@@ -32,3 +32,11 @@
 @media(max-width:760px){
   .k-task-actions > *{min-height:44px}
 }
+
+/* Phase 2b — Task group hierarchy */
+.k-task-group[data-group="available"] .k-task-group-head h3,
+.k-task-group[data-group="in_progress"] .k-task-group-head h3{color:var(--ko-ink,#24221f)}
+.k-task-group[data-group="completed"] .k-task-group-head h3{color:var(--ko-muted,#6D665F)}
+.k-task-group[data-group="completed"] .k-task-card{opacity:.92}
+.k-task-card .k-status{min-height:26px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:800}
+.k-app-section-tasks .k-app-title-row p{max-width:58ch}

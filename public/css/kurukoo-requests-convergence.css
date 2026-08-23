@@ -68,3 +68,49 @@
     transition: none;
   }
 }
+
+/* Phase 2 — Request lifecycle visual clarity */
+.k-request-workspace{gap:14px}
+.k-request-metrics{margin-bottom:4px}
+.k-request-metric strong{display:block;margin-top:8px;font-size:28px;letter-spacing:-.04em;font-family:"Space Grotesk",Inter,sans-serif}
+.k-request-card,
+[data-request-card],
+.k-app-data-list .k-request-item{
+  border:1px solid var(--ko-border,#E6DED5)!important;
+  border-radius:14px!important;background:#fff!important;padding:14px 15px!important;
+  box-shadow:0 1px 2px rgba(36,34,31,.03)!important;
+}
+.k-request-card-head,
+.k-request-item-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.k-request-card h3,
+.k-request-item h3{margin:4px 0 0;font-size:16px;line-height:1.3;letter-spacing:-.02em}
+.k-request-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.k-status[data-state="requested"],
+.k-status[data-state="matching"],
+.k-status[data-state="awaiting_match"]{background:#eef4f8;color:#3C6F91;border-color:#d5e3ee}
+.k-status[data-state="waiting"],
+.k-status[data-state="quoted"],
+.k-status[data-state="awaiting_confirmation"],
+.k-status[data-state="payment_pending"]{background:#f7f1e3;color:#B87928;border-color:#ead9b8}
+.k-status[data-state="approved"],
+.k-status[data-state="executing"],
+.k-status[data-state="in_fulfillment"]{background:#eef5f1;color:#2E8060;border-color:#cfe3d8}
+.k-status[data-state="evidence_pending"]{background:#f3eee8;color:#8a6b4a;border-color:#e2d5c6}
+.k-status[data-state="completed"],
+.k-status[data-state="fulfilled"]{background:#edf4ed;color:#2E8060;border-color:#c9decc}
+.k-status[data-state="blocked"],
+.k-status[data-state="failed"],
+.k-status[data-state="cancelled"],
+.k-status[data-state="expired"]{background:#f7eceb;color:#B5483D;border-color:#e8cecb}
+.k-request-next-action{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px;
+}
+.k-request-next-action .k-app-primary,
+.k-request-next-action .k-app-card-action{min-height:40px}
+.k-request-source{font-size:11px;color:var(--ko-muted,#6D665F);margin-top:8px}
+@media(max-width:760px){
+  .k-request-workspace-head{flex-direction:column}
+  .k-request-card-head{flex-direction:column}
+  .k-request-next-action{flex-direction:column;align-items:stretch}
+  .k-request-next-action > *{width:100%;justify-content:center;text-align:center}
+}
