@@ -1,0 +1,1 @@
+See docs/architecture/AGENT_OPERATING_MODEL_END_TO_END.md for the locked end-to-end completion contract. This marker exists only to make the architectural contract discoverable to repository tooling; no runtime authority is introduced.
