@@ -1,7 +1,7 @@
 import { listAgentTools, type AgentToolName } from './agentToolRegistry.js';
 import { listCapabilityRegistrations, validateCapabilityRegistry } from './capabilityRegistry.js';
 import { listUniversalCapabilities, type UniversalCapabilityDescriptor } from './universalCapabilityProtocol.js';
-import { discoverExternalAgentCapabilities, getExternalAgentParticipant, type ExternalAgentDiscoveryRecord, type ExternalAgentParticipantRegistration } from './externalAgentCoordination.js';
+import { discoverExternalAgentCapabilities, getExternalAgentParticipant, type ExternalAgentDiscoveryRecord } from './externalAgentCoordination.js';
 import { getAgentGoal, listAgentGoalEvents, type AgentGoal, type AgentGoalEvent } from './agentRuntime.js';
 
 export const KURUKOO_AGENT_OPERATING_MODEL_VERSION = '1.1' as const;
