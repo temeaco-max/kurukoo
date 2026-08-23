@@ -1,136 +1,15 @@
-import { getDb, saveDb } from '../database.js';
-
 /**
- * MONEY_CIRCLE_LIVE: Gatekeeper flag for P2P transaction authorization.
- * If false, mock or sandbox mode is enforced, protecting actual client money from moving.
+ * Money Circle is a gated coordination/simulation primitive. MONEY_CIRCLE_LIVE
+ * remains false, so this service never claims to move real client money.
  */
-export const MONEY_CIRCLE_LIVE = false; 
-
-export interface MoneyCircle {
-    id: number;
-    name: string;
-    creator_phone: string;
-    target_amount: number;
-    status: string;
-    mode: 'Standard' | 'BuyingCircle' | 'SafetyCircle'; // Custom circle modes
-}
-
-export async function createMoneyCircle(
-    name: string, 
-    creatorPhone: string, 
-    targetAmount: number,
-    mode: 'Standard' | 'BuyingCircle' | 'SafetyCircle' = 'Standard'
-): Promise<number> {
-    const db = await getDb();
-    
-    // Create Circle
-    db.run(
-        `INSERT INTO money_circles (name, creator_phone, target_amount, status) VALUES (?, ?, ?, 'active')`, 
-        [name, creatorPhone, targetAmount]
-    );
-    const res = db.exec(`SELECT last_insert_rowid() as id`);
-    const id = res[0]?.values[0][0] || 1;
-    
-    // Auto-join creator as Admin
-    db.run(`INSERT INTO circle_members (circle_id, phone, role) VALUES (?, ?, 'admin')`, [id, creatorPhone]);
-    
-    // Store mode configuration in preferences if schema doesn't have mode, or log it
-    console.log(`Money Circle created successfully with ID ${id} in ${mode} mode.`);
-    
-    saveDb();
-    return id;
-}
-
-// Buying Circle Variant logic
-export async function processBuyingCircleDiscount(circleId: number): Promise<{ success: boolean; discountPercentage: number; message: string }> {
-    const details = await getCircleDetails(circleId);
-    if (!details) {
-        throw new Error('Circle not found');
-    }
-    const memberCount = details.members.length;
-    // Bulk pricing discount scales with members
-    const discount = Math.min(25, memberCount * 5); // Max 25% bulk discount
-    return {
-        success: true,
-        discountPercentage: discount,
-        message: `Buying Circle achieved a bulk negotiation discount of ${discount}% with ${memberCount} pooled members.`
-    };
-}
-
-// Safety Circle Variant logic
-export async function broadcastSafetyCircleAlert(circleId: number, alertPhone: string, alertType: string): Promise<{ success: boolean; notifiedCount: number }> {
-    const details = await getCircleDetails(circleId);
-    if (!details) {
-        throw new Error('Circle not found');
-    }
-    const peersToNotify = details.members.filter((m: any) => m.phone !== alertPhone);
-    console.log(`Safety Circle alert [${alertType}] broadcast to:`, peersToNotify.map((m: any) => m.phone));
-    return {
-        success: true,
-        notifiedCount: peersToNotify.length
-    };
-}
-
-export async function joinMoneyCircle(circleId: number, phone: string): Promise<boolean> {
-    const db = await getDb();
-    // Check if circle exists
-    const stmt = db.prepare(`SELECT id FROM money_circles WHERE id = ?`);
-    stmt.bind([circleId]);
-    const exists = stmt.step();
-    stmt.free();
-    if (!exists) return false;
-
-    db.run(`INSERT INTO circle_members (circle_id, phone, role) VALUES (?, ?, 'member')`, [circleId, phone]);
-    saveDb();
-    return true;
-}
-
-export async function recordContribution(circleId: number, phone: string, amount: number): Promise<boolean> {
-    if (!MONEY_CIRCLE_LIVE) {
-        console.warn(`[GATED] MONEY_CIRCLE_LIVE is FALSE. Simulated contribution of ${amount} for ${phone} in circle ${circleId}. No actual funds moved.`);
-    } else {
-        console.log(`[LIVE TRANSACT] Executing real P2P contribution ledger for ${phone}: ${amount}`);
-    }
-
-    const db = await getDb();
-    db.run(`INSERT INTO circle_contributions (circle_id, phone, amount) VALUES (?, ?, ?)`, [circleId, phone, amount]);
-    saveDb();
-    return true;
-}
-
-export async function getCircleDetails(circleId: number): Promise<any> {
-    const db = await getDb();
-    const stmt = db.prepare(`SELECT * FROM money_circles WHERE id = ?`);
-    stmt.bind([circleId]);
-    let circle: any = null;
-    if (stmt.step()) {
-        circle = stmt.getAsObject();
-    }
-    stmt.free();
-
-    if (!circle) return null;
-
-    // Get members
-    const memStmt = db.prepare(`SELECT phone, role FROM circle_members WHERE circle_id = ?`);
-    memStmt.bind([circleId]);
-    const members: any[] = [];
-    while (memStmt.step()) {
-        members.push(memStmt.getAsObject());
-    }
-    memStmt.free();
-
-    // Get contributions
-    const contStmt = db.prepare(`SELECT phone, amount, created_at FROM circle_contributions WHERE circle_id = ?`);
-    contStmt.bind([circleId]);
-    const contributions: any[] = [];
-    while (contStmt.step()) {
-        contributions.push(contStmt.getAsObject());
-    }
-    contStmt.free();
-
-    return {
-        ...circle,
-        members,
-        contributions
-    };
-}
+import { getCanonicalStore } from './canonicalStore.js';
+import { getCanonicalPersistenceMode } from './canonicalPersistence.js';
+export const MONEY_CIRCLE_LIVE=false;
+export interface MoneyCircle{id:number;name:string;creator_phone:string;target_amount:number;status:string;mode:'Standard'|'BuyingCircle'|'SafetyCircle';}
+async function store(){const s=await getCanonicalStore();if(getCanonicalPersistenceMode()==='postgres'){await s.run(`CREATE TABLE IF NOT EXISTS money_circles(id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,name TEXT,creator_phone TEXT,target_amount DOUBLE PRECISION,status TEXT DEFAULT 'active',mode TEXT DEFAULT 'Standard',created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP)`);await s.run(`CREATE TABLE IF NOT EXISTS circle_members(id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,circle_id BIGINT,phone TEXT,role TEXT DEFAULT 'member')`);await s.run(`CREATE TABLE IF NOT EXISTS circle_contributions(id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,circle_id BIGINT,phone TEXT,amount DOUBLE PRECISION,created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP)`);}else{await s.run(`CREATE TABLE IF NOT EXISTS money_circles(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,creator_phone TEXT,target_amount REAL,status TEXT DEFAULT 'active',mode TEXT DEFAULT 'Standard',created_at TEXT DEFAULT CURRENT_TIMESTAMP)`);await s.run(`CREATE TABLE IF NOT EXISTS circle_members(id INTEGER PRIMARY KEY AUTOINCREMENT,circle_id INTEGER,phone TEXT,role TEXT DEFAULT 'member')`);await s.run(`CREATE TABLE IF NOT EXISTS circle_contributions(id INTEGER PRIMARY KEY AUTOINCREMENT,circle_id INTEGER,phone TEXT,amount REAL,created_at TEXT DEFAULT CURRENT_TIMESTAMP)`);}return s;}
+export async function createMoneyCircle(name:string,creatorPhone:string,targetAmount:number,mode:'Standard'|'BuyingCircle'|'SafetyCircle'='Standard'){const s=await store();const row=await s.insert<any>('INSERT INTO money_circles(name,creator_phone,target_amount,status,mode) VALUES(?,?,? ,?,?) RETURNING id',[name,creatorPhone,targetAmount,'active',mode]);const id=Number(row?.id||0);await s.run(`INSERT INTO circle_members(circle_id,phone,role) VALUES(?,?,'admin')`,[id,creatorPhone]);return id;}
+export async function processBuyingCircleDiscount(circleId:number){const details=await getCircleDetails(circleId);if(!details)throw new Error('Circle not found');const discount=Math.min(25,details.members.length*5);return{success:true,discountPercentage:discount,message:`Buying Circle achieved a bulk negotiation discount of ${discount}% with ${details.members.length} pooled members.`};}
+export async function broadcastSafetyCircleAlert(circleId:number,alertPhone:string,alertType:string){const details=await getCircleDetails(circleId);if(!details)throw new Error('Circle not found');return{success:true,notifiedCount:details.members.filter((m:any)=>m.phone!==alertPhone).length};}
+export async function joinMoneyCircle(circleId:number,phone:string){const s=await store();if(!(await s.one('SELECT id FROM money_circles WHERE id=?',[circleId])))return false;await s.run(`INSERT INTO circle_members(circle_id,phone,role) VALUES(?,?,'member')`,[circleId,phone]);return true;}
+export async function recordContribution(circleId:number,phone:string,amount:number){if(!MONEY_CIRCLE_LIVE)console.warn(`[GATED] MONEY_CIRCLE_LIVE is FALSE. Simulated contribution of ${amount} for ${phone} in circle ${circleId}. No actual funds moved.`);const s=await store();await s.run('INSERT INTO circle_contributions(circle_id,phone,amount) VALUES(?,?,?)',[circleId,phone,amount]);return true;}
+export async function getCircleDetails(circleId:number){const s=await store();const circle=await s.one<any>('SELECT * FROM money_circles WHERE id=?',[circleId]);if(!circle)return null;return{...circle,members:await s.all<any>('SELECT phone,role FROM circle_members WHERE circle_id=?',[circleId]),contributions:await s.all<any>('SELECT phone,amount,created_at FROM circle_contributions WHERE circle_id=?',[circleId])};}
