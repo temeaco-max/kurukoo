@@ -4,7 +4,7 @@ import { expireDeferredIntentions, getDueIntentions, incrementAttempt, resolveOp
 import { ensureLivingMemorySchema, runDailyMemoryDecay, runWeeklyMemoryPrune, runMemoryCrystallize } from './livingMemoryEngine.js';
 import { processDueReminders } from './reminderService.js';
 import { processExpiredCheckIns } from './safetyService.js';
-import { purgeExpiredData } from '../database.js';
+import { purgeExpiredData } from './dataRetention.js';
 import { find_worker } from './find-worker.js';
 import { sendFcmPush } from './pushNotifications.js';
 import { drainFcmQueue } from './pushNotificationsCanonical.js';
