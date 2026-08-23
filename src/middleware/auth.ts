@@ -7,22 +7,41 @@ export interface AuthRequest extends Request { user?: AuthUser; admin?: boolean 
 type RateState = { count: number; resetAt: number };
 const rateState = new Map<string, RateState>();
 const AUTH_WINDOW_MS = Math.max(10_000, Number(process.env.KURUKOO_AUTH_WINDOW_MS || 60_000));
-const AUTH_MAX_REQUESTS = Math.max(10, Number(process.env.KURUKOO_AUTH_MAX_REQUESTS || 60));
+/** Write/mutation budget (POST/PUT/PATCH/DELETE) for authenticated routes. */
+const AUTH_MAX_WRITE_REQUESTS = Math.max(10, Number(process.env.KURUKOO_AUTH_MAX_REQUESTS || 60));
+/**
+ * Read budget for authenticated GETs. A single Chat or Desk load fans out to
+ * many owner-scoped reads (me, notifications, points, tasks, timeline). Counting
+ * those against the write budget caused 429s during ordinary multi-surface use.
+ */
+const AUTH_MAX_READ_REQUESTS = Math.max(
+    AUTH_MAX_WRITE_REQUESTS,
+    Number(process.env.KURUKOO_AUTH_MAX_READ_REQUESTS || 300)
+);
 
 function rateLimit(req: Request, res: Response): boolean {
-    const key = String(req.ip || req.headers['x-forwarded-for'] || 'unknown').split(',')[0].trim();
+    const ip = String(req.ip || req.headers['x-forwarded-for'] || 'unknown').split(',')[0].trim();
+    const method = String(req.method || 'GET').toUpperCase();
+    const isRead = method === 'GET' || method === 'HEAD' || method === 'OPTIONS';
+    const max = isRead ? AUTH_MAX_READ_REQUESTS : AUTH_MAX_WRITE_REQUESTS;
+    const key = `${ip}:${isRead ? 'r' : 'w'}`;
     const now = Date.now();
     const current = rateState.get(key);
     if (!current || current.resetAt <= now) { rateState.set(key, { count: 1, resetAt: now + AUTH_WINDOW_MS }); return true; }
     current.count += 1;
-    if (current.count > AUTH_MAX_REQUESTS) { res.setHeader('Retry-After', Math.ceil((current.resetAt - now) / 1000)); res.status(429).json({ error: 'Too many authenticated requests' }); return false; }
+    if (current.count > max) {
+        res.setHeader('Retry-After', Math.ceil((current.resetAt - now) / 1000));
+        res.setHeader('X-RateLimit-Limit', String(max));
+        res.setHeader('X-RateLimit-Remaining', '0');
+        res.status(429).json({ error: 'Too many authenticated requests' });
+        return false;
+    }
     return true;
 }
 
 function getJwtSecret(): string {
     const secret = process.env.JWT_SECRET;
-    if (!secret || secret.length < 32) throw new Error('JWT_SECRET must be configured with at least 32 characters');
-    return secret;
+    if (!secret || secret.length < 32) throw new Error('JWT_SECRET must be configured with at least 32 characters');\n    return secret;
 }
 
 function getCookie(req: Request, name: string): string | undefined {
