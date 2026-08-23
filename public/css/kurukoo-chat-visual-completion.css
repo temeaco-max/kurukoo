@@ -15,3 +15,104 @@
 @media(max-width:760px){.chat-content{width:calc(100% - 24px);padding-top:24px}.welcome{min-height:52vh}.welcome h1{font-size:32px}.message{margin:18px 0}.composer{border-radius:15px}.chat-header{padding:0 12px}.header-right{gap:4px}.points-balance{padding-inline:9px}}
 @media(max-width:420px){.welcome h1{font-size:29px}.welcome p{font-size:13px}.quick-actions button{font-size:11px}.composer-quick-actions button{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.history-item,.quick-actions button,.composer-quick-actions button{transition:none}}
+
+/* Phase 2 — Chat interior density (existing Chat shell only) */
+.kurukoo-chat-page .chat-shell{--chat-gap:10px}
+.kurukoo-chat-page .sidebar-top,
+.kurukoo-chat-page .chat-header{
+  min-height:58px!important;height:58px!important;
+  padding-inline:14px!important;
+  border-bottom:1px solid color-mix(in srgb,var(--chat-border,var(--ko-border,#E6DED5)) 90%,transparent)!important;
+  background:rgba(255,255,255,.92)!important;
+  backdrop-filter:blur(12px);
+}
+.kurukoo-chat-page .history-item{
+  min-height:40px!important;padding:8px 10px!important;margin:1px 6px!important;
+  border-radius:10px!important;font-size:13px!important;line-height:1.35!important;
+}
+.kurukoo-chat-page .history-item.active{
+  background:color-mix(in srgb,var(--ko-primary,#B95D3C) 11%,#fff)!important;
+  box-shadow:inset 3px 0 0 var(--ko-primary,#B95D3C)!important;
+  font-weight:650!important;
+}
+.kurukoo-chat-page .chat-content{
+  width:min(860px,calc(100% - 32px))!important;
+  padding-top:28px!important;padding-bottom:120px!important;
+}
+.kurukoo-chat-page .message{margin:14px 0!important;gap:10px!important}
+.kurukoo-chat-page .message .bubble{
+  font-size:14px!important;line-height:1.55!important;
+  border-radius:14px!important;max-width:min(640px,100%)!important;
+}
+.kurukoo-chat-page .message.user .bubble{
+  padding:10px 13px!important;
+  background:#F3EEE9!important;
+  border:1px solid color-mix(in srgb,var(--ko-border,#E6DED5) 80%,transparent)!important;
+}
+.kurukoo-chat-page .message.assistant .bubble,
+.kurukoo-chat-page .message.bot .bubble{padding:2px 0!important;background:transparent!important;border:0!important}
+.kurukoo-chat-page .avatar{width:26px!important;height:26px!important;border-radius:8px!important}
+.kurukoo-chat-page .composer-wrap{
+  padding:12px 14px max(12px,env(safe-area-inset-bottom))!important;
+  background:linear-gradient(transparent,var(--chat-surface,var(--ko-bg,#F7F2EC)) 28%)!important;
+}
+.kurukoo-chat-page .composer{
+  width:min(860px,100%)!important;
+  min-height:54px!important;border-radius:16px!important;padding:7px 8px!important;
+  border:1px solid var(--chat-border,var(--ko-border,#E6DED5))!important;
+  box-shadow:0 6px 20px rgba(36,34,31,.06)!important;background:#fff!important;
+}
+.kurukoo-chat-page .composer textarea{font-size:14px!important;line-height:1.45!important;min-height:36px!important}
+.kurukoo-chat-page .send-btn,
+.kurukoo-chat-page .composer-btn{
+  min-width:44px!important;min-height:44px!important;border-radius:12px!important;
+}
+.kurukoo-chat-page .quick-actions button,
+.kurukoo-chat-page .composer-quick-actions button{
+  min-height:40px!important;padding:8px 12px!important;font-size:12.5px!important;font-weight:650!important;
+}
+.kurukoo-chat-page .inspector-card{
+  border-radius:14px!important;padding:14px!important;
+  border:1px solid var(--chat-border,var(--ko-border,#E6DED5))!important;
+  background:#fff!important;box-shadow:none!important;
+}
+.kurukoo-chat-page .inspector-value{font-size:22px!important;letter-spacing:-.03em!important}
+.kurukoo-chat-page .status-chip,
+.kurukoo-chat-page [data-chat-status]{
+  display:inline-flex;align-items:center;gap:6px;min-height:26px;padding:3px 9px;
+  border-radius:999px;font-size:11px;font-weight:700;
+  border:1px solid var(--ko-border,#E6DED5);background:var(--ko-surface-2,#FBF8F4);color:var(--ko-muted,#6D665F);
+}
+@media(max-width:760px){
+  .kurukoo-chat-page .chat-content{width:calc(100% - 20px)!important;padding-top:18px!important;padding-bottom:110px!important}
+  .kurukoo-chat-page .message{margin:12px 0!important}
+  .kurukoo-chat-page .composer{border-radius:14px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  .kurukoo-chat-page .history-item,.kurukoo-chat-page .composer{transition:none!important}
+}
+
+/* Phase 2b — Chat working states + quieter hierarchy */
+.kurukoo-chat-page .chat-sidebar{width:min(260px,28vw)!important}
+.kurukoo-chat-page .history-item .history-preview,
+.kurukoo-chat-page .history-item small{
+  font-size:11px!important;color:var(--ko-muted,#6D665F)!important;opacity:.9;
+}
+.kurukoo-chat-page .message.assistant .bubble p,
+.kurukoo-chat-page .message.bot .bubble p{margin:0 0 10px!important}
+.kurukoo-chat-page .message.assistant .bubble p:last-child{margin-bottom:0!important}
+.kurukoo-chat-page [data-chat-working],
+.kurukoo-chat-page .typing-indicator,
+.kurukoo-chat-page .agent-working{
+  display:inline-flex;align-items:center;gap:8px;min-height:28px;padding:4px 10px;
+  border-radius:999px;font-size:12px;font-weight:650;
+  background:color-mix(in srgb,var(--ko-warning,#B87928) 12%,#fff);
+  color:var(--ko-warning,#B87928);border:1px solid color-mix(in srgb,var(--ko-warning,#B87928) 25%,transparent);
+}
+.kurukoo-chat-page .composer:focus-within{
+  border-color:color-mix(in srgb,var(--ko-primary,#B95D3C) 45%,var(--ko-border,#E6DED5))!important;
+  box-shadow:0 0 0 3px rgba(185,93,60,.12),0 6px 20px rgba(36,34,31,.06)!important;
+}
+.kurukoo-chat-page .chat-inspector .inspector-card + .inspector-card{margin-top:10px!important}
+.kurukoo-chat-page .quick-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0}
+@media(max-width:900px){.kurukoo-chat-page .chat-sidebar{width:100%!important}}
