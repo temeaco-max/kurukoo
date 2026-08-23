@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticateAdmin, authenticateUser, type AuthRequest } from '../middleware/auth.js';
 import { agentRuntimeStatus, cancelAgentGoal, getAgentGoal, goalTimeline, listAgentGoalEvents, listAgentGoals, listAgentWorkerRuns, pauseAgentGoal, resumeAgentGoal } from '../services/agentRuntime.js';
 import { buildAgentBrief, enqueueAgentBriefNotification } from '../services/agentBriefService.js';
+import { getAgentOperatingCapability, getAgentRunSummary, getKurukooAgentCard, listAgentOperatingCapabilities } from '../services/agentOperatingModel.js';
 
 const router = Router();
 
@@ -12,6 +13,22 @@ router.get('/status', authenticateAdmin, (_req, res) => res.json({ success: true
 router.get('/runs', authenticateAdmin, async (req, res) => {
   const parsed = Number(req.query.limit || 20);
   res.json({ success: true, runs: await listAgentWorkerRuns(Number.isFinite(parsed) ? parsed : 20) });
+});
+
+/** Read-only operating-model identity. This never exposes owner-scoped state. */
+router.get('/card', authenticateUser, (_req, res) => {
+  res.json({ success: true, agent: getKurukooAgentCard() });
+});
+
+/** Read-only capability catalog projection over the canonical capability registry. */
+router.get('/capabilities', authenticateUser, async (_req, res) => {
+  res.json({ success: true, capabilities: await listAgentOperatingCapabilities() });
+});
+
+router.get('/capabilities/:capability', authenticateUser, async (req, res) => {
+  const capability = await getAgentOperatingCapability(String(req.params.capability || ''));
+  if (!capability) return res.status(404).json({ error: 'Capability not found' });
+  res.json({ success: true, capability });
 });
 
 router.get('/brief', authenticateUser, async (req: AuthRequest, res) => {
@@ -49,6 +66,13 @@ router.get('/goals/:id', authenticateUser, async (req: AuthRequest, res) => {
   const goal = await getAgentGoal(owner, String(req.params.id || ''));
   if (!goal) return res.status(404).json({ error: 'Goal not found' });
   res.json({ success: true, goal, events: await listAgentGoalEvents(owner, goal.id) });
+});
+
+router.get('/goals/:id/run-summary', authenticateUser, async (req: AuthRequest, res) => {
+  const owner = phone(req); if (!owner) return res.status(401).json({ error: 'Authentication required' });
+  const summary = await getAgentRunSummary(owner, String(req.params.id || ''));
+  if (!summary) return res.status(404).json({ error: 'Agent run not found' });
+  res.json({ success: true, run: summary });
 });
 
 router.post('/goals/:id/pause', authenticateUser, async (req: AuthRequest, res) => {
