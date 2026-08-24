@@ -45,14 +45,8 @@
 
   const requestSummary = (request) => {
     const requirements = parseRequirements(request);
-    const details = [
-      requirements.origin,
-      requirements.destination,
-      requirements.location,
-      requirements.items,
-      requirements.service,
-      requirements.event,
-    ].filter(Boolean).map(String);
+    const details = [requirements.origin, requirements.destination, requirements.location, requirements.items, requirements.service, requirements.event]
+      .filter(Boolean).map(String);
     return details.length ? details.slice(0, 2).join(' · ') : 'Details remain in the linked conversation.';
   };
 
@@ -66,19 +60,35 @@
   const appendMetaRow = (meta, label, value) => {
     const row = document.createElement('div');
     row.className = 'requests-convergence-meta-row';
-    const key = document.createElement('span');
-    key.textContent = label;
-    const detail = document.createElement('strong');
-    detail.textContent = value;
-    row.append(key, detail);
-    meta.appendChild(row);
+    const key = document.createElement('span'); key.textContent = label;
+    const detail = document.createElement('strong'); detail.textContent = value;
+    row.append(key, detail); meta.appendChild(row);
+  };
+
+  const appendGoalContinuation = async (meta, linkedGoal) => {
+    try {
+      const response = await fetch(`/api/agent/goals/${encodeURIComponent(String(linkedGoal.id))}/continuation`, { credentials: 'same-origin' });
+      if (!response.ok) return;
+      const payload = await response.json();
+      const continuation = payload?.continuation;
+      if (!continuation) return;
+      appendMetaRow(meta, continuation.ready ? 'Agent next' : 'Agent waiting', String(continuation.nextAction || 'Continue objective'));
+      const row = document.createElement('div');
+      row.className = 'requests-convergence-goal-row';
+      const action = document.createElement('a');
+      action.href = `/chat?prompt=${encodeURIComponent(`Continue my agent objective ${linkedGoal.id}`)}`;
+      action.textContent = continuation.ready ? 'Continue goal' : 'Review blocker';
+      action.setAttribute('aria-label', continuation.ready ? 'Continue Agent Goal' : 'Review Agent Goal blocker');
+      row.appendChild(action); meta.appendChild(row);
+    } catch {
+      // Continuation is enrichment only; request truth remains canonical.
+    }
   };
 
   const enrichCard = async (card, request, coordinationPromise) => {
     const requestId = String(request?.id || '').trim();
     if (!requestId || card.dataset.requestsConverged === '1') return;
-    card.dataset.requestsConverged = '1';
-    card.dataset.requestId = requestId;
+    card.dataset.requestsConverged = '1'; card.dataset.requestId = requestId;
 
     const action = card.querySelector('.workspace-text-action');
     const canonicalAction = nextAction(request);
@@ -101,36 +111,29 @@
     const coordination = await coordinationPromise;
     if (coordination) appendMetaRow(meta, 'Provider', participantState(coordination));
 
-    // Agent Goal linkage: where an economicRequestId exists, show the linked Agent Goal
     if (request.id) {
       try {
-        const goalResponse = await fetch(`/api/agent/goals?includeClosed=true`, { credentials: 'same-origin' });
+        const goalResponse = await fetch('/api/agent/goals?includeClosed=true', { credentials: 'same-origin' });
         if (goalResponse.ok) {
           const goalData = await goalResponse.json();
           const goals = Array.isArray(goalData.goals) ? goalData.goals : [];
           const linkedGoal = goals.find(g => String(g.economicRequestId || '') === String(request.id));
           if (linkedGoal) {
             const goalStatus = String(linkedGoal.status || '').replace(/_/g, ' ');
-            const goalRow = document.createElement('div');
-            goalRow.className = 'requests-convergence-goal-row';
-            const goalLabel = document.createElement('span');
-            goalLabel.className = 'requests-convergence-goal-label';
-            goalLabel.textContent = `Agent Goal · ${goalStatus}`;
-            const goalAction = document.createElement('a');
-            goalAction.href = `/chat?prompt=${encodeURIComponent(`Show me my agent objective ${linkedGoal.id || ''}`)}`;
-            goalAction.textContent = 'Open goal';
-            goalAction.setAttribute('aria-label', `Open Agent Goal for this request`);
-            goalRow.append(goalLabel, goalAction);
-            meta.appendChild(goalRow);
+            const goalRow = document.createElement('div'); goalRow.className = 'requests-convergence-goal-row';
+            const goalLabel = document.createElement('span'); goalLabel.className = 'requests-convergence-goal-label'; goalLabel.textContent = `Agent Goal · ${goalStatus}`;
+            const goalAction = document.createElement('a'); goalAction.href = `/chat?prompt=${encodeURIComponent(`Show me my agent objective ${linkedGoal.id || ''}`)}`; goalAction.textContent = 'Open goal';
+            goalAction.setAttribute('aria-label', 'Open Agent Goal for this request');
+            goalRow.append(goalLabel, goalAction); meta.appendChild(goalRow);
+            await appendGoalContinuation(meta, linkedGoal);
           }
         }
       } catch {
-        // Agent Goal lookup fails closed without inventing linkage
+        // Agent Goal lookup fails closed without inventing linkage.
       }
     }
 
-    const detail = card.querySelector('p');
-    if (detail) detail.textContent = requestSummary(request);
+    const detail = card.querySelector('p'); if (detail) detail.textContent = requestSummary(request);
     card.appendChild(meta);
   };
 
@@ -144,37 +147,26 @@
       const coordinationCache = new Map();
       const getCoordination = (id) => {
         if (!id || coordinationCache.has(id)) return coordinationCache.get(id) || null;
-        const promise = fetch(`/api/chat/economic-requests/${encodeURIComponent(id)}/participants`, { credentials: 'same-origin' })
-          .then((result) => result.ok ? result.json() : null)
-          .catch(() => null);
-        coordinationCache.set(id, promise);
-        return promise;
+        const promise = fetch(`/api/chat/economic-requests/${encodeURIComponent(id)}/participants`, { credentials: 'same-origin' }).then((result) => result.ok ? result.json() : null).catch(() => null);
+        coordinationCache.set(id, promise); return promise;
       };
-
       await Promise.all(cards.map((card, index) => {
-        const request = requests[index];
-        if (!request) return Promise.resolve();
+        const request = requests[index]; if (!request) return Promise.resolve();
         const coordinationPromise = index < 12 && request.id ? getCoordination(String(request.id)) : Promise.resolve(null);
         return enrichCard(card, request, coordinationPromise);
       }));
     } catch {
       // The underlying canonical Requests loader remains the source of truth.
-      // Presentation enhancement fails closed without inventing request state.
     }
   };
 
   const waitForCards = () => {
-    if (list.querySelector('.workspace-data-card')) {
-      void loadCanonicalContext();
-      return true;
-    }
+    if (list.querySelector('.workspace-data-card')) { void loadCanonicalContext(); return true; }
     return false;
   };
 
   if (!waitForCards()) {
-    const observer = new MutationObserver(() => {
-      if (waitForCards()) observer.disconnect();
-    });
+    const observer = new MutationObserver(() => { if (waitForCards()) observer.disconnect(); });
     observer.observe(list, { childList: true, subtree: true });
   }
 })();
