@@ -1,4 +1,6 @@
 import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import { requestStatusToLinkStatus, nextActionForRequest } from '../src/services/agentEconomicRequestOrchestrator.js';
 
 const orchestrator = fs.readFileSync('src/services/agentEconomicRequestOrchestrator.ts', 'utf8');
 const router = fs.readFileSync('src/routes/agentRouter.ts', 'utf8');
@@ -19,6 +21,7 @@ for (const name of requiredOrchestratorExports) {
 for (const marker of [
   '/goals/:id/economic-request',
   '/goals/:id/dependencies',
+  '/goals/:id/continuation',
   'getAgentEconomicRequestLink',
   'refreshAgentGoalDependencies',
   'attachAgentGoalDependency',
@@ -35,7 +38,13 @@ for (const marker of [
   if (!operatingModel.includes(marker)) throw new Error(`Missing Agent operating-model integration: ${marker}`);
 }
 
-if (!orchestrator.includes("['fulfilled', 'completed']")) throw new Error('Economic completion mapping missing.');
+assert.equal(requestStatusToLinkStatus('fulfilled'), 'completed');
+assert.equal(requestStatusToLinkStatus('payment_pending'), 'waiting');
+assert.equal(requestStatusToLinkStatus('cancelled'), 'blocked');
+assert.equal(requestStatusToLinkStatus('requested'), 'linked');
+assert.equal(nextActionForRequest('quoted'), 'review and confirm the quote');
+assert.equal(nextActionForRequest('in_fulfillment'), 'monitor fulfilment');
+
 if (!orchestrator.includes("economic_request_unavailable")) throw new Error('Economic request owner/blocking mapping missing.');
 if (!orchestrator.includes("blocking_goal_unavailable")) throw new Error('Blocking goal ownership mapping missing.');
 
