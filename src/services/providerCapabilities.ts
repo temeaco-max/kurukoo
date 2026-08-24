@@ -1,4 +1,4 @@
-export type ProviderName = 'local' | 'fasttext' | 'gemini' | 'mistral' | 'groq';
+export type ProviderName = 'local' | 'fasttext' | 'gemini' | 'mistral' | 'groq' | 'openrouter' | 'poolside';
 export type ProviderCapability = 'text' | 'transcription' | 'tts' | 'live' | 'vision' | 'moderation';
 export type ProviderLimitStatus = 'configured' | 'unknown' | 'unavailable';
 
