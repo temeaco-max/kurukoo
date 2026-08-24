@@ -106,7 +106,7 @@ export function decryptData(encryptedText: string): string {
     if (!looksEncrypted) return encryptedText;
     if (parts.length !== 2 || !/^[a-f0-9]+$/i.test(parts[1])) throw new Error('[Kurukoo Security] Invalid encrypted profile payload.');
     const iv = Buffer.from(parts[0], 'hex');
-    const decipher = crypto.createDecipheriv(ALGORITHM, crypto.createHash('sha256').update(String(process.env.MEMORY_ENCRYPTION_KEY || '').trim() || 'development-only-memory-key').digest(), iv);
+    const decipher = crypto.createDecipheriv(ALGORITHM, getSecretKey(), iv);
     let decrypted = decipher.update(parts[1], 'hex', 'utf8');
     decrypted += decipher.final('utf8');
     return decrypted;
@@ -169,13 +169,13 @@ export async function updateProfile(phone: string, serviceName: string = 'system
     const store = await getCanonicalStore();
     const existing = await getProfile(phone, serviceName);
 
-    const name = updates.name !== undefined ? updates.name : (existing ? existing.name : null);
-    const location = updates.location !== undefined ? updates.location : (existing ? existing.location : null);
-    const country = updates.country !== undefined ? updates.country : (existing ? existing.country : null);
-    const subscription_tier = updates.subscription_tier !== undefined ? updates.subscription_tier : (existing ? existing.subscription_tier : null);
-    const wallet_balance_minor = updates.wallet_balance_minor !== undefined ? updates.wallet_balance_minor : (existing ? existing.wallet_balance_minor : null);
+    const name = updates.name !== undefined ? updates.name : (existing?.name ?? null);
+    const location = updates.location !== undefined ? updates.location : (existing?.location ?? null);
+    const country = updates.country !== undefined ? updates.country : (existing?.country ?? null);
+    const subscription_tier = updates.subscription_tier !== undefined ? updates.subscription_tier : (existing?.subscription_tier ?? null);
+    const wallet_balance_minor = updates.wallet_balance_minor !== undefined ? updates.wallet_balance_minor : (existing?.wallet_balance_minor ?? null);
 
-    const prefsObj = updates.preferences !== undefined ? updates.preferences : (existing ? existing.preferences : {});
+    const prefsObj = updates.preferences !== undefined ? updates.preferences : (existing?.preferences ?? {});
     if (!prefsObj.referral_code) {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         let code = '';
@@ -184,10 +184,10 @@ export async function updateProfile(phone: string, serviceName: string = 'system
     }
     if (!prefsObj.badges) prefsObj.badges = [];
     const prefsStr = encryptData(JSON.stringify(prefsObj));
-    const patternsObj = updates.behavior_patterns !== undefined ? updates.behavior_patterns : (existing ? existing.behavior_patterns : {});
+    const patternsObj = updates.behavior_patterns !== undefined ? updates.behavior_patterns : (existing?.behavior_patterns ?? {});
     const patternsStr = encryptData(JSON.stringify(patternsObj));
-    const fcm_token = updates.fcm_token !== undefined ? updates.fcm_token : (existing ? existing.fcm_token : null);
-    const is_available = updates.is_available !== undefined ? updates.is_available : (existing ? existing.is_available : 0);
+    const fcm_token = updates.fcm_token !== undefined ? updates.fcm_token : (existing?.fcm_token ?? null);
+    const is_available = updates.is_available !== undefined ? updates.is_available : (existing?.is_available ?? 0);
 
     if (!existing) {
         await store.run(`INSERT INTO memory_profiles (phone, name, location, country, subscription_tier, wallet_balance_minor, preferences, behavior_patterns, fcm_token, is_available) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [phone, name, location, country, subscription_tier, wallet_balance_minor, prefsStr, patternsStr, fcm_token, is_available]);
