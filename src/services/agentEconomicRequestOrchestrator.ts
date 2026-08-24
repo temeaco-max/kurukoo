@@ -28,19 +28,7 @@ export interface CompoundGoalDependency {
 
 async function ensureSchema() {
   const store = await getCanonicalStore();
-  await store.run(`CREATE TABLE IF NOT EXISTS agent_goal_dependencies (
-    id TEXT PRIMARY KEY,
-    phone TEXT NOT NULL,
-    parent_goal_id TEXT NOT NULL,
-    economic_request_id TEXT,
-    skill TEXT NOT NULL,
-    purpose TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'pending',
-    blocked_by TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(parent_goal_id, skill, purpose)
-  )`);
+  await store.run(`CREATE TABLE IF NOT EXISTS agent_goal_dependencies (id TEXT PRIMARY KEY, phone TEXT NOT NULL, parent_goal_id TEXT NOT NULL, economic_request_id TEXT, skill TEXT NOT NULL, purpose TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', blocked_by TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP, UNIQUE(parent_goal_id, skill, purpose))`);
   await store.run(`CREATE INDEX IF NOT EXISTS idx_agent_goal_dependencies_parent ON agent_goal_dependencies(phone,parent_goal_id,status)`);
   await store.run(`CREATE INDEX IF NOT EXISTS idx_agent_goal_dependencies_request ON agent_goal_dependencies(economic_request_id,status)`);
   return store;
@@ -70,32 +58,14 @@ export async function getAgentEconomicRequestLink(phone: string, goalId: string)
   const owner = String(phone || '').trim();
   if (!owner) return null;
   const store = await getCanonicalStore();
-  const goal = await store.one<any>(
-    `SELECT id,phone,economic_request_id,status FROM agent_goals WHERE id=? AND phone=? LIMIT 1`,
-    [goalId, owner],
-  );
+  const goal = await store.one<any>(`SELECT id,phone,economic_request_id,status FROM agent_goals WHERE id=? AND phone=? LIMIT 1`, [goalId, owner]);
   if (!goal?.economic_request_id) return null;
   const request = await getEconomicRequest(String(goal.economic_request_id));
   if (!request || request.phone !== owner) return null;
-  return {
-    goalId: String(goal.id),
-    economicRequestId: request.id,
-    phone: owner,
-    requestStatus: request.status,
-    goalStatus: String(goal.status),
-    status: requestStatusToLinkStatus(request.status),
-    nextAction: nextActionForRequest(request.status),
-  };
+  return { goalId: String(goal.id), economicRequestId: request.id, phone: owner, requestStatus: request.status, goalStatus: String(goal.status), status: requestStatusToLinkStatus(request.status), nextAction: nextActionForRequest(request.status) };
 }
 
-export async function attachAgentGoalDependency(input: {
-  phone: string;
-  parentGoalId: string;
-  skill: string;
-  purpose: string;
-  economicRequestId?: string;
-  blockedBy?: string;
-}): Promise<CompoundGoalDependency> {
+export async function attachAgentGoalDependency(input: { phone: string; parentGoalId: string; skill: string; purpose: string; economicRequestId?: string; blockedBy?: string; }): Promise<CompoundGoalDependency> {
   const owner = String(input.phone || '').trim();
   const skill = String(input.skill || '').trim().toLowerCase();
   const purpose = String(input.purpose || '').trim();
@@ -110,43 +80,16 @@ export async function attachAgentGoalDependency(input: {
   }
   const id = `agd_${crypto.randomUUID()}`;
   const status: CompoundGoalDependency['status'] = input.blockedBy ? 'waiting' : input.economicRequestId ? 'ready' : 'pending';
-  await store.run(
-    `INSERT INTO agent_goal_dependencies(id,phone,parent_goal_id,economic_request_id,skill,purpose,status,blocked_by)
-     VALUES(?,?,?,?,?,?,?,?)
-     ON CONFLICT(parent_goal_id,skill,purpose) DO UPDATE SET
-       economic_request_id=COALESCE(excluded.economic_request_id,agent_goal_dependencies.economic_request_id),
-       status=excluded.status,
-       blocked_by=excluded.blocked_by,
-       updated_at=CURRENT_TIMESTAMP`,
-    [id, owner, input.parentGoalId, input.economicRequestId || null, skill, purpose, status, input.blockedBy || null],
-  );
-  const row = await store.one<any>(
-    `SELECT * FROM agent_goal_dependencies WHERE parent_goal_id=? AND skill=? AND purpose=? AND phone=? LIMIT 1`,
-    [input.parentGoalId, skill, purpose, owner],
-  );
-  return {
-    id: String(row.id), phone: owner, parentGoalId: String(row.parent_goal_id),
-    economicRequestId: row.economic_request_id ? String(row.economic_request_id) : undefined,
-    skill: String(row.skill), purpose: String(row.purpose),
-    status: String(row.status) as CompoundGoalDependency['status'],
-    blockedBy: row.blocked_by ? String(row.blocked_by) : undefined,
-  };
+  await store.run(`INSERT INTO agent_goal_dependencies(id,phone,parent_goal_id,economic_request_id,skill,purpose,status,blocked_by) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(parent_goal_id,skill,purpose) DO UPDATE SET economic_request_id=COALESCE(excluded.economic_request_id,agent_goal_dependencies.economic_request_id),status=excluded.status,blocked_by=excluded.blocked_by,updated_at=CURRENT_TIMESTAMP`, [id, owner, input.parentGoalId, input.economicRequestId || null, skill, purpose, status, input.blockedBy || null]);
+  const row = await store.one<any>(`SELECT * FROM agent_goal_dependencies WHERE parent_goal_id=? AND skill=? AND purpose=? AND phone=? LIMIT 1`, [input.parentGoalId, skill, purpose, owner]);
+  return { id: String(row.id), phone: owner, parentGoalId: String(row.parent_goal_id), economicRequestId: row.economic_request_id ? String(row.economic_request_id) : undefined, skill: String(row.skill), purpose: String(row.purpose), status: String(row.status) as CompoundGoalDependency['status'], blockedBy: row.blocked_by ? String(row.blocked_by) : undefined };
 }
 
 export async function listAgentGoalDependencies(phone: string, parentGoalId: string): Promise<CompoundGoalDependency[]> {
   await ensureSchema();
   const owner = String(phone || '').trim();
   const store = await getCanonicalStore();
-  return (await store.all<any>(
-    `SELECT * FROM agent_goal_dependencies WHERE phone=? AND parent_goal_id=? ORDER BY created_at ASC`,
-    [owner, parentGoalId],
-  )).map(row => ({
-    id: String(row.id), phone: owner, parentGoalId: String(row.parent_goal_id),
-    economicRequestId: row.economic_request_id ? String(row.economic_request_id) : undefined,
-    skill: String(row.skill), purpose: String(row.purpose),
-    status: String(row.status) as CompoundGoalDependency['status'],
-    blockedBy: row.blocked_by ? String(row.blocked_by) : undefined,
-  }));
+  return (await store.all<any>(`SELECT * FROM agent_goal_dependencies WHERE phone=? AND parent_goal_id=? ORDER BY created_at ASC`, [owner, parentGoalId])).map(row => ({ id: String(row.id), phone: owner, parentGoalId: String(row.parent_goal_id), economicRequestId: row.economic_request_id ? String(row.economic_request_id) : undefined, skill: String(row.skill), purpose: String(row.purpose), status: String(row.status) as CompoundGoalDependency['status'], blockedBy: row.blocked_by ? String(row.blocked_by) : undefined }));
 }
 
 export async function refreshAgentGoalDependencies(phone: string, parentGoalId: string): Promise<CompoundGoalDependency[]> {
@@ -156,23 +99,36 @@ export async function refreshAgentGoalDependencies(phone: string, parentGoalId: 
   for (const dependency of dependencies) {
     let status = dependency.status;
     let blockedBy = dependency.blockedBy;
+
     if (dependency.economicRequestId) {
       const request = await getEconomicRequest(dependency.economicRequestId);
-      if (!request || request.phone !== phone) { status = 'blocked'; blockedBy = 'economic_request_unavailable'; }
-      else if (['fulfilled', 'completed'].includes(request.status)) { status = 'completed'; blockedBy = undefined; }
-      else if (['failed', 'cancelled', 'abandoned', 'disputed'].includes(request.status)) { status = 'blocked'; blockedBy = `economic_request:${request.status}`; }
-      else if (dependency.blockedBy?.startsWith('goal:')) {
+      if (!request || request.phone !== phone) {
+        status = 'blocked'; blockedBy = 'economic_request_unavailable';
+      } else if (['fulfilled', 'completed'].includes(request.status)) {
+        status = 'completed'; blockedBy = undefined;
+      } else if (['failed', 'cancelled', 'abandoned', 'disputed'].includes(request.status)) {
+        status = 'blocked'; blockedBy = `economic_request:${request.status}`;
+      } else if (dependency.blockedBy?.startsWith('goal:')) {
         const blockingGoalId = dependency.blockedBy.slice('goal:'.length);
         const blockingGoal = await store.one<any>('SELECT status FROM agent_goals WHERE id=? AND phone=? LIMIT 1', [blockingGoalId, phone]);
-        if (blockingGoal?.status === 'completed') { status = 'ready'; blockedBy = undefined; }
-      } else status = 'ready';
+        if (!blockingGoal) { status = 'blocked'; blockedBy = 'blocking_goal_unavailable'; }
+        else if (blockingGoal.status === 'completed') { status = 'ready'; blockedBy = undefined; }
+        else if (['failed', 'cancelled', 'expired'].includes(String(blockingGoal.status))) { status = 'blocked'; blockedBy = `goal:${blockingGoal.status}`; }
+        else status = 'waiting';
+      } else {
+        status = 'ready';
+      }
     } else if (dependency.blockedBy?.startsWith('goal:')) {
       const blockingGoalId = dependency.blockedBy.slice('goal:'.length);
       const blockingGoal = await store.one<any>('SELECT status FROM agent_goals WHERE id=? AND phone=? LIMIT 1', [blockingGoalId, phone]);
       if (!blockingGoal) { status = 'blocked'; blockedBy = 'blocking_goal_unavailable'; }
       else if (blockingGoal.status === 'completed') { status = 'ready'; blockedBy = undefined; }
+      else if (['failed', 'cancelled', 'expired'].includes(String(blockingGoal.status))) { status = 'blocked'; blockedBy = `goal:${blockingGoal.status}`; }
       else status = 'waiting';
+    } else if (!dependency.economicRequestId && !dependency.blockedBy) {
+      status = 'pending';
     }
+
     if (status !== dependency.status || blockedBy !== dependency.blockedBy) {
       await store.run(`UPDATE agent_goal_dependencies SET status=?,blocked_by=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND phone=?`, [status, blockedBy || null, dependency.id, phone]);
     }
@@ -185,6 +141,4 @@ export async function isAgentGoalReadyForContinuation(phone: string, parentGoalI
   return refreshed.every(item => ['ready', 'completed'].includes(item.status));
 }
 
-export function agentEconomicRequestPersistenceMode(): 'postgres' | 'sqljs' {
-  return getCanonicalPersistenceMode() === 'postgres' ? 'postgres' : 'sqljs';
-}
+export function agentEconomicRequestPersistenceMode(): 'postgres' | 'sqljs' { return getCanonicalPersistenceMode() === 'postgres' ? 'postgres' : 'sqljs'; }
