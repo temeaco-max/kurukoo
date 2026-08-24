@@ -9,9 +9,7 @@
   if (!list) return;
 
   const esc = (value) => String(value ?? '').replace(/[&<>\"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
   const humanize = (value) => String(value || '').replaceAll('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase()) || 'Unknown';
-
   const formatDate = (value) => {
     if (!value) return '';
     const date = new Date(value);
@@ -30,73 +28,63 @@
     return payload;
   };
 
-  const goalPresenceLabel = (status) => {
-    const map = {
-      active: 'Working',
-      waiting: 'Waiting',
-      needs_user: 'Needs your input',
-      blocked: 'Blocked',
-      completed: 'Completed',
-      cancelled: 'Cancelled',
-      failed: 'Failed',
-      expired: 'Expired',
-    };
-    return map[String(status || '')] || humanize(status);
-  };
+  const goalPresenceLabel = (status) => ({
+    active: 'Working', waiting: 'Waiting', needs_user: 'Needs your input', blocked: 'Blocked',
+    completed: 'Completed', cancelled: 'Cancelled', failed: 'Failed', expired: 'Expired',
+  }[String(status || '')] || humanize(status));
 
-  const render = (goals) => {
+  const render = (goals, continuations = new Map()) => {
     if (empty) empty.hidden = Boolean(goals.length);
-    if (!goals.length) {
-      list.innerHTML = '';
-      return;
-    }
+    if (!goals.length) { list.innerHTML = ''; return; }
     list.setAttribute('aria-busy', 'false');
-    const rows = goals.slice(0, 25).map((goal) => {
+    list.innerHTML = goals.slice(0, 25).map((goal) => {
       const status = String(goal.status || '').toLowerCase();
       const id = esc(String(goal.id || '').slice(0, 8));
       const objective = esc(String(goal.objective || goal.summary || 'Agent goal'));
       const presence = esc(goalPresenceLabel(goal.status));
       const updated = esc(formatDate(goal.updatedAt || goal.updated_at));
-      const href = `/chat?prompt=${encodeURIComponent(`Show me my agent objective ${goal.id || ''}`)}`;
+      const continuation = continuations.get(String(goal.id || ''));
+      const next = esc(continuation?.nextAction || 'Continue the objective');
+      const ready = continuation ? Boolean(continuation.ready) : true;
+      const href = `/chat?prompt=${encodeURIComponent(`Continue my agent objective ${goal.id || ''}`)}`;
       return `<article class="k-agent-goal-row">
         <div class="k-agent-goal-head">
           <strong class="k-agent-goal-objective">${objective}${id ? ` <small>· ${id}</small>` : ''}</strong>
           <span class="k-agent-goal-status" data-agent-goal-status="${esc(status)}">${presence}</span>
         </div>
         ${updated ? `<small class="k-agent-goal-updated">Updated ${updated}</small>` : ''}
-        <a class="k-agent-goal-link" href="${href}">Open in Chat →</a>
+        <small class="k-agent-goal-next" data-agent-goal-ready="${ready ? 'true' : 'false'}">${next}</small>
+        <a class="k-agent-goal-link" href="${href}">${ready ? 'Continue in Chat' : 'Review blocker'} →</a>
       </article>`;
-    });
-    list.innerHTML = `${rows.join('')}`;
+    }).join('');
   };
 
   const load = async () => {
     try {
       const data = await api('/api/agent/goals');
       const goals = Array.isArray(data.goals) ? data.goals : Array.isArray(data) ? data : [];
-      render(goals);
-    } catch (error) {
-      if (empty) { empty.hidden = false; empty.querySelector('h3').textContent = 'Agent goals are unavailable'; }
+      const continuations = new Map();
+      await Promise.all(goals.slice(0, 25).map(async (goal) => {
+        try {
+          const result = await api(`/api/agent/goals/${encodeURIComponent(String(goal.id || ''))}/continuation`);
+          if (result?.continuation) continuations.set(String(goal.id || ''), result.continuation);
+        } catch {
+          // Goal rendering remains truthful if continuation is unavailable.
+        }
+      }));
+      render(goals, continuations);
+    } catch {
+      if (empty) { empty.hidden = false; const title = empty.querySelector('h3'); if (title) title.textContent = 'Agent goals are unavailable'; }
       list.setAttribute('aria-busy', 'false');
       list.innerHTML = '';
     }
   };
 
-  list.addEventListener('click', (event) => {
-    const link = event.target.closest('.k-agent-goal-link');
-    if (!link) return;
-    // Links are real hrefs to /chat with prompt, so default navigation is fine
-  });
-
   void load();
 
-  // Set up periodic refresh for live goals (owner-scoped, lightweight)
   let refreshTimer = null;
-  const startRefresh = () => {
-    stopRefresh();
-    refreshTimer = setInterval(() => { void load(); }, 30000);
-  };
   const stopRefresh = () => { if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; } };
+  const startRefresh = () => { stopRefresh(); refreshTimer = setInterval(() => { void load(); }, 30000); };
   startRefresh();
   window.addEventListener('beforeunload', stopRefresh);
 })();
