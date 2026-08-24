@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 
 const mode = process.argv[2] || 'write';
@@ -9,7 +10,7 @@ process.env.KURUKOO_DATABASE_MODE='postgres';
 process.env.DATABASE_URL=connectionString;
 process.env.KURUKOO_POSTGRES_SSL=String(process.env.KURUKOO_POSTGRES_SSL || 'false');
 process.env.NODE_ENV='test';
-process.env.JWT_SECRET=process.env.JWT_SECRET||'domain-restart-test-secret-01234567890123456789';
+process.env.JWT_SECRET=process.env.JWT_SECRET||'domain-restart-test-secret-01234567890123456789';process.env.KURUKOO_AGENT_ENABLED='true';
 
 const ownerA='+2348000000811';
 const ownerB='+2348000000822';
@@ -43,7 +44,7 @@ try {
     await store.run(`INSERT INTO postgres_restart_probe(id,owner_phone,order_id) VALUES(?,?,?)`,['domain-restart',ownerA,orderId]);
 
     await store.close();
-    const child = spawnSync(process.execPath,['--import','tsx',new URL(import.meta.url).pathname,'read'],{env:childEnv,stdio:'inherit'});
+    const child = spawnSync(process.execPath,['--import','tsx',fileURLToPath(import.meta.url),'read'],{env:childEnv,stdio:'inherit'});
     if (child.status!==0) throw new Error(`PostgreSQL domain restart reader exited with ${child.status}`);
     console.log(JSON.stringify({processA:'verified-write',processB:'verified-read',economicRequestId:economicRequest.id,agentGoalId:goal.id,reminderId:reminder.id,orderId},null,2));
     process.exit(0);
@@ -85,8 +86,8 @@ try {
 
   const reminderRow = await store.one<any>('SELECT id FROM reminders WHERE phone=? ORDER BY created_at DESC LIMIT 1',[ownerA]);
   assert.ok(reminderRow?.id);
-  assert.ok(await getReminderForPhone(ownerA,Number(reminderRow.id)));
-  assert.equal(await store.one<any>('SELECT id FROM reminders WHERE id=? AND phone=? LIMIT 1',[Number(reminderRow.id),ownerB]),undefined);
+  assert.ok(await getReminderForPhone(ownerA,String(reminderRow.id)));
+  assert.equal(await store.one<any>('SELECT id FROM reminders WHERE id=? AND phone=? LIMIT 1',[String(reminderRow.id),ownerB]),undefined);
 
   await closeCanonicalStore();
   console.log('PostgreSQL domain restart: VERIFIED — process A wrote Memory/profile, Economic Request, Agent Goal/Event, notification, reminder and order state; process B reopened the same PostgreSQL database and recovered it with owner isolation.');
