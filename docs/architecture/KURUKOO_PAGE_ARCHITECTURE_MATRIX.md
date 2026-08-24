@@ -57,6 +57,37 @@ These pages are public, searchable, shareable and should answer a defined user/s
 
 These surfaces are private and should optimize for work completion and continuity, not public SEO.
 
+### Authenticated compatibility alias surfaces
+
+Legacy `/app/*` paths remain mounted as compatibility aliases onto the canonical clean routes below. They are not canonical URLs; they exist so older links, notifications and native deep links keep resolving while the canonical route policy governs new surface naming.
+
+| Compatibility alias | Canonical surface | Purpose boundary |
+| --- | --- | --- |
+| `/app/discover` | `/discover` | Authenticated surface (compatibility alias) |
+| `/app/topics` | `/topics` | Authenticated surface (compatibility alias) |
+| `/app/requests` | `/requests` | Authenticated surface (compatibility alias) |
+| `/app/reminders` | `/reminders` | Authenticated surface (compatibility alias) |
+| `/app/saved` | `/saved` | Authenticated surface (compatibility alias) |
+| `/app/cart` | `/cart` | Authenticated surface (compatibility alias) |
+| `/app/tasks` | `/tasks` | Authenticated surface (compatibility alias) |
+| `/app/connect` | `/connect` | Authenticated surface (compatibility alias) |
+| `/app/agents` | `/agents` | Authenticated surface (compatibility alias) |
+| `/app/capabilities` | `/capabilities` | Authenticated surface (compatibility alias) |
+| `/app/opportunities` | `/opportunities` | Authenticated surface (compatibility alias) |
+| `/app/wallet` | `/wallet` | Authenticated surface (compatibility alias) |
+| `/app/points` | `/points` | Authenticated surface (compatibility alias) |
+| `/app/top-up` | `/top-up` | Authenticated surface (compatibility alias) |
+| `/app/subscriptions` | `/subscriptions` | Authenticated surface (compatibility alias) |
+| `/app/checkout` | `/checkout` | Authenticated surface (compatibility alias) |
+| `/app/confirmations` | `/confirmations` | Authenticated surface (compatibility alias) |
+| `/app/memory` | `/memory` | Authenticated surface (compatibility alias) |
+| `/app/artifacts` | `/artifacts` | Authenticated surface (compatibility alias) |
+| `/app/prayer` | `/prayer` | Authenticated surface (compatibility alias) |
+| `/app/call` | `/call` | Authenticated surface (compatibility alias) |
+| `/app/notifications` | `/notifications` | Authenticated surface (compatibility alias) |
+| `/app/safety` | `/safety` | Authenticated surface (compatibility alias) |
+| `/app/agent` | `/chat` | Legacy Agent alias canonicalized to Chat |
+
 **Canonical URL rule:** The authenticated OS uses clean canonical routes (see `docs/architecture/KURUKOO_CANONICAL_URL_POLICY.md` and `docs/architecture/KURUKOO_URL_ARCHITECTURE.md`). Legacy `/app/*` paths are compatibility aliases only; they must not be treated as canonical.
 
 | Surface | Primary purpose | Required sections / components | Primary actions |
