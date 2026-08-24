@@ -34,14 +34,14 @@ async function ensureSchema() {
   return store;
 }
 
-function requestStatusToLinkStatus(requestStatus: string): AgentEconomicLinkStatus {
+export function requestStatusToLinkStatus(requestStatus: string): AgentEconomicLinkStatus {
   if (['fulfilled', 'completed'].includes(requestStatus)) return 'completed';
   if (['failed', 'cancelled', 'abandoned', 'disputed'].includes(requestStatus)) return 'blocked';
   if (['awaiting_confirmation', 'payment_pending'].includes(requestStatus)) return 'waiting';
   return 'linked';
 }
 
-function nextActionForRequest(status: string): string {
+export function nextActionForRequest(status: string): string {
   if (status === 'requested') return 'awaiting matching / fulfilment';
   if (status === 'awaiting_match' || status === 'partially_matched') return 'continue provider matching';
   if (['matched', 'quoting'].includes(status)) return 'awaiting quote';
