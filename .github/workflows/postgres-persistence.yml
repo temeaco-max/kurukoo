@@ -28,6 +28,7 @@ jobs:
           --health-retries 20
     env:
       KURUKOO_TEST_POSTGRES_URL: postgres://kurukoo:kurukoo_ci@localhost:5432/kurukoo_ci
+      KURUKOO_DOMAIN_POSTGRES_URL: postgres://kurukoo:kurukoo_ci@localhost:5432/kurukoo_domain_ci
       KURUKOO_POSTGRES_SSL: 'false'
     steps:
       - uses: actions/checkout@v4
@@ -43,5 +44,13 @@ jobs:
         run: node scripts/audit-persistence-boundary.mjs
       - name: PostgreSQL shared-writer proof
         run: npx tsx scripts/test-postgres-persistence.ts
+      - name: Prepare fresh PostgreSQL domain database
+        run: npx tsx scripts/prepare-postgres-domain-db.ts
+      - name: Bootstrap canonical PostgreSQL domain schema
+        env:
+          KURUKOO_TEST_POSTGRES_URL: ${{ env.KURUKOO_DOMAIN_POSTGRES_URL }}
+        run: npx tsx scripts/bootstrap-postgres-domain-schema.ts
       - name: PostgreSQL domain runtime proof
+        env:
+          KURUKOO_TEST_POSTGRES_URL: ${{ env.KURUKOO_DOMAIN_POSTGRES_URL }}
         run: npx tsx scripts/test-postgres-domain-runtime.ts
