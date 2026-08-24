@@ -57,32 +57,34 @@ These pages are public, searchable, shareable and should answer a defined user/s
 
 These surfaces are private and should optimize for work completion and continuity, not public SEO.
 
+**Canonical URL rule:** The authenticated OS uses clean canonical routes (see `docs/architecture/KURUKOO_CANONICAL_URL_POLICY.md` and `docs/architecture/KURUKOO_URL_ARCHITECTURE.md`). Legacy `/app/*` paths are compatibility aliases only; they must not be treated as canonical.
+
 | Surface | Primary purpose | Required sections / components | Primary actions |
 |---|---|---|---|
-| `/app` / `/app/agent` | Universal personal control surface | Current conversation entry; active goals; pending attention; recent continuity; reminders/tasks summary; notifications summary; request summary; agent status; recovery/return-to-Chat | Open Chat; resume goal/request; inspect pending item; create/continue |
-| `/app/discover` | Personal discovery | Search/filter; nearby/discovery results; source/provenance; availability state; Topics/Opportunities; saved/follow/watch; location consent; Chat handoff | Inspect; save; follow/watch; continue in Chat |
-| `/app/topics` | Personal Topic interaction | Topic list; search; category; saved/followed; authored/replied items; moderation/reporting | Open; reply; report; save; Chat |
-| `/app/requests` | Manage Economic Requests | Attention queue; active; waiting/deferred; needs input; completed; cancelled; detail; originating conversation; provider/evidence; quote/payment state; next action; cancel/dispute/recover | Open detail; continue Chat; supply missing info; cancel; retry/recover |
-| `/app/reminders` | Manage reminders | Today/upcoming/overdue/completed; reminder detail; originating conversation; notification state; recurrence; pause/resume/cancel | Create/edit/pause/resume/cancel; Chat |
-| `/app/saved` | Owner-scoped saved context | Saved items/offers; source; date; follow/watch state; originating conversation/topic; remove/save; stale/unavailable treatment | Open; continue; remove; move to request/cart where permitted |
-| `/app/cart` | Prepare economic action | Cart groups; sourced item/offer provenance; quantity/options; availability truth; request transition; subtotal where canonical; payment boundary; empty/error states | Review; remove/edit; request/checkout; return Chat |
-| `/app/tasks` | Manage tasks/contributions | Today/upcoming/overdue/completed; source; reminder relationship; agent relationship; evidence; attachment/artifact; task detail | Complete; pause; reschedule; attach evidence; open originating context |
-| `/app/connect` | Manage connected resources/channels | Storage; channels; linked devices; source permissions; readiness; connection health; pairing; revoke; last sync; unsupported/unconfigured states | Connect; pair; authorize; revoke; retry; inspect readiness |
-| `/app/agents` | Agent directory/runtime | Agent identity; role/persona; active goals; runtime state; tool/capability scope; risk/approval; budget/usage; pause/resume/cancel; retry/failure; evidence | Create/manage goal; pause/resume/cancel; inspect |
-| `/app/capabilities` | Capability portfolio | Roles/capabilities; evidence; availability; skill coverage; profile completeness; contributor/provider/buyer/seller roles; verification state | Add/update capability; verify; manage availability |
-| `/app/opportunities` | Opportunity view | Opportunity source; fit/relevance; eligibility; evidence; invitation/claim/participation state; related capability; expiration | Inspect; accept/decline/claim; Chat |
-| `/app/wallet` | Economic account state | Balance; ledger/history; pending/failed; top-up boundary; Points separation; subscription/entitlement relationship; payment readiness | Inspect; top up; open points/subscription; recovery |
-| `/app/points` | Closed-loop Points | Balance; earn/spend/reward history; qualifying actions; contributor rewards; non-cash disclosure; disputes/reversals where applicable | Inspect; earn/spend where supported; history |
-| `/app/top-up` | Add funds | Amount; payment method readiness; fees if canonical; review; confirmation; failure/retry; sandbox/unconfigured state | Review; authorize; retry; return Chat |
-| `/app/subscriptions` | Plans/entitlements | Current plan; features; renew/cancel/change; billing readiness; trial/expiry; payment evidence | Compare; subscribe/change/cancel; recover |
-| `/app/checkout` | Final economic review | Request identity; sourced offer; item/quantity; provider/evidence; price/quote; payment state; confirmation boundary; cancellation; recovery | Confirm; pay when available; edit/cancel; return |
-| `/app/confirmations` | Outcome/continuation | Request identity; lifecycle; evidence; payment; provider coordination; notifications; completion/cancellation; recovery; originating Chat | Continue; cancel; dispute; repeat; Chat |
-| `/app/memory` | Owner-scoped memory | Active facts; categories; provenance semantics; scope; confidence; proposed/suggested; revoke/delete; privacy/retention; empty/error | Inspect; revoke; manage; Chat |
-| `/app/artifacts` | Manage generated/connected artifacts | Files; recordings; transcripts; owner scope; source; storage readiness; download/open; retention; delete/revoke | Open/download/delete; Connect storage; Chat |
-| `/app/prayer` | Prayer companion | Current request/context; prayer content; routines; reminders; artifacts; voice boundary; privacy | Start prayer; save; reminder; voice |
-| `/app/call` | Voice/peer communication | AI voice readiness; peer-call readiness; consent; participant identity; session status; connection/recovery; recording/artifact disclosure | Start/end; retry; inspect; artifact where available |
-| `/app/notifications` | Notification centre | Urgent/attention; request/reminder; channels; read/unread; originating object; delivery state; permission/device state | Open; mark read; continue; settings |
-| `/app/safety` | Safety/check-in management | Check-in status; trusted contacts; consent; overdue; resolution; emergency boundary; incident continuity | Start/update/end check-in; manage contacts; emergency path |
+| `/desk` | Universal personal control surface | Current conversation entry; active goals; pending attention; recent continuity; reminders/tasks summary; notifications summary; request summary; agent status; recovery/return-to-Chat | Open Chat; resume goal/request; inspect pending item; create/continue |
+| `/discover` | Personal discovery | Search/filter; nearby/discovery results; source/provenance; availability state; Topics/Opportunities; saved/follow/watch; location consent; Chat handoff | Inspect; save; follow/watch; continue in Chat |
+| `/topics` | Personal Topic interaction | Topic list; search; category; saved/followed; authored/replied items; moderation/reporting | Open; reply; report; save; Chat |
+| `/requests` | Manage Economic Requests | Attention queue; active; waiting/deferred; needs input; completed; cancelled; detail; originating conversation; provider/evidence; quote/payment state; next action; cancel/dispute/recover | Open detail; continue Chat; supply missing info; cancel; retry/recover |
+| `/reminders` | Manage reminders | Today/upcoming/overdue/completed; reminder detail; originating conversation; notification state; recurrence; pause/resume/cancel | Create/edit/pause/resume/cancel; Chat |
+| `/saved` | Owner-scoped saved context | Saved items/offers; source; date; follow/watch state; originating conversation/topic; remove/save; stale/unavailable treatment | Open; continue; remove; move to request/cart where permitted |
+| `/cart` | Prepare economic action | Cart groups; sourced item/offer provenance; quantity/options; availability truth; request transition; subtotal where canonical; payment boundary; empty/error states | Review; remove/edit; request/checkout; return Chat |
+| `/tasks` | Manage tasks/contributions | Today/upcoming/overdue/completed; source; reminder relationship; agent relationship; evidence; attachment/artifact; task detail | Complete; pause; reschedule; attach evidence; open originating context |
+| `/connect` | Manage connected resources/channels | Storage; channels; linked devices; source permissions; readiness; connection health; pairing; revoke; last sync; unsupported/unconfigured states | Connect; pair; authorize; revoke; retry; inspect readiness |
+| `/agents` | Agent directory/runtime | Agent identity; role/persona; active goals; runtime state; tool/capability scope; risk/approval; budget/usage; pause/resume/cancel; retry/failure; evidence | Create/manage goal; pause/resume/cancel; inspect |
+| `/capabilities` | Capability portfolio | Roles/capabilities; evidence; availability; skill coverage; profile completeness; contributor/provider/buyer/seller roles; verification state | Add/update capability; verify; manage availability |
+| `/opportunities` | Opportunity view | Opportunity source; fit/relevance; eligibility; evidence; invitation/claim/participation state; related capability; expiration | Inspect; accept/decline/claim; Chat |
+| `/wallet` | Economic account state | Balance; ledger/history; pending/failed; top-up boundary; Points separation; subscription/entitlement relationship; payment readiness | Inspect; top up; open points/subscription; recovery |
+| `/points` | Closed-loop Points | Balance; earn/spend/reward history; qualifying actions; contributor rewards; non-cash disclosure; disputes/reversals where applicable | Inspect; earn/spend where supported; history |
+| `/top-up` | Add funds | Amount; payment method readiness; fees if canonical; review; confirmation; failure/retry; sandbox/unconfigured state | Review; authorize; retry; return Chat |
+| `/subscriptions` | Plans/entitlements | Current plan; features; renew/cancel/change; billing readiness; trial/expiry; payment evidence | Compare; subscribe/change/cancel; recover |
+| `/checkout` | Final economic review | Request identity; sourced offer; item/quantity; provider/evidence; price/quote; payment state; confirmation boundary; cancellation; recovery | Confirm; pay when available; edit/cancel; return |
+| `/confirmations` | Outcome/continuation | Request identity; lifecycle; evidence; payment; provider coordination; notifications; completion/cancellation; recovery; originating Chat | Continue; cancel; dispute; repeat; Chat |
+| `/memory` | Owner-scoped memory | Active facts; categories; provenance semantics; scope; confidence; proposed/suggested; revoke/delete; privacy/retention; empty/error | Inspect; revoke; manage; Chat |
+| `/artifacts` | Manage generated/connected artifacts | Files; recordings; transcripts; owner scope; source; storage readiness; download/open; retention; delete/revoke | Open/download/delete; Connect storage; Chat |
+| `/prayer` | Prayer companion | Current request/context; prayer content; routines; reminders; artifacts; voice boundary; privacy | Start prayer; save; reminder; voice |
+| `/call` | Voice/peer communication | AI voice readiness; peer-call readiness; consent; participant identity; session status; connection/recovery; recording/artifact disclosure | Start/end; retry; inspect; artifact where available |
+| `/notifications` | Notification centre | Urgent/attention; request/reminder; channels; read/unread; originating object; delivery state; permission/device state | Open; mark read; continue; settings |
+| `/safety` | Safety/check-in management | Check-in status; trusted contacts; consent; overdue; resolution; emergency boundary; incident continuity | Start/update/end check-in; manage contacts; emergency path |
 
 ### Chat and conversation surfaces
 
