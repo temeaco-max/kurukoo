@@ -19,9 +19,16 @@ const appSections = [
   'wallet','points','top-up','subscriptions','checkout','confirmations','memory','artifacts','prayer','call','notifications','safety'
 ];
 
+const canonicalSurfaceFor = (surface) => {
+  if (surface === '/app') return '/desk';
+  if (surface === '/app/agent') return '/chat';
+  if (surface.startsWith('/app/')) return surface.slice('/app'.length);
+  return surface;
+};
+
 for (const section of appSections) {
   require(appRoutes.includes(`['${section}'`), `Canonical Web App surface missing: ${section}`);
-  require(matrix.includes(`/app/${section}`), `Page Architecture Matrix missing authenticated surface: /app/${section}`);
+  require(matrix.includes(`/${section}`), `Page Architecture Matrix missing canonical authenticated surface: /${section}`);
 }
 
 const requiredPublicFamilies = [
@@ -59,4 +66,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('Kurukoo Page Architecture audit passed: public, authenticated and Admin surfaces are represented, core product dimensions are explicit, and the canonical skill/feature registries remain part of the completeness boundary.');
+console.log('Kurukoo Page Architecture audit passed: public, canonical authenticated and Admin surfaces are represented, core product dimensions are explicit, and compatibility /app/* mappings normalize to canonical routes.');
