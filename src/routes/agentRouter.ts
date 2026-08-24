@@ -3,6 +3,7 @@ import { authenticateAdmin, authenticateUser, type AuthRequest } from '../middle
 import { agentRuntimeStatus, cancelAgentGoal, getAgentGoal, goalTimeline, listAgentGoalEvents, listAgentGoals, listAgentWorkerRuns, pauseAgentGoal, resumeAgentGoal } from '../services/agentRuntime.js';
 import { buildAgentBrief, enqueueAgentBriefNotification } from '../services/agentBriefService.js';
 import { attachAgentGoalDependency, getAgentEconomicRequestLink, listAgentGoalDependencies, refreshAgentGoalDependencies } from '../services/agentEconomicRequestOrchestrator.js';
+import { getAgentGoalContinuation } from '../services/agentGoalContinuation.js';
 
 const router = Router();
 
@@ -68,6 +69,13 @@ router.get('/goals/:id/dependencies', authenticateUser, async (req: AuthRequest,
   const goal = await getAgentGoal(owner, String(req.params.id || ''));
   if (!goal) return res.status(404).json({ error: 'Goal not found' });
   res.json({ success: true, dependencies: await refreshAgentGoalDependencies(owner, goal.id) });
+});
+
+router.get('/goals/:id/continuation', authenticateUser, async (req: AuthRequest, res) => {
+  const owner = phone(req); if (!owner) return res.status(401).json({ error: 'Authentication required' });
+  const continuation = await getAgentGoalContinuation(owner, String(req.params.id || ''));
+  if (!continuation) return res.status(404).json({ error: 'Goal not found' });
+  res.json({ success: true, continuation });
 });
 
 router.post('/goals/:id/dependencies', authenticateUser, async (req: AuthRequest, res) => {
