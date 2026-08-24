@@ -1,17 +1,115 @@
 import crypto from 'node:crypto';
 import { sendFcmPush } from './pushNotifications.js';
 import { persistCoordinatorEvent } from './coordinatorStore.js';
-import { getCanonicalStore } from './canonicalStore.js';
-import { getCanonicalPersistenceMode } from './canonicalPersistence.js';
 
-export type ReminderStatus='scheduled'|'sent'|'completed'|'cancelled'|'failed';
-export interface Reminder{id:string;phone:string;title:string;note:string;due_at:string;recurrence:string|null;status:ReminderStatus;created_at:string;sent_at:string|null;source_conversation_id:string|null;resume_context_id:string|null;}
-async function ensureReminderSchema(){const s=await getCanonicalStore();if(getCanonicalPersistenceMode()==='postgres')await s.run(`CREATE TABLE IF NOT EXISTS reminders(id TEXT PRIMARY KEY,phone TEXT NOT NULL,title TEXT NOT NULL,note TEXT NOT NULL DEFAULT '',due_at TIMESTAMPTZ NOT NULL,recurrence TEXT,status TEXT NOT NULL DEFAULT 'scheduled',created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,sent_at TIMESTAMPTZ,source_conversation_id TEXT,resume_context_id TEXT)`);else await s.run(`CREATE TABLE IF NOT EXISTS reminders(id TEXT PRIMARY KEY,phone TEXT NOT NULL,title TEXT NOT NULL,note TEXT NOT NULL DEFAULT '',due_at TEXT NOT NULL,recurrence TEXT,status TEXT NOT NULL DEFAULT 'scheduled',created_at TEXT DEFAULT CURRENT_TIMESTAMP,sent_at TEXT,source_conversation_id TEXT,resume_context_id TEXT)`);await s.run('CREATE INDEX IF NOT EXISTS idx_reminders_phone_due ON reminders(phone,due_at,status)');return s;}
-async function emitReminderEvent(reminder:Reminder,status:ReminderStatus,payload:Record<string,unknown>={}){await persistCoordinatorEvent({id:`reminder:${reminder.id}:state:${status}:${Date.now()}`,type:'reminder.state_changed',occurredAt:new Date().toISOString(),producer:'reminderService',correlationId:`reminder:${reminder.id}`,ownerPhone:reminder.phone.startsWith('anon_')?undefined:reminder.phone,payload:{reminderId:reminder.id,status,dueAt:reminder.due_at,recurrence:reminder.recurrence,sourceConversationId:reminder.source_conversation_id,resumeContextId:reminder.resume_context_id,titleLength:reminder.title.length,notePresent:Boolean(reminder.note),...payload},sensitivity:reminder.phone.startsWith('anon_')?'public':'personal',provenance:{source:'canonical_service',sourceId:reminder.id,evidenceLevel:'persisted_state'},policy:{autonomousAllowed:false,confirmationRequired:'none'},schemaVersion:1});}
-function rowToReminder(row:any):Reminder{return{id:String(row.id),phone:String(row.phone),title:String(row.title),note:String(row.note||''),due_at:String(row.due_at),recurrence:row.recurrence?String(row.recurrence):null,status:String(row.status) as ReminderStatus,created_at:String(row.created_at),sent_at:row.sent_at?String(row.sent_at):null,source_conversation_id:row.source_conversation_id?String(row.source_conversation_id):null,resume_context_id:row.resume_context_id?String(row.resume_context_id):null};}
-export async function createReminder(phone:string,input:{title:string;note?:string;dueAt:string;recurrence?:string|null;sourceConversationId?:string|null;resumeContextId?:string|null}):Promise<Reminder>{const due=new Date(input.dueAt);if(Number.isNaN(due.getTime()))throw new Error('Invalid reminder time');if(due.getTime()<=Date.now())throw new Error('Reminder time must be in the future');if(!input.title.trim())throw new Error('Reminder title is required');const s=await ensureReminderSchema();const id=crypto.randomUUID();await s.run(`INSERT INTO reminders(id,phone,title,note,due_at,recurrence,status,source_conversation_id,resume_context_id) VALUES(?,?,?,?,? ,?,'scheduled',?,?)`,[id,phone,input.title.trim(),String(input.note||'').trim(),due.toISOString(),input.recurrence||null,input.sourceConversationId||null,input.resumeContextId||null]);const row=await s.one<any>('SELECT * FROM reminders WHERE id=?',[id]);if(!row)throw new Error('Reminder could not be created');const reminder=rowToReminder(row);await emitReminderEvent(reminder,'scheduled',{action:'created'});return reminder;}
-export async function listReminders(phone:string,includeCompleted=false){const s=await ensureReminderSchema();const sql=includeCompleted?'SELECT * FROM reminders WHERE phone=? ORDER BY due_at ASC':"SELECT * FROM reminders WHERE phone=? AND status NOT IN ('completed','cancelled') ORDER BY due_at ASC";return (await s.all<any>(sql,[phone])).map(rowToReminder);}
-export async function getReminderForPhone(phone:string,id:string){const s=await ensureReminderSchema();const row=await s.one<any>('SELECT * FROM reminders WHERE id=? AND phone=? LIMIT 1',[id,phone]);return row?rowToReminder(row):null;}
-export async function cancelReminder(phone:string,id:string){const s=await ensureReminderSchema();const result=await s.run("UPDATE reminders SET status='cancelled' WHERE id=? AND phone=? AND status='scheduled'",[id,phone]);if(result.rowCount===0)return false;const row=await s.one<any>("SELECT * FROM reminders WHERE id=? AND phone=? AND status='cancelled'",[id,phone]);if(!row)return false;await emitReminderEvent(rowToReminder(row),'cancelled',{action:'cancelled'});return true;}
-function nextOccurrence(dueAt:string,recurrence:string){const d=new Date(dueAt);if(Number.isNaN(d.getTime()))return null;if(recurrence==='daily')d.setUTCDate(d.getUTCDate()+1);else if(recurrence==='weekly')d.setUTCDate(d.getUTCDate()+7);else if(recurrence==='monthly')d.setUTCMonth(d.getUTCMonth()+1);else return null;return d.toISOString();}
-export async function processDueReminders(limit=100){const s=await ensureReminderSchema();const rows=await s.all<any>(`SELECT * FROM reminders WHERE status='scheduled' AND due_at<=? ORDER BY due_at ASC LIMIT ${Math.max(1,Math.min(500,Math.floor(limit)))}`,[new Date().toISOString()]);let delivered=0,queued=0,failed=0;for(const row of rows){const reminder=rowToReminder(row);const body=reminder.note?`${reminder.title} — ${reminder.note}`:reminder.title;let pushSent=false;try{pushSent=await sendFcmPush(reminder.phone,'Kurukoo reminder',body,'/chat/');}catch(error){console.warn('[Reminder] push failed:',error);failed++;}const reminderCard={type:'reminder',reminder_id:reminder.id,interruptive:true,priority:'high',triggerState:'due',sourceConversationId:reminder.source_conversation_id,resumeContextId:reminder.resume_context_id,preservePriorConversation:true,actions:[{id:'open',label:'Open reminder'},{id:'dismiss',label:'Dismiss'},{id:'snooze',label:'Snooze'}]};const messageStatus=pushSent?'sent':'queued';await s.run(`INSERT INTO messages(phone,sender,content,channel,card_data,status) VALUES(?,'kurukoo',?,'pwa',?,?)`,[reminder.phone,`Reminder: ${body}`,JSON.stringify(reminderCard),messageStatus]);if(pushSent)delivered++;else queued++;const next=reminder.recurrence?nextOccurrence(reminder.due_at,reminder.recurrence):null;const status=next?'scheduled':'sent';await s.run(`UPDATE reminders SET due_at=?,status=?,sent_at=? WHERE id=?`,[next||reminder.due_at,status,new Date().toISOString(),reminder.id]);const nextReminder={...reminder,due_at:next||reminder.due_at,status:status as ReminderStatus,sent_at:new Date().toISOString()};await emitReminderEvent(nextReminder,nextReminder.status,{action:'due_processed',internalMessageStatus:messageStatus,transportEvidence:pushSent?'adapter_reported_success':'not_configured_or_unsuccessful',interruptive:true});}return{checked:rows.length,delivered,queued,failed};}
+export type ReminderStatus = 'scheduled' | 'sent' | 'completed' | 'cancelled' | 'failed';
+
+export interface Reminder {
+  id: string;
+  phone: string;
+  title: string;
+  note: string;
+  due_at: string;
+  recurrence: string | null;
+  status: ReminderStatus;
+  created_at: string;
+  sent_at: string | null;
+  source_conversation_id: string | null;
+  resume_context_id: string | null;
+}
+
+async function ensureReminderSchema() {
+  const db = await import('../database.js').then(module => module.getDb());
+  db.run(`CREATE TABLE IF NOT EXISTS reminders (
+    id TEXT PRIMARY KEY,
+    phone TEXT NOT NULL,
+    title TEXT NOT NULL,
+    note TEXT NOT NULL DEFAULT '',
+    due_at TEXT NOT NULL,
+    recurrence TEXT,
+    status TEXT NOT NULL DEFAULT 'scheduled',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    sent_at TEXT,
+    source_conversation_id TEXT,
+    resume_context_id TEXT
+  );`);
+  const cols = db.exec('PRAGMA table_info(reminders)')[0]?.values || [];
+  const names = new Set(cols.map((row: any[]) => String(row[1])));
+  if (!names.has('source_conversation_id')) db.run('ALTER TABLE reminders ADD COLUMN source_conversation_id TEXT');
+  if (!names.has('resume_context_id')) db.run('ALTER TABLE reminders ADD COLUMN resume_context_id TEXT');
+  db.run('CREATE INDEX IF NOT EXISTS idx_reminders_phone_due ON reminders(phone, due_at, status)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_reminders_due ON reminders(due_at, status)');
+}
+
+async function emitReminderEvent(reminder: Reminder, status: ReminderStatus, payload: Record<string, unknown> = {}): Promise<void> {
+  await persistCoordinatorEvent({
+    id: `reminder:${reminder.id}:state:${status}:${Date.now()}`,
+    type: 'reminder.state_changed',
+    occurredAt: new Date().toISOString(),
+    producer: 'reminderService',
+    correlationId: `reminder:${reminder.id}`,
+    ownerPhone: reminder.phone.startsWith('anon_') ? undefined : reminder.phone,
+    payload: { reminderId: reminder.id, status, dueAt: reminder.due_at, recurrence: reminder.recurrence, sourceConversationId: reminder.source_conversation_id, resumeContextId: reminder.resume_context_id, titleLength: reminder.title.length, notePresent: Boolean(reminder.note), ...payload },
+    sensitivity: reminder.phone.startsWith('anon_') ? 'public' : 'personal',
+    provenance: { source: 'canonical_service', sourceId: reminder.id, evidenceLevel: 'persisted_state' },
+    policy: { autonomousAllowed: false, confirmationRequired: 'none' },
+    schemaVersion: 1,
+  });
+}
+
+function rowToReminder(row: any): Reminder {
+  return {
+    id: String(row.id), phone: String(row.phone), title: String(row.title), note: String(row.note || ''), due_at: String(row.due_at), recurrence: row.recurrence ? String(row.recurrence) : null, status: String(row.status) as ReminderStatus, created_at: String(row.created_at), sent_at: row.sent_at ? String(row.sent_at) : null,
+    source_conversation_id: row.source_conversation_id ? String(row.source_conversation_id) : null,
+    resume_context_id: row.resume_context_id ? String(row.resume_context_id) : null,
+  };
+}
+
+export async function createReminder(phone: string, input: { title: string; note?: string; dueAt: string; recurrence?: string | null; sourceConversationId?: string | null; resumeContextId?: string | null }): Promise<Reminder> {
+  await ensureReminderSchema();
+  const due = new Date(input.dueAt); if (Number.isNaN(due.getTime())) throw new Error('Invalid reminder time'); if (due.getTime() <= Date.now()) throw new Error('Reminder time must be in the future'); if (!input.title.trim()) throw new Error('Reminder title is required');
+  const db = await import('../database.js').then(module => module.getDb()); const id = crypto.randomUUID();
+  db.run(`INSERT INTO reminders (id, phone, title, note, due_at, recurrence, status, source_conversation_id, resume_context_id) VALUES (?, ?, ?, ?, ?, ?, 'scheduled', ?, ?)`, [id, phone, input.title.trim(), String(input.note || '').trim(), due.toISOString(), input.recurrence || null, input.sourceConversationId || null, input.resumeContextId || null]);
+  try { const pStmt = db.prepare('SELECT behavior_patterns FROM memory_profiles WHERE phone = ?'); pStmt.bind([phone]); if (pStmt.step()) { const res = pStmt.getAsObject(); let patterns: any = {}; try { patterns = JSON.parse(String(res.behavior_patterns || '{}')); } catch {} patterns.last_reminder_created = new Date().toISOString(); patterns.reminder_count = (Number(patterns.reminder_count) || 0) + 1; db.run('UPDATE memory_profiles SET behavior_patterns = ?, updated_at = CURRENT_TIMESTAMP WHERE phone = ?', [JSON.stringify(patterns), phone]); } pStmt.free(); } catch {}
+  const { saveDb } = await import('../database.js'); saveDb();
+  const stmt = db.prepare('SELECT * FROM reminders WHERE id = ?'); stmt.bind([id]); const row = stmt.step() ? stmt.getAsObject() : null; stmt.free(); if (!row) throw new Error('Reminder could not be created');
+  const reminder = rowToReminder(row); await emitReminderEvent(reminder, reminder.status, { action: 'created' }); return reminder;
+}
+
+export async function listReminders(phone: string, includeCompleted = false): Promise<Reminder[]> {
+  await ensureReminderSchema(); const db = await import('../database.js').then(module => module.getDb());
+  const sql = includeCompleted ? 'SELECT * FROM reminders WHERE phone = ? ORDER BY due_at ASC' : "SELECT * FROM reminders WHERE phone = ? AND status NOT IN ('completed','cancelled') ORDER BY due_at ASC";
+  const result = db.exec(sql, [phone]); return (result[0]?.values || []).map((values: any[]) => rowToReminder(Object.fromEntries((result[0].columns || []).map((c: string, i: number) => [c, values[i]]))));
+}
+
+/** Read-only owner-scoped reminder lookup for canonical conversation continuation. */
+export async function getReminderForPhone(phone: string, id: string): Promise<Reminder | null> {
+  await ensureReminderSchema(); const db = await import('../database.js').then(module => module.getDb());
+  const result = db.exec('SELECT * FROM reminders WHERE id = ? AND phone = ? LIMIT 1', [id, phone]); const row = result[0]?.values?.[0];
+  return row ? rowToReminder(Object.fromEntries((result[0].columns || []).map((column: string, index: number) => [column, row[index]]))) : null;
+}
+
+export async function cancelReminder(phone: string, id: string): Promise<boolean> {
+  await ensureReminderSchema(); const db = await import('../database.js').then(module => module.getDb()); db.run("UPDATE reminders SET status = 'cancelled' WHERE id = ? AND phone = ? AND status = 'scheduled'", [id, phone]); const { saveDb } = await import('../database.js'); saveDb();
+  const check = db.exec("SELECT * FROM reminders WHERE id = ? AND phone = ? AND status = 'cancelled'", [id, phone]); const row = check[0]?.values?.[0]; if (!row) return false;
+  const reminder = rowToReminder(Object.fromEntries((check[0].columns || []).map((c: string, i: number) => [c, row[i]]))); await emitReminderEvent(reminder, 'cancelled', { action: 'cancelled' }); return true;
+}
+
+function nextOccurrence(dueAt: string, recurrence: string): string | null { const d = new Date(dueAt); if (Number.isNaN(d.getTime())) return null; if (recurrence === 'daily') d.setUTCDate(d.getUTCDate() + 1); else if (recurrence === 'weekly') d.setUTCDate(d.getUTCDate() + 7); else if (recurrence === 'monthly') d.setUTCMonth(d.getUTCMonth() + 1); else return null; return d.toISOString(); }
+
+export async function processDueReminders(limit = 100): Promise<{ checked: number; delivered: number; queued: number; failed: number }> {
+  await ensureReminderSchema(); const db = await import('../database.js').then(module => module.getDb()); const now = new Date().toISOString();
+  const result = db.exec(`SELECT * FROM reminders WHERE status = 'scheduled' AND due_at <= ? ORDER BY due_at ASC LIMIT ${Math.max(1, Math.min(500, Math.floor(limit)))}`, [now]); const rows = result[0]?.values || []; const columns = result[0]?.columns || [];
+  let delivered = 0, queued = 0, failed = 0;
+  for (const values of rows) {
+    const reminder = rowToReminder(Object.fromEntries(columns.map((c: string, i: number) => [c, values[i]]))); const body = reminder.note ? `${reminder.title} — ${reminder.note}` : reminder.title; let pushSent = false;
+    try { pushSent = await sendFcmPush(reminder.phone, 'Kurukoo reminder', body, '/chat/'); } catch (error) { console.warn('[Reminder] push failed:', error); }
+    const reminderCard = { type: 'reminder', reminder_id: reminder.id, interruptive: true, priority: 'high', triggerState: 'due', sourceConversationId: reminder.source_conversation_id, resumeContextId: reminder.resume_context_id, preservePriorConversation: true, actions: [{ id: 'open', label: 'Open reminder' }, { id: 'dismiss', label: 'Dismiss' }, { id: 'snooze', label: 'Snooze' }] };
+    db.run(`INSERT INTO messages (phone, sender, content, channel, card_data, status) VALUES (?, 'kurukoo', ?, 'pwa', ?, ?)`, [reminder.phone, `Reminder: ${body}`, JSON.stringify(reminderCard), pushSent ? 'sent' : 'queued']);
+    if (pushSent) delivered += 1; else queued += 1;
+    if (reminder.recurrence) { const next = nextOccurrence(reminder.due_at, reminder.recurrence); if (next) { db.run("UPDATE reminders SET due_at = ?, status = 'scheduled', sent_at = ? WHERE id = ?", [next, new Date().toISOString(), reminder.id]); reminder.due_at = next; reminder.status = 'scheduled'; reminder.sent_at = new Date().toISOString(); } else { db.run("UPDATE reminders SET status = 'sent', sent_at = ? WHERE id = ?", [new Date().toISOString(), reminder.id]); reminder.status = 'sent'; reminder.sent_at = new Date().toISOString(); } } else { db.run("UPDATE reminders SET status = 'sent', sent_at = ? WHERE id = ?", [new Date().toISOString(), reminder.id]); reminder.status = 'sent'; reminder.sent_at = new Date().toISOString(); }
+    await emitReminderEvent(reminder, reminder.status, { action: 'due_processed', internalMessageStatus: pushSent ? 'sent' : 'queued', transportEvidence: pushSent ? 'adapter_reported_success' : 'not_configured_or_unsuccessful', interruptive: true });
+  }
+  if (rows.length) { const { saveDb } = await import('../database.js'); saveDb(); }
+  return { checked: rows.length, delivered, queued, failed };
+}
