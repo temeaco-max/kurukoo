@@ -37,7 +37,7 @@ try {
 
     const economicRequest = await createEconomicRequest({ id:`restart-erq-${crypto.randomUUID()}`, phone:ownerA, skill:'plumber', requirements:{restartProbe:true} });
     const goal = await createConversationGoal({ phone:ownerA, skill:'reminder', objective:'PostgreSQL restart proof goal', source:'conversation' });
-    await sendFcmPush(ownerA,'Restart proof','Persistent notification state',{ contextId:'postgres-restart', objectType:'restart_probe', objectId:'domain-restart', ownerScope:ownerA, idempotencyKey:'postgres-restart-notification', surface:'chat' });
+    await sendFcmPush(ownerA,'Restart proof','Persistent notification state',undefined,{ contextId:'postgres-restart', objectType:'restart_probe', objectId:'domain-restart', ownerScope:ownerA, idempotencyKey:'postgres-restart-notification', surface:'chat' });
     const reminder = await createReminder(ownerA,{title:'PostgreSQL restart proof reminder',dueAt:new Date(Date.now()+7200000).toISOString()});
     await store.run(`INSERT INTO orders(id,phone,order_type,provider_phone,amount,status,idempotency_key) VALUES(?,?,?,?,?,?,?)`,[orderId,ownerA,'restart-proof',ownerA,1,'created',`restart-order:${orderId}`]);
     await store.run(`INSERT INTO postgres_restart_probe(id,owner_phone,order_id) VALUES(?,?,?)`,['domain-restart',ownerA,orderId]);
@@ -46,7 +46,7 @@ try {
     const child = spawnSync(process.execPath,['--import','tsx',new URL(import.meta.url).pathname,'read'],{env:childEnv,stdio:'inherit'});
     if (child.status!==0) throw new Error(`PostgreSQL domain restart reader exited with ${child.status}`);
     console.log(JSON.stringify({processA:'verified-write',processB:'verified-read',economicRequestId:economicRequest.id,agentGoalId:goal.id,reminderId:reminder.id,orderId},null,2));
-    return;
+    process.exit(0);
   }
 
   const store = await getCanonicalStore();
