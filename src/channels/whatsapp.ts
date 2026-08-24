@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { getDb, saveDb } from '../database.js';
+import { getCanonicalStore } from '../services/canonicalStore.js';
 import { updateSessionInteraction } from '../services/sessionManager.js';
 import { recordChannelEvidence } from '../services/progressiveTrustService.js';
 import { claimInboundWebhook } from '../services/channelWebhookDeduplication.js';
@@ -67,15 +67,14 @@ export async function handleWhatsAppWebhook(body: any, signature: string, rawBod
 
         const statuses = value?.statuses;
         if (Array.isArray(statuses) && statuses.length) {
-            const db = await getDb();
+            const db = await getCanonicalStore();
             for (const st of statuses) {
                 const wamid = st.id;
                 const statusVal = st.status;
                 const recipientId = st.recipient_id ? `+${st.recipient_id}` : (st.recipient ? `+${st.recipient}` : null);
-                if (wamid) db.run(`UPDATE messages SET status = ? WHERE whatsapp_msg_id = ?`, [statusVal, wamid]);
-                if (recipientId && statusVal === 'read') db.run(`UPDATE messages SET status = 'read' WHERE phone = ? AND sender = 'assistant' AND status != 'read'`, [recipientId]);
+                if (wamid) await db.run(`UPDATE messages SET status = ? WHERE whatsapp_msg_id = ?`, [statusVal, wamid]);
+                if (recipientId && statusVal === 'read') await db.run(`UPDATE messages SET status = 'read' WHERE phone = ? AND sender = 'assistant' AND status != 'read'`, [recipientId]);
             }
-            saveDb();
             return { status: 'success', processed: 'statuses' };
         }
 
@@ -108,9 +107,8 @@ export async function handleWhatsAppWebhook(body: any, signature: string, rawBod
             return { status: 'error', error: delivery.error || 'whatsapp_delivery_failed', conversationId: turn.conversationId };
         }
 
-        const db = await getDb();
-        db.run(`UPDATE messages SET whatsapp_msg_id = ?, status = 'sent' WHERE id = (SELECT MAX(id) FROM messages WHERE phone = ? AND sender = 'assistant')`, [delivery.id, phone]);
-        saveDb();
+        const db = await getCanonicalStore();
+        await db.run(`UPDATE messages SET whatsapp_msg_id = ?, status = 'sent' WHERE id = (SELECT MAX(id) FROM messages WHERE phone = ? AND sender = 'assistant')`, [delivery.id, phone]);
         await sendWhatsAppTypingIndicator(phone, 'stopped', phoneNumberId);
         return { status: 'success', conversationId: turn.conversationId, response: turn.reply, cardData: turn.cardData, whatsappMessageId: delivery.id };
     } catch (e) {
