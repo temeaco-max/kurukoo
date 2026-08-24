@@ -54,3 +54,7 @@ jobs:
         env:
           KURUKOO_TEST_POSTGRES_URL: ${{ env.KURUKOO_DOMAIN_POSTGRES_URL }}
         run: npx tsx scripts/test-postgres-domain-runtime.ts
+      - name: PostgreSQL cross-process domain restart proof
+        env:
+          KURUKOO_TEST_POSTGRES_URL: ${{ env.KURUKOO_DOMAIN_POSTGRES_URL }}
+        run: npx tsx scripts/test-postgres-domain-restart.ts
