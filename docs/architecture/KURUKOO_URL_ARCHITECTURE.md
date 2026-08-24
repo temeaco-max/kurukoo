@@ -170,7 +170,8 @@ Infrastructure endpoints remain `/health`, `/ready`, `/live`.
 
 Legacy routes may remain temporarily, but new UI must never emit them.
 
-- `/app` and `/app/agent` → `/desk`
+- `/app` → `/desk`
+- `/app/agent` → `/chat`
 - `/app/<surface>` → `/<surface>`
 - `/web`, `/workspace` → `/desk`
 - `/subscription` → `/subscriptions`

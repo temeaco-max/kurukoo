@@ -4,7 +4,7 @@
   if (document.documentElement.dataset.kurukooDeskData === 'true') return;
   document.documentElement.dataset.kurukooDeskData = 'true';
 
-  const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#39;' }[c]));
+  const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const humanize = (value) => String(value || '').replaceAll('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase()) || 'Not available';
   const formatDate = (value) => {
     if (!value) return '';

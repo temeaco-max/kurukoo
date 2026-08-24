@@ -18,7 +18,7 @@
       if (url.origin !== window.location.origin) return value;
       const direct = {
         '/app': '/desk',
-        '/app/agent': '/desk',
+        '/app/agent': '/chat',
         '/app/discover': '/discover',
         '/app/requests': '/requests',
         '/app/tasks': '/tasks',

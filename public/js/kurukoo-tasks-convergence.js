@@ -55,12 +55,14 @@
   const continuation = (task) => {
     const sourceType = String(task?.sourceType || '').toLowerCase();
     const sourceId = encodeURIComponent(String(task?.sourceId || ''));
-    if (!sourceId) return null;
-    if (sourceType === 'topic') return `/topics/${sourceId}`;
-    if (sourceType === 'request' || sourceType === 'economic_request') return `/requests/${sourceId}`;
-    if (sourceType === 'agent') return `/agents/${sourceId}`;
-    if (sourceType === 'conversation') return `/chat/${sourceId}`;
-    return null;
+    if (sourceId) {
+      if (sourceType === 'topic') return `/topics/${sourceId}`;
+      if (sourceType === 'request' || sourceType === 'economic_request') return `/requests/${sourceId}`;
+      if (sourceType === 'agent') return `/agents/${sourceId}`;
+      if (sourceType === 'conversation') return `/chat/${sourceId}`;
+    }
+    const title = task?.title || task?.name || `Task ${task?.id || ''}`;
+    return `/chat?prompt=${encodeURIComponent(`Open my ${title} task ${task?.id || ''}`.trim())}`;
   };
 
   const action = (label, kind, taskId, primary = false) => `<button type="button" class="${primary ? 'k-app-primary' : 'k-app-card-action'} k-task-action" data-task-action="${kind}" data-task-id="${escape(taskId)}">${label}</button>`;
@@ -78,7 +80,10 @@
     const actions = [];
     if (isAvailable(task)) actions.push(action('Accept task', 'accept', task.id, true));
     if (active) actions.push(action('Complete task', 'complete', task.id, true));
-    if (continuationHref) actions.push(`<a class="k-app-card-action" href="${continuationHref}">Open source context →</a>`);
+    if (continuationHref) {
+      const isChat = continuationHref.startsWith('/chat');
+      actions.push(`<a class="k-app-card-action" href="${continuationHref}">${isChat ? 'Continue in Chat →' : 'Open source context →'}</a>`);
+    }
     if (closed || complete) actions.push(`<span class="k-task-state-note">${complete ? 'Canonical completion recorded.' : 'No action available in this state.'}</span>`);
     return `<article class="k-task-card" data-task-state="${escape(currentState)}"><div class="k-task-card-head"><div><span class="k-app-card-label">${escape(task.sourceType ? String(task.sourceType).replace(/_/g, ' ') : 'Task')}</span><h3>${escape(task.title || `Task ${task.id}`)}</h3></div><span class="k-status k-task-status" data-state="${escape(currentState)}">${escape(statusLabel)}</span></div><p>${escape(task.description || 'No additional task instructions were supplied.')}</p><div class="k-task-context"><span>Task #${escape(task.id)}</span><span>${escape(source)}</span></div>${result}<div class="k-task-actions">${actions.join('') || '<span class="k-task-state-note">Waiting for the canonical task state.</span>'}</div></article>`;
   };

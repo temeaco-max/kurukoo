@@ -11,7 +11,7 @@ const extensions = read('public/js/kurukoo-app-extensions.js');
 const bridge = read('src/middleware/apiV1Bridge.ts');
 const nativeIntent = read('mobile/kurukoo-mobile/app/+native-intent.tsx');
 
-for (const token of ['legacyToCanonical', "'/app/agent': '/desk'", "'/app/requests': '/requests'", "'/app/tasks': '/tasks'", "'/app/connect': '/connect'"]) {
+for (const token of ['legacyToCanonical', "'/app/agent': '/chat'", "'/app/requests': '/requests'", "'/app/tasks': '/tasks'", "'/app/connect': '/connect'"]) {
   assert.ok(desk.includes(token), `Desk canonical URL mapping missing: ${token}`);
 }
 for (const token of ['kurukoo-drawer-search', 'kurukoo-drawer-notifications', 'kurukoo-drawer-profile', 'k-desk-icon-button', 'Search Kurukoo', 'Ask Agent']) {

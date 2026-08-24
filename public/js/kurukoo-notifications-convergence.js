@@ -3,7 +3,7 @@
   const container = document.querySelector('[data-notifications-root]') || document.querySelector('.k-app-container');
   if (!container) return;
   const escapePath = (value) => encodeURIComponent(String(value || ''));
-  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#39;' }[char]));
+  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
   const safeInternalHref = (value) => {
     const link = String(value || '').trim();
     return /^\/(?!\/)/.test(link) ? link : null;

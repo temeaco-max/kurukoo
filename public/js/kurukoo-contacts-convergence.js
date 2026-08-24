@@ -1,6 +1,6 @@
 (() => {
   if (document.body?.dataset.workspaceSection !== 'connect') return;
-  const container = document.querySelector('.k-app-container');
+  const container = document.querySelector('[data-connect-people-root]') || document.querySelector('.k-app-container');
   if (!container) return;
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const path = (value) => encodeURIComponent(String(value || ''));

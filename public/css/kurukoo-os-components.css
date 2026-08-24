@@ -57,7 +57,6 @@
 [data-agent-presence-label][data-agent-presence="thinking"],
 [data-agent-presence-label][data-agent-presence="working"]{color:var(--ko-warning,#B87928);border-color:color-mix(in srgb,var(--ko-warning,#B87928) 28%,var(--ko-border,#E6DED5))}
 [data-agent-presence-label][data-agent-presence="speaking"]{color:var(--ko-primary,#B95D3C);border-color:color-mix(in srgb,var(--ko-primary,#B95D3C) 28%,var(--ko-border,#E6DED5))}
-[data-agent-presence-label][data-agent-presence="waiting"]{color:var(--ko-muted,#6D665F)}
 [data-agent-presence-label][data-agent-presence="needs-attention"],
 [data-agent-presence-label][data-agent-presence="blocked"]{color:var(--ko-danger,#B5483D);border-color:color-mix(in srgb,var(--ko-danger,#B5483D) 28%,var(--ko-border,#E6DED5))}
 [data-agent-presence-label][data-agent-presence="completed"]{color:var(--ko-success,#2E8060)}

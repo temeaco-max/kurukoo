@@ -63,6 +63,8 @@ body.k-app-page .k-app-ask:hover{background:var(--ko-primary-strong)!important;b
     overflow-y:auto!important;
   }
   body.k-app-page .k-app-main{
+    grid-column:2!important;
+    margin-left:0!important;
     min-width:0!important;
     padding:22px 24px 40px!important;
   }
