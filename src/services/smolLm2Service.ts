@@ -89,6 +89,26 @@ export function querySmolLM2Diagnostics(): { requestedModel: string; actualModel
   return { requestedModel: getModelName(), actualModel: status.actualModel, executionMode: status.executionMode, latencyMs: status.latencyMs, fallbackReason: status.lastFailure, source: status.source, available: status.available, serverlessRuntime: status.serverlessRuntime };
 }
 
+// Generation config: verified against @huggingface/transformers 3.8.1
+// (do_sample and repetition_penalty are supported GenerationConfig fields).
+// Defaults are deterministic/greedy for short utility answers; all overridable via env.
+function getGenerationConfig(): { max_new_tokens: number; do_sample: boolean; temperature?: number; repetition_penalty?: number; return_full_text: boolean } {
+  const doSample = String(process.env.SMOLLM2_DO_SAMPLE || 'false').trim().toLowerCase() === 'true';
+  const maxNewTokens = Math.max(16, Math.min(Number(process.env.SMOLLM2_MAX_NEW_TOKENS || 96) || 96, 512));
+  const repetitionPenaltyRaw = Number(process.env.SMOLLM2_REPETITION_PENALTY || 1.15);
+  const config: { max_new_tokens: number; do_sample: boolean; temperature?: number; repetition_penalty?: number; return_full_text: boolean } = {
+    max_new_tokens: maxNewTokens,
+    do_sample: doSample,
+    repetition_penalty: Number.isFinite(repetitionPenaltyRaw) && repetitionPenaltyRaw >= 1 ? repetitionPenaltyRaw : undefined,
+    return_full_text: false,
+  };
+  if (doSample) config.temperature = 0.2;
+  return config;
+}
+function getRetryMaxNewTokens(): number {
+  return Math.min(getGenerationConfig().max_new_tokens, Math.max(16, Math.min(Number(process.env.SMOLLM2_RETRY_MAX_NEW_TOKENS || 64) || 64, getGenerationConfig().max_new_tokens)));
+}
+
 export async function querySmolLM2(prompt: string, systemPrompt?: string): Promise<string> {
   const startedAt = Date.now();
   const input = buildPrompt(prompt, systemPrompt);
@@ -107,7 +127,7 @@ export async function querySmolLM2(prompt: string, systemPrompt?: string): Promi
         lastInferenceFailure = 'local_model_fallback';
         generator = await getLocalPipeline(getFallbackModelName());
       }
-        const output = await generator(input, { max_new_tokens: Number(process.env.SMOLLM2_MAX_NEW_TOKENS || 192), temperature: 0.2, do_sample: true, return_full_text: false });
+        const output = await generator(input, getGenerationConfig());
         const first = Array.isArray(output) ? output[0] : output;
         const text = typeof first === 'object' && first && 'generated_text' in first ? String(first.generated_text || '').trim() : '';
         if (text) {
@@ -115,7 +135,7 @@ export async function querySmolLM2(prompt: string, systemPrompt?: string): Promi
           if (cleaned && !containsInternalGeneration(cleaned)) { lastInferenceSource = 'local'; if (lastInferenceFailure !== 'local_model_fallback') lastInferenceFailure = null; recordInference('local_pipeline', activeModelName || getModelName(), startedAt); return cleaned; }
         }
         const retryInput = buildPrompt(prompt, 'You are Kurukoo. Answer the user directly in one or two natural sentences. For ambiguity, ask one concise clarifying question. For failure, explain that completion is unconfirmed and offer retry, resume, or cancellation. Do not use headings, delimiters, role labels, context narration, or internal architecture language.');
-        const retryOutput = await generator(retryInput, { max_new_tokens: Math.min(Number(process.env.SMOLLM2_MAX_NEW_TOKENS || 192), 96), temperature: 0.1, do_sample: true, return_full_text: false });
+        const retryOutput = await generator(retryInput, { ...getGenerationConfig(), max_new_tokens: getRetryMaxNewTokens() });
         const retryFirst = Array.isArray(retryOutput) ? retryOutput[0] : retryOutput;
         const retryText = typeof retryFirst === 'object' && retryFirst && 'generated_text' in retryFirst ? String(retryFirst.generated_text || '').trim() : '';
         const retryCleaned = sanitizeGeneratedText(retryText.replace(/<\|im_end\|>[\s\S]*$/g, ''));
