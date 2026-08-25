@@ -4,6 +4,7 @@ import { agentRuntimeStatus, cancelAgentGoal, getAgentGoal, goalTimeline, listAg
 import { buildAgentBrief, enqueueAgentBriefNotification } from '../services/agentBriefService.js';
 import { attachAgentGoalDependency, getAgentEconomicRequestLink, listAgentGoalDependencies, refreshAgentGoalDependencies } from '../services/agentEconomicRequestOrchestrator.js';
 import { getAgentGoalContinuation } from '../services/agentGoalContinuation.js';
+import { listAgentExecutionTrace } from '../services/agentExecutionTrace.js';
 
 const router = Router();
 
@@ -55,6 +56,15 @@ router.get('/goals/:id', authenticateUser, async (req: AuthRequest, res) => {
     listAgentGoalDependencies(owner, goal.id),
   ]);
   res.json({ success: true, goal, events: await listAgentGoalEvents(owner, goal.id), economicLink, dependencies });
+});
+
+router.get('/goals/:id/trace', authenticateUser, async (req: AuthRequest, res) => {
+  const owner = phone(req); if (!owner) return res.status(401).json({ error: 'Authentication required' });
+  const goal = await getAgentGoal(owner, String(req.params.id || ''));
+  if (!goal) return res.status(404).json({ error: 'Goal not found' });
+  const parsedLimit = Number(req.query.limit || 100);
+  const limit = Number.isFinite(parsedLimit) ? parsedLimit : 100;
+  res.json({ success: true, trace: await listAgentExecutionTrace(owner, goal.id, limit) });
 });
 
 router.get('/goals/:id/economic-request', authenticateUser, async (req: AuthRequest, res) => {
