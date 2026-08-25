@@ -1,4 +1,4 @@
-import { getDb, saveDb } from '../database.js';
+import { getCanonicalStore } from './canonicalStore.js';
 
 export type CanonicalCapabilityOutcome = {
   status: string;
@@ -54,8 +54,8 @@ function goalStatus(status: string, plan: GoalPlanStep[], currentIndex: number):
 
 /**
  * Reconciles one canonical capability result into the persisted first-class
- * agent goal. This is deliberately a projection over existing agent state,
- * not a second agent runtime or execution authority.
+ * Agent Goal. This is deliberately a projection over existing Agent state,
+ * not a second Agent runtime or execution authority.
  */
 export async function syncAgentGoalFromCapabilityResult(input: {
   phone: string;
@@ -66,15 +66,12 @@ export async function syncAgentGoalFromCapabilityResult(input: {
   outcome: CanonicalCapabilityOutcome;
 }): Promise<void> {
   if (!input.goalId || !input.phone) return;
-  const db = await getDb();
-  const goalRow = db.exec('SELECT * FROM agent_goals WHERE id = ? AND phone = ? LIMIT 1', [input.goalId, input.phone])[0]?.values?.[0] as any[] | undefined;
+  const store = await getCanonicalStore();
+  const goalRow = await store.one<any>('SELECT * FROM agent_goals WHERE id = ? AND phone = ? LIMIT 1', [input.goalId, input.phone]);
   if (!goalRow) return;
 
-  const columns = db.exec('PRAGMA table_info(agent_goals)')[0]?.values?.map((row: any[]) => String(row[1])) || [];
-  const indexOf = (name: string) => columns.indexOf(name);
-  const currentPlanRaw = indexOf('plan_json') >= 0 ? goalRow[indexOf('plan_json')] : null;
   let plan: { objective?: string; currentStep?: number; status?: string; executablePlan?: unknown; lastCanonicalCapabilityOutcome?: unknown; steps?: GoalPlanStep[] } = {};
-  try { plan = currentPlanRaw ? JSON.parse(String(currentPlanRaw)) : {}; } catch { plan = {}; }
+  try { plan = goalRow.plan_json ? JSON.parse(String(goalRow.plan_json)) : {}; } catch { plan = {}; }
   const steps = Array.isArray(plan.steps) ? plan.steps.map(step => ({ ...step })) : [];
   const capabilityKey = `${input.capability}:${input.action}`.toLowerCase();
   let stepIndex = steps.findIndex(step => String(step.action || '').toLowerCase().includes(capabilityKey) || String(step.action || '').toLowerCase().includes(input.action.toLowerCase()));
@@ -111,14 +108,15 @@ export async function syncAgentGoalFromCapabilityResult(input: {
     canonicalFacts: input.outcome.canonicalFacts,
   };
 
-  const updateFields: string[] = ['status = ?', 'next_action_at = ?', 'completed_at = ?', 'failure_reason = ?', 'summary = ?', 'plan_json = ?', 'updated_at = CURRENT_TIMESTAMP'];
-  const params: unknown[] = [status, nextActionAt, completedAt, failureReason, summary, JSON.stringify(plan)];
-  db.run(`UPDATE agent_goals SET ${updateFields.join(', ')} WHERE id = ? AND phone = ?`, [...params, input.goalId, input.phone]);
+  await store.run(
+    `UPDATE agent_goals SET status=?,next_action_at=?,completed_at=?,failure_reason=?,summary=?,plan_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND phone=?`,
+    [status, nextActionAt, completedAt, failureReason, summary, JSON.stringify(plan), input.goalId, input.phone],
+  );
 
   const eventKey = input.idempotencyKey ? `agent-outcome:${input.goalId}:${input.idempotencyKey}` : `agent-outcome:${input.goalId}:${input.capability}:${input.action}:${input.outcome.status}:${stepIndex}`;
-  const existing = db.exec('SELECT id FROM agent_goal_events WHERE idempotency_key = ? LIMIT 1', [eventKey])[0]?.values?.[0];
+  const existing = await store.one<any>('SELECT id FROM agent_goal_events WHERE idempotency_key = ? LIMIT 1', [eventKey]);
   if (!existing) {
-    db.run('INSERT INTO agent_goal_events (goal_id, action, tool, result, evidence, detail, idempotency_key) VALUES (?, ?, ?, ?, ?, ?, ?)', [
+    await store.run('INSERT INTO agent_goal_events (goal_id, action, tool, result, evidence, detail, idempotency_key) VALUES (?, ?, ?, ?, ?, ?, ?)', [
       input.goalId,
       `${input.capability}:${input.action}`,
       'execute_capability',
@@ -128,15 +126,17 @@ export async function syncAgentGoalFromCapabilityResult(input: {
       eventKey,
     ]);
   }
-  saveDb();
 
   if (['needs_user', 'blocked', 'completed'].includes(status)) {
     try {
       const runtime = await import('./agentRuntime.js');
       const updated = await runtime.getAgentGoal(input.phone, input.goalId);
+      if (updated?.parentGoalId && ['blocked', 'failed', 'completed'].includes(status)) {
+        await import('./agentEconomicRequestOrchestrator.js').then(({ syncSubGoalStatusesWithDependencies }) => syncSubGoalStatusesWithDependencies(input.phone, updated.parentGoalId!));
+      }
       if (updated) await runtime.notifyGoalIfNeeded(updated);
     } catch {
-      // Notification failure must never roll back canonical goal state.
+      // Notification/dependency projection failure must never roll back canonical goal state.
     }
   }
 }
