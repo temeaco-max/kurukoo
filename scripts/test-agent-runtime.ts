@@ -19,6 +19,7 @@ const { createEconomicRequest } = await import('../src/services/skillFlows.js');
 const { executeAgentTool, listAgentTools } = await import('../src/services/agentToolRegistry.js');
 const { cancelAgentGoal, createConversationGoal, getAgentGoal, goalTimeline, listAgentGoals, runAgentGoal, runDueAgentGoals } = await import('../src/services/agentRuntime.js');
 const { listAgentExecutionTrace } = await import('../src/services/agentExecutionTrace.js');
+const { syncAgentGoalFromCapabilityResult } = await import('../src/services/agentCapabilityOutcomeService.js');
 const { getDb } = await import('../src/database.js');
 const { executeVoiceTool } = await import('../src/services/voiceToolRegistry.js');
 
@@ -62,6 +63,14 @@ const unsafeTool = await executeAgentTool('payment' as any, {}, { phone: owner, 
 assert.equal(unsafeTool.ok, false, 'High-risk payment or arbitrary tool names are unavailable to the runtime');
 assert.equal(goal.plan.steps.some(step => step.tool === ('payment' as any)), false, 'Plans must not contain undeclared high-risk payment actions');
 
+const projectionGoal = await createConversationGoal({ phone: owner, conversationId: 'conversation-capability-projection', skill: 'find_worker', objective: 'Project a canonical capability outcome', persistWhenDisabled: true });
+assert.ok(projectionGoal, 'A persistent Goal can be created for capability projection');
+await syncAgentGoalFromCapabilityResult({ phone: owner, goalId: projectionGoal!.id, capability: 'skill.find_worker', action: 'observe', idempotencyKey: 'projection-test-1', outcome: { status: 'completed', capability: 'skill.find_worker', action: 'observe', canonicalObjectId: projectionGoal!.id, evidence: 'test:canonical-capability:completed', message: 'Canonical capability outcome recorded.' } });
+const projected = await getAgentGoal(owner, projectionGoal!.id);
+assert.equal(projected?.status, 'completed', 'Capability outcomes must update the canonical Agent Goal state');
+assert.match(String(projected?.summary), /Canonical capability outcome recorded/i, 'Capability outcome summary must persist');
+assert.ok((await goalTimeline(owner, 'conversation-capability-projection')).events.some(event => event.action === 'skill.find_worker:observe'), 'Capability outcome must create one durable Goal event');
+
 const db = await getDb();
 db.run(`UPDATE agent_goals SET next_action_at=datetime('now','-1 minute') WHERE id=?`, [goal.id]);
 const due = await runDueAgentGoals();
@@ -78,4 +87,4 @@ assert.deepEqual(await runDueAgentGoals(), [], 'The worker must remain inactive 
 process.env.KURUKOO_AGENT_ENABLED = 'false';
 process.env.KURUKOO_AGENT_AUTONOMOUS = 'false';
 assert.equal(await createConversationGoal({ phone: owner, skill: 'find_worker', objective: 'Disabled runtime', economicRequestId: request.id }), null, 'Disabled runtime must preserve normal chat behaviour without creating goals');
-console.log('Agent runtime regression passed: persistent owned goals, idempotency, bounded tools, waiting and worker re-entry, durable execution trace, budget policy, quality evaluation, cancellation, disabled mode, and high-risk denial.');
+console.log('Agent runtime regression passed: persistent owned goals, idempotency, bounded tools, waiting and worker re-entry, canonical capability outcome persistence, durable execution trace, budget policy, quality evaluation, cancellation, disabled mode, and high-risk denial.');
