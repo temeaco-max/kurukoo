@@ -1,7 +1,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { execFileSync } from 'child_process';
+import { execFileSync, spawnSync } from 'child_process';
 import { getDb } from '../database.js';
 import { getAllConvergedSkillNames } from './skillBehaviourConvergence.js';
 import { getFastTextThresholdConfig } from './fastTextThresholds.js';
@@ -28,7 +28,16 @@ function normalize(query: string): string { return query.toLowerCase().replace(/
 function meaningfulTokens(query: string): string[] { return normalize(query).split(/\s+/).filter(token => token.length > 1 && !STOP_WORDS.has(token)); }
 function isRealBinaryModel(binPath: string): boolean { try { if (!fs.existsSync(binPath)) return false; const stats=fs.statSync(binPath); if(stats.size<100)return false; return !fs.readFileSync(binPath).subarray(0,32).toString('utf8').includes('DUMMY_FASTTEXT'); } catch { return false; } }
 function getModelState(binPath: string): FastTextModelState { if(!fs.existsSync(binPath))return'missing'; return isRealBinaryModel(binPath)?'real':'invalid'; }
-function isFastTextExecutableAvailable(): boolean { try { execFileSync('fasttext',['--help'],{stdio:'ignore',timeout:1500}); return true; } catch{return false;} }
+// Capability probe: the real fasttext CLI prints its usage text and may exit non-zero
+// when invoked without a valid command, so availability must not depend on exit code.
+function isFastTextExecutableAvailable(): boolean {
+  try {
+    const probe = spawnSync('fasttext', [], { timeout: 3000, encoding: 'utf8' });
+    if (probe.error) return false;
+    const output = `${probe.stdout || ''}${probe.stderr || ''}`.toLowerCase();
+    return output.includes('fasttext') && output.includes('command');
+  } catch { return false; }
+}
 export function getFastTextRuntimeStatus(rootDir=process.cwd()): FastTextRuntimeStatus { const binPath=path.join(rootDir,'models','kurukoo_intent.bin'); const modelState=getModelState(binPath); const realModelPresent=modelState==='real'; const executableAvailable=realModelPresent&&isFastTextExecutableAvailable(); return {modelState,realModelPresent,executableAvailable,ready:realModelPresent&&executableAvailable,modelPath:binPath,trainingExamples:trainingSet.length}; }
 function loadTrainingData(): void { try { const filePath=trainingPath(); if(!fs.existsSync(filePath))return; trainingSet=[]; trainingExact.clear(); for(const line of fs.readFileSync(filePath,'utf8').split(/\r?\n/)){ if(!line.startsWith('__label__'))continue; const spaceIdx=line.indexOf(' '); if(spaceIdx===-1)continue; const label=line.slice(9,spaceIdx).trim(); const normalized=normalize(line.slice(spaceIdx+1)); const tokens=new Set(meaningfulTokens(normalized)); const entry={label,tokens,normalized}; trainingSet.push(entry); if(normalized.length>=3 && !trainingExact.has(normalized)) trainingExact.set(normalized,label); } console.log(`[FastText] loaded ${trainingSet.length} training examples`); } catch(err){console.error('[FastText] training-data load failed:',err);} }
 export function initializeFastText(): void { classificationCache.clear(); const binaryModelPath=modelPath(); fastTextReady=isRealBinaryModel(binaryModelPath)&&isFastTextExecutableAvailable(); loadTrainingData(); const status=getFastTextRuntimeStatus(); console.log(`[FastText] modelState=${status.modelState}, ready=${fastTextReady}, trainingExamples=${trainingSet.length}`); }
@@ -58,13 +67,13 @@ const blueprintRules: Array<[RegExp,string]> = [
   [/\b(keke|tricycle)\b/i,'keke_driver'],
   [/\b(ride|okada|keke|taxi|cab|transport|driver)\b/i,'ride_request'],
   [/\b(food|suya|rice|bread|grocery|groceries|meal|restaurant|caterer)\b/i,'order_food'],
+  [/\b(tv|television|smart tv).{0,40}\b(repair|broken|no picture|no sound|fix)\b/i,'tv_repairer'],
   [/\b(iphone|phone|smartphone|android|samsung(?: galaxy)?|pixel|mobile).{0,40}\b(screen|repair(?:ed|ing)?|broken|damaged|smashed|fix|not working|cracked|won't turn on|not charging)\b/i,'phone_repairer'],
   [/\b(laptop|macbook|dell laptop|lenovo laptop|hp laptop).{0,40}\b(repair(?:ed|ing)?|broken|damaged|fix|won't turn on|not charging)\b/i,'laptop_repairer'],
   [/\b(tablet|ipad|galaxy tab|surface).{0,40}\b(repair|broken|damaged|fix|not working)\b/i,'tablet_repairer'],
   [/\b(ps5|ps4|xbox|nintendo switch|playstation).{0,40}\b(repair|broken|fix|not working|won't turn on)\b/i,'console_repairer'],
-  [/\b(tv|television|smart tv).{0,40}\b(repair|broken|no picture|no sound|fix)\b/i,'tv_repairer'],
   [/\b(apple watch|galaxy watch|garmin|fitbit).{0,40}\b(repair|broken|fix|not working)\b/i,'smartwatch_repairer'],
-  [/\b(airpods|airpod|galaxy buds|wireless earbuds).{0,40}\b(repair|broken|not working|fix)\b/i,'earbuds_repairer'],
+  [/\b(airpods|airpod|galaxy buds|wireless earbuds).{0,40}\b(repair|broken|not working|fix)\b|\b(repair|broken|not working|fix)\b.{0,40}\b(airpods|airpod|galaxy buds|wireless earbuds)\b/i,'earbuds_repairer'],
   [/\b(bluetooth speaker|bose speaker|jbl speaker|wireless speaker).{0,40}\b(repair|broken|no sound|fix)\b/i,'speaker_repairer'],
   [/\b(washing machine|fridge|refrigerator|oven|dishwasher).{0,40}\b(repair|broken|leak|fix|not working)\b/i,'appliance_repairer'],
   [/\b(bicycle|bike).{0,40}\b(repair|broken|fix|damaged|puncture)\b/i,'bicycle_repairer'],

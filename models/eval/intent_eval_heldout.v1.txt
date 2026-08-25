@@ -1,0 +1,78 @@
+__label__greeting how far me my guy na
+__label__greeting oy oy boss wetin happen
+__label__greeting hi there
+__label__greeting good morning
+__label__greeting hello
+__label__how_to how do i reset my password
+__label__how_to how do i cancel a request
+__label__how_to how do i add money to my wallet
+__label__how_to how do i top up my wallet
+__label__how_to how do i unlink my phone number
+__label__how_to how do i link my phone number
+__label__how_to how do i check if my order is ready
+__label__how_to can you show me how to pay a bill
+__label__phone_repairer my iPhone 11 screen is shattered need fix
+__label__phone_repairer samsung galaxy broken screen repair
+__label__phone_repairer android phone won't turn on
+__label__phone_repairer phone not charging need repair
+__label__laptop_repairer macbook pro screen cracked
+__label__laptop_repairer my dell laptop won't boot
+__label__tv_repairer my samsung television no picture and no sound
+__label__tv_repairer lg smart tv making noise and no display
+__label__tv_repairer television screen has lines fix it
+__label__earbuds_repairer repair my airpods they are not charging
+__label__earbuds_repairer galaxy buds only one side works
+__label__earbuds_repairer my wireless earbuds are broken
+__label__speaker_repairer bluetooth speaker no sound after drop
+__label__smartwatch_repairer apple watch won't turn on
+__label__appliance_repairer washing machine leaking water
+__label__appliance_repairer fridge not cooling anymore
+__label__appliance_repairer my generator won't start this morning
+__label__bicycle_repairer bicycle tyre punctured again
+__label__okada_rider I need an okada to Ikeja now
+__label__keke_driver keke to Victoria Island please
+__label__ride_request i need a taxi to the airport
+__label__ride_request book me a cab to Lekki
+__label__order_food i want pounded yam and egusi near me
+__label__order_food order jollof rice and chicken
+__label__order_food gimme suya and bread for tonight
+__label__order_food where can I get moi moi around here
+__label__find_worker my fence is broken need a carpenter
+__label__find_worker plumber to fix a leaking pipe urgently
+__label__find_worker need an electrician for house wiring
+__label__find_worker electrician to rewire my sitting room
+__label__find_worker fix my borehole water pump
+__label__hotel_deals book a hotel room for two tonight
+__label__hotel_deals find me a cheap hotel in Abuja
+__label__mot_booking I need to book my car MOT next week
+__label__pos_agent where is the nearest POS agent
+__label__pos_agent find me a pos agent to withdraw cash
+__label__gas_refill I want to buy cooking gas refill
+__label__parcel_pickup drop off this parcel at the branch
+__label__locksmith I am locked out of my car
+__label__locksmith door lock broke need a locksmith
+__label__boiler_repairer my boiler is making noise
+__label__boiler_repairer heating engineer needed boiler broken
+__label__rubbish_removal need junk removal for old furniture
+__label__window_cleaner clean my windows this weekend
+__label__key_cutter cut me a spare key for my house
+__label__laundry_pickup wash and fold laundry pickup service
+__label__market_shopper can you do a market run for me
+__label__school_run school pickup for my daughter at 2pm
+__label__local_courier courier pickup from my shop
+__label__generator_fuel_delivery diesel delivery to site
+__label__borehole_water water tanker delivery needed
+__label__sports_matchmaking find football players nearby
+__label__prayer help me pray for my family
+__label__emergency I need emergency help after an accident
+__label__safety i am not safe in this neighbourhood
+__label__bin_day remind me when my bins go out
+__label__advertising my promoted post is not showing
+__label__off_topic the purple moon is talking to me
+__label__off_topic xyzzy plugh frobnicate random
+__label__off_topic does the policy cover blue widgets in mars
+__label__off_topic what is the square root of Tuesday
+__label__general_question how does Kurukoo make money
+__label__general_question what can I use Kurukoo for
+__label__general_question tell me about payment methods
+__label__general_question how does the pricing work on Kurukoo

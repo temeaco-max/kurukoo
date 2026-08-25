@@ -34,6 +34,19 @@ try {
   process.exitCode = 1;
 }
 
+// Selected hyperparameters, recorded explicitly for reproducibility:
+//   lr=0.75 epoch=80 wordNgrams=2 dim=75 bucket=20000 minn=1 maxn=3 thread=1
+//
+// Autotune evaluation (2026-08-25, fastText CLI via `supervised` +
+// `-autotune-validation`, deterministic hash split 296 train / 66 valid):
+//   - unconstrained best (dim=202, bucket~1.1M, minn=3, maxn=6): validation
+//     macro-F1 0.53 but a 891 MB model — unusable.
+//   - size-capped (-autotune-modelsize 5M): P@1=0.030 R@3=0.136 vs the manual
+//     configuration above at P@1=0.379 R@3=0.561 on the same split.
+// Decision: built-in autotuning REJECTED for this corpus scale; the
+// deterministic manual configuration remains canonical so builds stay
+// reproducible. Re-evaluate if the corpus grows substantially.
+
 try { fs.unlinkSync(mergedTrainingPath); } catch {}
 if (fs.existsSync(binaryPath)) {
   const size = fs.statSync(binaryPath).size;
