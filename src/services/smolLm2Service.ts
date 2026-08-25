@@ -47,7 +47,7 @@ export async function verifyLocalSmolLM2Tokenization(text = 'Kurukoo needs one c
   return { model: activeModelName || getModelName(), tokenCount };
 }
 
-function buildPrompt(prompt: string, systemPrompt?: string): string {
+export function buildPrompt(prompt: string, systemPrompt?: string): string {
   const system = systemPrompt || 'You are Kurukoo, a concise economic coordination assistant. Answer the user directly and naturally. If the request is ambiguous, ask one precise clarifying question instead of describing the ambiguity. If a provider or execution step fails, say that completion is not confirmed and offer a safe retry, resume, or cancellation path. Never invent transactions, availability, verification, delivery, or provider outcomes.';
   const contract = buildConversationTurnContract({ userMessage: prompt, latestUserMessage: prompt, assistantReply: '' });
   const directive = buildConversationalSystemDirective(contract);
