@@ -2,16 +2,22 @@
 // Evaluates the CURRENT production classifier (src/services/fastTextService.ts)
 // against models/eval/intent_eval_heldout.v1.txt — NEVER used for training.
 //
-// Reports: P@1, P@3, R@3, confusion matrix, per-category accuracy,
-// sparse-label accuracy (catalogue labels with <=2 training examples), and
-// hard-negative accuracy (off_topic cases that should not be confidently mapped
-// to a real skill).
+// Reports: Top-1 accuracy, Top-3 hit rate, confusion matrix, per-category
+// accuracy, sparse-label accuracy (catalogue labels with <=2 training examples),
+// and hard-negative accuracy (off_topic cases that should not be confidently
+// mapped to a real skill).
+//
+// Metric note (single-label, each case has exactly one true label):
+// - Top-1 accuracy   = fraction of cases whose TRUE label is the #1 prediction.
+// - Top-3 hit rate   = fraction of cases whose TRUE label appears anywhere in
+//                      the top-3 predictions. For single-label ranking this
+//                      equals Recall@3; it is NOT precision@3 (precision@3 would
+//                      require multiple independent predictions per case).
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { classifyWithFastText } from '../src/services/fastTextService.js';
 import { getEconomicCategory } from '../src/services/skillFlows.js';
-import fs from 'node:fs';
 
 const root = process.cwd();
 const evalPath = path.join(root, 'models', 'eval', 'intent_eval_heldout.v1.txt');
@@ -33,11 +39,33 @@ function predictTopK(query: string, k: number): { label: string; confidence: num
   return [...best, ...(r?.alternateIntents || []).map((s, i) => ({ label: s, confidence: Math.max(0, r!.confidence - (i + 1) * 0.05) }))].slice(0, k);
 }
 
-let p1 = 0, p3 = 0, r3 = 0;
+let top1 = 0, top3 = 0;
 const confusion = new Map<string, Map<string, number>>();
 const perCategory = new Map<string, { correct: number; total: number }>();
+// Guard: the held-out corpus must NEVER appear in, or be appended to, any
+// training input consumed by the FastText build (see scripts/build-fasttext.mjs).
+// Fail fast if it has been accidentally included. We compare the *content* of the
+// corpus against each training file (the corpus text is the contamination marker,
+// not its filename or a substring of its lines).
+const trainingFiles = [
+  'intent_training_data.txt',
+  'intent_training_behaviour_additions.txt',
+  'intent_training_skill_hits.txt',
+  'intent_training_skill_hints.txt',
+];
+const heldoutText = fs.readFileSync(evalPath, 'utf8');
+for (const f of trainingFiles) {
+  const tp = path.join(root, 'models', f);
+  if (!fs.existsSync(tp)) continue;
+  const content = fs.readFileSync(tp, 'utf8');
+  assert.ok(!content.includes(heldoutText),
+    `held-out eval content found verbatim in training file ${f} — train/test contamination`);
+  assert.ok(!content.includes('intent_eval_heldout'),
+    `training file ${f} references the held-out corpus path — train/test contamination`);
+}
+
 const sparseCounts: Record<string, number> = {};
-for (const f of ['intent_training_data.txt', 'intent_training_behaviour_additions.txt', 'intent_training_skill_hints.txt']) {
+for (const f of trainingFiles) {
   const p = path.join(root, 'models', f);
   if (!fs.existsSync(p)) continue;
   for (const raw of fs.readFileSync(p, 'utf8').split(/\r?\n/)) {
@@ -63,15 +91,15 @@ function bump(confusion: Map<string, Map<string, number>>, a: string, b: string)
 
 for (const c of cases) {
   const preds = predictTopK(c.text, 3);
-  const top1 = preds[0]?.label || 'unknown';
+  const predicted1 = preds[0]?.label || 'unknown';
   const topLabels = new Set(preds.map((p) => p.label));
-  if (top1 === c.label) p1 += 1;
-  if (topLabels.has(c.label)) { p3 += 1; r3 += 1; }
-  bump(confusion, c.label, top1);
+  if (predicted1 === c.label) top1 += 1;
+  if (topLabels.has(c.label)) { top3 += 1; }
+  bump(confusion, c.label, predicted1);
   const cat = catOf(c.label);
   const pc = perCategory.get(cat) || { correct: 0, total: 0 };
-  pc.total += 1;
-  if (top1 === c.label) pc.correct += 1;
+          pc.total += 1;
+  if (predicted1 === c.label) pc.correct += 1;
   perCategory.set(cat, pc);
 }
 
@@ -89,9 +117,9 @@ for (const c of hardNegatives) {
 }
 
 console.log(`[eval] cases=${cases.length}`);
-console.log(`[eval] P@1=${(p1 / cases.length * 100).toFixed(1)}%`);
-console.log(`[eval] P@3=${(p3 / cases.length * 100).toFixed(1)}%`);
-console.log(`[eval] R@3=${(r3 / cases.length * 100).toFixed(1)}%`);
+console.log(`[eval] Top-1 accuracy=${(top1 / cases.length * 100).toFixed(1)}%`);
+console.log(`[eval] Top-3 hit rate=${(top3 / cases.length * 100).toFixed(1)}%`);
+console.log(`[eval] (Top-3 hit rate == Recall@3 for single-label ranking; NOT precision@3)`);
 console.log(`[eval] sparse-label accuracy (<=2 train ex): ${sparseTotal ? (sparseCorrect / sparseTotal * 100).toFixed(1) : 'n/a'}% (${sparseCorrect}/${sparseTotal})`);
 console.log(`[eval] hard-negative accuracy: ${(hardNegativeCorrect / hardNegatives.length * 100).toFixed(1)}% (${hardNegativeCorrect}/${hardNegatives.length})`);
 
