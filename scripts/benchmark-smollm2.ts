@@ -38,7 +38,7 @@ for (const [name, config] of Object.entries(configs)) {
     const text = typeof first === 'object' && first && 'generated_text' in first ? String(first.generated_text || '') : '';
     const newTokens = Math.max(0, text.length / 4); // approximate; transformers.js does not return token counts here
     totalTokens += newTokens;
-    console.log(`[bench][${name}] latency=${latency}ms approxNewTokens=${Math.round(newTokens)}`);
+    console.log(`[bench][${name}] latency=${latency}ms approxNewTokens=${Math.round(newTokens)} approxTokPerSec=${(newTokens / (latency / 1000)).toFixed(2)}`);
     console.log(`[bench][${name}] output: ${text.replace(/\s+/g, ' ').slice(0, 220)}`);
   }
   console.log(`[bench][${name}] totalLatency=${totalLatency}ms avgLatency=${Math.round(totalLatency / prompts.length)}ms`);
