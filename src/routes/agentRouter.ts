@@ -5,6 +5,7 @@ import { listAgentExecutionTrace } from '../services/agentExecutionTrace.js';
 import { buildAgentBrief, enqueueAgentBriefNotification } from '../services/agentBriefService.js';
 import { attachAgentGoalDependency, getAgentEconomicRequestLink, listAgentGoalDependencies, refreshAgentGoalDependencies } from '../services/agentEconomicRequestOrchestrator.js';
 import { getAgentGoalContinuation } from '../services/agentGoalContinuation.js';
+import { approveAgentGoal } from '../services/agentGoalApprovalService.js';
 
 const router = Router();
 
@@ -104,6 +105,24 @@ router.post('/goals/:id/dependencies', authenticateUser, async (req: AuthRequest
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to attach goal dependency';
     res.status(400).json({ error: message });
+  }
+});
+
+router.post('/goals/:id/approve', authenticateUser, async (req: AuthRequest, res) => {
+  const owner = phone(req); if (!owner) return res.status(401).json({ error: 'Authentication required' });
+  try {
+    const result = await approveAgentGoal({
+      phone: owner,
+      goalId: String(req.params.id || ''),
+      action: req.body?.action ? String(req.body.action) : undefined,
+      arguments: req.body?.arguments && typeof req.body.arguments === 'object' ? req.body.arguments : undefined,
+    });
+    if (!result.goal && !result.ok) return res.status(404).json({ error: result.message });
+    if (!result.ok) return res.status(409).json({ success: false, goal: result.goal, outcome: result.outcome, error: result.message });
+    res.json({ success: true, goal: result.goal, outcome: result.outcome, message: result.message });
+  } catch (error) {
+    console.error('[Agent] approval continuation failed:', error);
+    res.status(500).json({ error: 'Unable to continue this approved goal safely' });
   }
 });
 
