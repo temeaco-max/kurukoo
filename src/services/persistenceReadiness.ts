@@ -39,6 +39,19 @@ export function getPersistenceReadiness(env: NodeJS.ProcessEnv = process.env): P
         requiredChange: 'Migrate the existing persistence call surface to the async canonical persistence interface and then run the PostgreSQL validation suite before enabling PostgreSQL mode.',
       };
     }
+    const activationEnabled = env.KURUKOO_POSTGRES_APPLICATION_INTEGRATED === 'true';
+    if (!activationEnabled) {
+      return {
+        state: 'BLOCKED',
+        mode,
+        cloudRunDetected,
+        durableCanonicalState: false,
+        concurrentWriterSafe: false,
+        adapterImplemented: true,
+        reason: 'PostgreSQL call-surface migration is verified, but production activation remains fail-closed. The KURUKOO_POSTGRES_APPLICATION_INTEGRATED gate has not been set.',
+        requiredChange: 'Provision managed PostgreSQL, configure DATABASE_URL as a secret, and set KURUKOO_POSTGRES_APPLICATION_INTEGRATED=true during the controlled external cutover only.',
+      };
+    }
     return {
       state: postgresConfigured ? 'READY_FOR_EXTERNAL_CONFIG' : 'BLOCKED',
       mode,
