@@ -116,7 +116,8 @@ router.post('/goals/:id/pause', authenticateUser, async (req: AuthRequest, res) 
 
 router.post('/goals/:id/resume', authenticateUser, async (req: AuthRequest, res) => {
   const owner = phone(req); if (!owner) return res.status(401).json({ error: 'Authentication required' });
-  const goal = await resumeAgentGoal(owner, String(req.params.id || ''));
+  const approvalGranted = req.body?.approvalGranted === true;
+  const goal = await resumeAgentGoal(owner, String(req.params.id || ''), approvalGranted);
   if (!goal) return res.status(404).json({ error: 'Goal not found' });
   res.json({ success: true, goal });
 });
