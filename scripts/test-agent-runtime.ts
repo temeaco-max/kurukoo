@@ -11,11 +11,14 @@ process.env.KURUKOO_AGENT_AUTONOMOUS = 'true';
 process.env.KURUKOO_AGENT_AUTONOMOUS_LOW_RISK = 'true';
 process.env.KURUKOO_AGENT_MAX_ACTIONS_PER_CYCLE = '2';
 process.env.KURUKOO_AGENT_MAX_CONCURRENT_GOALS = '2';
+process.env.KURUKOO_AGENT_MAX_RETRIES = '1';
+process.env.KURUKOO_AGENT_MAX_ELAPSED_MS = '120000';
 
 const { upsertProfile } = await import('../src/routes/authRoutes.js');
 const { createEconomicRequest } = await import('../src/services/skillFlows.js');
 const { executeAgentTool, listAgentTools } = await import('../src/services/agentToolRegistry.js');
 const { cancelAgentGoal, createConversationGoal, getAgentGoal, goalTimeline, listAgentGoals, runAgentGoal, runDueAgentGoals } = await import('../src/services/agentRuntime.js');
+const { listAgentExecutionTrace } = await import('../src/services/agentExecutionTrace.js');
 const { getDb } = await import('../src/database.js');
 const { executeVoiceTool } = await import('../src/services/voiceToolRegistry.js');
 
@@ -42,6 +45,12 @@ assert.match(String(inspected?.summary), /waiting/i, 'Waiting status must descri
 const timeline = await goalTimeline(owner, 'conversation-agent-test');
 assert.equal(timeline.goal?.id, goal.id, 'Conversation timeline must resolve only the owner’s goal');
 assert.ok(timeline.events.some(event => event.tool === 'get_request_state'), 'Runtime evaluation must record concise tool evidence');
+const trace = await listAgentExecutionTrace(owner, goal.id);
+assert.ok(trace.some(event => event.kind === 'goal_started'), 'Runtime must record a durable goal-start trace');
+assert.ok(trace.some(event => event.kind === 'policy_decision'), 'Runtime must record the execution-budget decision');
+assert.ok(trace.some(event => event.kind === 'tool_call' && event.tool === 'get_request_state'), 'Runtime must trace the existing Agent Tool Registry call');
+assert.ok(trace.some(event => event.kind === 'outcome' && event.status === 'waiting'), 'Runtime must trace the truthful waiting outcome');
+assert.ok(trace.every(event => event.ownerPhone === owner && event.goalId === goal.id), 'Trace records must remain owner- and goal-scoped');
 
 const ownRequest = await executeAgentTool('get_request_state', { requestId: request.id }, { phone: owner, conversationId: 'conversation-agent-test', goalId: goal.id });
 assert.equal(ownRequest.ok, true, 'Owned request state may be read through the controlled registry');
@@ -57,6 +66,8 @@ const db = await getDb();
 db.run(`UPDATE agent_goals SET next_action_at=datetime('now','-1 minute') WHERE id=?`, [goal.id]);
 const due = await runDueAgentGoals();
 assert.ok(due.some(item => item.id === goal.id), 'Due goals must re-enter only through the bounded worker pass');
+const traceAfterWorker = await listAgentExecutionTrace(owner, goal.id);
+assert.ok(traceAfterWorker.some(event => event.metadata && typeof event.metadata.executionId === 'string'), 'Worker execution must carry a durable correlation id in trace metadata');
 const cancelled = await cancelAgentGoal(owner, goal.id);
 assert.equal(cancelled?.status, 'cancelled', 'The user can stop autonomous follow-up');
 assert.equal((await runAgentGoal(goal.id, owner))?.status, 'cancelled', 'Cancelled goals must not resume automatically');
@@ -67,4 +78,4 @@ assert.deepEqual(await runDueAgentGoals(), [], 'The worker must remain inactive 
 process.env.KURUKOO_AGENT_ENABLED = 'false';
 process.env.KURUKOO_AGENT_AUTONOMOUS = 'false';
 assert.equal(await createConversationGoal({ phone: owner, skill: 'find_worker', objective: 'Disabled runtime', economicRequestId: request.id }), null, 'Disabled runtime must preserve normal chat behaviour without creating goals');
-console.log('Agent runtime regression passed: persistent owned goals, idempotency, bounded tools, waiting and worker re-entry, cancellation, disabled mode, and high-risk denial.');
+console.log('Agent runtime regression passed: persistent owned goals, idempotency, bounded tools, waiting and worker re-entry, durable execution trace, budget policy, quality evaluation, cancellation, disabled mode, and high-risk denial.');
