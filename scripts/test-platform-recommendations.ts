@@ -1,0 +1,27 @@
+import assert from 'node:assert/strict';
+import { runPlatformConvergencePass, getPlatformConvergenceSnapshot } from '../src/services/platformConvergenceService.js';
+import { recordUnknownIntentCandidate } from '../src/services/unknownIntentFeedbackService.js';
+import { getCountryExperience } from '../src/services/countryExperience.js';
+
+process.env.KURUKOO_MARKET_PROFILES_JSON = JSON.stringify([
+  { code: 'au', iso3: 'AUS', name: 'Australia', locale: 'en-AU', currency: 'AUD', currencyMinorUnit: 'cents', defaultEmergencyNumber: '000', publicPath: '/au', channels: ['web'], paymentRails: ['card', 'bank_transfer'], regulatoryClass: 'market-specific-regulation', supportedLanguages: ['en'], enabled: true },
+]);
+process.env.KURUKOO_DISCOVERY_SEEDS_JSON = JSON.stringify([
+  { id: `test-seed-${Date.now()}`, entityType: 'business', lifecycle: 'candidate', name: 'Curated test seed', detail: 'Synthetic CI discovery seed; not a real provider', category: 'test', source: 'ci', sourceRef: 'test', sourceUrl: 'https://example.invalid', latitude: 6.5244, longitude: 3.3792, freshnessAt: new Date().toISOString(), evidenceLevel: 'source_attributed', claimed: false, verified: false, available: false, provenance: 'curated_seed' },
+]);
+
+await recordUnknownIntentCandidate(`learning candidate ${Date.now()}`, { confidence: 0.2, provenance: 'ci_low_confidence' });
+const snapshotBefore = await getPlatformConvergenceSnapshot();
+assert.ok(snapshotBefore.markets.some(market => market.code === 'au'), 'Market profiles must support adding a market without changing the TypeScript country enum');
+assert.ok(snapshotBefore.learning.pendingCandidates >= 1, 'Low-confidence intent learning candidates must be persisted and visible');
+
+const result = await runPlatformConvergencePass();
+assert.ok(result.seededDiscovery >= 1, 'Configured discovery seeds must materialize through the existing discovery owner');
+assert.ok(result.snapshot.discovery.seedSourceConfigured, 'Discovery seed configuration must be surfaced as a readiness fact');
+assert.ok(result.snapshot.evidence, 'Portable evidence ledger must be available through the canonical store');
+assert.equal(result.snapshot.businessSurface.sharedExecution, true, 'Business and individual surfaces must share the same execution substrate');
+assert.equal(result.snapshot.whatsapp.productionTransport, 'Meta WhatsApp Cloud API', 'Core WhatsApp transport must remain on the official API boundary');
+
+const country = getCountryExperience('ca');
+assert.equal(country.iso3, 'CAN', 'Existing Canada market experience must remain intact');
+console.log(JSON.stringify({ passed: true, market: 'au', seededDiscovery: result.seededDiscovery, evidence: result.snapshot.evidence }, null, 2));

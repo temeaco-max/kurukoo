@@ -10,6 +10,7 @@ import { drainPendingExecutionRequests } from '../services/executionConnector.js
 import { isWhatsAppLinkedDeviceConfigured, startWhatsAppLinkedDevice, stopWhatsAppLinkedDevice } from '../services/whatsappLinkedDeviceService.js';
 import { markAgentWorkerCycleCompleted, markAgentWorkerCycleFailed, markAgentWorkerCycleStarted, markAgentWorkerStarted, markAgentWorkerStopped, notifyGoalIfNeeded, recordAgentWorkerRun, reenterDueDeferredGoals, runDueAgentGoals } from '../services/agentRuntime.js';
 import { runRecurringSubscriptionBillingPass } from '../services/commercialBillingService.js';
+import { runPlatformConvergencePass } from '../services/platformConvergenceService.js';
 
 const backgroundTimers: Array<ReturnType<typeof setInterval> | ReturnType<typeof setTimeout>> = [];
 let backgroundServicesStarted = false;
@@ -22,6 +23,7 @@ export async function startBackgroundServices(): Promise<void> {
     try { await startContactSyncService(); } catch (error) { console.error('Failed to start contact sync service:', error); }
     try { await startDeliveryStatusService(); } catch (error) { console.error('Failed to start delivery status service:', error); }
     try { await runRecurringSubscriptionBillingPass(); } catch (error) { console.error('Failed to run initial recurring subscription billing pass:', error); }
+    try { const convergence = await runPlatformConvergencePass(); console.log(`[PlatformConvergence] markets=${convergence.snapshot.marketCount} learningPending=${convergence.snapshot.learning.pendingCandidates} discoverySeeds=${convergence.snapshot.discovery.configuredSeedCount} evidence=${convergence.snapshot.evidence.verifiedLedgerEntries}`); } catch (error) { console.error('Failed to run initial platform convergence pass:', error); }
     purgeExpiredData().catch((error) => console.error('Error running initial data retention purge:', error));
     backgroundTimers.push(setInterval(() => purgeExpiredData().catch((error) => console.error('Error running daily data retention purge:', error)), 24 * 60 * 60 * 1000));
     const logHeartbeat = () => { const mem = process.memoryUsage(); console.log(`[Heartbeat] Server healthy. Memory usage: RSS ${(mem.rss / 1024 / 1024).toFixed(2)} MB, Heap ${(mem.heapUsed / 1024 / 1024).toFixed(2)}/${(mem.heapTotal / 1024 / 1024).toFixed(2)} MB.`); };
@@ -29,6 +31,7 @@ export async function startBackgroundServices(): Promise<void> {
     backgroundTimers.push(setInterval(logHeartbeat, 5 * 60 * 1000));
 
     backgroundTimers.push(setInterval(() => runRecurringSubscriptionBillingPass().then(result => { if (result.attempted) console.log(`[CommercialBilling] attempted=${result.attempted} renewed=${result.renewed} failed=${result.failed}`); }).catch(error => console.error('Error running recurring subscription billing pass:', error)), 60 * 60 * 1000));
+    backgroundTimers.push(setInterval(() => runPlatformConvergencePass().then(result => { if (result.seededDiscovery || result.materializedEvidence) console.log(`[PlatformConvergence] seededDiscovery=${result.seededDiscovery} materializedEvidence=${result.materializedEvidence}`); }).catch(error => console.error('Error running platform convergence pass:', error)), 60 * 60 * 1000));
 
     if (isFcmConfigured()) {
         const runFcmCycle = async () => { await requeueDueFcmFailures(); await drainFcmQueue(); };

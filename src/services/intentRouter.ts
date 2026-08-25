@@ -4,10 +4,22 @@ import { assessConversationQuality } from './conversationQualityService.js';
 import { buildConversationTurnContract, buildConversationalSystemDirective } from './conversationTurnContractService.js';
 import { interpretConversationSemantics } from './semanticConversationInterpreter.js';
 import { routeIntent as legacyRouteIntent } from './legacyIntentRouter.js';
+import { recordUnknownIntentCandidate } from './unknownIntentFeedbackService.js';
 import type { IntentRoutingResult } from '../types.js';
 
 const CANONICAL_LOOKUP_RE = /^(remember that|what do you remember|what do you know about me|what notifications|show (?:my )?notifications|what updates|show (?:my )?updates|show nearby|nearby active|radar|where are providers|balance|points|wallet|credits|remind me|set (?:me )?a reminder|cancel (?:the )?reminder|pause(?: that| it)?$|resume(?: that| it)?$|cancel that$|cancel it$|stop following$|stop checking$|continue checking$|what provider and model|what have you been doing|what are you doing|reset onboarding)/i;
 const SAFETY_RE = /\b(?:emergency|immediate danger|life[- ]threatening|ambulance|fire service|police|safety contact|security interruption|stolen phone|otp|recovery code)\b/i;
+const LEARNING_THRESHOLD = 0.55;
+
+async function recordRoutingLearningSignal(message: string, semantic: Awaited<ReturnType<typeof interpretConversationSemantics>>, source: 'semantic' | 'legacy'): Promise<void> {
+  if (semantic.confidence >= LEARNING_THRESHOLD && source !== 'legacy') return;
+  await recordUnknownIntentCandidate(message, {
+    category: semantic.mode,
+    skill: semantic.entities?.skill ? String(semantic.entities.skill) : undefined,
+    confidence: semantic.confidence,
+    provenance: source === 'legacy' ? 'legacy_router_fallback' : 'semantic_low_confidence',
+  }).catch(() => undefined);
+}
 
 function shouldDelegateToCanonicalRouter(message: string, semantic: Awaited<ReturnType<typeof interpretConversationSemantics>>): boolean {
   if (CANONICAL_LOOKUP_RE.test(message.trim())) return true;
@@ -37,7 +49,9 @@ export async function routeIntent(query: string, phone?: string, provider?: AIPr
     pendingFields: contextHint?.activeContexts?.flatMap(context => context.pendingFields || []).slice(0, 12),
   });
 
-  if (shouldDelegateToCanonicalRouter(message, semantic) || semantic.confidence < 0.55) {
+  const delegated = shouldDelegateToCanonicalRouter(message, semantic) || semantic.confidence < LEARNING_THRESHOLD;
+  if (delegated) {
+    await recordRoutingLearningSignal(message, semantic, 'legacy');
     return legacyRouteIntent(query, phone, provider, contextHint, threadId);
   }
 
