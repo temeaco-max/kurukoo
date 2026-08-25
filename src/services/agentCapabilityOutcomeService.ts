@@ -47,7 +47,12 @@ function goalStatus(status: string, plan: GoalPlanStep[], currentIndex: number):
   if (status === 'failed' || status === 'invalid') return 'failed';
   if (status === 'needs_user' || status === 'confirmation_required') return 'needs_user';
   const pending = plan.some((step, index) => index > currentIndex && ['pending', 'running', 'waiting'].includes(step.status));
-  if (status === 'completed') return pending ? 'active' : 'completed';
+  if (status === 'completed') {
+    // Agent Goal truth is completed only after the canonical Agent Quality Gate.
+    // Capability outcome projection records the capability fact and leaves the
+    // Goal runnable so the owning runtime can verify evidence before completion.
+    return pending ? 'active' : 'active';
+  }
   if (status === 'waiting' || status === 'externally_pending') return 'waiting';
   return 'active';
 }
@@ -55,7 +60,9 @@ function goalStatus(status: string, plan: GoalPlanStep[], currentIndex: number):
 /**
  * Reconciles one canonical capability result into the persisted first-class
  * Agent Goal. This is deliberately a projection over existing Agent state,
- * not a second Agent runtime or execution authority.
+ * not a second Agent runtime or execution authority. A capability result is
+ * never treated as sufficient proof of Goal completion; the Agent Quality Gate
+ * remains the sole completion decision boundary.
  */
 export async function syncAgentGoalFromCapabilityResult(input: {
   phone: string;
@@ -91,7 +98,7 @@ export async function syncAgentGoalFromCapabilityResult(input: {
   const nextStep = stepIndex >= 0 && projectedStepStatus === 'completed' ? Math.min(steps.length, stepIndex + 1) : Math.max(0, stepIndex);
   const status = goalStatus(input.outcome.status, steps, nextStep - 1);
   const nextActionAt = status === 'active' || status === 'waiting' ? new Date(Date.now() + 30000).toISOString() : null;
-  const completedAt = status === 'completed' ? new Date().toISOString() : null;
+  const completedAt = null;
   const failureReason = ['failed', 'blocked'].includes(status) ? String(input.outcome.message || input.outcome.status).slice(0, 1000) : null;
   const summary = String(input.outcome.message || `Capability ${input.capability}:${input.action} returned ${input.outcome.status}.`).slice(0, 1000);
   plan.steps = steps;
@@ -127,11 +134,11 @@ export async function syncAgentGoalFromCapabilityResult(input: {
     ]);
   }
 
-  if (['needs_user', 'blocked', 'completed'].includes(status)) {
+  if (['needs_user', 'blocked'].includes(status)) {
     try {
       const runtime = await import('./agentRuntime.js');
       const updated = await runtime.getAgentGoal(input.phone, input.goalId);
-      if (updated?.parentGoalId && ['blocked', 'failed', 'completed'].includes(status)) {
+      if (updated?.parentGoalId && ['blocked', 'failed'].includes(status)) {
         await import('./agentEconomicRequestOrchestrator.js').then(({ syncSubGoalStatusesWithDependencies }) => syncSubGoalStatusesWithDependencies(input.phone, updated.parentGoalId!));
       }
       if (updated) await runtime.notifyGoalIfNeeded(updated);
