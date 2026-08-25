@@ -11,7 +11,7 @@ const cases: Array<{ text: string; act?: string; skill?: string; escalate?: bool
   { text: 'find a dentist near me tomorrow', skill: 'dentist_appointment' },
   { text: 'clear my driveway after the snow', skill: 'snow_removal' },
   { text: 'get an okada from Ikeja to VI now', skill: 'okada_rider' },
-  { text: 'book a hotel and airport transfer', skill: 'hotel_booking' },
+  { text: 'book a hotel and airport transfer', skill: 'hotel_deals' },
   { text: 'what are my options for fixing this', escalate: true },
 ];
 

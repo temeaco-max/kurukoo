@@ -55,14 +55,14 @@ db.run(`UPDATE agent_goals SET status='needs_user', summary='Your repair request
 db.run(`UPDATE agent_goals SET status='completed', completed_at='2026-08-01T00:00:00.000Z', updated_at='2026-08-01T00:00:00.000Z' WHERE id=?`, [historicGoal.id]);
 db.run(`INSERT INTO micro_tasks(title, description, skill_tag, credits_reward, status, assigned_to) VALUES(?, ?, ?, ?, 'in_progress', ?)`, ['Review repair options', 'Read-only task context', 'review', 0, owner]);
 db.run(`INSERT INTO micro_tasks(title, description, skill_tag, credits_reward, status, assigned_to, created_at, updated_at) VALUES(?, ?, ?, ?, 'completed', ?, '2026-08-01T00:00:00.000Z', '2026-08-01T00:00:00.000Z')`, ['Historic completed task', 'Must not remain in a current brief', 'review', 0, owner]);
-const reminder = await createReminder(owner, { title: 'Call the workshop', dueAt: new Date(Date.now() + 60 * 60 * 1000).toISOString() });
+const fixedNow = new Date(Date.now() + 60_000);
+const reminder = await createReminder(owner, { title: 'Call the workshop', dueAt: new Date(fixedNow.getTime() + 60 * 60 * 1000).toISOString() });
 assert.equal(reminder.status, 'scheduled', 'A canonical reminder should be available to the brief.');
 await sendFcmPush(owner, 'Safety update', 'Check your safety plan before continuing.', '/chat', { canonicalAction: 'safety.alert', objectType: 'safety_event', objectId: 'brief-safety', ownerScope: owner });
 await sendFcmPush(owner, 'Safety update', 'Check your safety plan before continuing.', '/chat', { canonicalAction: 'safety.alert', objectType: 'safety_event', objectId: 'brief-safety', ownerScope: owner });
 await sendFcmPush(other, 'Other user update', 'Must remain private.', '/chat', { canonicalAction: 'notification.open', objectType: 'notification', objectId: 'other-only', ownerScope: other });
 await sendFcmPush(owner, 'Kurukoo promotion', 'Sponsored local offer.', '/chat', { canonicalAction: 'notification.open', objectType: 'notification', objectId: 'promotion-only', ownerScope: owner });
 
-const fixedNow = new Date('2026-08-22T12:00:00.000Z');
 const brief = await buildAgentBrief(owner, { now: fixedNow });
 const sameBrief = await buildAgentBrief(owner, { now: fixedNow });
 assert.equal(brief.id, sameBrief.id, 'Equivalent canonical state must produce an idempotent brief identifier.');

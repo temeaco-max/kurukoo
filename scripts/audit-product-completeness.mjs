@@ -64,7 +64,7 @@ const appSections = [
 ];
 for (const section of appSections) {
   require(appRoutes.includes(`['${section}'`), `Missing canonical Web App route owner: ${section}`);
-  require(matrix.includes(`/app/${section}`), `Missing Page Architecture entry: /app/${section}`);
+  require(matrix.includes(`/${section}`), `Missing Page Architecture entry: /${section}`);
 }
 
 for (const route of ['/','/explore','/discover','/network','/channels','/topics','/resources','/how-it-works','/about','/help','/contact','/careers','/partners','/advertise','/pricing','/legal','/api-docs','/offline']) {
@@ -83,14 +83,21 @@ const webSurfaces = [...featureRegistry.matchAll(/webSurface:'([^']+)'/g)].map((
 const owners = [...featureRegistry.matchAll(/canonicalOwner:'([^']+)'/g)].map((match) => match[1]);
 require(featureIds.length >= 40, `Platform feature registry unexpectedly small: ${featureIds.length}`);
 require(featureIds.length === new Set(featureIds).size, 'Platform feature registry contains duplicate feature IDs.');
+const canonicalSurfaceFor = (surface) => {
+  if (surface === '/app') return '/desk';
+  if (surface === '/app/agent') return '/chat';
+  if (surface.startsWith('/app/')) return surface.slice('/app'.length);
+  return surface;
+};
 const matrixSurfacePresent = (surface) => {
-  if (matrix.includes(surface)) return true;
-  if (surface === '/chat') return matrix.includes('### Chat and conversation surfaces');
-  if (surface === '/start') return matrix.includes('QR Context') || matrix.includes('Cross-system feature inventory');
-  if (surface.startsWith('/admin/?')) return true;
+  const canonicalSurface = canonicalSurfaceFor(surface);
+  if (matrix.includes(canonicalSurface)) return true;
+  if (canonicalSurface === '/chat') return matrix.includes('### Chat and conversation surfaces');
+  if (canonicalSurface === '/start') return matrix.includes('QR Context') || matrix.includes('Cross-system feature inventory');
+  if (canonicalSurface.startsWith('/admin/?')) return true;
   return false;
 };
-for (const surface of webSurfaces) require(matrixSurfacePresent(surface), `Registered feature points to a web surface absent from the Page Architecture Matrix: ${surface}`);
+for (const surface of webSurfaces) require(matrixSurfacePresent(surface), `Registered feature points to a canonical web surface absent from the Page Architecture Matrix: ${surface}`);
 require(owners.length === featureIds.length, 'Every registered feature must have a canonical owner.');
 require(featureRegistry.includes('discoverable:true'), 'Discoverability field is missing from the feature registry.');
 
@@ -121,4 +128,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`Kurukoo Product Completeness Gate passed: ${featureIds.length} registered visual features, ${appSections.length} authenticated surfaces, public SEO/navigation authority, Admin operational navigation, and the canonical 205-skill/46-family representation boundary remain protected.`);
+console.log(`Kurukoo Product Completeness Gate passed: ${featureIds.length} registered visual features, ${appSections.length} canonical authenticated surfaces, public SEO/navigation authority, Admin operational navigation, and the canonical 205-skill/46-family representation boundary remain protected.`);

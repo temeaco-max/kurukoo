@@ -6,10 +6,11 @@ import { withMemoryContext, logAiAudit } from './livingMemoryEngine.js';
 import { checkAiQuota, recordAiUsage, type QuotaKind } from './aiQuotaService.js';
 import { queryMistral } from './mistralService.js';
 import { queryOpenRouter } from './openRouterService.js';
+import { queryPoolside, getActivePoolsideModel } from './poolsideService.js';
 import { hasConfiguredSecret } from './providerCapabilities.js';
 import { getFeatureFlag } from './featureFlags.js';
 
-export type AIProvider = 'auto' | 'gemini' | 'mistral' | 'smollm2' | 'groq' | 'openrouter' | 'local_intent';
+export type AIProvider = 'auto' | 'gemini' | 'mistral' | 'smollm2' | 'groq' | 'openrouter' | 'local_intent' | 'poolside';
 export interface ConversationalContextHint {
   selectedContext?: string;
   relation?: string;
@@ -51,8 +52,8 @@ export interface AIStreamChunk {
   confidence?: number;
 }
 
-type HostedProvider = Extract<AIProvider, 'mistral' | 'gemini' | 'groq' | 'openrouter'>;
-const HOSTED_PROVIDER_ORDER: HostedProvider[] = ['mistral', 'gemini', 'groq', 'openrouter'];
+type HostedProvider = Extract<AIProvider, 'mistral' | 'gemini' | 'groq' | 'openrouter' | 'poolside'>;
+const HOSTED_PROVIDER_ORDER: HostedProvider[] = ['mistral', 'gemini', 'groq', 'openrouter', 'poolside'];
 
 function configuredHostedProviders(): HostedProvider[] {
   const country = process.env.KURUKOO_DEFAULT_COUNTRY || 'ng';
@@ -61,6 +62,7 @@ function configuredHostedProviders(): HostedProvider[] {
     gemini: (hasConfiguredSecret(process.env.GEMINI_API_KEY) || hasConfiguredSecret(process.env.API_KEY)) && getFeatureFlag(country, 'hosted_gemini'),
     groq: hasConfiguredSecret(process.env.GROQ_API_KEY) && getFeatureFlag(country, 'hosted_groq'),
     openrouter: hasConfiguredSecret(process.env.OPENROUTER_API_KEY) && Boolean(String(process.env.OPENROUTER_MODEL || '').trim()) && getFeatureFlag(country, 'hosted_openrouter'),
+    poolside: hasConfiguredSecret(process.env.POOLSIDE_API_KEY) && getFeatureFlag(country, 'hosted_poolside'),
   };
   return HOSTED_PROVIDER_ORDER.filter(provider => available[provider]);
 }
@@ -72,7 +74,7 @@ export function resolveHostedProviderCandidates(preferred: AIProvider | undefine
     : String(process.env.KURUKOO_AI_HOSTED_PROVIDER || '').trim().toLowerCase();
   if (requested === 'none' || requested === 'smollm2' || requested === 'local_intent') return [];
   const configured = configuredHostedProviders();
-  if (requested === 'mistral' || requested === 'gemini' || requested === 'groq' || requested === 'openrouter') {
+  if (requested === 'mistral' || requested === 'gemini' || requested === 'groq' || requested === 'openrouter' || requested === 'poolside') {
     return [...configured.filter(provider => provider === requested), ...configured.filter(provider => provider !== requested)];
   }
   return configured;
@@ -324,11 +326,15 @@ export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions =
             ? await queryGemini(prompt, { systemInstruction: systemPrompt })
             : provider === 'groq'
               ? await queryGroq(prompt, { systemPrompt })
-              : openRouter?.text || '';
+              : provider === 'openrouter'
+                ? openRouter?.text || ''
+                : provider === 'poolside'
+                  ? await queryPoolside(prompt, { systemInstruction: systemPrompt })
+                  : '';
         const result = cleanThinking(raw);
         const response: AIResponse = {
-          provider: provider === 'mistral' ? 'Mistral' : provider === 'gemini' ? 'Gemini' : provider === 'groq' ? 'Groq' : 'OpenRouter',
-          model: provider === 'mistral' ? (process.env.MISTRAL_MODEL || 'mistral-small-latest') : provider === 'gemini' ? (process.env.GEMINI_MODEL || 'gemini-2.5-flash') : provider === 'groq' ? (process.env.GROQ_MODEL || 'llama-3.1-8b-instant') : (openRouter?.model || process.env.OPENROUTER_MODEL || 'openrouter-unconfigured'),
+                    provider: provider === 'mistral' ? 'Mistral' : provider === 'gemini' ? 'Gemini' : provider === 'groq' ? 'Groq' : provider === 'openrouter' ? 'OpenRouter' : 'Poolside',
+          model: provider === 'mistral' ? (process.env.MISTRAL_MODEL || 'mistral-small-latest') : provider === 'gemini' ? (process.env.GEMINI_MODEL || 'gemini-2.5-flash') : provider === 'groq' ? (process.env.GROQ_MODEL || 'llama-3.1-8b-instant') : provider === 'openrouter' ? (openRouter?.model || process.env.OPENROUTER_MODEL || 'openrouter-unconfigured') : (getActivePoolsideModel() || 'poolside/laguna-xs-2.1'),
           text: result.text,
           thought: result.thought,
           latencyMs: Date.now() - started,
@@ -348,7 +354,7 @@ export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions =
     return null;
   };
 
-  if (preferred === 'gemini' || preferred === 'mistral' || preferred === 'groq' || preferred === 'openrouter') {
+  if (preferred === 'gemini' || preferred === 'mistral' || preferred === 'groq' || preferred === 'openrouter' || preferred === 'poolside') {
     return (await tryHostedProviders(resolveHostedProviderCandidates(preferred))) || fallbackWithDiagnostic('all_eligible_hosted_providers_failed');
   }
 

@@ -2,6 +2,7 @@ import { listAgentTools, type AgentToolName } from './agentToolRegistry.js';
 import { listCapabilityRegistrations, validateCapabilityRegistry } from './capabilityRegistry.js';
 import { listUniversalCapabilities, type UniversalCapabilityDescriptor } from './universalCapabilityProtocol.js';
 import { getAgentGoal, listAgentGoalEvents, type AgentGoal, type AgentGoalEvent } from './agentRuntime.js';
+import { getAgentEconomicRequestLink, listAgentGoalDependencies, type AgentEconomicLink, type CompoundGoalDependency } from './agentEconomicRequestOrchestrator.js';
 
 export const KURUKOO_AGENT_OPERATING_MODEL_VERSION = '1.0' as const;
 
@@ -51,6 +52,8 @@ export interface AgentRunSummary {
   events: AgentGoalEvent[];
   correlatedObjectIds: string[];
   delegated: false;
+  economicLink?: AgentEconomicLink;
+  dependencies: CompoundGoalDependency[];
 }
 
 const OPERATING_ROLES: AgentOperatingRole[] = [
@@ -79,6 +82,7 @@ const CANONICAL_OWNERS = [
   'memoryProfile',
   'notificationQueue',
   'evidenceBoundary',
+  'agentEconomicRequestOrchestrator',
 ];
 
 function summarizeDescriptor(descriptor: UniversalCapabilityDescriptor): AgentOperatingCapabilitySummary {
@@ -134,13 +138,19 @@ export async function getAgentRunSummary(phone: string, goalId: string): Promise
   const goal = await getAgentGoal(phone, goalId);
   if (!goal) return null;
   const events = await listAgentGoalEvents(phone, goalId);
+  const [economicLink, dependencies] = await Promise.all([
+    getAgentEconomicRequestLink(phone, goalId),
+    listAgentGoalDependencies(phone, goalId),
+  ]);
   const correlatedObjectIds = [...new Set([
     goal.id,
     goal.conversationId,
     goal.economicRequestId,
+    economicLink?.economicRequestId,
+    ...dependencies.map(item => item.economicRequestId),
     ...events.map(event => event.detail?.match(/(?:request|execution|object|resource|notification)[:=]([A-Za-z0-9._:-]+)/i)?.[1]).filter(Boolean) as string[],
   ].filter(Boolean) as string[])];
-  return { goal, events, correlatedObjectIds, delegated: false };
+  return { goal, events, correlatedObjectIds, delegated: false, ...(economicLink ? { economicLink } : {}), dependencies };
 }
 
 export function validateAgentOperatingModel(): {

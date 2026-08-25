@@ -81,3 +81,53 @@
     transition: none;
   }
 }
+
+/* Agent Work Experience — objective card extensions */
+.chat-inspector .agent-goal-presence {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.chat-inspector .agent-goal-presence-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success, #2E7D32);
+  flex: 0 0 auto;
+}
+.chat-inspector .agent-goal-doing,
+.chat-inspector .agent-goal-needs,
+.chat-inspector .agent-goal-next {
+  margin: 8px 0;
+}
+.chat-inspector .agent-goal-doing .inspector-label,
+.chat-inspector .agent-goal-needs .inspector-label,
+.chat-inspector .agent-goal-next .inspector-label {
+  display: block;
+}
+.chat-inspector .agent-goal-doing-text,
+.chat-inspector .agent-goal-needs-text,
+.chat-inspector .agent-goal-next-text {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--gray-700, #525252);
+}
+.chat-inspector .agent-goal-doing-text,
+.chat-inspector .agent-goal-next-text {
+  font-weight: 500;
+}
+.chat-inspector .agent-goal-doing-text {
+  color: var(--chat-charcoal, #24221F);
+}
+.chat-inspector .agent-goal-next-text {
+  color: var(--chat-primary, #B95D3C);
+}
+@media (max-width: 620px) {
+  .chat-inspector .agent-goal-doing-text,
+  .chat-inspector .agent-goal-needs-text,
+  .chat-inspector .agent-goal-next-text {
+    font-size: 12px;
+  }
+}

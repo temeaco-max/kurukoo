@@ -114,3 +114,30 @@
   .k-request-next-action{flex-direction:column;align-items:stretch}
   .k-request-next-action > *{width:100%;justify-content:center;text-align:center}
 }
+
+/* Agent Goal linkage row in Requests convergence */
+.k-app-section-requests .requests-convergence-goal-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  min-height:34px;
+  padding:6px 0;
+  font-size:11px;
+  line-height:1.35;
+}
+.k-app-section-requests .requests-convergence-goal-row + .requests-convergence-meta-row{
+  border-top:1px solid color-mix(in srgb, var(--border-color, #e8e5df) 72%, transparent);
+}
+.k-app-section-requests .requests-convergence-goal-label{
+  color:var(--muted, #77716a);
+  flex:0 0 auto;
+}
+.k-app-section-requests .requests-convergence-goal-action{
+  min-width:0;
+  color:var(--text, #2b2926);
+  font-size:11px;
+  font-weight:650;
+  text-align:right;
+  overflow-wrap:anywhere;
+}

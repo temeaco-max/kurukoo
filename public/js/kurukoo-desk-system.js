@@ -195,7 +195,7 @@
     const safety=makeDeskModule('safety-check-in','Safety check-in','Stay in control of safety context','Safety support is explicit, consent-bound and never represented as emergency-service delivery.',[{label:'Open Safety',href:'/safety'}]);
     safety.appendChild(makeDeskState('ready','Safety controls are available','Use the canonical Safety surface for check-ins and trusted-contact management.',{label:'Open Safety',href:'/safety'}));
     const activity=makeDeskModule('activity-summary','Activity summary','A compact view of your recent activity','Desk provides orientation; detailed analytics remain owned by the relevant surfaces.',[{label:'Open Tasks',href:'/tasks',tone:'secondary'},{label:'Open Requests',href:'/requests',tone:'secondary'}]);
-    const activityMetrics=document.createElement('div'); activityMetrics.className='k-desk-activity-metrics'; [['Tasks','—'],['Requests','—'],['Time saved','—']].forEach(([label,value])=>{const item=document.createElement('div');item.innerHTML=`<span>${label}</span><strong>${value}</strong>`;activityMetrics.appendChild(item);}); activity.appendChild(activityMetrics);
+    const activityMetrics = document.createElement('div'); activityMetrics.className = 'k-desk-activity-metrics'; [['Tasks', '—'], ['Requests', '—'], ['Agent goals', '—']].forEach(([label, value]) => { const item = document.createElement('div'); item.innerHTML = `<span>${label}</span><strong>${value}</strong>`; activityMetrics.appendChild(item); }); activity.appendChild(activityMetrics);
     [pulse,safety,activity].forEach((card)=>rail.appendChild(card));
 
     root.append(main,rail);

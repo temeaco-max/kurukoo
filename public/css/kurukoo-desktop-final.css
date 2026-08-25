@@ -128,6 +128,22 @@
   body.admin-os .modal-content{max-width:720px}
   body.admin-os .k-section-heading{margin-bottom:14px}
 
-  /* Desktop-only cross-plane recovery emphasis */
+    /* Desktop-only cross-plane recovery emphasis */
   .k-app-page a[href="/chat"],.k-app-page a[href="/app/agent"],body.admin-os a[href="/app/agent"]{text-underline-offset:3px}
+
+  /* Agent Work Experience — Agents surface styling */
+  body.k-app-page.k-app-section-agents .k-app-data-list{display:grid;gap:10px;margin-top:16px}
+  body.k-app-page.k-app-section-agents .k-agent-goal-row{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--kd-border);border-radius:12px;background:var(--kd-surface);box-shadow:0 4px 12px rgba(36,34,31,.03)}
+  body.k-app-page.k-app-section-agents .k-agent-goal-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  body.k-app-page.k-app-section-agents .k-agent-goal-objective{font-size:15px;line-height:1.3;color:var(--kd-ink);margin:0}
+  body.k-app-page.k-app-section-agents .k-agent-goal-objective small{font-size:11px;opacity:.5;color:var(--kd-muted)}
+  body.k-app-page.k-app-section-agents .k-agent-goal-status{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:999px;background:rgba(32,31,29,.07);color:var(--kd-muted)}
+  body.k-app-page.k-app-section-agents .k-agent-goal-updated{font-size:11px;color:var(--kd-muted);margin:2px 0}
+  body.k-app-page.k-app-section-agents .k-agent-goal-link{display:inline-flex;align-items:center;min-height:34px;border:0;background:transparent;color:var(--kd-accent);font:700 12px/1 Inter,system-ui,sans-serif;text-decoration:none;cursor:pointer}
+  body.k-app-page.k-app-section-agents .k-agent-goal-link:hover{color:var(--kd-accent-strong)}
+  body.k-app-page.k-app-section-agents .k-app-empty{display:flex;align-items:flex-start;gap:14px;margin-top:16px;padding:18px;border:1px dashed var(--kd-border);border-radius:14px;background:var(--kd-surface-soft)}
+  body.k-app-page.k-app-section-agents .k-app-empty-mark{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;border-radius:11px;background:var(--kd-surface);color:var(--kd-accent);font:800 12px/1 "Space Grotesk",Inter,sans-serif}
+  body.k-app-page.k-app-section-agents .k-app-empty h3{margin:0 0 5px;color:var(--kd-ink);font:700 17px/1.25 "Space Grotesk",Inter,sans-serif}
+  body.k-app-page.k-app-section-agents .k-app-empty p{margin:0;color:var(--kd-muted);line-height:1.5}
+  body.k-app-page.k-app-section-agents .k-app-empty .k-app-card-action{display:inline-flex;align-items:center;min-height:44px;margin-top:8px;color:var(--kd-accent)}
 }

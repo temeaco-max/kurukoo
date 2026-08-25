@@ -68,6 +68,8 @@ export function shouldEscalateToAi(signal: AiRoutingSignal, text: string): boole
   if (signal.conversationAct && ['greeting', 'thanks', 'farewell', 'confirmation', 'rejection'].includes(signal.conversationAct)) return false;
   if (signal.source === 'none') return true;
   if (signal.confidence < 0.72) return true;
+  // Informational/clarification/status acts require a model response — escalate.
+  if (signal.conversationAct && ['how_to', 'clarification', 'status'].includes(signal.conversationAct)) return true;
   if (/\b(why|compare|which is better|negotiate|arrange|coordinate|same[- ]day|multiple|instead|actually|what are my options)\b/i.test(text)) return true;
   return false;
 }

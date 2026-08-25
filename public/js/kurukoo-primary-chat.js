@@ -1471,13 +1471,46 @@
   async function loadMemory() { try { const res = await fetch('/api/profile', { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); const profile = data.profile || {}; if (!state.displayName && profile.name) state.displayName = String(profile.name); const memoryStatus = $('sidebar-memory-status'); if (memoryStatus) memoryStatus.textContent = profile.location || profile.name ? 'In use' : 'Ready'; personalizeQuickActions(profile); const text = `Kurukoo remembers ${profile.location || 'your area'}${profile.primary_lga ? `, ${profile.primary_lga}` : ''}. Your Memory Profile remains attached to your account.`; const mc = $('memory-context'); if (mc) mc.textContent = text; const im = $('inspector-memory'); if (im) im.textContent = text; } catch {} }
 
   function renderAgentGoal(goal, events = []) {
-    const card = $('agent-goal-card'); const status = $('agent-goal-status'); const summary = $('agent-goal-summary'); const list = $('agent-goal-events'); const pause = $('agent-goal-pause'); const cancel = $('agent-goal-cancel');
-    if (!card || !status || !summary || !list || !pause || !cancel) return;
+    const card = $('agent-goal-card'); const statusEl = $('agent-goal-status'); const summary = $('agent-goal-summary'); const list = $('agent-goal-events'); const pause = $('agent-goal-pause'); const cancel = $('agent-goal-cancel');
+    const doing = $('agent-goal-doing'); const needs = $('agent-goal-needs'); const next = $('agent-goal-next'); const presenceEl = card?.querySelector('.agent-goal-presence');
+    if (!card || !statusEl || !summary || !list || !pause || !cancel) return;
     if (!goal) { card.hidden = true; card.dataset.goalAvailable = 'false'; return; }
     card.hidden = false; card.dataset.goalAvailable = 'true'; card.dataset.goalId = String(goal.id || '');
     const goalStatus = String(goal.status || 'checking');
-    status.textContent = goalStatus.replace(/_/g, ' ');
-    summary.textContent = String(goal.summary || goal.objective || 'Kurukoo is checking the current objective.');
+    statusEl.textContent = goalStatus.replace(/_/g, ' ');
+    // Show a truthful objective summary: what Kurukoo is doing + what it needs + next step
+    const objective = String(goal.objective || 'Current objective');
+    const currentSummary = String(goal.summary || '');
+    summary.textContent = currentSummary || objective;
+    // What Kurukoo is doing - derived from status
+    const doingText = goalStatus === 'active' ? 'Kurukoo is following the canonical plan for this objective.'
+      : goalStatus === 'waiting' ? 'Kurukoo is waiting for the next verified event or re-check.'
+      : goalStatus === 'needs_user' ? 'Kurukoo has paused for your decision.'
+      : goalStatus === 'blocked' ? 'Kurukoo cannot continue until the blocker is resolved.'
+      : goalStatus === 'completed' ? 'Kurukoo completed this objective.'
+      : goalStatus === 'cancelled' ? 'You asked Kurukoo to stop following up on this objective.'
+      : goalStatus === 'failed' ? 'Kurukoo paused this goal after repeated safe failures.'
+      : 'Kurukoo is checking the current objective.';
+    if (doing) doing.textContent = doingText;
+    // What Kurukoo needs
+    const needsText = goalStatus === 'needs_user' ? (currentSummary || 'Confirmation or a response on the next step.')
+      : goalStatus === 'waiting' ? 'More evidence from the canonical source before re-checking.'
+      : goalStatus === 'blocked' ? 'Verified information to unblock the capability path.'
+      : goalStatus === 'active' ? (goal.plan?.requiredInputs?.length ? goal.plan.requiredInputs.join(', ') : 'The next capability to run on the plan.')
+      : 'No further input is required right now.';
+    if (needs) needs.textContent = needsText;
+    // Next step
+    const nextText = goalStatus === 'needs_user' ? 'Reply with your decision in Chat.'
+      : goalStatus === 'waiting' ? 'Kurukoo will re-check when the next event arrives.'
+      : goalStatus === 'active' ? (currentSummary || 'Kurukoo continues the plan automatically.')
+      : goalStatus === 'blocked' ? 'Update the request or context to resume.'
+      : goalStatus === 'cancelled' || goalStatus === 'completed' ? 'No further action required.'
+      : 'Continue in Chat when you are ready.';
+    if (next) next.textContent = nextText;
+    // Agent Presence: derive from goal status for live presence indicator
+    const presenceMap = { active: 'working', waiting: 'waiting', needs_user: 'needs-attention', blocked: 'blocked', completed: 'idle', cancelled: 'idle', failed: 'idle', expired: 'idle' };
+    const presence = presenceMap[goalStatus] || 'idle';
+    window.KurukooAgentPresence?.set?.(presence, 'agent-goal');
     list.replaceChildren();
     (Array.isArray(events) ? events.slice(-4) : []).forEach(event => {
       const row = makeElement('div', 'agent-goal-event');
@@ -1505,9 +1538,26 @@
 
   async function loadAgentGoal() {
     try {
-      const url = new URL('/api/agent/timeline', location.origin); if (state.conversationId) url.searchParams.set('conversationId', state.conversationId);
-      const response = await fetch(url, { credentials: 'same-origin' }); if (!response.ok) { renderAgentGoal(null); return; }
-      const data = await response.json(); renderAgentGoal(data.goal, data.events);
+      // Load the full list of active agent goals for this user to show in the
+      // objective/work card. Only real, owner-scoped goals are rendered.
+      const goalsResponse = await fetch('/api/agent/goals', { credentials: 'same-origin' });
+      let goals = [];
+      if (goalsResponse.ok) {
+        const goalsData = await goalsResponse.json();
+        goals = Array.isArray(goalsData.goals) ? goalsData.goals : [];
+      }
+      // Also fetch the conversation-specific timeline for event history
+      const url = new URL('/api/agent/timeline', location.origin);
+      if (state.conversationId) url.searchParams.set('conversationId', state.conversationId);
+      const response = await fetch(url, { credentials: 'same-origin' });
+      if (!response.ok) {
+        // If no conversation timeline, show the first active goal if available
+        const activeGoal = goals.find(g => ['active', 'waiting', 'needs_user', 'blocked'].includes(String(g.status || '')));
+        renderAgentGoal(activeGoal || null, []);
+        return;
+      }
+      const data = await response.json();
+      renderAgentGoal(data.goal, data.events);
     } catch { renderAgentGoal(null); }
   }
 

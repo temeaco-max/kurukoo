@@ -9,7 +9,7 @@ import {
   type CapabilityActionProposal,
   type UniversalCapabilityResult,
 } from './universalCapabilityProtocol.js';
-import { createReminder, cancelReminder } from './reminderService.js';
+import { createReminder, cancelReminder, getReminderForPhone } from './reminderService.js';
 import { cancelAgentGoal, getAgentGoal, pauseAgentGoal, resumeAgentGoal } from './agentRuntime.js';
 import { getInternalNotificationById, markNotificationRead } from './pushNotifications.js';
 import { revokeMemoryFact } from './memoryProfile.js';
@@ -205,11 +205,15 @@ async function dispatchCanonicalAction(input: CanonicalCapabilityExecutionInput,
     return baseResult(input, result.accepted ? 'externally_pending' : 'external_unavailable', result.accepted ? `The ${command} command was accepted by Kurukoo for ${resource.label}. Delivery to the connected device remains external and has not been claimed.` : `Kurukoo could not send the ${command} command to ${resource.label}.`, { canonicalFacts: { resource: result.resource, command, state: result.state, reason: result.reason, commandId: result.commandId }, evidenceLevel: 'canonical_service', externalActivation: result.accepted ? 'repository_ready_external_activation' : 'unavailable_external_dependency', nextActions: result.accepted ? [{ action: 'status', label: 'Check device status' }] : [{ action: 'retry', label: 'Retry command' }] });
   }
   if (input.capability === 'reminder' && input.action === 'create') {
-    const reminder = await createReminder(input.phone, { title: String(args.title || ''), note: args.note ? String(args.note) : undefined, dueAt: String(args.dueAt || args.due_at || ''), recurrence: args.recurrence ? String(args.recurrence) : null });
+    const reminder = await createReminder(input.phone, { title: String(args.title || ''), note: args.note ? String(args.note) : undefined, dueAt: String(args.dueAt || args.due_at || ''), recurrence: args.recurrence ? String(args.recurrence) : null, sourceConversationId: input.conversationId || null, resumeContextId: input.contextId || null });
     return baseResult(input, 'completed', `Reminder created for ${reminder.due_at}.`, { canonicalObjectId: reminder.id, canonicalFacts: { reminderId: reminder.id, dueAt: reminder.due_at, status: reminder.status }, evidenceLevel: 'canonical_service', nextActions: [{ action: 'open', label: 'Open reminder' }, { action: 'cancel', label: 'Cancel reminder', confirmationRequired: false }] });
   }
   if (input.capability === 'reminder' && input.action === 'cancel') {
-    const cancelled = await cancelReminder(input.phone, input.canonicalObjectId!);
+    if (!input.canonicalObjectId) return invalidResult(input, 'invalid', 'A reminder ID is required to cancel.', 'reminder_id_required');
+    const existing = await getReminderForPhone(input.phone, input.canonicalObjectId);
+    if (!existing) return invalidResult(input, 'unauthorized', 'That reminder is not available to this account.', 'foreign_or_missing_reminder');
+    if (existing.status !== 'scheduled') return invalidResult(input, 'stale_context', 'That exact reminder is no longer active. I did not substitute another reminder.', 'reminder_not_active');
+    const cancelled = await cancelReminder(input.phone, input.canonicalObjectId);
     return cancelled ? baseResult(input, 'completed', 'The exact reminder was cancelled.', { canonicalFacts: { reminderId: input.canonicalObjectId, status: 'cancelled' }, evidenceLevel: 'canonical_service' }) : invalidResult(input, 'stale_context', 'That exact reminder is no longer active. I did not substitute another reminder.', 'reminder_not_active');
   }
   if (input.capability === 'agent' && ['pause', 'resume', 'cancel'].includes(input.action)) {

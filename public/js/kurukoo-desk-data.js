@@ -96,12 +96,13 @@
     const composition = await waitForComposition();
     if (!composition) return;
 
-    const [requestsR, tasksR, notificationsR, remindersR, pointsR] = await Promise.all([
+    const [requestsR, tasksR, notificationsR, remindersR, pointsR, goalsR] = await Promise.all([
       settle(api('/api/chat/economic-requests')),
       settle(api('/api/tasks')),
       settle(api('/api/notifications')),
       settle(api('/api/reminders')),
       settle(api('/api/points/balance')),
+      settle(api('/api/agent/goals')),
     ]);
 
     const requests = requestsR.ok
@@ -115,6 +116,9 @@
       : [];
     const reminders = remindersR.ok
       ? (Array.isArray(remindersR.value?.reminders) ? remindersR.value.reminders : Array.isArray(remindersR.value) ? remindersR.value : [])
+      : [];
+    const goals = goalsR.ok
+      ? (Array.isArray(goalsR.value?.goals) ? goalsR.value.goals : Array.isArray(goalsR.value) ? goalsR.value : [])
       : [];
     const points = pointsR.ok ? Number(pointsR.value?.points ?? pointsR.value?.balance ?? 0) : null;
 
@@ -174,6 +178,22 @@
       const href = `/chat?prompt=${encodeURIComponent(`Show reminder ${rem.id || label}`)}`;
       if (overdue) attention.push({ label, detail, href });
       else progress.push({ label, detail, href });
+    });
+
+    // Agent Goals: surface real, owner-scoped Agent Goals in today's flow
+    goals.forEach((goal) => {
+      const goalStatus = String(goal.status || '').toLowerCase();
+      const id = String(goal.id || '').slice(0, 8);
+      const label = `${String(goal.objective || goal.summary || 'Agent goal').slice(0, 80)}${id ? ` · ${id}` : ''}`;
+      const detail = `Status: ${humanize(goalStatus)}`;
+      const href = `/chat?prompt=${encodeURIComponent(`Show me my agent objective ${goal.id || ''}`)}`;
+      if (['needs_user', 'blocked'].includes(goalStatus)) {
+        attention.push({ label, detail, href });
+      } else if (['active', 'waiting'].includes(goalStatus)) {
+        progress.push({ label, detail, href });
+      } else if (['completed', 'cancelled', 'failed', 'expired'].includes(goalStatus)) {
+        cont.push({ label, detail, href });
+      }
     });
 
     const today = composition.querySelector('[data-desk-module="today-flow"]');
@@ -259,10 +279,11 @@
         const openRequests = requests.filter((r) => !['completed', 'cancelled', 'failed', 'abandoned'].includes(String(r.status || '').toLowerCase())).length;
         const openTasks = tasks.filter((t) => !['completed', 'approved', 'cancelled', 'expired'].includes(String(t.status || '').toLowerCase())).length;
         const activeReminders = reminders.filter((r) => !['cancelled', 'completed', 'done'].includes(String(r.status || '').toLowerCase())).length;
+        const activeGoals = goals.filter((g) => !['completed', 'cancelled', 'failed', 'expired'].includes(String(g.status || '').toLowerCase())).length;
         const cells = metrics.querySelectorAll('div');
         if (cells[0]) cells[0].innerHTML = `<span>Tasks</span><strong>${openTasks}</strong>`;
         if (cells[1]) cells[1].innerHTML = `<span>Requests</span><strong>${openRequests}</strong>`;
-        if (cells[2]) cells[2].innerHTML = `<span>Reminders</span><strong>${activeReminders}</strong>`;
+        if (cells[2]) cells[2].innerHTML = `<span>Agent goals</span><strong>${activeGoals}</strong>`;
       }
     }
 

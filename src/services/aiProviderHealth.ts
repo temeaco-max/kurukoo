@@ -1,4 +1,4 @@
-export type AiProvider = 'mistral' | 'gemini' | 'groq' | 'openrouter';
+export type AiProvider = 'mistral' | 'gemini' | 'groq' | 'openrouter' | 'poolside';
 export type AiProviderHealthState = 'healthy' | 'degraded' | 'open' | 'half_open';
 
 export interface AiProviderHealthSnapshot {
@@ -38,7 +38,7 @@ export function getAiProviderHealth(provider: AiProvider): AiProviderHealthSnaps
 }
 
 export function listAiProviderHealth(): AiProviderHealthSnapshot[] {
-  return (['mistral', 'gemini', 'groq', 'openrouter'] as AiProvider[]).map(getAiProviderHealth);
+  return (['mistral', 'gemini', 'groq', 'openrouter', 'poolside'] as AiProvider[]).map(getAiProviderHealth);
 }
 
 export function isAiProviderUsable(provider: AiProvider): boolean {
