@@ -14,6 +14,7 @@ import { releaseExpiredDurableJobLeases } from './durableJobQueue.js';
 import { expireProviderVerifications } from './providerVerificationLifecycle.js';
 import { purgeOldWebhookEvents } from './channelWebhookDeduplication.js';
 import { processDiscoverWatches } from './discoverExperience.js';
+import { runDueAgentGoals, reenterDueDeferredGoals, markAgentWorkerCycleStarted, markAgentWorkerCycleCompleted, markAgentWorkerCycleFailed, recordAgentWorkerRun } from './agentRuntime.js';
 
 let started = false;
 const timers: NodeJS.Timeout[] = [];
@@ -36,6 +37,20 @@ async function progressLinkedEconomicRequest(economicRequestId: string | null | 
   } catch (e) { console.warn('[Worker:deferred] progressLinkedEconomicRequest failed:', e); return 'not_eligible'; }
 }
 let deferredPassActive = false;
+async function processAgentGoals(): Promise<void> {
+  if (!markAgentWorkerCycleStarted()) return;
+  const startedAt = new Date().toISOString();
+  try {
+    const [deferred, due] = await Promise.all([reenterDueDeferredGoals(25), runDueAgentGoals(25)]);
+    const updatedGoalCount = deferred.length + due.length;
+    markAgentWorkerCycleCompleted(updatedGoalCount, updatedGoalCount);
+    await recordAgentWorkerRun({ startedAt, completedAt: new Date().toISOString(), status: 'completed', dueGoalCount: updatedGoalCount, updatedGoalCount });
+    if (updatedGoalCount) console.log(`[Worker:agent] resumed=${deferred.length} due=${due.length}`);
+  } catch (error) {
+    markAgentWorkerCycleFailed(error);
+    await recordAgentWorkerRun({ startedAt, completedAt: new Date().toISOString(), status: 'failed', dueGoalCount: 0, updatedGoalCount: 0, error: String(error instanceof Error ? error.message : error) });
+  }
+}
 export async function processDueDeferred(): Promise<{ checked: number; matched: number; notified: number; quoted: number }> {
   if (deferredPassActive) return { checked: 0, matched: 0, notified: 0, quoted: 0 };
   deferredPassActive = true;
@@ -67,6 +82,7 @@ export function startBackgroundWorkers(): void {
   started = true;
   const orchMs = process.env.KURUKOO_ORCHESTRATION_INTERVAL_SEC ? Math.max(30_000, Number(process.env.KURUKOO_ORCHESTRATION_INTERVAL_SEC) * 1000) : 5 * 60 * 1000;
   const deferredMs = process.env.KURUKOO_DEFERRED_INTERVAL_SEC ? Math.max(60_000, Number(process.env.KURUKOO_DEFERRED_INTERVAL_SEC) * 1000) : 2 * 60 * 60 * 1000;
+  const agentMs = process.env.KURUKOO_AGENT_WORKER_INTERVAL_MS ? Math.max(15_000, Number(process.env.KURUKOO_AGENT_WORKER_INTERVAL_MS)) : 30_000;
   const reminderMs = process.env.KURUKOO_REMINDER_INTERVAL_SEC ? Math.max(30_000, Number(process.env.KURUKOO_REMINDER_INTERVAL_SEC) * 1000) : 60 * 1000;
   const safetyMs = process.env.KURUKOO_SAFETY_INTERVAL_SEC ? Math.max(30_000, Number(process.env.KURUKOO_SAFETY_INTERVAL_SEC) * 1000) : 60 * 1000;
   const memoryMs = process.env.KURUKOO_MEMORY_INTERVAL_SEC ? Math.max(300_000, Number(process.env.KURUKOO_MEMORY_INTERVAL_SEC) * 1000) : 24 * 60 * 60 * 1000;
@@ -80,6 +96,7 @@ export function startBackgroundWorkers(): void {
 
   timers.push(setInterval(() => { void safe('orchestration', async () => { const result = await runOrchestrationPass(); if (result.matched || result.quoted || result.released) console.log(`[Worker:orchestration] matched=${result.matched} quoted=${result.quoted} released=${result.released} failed=${result.failed}`); }); }, orchMs));
   timers.push(setInterval(() => { void safe('deferred', async () => { const r = await processDueDeferred(); await expireDeferredIntentions(); if (r.checked || r.matched) console.log(`[Worker:deferred] checked=${r.checked} matched=${r.matched} notified=${r.notified} quoted=${r.quoted}`); }); }, deferredMs));
+  timers.push(setInterval(() => { void safe('agent', processAgentGoals); }, agentMs));
   timers.push(setInterval(() => { void safe('reminders', async () => { const r = await processDueReminders(100); if (r.checked) console.log(`[Worker:reminders] checked=${r.checked} delivered=${r.delivered} queued=${r.queued}`); }); }, reminderMs));
   timers.push(setInterval(() => { void safe('safety', async () => { const count = await processExpiredCheckIns(); if (count) console.warn(`[Worker:safety] ${count} check-in(s) require escalation review`); }); }, safetyMs));
   timers.push(setInterval(() => { void safe('memory', async () => { await ensureLivingMemorySchema(); const decay = await runDailyMemoryDecay(); const prune = await runWeeklyMemoryPrune(); const crystallize = await runMemoryCrystallize(); console.log(`[Worker:memory] decay=${decay.updated} prune=${prune.deleted} crystallize=${crystallize.promoted}`); }); }, memoryMs));
@@ -93,6 +110,7 @@ export function startBackgroundWorkers(): void {
   for (const t of timers) t.unref?.();
   setTimeout(() => {
     void safe('orchestration:boot', () => runOrchestrationPass());
+    void safe('agent:boot', processAgentGoals);
     void safe('memory:boot', async () => { await ensureLivingMemorySchema(); });
     void safe('reminders:boot', async () => { await processDueReminders(100); });
     void safe('safety:boot', async () => { await processExpiredCheckIns(); });
@@ -103,6 +121,6 @@ export function startBackgroundWorkers(): void {
     void safe('webhook-dedup:boot', async () => { await purgeOldWebhookEvents(30); });
     void safe('discover-watches:boot', async () => { await processDiscoverWatches(100); });
   }, 15_000).unref?.();
-  console.log(`[Workers] Started orchestration=${Math.round(orchMs / 1000)}s deferred=${Math.round(deferredMs / 1000)}s reminders=${Math.round(reminderMs / 1000)}s safety=${Math.round(safetyMs / 1000)}s memory=${Math.round(memoryMs / 1000)}s purge=${Math.round(purgeMs / 1000)}s trust=${Math.round(trustMs / 1000)}s fcm=${Math.round(fcmMs / 1000)}s providerVerification=${Math.round(providerVerificationMs / 1000)}s durableJobLeases=${Math.round(leaseMs / 1000)}s webhookDedup=${Math.round(webhookPurgeMs / 1000)}s discoverWatches=${Math.round(discoverWatchMs / 1000)}s`);
+  console.log(`[Workers] Started orchestration=${Math.round(orchMs / 1000)}s deferred=${Math.round(deferredMs / 1000)}s agent=${Math.round(agentMs / 1000)}s reminders=${Math.round(reminderMs / 1000)}s safety=${Math.round(safetyMs / 1000)}s memory=${Math.round(memoryMs / 1000)}s purge=${Math.round(purgeMs / 1000)}s trust=${Math.round(trustMs / 1000)}s fcm=${Math.round(fcmMs / 1000)}s providerVerification=${Math.round(providerVerificationMs / 1000)}s durableJobLeases=${Math.round(leaseMs / 1000)}s webhookDedup=${Math.round(webhookPurgeMs / 1000)}s discoverWatches=${Math.round(discoverWatchMs / 1000)}s`);
 }
 export function stopBackgroundWorkers(): void { for (const t of timers) clearInterval(t); timers.length = 0; started = false; }
