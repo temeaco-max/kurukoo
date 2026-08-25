@@ -17,7 +17,7 @@ process.env.KURUKOO_AGENT_MAX_ELAPSED_MS = '120000';
 const { upsertProfile } = await import('../src/routes/authRoutes.js');
 const { createEconomicRequest } = await import('../src/services/skillFlows.js');
 const { executeAgentTool, listAgentTools } = await import('../src/services/agentToolRegistry.js');
-const { cancelAgentGoal, createConversationGoal, getAgentGoal, goalTimeline, listAgentGoals, runAgentGoal, runDueAgentGoals, resumeAgentGoal, completeAgentGoal } = await import('../src/services/agentRuntime.js');
+const { cancelAgentGoal, createConversationGoal, getAgentGoal, goalTimeline, listAgentGoals, runAgentGoal, runDueAgentGoals, resumeAgentGoal } = await import('../src/services/agentRuntime.js');
 const { listAgentExecutionTrace } = await import('../src/services/agentExecutionTrace.js');
 const { syncAgentGoalFromCapabilityResult } = await import('../src/services/agentCapabilityOutcomeService.js');
 const { createCompoundGoalIfRecognized } = await import('../src/services/compoundGoalLifecycle.js');
@@ -73,17 +73,7 @@ assert.equal(projected?.status, 'active', 'Capability outcomes must remain activ
 assert.match(String(projected?.summary), /Canonical capability outcome recorded/i, 'Capability outcome summary must persist');
 assert.ok((await goalTimeline(owner, 'conversation-capability-projection')).events.some(event => event.action === 'skill.find_worker:observe'), 'Capability outcome must create one durable Goal event');
 
-// Actual runtime execution proof: a deterministic reminder capability is selected
-// by the Agent plan, invoked through the Tool Registry, projected through the
-// canonical capability outcome service, and completed only after the quality gate.
-const reminderGoal = await createConversationGoal({
-  phone: owner,
-  conversationId: 'conversation-agent-reminder-execution',
-  skill: 'reminder',
-  objective: 'Remind me tomorrow to call John.',
-  executionArguments: { title: 'Call John', dueAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() },
-  persistWhenDisabled: true,
-});
+const reminderGoal = await createConversationGoal({ phone: owner, conversationId: 'conversation-agent-reminder-execution', skill: 'reminder', objective: 'Remind me tomorrow to call John.', executionArguments: { title: 'Call John', dueAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() }, persistWhenDisabled: true });
 assert.ok(reminderGoal, 'Reminder execution goal must persist through the canonical Agent runtime');
 const reminderCompleted = await runAgentGoal(reminderGoal!.id, owner);
 assert.equal(reminderCompleted?.status, 'completed', 'Agent runtime must complete a deterministic reminder through registry -> canonical executor -> quality gate');
@@ -94,28 +84,16 @@ assert.ok(reminderTrace.some(event => event.kind === 'tool_completed' && event.t
 assert.ok(reminderTrace.some(event => event.kind === 'evidence_recorded'), 'Runtime must record canonical capability evidence');
 assert.ok(reminderTrace.some(event => event.kind === 'quality_evaluated' && event.status === 'pass'), 'Runtime must evaluate quality before completing the Goal');
 assert.ok(reminderTrace.some(event => event.kind === 'goal_completed'), 'Runtime must record terminal Goal completion');
-const reminderAgain = await runAgentGoal(reminderGoal!.id, owner);
-assert.equal(reminderAgain?.status, 'completed', 'Completed capability execution must not repeat on worker re-entry');
+assert.equal((await runAgentGoal(reminderGoal!.id, owner))?.status, 'completed', 'Completed capability execution must not repeat on worker re-entry');
 
-// Explicit approval proof: resume without approval is insufficient; authenticated
-// explicit approval resumes the exact Goal and the same canonical execution path.
 process.env.KURUKOO_AGENT_AUTONOMOUS_LOW_RISK = 'false';
-const approvalGoal = await createConversationGoal({
-  phone: owner,
-  conversationId: 'conversation-agent-approval',
-  skill: 'reminder',
-  objective: 'Create an approved reminder.',
-  executionArguments: { title: 'Approved reminder', dueAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() },
-  persistWhenDisabled: true,
-});
+const approvalGoal = await createConversationGoal({ phone: owner, conversationId: 'conversation-agent-approval', skill: 'reminder', objective: 'Create an approved reminder.', executionArguments: { title: 'Approved reminder', dueAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() }, persistWhenDisabled: true });
 assert.equal(approvalGoal?.status, 'needs_user', 'Consequential/non-autonomous capability work must enter needs_user');
 assert.equal((await resumeAgentGoal(owner, approvalGoal!.id)).status, 'needs_user', 'Resume without explicit approval must not authorize the action');
 assert.equal((await resumeAgentGoal(owner, approvalGoal!.id, true)).status, 'active', 'Explicit authenticated approval must resume the exact Goal');
 assert.equal((await runAgentGoal(approvalGoal!.id, owner))?.status, 'completed', 'Approved Goal must continue through the canonical executor and quality gate');
 process.env.KURUKOO_AGENT_AUTONOMOUS_LOW_RISK = 'true';
 
-// Durable budget proof: usage belongs to the Goal execution state, so worker
-// re-entry does not reset max-actions and silently perform another action.
 process.env.KURUKOO_AGENT_MAX_ACTIONS_PER_CYCLE = '1';
 const budgetGoal = await createConversationGoal({ phone: owner, conversationId: 'conversation-agent-budget', skill: 'find_worker', objective: 'Wait for the existing request.', economicRequestId: request.id, persistWhenDisabled: true });
 const firstBudgetRun = await runAgentGoal(budgetGoal!.id, owner);
@@ -130,8 +108,7 @@ assert.ok(budgetTrace.some(event => event.kind === 'execution_stopped' && event.
 assert.equal(budgetTrace.filter(event => event.metadata?.executionId === executionId).length > 0, true, 'The same execution correlation id must survive worker re-entry');
 process.env.KURUKOO_AGENT_MAX_ACTIONS_PER_CYCLE = '2';
 
-// Compound lifecycle proof: the existing dependency owner keeps the second
-// sub-goal waiting until the first Goal completes, then makes it runnable.
+process.env.KURUKOO_AGENT_MAX_CONCURRENT_GOALS = '10';
 const compound = await createCompoundGoalIfRecognized({ phone: owner, conversationId: 'conversation-compound-agent', objective: 'Fix my laptop and sell it when it is ready.' });
 assert.ok(compound, 'Compound objective must decompose through the existing compound lifecycle');
 assert.equal(compound!.subGoals.length, 2, 'Compound objective must create two canonical sub-goals');
@@ -141,6 +118,7 @@ assert.ok(firstChild, 'First compound child must be owner-scoped and durable');
 await getDb().then(db => db.run(`UPDATE agent_goals SET status='completed',next_action_at=NULL,completed_at=datetime('now'),updated_at=CURRENT_TIMESTAMP WHERE id=? AND phone=?`, [firstChild!.id, owner]));
 await syncSubGoalStatusesWithDependencies(owner, compound!.parentGoal.id);
 assert.equal((await getAgentGoal(owner, compound!.subGoals[1].id))?.status, 'active', 'Dependency refresh must make the next sub-goal runnable only after its prerequisite completes');
+process.env.KURUKOO_AGENT_MAX_CONCURRENT_GOALS = '2';
 
 const db = await getDb();
 db.run(`UPDATE agent_goals SET next_action_at=datetime('now','-1 minute') WHERE id=?`, [goal.id]);
