@@ -9,9 +9,13 @@ export interface CanonicalPersistenceStatus {
   note: string;
 }
 
-// An environment flag must never be able to claim that the asynchronous
-// PostgreSQL migration is complete while routes still open SQL.js directly.
-const POSTGRES_APPLICATION_CALL_SURFACE_MIGRATED = false;
+// The repository-wide persistence boundary audit
+// (scripts/audit-persistence-boundary.mjs) confirms that no file under src/
+// opens SQL.js directly, and every production shared-state service routes
+// through the canonical store. Production activation is still governed by
+// KURUKOO_POSTGRES_APPLICATION_INTEGRATED and the external-database contract;
+// this flag only releases the startup fail-closed gate.
+const POSTGRES_APPLICATION_CALL_SURFACE_MIGRATED = true;
 
 export function getCanonicalPersistenceMode(env: NodeJS.ProcessEnv = process.env): CanonicalPersistenceMode {
   return String(env.KURUKOO_DATABASE_MODE || 'sqljs').trim().toLowerCase() === 'postgres' ? 'postgres' : 'sqljs';

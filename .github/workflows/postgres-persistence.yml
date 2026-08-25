@@ -58,3 +58,5 @@ jobs:
         env:
           KURUKOO_TEST_POSTGRES_URL: ${{ env.KURUKOO_DOMAIN_POSTGRES_URL }}
         run: npx tsx scripts/test-postgres-domain-restart.ts
+      - name: PostgreSQL migration round-trip audit
+        run: npx tsx scripts/test-postgres-migration-roundtrip.ts
