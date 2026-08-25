@@ -77,7 +77,7 @@ router.get('/smol-lm2',async(_req,res)=>res.json({success:true,status:getSmolLM2
 router.post('/mistral/test',async(_req,res)=>{try{res.json({success:true,status:await testMistralConnection()});}catch(error){return jsonError(res,error);}});
 router.get('/privacy',async(_req,res)=>res.json({success:true,status:getPrivacyBridgeStatus()}));
 
-router.get('/celebrity',async(_req,res)=>{try{const db=await getCanonicalStore();res.json({success:true,demand:await db.all<any>('SELECT * FROM celebrity_demand ORDER BY interested_users DESC').catch(()=>[])});}catch(error){return jsonError(res,error);}});
+router.get('/celebrity',authenticateAdmin,async(_req,res)=>{try{const db=await getCanonicalStore();res.json({success:true,demand:await db.all<any>('SELECT * FROM celebrity_demand ORDER BY interested_users DESC').catch(()=>[])});}catch(error){return jsonError(res,error);}});
 router.get('/future_plans',async(_req,res)=>{try{const db=await getCanonicalStore();res.json({success:true,plans:await db.all<any>('SELECT * FROM future_plans ORDER BY id DESC').catch(()=>[])});}catch(error){return jsonError(res,error);}});
 router.get('/social_posts',async(_req,res)=>{try{const db=await getCanonicalStore();res.json({success:true,posts:await db.all<any>('SELECT * FROM social_posts ORDER BY created_at DESC LIMIT 200').catch(()=>[])});}catch(error){return jsonError(res,error);}});
 router.post('/social_posts',async(req,res)=>{try{const body=req.body||{};res.status(201).json({success:true,result:await schedulePost(String(body.platform||''),String(body.content||''),String(body.scheduledTime||body.scheduled_time||''))});}catch(error){return jsonError(res,error,422);}});
