@@ -5,8 +5,6 @@ const expected = [
     '/explore',
     '/explore/:slug',
     '/p/:providerSlug',
-    '/web',
-    '/workspace',
     '/requests',
     '/reminders',
     '/saved',

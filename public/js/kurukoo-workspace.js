@@ -566,8 +566,22 @@
   qsa('[data-proactive-dismiss], [data-proactive-response]').forEach((button) => button.addEventListener('click', () => { qs('[data-proactive-card]')?.setAttribute('hidden', ''); localStorage.setItem('kurukoo_proactive_dismissed', '1'); }));
   if (localStorage.getItem('kurukoo_proactive_dismissed') === '1') qs('[data-proactive-card]')?.setAttribute('hidden', '');
 
+  const hydrateWorkspaceSurface = (requestedSection = section) => {
+    const target = String(requestedSection || '').trim();
+    if (target === 'requests') void loadRequests();
+    else if (target === 'tasks') void loadTasks();
+    else if (target === 'reminders') void loadReminders();
+    else if (target === 'points') void loadPoints();
+    else if (target === 'safety') void loadSafety();
+    else if (target === 'daily-picks') void loadDailyPicks();
+    else if (target === 'cart') void loadCart();
+    else if (target === 'confirmation') void loadConfirmation();
+    else if (target === 'connect') void loadConnections();
+  };
+  document.addEventListener('kurukoo:workspace-surface', (event) => hydrateWorkspaceSurface(event.detail?.section));
+
   const params = new URLSearchParams(window.location.search); const prompt = params.get('prompt'); if (prompt && input) window.requestAnimationFrame(() => seedPrompt(prompt));
-  if (section === 'requests') loadRequests(); if (section === 'tasks') loadTasks(); if (section === 'reminders') loadReminders(); if (section === 'points') loadPoints(); if (section === 'safety') loadSafety(); if (section === 'daily-picks') loadDailyPicks(); if (section === 'cart') loadCart(); if (section === 'confirmation') loadConfirmation(); if (section === 'connect') loadConnections();
+  hydrateWorkspaceSurface();
 
   loadConnectedResources();
 })();

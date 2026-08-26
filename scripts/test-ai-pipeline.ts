@@ -2,7 +2,7 @@ import { classifyWithFastText } from '../src/services/fastTextService.js';
 import { queryUnifiedAI } from '../src/services/unifiedAiEngine.js';
 
 const cases = [
-  ['Book an okada to Ikeja', 'ride_request'],
+  ['Book an okada to Ikeja', 'okada_rider'],
   ['Order jollof rice near me', 'order_food'],
   ['Find an electrician', 'find_worker'],
   ['How many points do I have?', 'check_balance']

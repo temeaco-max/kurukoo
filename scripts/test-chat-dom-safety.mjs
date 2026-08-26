@@ -24,6 +24,9 @@ assert.doesNotMatch(storefront, /style=["'][^"']*width/, 'storefront renderer mu
 assert.match(source, /function renderMarkdown\(text\).*sanitizeHtml/s, 'sanitized Markdown rendering must remain available for genuine message content');
 assert.match(source, /setMarkdown\(output, full\)/, 'streaming Markdown must continue through its sanitizer-backed DOM helper');
 assert.match(source, /function setMarkdown\(el, text\)[\s\S]*renderMarkdown\(text\)[\s\S]*replaceChildren/, 'Markdown helper must sanitize before replacing rendered DOM content');
+assert.match(shell, /marked@15\.0\.7\/marked\.min\.js" async/, 'optional Markdown rendering must load asynchronously without delaying the Chat runtime');
+assert.match(shell, /highlight\.min\.js" async/, 'optional code highlighting must load asynchronously without delaying the Chat runtime');
+assert.doesNotMatch(shell, /(?:marked@15\.0\.7\/marked\.min\.js|highlight\.min\.js)" defer/, 'optional third-party rendering helpers must not block the canonical Chat bootstrap');
 assert.match(shell, /aria-controls="chat-inspector"/, 'context inspector toggle must declare its controlled region');
 assert.match(shell, /id="inspector-feedback"[^>]*role="status"/, 'Native Assistance feedback must be announced to assistive technology');
 assert.match(shell, /id="native-assistance-status"[^>]*role="status"/, 'primary chat must announce proactive Native Assistance status');
@@ -50,4 +53,4 @@ assert.match(chatCss, /\.message-action-btn/, 'message action buttons must have 
 assert.match(chatCss, /min-height:42px/, 'primary Chat actions must remain usable on touch devices');
 assert.match(chatCss, /\.sidebar-bottom\[hidden\]\{display:none!important\}/, 'collapsed More-menu utility links must remain hidden until expanded');
 
-console.log('Chat DOM-safety contract passed: sanitized cards, accessible streaming, native icon actions, stop generation, and attachment affordances remain covered.');
+console.log('Chat DOM-safety contract passed: sanitized cards, non-blocking optional render helpers, accessible streaming, native icon actions, stop generation, and attachment affordances remain covered.');

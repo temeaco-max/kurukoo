@@ -148,12 +148,16 @@ try {
   assert.notEqual((resumedDone?.cardData as { type?: string } | undefined)?.type, 'survey', 'Claimed requests must not be diverted into onboarding');
   assert.doesNotMatch(String(resumedDone?.fullReply || ''), /Nice to meet you/i, 'Claimed requests must preserve the fulfillment journey');
 
-  const anonymousHub = await fetch(`${baseUrl}/web`, { redirect: 'manual' });
-  assert.equal(anonymousHub.status, 302, 'Unauthenticated Request Hub visits should redirect contextually');
-  assert.equal(anonymousHub.headers.get('location'), '/login?return=%2Fweb');
+  const anonymousRequests = await fetch(`${baseUrl}/requests`, { redirect: 'manual' });
+  assert.equal(anonymousRequests.status, 302, 'Unauthenticated canonical Request Hub visits should redirect contextually');
+  assert.equal(anonymousRequests.headers.get('location'), '/login?return=%2Frequests');
 
-  const authenticatedHub = await fetch(`${baseUrl}/web`, { headers: { Cookie: authCookie } });
-  assert.equal(authenticatedHub.status, 200, 'Authenticated users should access the Request Hub');
+  const authenticatedRequests = await fetch(`${baseUrl}/requests`, { headers: { Cookie: authCookie } });
+  assert.equal(authenticatedRequests.status, 200, 'Authenticated users should access the canonical Request Hub');
+
+  const legacyWeb = await fetch(`${baseUrl}/web`, { redirect: 'manual' });
+  assert.equal(legacyWeb.status, 308, 'The deprecated Request Hub alias should permanently resolve to Desk');
+  assert.equal(legacyWeb.headers.get('location'), '/desk');
 
   const logout = await fetch(`${baseUrl}/api/auth/logout`, { method: 'POST', headers: { Cookie: authCookie } });
   assert.equal(logout.status, 200, 'Canonical logout should succeed');

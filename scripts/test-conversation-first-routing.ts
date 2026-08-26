@@ -17,7 +17,11 @@ async function main() {
   const howQuestion = await routeIntent('How can I get a cleaner for Saturday?');
   assert(howQuestion.skill === 'general_question', `Expected exploratory how-question to remain conversational, got ${howQuestion.skill}`);
 
-  console.log('Conversation-first routing regression passed.');
+  const safetyCheckIn = await routeIntent('Set a safety check-in');
+  assert(safetyCheckIn.skill === 'safety_contact', `Expected explicit safety check-in to route to safety contact flow, got ${safetyCheckIn.skill}`);
+  assert(/sign in/i.test(safetyCheckIn.reply), 'Unsigned safety check-in should state the profile-bound sign-in prerequisite rather than fall through to generic chat');
+
+  console.log('Conversation-first routing regression passed, including the explicit safety check-in prerequisite.');
 }
 
 main().catch(error => {

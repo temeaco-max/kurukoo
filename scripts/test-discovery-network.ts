@@ -6,10 +6,10 @@ import { processCanonicalChatTurn } from '../src/services/canonicalChatTurnServi
 const discoverController = fs.readFileSync(new URL('../public/js/kurukoo-discover-map.js', import.meta.url), 'utf8');
 assert.match(discoverController, /discoveryEntityId/, 'Discover Chat links must carry the canonical entity identity');
 assert.match(discoverController, /Open exact context in Chat/, 'Discover must label the exact-context handoff');
-assert.match(discoverController, /Preview example/, 'Preview fixtures must be visibly labelled');
-assert.match(discoverController, /Kurukoo preview fixture/, 'Preview fixtures must expose source provenance');
-assert.match(discoverController, /lifecycle:/, 'Discovery cards must expose lifecycle state');
-assert.doesNotMatch(discoverController, /preview: true[^}]*available: true/, 'Preview fixtures must not imply availability');
+assert.match(discoverController, /Nothing attributed here yet/, 'Discovery must show a truthful empty state when no attributed results exist');
+assert.match(discoverController, /will not turn an empty map into an invented result/, 'Discovery must explicitly refuse fabricated supply');
+assert.match(discoverController, /discover-result-badge--lifecycle/, 'Discovery cards must expose lifecycle state');
+assert.doesNotMatch(discoverController, /Preview example|Kurukoo preview fixture/, 'Discovery client must not embed fabricated preview supply');
 
 const id = `test-discovery:${Date.now()}`;
 await upsertDiscoveryEntity({

@@ -29,7 +29,7 @@ const ownerA = '+2348091000001';
 const ownerB = '+2348091000002';
 const token = (phone: string) => jwt.sign({ phone, role: 'user' }, process.env.JWT_SECRET!, { algorithm: 'HS256' });
 const headers = (phone: string) => ({ Authorization: `Bearer ${token(phone)}` });
-const fixedNow = new Date('2026-08-22T12:00:00.000Z');
+const fixedNow = new Date();
 const aPreferences = { proactive_brief: { voice_enabled: true, style: 'detailed', interruption_sensitivity: 'standard', allow_critical_interruption: true } };
 const bPreferences = { proactive_brief: { voice_enabled: false, style: 'concise', interruption_sensitivity: 'minimal', allow_critical_interruption: false }, sensitive_note: 'B_ONLY_MEMORY_NEVER_SURFACE' };
 
@@ -37,7 +37,7 @@ await updateProfile(ownerA, 'agent-brief-redteam', { name: 'Owner A', preference
 await updateProfile(ownerB, 'agent-brief-redteam', { name: 'Owner B', preferences: bPreferences });
 const requestA = await createEconomicRequest({ id: 'redteam-request-a', phone: ownerA, skill: 'find_worker', requirements: { service: 'repair A', location: 'Ikeja' } });
 const requestB = await createEconomicRequest({ id: 'redteam-request-b', phone: ownerB, skill: 'find_worker', requirements: { service: 'repair B', location: 'Yaba' } });
-const dueSoon = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+const dueSoon = new Date(fixedNow.getTime() + 60 * 60 * 1000).toISOString();
 const reminderA = await createReminder(ownerA, { title: 'Owner A reminder', dueAt: dueSoon });
 const reminderB = await createReminder(ownerB, { title: 'Owner B reminder', dueAt: dueSoon });
 const goalA = await createConversationGoal({ phone: ownerA, conversationId: 'redteam-conversation-a', skill: 'find_worker', objective: 'Owner A agent goal', economicRequestId: requestA.id, persistWhenDisabled: true });
