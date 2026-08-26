@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-26T17:10:05Z",
+  "evaluation": {
+    "script": "scripts/evaluate-fasttext-heldout.ts",
+    "command": "tsx scripts/evaluate-fasttext-heldout.ts",
+    "heldoutCorpus": {
+      "path": "models/eval/intent_eval_heldout.v1.txt",
+      "sha256": "22c2348c05d76f8623fb51a0a0abd4f39ac140ce8b9595131c63e8004547f5ce",
+      "caseCount": 78
+    },
+    "metrics": {
+      "precisionAt1": 0.962,
+      "precisionAt3": 0.949,
+      "recallAt3": 0.949,
+      "sparseLabelAccuracy": 1,
+      "sparseLabelCases": 12,
+      "hardNegativeAccuracy": 1,
+      "hardNegativeCases": 4
+    },
+    "acceptance": {
+      "minimumPrecisionAt1": 0.9,
+      "hardNegativeAccuracyRequired": 1,
+      "result": "passed"
+    }
+  },
+  "model": {
+    "path": "models/kurukoo_intent.bin",
+    "sha256": "9b89844dc5c32a20554b7f4dc0eba70861ee8e59afc5e88133c7361c33d74184",
+    "evaluationMode": "existing_repository_model",
+    "note": "The held-out evaluation ran against the repository model. A local FastText rebuild was not performed because the FastText CLI was unavailable in the local sandbox."
+  },
+  "trainingSources": [
+    {
+      "path": "models/intent_training_data.txt",
+      "sha256": "b667c376c6b9ea28cc6be762070802fc5cd8c9d8bb9242497607ca073a64b4ca"
+    },
+    {
+      "path": "models/intent_training_behaviour_additions.txt",
+      "sha256": "b12750568566be2fd9cf934ff30700dc9b831cd68b9c820999fc45abf56a1312"
+    },
+    {
+      "path": "models/intent_training_skill_hints.txt",
+      "sha256": "6fc0a4dbf563a2cdd6ca2122b34345f4d62fdc7fb5a77f7aeeab4033d4aac79c"
+    }
+  ]
+}
