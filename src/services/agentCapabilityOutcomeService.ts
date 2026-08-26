@@ -1,4 +1,7 @@
+import { getCapabilityActionContract } from './capabilityRegistry.js';
 import { getCanonicalStore } from './canonicalStore.js';
+import { recordAgentExecutionTrace } from './agentExecutionTrace.js';
+import { evaluateAgentObjective } from './agentObjectiveEvaluator.js';
 
 export type CanonicalCapabilityOutcome = {
   status: string;
@@ -25,6 +28,8 @@ type GoalPlanStep = {
   result?: string;
 };
 
+type PersistedGoalStatus = 'active' | 'waiting' | 'needs_user' | 'blocked' | 'completed' | 'failed';
+
 function mapOutcome(status: string): 'success' | 'waiting' | 'needs_user' | 'blocked' | 'failed' {
   if (status === 'completed') return 'success';
   if (status === 'waiting' || status === 'externally_pending') return 'waiting';
@@ -42,7 +47,7 @@ function mapStepStatus(status: string): GoalPlanStep['status'] {
   return 'running';
 }
 
-function goalStatus(status: string, plan: GoalPlanStep[], currentIndex: number): 'active' | 'waiting' | 'needs_user' | 'blocked' | 'completed' | 'failed' {
+function goalStatus(status: string, plan: GoalPlanStep[], currentIndex: number): PersistedGoalStatus {
   if (status === 'blocked' || status === 'unauthorized') return 'blocked';
   if (status === 'failed' || status === 'invalid') return 'failed';
   if (status === 'needs_user' || status === 'confirmation_required') return 'needs_user';
@@ -50,6 +55,25 @@ function goalStatus(status: string, plan: GoalPlanStep[], currentIndex: number):
   if (status === 'completed') return pending ? 'active' : 'completed';
   if (status === 'waiting' || status === 'externally_pending') return 'waiting';
   return 'active';
+}
+
+function qualityMappedStatus(verdict: 'pass' | 'needs_user' | 'blocked' | 'fail', reasons: string[]): PersistedGoalStatus {
+  if (verdict === 'pass') return 'completed';
+  if (reasons.includes('external_outcome_not_verified')) return 'blocked';
+  if (verdict === 'needs_user') return 'needs_user';
+  if (verdict === 'blocked') return 'blocked';
+  return 'failed';
+}
+
+function externalCompletionRequiresEvidence(capability: string, action: string, outcome: CanonicalCapabilityOutcome): boolean {
+  const contract = getCapabilityActionContract(capability, action);
+  if (contract && contract.activationState !== 'locally_available') return true;
+  const description = `${outcome.status} ${outcome.message || ''} ${outcome.evidence || ''}`;
+  return /external|provider|repair(?:ed)?|sold|deliver(?:ed|y)|fulfil(?:led|ment)|payment|settle(?:d|ment)/i.test(description);
+}
+
+function verifiedEvidence(outcome: CanonicalCapabilityOutcome): boolean {
+  return Boolean(outcome.evidence) && /verified|confirmed|validated/i.test(String(outcome.evidence));
 }
 
 /**
@@ -89,11 +113,88 @@ export async function syncAgentGoalFromCapabilityResult(input: {
   }
 
   const nextStep = stepIndex >= 0 && projectedStepStatus === 'completed' ? Math.min(steps.length, stepIndex + 1) : Math.max(0, stepIndex);
-  const status = goalStatus(input.outcome.status, steps, nextStep - 1);
+  let status = goalStatus(input.outcome.status, steps, nextStep - 1);
+  const summary = String(input.outcome.message || `Capability ${input.capability}:${input.action} returned ${input.outcome.status}.`).slice(0, 1000);
+  const eventKey = input.idempotencyKey ? `agent-outcome:${input.goalId}:${input.idempotencyKey}` : `agent-outcome:${input.goalId}:${input.capability}:${input.action}:${input.outcome.status}:${stepIndex}`;
+  const executionId = input.idempotencyKey || eventKey;
+  const requiresEvidence = externalCompletionRequiresEvidence(input.capability, input.action, input.outcome);
+
+  await recordAgentExecutionTrace({
+    ownerPhone: input.phone,
+    goalId: input.goalId,
+    conversationId: goalRow.conversation_id ? String(goalRow.conversation_id) : undefined,
+    kind: 'capability_execution',
+    actor: 'agentCapabilityOutcomeService',
+    status: input.outcome.status,
+    capability: input.capability,
+    action: input.action,
+    canonicalObjectId: input.outcome.canonicalObjectId,
+    reason: summary,
+    idempotencyKey: `${eventKey}:capability`,
+    metadata: { executionId, stepIndex, requiresEvidence },
+  });
+  if (input.outcome.evidence) {
+    await recordAgentExecutionTrace({
+      ownerPhone: input.phone,
+      goalId: input.goalId,
+      conversationId: goalRow.conversation_id ? String(goalRow.conversation_id) : undefined,
+      kind: 'evidence',
+      actor: 'agentCapabilityOutcomeService',
+      status: verifiedEvidence(input.outcome) ? 'verified' : 'recorded',
+      capability: input.capability,
+      action: input.action,
+      canonicalObjectId: input.outcome.canonicalObjectId,
+      evidence: String(input.outcome.evidence).slice(0, 1000),
+      idempotencyKey: `${eventKey}:evidence`,
+      metadata: { executionId },
+    });
+  }
+  await recordAgentExecutionTrace({
+    ownerPhone: input.phone,
+    goalId: input.goalId,
+    conversationId: goalRow.conversation_id ? String(goalRow.conversation_id) : undefined,
+    kind: 'outcome',
+    actor: 'agentCapabilityOutcomeService',
+    status: requiresEvidence ? `external_${input.outcome.status}` : input.outcome.status,
+    capability: input.capability,
+    action: input.action,
+    canonicalObjectId: input.outcome.canonicalObjectId,
+    reason: summary,
+    evidence: input.outcome.evidence ? String(input.outcome.evidence).slice(0, 1000) : undefined,
+    idempotencyKey: `${eventKey}:outcome`,
+    metadata: { executionId, requiresEvidence },
+  });
+
+  if (status === 'completed') {
+    const quality = await evaluateAgentObjective({
+      ownerPhone: input.phone,
+      goalId: input.goalId,
+      objective: String(goalRow.objective || plan.objective || ''),
+      planPresent: steps.length > 0,
+      capabilityAllowed: true,
+      authorizationSatisfied: true,
+      dependenciesSatisfied: true,
+      evidenceRequired: requiresEvidence,
+    });
+    await recordAgentExecutionTrace({
+      ownerPhone: input.phone,
+      goalId: input.goalId,
+      conversationId: goalRow.conversation_id ? String(goalRow.conversation_id) : undefined,
+      kind: 'quality_evaluated',
+      actor: 'agentQualityGate',
+      status: quality.verdict,
+      capability: input.capability,
+      action: input.action,
+      reason: quality.reasons.join(',').slice(0, 1000),
+      idempotencyKey: `${eventKey}:quality`,
+      metadata: { executionId, traceCount: quality.traceCount, evidencePresent: quality.evidencePresent, externallyVerified: quality.externallyVerified },
+    });
+    status = qualityMappedStatus(quality.verdict, quality.reasons);
+  }
+
   const nextActionAt = status === 'active' || status === 'waiting' ? new Date(Date.now() + 30000).toISOString() : null;
   const completedAt = status === 'completed' ? new Date().toISOString() : null;
-  const failureReason = ['failed', 'blocked'].includes(status) ? String(input.outcome.message || input.outcome.status).slice(0, 1000) : null;
-  const summary = String(input.outcome.message || `Capability ${input.capability}:${input.action} returned ${input.outcome.status}.`).slice(0, 1000);
+  const failureReason = ['failed', 'blocked'].includes(status) ? (status === 'blocked' && requiresEvidence && !verifiedEvidence(input.outcome) ? 'verified_external_evidence_required' : summary) : null;
   plan.steps = steps;
   plan.currentStep = nextStep;
   plan.status = status;
@@ -113,21 +214,20 @@ export async function syncAgentGoalFromCapabilityResult(input: {
     [status, nextActionAt, completedAt, failureReason, summary, JSON.stringify(plan), input.goalId, input.phone],
   );
 
-  const eventKey = input.idempotencyKey ? `agent-outcome:${input.goalId}:${input.idempotencyKey}` : `agent-outcome:${input.goalId}:${input.capability}:${input.action}:${input.outcome.status}:${stepIndex}`;
   const existing = await store.one<any>('SELECT id FROM agent_goal_events WHERE idempotency_key = ? LIMIT 1', [eventKey]);
   if (!existing) {
     await store.run('INSERT INTO agent_goal_events (goal_id, action, tool, result, evidence, detail, idempotency_key) VALUES (?, ?, ?, ?, ?, ?, ?)', [
       input.goalId,
       `${input.capability}:${input.action}`,
       'execute_capability',
-      mapOutcome(input.outcome.status),
+      status === 'completed' ? 'success' : mapOutcome(status),
       input.outcome.evidence || `canonical_capability:${input.capability}:${input.action}:${input.outcome.status}`,
       summary,
       eventKey,
     ]);
   }
 
-  if (['needs_user', 'blocked', 'completed'].includes(status)) {
+  if (['needs_user', 'blocked', 'completed', 'failed'].includes(status)) {
     try {
       const runtime = await import('./agentRuntime.js');
       const updated = await runtime.getAgentGoal(input.phone, input.goalId);

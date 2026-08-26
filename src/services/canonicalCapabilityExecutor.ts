@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
-import { getDb, saveDb } from '../database.js';
+import { getCanonicalPersistenceMode } from './canonicalPersistence.js';
+import { getCanonicalStore } from './canonicalStore.js';
 import { listChatMessages } from './chatConversationService.js';
 import {
   getCanonicalOperationDescriptor,
@@ -41,8 +42,8 @@ export interface CanonicalCapabilityExecutionResult extends Omit<UniversalCapabi
 }
 
 async function ensureExecutionTable(): Promise<void> {
-  const db = await getDb();
-  db.run(`CREATE TABLE IF NOT EXISTS capability_action_runs (
+  const store = await getCanonicalStore();
+  await store.run(`CREATE TABLE IF NOT EXISTS capability_action_runs (
     id TEXT PRIMARY KEY,
     idempotency_key TEXT NOT NULL UNIQUE,
     phone TEXT NOT NULL,
@@ -52,27 +53,25 @@ async function ensureExecutionTable(): Promise<void> {
     result_json TEXT NOT NULL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   )`);
-  db.run('CREATE INDEX IF NOT EXISTS idx_capability_action_runs_phone ON capability_action_runs(phone, created_at)');
+  await store.run('CREATE INDEX IF NOT EXISTS idx_capability_action_runs_phone ON capability_action_runs(phone, created_at)');
 }
 
 async function readIdempotentResult(phone: string, idempotencyKey: string): Promise<CanonicalCapabilityExecutionResult | null> {
   await ensureExecutionTable();
-  const db = await getDb();
-  const stmt = db.prepare('SELECT result_json FROM capability_action_runs WHERE idempotency_key = ? AND phone = ? LIMIT 1');
-  stmt.bind([idempotencyKey, phone]);
-  const row = stmt.step() ? stmt.getAsObject() : null;
-  stmt.free();
+  const row = await (await getCanonicalStore()).one<{ result_json?: string }>('SELECT result_json FROM capability_action_runs WHERE idempotency_key = ? AND phone = ? LIMIT 1', [idempotencyKey, phone]);
   if (!row?.result_json) return null;
   try { return { ...JSON.parse(String(row.result_json)), duplicate: true }; } catch { return null; }
 }
 
 async function persistResult(input: CanonicalCapabilityExecutionInput, idempotencyKey: string, result: CanonicalCapabilityExecutionResult): Promise<void> {
   await ensureExecutionTable();
-  const db = await getDb();
-  db.run(`INSERT OR IGNORE INTO capability_action_runs(id, idempotency_key, phone, capability, action, canonical_object_id, result_json) VALUES(?,?,?,?,?,?,?)`, [
+  const store = await getCanonicalStore();
+  const sql = getCanonicalPersistenceMode() === 'postgres'
+    ? 'INSERT INTO capability_action_runs(id, idempotency_key, phone, capability, action, canonical_object_id, result_json) VALUES(?,?,?,?,?,?,?) ON CONFLICT (idempotency_key) DO NOTHING'
+    : 'INSERT OR IGNORE INTO capability_action_runs(id, idempotency_key, phone, capability, action, canonical_object_id, result_json) VALUES(?,?,?,?,?,?,?)';
+  await store.run(sql, [
     crypto.randomUUID(), idempotencyKey, input.phone, input.capability, input.action, input.canonicalObjectId || null, JSON.stringify(result),
   ]);
-  saveDb();
 }
 
 function baseResult(input: CanonicalCapabilityExecutionInput, status: ExecutorStatus, message: string, extra: Partial<CanonicalCapabilityExecutionResult> = {}): CanonicalCapabilityExecutionResult {
@@ -163,9 +162,7 @@ async function verifyExactOwner(input: CanonicalCapabilityExecutionInput): Promi
     return object ? { ok: true, object } : { ok: false, code: 'foreign_or_missing_notification' };
   }
   if (capability === 'reminder') {
-    const db = await getDb();
-    const result = db.exec('SELECT * FROM reminders WHERE id = ? AND phone = ? LIMIT 1', [input.canonicalObjectId, input.phone]);
-    const row = result[0]?.values?.[0];
+    const row = await (await getCanonicalStore()).one('SELECT id FROM reminders WHERE id = ? AND phone = ? LIMIT 1', [input.canonicalObjectId, input.phone]);
     return row ? { ok: true, object: row } : { ok: false, code: 'foreign_or_missing_reminder' };
   }
   if (capability === 'memory') {
@@ -239,12 +236,10 @@ async function dispatchCanonicalAction(input: CanonicalCapabilityExecutionInput,
     return baseResult(input, 'completed', input.action === 'history' ? `You have ${balance} Kurukoo Points. I’ve also retrieved your recent Points activity.` : `You have ${balance} Kurukoo Points.`, { canonicalFacts: { pointsBalance: balance, history }, evidenceLevel: 'canonical_service', nextActions: [{ action: 'history', label: 'View Points history' }] });
   }
   if (input.capability === 'subscription' && ['inspect', 'status'].includes(input.action)) {
-    const db = await getDb();
-    const profile = db.exec('SELECT subscription_tier, country, updated_at FROM memory_profiles WHERE phone = ? LIMIT 1', [input.phone]);
-    const profileRow = profile[0]?.values?.[0];
-    const provider = db.exec('SELECT tier, status, next_billing_date, leads_this_month FROM provider_subscriptions WHERE phone = ? LIMIT 1', [input.phone]);
-    const providerRow = provider[0]?.values?.[0];
-    const subscription = { tier: profileRow?.[0] ? String(profileRow[0]) : 'Base', country: profileRow?.[1] ? String(profileRow[1]) : undefined, updatedAt: profileRow?.[2] ? String(profileRow[2]) : undefined, providerTier: providerRow?.[0] ? String(providerRow[0]) : undefined, providerStatus: providerRow?.[1] ? String(providerRow[1]) : undefined, nextBillingDate: providerRow?.[2] ? String(providerRow[2]) : undefined, leadsThisMonth: providerRow?.[3] == null ? undefined : Number(providerRow[3]) }; return baseResult(input, 'completed', `Your current Kurukoo subscription is ${subscription.tier}.`, { canonicalFacts: { subscription }, evidenceLevel: 'canonical_service', nextActions: [{ action: 'change', label: 'Change subscription' }] });
+    const store = await getCanonicalStore();
+    const profile = await store.one<any>('SELECT subscription_tier, country, updated_at FROM memory_profiles WHERE phone = ? LIMIT 1', [input.phone]);
+    const provider = await store.one<any>('SELECT tier, status, next_billing_date, leads_this_month FROM provider_subscriptions WHERE phone = ? LIMIT 1', [input.phone]);
+    const subscription = { tier: profile?.subscription_tier ? String(profile.subscription_tier) : 'Base', country: profile?.country ? String(profile.country) : undefined, updatedAt: profile?.updated_at ? String(profile.updated_at) : undefined, providerTier: provider?.tier ? String(provider.tier) : undefined, providerStatus: provider?.status ? String(provider.status) : undefined, nextBillingDate: provider?.next_billing_date ? String(provider.next_billing_date) : undefined, leadsThisMonth: provider?.leads_this_month == null ? undefined : Number(provider.leads_this_month) }; return baseResult(input, 'completed', `Your current Kurukoo subscription is ${subscription.tier}.`, { canonicalFacts: { subscription }, evidenceLevel: 'canonical_service', nextActions: [{ action: 'change', label: 'Change subscription' }] });
   }
   if (input.capability === 'payment' && ['inspect', 'status'].includes(input.action)) {
     const requestId = String(input.canonicalObjectId || args.economicRequestId || '').trim();
