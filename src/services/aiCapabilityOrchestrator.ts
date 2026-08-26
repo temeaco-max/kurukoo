@@ -6,6 +6,7 @@ import { deriveActionInteractionPolicy, deriveActionInteractionPolicyForName, ty
 import type { UniversalCapabilityDescriptor } from './universalCapabilityProtocol.js';
 import { ensureCapabilityFoundation, getRegisteredSkillCapabilityPlan } from './capabilityFoundation.js';
 import { resolveSkillCapabilityComposition } from './capabilityFoundationIntegration.js';
+import { getCapabilityRegistration } from './capabilityRegistry.js';
 import { resolveCapabilityExecutionPlan } from './capabilityExecutionPlanService.js';
 
 export type CapabilityProposalPosture = 'none' | 'clarify' | 'propose' | 'control';
@@ -68,10 +69,10 @@ function descriptorFromDecision(capability: string, routing: IntentRoutingResult
 
 function ensureSkillComposition(skill: string): { capabilityPlan: string[]; skillDescriptor: UniversalCapabilityDescriptor; executionPlan: ReturnType<typeof resolveCapabilityExecutionPlan> } {
   ensureCapabilityFoundation();
-  const registration = getRegisteredSkillCapabilityPlan(skill);
+  const registration = getRegisteredSkillCapabilityPlan(skill) || getCapabilityRegistration(skill);
   const composition = resolveSkillCapabilityComposition(skill);
   const executionPlan = resolveCapabilityExecutionPlan(skill);
-  const skillDescriptor = registration?.descriptor || composition.ordered.find(item => item.descriptor.capability === `skill.${skill}`)?.descriptor;
+  const skillDescriptor = registration?.descriptor || composition.ordered.find(item => item.descriptor.capability === `skill.${skill}` || item.descriptor.capability === skill)?.descriptor;
   if (!skillDescriptor) throw new Error(`No canonical capability composition registered for skill ${skill}.`);
   if (composition.unresolved.length || composition.cycle?.length || executionPlan.unresolved.length || executionPlan.cycle?.length) throw new Error(`Invalid capability composition for skill ${skill}.`);
   return { capabilityPlan: composition.ordered.map(item => item.descriptor.capability), skillDescriptor, executionPlan };

@@ -30,7 +30,8 @@ export type ExecutableCapabilityPlan = {
 
 export function resolveSkillCapabilityPlan(skill: string): string[] {
   ensureCapabilityFoundation();
-  const registration = getCapabilityRegistration(`skill.${String(skill || '').trim().toLowerCase()}`);
+  const normalized = String(skill || '').trim().toLowerCase();
+  const registration = getCapabilityRegistration(`skill.${normalized}`) || getCapabilityRegistration(normalized);
   if (!registration) return [];
   const composition = resolveCapabilityComposition([registration.descriptor.capability]);
   if (composition.unresolved.length || composition.cycle?.length) return [];
@@ -70,7 +71,8 @@ export function resolveCapabilityDependencies(skill: string): string[] {
 
 export function resolveSkillCapabilityComposition(skill: string) {
   ensureCapabilityFoundation();
-  const registration = getCapabilityRegistration(`skill.${String(skill || '').trim().toLowerCase()}`);
+  const normalized = String(skill || '').trim().toLowerCase();
+  const registration = getCapabilityRegistration(`skill.${normalized}`) || getCapabilityRegistration(normalized);
   if (!registration) return { requested: [], ordered: [], unresolved: [`skill.${String(skill || '').trim().toLowerCase()}`] };
   return resolveCapabilityComposition([registration.descriptor.capability]);
 }

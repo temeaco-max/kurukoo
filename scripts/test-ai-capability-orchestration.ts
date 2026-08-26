@@ -48,4 +48,15 @@ if (!resultDecision.shouldPresentCanonicalResult) {
   throw new Error('Canonical result must remain available for conversational presentation');
 }
 
+const referral: IntentRoutingResult = {
+  skill: 'referral',
+  reply: 'Your referral link is ready through the Referral QR surface.',
+  cardData: { type: 'referral', status: 'ready', destination: '/referral-qr/' },
+  canonicalAction: 'referral.invite',
+};
+const referralDecision = buildAICapabilityOrchestration(referral, contract('Create my referral link'));
+if (referralDecision.proposal?.capability !== 'referral' || !referralDecision.proposal.executionPlan?.some(candidate => candidate.capability === 'referral')) {
+  throw new Error('Referral routes must resolve through the registered direct referral capability without falling through to an unregistered skill');
+}
+
 console.log('AI capability orchestration regression passed');

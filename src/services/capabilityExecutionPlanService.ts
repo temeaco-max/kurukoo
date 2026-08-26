@@ -14,7 +14,7 @@ export interface CapabilityExecutionPlan {
 export function resolveCapabilityExecutionPlan(skill: string): CapabilityExecutionPlan {
   ensureCapabilityFoundation();
   const normalized = String(skill || '').trim().toLowerCase();
-  const registration = getCapabilityRegistration(normalized.startsWith('skill.') ? normalized : `skill.${normalized}`);
+  const registration = getCapabilityRegistration(normalized.startsWith('skill.') ? normalized : `skill.${normalized}`) || getCapabilityRegistration(normalized.replace(/^skill\./, ''));
   if (!registration) {
     return { skill: normalized, registeredSkill: normalized, composition: [], executableCandidates: [], unresolved: [normalized] };
   }
