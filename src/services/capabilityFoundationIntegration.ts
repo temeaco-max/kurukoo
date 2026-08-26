@@ -43,12 +43,13 @@ export function resolveSkillCapabilityPlan(skill: string): string[] {
 export function resolveExecutableCapabilityPlan(skill: string): ExecutableCapabilityPlan {
   ensureCapabilityFoundation();
   const normalized = String(skill || '').trim().toLowerCase();
-  const registration = getCapabilityRegistration(normalized.startsWith('skill.') ? normalized : `skill.${normalized}`);
-  if (!registration) return { skill: normalized.replace(/^skill\./, ''), composition: [], executable: [], unresolved: [`skill.${normalized.replace(/^skill\./, '')}`] };
+  const capabilityName = normalized.replace(/^skill\./, '');
+  const registration = getCapabilityRegistration(normalized.startsWith('skill.') ? normalized : `skill.${normalized}`) || getCapabilityRegistration(capabilityName);
+  if (!registration) return { skill: capabilityName, composition: [], executable: [], unresolved: [`skill.${capabilityName}`] };
   const composition = resolveCapabilityComposition([registration.descriptor.capability]);
   const adapters = new Set(listCapabilityExecutionAdapters().map(adapter => adapter.capability));
   return {
-    skill: normalized.replace(/^skill\./, ''),
+    skill: capabilityName,
     composition: composition.ordered.map(item => item.descriptor.capability),
     executable: composition.ordered
       .filter(item => item.descriptor.kind === 'operation')

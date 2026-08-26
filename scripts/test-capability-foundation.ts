@@ -1,6 +1,6 @@
 import { getKnownSkills } from '../src/services/skillFlows.js';
 import { ensureCapabilityFoundation } from '../src/services/capabilityFoundation.js';
-import { resolveSkillCapabilityPlan } from '../src/services/capabilityFoundationIntegration.js';
+import { resolveExecutableCapabilityPlan, resolveSkillCapabilityPlan } from '../src/services/capabilityFoundationIntegration.js';
 import { getCapabilityRegistration, validateCapabilityRegistry } from '../src/services/capabilityRegistry.js';
 
 async function main(): Promise<void> {
@@ -12,6 +12,10 @@ async function main(): Promise<void> {
     if (!registration) throw new Error(`Skill composition missing from capability registry: ${skill}`);
     const plan = resolveSkillCapabilityPlan(skill);
     if (!plan.length) throw new Error(`Skill has no resolved capability plan: ${skill}`);
+  }
+  const referral = resolveExecutableCapabilityPlan('referral');
+  if (referral.unresolved.length || !referral.executable.some(candidate => candidate.capability === 'referral')) {
+    throw new Error(`Direct referral capability must resolve to its canonical executable plan: ${JSON.stringify(referral)}`);
   }
   const registry = validateCapabilityRegistry();
   if (!registry.valid) throw new Error(`Capability registry invalid: ${JSON.stringify(registry)}`);
