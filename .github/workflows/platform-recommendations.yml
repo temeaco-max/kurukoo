@@ -21,4 +21,5 @@ jobs:
           cache-dependency-path: package-lock.json
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npx tsx scripts/test-platform-recommendations.ts
+      - run: npx tsx scripts/test-agent-env-defaults.ts
       - run: npx tsc --noEmit
