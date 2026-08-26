@@ -11,8 +11,8 @@ if (!agents.includes('single current-state product truth authority')) failures.p
 if (!agents.includes('Repository verification') || !agents.includes('Runtime verification') || !agents.includes('Real-world verification')) failures.push('AGENTS.md lacks the three verification dimensions');
 const voice = fs.readFileSync(path.join(root,'public/js/kurukoo-speech-output.js'),'utf8');
 for (const marker of ['SpeechSynthesisUtterance','KurukooSpeechOutput',"provider: 'browser'"]) if (!voice.includes(marker)) failures.push(`zero-cost voice adapter missing: ${marker}`);
-const pageRouter = fs.readFileSync(path.join(root,'src/routes/chatPageRoutes.ts'),'utf8');
-if (!pageRouter.includes('/js/kurukoo-speech-output.js')) failures.push('canonical Chat page does not inject browser speech adapter');
+const sharedAppTemplate = fs.readFileSync(path.join(root,'views/app.ejs'),'utf8');
+if (!sharedAppTemplate.includes('/js/kurukoo-speech-output.js')) failures.push('canonical shared Chat surface does not inject browser speech adapter');
 for (const legacy of ['scripts/run-complete-audit.mjs','scripts/reconcile-main-truth.mjs']) if (!fs.existsSync(path.join(root,legacy)) || !fs.readFileSync(path.join(root,legacy),'utf8').includes('verify-product-truth.mjs')) failures.push(`legacy audit entrypoint is not delegated: ${legacy}`);
 for (const stale of ['data/audits/main-reconciliation.json','data/audits/main-reconciliation.md']) if (fs.existsSync(path.join(root,stale))) failures.push(`stale generated truth snapshot remains: ${stale}`);
 const result = { status: failures.length ? 'FAIL' : 'PASS', verificationDimensions:['repository','runtime','real-world'], unverifiedIsFirstClass:true, canonicalTruth:'docs/architecture/CURRENT_PRODUCT_TRUTH.md', auditAuthorityCount:1, failures };

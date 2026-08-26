@@ -9,7 +9,7 @@ const routes = read('src/routes/appSurfaceRoutes.ts');
 const app = read('views/app.ejs');
 const desk = read('public/js/kurukoo-desk-system.js');
 const deskData = read('public/js/kurukoo-desk-data.js');
-const chat = read('public/chat/index.html');
+const chat = read('views/partials/chat-workspace.ejs');
 const requests = read('public/js/kurukoo-requests-convergence.js');
 const tasks = read('public/js/kurukoo-tasks-convergence.js');
 const notifications = read('public/js/kurukoo-notifications-convergence.js');
@@ -18,6 +18,8 @@ const memory = read('public/js/kurukoo-memory-convergence.js');
 const discover = read('public/js/kurukoo-discover-convergence.js');
 const workOverview = read('public/js/kurukoo-agents-convergence.js');
 const styling = read('public/css/kurukoo-product-os-convergence.css');
+const revampStyling = read('public/css/kurukoo-product-os-revamp.css');
+const manifest = read('src/services/canonicalAuthenticatedScreenSetManifest.json');
 
 for (const pathname of ['/desk', '/chat', '/requests', '/tasks', '/notifications', '/connect', '/memory', '/discover', '/agents']) {
   assert.match(routes, new RegExp(`['\"]${pathname.replace('/', '\\/')}['\"]|router\\.get\\(['\"]${pathname.replace('/', '\\/')}`), `Canonical route must remain available: ${pathname}`);
@@ -41,7 +43,14 @@ for (const endpoint of ['/api/chat/economic-requests', '/api/tasks', '/api/notif
 }
 assert.doesNotMatch(deskData, /africastalking|providerBaseUrl|fetch\(['\"]https?:/i, 'Desk must not add a parallel external-provider transport');
 
-assert.match(chat, /<span class="agent-title" id="header-context-title">Kurukoo<\/span>/, 'Chat must remain the single Kurukoo-facing control surface');
+assert.match(app, /include\('partials\/chat-workspace'\)/, 'Chat must render inside the shared authenticated application template');
+assert.match(routes, /\['chat', \{ title: 'Conversation'/, 'Chat must have a canonical shared-app surface definition');
+assert.match(routes, /renderApp\(req, res, 'chat'\)/, 'Conversation routes must render the shared Chat app surface');
+assert.match(manifest, /views\/partials\/chat-workspace\.ejs/, 'The authenticated screen manifest must name the shared Chat workspace partial');
+assert.match(app, /id="chat-sidebar"/, 'Chat history, nearby radar, and sponsored placement must remain in the shared sidebar');
+assert.match(app, /id="history-list"/, 'Chat history must remain available from the shared sidebar');
+assert.match(app, /id="sidebar-promo"/, 'Sponsored placement must remain explicit in the shared Chat sidebar');
+assert.match(chat, /id="header-context-title"/, 'Chat must retain its integrated conversation subheader state hook');
 assert.match(chat, /What would you like to move forward\?/, 'Chat landing copy should orient around a personal need-to-outcome model');
 for (const label of ['Current work', 'Work in progress', 'What is happening', 'What is needed from you', 'Next actions']) {
   assert.match(chat, new RegExp(label), `Chat context should expose ${label}`);
@@ -56,5 +65,6 @@ assert.match(discover, /See what might help today\./, 'Discover must retain a us
 assert.match(workOverview, /What Kurukoo is keeping moving|Continue with Kurukoo/, 'Work overview must remain a readable inspection surface');
 assert.match(styling, /k-desk-module-today-flow/, 'Responsive style layer must make attention work materially distinct');
 assert.match(styling, /@media \(max-width: 820px\)/, 'Responsive hierarchy must have a compact-screen layout');
+for (const marker of ['k-app-header', 'k-app-sidebar', 'k-chat-workspace', 'k-chat-subheader', 'chat-toast-region', 'k-mobile-tabbar', '@media (max-width: 640px)']) assert.match(revampStyling, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `Shared product revamp must include ${marker}`);
 
 console.log('Product OS convergence contract passed: canonical routes and data owners remain intact; Desk, Chat, Requests, Tasks, Updates, Connect, Memory, Discover, and Work overview use one human-readable coordination model.');

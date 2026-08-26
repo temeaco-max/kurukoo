@@ -13,6 +13,7 @@ const router = express.Router();
 
 const surfaceMap = new Map([
   ['desk', { title: 'Desk', eyebrow: 'Your Kurukoo Brief', description: 'See what needs you, what Kurukoo is moving forward, and the next useful place to continue.', cta: '/chat', ctaLabel: 'Tell Kurukoo what you need' }],
+  ['chat', { title: 'Conversation', eyebrow: 'Your conversation with Kurukoo', description: 'Think through what you need, keep useful context close, and move the next step forward from one continuous conversation.', cta: '/chat', ctaLabel: 'New conversation' }],
   ['discover', { title: 'Discover', eyebrow: 'Useful possibilities', description: 'Explore people, services, products, topics, and opportunities with clear source context before you decide to act.', cta: '/discover', ctaLabel: 'Explore Discover' }],
   ['topics', { title: 'Topics', eyebrow: 'Community context', description: 'Browse and share moderated community questions, reports and experiences without turning community content into a provider, offer or payment claim.', cta: '/topics', ctaLabel: 'Open Topics' }],
   ['requests', { title: 'Requests', eyebrow: 'Coordination in motion', description: 'Follow what is being arranged, what changed, and what needs you—then return to the conversation that started it.', cta: '/requests', ctaLabel: 'View Requests' }],
@@ -41,7 +42,7 @@ const surfaceMap = new Map([
 
 
 const cleanCanonicalSections: Record<string, string> = {
-  '/desk': 'desk', '/discover': 'discover', '/topics': 'topics', '/requests': 'requests', '/reminders': 'reminders', '/saved': 'saved', '/cart': 'cart', '/tasks': 'tasks', '/connect': 'connect', '/agents': 'agents', '/capabilities': 'capabilities', '/opportunities': 'opportunities', '/wallet': 'wallet', '/points': 'points', '/top-up': 'top-up', '/subscriptions': 'subscriptions', '/checkout': 'checkout', '/confirmations': 'confirmations', '/memory': 'memory', '/artifacts': 'artifacts', '/prayer': 'prayer', '/call': 'call', '/notifications': 'notifications', '/safety': 'safety', '/settings': 'settings',
+  '/desk': 'desk', '/chat': 'chat', '/discover': 'discover', '/topics': 'topics', '/requests': 'requests', '/reminders': 'reminders', '/saved': 'saved', '/cart': 'cart', '/tasks': 'tasks', '/connect': 'connect', '/agents': 'agents', '/capabilities': 'capabilities', '/opportunities': 'opportunities', '/wallet': 'wallet', '/points': 'points', '/top-up': 'top-up', '/subscriptions': 'subscriptions', '/checkout': 'checkout', '/confirmations': 'confirmations', '/memory': 'memory', '/artifacts': 'artifacts', '/prayer': 'prayer', '/call': 'call', '/notifications': 'notifications', '/safety': 'safety', '/settings': 'settings',
 };
 
 const sharedPublicAuthenticated = new Set(['/discover', '/topics']);
@@ -88,9 +89,9 @@ router.get('/features', (_req, res) => res.render('features'));
 router.get('/developers', (_req, res) => res.render('developers'));
 router.get('/developers/api', (_req, res) => res.render('developers'));
 
-router.get('/chat/:conversationId', (req, res) => {
+router.get('/chat/:conversationId', optionalAuthenticateUser, (req, res) => {
   res.setHeader('X-Kurukoo-Conversation-Id', String(req.params.conversationId));
-  return res.sendFile(path.join(process.cwd(), 'public', 'chat', 'index.html'));
+  return renderApp(req, res, 'chat');
 });
 router.get('/share/:shareId', (req, res) => {
   res.setHeader('X-Kurukoo-Share-Id', String(req.params.shareId));

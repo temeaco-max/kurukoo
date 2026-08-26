@@ -17,6 +17,8 @@
     loadStylesheet('/css/kurukoo-platform-state-visual.css?v=1');
     if (window.location.pathname === '/chat' || window.location.pathname === '/chat/') {
       loadStylesheet('/css/kurukoo-chat-visual-completion.css?v=3');
+      // The unified authenticated shell is the final Chat visual authority.
+      loadStylesheet('/css/kurukoo-product-os-revamp.css?v=4');
     }
   }
 

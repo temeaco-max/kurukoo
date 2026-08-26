@@ -67,7 +67,7 @@
   const surfaceTitles = { cart: 'Cart', points: 'Points', topup: 'Top up', subscription: 'Subscription', requests: 'Requests', reminders: 'Reminders', saved: 'Saved & offers', tasks: 'Tasks', 'daily-picks': 'Daily Picks', discover: 'Discover', connect: 'Connect', memory: 'Memory', safety: 'Safety & check-ins', settings: 'Settings', topics: 'Topics' };
   function updateSurfaceHeader(view = null) {
     const title = $('header-context-title'); const back = $('surface-header-back');
-    if (title) title.textContent = view ? (surfaceTitles[view] || 'Workspace') : 'Agent';
+    if (title) title.textContent = view ? (surfaceTitles[view] || 'Workspace') : 'Kurukoo';
     if (back) { back.hidden = !view; back.setAttribute('aria-label', view ? `Back from ${surfaceTitles[view] || 'workspace'}` : 'Back to conversation'); }
   }
   function updateSurfaceContext(view = null) {

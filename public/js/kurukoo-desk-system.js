@@ -1,10 +1,10 @@
 (() => {
   'use strict';
-  if (!document.body?.classList.contains('k-app-page')) return;
+  if (!document.body?.classList.contains('k-app-page') || document.body.dataset.appSection !== 'desk') return;
   if (document.documentElement.dataset.kurukooDeskSystem === 'true') return;
   document.documentElement.dataset.kurukooDeskSystem = 'true';
 
-  let accountName = 'Your account';
+  let accountName = String(document.body?.dataset.displayName || 'Your account');
   let accountPhone = '';
   const section = document.body.dataset.appSection || '';
   const closeAll = () => document.querySelectorAll('.k-desk-drawer:not([hidden])').forEach((panel) => {
@@ -171,19 +171,8 @@
   };
 
   const boot = () => {
-    const host=document.querySelector('.k-app-header-actions'); if(!host) return;
-    const identity = host.querySelector('.k-app-identity');
-    accountName = identity?.querySelector('strong')?.textContent?.trim() || 'Your account';
-    accountPhone = identity?.querySelector('small')?.textContent?.trim() || '';
-    const ask = host.querySelector('.k-app-ask');
-    identity?.remove(); ask?.remove();
-
-    const search=makeDrawer({id:'kurukoo-drawer-search',title:'Search'}); const notifications=makeDrawer({id:'kurukoo-drawer-notifications',title:'Notifications'}); const profile=makeDrawer({id:'kurukoo-drawer-profile',title:'Account'}); const workspace=makeDrawer({id:'kurukoo-drawer-workspace',title:'Your Kurukoo'}); const context=makeDrawer({id:'kurukoo-drawer-context',title:'Context'}); if(!search||!notifications||!profile||!workspace||!context) return;
-    const controls = [searchButton(search.id), headerAction('Points','/points','points','k-desk-header-points'), headerAction('Cart','/cart','package','k-desk-header-cart'), iconButton('Notifications',notifications.id,'alert','k-desk-header-notifications'), iconButton('Open context inspector',context.id,'saved'), iconButton('Your Kurukoo workspace',workspace.id,'menu'), iconButton('Account',profile.id,'user','k-desk-header-account')];
-    controls.forEach((control) => host.appendChild(control));
-    wireDrawer(search,renderSearch); wireDrawer(notifications,renderNotifications); wireDrawer(profile,renderProfile); wireDrawer(workspace,renderOsWorkspace); wireDrawer(context,renderContext);
-    document.addEventListener('keydown',(event)=>{if(event.key==='Escape')closeAll();});
-    if(!document.querySelector('link[data-kurukoo-os-components]')){const link=document.createElement('link');link.rel='stylesheet';link.href='/css/kurukoo-os-components.css?v=1';link.dataset.kurukooOsComponents='true';document.head.appendChild(link);}
+    // Header, navigation, search and account controls are owned by views/app.ejs.
+    // Desk owns only its Brief composition, preventing a second legacy control row.
     renderDeskComposition();
   };
 

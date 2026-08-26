@@ -6,6 +6,7 @@ import { KURUKOO_OS_COMPONENTS } from '../src/services/kurukooOsComponentRegistr
 
 const shellRuntime = readFileSync(resolve(process.cwd(), 'public/js/kurukoo-desk-system.js'), 'utf8');
 const appShellRuntime = readFileSync(resolve(process.cwd(), 'public/js/kurukoo-app-shell.js'), 'utf8');
+const sharedAppTemplate = readFileSync(resolve(process.cwd(), 'views/app.ejs'), 'utf8');
 const componentCss = readFileSync(resolve(process.cwd(), 'public/css/kurukoo-os-components.css'), 'utf8');
 const finalCss = readFileSync(resolve(process.cwd(), 'public/css/kurukoo-os-final.css'), 'utf8');
 const pixelCss = readFileSync(resolve(process.cwd(), 'public/css/kurukoo-webapp-pixel-refinement.css'), 'utf8');
@@ -19,7 +20,8 @@ for (const required of [
   'Search Kurukoo','Notifications','Account','/points','/cart','/chat','/requests','/tasks','/discover','/connect','/topics','/saved','/reminders','/memory','/safety','/settings'
 ]) assert.ok(shellRuntime.includes(required), `Desk shell missing ${required}`);
 assert.ok(shellRuntime.includes("'k-desk-search-trigger'"));
-assert.ok(shellRuntime.includes("'k-desk-header-cart'"));
+assert.ok(sharedAppTemplate.includes('data-surface-view="cart"'), 'shared authenticated header must expose the cart action');
+assert.ok(sharedAppTemplate.includes('aria-label="Open cart"'), 'shared cart action must remain accessible');
 assert.ok(shellRuntime.includes('renderOsWorkspace'));
 assert.ok(shellRuntime.includes('renderContext'));
 assert.doesNotMatch(shellRuntime, /\/app\//, 'Desk shell must use direct canonical routes without legacy app aliases');

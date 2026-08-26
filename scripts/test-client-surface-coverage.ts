@@ -32,6 +32,7 @@ requireFile('public/js/kurukoo-app-shell.js', 'Web mobile navigation/runtime mod
 requireFile('public/js/kurukoo-pwa.js', 'PWA lifecycle/runtime owner');
 requireFile('public/offline.html', 'Offline platform-state surface');
 requireFile('views/app.ejs', 'Canonical authenticated Web App shell');
+requireFile('views/partials/chat-workspace.ejs', 'Canonical shared Chat workspace partial');
 requireFile('src/routes/appSurfaceRoutes.ts', 'Canonical authenticated Web App router');
 requireFile('src/routes/contentRoutes.ts', 'Canonical public content/resource router');
 requireFile('public/api-docs.html', 'API docs visual surface');
@@ -118,9 +119,14 @@ if (!appShell.includes("path==='/chat'")) failures.push('Web App Agent page-spec
 if (appShell.includes('/app/agent')) failures.push('Web App runtime retains a legacy Agent alias');
 if (!appShell.includes('kurukoo-os-final')) failures.push('Web App runtime does not mount OS final authority');
 
-const chat = read('public/chat/index.html');
-if (!chat.includes('/js/kurukoo-pwa.js')) failures.push('Chat/PWA runtime owner missing');
-if (!chat.includes('/css/kurukoo-chat.css')) failures.push('Chat base visual authority missing');
+const chat = read('views/partials/chat-workspace.ejs');
+if (!app.includes("section === 'chat'")) failures.push('Shared authenticated shell has no Chat composition branch');
+if (!app.includes("include('partials/chat-workspace')")) failures.push('Shared authenticated shell does not mount the canonical Chat workspace partial');
+if (!appRouter.includes("'/chat': 'chat'")) failures.push('Canonical Web App direct Chat route is missing');
+if (!appRouter.includes("renderApp(req, res, 'chat')")) failures.push('Conversation routes do not render the shared Chat app surface');
+if (!app.includes('/js/kurukoo-pwa.js')) failures.push('Chat/PWA runtime owner missing from shared application shell');
+if (!app.includes('/css/kurukoo-chat.css')) failures.push('Chat base visual authority is not scoped through the shared application shell');
+for (const marker of ['chat-content', 'composer-wrap', 'chat-inspector', 'message-input']) if (!chat.includes(marker)) failures.push(`Canonical shared Chat workspace is missing ${marker}`);
 const workspace = read('views/workspace.ejs');
 if (!workspace.includes('/css/kurukoo-workspace.css')) failures.push('Workspace base visual authority missing');
 

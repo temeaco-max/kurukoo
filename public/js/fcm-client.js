@@ -115,24 +115,24 @@
     const button = document.createElement('button');
     button.id = 'kurukoo-enable-notifications';
     button.type = 'button';
-    button.className = 'k-app-ask';
-    button.textContent = 'Enable notifications';
+    button.className = 'k-app-notification-optin';
+    button.textContent = 'Turn on alerts';
     button.addEventListener('click', async () => {
       button.disabled = true;
       button.textContent = 'Enabling…';
       try {
         const result = await enable();
         if (result.status === 'registered') {
-          button.textContent = 'Notifications on';
+          button.textContent = 'Alerts on';
           button.setAttribute('aria-label', 'Kurukoo notifications enabled');
           return;
         }
-        button.textContent = result.status === 'denied' ? 'Notifications blocked' : 'Try notifications again';
+        button.textContent = result.status === 'denied' ? 'Alerts blocked' : 'Try alerts again';
         button.disabled = false;
       } catch (error) {
         status = 'error';
         console.warn('[Kurukoo FCM] permission/registration failed', error);
-        button.textContent = 'Try notifications again';
+        button.textContent = 'Try alerts again';
         button.disabled = false;
       }
     });
