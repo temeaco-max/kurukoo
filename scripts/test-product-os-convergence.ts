@@ -25,10 +25,10 @@ for (const pathname of ['/desk', '/chat', '/requests', '/tasks', '/notifications
   assert.match(routes, new RegExp(`['\"]${pathname.replace('/', '\\/')}['\"]|router\\.get\\(['\"]${pathname.replace('/', '\\/')}`), `Canonical route must remain available: ${pathname}`);
 }
 
-for (const expected of ['Desk', 'Chat', 'Requests', 'Tasks', 'Updates', 'Discover', 'Connect', 'Work overview', 'Memory']) {
+for (const expected of ['Desk', 'Agent', 'Requests', 'Tasks', 'Updates', 'Discover', 'Connect', 'Memory', 'Safety', 'Settings']) {
   assert.match(app, new RegExp(`>${expected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}<`), `Authenticated hierarchy should expose ${expected}`);
 }
-assert.match(app, /aria-label="More Kurukoo"/, 'Secondary destinations must be grouped rather than crowding primary navigation');
+assert.match(app, /aria-label="Supporting workspace"/, 'Secondary destinations must be grouped rather than crowding primary navigation');
 assert.match(routes, /\['agents', \{ title: 'Work overview'/, 'The canonical /agents route should be presented as a user-facing work overview');
 assert.match(app, /Keep this work connected/, 'Shared surfaces should explain relationship continuity without runtime vocabulary');
 
@@ -65,6 +65,6 @@ assert.match(discover, /See what might help today\./, 'Discover must retain a us
 assert.match(workOverview, /What Kurukoo is keeping moving|Continue with Kurukoo/, 'Work overview must remain a readable inspection surface');
 assert.match(styling, /k-desk-module-today-flow/, 'Responsive style layer must make attention work materially distinct');
 assert.match(styling, /@media \(max-width: 820px\)/, 'Responsive hierarchy must have a compact-screen layout');
-for (const marker of ['k-app-header', 'k-app-sidebar', 'k-chat-workspace', 'k-chat-subheader', 'chat-toast-region', 'k-mobile-tabbar', '@media (max-width: 640px)']) assert.match(revampStyling, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `Shared product revamp must include ${marker}`);
+for (const marker of ['k-reference-app-header', 'k-reference-sidebar', 'k-chat-workspace', 'k-chat-subheader', 'chat-toast-region', 'k-mobile-tabbar', '@media (max-width: 767px)']) assert.match(revampStyling, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `Shared product revamp must include ${marker}`);
 
 console.log('Product OS convergence contract passed: canonical routes and data owners remain intact; Desk, Chat, Requests, Tasks, Updates, Connect, Memory, Discover, and Work overview use one human-readable coordination model.');

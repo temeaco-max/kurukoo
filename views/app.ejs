@@ -29,64 +29,67 @@
 </head>
 <body class="k-app-page workspace-page k-app-section-<%= section %><%= section === 'chat' ? ' kurukoo-chat-page' : '' %>" data-workspace-section="<%= section %>" data-app-section="<%= section %>" data-display-name="<%= displayName %>">
   <% const icon = (name) => `<svg class="k-app-icon" aria-hidden="true"><use href="/icons/kurukoo-icons.svg#${name}"></use></svg>`; %>
-  <div class="k-app-shell <%= section === 'chat' ? 'chat-template-shell' : '' %>">
-    <header class="k-app-header" aria-label="Kurukoo controls">
-      <div class="k-app-header-start">
-        <button class="k-app-icon-button k-app-mobile-menu" id="open-sidebar" type="button" aria-label="Open navigation" aria-expanded="false"><%- icon('menu') %></button>
-        <a href="/desk" class="k-app-brand"><img src="/assets/brand/logo-icon.png" alt="Kurukoo" width="32" height="32"><span>Kurukoo</span></a>
-        <div class="k-app-header-location"><span class="k-app-header-kicker">Your workspace</span><strong><%= section === 'chat' ? 'Conversation' : selected.title %></strong></div>
+  <div class="k-app-shell k-reference-shell <%= section === 'chat' ? 'chat-template-shell' : '' %>">
+    <header class="k-app-header k-reference-app-header" aria-label="Kurukoo workspace controls">
+      <div class="k-reference-header-start">
+        <button class="k-app-icon-button k-app-mobile-menu header-drawer" id="open-sidebar" type="button" aria-label="Open workspace navigation" aria-expanded="false"><%- icon('menu') %></button>
+        <a href="/desk" class="k-app-brand k-reference-brand" aria-label="Open your Kurukoo Desk"><img src="/assets/brand/logo-icon.png" alt="" width="28" height="28"><span>Kurukoo</span></a>
+        <a class="k-reference-agent-switcher" href="/chat" aria-label="Open Agent workspace"><span class="k-reference-agent-mark"><%- icon('chat') %></span><span><strong>Agent</strong><small>Coordinate what matters</small></span><%- icon('more') %></a>
       </div>
-      <div class="k-app-header-actions">
-        <a class="k-app-search" href="<%= section === 'chat' ? '#' : '/discover' %>" data-surface-view="discover" aria-label="Search Kurukoo"><%- icon('discover') %><span>Search</span><kbd>⌘ K</kbd></a>
+      <div class="k-app-header-actions k-reference-header-actions">
+        <a class="k-reference-header-control k-reference-header-search" id="k-reference-header-search" href="/discover" aria-label="Search Discover"><%- icon('search') %><span>Search</span></a>
+        <a class="k-reference-header-control" id="header-nearby-radar" href="/discover" aria-label="Open Nearby Radar"><span class="k-reference-radar-pulse" aria-hidden="true"></span><%- icon('radar') %><span class="k-reference-control-label">Nearby</span></a>
+        <a class="k-reference-header-control" id="header-call" href="/call" aria-label="Open Kurukoo Call"><%- icon('call') %><span class="k-reference-control-label">Call</span></a>
         <% if (section === 'chat') { %>
-        <span class="k-app-connection" id="connection-status"><span class="presence-pulse is-active" id="header-presence-pulse" data-agent-presence="idle" aria-hidden="true"></span><span class="k-app-connection-label" id="connection-label">connected</span></span>
-        <button class="k-app-icon-button k-app-header-utility" id="points-balance" type="button" data-surface-view="points" aria-label="Points balance"><%- icon('points') %><span>0</span></button>
-        <button class="k-app-icon-button k-app-header-utility" type="button" data-surface-view="cart" aria-label="Open cart"><%- icon('package') %></button>
-        <button class="k-app-icon-button" id="notification-toggle" type="button" aria-label="Show notifications" aria-controls="chat-inspector" aria-expanded="false"><%- icon('notification') %><span class="notification-badge" id="notification-badge" hidden>0</span></button>
-        <button class="k-app-icon-button" id="memory-toggle" type="button" aria-label="Show conversation context" aria-controls="chat-inspector" aria-expanded="false"><%- icon('saved') %></button>
-        <div class="k-app-overflow"><button class="k-app-icon-button" id="chat-overflow-toggle" type="button" aria-label="More conversation actions" aria-controls="chat-overflow-menu" aria-expanded="false"><%- icon('more') %></button><div class="chat-overflow-menu" id="chat-overflow-menu" role="menu" hidden><button type="button" role="menuitem" data-overflow-action="pin">Pin</button><button type="button" role="menuitem" data-surface-view="saved">Saved &amp; offers</button><button type="button" role="menuitem" data-surface-view="reminders">Reminders</button><button type="button" role="menuitem" data-overflow-action="delete">Delete conversation</button></div></div>
+        <button class="k-reference-header-control k-reference-new-conversation" id="new-chat" type="button" aria-label="Start a new conversation"><%- icon('edit') %><span class="k-reference-control-label">New</span></button>
+        <button class="k-reference-header-control" id="notification-toggle" type="button" aria-label="Show notifications" aria-controls="chat-inspector" aria-expanded="false"><%- icon('notification') %><span class="notification-badge" id="notification-badge" hidden>0</span><span class="k-reference-control-label">Updates</span></button>
+        <button class="k-reference-header-control" id="memory-toggle" type="button" aria-label="Open conversation context" aria-controls="chat-inspector" aria-expanded="false"><%- icon('saved') %><span class="k-reference-control-label">Context</span></button>
         <% } else { %>
-        <a class="k-app-ask" href="/chat"><%- icon('chat') %><span>Talk to Kurukoo</span></a>
+        <a class="k-reference-header-control" id="header-messages" href="/chat" aria-label="Open Agent conversations"><%- icon('chat') %><span class="k-reference-control-label">Agent</span></a>
+        <a class="k-reference-header-control" id="header-notifications" href="/notifications" aria-label="Open notifications"><%- icon('notification') %><span class="k-reference-control-label">Updates</span></a>
         <% } %>
-        <a class="k-app-account" href="/settings" aria-label="Open account settings"><span><%= String(displayName || 'K').slice(0, 1).toUpperCase() %></span></a>
+        <a class="k-reference-header-control" id="header-points" href="/points" aria-label="Open points balance"><%- icon('points') %><span class="k-reference-control-label">Points</span></a>
+        <a class="k-reference-header-control" id="header-cart" href="/cart" aria-label="Open cart"><%- icon('cart') %><span class="k-reference-control-label">Cart</span></a>
+        <a class="k-reference-account-button" id="header-account" href="/settings" aria-label="Open account and settings"><span><%= String(displayName || 'K').slice(0, 1).toUpperCase() %></span></a>
+        <details class="k-reference-header-overflow"><summary class="k-reference-header-control" id="header-drawer" aria-label="Open more workspace controls"><%- icon('more') %></summary><div class="k-reference-header-menu"><a href="/call">Kurukoo Call</a><a href="/points">Points</a><a href="/cart">Cart</a><a href="/settings">Settings</a><a href="/channels">Connections</a><a href="/help">Help &amp; support</a></div></details>
       </div>
     </header>
-    <aside class="k-app-sidebar" id="chat-sidebar" aria-label="Kurukoo application navigation">
-      <div class="k-app-sidebar-top"><div class="k-app-sidebar-label">Kurukoo</div><button class="k-app-icon-button k-app-sidebar-close" id="close-sidebar" type="button" aria-label="Close navigation"><%- icon('close') %></button></div>
-      <button class="k-app-new" id="new-chat" type="button"><%- icon('plus') %><span>New conversation</span></button>
-      <nav class="k-app-nav" aria-label="Primary">
-        <a class="<%= section === 'desk' ? 'active' : '' %>" href="/desk"><%- icon('chat') %><span>Desk</span></a>
-        <a class="<%= section === 'chat' ? 'active' : '' %>" href="/chat"><%- icon('chat') %><span>Chat</span></a>
+    <aside class="k-app-sidebar k-reference-sidebar" id="chat-sidebar" aria-label="Kurukoo application navigation">
+      <div class="k-app-sidebar-top"><div class="k-app-sidebar-label">Workspace</div><button class="k-app-icon-button k-app-sidebar-close" id="close-sidebar" type="button" aria-label="Close workspace navigation"><%- icon('close') %></button></div>
+      <nav class="k-app-nav k-reference-primary-nav" aria-label="Primary workspace">
+        <a class="<%= section === 'desk' ? 'active' : '' %>" href="/desk"><%- icon('work') %><span>Desk</span></a>
+        <a class="<%= section === 'chat' ? 'active' : '' %>" href="/chat"><%- icon('chat') %><span>Agent</span></a>
         <a class="<%= section === 'requests' ? 'active' : '' %>" href="/requests"><%- icon('request') %><span>Requests</span></a>
         <a class="<%= section === 'tasks' ? 'active' : '' %>" href="/tasks"><%- icon('work') %><span>Tasks</span></a>
-        <a class="<%= section === 'notifications' ? 'active' : '' %>" href="/notifications"><%- icon('notification') %><span>Updates</span></a>
         <a class="<%= section === 'discover' ? 'active' : '' %>" href="/discover"><%- icon('discover') %><span>Discover</span></a>
-        <a class="<%= section === 'connect' ? 'active' : '' %>" href="/connect"><%- icon('settings') %><span>Connect</span></a>
       </nav>
       <div class="k-app-divider"></div>
-      <nav class="k-app-nav" aria-label="More Kurukoo">
-        <a class="<%= section === 'agents' ? 'active' : '' %>" href="/agents"><%- icon('chat') %><span>Work overview</span></a>
+      <nav class="k-app-nav k-reference-secondary-nav" aria-label="Supporting workspace">
+        <a class="<%= section === 'reminders' ? 'active' : '' %>" href="/reminders"><%- icon('reminder') %><span>Reminders</span></a>
+        <a class="<%= section === 'connect' ? 'active' : '' %>" href="/connect"><%- icon('channels') %><span>Connect</span></a>
         <a class="<%= section === 'memory' ? 'active' : '' %>" href="/memory"><%- icon('saved') %><span>Memory</span></a>
-        <a class="<%= section === 'saved' ? 'active' : '' %>" href="/saved"><%- icon('saved') %><span>Saved</span></a>
-        <a class="<%= section === 'settings' ? 'active' : '' %>" href="/settings"><%- icon('settings') %><span>Settings</span></a>
-        <a href="/help"><%- icon('help') %><span>Help</span></a>
+        <a class="<%= section === 'safety' ? 'active' : '' %>" href="/safety"><%- icon('safety') %><span>Safety</span></a>
       </nav>
       <% if (section === 'chat') { %>
-      <section class="k-app-sidebar-conversation" aria-label="Conversation support">
-        <div class="k-app-sidebar-section-head"><span>Recent conversations</span><button class="k-app-sidebar-text" type="button" id="sidebar-more-toggle" aria-controls="sidebar-more-items" aria-expanded="false">More</button></div>
+      <section class="k-app-sidebar-conversation k-reference-conversation-nav" aria-label="Agent conversation utilities">
+        <div class="k-app-sidebar-section-head"><span>Recent conversations</span><button class="k-app-sidebar-text" type="button" id="sidebar-more-toggle" aria-controls="sidebar-more-items" aria-expanded="false">View all</button></div>
         <div class="k-app-history-list" id="history-list"></div>
-        <div class="k-app-sidebar-radar"><button type="button" id="radar-toggle" class="radar-toggle is-active" aria-pressed="true"><span class="k-app-radar-mark"></span><span><strong>Nearby radar</strong><small id="radar-status">Ready</small></span></button></div>
-        <div class="k-app-sidebar-presence"><span><i class="k-app-presence-dot"></i>Presence</span><strong id="sidebar-presence" data-agent-presence="idle" data-agent-presence-label>Available</strong><span>Memory</span><strong id="sidebar-memory-status">In use</strong><span>Connected</span><strong id="sidebar-channel-status">Web</strong></div>
-        <button class="k-app-sponsored" id="sidebar-promo" type="button" aria-label="Sponsored local service promotion" hidden><img src="" alt="" loading="lazy"><span class="sidebar-sponsored-tag">Sponsored</span></button>
-        <div class="k-app-sidebar-more" id="sidebar-more-items" hidden><button class="k-app-sidebar-text" type="button" data-surface-view="safety">Safety &amp; check-ins</button><button class="k-app-sidebar-text" type="button" data-surface-view="memory">Memory</button><button class="k-app-sidebar-text" type="button" id="workspace-logout">Log out</button></div>
+        <div class="k-app-sidebar-radar"><button type="button" id="radar-toggle" class="radar-toggle is-active" aria-pressed="true"><span class="k-app-radar-mark"></span><span><strong>Nearby Radar</strong><small id="radar-status">Ready when you are</small></span></button></div>
+        <button class="k-app-sponsored" id="sidebar-promo" type="button" aria-label="Open sponsored local service" hidden><img src="" alt="" loading="lazy"><span class="sidebar-sponsored-tag">Sponsored</span></button>
+        <div class="k-app-sidebar-more" id="sidebar-more-items" hidden><a href="/saved">Saved items</a><a href="/notifications">Updates</a><a href="/settings#k-settings-privacy">Memory and privacy</a></div>
       </section>
       <% } %>
+      <div class="k-reference-account-nav">
+        <a class="<%= section === 'settings' ? 'active' : '' %>" href="/settings"><%- icon('settings') %><span>Settings</span></a>
+        <details><summary><span class="k-reference-account-avatar"><%= String(displayName || 'K').slice(0, 1).toUpperCase() %></span><span><strong><%= displayName || 'Your account' %></strong><small>Account and plan</small></span><%- icon('more') %></summary><div><a href="/subscriptions">Subscription</a><a href="/wallet">Wallet and billing</a><a href="/channels">Connected channels</a><button type="button" id="workspace-logout">Log out</button></div></details>
+      </div>
     </aside>
     <main class="k-app-main">
       <% if (section === 'chat') { %>
         <%- include('partials/chat-workspace') %>
       <% } else { %>
       <div class="k-app-container">
+        <% if (section !== 'settings') { %>
         <div class="k-app-eyebrow"><%= selected.eyebrow %></div>
         <div class="k-app-title-row">
           <div><h1><%= selected.title %></h1><p><%= selected.description %></p></div>
@@ -97,6 +100,7 @@
           <div><div class="ko-context-title">Keep this work connected</div><div class="ko-context-meta">Open any item to see what changed, what is next, and the conversation that started it.</div></div>
           <a class="ko-context-action" href="/chat">Ask Kurukoo</a>
         </section>
+        <% } %>
         <% if (section === 'desk') { %>
           <section class="k-desk-live" data-desk-root data-workspace-owned-surface="desk" aria-label="Live Desk summary">
             <div class="k-desk-loading" data-desk-loading aria-live="polite">Loading your Desk…</div>
@@ -111,7 +115,8 @@
           <section class="k-connect-people" data-connect-people-root aria-live="polite" aria-busy="true"></section>
 
         <% } else if (section === 'wallet' || section === 'points' || section === 'top-up' || section === 'subscriptions') { %>
-          <section class="k-app-grid three"><article class="k-app-card"><span class="k-app-card-label">Wallet</span><h2>Money controls</h2><p>Wallet state is separate from provider success and always reflects canonical economic evidence.</p><a href="/wallet" class="k-app-card-action">Wallet →</a></article><article class="k-app-card"><span class="k-app-card-label">Points</span><h2>Closed-loop utility</h2><p>Points remain independent from cash payment rails and can be governed without a payment provider.</p><a href="/points" class="k-app-card-action">Points →</a></article><article class="k-app-card"><span class="k-app-card-label">Billing</span><h2>Top Up & Subscriptions</h2><p>These surfaces remain ready even when the live payment provider is disabled or awaiting verification.</p><div><a href="/top-up" class="k-app-card-action">Top Up →</a> · <a href="/subscriptions" class="k-app-card-action">Subscriptions →</a></div></article></section>
+          <% const moneyLinks = section === 'wallet' ? { first: ['/points', 'Review points'], second: ['/top-up', 'Review top-ups'], third: ['/subscriptions', 'Manage subscription'] } : section === 'points' ? { first: ['/wallet', 'Open wallet'], second: ['/top-up', 'Review top-ups'], third: ['/subscriptions', 'Manage subscription'] } : section === 'top-up' ? { first: ['/wallet', 'Open wallet'], second: ['/points', 'Review points'], third: ['/subscriptions', 'Manage subscription'] } : { first: ['/wallet', 'Open wallet'], second: ['/points', 'Review points'], third: ['/top-up', 'Review top-ups'] }; %>
+          <section class="k-app-grid three"><article class="k-app-card"><span class="k-app-card-label">Wallet</span><h2>Money controls</h2><p>Wallet state is separate from provider success and always reflects canonical economic evidence.</p><a href="<%= moneyLinks.first[0] %>" class="k-app-card-action"><%= moneyLinks.first[1] %> →</a></article><article class="k-app-card"><span class="k-app-card-label">Points</span><h2>Closed-loop utility</h2><p>Points remain independent from cash payment rails and can be governed without a payment provider.</p><a href="<%= moneyLinks.second[0] %>" class="k-app-card-action"><%= moneyLinks.second[1] %> →</a></article><article class="k-app-card"><span class="k-app-card-label">Billing</span><h2>Plan and billing</h2><p>Review plan and payment readiness; completion is only shown when a configured provider returns evidence.</p><a href="<%= moneyLinks.third[0] %>" class="k-app-card-action"><%= moneyLinks.third[1] %> →</a></article></section>
         <% } else if (section === 'checkout' || section === 'confirmations') { %>
           <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label">Economic truth</span><h2>Explicit confirmation before irreversible action.</h2><p>Checkout and confirmations use canonical request state, payment policy and evidence. UI never turns intent into claimed success.</p><a href="/requests" class="k-app-card-action">View Requests →</a></article><article class="k-app-card"><span class="k-app-card-label">Recovery</span><h2>Continue, retry or recover.</h2><p>Failed, pending, cancelled and completed states remain visible and resumable without losing the originating conversation.</p><a href="/chat" class="k-app-card-action">Continue in Chat →</a></article></section>
         <% } else if (section === 'requests') { %>
@@ -147,7 +152,7 @@
             <div class="k-app-list-loading">Loading your notifications…</div>
           </section>
         <% } else if (section === 'topics') { %>
-          <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label">Community context</span><h2>Useful local knowledge, clearly labelled.</h2><p>Topics are community-shared questions, reports and experiences. They provide context and discovery signals but do not confirm provider status, price, stock, availability, booking or payment.</p><a href="/topics" class="k-app-primary">Browse Topics</a></article><article class="k-app-card"><span class="k-app-card-label">Moderation boundary</span><h2>Share with a review boundary.</h2><p>Authenticated Topics and replies remain subject to moderation and reporting. Community content never silently creates a provider, offer, economic request or transaction.</p><a href="/topics#create-topic" class="k-app-card-action">Share a Topic →</a></article></section>
+          <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label">Community context</span><h2>Useful local knowledge, clearly labelled.</h2><p>Topics are community-shared questions, reports and experiences. They provide context and discovery signals but do not confirm provider status, price, stock, availability, booking or payment.</p><a href="/discover" class="k-app-primary">Return to Discover</a></article><article class="k-app-card"><span class="k-app-card-label">Moderation boundary</span><h2>Share with a review boundary.</h2><p>Authenticated Topics and replies remain subject to moderation and reporting. Community content never silently creates a provider, offer, economic request or transaction.</p><a href="/topics#create-topic" class="k-app-card-action">Share a Topic →</a></article></section>
         <% } else if (section === 'reminders') { %>
           <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label">Reminder timeline</span><h2>Keep planned follow-through visible.</h2><p>Upcoming, overdue, completed and recurring reminders remain tied to their canonical conversation and notification state. Create or change a reminder through Chat.</p><a href="/chat?prompt=Show%20me%20my%20reminders" class="k-app-primary">Manage reminders in Chat</a></article><article class="k-app-card"><span class="k-app-card-label">Recovery</span><h2>Pause, resume or cancel without losing context.</h2><p>If a reminder is unavailable, delayed or no longer relevant, return to its originating conversation to review, reschedule or cancel it explicitly.</p><a href="/notifications" class="k-app-card-action">Open Notifications →</a></article></section>
         <% } else if (section === 'saved') { %>
@@ -160,35 +165,48 @@
         <% } else if (section === 'capabilities') { %>
           <section class="k-app-card"><span class="k-app-card-label">Capability Portfolio</span><h2>Many roles. One identity.</h2><p>A user can be a barber, contributor, delivery worker, seller and buyer at the same time without creating separate accounts or memories.</p><a href="/chat?prompt=Show%20me%20my%20capabilities" class="k-app-primary">Open Capability Portfolio</a></section>
         <% } else if (section === 'opportunities') { %>
-          <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label">Proactive Opportunity Engine</span><h2>Useful ideas without noise.</h2><p>Quiet-user engagement, daily picks and network opportunities are surfaced only when relevant and clearly labelled.</p><a href="/discover" class="k-app-card-action">Open Discover →</a></article><article class="k-app-card"><span class="k-app-card-label">Truth boundary</span><h2>No invented opportunity.</h2><p>Availability, provider status, price and fulfilment remain evidence-gated.</p><a href="/discover" class="k-app-card-action">Explore the network →</a></article></section>
+          <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label">Proactive Opportunity Engine</span><h2>Useful ideas without noise.</h2><p>Quiet-user engagement, daily picks and network opportunities are surfaced only when relevant and clearly labelled.</p><a href="/discover" class="k-app-card-action">Open Discover →</a></article><article class="k-app-card"><span class="k-app-card-label">Truth boundary</span><h2>No invented opportunity.</h2><p>Availability, provider status, price and fulfilment remain evidence-gated.</p><a href="/network" class="k-app-card-action">Explore the network →</a></article></section>
         <% } else if (section === 'artifacts') { %>
           <section class="k-app-card"><span class="k-app-card-label">ArtifactService</span><h2>Your files, recordings and transcripts.</h2><p>Artifact metadata is owner-scoped; Google Drive is preferred for durable user-owned storage, with managed fallback only when appropriate.</p><a href="/connect" class="k-app-primary">Open Artifact History</a></section>
         <% } else if (section === 'prayer') { %>
           <section class="k-app-card"><span class="k-app-card-label">Prayer Companion</span><h2>A first-class Kurukoo agent.</h2><p>Prayer requests can become personalized written prayers, routines, reminders and voice experiences through the existing Agent Runtime and voice/artifact boundaries.</p><a href="/chat?prompt=I%20would%20like%20a%20prayer" class="k-app-primary">Start a prayer conversation</a></section>
         <% } else if (section === 'call') { %>
-          <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label">AI voice</span><h2>Talk to Kurukoo.</h2><p>Realtime AI voice uses the canonical conversation and tool boundary.</p><a href="/chat?voice=1" class="k-app-primary">Open AI voice</a></article><article class="k-app-card"><span class="k-app-card-label">Kurukoo Call</span><h2>Realtime peer communication.</h2><p>WebRTC calling uses the canonical identity and signalling layer; production relay/provider readiness remains externally gated.</p><a href="/call" class="k-app-card-action">Open Call →</a></article></section>
+          <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label">AI voice</span><h2>Talk to Kurukoo.</h2><p>Realtime AI voice uses the canonical conversation and tool boundary.</p><a href="/chat?voice=1" class="k-app-primary">Open AI voice</a></article><article class="k-app-card"><span class="k-app-card-label">Kurukoo Call</span><h2>Realtime peer communication.</h2><p>WebRTC calling uses the canonical identity and signalling layer; production relay/provider readiness remains externally gated.</p><a href="/channels" class="k-app-card-action">Review channel readiness →</a></article></section>
         <% } else if (section === 'safety') { %>
-          <section class="k-app-card"><span class="k-app-card-label">Safety</span><h2>Explicit, consent-bound safety support.</h2><p>Manage check-ins, trusted contacts and safety continuity without implying emergency-service delivery.</p><a href="/safety" class="k-app-primary">Open Safety →</a></section>
+          <section class="k-app-card"><span class="k-app-card-label">Safety</span><h2>Explicit, consent-bound safety support.</h2><p>Manage check-ins, trusted contacts and safety continuity without implying emergency-service delivery.</p><a href="/settings#k-settings-safety" class="k-app-primary">Review safety preferences</a></section>
         <% } else if (section === 'discover') { %>
-          <section class="k-app-grid two k-discover-route-links"><article class="k-app-card"><span class="k-app-card-label">Nearby Pulse</span><h2>Local presence with consent and truth.</h2><p>Presence and availability are surfaced from the canonical Pulse/network boundary rather than guessed from stale UI state.</p><a href="/discover" class="k-app-card-action">Open Discover →</a></article><article class="k-app-card"><span class="k-app-card-label">Opportunities</span><h2>Find useful things.</h2><p>Explore products, providers, Topics and opportunities without leaving the same Kurukoo relationship.</p><a href="/discover" class="k-app-card-action">Open Opportunities →</a></article></section>
+          <section class="k-app-grid two k-discover-route-links"><article class="k-app-card"><span class="k-app-card-label">Nearby Radar</span><h2>Local context with consent.</h2><p>Presence and availability stay approximate, source-aware, and distinct from any provider confirmation.</p><a href="/topics" class="k-app-card-action">Browse community context →</a></article><article class="k-app-card"><span class="k-app-card-label">Opportunities</span><h2>Find useful next steps.</h2><p>Explore products, providers, Topics and opportunities without losing the context that made them useful.</p><a href="/opportunities" class="k-app-card-action">View opportunities →</a></article></section>
+        <% } else if (section === 'settings') { %>
+          <section class="k-settings-hub" id="k-settings-hub" aria-label="Settings and account hub">
+            <header class="k-settings-hub-intro"><span class="k-app-card-label">Account and workspace</span><h2>Settings that keep Kurukoo working your way</h2><p>Manage your plan, billing, channels, notifications and personal preferences from one place. Actions remain explicit and provider state remains separate from readiness.</p></header>
+            <div class="k-settings-grid"><article class="k-settings-card" id="k-settings-subscription"><span class="k-settings-icon"><%- icon('points') %></span><div><h3>Subscription and plan</h3><p>Review plan options, included features and renewal details.</p></div><a href="/subscriptions">Manage subscription</a></article><article class="k-settings-card" id="k-settings-billing"><span class="k-settings-icon"><%- icon('cart') %></span><div><h3>Wallet and billing</h3><p>Review points, top-ups and payment readiness without treating them as confirmed transactions.</p></div><a href="/wallet">Open wallet</a></article><article class="k-settings-card" id="k-settings-connections"><span class="k-settings-icon"><%- icon('channels') %></span><div><h3>Connections</h3><p>Choose the channels and sources you want Kurukoo to use.</p></div><a href="/channels">Manage channels</a></article><article class="k-settings-card" id="k-settings-notifications"><span class="k-settings-icon"><%- icon('notification') %></span><div><h3>Notifications and reminders</h3><p>Decide which updates deserve your attention and where they should appear.</p></div><a href="/notifications">Review updates</a></article><article class="k-settings-card" id="k-settings-privacy"><span class="k-settings-icon"><%- icon('saved') %></span><div><h3>Memory and privacy</h3><p>Review what is remembered and the context you have chosen to keep available.</p></div><a href="/memory">Review memory</a></article><article class="k-settings-card" id="k-settings-safety"><span class="k-settings-icon"><%- icon('safety') %></span><div><h3>Safety and check-ins</h3><p>Manage consent-bound check-ins and trusted contacts without implying emergency response.</p></div><a href="/safety">Open safety</a></article><article class="k-settings-card" id="k-settings-support"><span class="k-settings-icon"><%- icon('help') %></span><div><h3>Help and support</h3><p>Find product guidance, account assistance and available support routes.</p></div><a href="/help">Get help</a></article></div>
+          </section>
         <% } else { %>
           <section class="k-app-card"><span class="k-app-card-label"><%= selected.eyebrow %></span><h2><%= selected.title %> remains connected to the same Kurukoo OS.</h2><p><%= selected.description %></p><a href="<%= selected.cta %>" class="k-app-primary"><%= selected.ctaLabel %></a></section>
         <% } %>
-        <section class="k-app-status-row" aria-label="Workspace guidance">
-          <span class="k-status" data-state="ready">Kurukoo keeps work connected</span>
-          <span class="k-status">Continue from Desk, a detail, or Chat.</span>
-        </section>
       </div>
       <% } %>
     </main>
+    <% if (section !== 'chat') { %>
+    <aside class="k-reference-context-rail" aria-label="Helpful workspace context">
+      <div class="k-reference-rail-heading"><span>Context</span><button type="button" class="k-reference-rail-collapse" aria-label="Collapse workspace context" disabled><%- icon('chevron-left') %></button></div>
+      <section class="k-reference-rail-card"><span class="k-reference-rail-label">Keep in view</span><strong><%= section === 'requests' ? 'Requests need clear decisions' : section === 'tasks' ? 'Tasks move requests forward' : section === 'discover' ? 'Results remain source-aware' : 'What matters next' %></strong><p><%= section === 'requests' ? 'Review the next decision, evidence, or response that keeps an outcome moving.' : section === 'tasks' ? 'Each action remains connected to the request or outcome it supports.' : section === 'discover' ? 'Nearby information is useful only when its source and current availability are clear.' : 'Kurukoo keeps useful context close without turning it into an unverified claim.' %></p></section>
+      <section class="k-reference-rail-card"><span class="k-reference-rail-label">Shortcuts</span><a href="/notifications"><%- icon('notification') %><span>Updates</span></a><a href="/reminders"><%- icon('reminder') %><span>Reminders</span></a><a href="/settings#k-settings-privacy"><%- icon('saved') %><span>Memory &amp; privacy</span></a></section>
+      <section class="k-reference-rail-card k-reference-rail-card-muted"><span class="k-reference-rail-label">Availability</span><p>Details that need provider, source, or delivery confirmation stay clearly marked until they are verified.</p></section>
+    </aside>
+    <% } %>
   </div>
-  <nav class="k-mobile-tabbar" aria-label="Kurukoo application navigation">
-    <a href="/desk" aria-current="<%= section === 'desk' ? 'page' : 'false' %>"><span><%- icon('chat') %></span><span>Desk</span></a>
-    <a href="/chat"><span><%- icon('chat') %></span><span>Chat</span></a>
+  <nav class="k-mobile-tabbar" aria-label="Primary workspace navigation">
+    <a href="/chat" aria-current="<%= section === 'chat' ? 'page' : 'false' %>"><span><%- icon('chat') %></span><span>Agent</span></a>
+    <a href="/discover" aria-current="<%= section === 'discover' ? 'page' : 'false' %>"><span><%- icon('discover') %></span><span>Discover</span></a>
     <a href="/requests" aria-current="<%= section === 'requests' ? 'page' : 'false' %>"><span><%- icon('request') %></span><span>Requests</span></a>
     <a href="/tasks" aria-current="<%= section === 'tasks' ? 'page' : 'false' %>"><span><%- icon('work') %></span><span>Tasks</span></a>
-    <a href="/discover" aria-current="<%= section === 'discover' ? 'page' : 'false' %>"><span><%- icon('discover') %></span><span>Discover</span></a>
+    <button class="k-reference-mobile-more" id="k-reference-mobile-more" type="button" aria-label="Open more workspace tools" aria-controls="k-reference-mobile-more-sheet" aria-expanded="false"><span><%- icon('more') %></span><span>More</span></button>
   </nav>
+  <aside class="k-reference-sheet k-reference-mobile-more-sheet" id="k-reference-mobile-more-sheet" aria-label="More workspace tools" hidden>
+    <div class="k-reference-sheet-handle" aria-hidden="true"></div><div class="k-reference-sheet-heading"><strong>More</strong><button id="k-reference-mobile-more-close" type="button" aria-label="Close more workspace tools"><%- icon('close') %></button></div>
+    <nav><a href="/desk"><%- icon('work') %><span>Desk</span></a><a href="/reminders"><%- icon('reminder') %><span>Reminders</span></a><a href="/connect"><%- icon('channels') %><span>Connect</span></a><a href="/memory"><%- icon('saved') %><span>Memory</span></a><a href="/safety"><%- icon('safety') %><span>Safety</span></a><a href="/settings"><%- icon('settings') %><span>Settings</span></a></nav>
+  </aside>
   <script src="/js/kurukoo-workspace.js?v=routes1" defer></script>
   <% if (section === 'desk') { %>
   <script src="/js/kurukoo-desk-data.js?v=1" defer></script>

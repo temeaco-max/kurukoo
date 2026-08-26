@@ -14,6 +14,8 @@ const phone = String(process.env.KURUKOO_TEST_PHONE || '08030000000');
 const outputDir = path.resolve(process.env.KURUKOO_E2E_OUTPUT || 'artifacts/product-os-responsive');
 const viewports = [
   { name: 'desktop', width: 1440, height: 900, mobile: false },
+  { name: 'laptop', width: 1280, height: 800, mobile: false },
+  { name: 'tablet', width: 900, height: 1080, mobile: true },
   { name: 'mobile', width: 390, height: 844, mobile: true },
 ];
 const routes = [
@@ -25,7 +27,11 @@ const routes = [
   { path: '/connect', required: ['People and connections'], selector: '[data-connect-resource-grid]' },
   { path: '/memory', required: ['What Kurukoo remembers'], selector: '[data-memory-root]' },
   { path: '/discover', required: ['See what might help today.'], selector: '.discover-os-header' },
-  { path: '/agents', required: ['What Kurukoo is keeping moving'], selector: '[data-agents-list]' },
+  { path: '/agents', required: ['What Kurukoo is keeping moving'], selector: '.k-app-container' },
+  { path: '/settings', required: ['Settings that keep Kurukoo working your way', 'Subscription and plan', 'Memory and privacy'], selector: '#k-settings-hub' },
+  { path: '/wallet', required: ['Economic balances and payment evidence', 'Plan and billing'], selector: '.k-app-container' },
+  { path: '/reminders', required: ['Create and review scheduled help', 'Pause, resume or cancel without losing context'], selector: '.k-app-container' },
+  { path: '/safety', required: ['Safety context, trusted contacts and check-ins'], selector: '.k-app-container' },
 ];
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -145,7 +151,14 @@ try {
           viewportWidth: innerWidth,
           horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 2,
           visibleError: /internal server error|application error|unable to render/i.test(document.body.innerText),
-          contextControlVisible: ${route.contextControl ? `(() => { const node = document.querySelector(${JSON.stringify(route.contextControl)}); if (!node) return false; const style = getComputedStyle(node); return style.display !== 'none' && style.visibility !== 'hidden'; })()` : 'true'}
+          contextControlVisible: ${route.contextControl ? `(() => { const node = document.querySelector(${JSON.stringify(route.contextControl)}); if (!node) return false; const style = getComputedStyle(node); return style.display !== 'none' && style.visibility !== 'hidden'; })()` : 'true'},
+          referenceShell: Boolean(document.querySelector('.k-reference-shell, .k-reference-app-header, .k-reference-sidebar')),
+          globalToolsPresent: ['k-reference-header-search','header-nearby-radar','header-call','header-points','header-cart','header-account','header-drawer'].every((id) => Boolean(document.getElementById(id))),
+          agentCreationScoped: (location.pathname === '/chat' || location.pathname === '/chat/') ? Boolean(document.querySelector('#new-chat.k-reference-new-conversation')) : !document.querySelector('#new-chat'),
+          desktopPaneModel: innerWidth > 1024 ? Boolean(document.querySelector('.k-reference-sidebar')) && ((location.pathname === '/chat' || location.pathname === '/chat/') ? Boolean(document.querySelector('.chat-inspector')) : Boolean(document.querySelector('.k-reference-context-rail'))) : true,
+          tabletDrawerModel: innerWidth > 767 && innerWidth <= 1024 ? Boolean(document.querySelector('#open-sidebar')) && Boolean(document.querySelector('.k-reference-sidebar')) : true,
+          mobileMoreModel: innerWidth <= 767 ? Boolean(document.querySelector('#k-reference-mobile-more')) && Boolean(document.querySelector('#k-reference-mobile-more-sheet')) : true,
+          mobileMoreInteraction: innerWidth <= 767 ? (() => { const button = document.querySelector('#k-reference-mobile-more'); const sheet = document.querySelector('#k-reference-mobile-more-sheet'); const close = document.querySelector('#k-reference-mobile-more-close'); if (!button || !sheet || !close) return false; button.click(); const opened = !sheet.hidden && button.getAttribute('aria-expanded') === 'true'; close.click(); return opened && sheet.hidden && button.getAttribute('aria-expanded') === 'false'; })() : true
         }))()`);
         const layout = JSON.parse(evaluation);
         const textChecks = [
@@ -153,7 +166,7 @@ try {
           ...(route.domRequired || []).map((expected) => ({ expected: `${expected} (inspector)`, pass: layout.domText.toLowerCase().includes(expected.toLowerCase()) })),
         ];
         const pass = layout.url === route.path.replace(/\/$/, '') || layout.url === `${route.path.replace(/\/$/, '')}/`;
-        const finalPass = pass && layout.hasShell && layout.selectorVisible && layout.contextControlVisible && !layout.horizontalOverflow && !layout.visibleError && textChecks.every((check) => check.pass);
+        const finalPass = pass && layout.hasShell && layout.referenceShell && layout.globalToolsPresent && layout.agentCreationScoped && layout.desktopPaneModel && layout.tabletDrawerModel && layout.mobileMoreModel && layout.mobileMoreInteraction && layout.selectorVisible && layout.contextControlVisible && !layout.horizontalOverflow && !layout.visibleError && textChecks.every((check) => check.pass);
         const screenshot = await cdp.send('Page.captureScreenshot', { format: 'png', fromSurface: true });
         const safeRoute = route.path.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '') || 'root';
         await fs.writeFile(path.join(outputDir, `${viewport.name}-${safeRoute}.png`), Buffer.from(screenshot.data, 'base64'));
@@ -165,7 +178,7 @@ try {
   }
   const failed = results.filter((result) => !result.pass);
   await fs.writeFile(path.join(outputDir, 'report.json'), JSON.stringify({ baseUrl, generatedAt: new Date().toISOString(), results, summary: { total: results.length, passed: results.length - failed.length, failed: failed.length } }, null, 2));
-  console.log(JSON.stringify({ summary: { total: results.length, passed: results.length - failed.length, failed: failed.length }, failures: failed.map((result) => ({ viewport: result.viewport, route: result.route, overflow: result.layout.horizontalOverflow, selectorVisible: result.layout.selectorVisible, missingText: result.textChecks.filter((check) => !check.pass).map((check) => check.expected) })) }, null, 2));
+  console.log(JSON.stringify({ summary: { total: results.length, passed: results.length - failed.length, failed: failed.length }, failures: failed.map((result) => ({ viewport: result.viewport, route: result.route, overflow: result.layout.horizontalOverflow, selectorVisible: result.layout.selectorVisible, referenceShell: result.layout.referenceShell, globalToolsPresent: result.layout.globalToolsPresent, agentCreationScoped: result.layout.agentCreationScoped, desktopPaneModel: result.layout.desktopPaneModel, tabletDrawerModel: result.layout.tabletDrawerModel, mobileMoreModel: result.layout.mobileMoreModel, mobileMoreInteraction: result.layout.mobileMoreInteraction, missingText: result.textChecks.filter((check) => !check.pass).map((check) => check.expected) })) }, null, 2));
   if (failed.length) process.exitCode = 1;
 } finally {
   if (!chrome.killed) chrome.kill('SIGTERM');

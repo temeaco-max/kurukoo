@@ -550,6 +550,17 @@
 
   qs('#open-sidebar')?.addEventListener('click', () => toggleChatSidebar(true));
   qs('#close-sidebar')?.addEventListener('click', () => toggleChatSidebar(false));
+  const referenceMobileMore = qs('#k-reference-mobile-more');
+  const referenceMobileMoreSheet = qs('#k-reference-mobile-more-sheet');
+  const setReferenceMobileMore = (open) => {
+    if (!referenceMobileMore || !referenceMobileMoreSheet) return;
+    referenceMobileMore.setAttribute('aria-expanded', String(open));
+    referenceMobileMoreSheet.hidden = !open;
+    document.body.classList.toggle('k-reference-mobile-more-open', open);
+  };
+  referenceMobileMore?.addEventListener('click', () => setReferenceMobileMore(referenceMobileMoreSheet?.hidden !== false));
+  qs('#k-reference-mobile-more-close')?.addEventListener('click', () => setReferenceMobileMore(false));
+  referenceMobileMoreSheet?.addEventListener('click', (event) => { if (event.target === referenceMobileMoreSheet || event.target.closest('a')) setReferenceMobileMore(false); });
   qs('#sidebar-collapse')?.addEventListener('click', () => { const collapsed = document.body.classList.toggle('chat-sidebar-collapsed'); localStorage.setItem('kurukoo_chat_sidebar_collapsed', collapsed ? '1' : '0'); });
   if (localStorage.getItem('kurukoo_chat_sidebar_collapsed') === '1') document.body.classList.add('chat-sidebar-collapsed');
   qs('#workspace-collapse')?.addEventListener('click', () => { const collapsed = workspaceSidebar?.classList.toggle('is-collapsed'); localStorage.setItem('kurukoo_workspace_collapsed', collapsed ? '1' : '0'); });
