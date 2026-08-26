@@ -18,9 +18,9 @@
 
   const paymentState = (request) => {
     const status = String(request?.status || '');
-    if (status === 'payment_pending') return 'Awaiting verified payment evidence';
-    if (status === 'paid') return 'Payment state recorded';
-    return 'Not completed';
+    if (status === 'payment_pending') return 'Waiting for verified payment';
+    if (status === 'paid') return 'Payment is recorded';
+    return 'No payment recorded';
   };
 
   const nextAction = (request) => {
@@ -28,12 +28,12 @@
     const skill = humanize(request?.skill || request?.category || 'request');
     const continuationPrompt = `Continue my ${skill} request.`;
     if (['awaiting_confirmation', 'reserved', 'payment_pending'].includes(String(request?.status || ''))) {
-      return { label: 'Review request', href: `/confirmations?request=${encodeURIComponent(id)}` };
+      return { label: 'Review details', href: `/confirmations?request=${encodeURIComponent(id)}` };
     }
     if (String(request?.status || '') === 'completed') {
-      return { label: 'View confirmation', href: `/confirmations?request=${encodeURIComponent(id)}` };
+      return { label: 'View outcome', href: `/confirmations?request=${encodeURIComponent(id)}` };
     }
-    return { label: 'Continue in Chat', href: `/chat?prompt=${encodeURIComponent(continuationPrompt)}` };
+    return { label: 'Continue with Kurukoo', href: `/chat?prompt=${encodeURIComponent(continuationPrompt)}` };
   };
 
   const parseRequirements = (request) => {
@@ -47,14 +47,14 @@
     const requirements = parseRequirements(request);
     const details = [requirements.origin, requirements.destination, requirements.location, requirements.items, requirements.service, requirements.event]
       .filter(Boolean).map(String);
-    return details.length ? details.slice(0, 2).join(' · ') : 'Details remain in the linked conversation.';
+    return details.length ? details.slice(0, 2).join(' · ') : 'Details stay in the conversation that started this request.';
   };
 
   const participantState = (coordination) => {
     const participants = Array.isArray(coordination?.participants) ? coordination.participants : [];
     if (participants.some((item) => String(item?.status || '').toLowerCase() === 'confirmed')) return 'Provider confirmation recorded';
-    if (participants.length) return 'Provider context recorded';
-    return 'No provider confirmation recorded';
+    if (participants.length) return 'Provider context is available';
+    return 'No provider confirmation yet';
   };
 
   const appendMetaRow = (meta, label, value) => {
@@ -102,13 +102,13 @@
     const meta = document.createElement('div');
     meta.className = 'requests-convergence-meta';
     meta.setAttribute('aria-label', 'Request context');
-    appendMetaRow(meta, 'Created', formatDate(request.created_at || request.createdAt));
-    if (request.updated_at || request.updatedAt) appendMetaRow(meta, 'Updated', formatDate(request.updated_at || request.updatedAt));
+    appendMetaRow(meta, 'Started', formatDate(request.created_at || request.createdAt));
+    if (request.updated_at || request.updatedAt) appendMetaRow(meta, 'Latest update', formatDate(request.updated_at || request.updatedAt));
     appendMetaRow(meta, 'Payment', paymentState(request));
     if (request.quote && typeof request.quote === 'object') appendMetaRow(meta, 'Quote', 'Quote recorded');
 
     const coordination = await coordinationPromise;
-    if (coordination) appendMetaRow(meta, 'Provider', participantState(coordination));
+    if (coordination) appendMetaRow(meta, 'Provider update', participantState(coordination));
 
     if (request.id) {
       try {
@@ -122,7 +122,7 @@
             const goalStateLabel = { active: 'Working', waiting: 'Waiting', waiting_on_dependency: 'Waiting for earlier work', needs_user: 'Your input is needed', blocked: 'Paused safely', completed: 'Completed', failed: 'Needs review', cancelled: 'Stopped' };
             const goalRow = document.createElement('div'); goalRow.className = 'requests-convergence-goal-row';
             const goalLabel = document.createElement('span'); goalLabel.className = 'status-pill requests-convergence-goal-label'; goalLabel.dataset.state = goalStatus; goalLabel.textContent = `Objective · ${goalStateLabel[goalStatus] || 'Updating'}`;
-            const goalAction = document.createElement('a'); goalAction.href = `/chat?prompt=${encodeURIComponent('Show me the next step for this request objective.')}`; goalAction.textContent = 'Open in Chat';
+            const goalAction = document.createElement('a'); goalAction.href = `/chat?prompt=${encodeURIComponent('Show me the next step for this request.')}`; goalAction.textContent = 'Continue with Kurukoo';
             goalAction.setAttribute('aria-label', 'Open this request objective in Chat');
             goalRow.append(goalLabel, goalAction); meta.appendChild(goalRow);
             await appendGoalContinuation(meta, linkedGoal);

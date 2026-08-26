@@ -79,15 +79,15 @@
   };
 
   const goalPresenceLabel = (status) => ({
-    active: 'Working',
+    active: 'Working now',
     waiting: 'Waiting for an update',
     waiting_on_dependency: 'Waiting for earlier work',
-    needs_user: 'Your input is needed',
-    blocked: 'Paused safely',
-    completed: 'Completed',
+    needs_user: 'Your input is needed to approve',
+    blocked: 'Kurukoo needs something to continue',
+    completed: 'Done',
     cancelled: 'Stopped',
-    failed: 'Needs review',
-    expired: 'Expired',
+    failed: "Couldn't complete this yet",
+    expired: 'No longer active',
   }[String(status || '').toLowerCase()] || humanize(status));
 
   const goalActivityLabel = (event) => {
@@ -276,17 +276,10 @@
     const todayList = today?.querySelector('.k-desk-flow-list');
     if (todayList) {
       todayList.replaceChildren();
-      const hierarchy = [
-        ...attention.slice(0, 4).map((row) => ({ ...row, label: `Needs attention · ${row.label}` })),
-        ...progress.slice(0, 4).map((row) => ({ ...row, label: `In progress · ${row.label}` })),
-        ...cont.slice(0, 2).map((row) => ({ ...row, label: `Continue · ${row.label}` })),
-      ];
-      if (hierarchy.length) {
-        hierarchy.forEach((row) => todayList.appendChild(flowRow(row.label, row.href, row.detail, row.status)));
+      if (attention.length) {
+        attention.slice(0, 5).forEach((row) => todayList.appendChild(flowRow(row.label, row.href, row.detail, 'attention')));
       } else {
-        todayList.appendChild(flowRow('Ask Kurukoo', '/chat', 'Nothing needs attention right now'));
-        todayList.appendChild(flowRow('Open Requests', '/requests', 'No active economic requests'));
-        todayList.appendChild(flowRow('Open Tasks', '/tasks', 'No task work waiting'));
+        todayList.appendChild(flowRow('Nothing needs attention right now', '/chat', 'Tell Kurukoo what you need when you are ready'));
       }
     }
 
@@ -297,7 +290,7 @@
       const visibleGoalRows = goalRows
         .filter((row) => visibleGoalStatuses.has(row.status))
         .sort((a, b) => (goalStatusPriority[a.status] ?? 99) - (goalStatusPriority[b.status] ?? 99) || a.order - b.order);
-      setModuleList(agentObjectives, visibleGoalRows.slice(0, 6), 'No active Agent objectives', 'No Agent objective is currently active, waiting, blocked or awaiting your input.', '/agents');
+      setModuleList(agentObjectives, visibleGoalRows.slice(0, 6), 'Nothing is running right now', 'When Kurukoo is keeping work moving, its truthful progress appears here.', '/agents');
     }
 
     const requestCard = composition.querySelector('[data-desk-module="active-requests"]');
@@ -320,7 +313,7 @@
           detail: humanize(r.status),
           href: `/chat?prompt=${encodeURIComponent(`Continue my request ${r.id}`)}`,
         }));
-      setModuleList(requestCard, [...actionRows, ...progressRows], 'No active requests', 'Start in Chat when you are ready to source, compare or continue a request.', '/chat');
+      setModuleList(requestCard, [...actionRows, ...progressRows], 'Nothing is being arranged right now', 'When you need something arranged, Kurukoo will keep it here.', '/chat');
     }
 
     const taskModule = composition.querySelector('[data-desk-module="tasks-reminders"]');
@@ -342,7 +335,7 @@
             href: `/chat?prompt=${encodeURIComponent(`Show reminder ${rem.id || ''}`)}`,
           });
         });
-      setModuleList(taskModule, rows, 'No task work waiting', 'No available or in-progress tasks for this identity.', '/tasks');
+      setModuleList(taskModule, rows, 'Nothing needs doing right now', 'When a concrete next action is ready, Kurukoo will keep it here with its context.', '/tasks');
     }
 
     const pulse = composition.querySelector('[data-desk-module="pulse"]');
@@ -355,28 +348,12 @@
         detail: formatDate(n.created_at || n.createdAt),
         href: typeof n.link === 'string' && n.link.startsWith('/') ? n.link : '/notifications',
       }));
-      setModuleList(pulse, rows, 'No live pulse', 'Current notifications remain available from their canonical source.', '/notifications');
+      setModuleList(pulse, rows, 'You are up to date', 'No recent update needs your attention.', '/notifications');
     }
 
-    const activity = composition.querySelector('[data-desk-module="activity-summary"]');
-    if (activity) {
-      const metrics = activity.querySelector('.k-desk-activity-metrics');
-      if (metrics) {
-        const openRequests = requests.filter((r) => !['completed', 'cancelled', 'failed', 'abandoned'].includes(String(r.status || '').toLowerCase())).length;
-        const openTasks = tasks.filter((t) => !['completed', 'approved', 'cancelled', 'expired'].includes(String(t.status || '').toLowerCase())).length;
-        const activeReminders = reminders.filter((r) => !['cancelled', 'completed', 'done'].includes(String(r.status || '').toLowerCase())).length;
-        const activeGoals = goals.filter((g) => !['completed', 'cancelled', 'failed', 'expired'].includes(String(g.status || '').toLowerCase())).length;
-        const cells = metrics.querySelectorAll('div');
-        if (cells[0]) cells[0].innerHTML = `<span>Tasks</span><strong>${openTasks}</strong>`;
-        if (cells[1]) cells[1].innerHTML = `<span>Requests</span><strong>${openRequests}</strong>`;
-        if (cells[2]) cells[2].innerHTML = `<span>Agent goals</span><strong>${activeGoals}</strong>`;
-      }
-    }
-
-    if (points !== null) {
-      document.querySelectorAll('[data-desk-points-value]').forEach((node) => {
-        node.textContent = `${points.toLocaleString()} points`;
-      });
+    const outcomes = composition.querySelector('[data-desk-module="recent-outcomes"]');
+    if (outcomes) {
+      setModuleList(outcomes, cont.slice(0, 5), 'No recent outcomes yet', 'When work is confirmed as done, Kurukoo will keep a concise record here.', '/requests');
     }
 
     composition.dataset.deskHydrated = 'true';

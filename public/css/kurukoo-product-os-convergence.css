@@ -1,0 +1,300 @@
+/* Kurukoo Product OS convergence: one coordination-first hierarchy across canonical surfaces. */
+
+:root {
+  --k-os-ink: #201f1d;
+  --k-os-muted: #706a62;
+  --k-os-line: rgba(32, 31, 29, 0.11);
+  --k-os-surface: rgba(255, 255, 255, 0.9);
+  --k-os-soft: #f7f4ef;
+  --k-os-attention: #9a4b36;
+  --k-os-attention-soft: rgba(154, 75, 54, 0.075);
+  --k-os-progress: #1f665d;
+}
+
+body.k-app-page .k-app-sidebar .k-app-nav[aria-label="Primary"] {
+  gap: 3px;
+}
+
+body.k-app-page .k-app-sidebar .k-app-nav[aria-label="Primary"] a {
+  font-weight: 720;
+}
+
+body.k-app-page .k-app-sidebar .k-app-nav[aria-label="More Kurukoo"] {
+  display: grid;
+  gap: 2px;
+}
+
+body.k-app-page .k-app-sidebar .k-app-nav[aria-label="More Kurukoo"] a {
+  min-height: 34px;
+  font-size: 13px;
+  color: rgba(32, 31, 29, 0.7);
+}
+
+body.k-app-page .k-app-sidebar .k-app-divider {
+  margin: 15px 0 12px;
+}
+
+body.k-app-page .k-app-title-row {
+  align-items: flex-end;
+  gap: 22px;
+  margin-bottom: 18px;
+}
+
+body.k-app-page .k-app-title-row h1 {
+  max-width: 720px;
+  letter-spacing: -0.045em;
+}
+
+body.k-app-page .k-app-title-row p {
+  max-width: 720px;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+body.k-app-page .ko-context {
+  margin: 0 0 22px;
+  padding: 12px 14px;
+  border-color: var(--k-os-line);
+  background: rgba(255, 255, 255, 0.65);
+}
+
+body.k-app-page .ko-context-title {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+body.k-app-page .ko-context-meta {
+  max-width: 680px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+body.k-app-page .ko-context-action {
+  min-height: 34px;
+  white-space: nowrap;
+}
+
+body.k-app-page .k-app-card {
+  border-color: var(--k-os-line);
+  background: var(--k-os-surface);
+  box-shadow: 0 9px 24px rgba(31, 28, 24, 0.045);
+}
+
+body.k-app-page .k-request-metrics,
+body.k-app-page .k-task-metrics {
+  align-items: stretch;
+}
+
+body.k-app-page .k-request-metric,
+body.k-app-page .k-task-metric {
+  min-height: 164px;
+}
+
+body.k-app-page .k-request-metric.is-attention {
+  border-color: rgba(154, 75, 54, 0.28);
+  background: linear-gradient(135deg, rgba(255, 250, 246, 0.96), var(--k-os-attention-soft));
+}
+
+body.k-app-page .k-request-metric.is-attention strong {
+  color: var(--k-os-attention);
+}
+
+body.k-app-page .k-request-workspace-head,
+body.k-app-page .k-task-workspace-head,
+body.k-app-page .k-connect-workspace-head {
+  align-items: flex-end;
+  gap: 22px;
+}
+
+body.k-app-page .k-request-workspace-head p,
+body.k-app-page .k-task-workspace-head p,
+body.k-app-page .k-connect-workspace-head p {
+  max-width: 650px;
+}
+
+body.k-app-page .k-app-empty {
+  border-color: var(--k-os-line);
+  background: linear-gradient(135deg, rgba(255, 253, 249, 0.94), rgba(247, 244, 239, 0.72));
+}
+
+body.k-app-page .k-app-status-row {
+  margin-top: 20px;
+  gap: 8px;
+}
+
+body.k-app-page .k-mobile-tabbar a {
+  font-weight: 750;
+}
+
+/* Desk: a quiet operating Brief, not a collection of equal-weight dashboard tiles. */
+body.k-app-page.k-app-section-desk .k-app-eyebrow,
+body.k-app-page.k-app-section-desk .k-app-title-row,
+body.k-app-page.k-app-section-desk .ko-context {
+  display: none !important;
+}
+
+body.k-app-page.k-app-section-desk .k-desk-convergence {
+  grid-template-columns: minmax(0, 1fr) minmax(278px, 320px);
+  gap: 24px;
+  margin-top: 0;
+}
+
+body.k-app-page.k-app-section-desk .k-desk-convergence-main {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+body.k-app-page.k-app-section-desk .k-desk-convergence-rail {
+  gap: 16px;
+}
+
+body.k-app-page.k-app-section-desk .k-desk-module {
+  padding: 19px;
+  border-radius: 17px;
+  border-color: var(--k-os-line);
+  background: var(--k-os-surface);
+  box-shadow: 0 9px 24px rgba(31, 28, 24, 0.045);
+}
+
+body.k-app-page.k-app-section-desk .k-desk-module.is-hero {
+  padding: 25px;
+  background:
+    radial-gradient(circle at top right, rgba(217, 122, 92, 0.12), transparent 35%),
+    linear-gradient(135deg, rgba(255, 253, 248, 0.98), rgba(250, 247, 242, 0.95));
+}
+
+body.k-app-page.k-app-section-desk .k-desk-module.is-hero,
+body.k-app-page.k-app-section-desk .k-desk-module-today-flow {
+  grid-column: 1 / -1;
+}
+
+body.k-app-page.k-app-section-desk .k-desk-module-today-flow {
+  border-color: rgba(154, 75, 54, 0.25);
+  background: linear-gradient(135deg, rgba(255, 251, 247, 0.97), var(--k-os-attention-soft));
+}
+
+body.k-app-page.k-app-section-desk .k-desk-module-today-flow .k-desk-module-label,
+body.k-app-page.k-app-section-desk .k-desk-module-today-flow h2 {
+  color: var(--k-os-attention);
+}
+
+body.k-app-page.k-app-section-desk .k-desk-module h2 {
+  font-size: 20px;
+  line-height: 1.18;
+}
+
+body.k-app-page.k-app-section-desk .k-desk-module-copy {
+  max-width: 53ch;
+}
+
+body.k-app-page.k-app-section-desk .k-desk-flow-item {
+  min-height: 52px;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+body.k-app-page.k-app-section-desk .k-desk-flow-item[data-state="attention"] {
+  border-color: rgba(154, 75, 54, 0.22);
+}
+
+body.k-app-page.k-app-section-desk .k-desk-module-recent-outcomes .k-desk-state,
+body.k-app-page.k-app-section-desk .k-desk-module-pulse .k-desk-state {
+  background: rgba(247, 244, 239, 0.62);
+}
+
+body.k-app-page.k-app-section-desk .k-desk-module-opportunity-radar {
+  background: linear-gradient(145deg, rgba(246, 251, 249, 0.98), rgba(255, 255, 255, 0.92));
+}
+
+body.k-app-page.k-app-section-desk .k-desk-module-connected-channels {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+/* Chat: keep one user-facing Kurukoo conversation, with context in service of that work. */
+body.kurukoo-chat-page .welcome {
+  max-width: 700px;
+}
+
+body.kurukoo-chat-page .welcome h1 {
+  letter-spacing: -0.055em;
+}
+
+body.kurukoo-chat-page .welcome p {
+  max-width: 590px;
+  line-height: 1.62;
+}
+
+body.kurukoo-chat-page .quick-actions,
+body.kurukoo-chat-page .composer-quick-actions {
+  gap: 8px;
+}
+
+body.kurukoo-chat-page .quick-actions button,
+body.kurukoo-chat-page .composer-quick-actions button {
+  border-radius: 999px;
+}
+
+body.kurukoo-chat-page .chat-inspector .context-intro,
+body.kurukoo-chat-page .chat-inspector #agent-goal-card {
+  border-color: rgba(31, 102, 93, 0.2);
+  background: linear-gradient(135deg, rgba(247, 253, 251, 0.98), rgba(255, 255, 255, 0.94));
+}
+
+body.kurukoo-chat-page .inspector-label {
+  letter-spacing: 0.09em;
+}
+
+@media (max-width: 1100px) {
+  body.k-app-page.k-app-section-desk .k-desk-convergence {
+    grid-template-columns: 1fr;
+  }
+
+  body.k-app-page.k-app-section-desk .k-desk-convergence-rail {
+    position: static;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  body.k-app-page .k-app-title-row,
+  body.k-app-page .k-request-workspace-head,
+  body.k-app-page .k-task-workspace-head,
+  body.k-app-page .k-connect-workspace-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  body.k-app-page .k-request-workspace-head .k-app-primary,
+  body.k-app-page .k-task-workspace-head .k-app-primary {
+    width: 100%;
+  }
+
+  body.k-app-page.k-app-section-desk .k-desk-convergence-main,
+  body.k-app-page.k-app-section-desk .k-desk-convergence-rail {
+    grid-template-columns: 1fr;
+  }
+
+  body.k-app-page.k-app-section-desk .k-desk-module.is-hero,
+  body.k-app-page.k-app-section-desk .k-desk-module-today-flow {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  body.k-app-page .ko-context {
+    align-items: flex-start;
+  }
+
+  body.k-app-page .ko-context-action {
+    width: 100%;
+    justify-content: center;
+  }
+
+  body.k-app-page .k-request-metric,
+  body.k-app-page .k-task-metric {
+    min-height: 0;
+  }
+
+  body.kurukoo-chat-page .welcome {
+    padding-inline: 18px;
+  }
+}

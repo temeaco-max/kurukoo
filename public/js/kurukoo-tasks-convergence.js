@@ -70,20 +70,20 @@
     const complete = isComplete(task);
     const closed = isClosed(task);
     const sourceType = String(task.sourceType || '').toLowerCase();
-    const source = sourceType === 'agent' ? 'Part of an objective' : sourceType === 'request' || sourceType === 'economic_request' ? 'Part of a request' : sourceType === 'conversation' ? 'From a conversation' : sourceType === 'topic' ? 'From a topic' : 'No source context supplied';
-    const statusLabel = { available: 'Available', in_progress: 'In progress', waiting: 'Waiting', waiting_on_dependency: 'Waiting for earlier work', needs_user: 'Your input is needed', completed: 'Completed', approved: 'Completed', blocked: 'Paused safely', failed: 'Needs review', cancelled: 'Stopped', expired: 'Expired', rejected: 'Unavailable' }[currentState] || 'Updating';
+    const source = sourceType === 'agent' ? 'Part of an objective Kurukoo is moving forward' : sourceType === 'request' || sourceType === 'economic_request' ? 'Part of a request' : sourceType === 'conversation' ? 'Started in a conversation' : sourceType === 'topic' ? 'Started from a topic' : 'Source context is not available';
+    const statusLabel = { available: 'Ready to do', in_progress: 'Moving forward', waiting: 'Waiting for an update', waiting_on_dependency: 'Waiting for earlier work', needs_user: 'Needs your input', completed: 'Done', approved: 'Done', blocked: 'Paused until something changes', failed: "Couldn't complete this yet", cancelled: 'Stopped', expired: 'No longer available', rejected: 'Unavailable' }[currentState] || 'Updating';
     const continuationHref = continuation(task);
     const resultId = `task-result-${task.id}`;
     const result = active ? `<label class="k-task-result-label" for="${resultId}">Completion note <span>optional</span></label><textarea id="${resultId}" class="k-task-result" data-task-result="${escape(task.id)}" rows="2" maxlength="4000" placeholder="Add evidence or a useful completion note"></textarea>` : '';
     const actions = [];
-    if (isAvailable(task)) actions.push(action('Accept task', 'accept', task.id, true));
-    if (active) actions.push(action('Complete task', 'complete', task.id, true));
+    if (isAvailable(task)) actions.push(action('Start task', 'accept', task.id, true));
+    if (active) actions.push(action('Mark done', 'complete', task.id, true));
     if (continuationHref) {
       const isChat = continuationHref.startsWith('/chat');
       actions.push(`<a class="k-app-card-action" href="${continuationHref}">${isChat ? 'Continue in Chat →' : 'Open source context →'}</a>`);
     }
     if (closed || complete) actions.push(`<span class="k-task-state-note">${complete ? 'Completion recorded.' : 'No action available in this state.'}</span>`);
-    return `<article class="k-task-card" data-task-state="${escape(currentState)}"><div class="k-task-card-head"><div><span class="k-app-card-label">${escape(sourceType === 'agent' ? 'Objective task' : sourceType === 'request' || sourceType === 'economic_request' ? 'Request task' : 'Task')}</span><h3>${escape(task.title || 'Task')}</h3></div><span class="k-status k-task-status" data-state="${escape(currentState)}">${escape(statusLabel)}</span></div><p>${escape(task.description || 'No additional task instructions were supplied.')}</p><div class="k-task-context"><span>${escape(source)}</span></div>${result}<div class="k-task-actions">${actions.join('') || '<span class="k-task-state-note">Waiting for the next confirmed update.</span>'}</div></article>`;
+    return `<article class="k-task-card" data-task-state="${escape(currentState)}"><div class="k-task-card-head"><div><span class="k-app-card-label">${escape(sourceType === 'agent' ? 'Work in progress' : sourceType === 'request' || sourceType === 'economic_request' ? 'Request step' : 'Next action')}</span><h3>${escape(task.title || 'Task')}</h3></div><span class="k-status k-task-status" data-state="${escape(currentState)}">${escape(statusLabel)}</span></div><p>${escape(task.description || 'No additional task instructions were supplied.')}</p><div class="k-task-context"><span>${escape(source)}</span></div>${result}<div class="k-task-actions">${actions.join('') || '<span class="k-task-state-note">Waiting for the next confirmed update.</span>'}</div></article>`;
   };
 
   const group = (title, description, tasks, emptyLabel) => `<section class="k-task-group" aria-labelledby="${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-title"><div class="k-task-group-head"><div><span class="k-app-card-label">Task state</span><h3 id="${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-title">${title}</h3><p>${description}</p></div><span class="k-task-count">${tasks.length}</span></div><div class="k-task-group-list">${tasks.length ? tasks.map(card).join('') : `<div class="k-task-inline-empty"><strong>${emptyLabel}</strong></div>`}</div></section>`;
@@ -94,10 +94,10 @@
     const completed = tasks.filter(isComplete);
     const closed = tasks.filter(isClosed);
     list.innerHTML = [
-      group('Available Work', 'Tasks you can accept are shown here.', available, 'No available work right now.'),
-      group('In Progress', 'Tasks you have already accepted are shown here.', active, 'No active work right now.'),
-      group('Completed', 'Only tasks recorded as completed are counted here.', completed, 'No completed work to show yet.'),
-      closed.length ? group('Closed / Unavailable', 'Cancelled, expired, blocked, failed or rejected tasks remain visible without inventing a completion state.', closed, 'No closed task records.') : '',
+      group('Ready to do', 'Concrete next actions that are ready for you.', available, 'No available work right now.'),
+      group('Moving forward', 'Actions already underway, with the work they support kept in context.', active, 'No active work right now.'),
+      group('Done', 'Only actions with a recorded completion appear here.', completed, 'No completed work to show yet.'),
+      closed.length ? group('Waiting or unavailable', 'Stopped, expired, blocked, failed, or rejected actions remain visible without being called complete.', closed, 'No unavailable action records.') : '',
     ].join('');
     list.setAttribute('aria-busy', 'false');
     empty.hidden = Boolean(tasks.length);
@@ -139,7 +139,7 @@
     try {
       if (kind === 'accept') {
         await api('/api/tasks/accept', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ taskId }) });
-        live('Task accepted and moved to in progress.');
+        live('Task started and is now moving forward.');
       } else if (kind === 'complete') {
         const result = list.querySelector(`[data-task-result="${CSS.escape(String(taskId))}"]`)?.value || '';
         await api('/api/tasks/complete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ taskId, result }) });

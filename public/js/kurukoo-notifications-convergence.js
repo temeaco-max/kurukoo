@@ -16,7 +16,7 @@
   const humanize = (value) => String(value || 'Notification').replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
   const sourceLabel = (notification) => {
     const type = String(notification.surface || notification.object_type || '').toLowerCase();
-    if (type === 'agent_goal' || type === 'agent') return 'Objective';
+    if (type === 'agent_goal' || type === 'agent') return 'Work in progress';
     if (type === 'economic_request' || type === 'request') return 'Request';
     return humanize(type || 'Kurukoo');
   };
@@ -24,8 +24,8 @@
     const action = String(notification.available_action || notification.canonical_action || '').toLowerCase();
     if (/approve|confirm|payment/.test(action)) return 'Review and decide';
     if (/resume|continue/.test(action)) return 'Continue in Chat';
-    if (/review|open/.test(action)) return 'Review update';
-    return href ? 'Open update' : '';
+    if (/review|open/.test(action)) return 'Review change';
+    return href ? 'Open details' : '';
   };
   const deliveryLabel = (state) => ({ queued: 'Delivery queued', accepted: 'Delivery accepted by provider', sent: 'Delivery sent', delivered: 'Delivery confirmed', failed: 'Delivery failed', suppressed: 'Delivery suppressed', dead_letter: 'Delivery stopped', unavailable: 'Delivery unavailable' }[String(state || '')] || 'In-app state recorded');
   const canonicalHref = (notification) => {
@@ -49,9 +49,9 @@
     return payload;
   };
   const setInner = (html) => { container.innerHTML = html; };
-  const shell = (content) => `<div class="k57-notifications"><div class="k-app-card"><span class="k-app-card-label">Notification centre</span><h2>What needs your attention</h2><p>These updates stay connected to the work they relate to. Delivery is only described when a confirmation is available.</p></div>${content}</div>`;
+  const shell = (content) => `<div class="k57-notifications"><div class="k-app-card"><span class="k-app-card-label">Your updates</span><h2>Changes and decisions that matter</h2><p>Each update stays connected to the work it relates to. Delivery is only described when confirmation is available.</p></div>${content}</div>`;
   const loading = () => shell('<section class="k-app-card" aria-live="polite" aria-busy="true"><div class="k-app-list-loading">Loading your notifications…</div></section>');
-  const empty = () => shell('<section class="k-app-card k57-unavailable"><div><h3>You are all caught up</h3><p>No unread or recent notifications are available right now.</p><div class="k57-notification-actions"><a class="k-app-card-action" href="/desk">Open Desk →</a></div></div></section>');
+  const empty = () => shell('<section class="k-app-card k57-unavailable"><div><h3>You are up to date</h3><p>No recent change or decision needs your attention right now.</p><div class="k57-notification-actions"><a class="k-app-card-action" href="/desk">Open Desk →</a></div></div></section>');
   const error = () => shell('<section class="k-app-card k57-unavailable" role="alert"><div><h3>Notifications are unavailable</h3><p>Kurukoo could not load your notifications. No update status is shown until it can be confirmed.</p><div class="k57-notification-actions"><button class="k-app-primary" type="button" data-k57-retry>Retry Notifications</button></div></div></section>');
   const render = (notifications) => {
     if (!notifications.length) { setInner(empty()); return; }
@@ -68,7 +68,7 @@
         return `<article class="k57-notification-card ${isUnread ? 'is-unread' : ''}" data-notification-id="${escapeHtml(item.id)}"><div><div class="k57-notification-meta"><span class="k57-notification-source">${escapeHtml(source)}</span><span>${escapeHtml(formatDate(item.created_at))}</span><span class="k57-delivery">${escapeHtml(delivery)}</span></div><h3>${escapeHtml(item.title || 'Notification')}</h3><p class="k57-notification-copy">${escapeHtml(item.body || '')}</p><div class="k57-notification-actions">${href ? `<a class="k-app-card-action k57-notification-action" href="${escapeHtml(href)}" data-k57-open="${escapeHtml(item.id)}">${escapeHtml(actionLabel || 'Open')}</a>` : ''}${isUnread ? `<button class="workspace-text-action k57-notification-action" type="button" data-k57-read="${escapeHtml(item.id)}">Mark read</button>` : ''}</div></div></article>`;
       }).join('')}</div></section>`;
     };
-    setInner(shell(`${section('Needs your attention', unread)}${section('Earlier', read)}`));
+    setInner(shell(`${section('Needs your attention', unread)}${section('Earlier updates', read)}`));
     container.querySelectorAll('[data-k57-read]').forEach((button) => button.addEventListener('click', async () => {
       const id = button.dataset.k57Read;
       button.disabled = true;
