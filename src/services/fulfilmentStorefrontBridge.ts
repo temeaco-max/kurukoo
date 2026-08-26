@@ -7,6 +7,8 @@ import {
   createOffer,
   createProviderInquiry,
   getFulfilment,
+  markProviderInquirySent,
+  providerInquiryReference,
   listOffers,
   listProviderInquiries,
   selectOffer,
@@ -16,6 +18,7 @@ import {
   type Offer,
 } from './canonicalFulfilmentService.js';
 import { getFulfilmentSkillBinding, resolveMissingFulfilmentInputs } from './fulfilmentSkillBindings.js';
+import { sendSmsText } from '../channels/sms.js';
 
 export interface FulfilmentStorefrontCard extends StorefrontCard {
   fulfilment?: Pick<Fulfilment, 'id' | 'status' | 'missingInputs' | 'economicRequestId'>;
@@ -157,7 +160,7 @@ async function providerInquiries(phone: string, request: EconomicRequest, fulfil
   const candidates = await find_worker({ skill: request.skill, service: item, location: asString(requirements.location), max: 3 }).catch(() => ({ providers: [] }));
   for (const provider of candidates.providers.slice(0, 3)) {
     const question = `A Kurukoo customer wants ${requirements.quantity || 'the requested quantity'}${requirements.unit ? ` ${requirements.unit}` : ''} of ${item}${requirements.location ? ` in ${requirements.location}` : ''}${requirements.timing ? ` ${requirements.timing}` : ''}. Do you currently have this available, and what is your price?`;
-    await createProviderInquiry({
+    const inquiry = await createProviderInquiry({
       id: stableId('provider-inquiry', [fulfilment.id, provider.phone, item, requirements.quantity, requirements.location]),
       fulfilmentId: fulfilment.id,
       ownerPhone: phone,
@@ -167,6 +170,10 @@ async function providerInquiries(phone: string, request: EconomicRequest, fulfil
       question,
       requestedFields: ['availability', 'price', 'delivery'],
     });
+    if (inquiry.status === 'pending') {
+      const delivery = await sendSmsText(provider.phone, `${question}\nReply with availability and price. Reference: ${providerInquiryReference(inquiry.id)}`);
+      if (delivery.ok) await markProviderInquirySent(phone, inquiry.id);
+    }
   }
 }
 

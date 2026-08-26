@@ -39,7 +39,7 @@ export const channelRegistry = {
     ussd: async (body: any, _headers: Record<string, any>): Promise<ChannelHandlerResult> => {
         const { phoneNumber, text } = body || {};
         if (!phoneNumber || typeof phoneNumber !== 'string') return { status: 'ignored' };
-        const response = await handleUssdRequest(phoneNumber, typeof text === 'string' ? text : '');
+        const response = await handleUssdRequest(phoneNumber, typeof text === 'string' ? text : '', { sessionId: typeof body?.sessionId === 'string' ? body.sessionId : undefined, serviceCode: typeof body?.serviceCode === 'string' ? body.serviceCode : undefined });
         return { status: 'success', response };
     }
 };

@@ -25,6 +25,7 @@ import { resolveExecutableCapabilityPlan } from './capabilityFoundationIntegrati
 import { getCapabilityRegistration, getCapabilityActionContract } from './capabilityRegistry.js';
 import { createProviderInquiry, getFulfilment, listOffers, listProviderInquiries, selectOffer, transitionFulfilment, updateFulfilmentRequirements } from './canonicalFulfilmentService.js';
 import { getFulfilmentSkillBinding, resolveMissingFulfilmentInputs } from './fulfilmentSkillBindings.js';
+import { getAirtimeOperation, prepareAirtimeOperation, purchaseAirtime } from './airtimeService.js';
 
 type ExecutorStatus = UniversalCapabilityResult['status'] | 'in_progress' | 'external_unavailable' | 'stale_context' | 'unauthorized' | 'invalid';
 
@@ -178,6 +179,10 @@ async function verifyExactOwner(input: CanonicalCapabilityExecutionInput): Promi
     const object = await getConnectedResource(input.phone, input.canonicalObjectId);
     return object ? { ok: true, object } : { ok: false, code: 'foreign_or_missing_connected_resource' };
   }
+  if (capability === 'airtime' && input.canonicalObjectId) {
+    const object = await getAirtimeOperation(input.phone, input.canonicalObjectId);
+    return object ? { ok: true, object } : { ok: false, code: 'foreign_or_missing_airtime_operation' };
+  }
   if (capability === 'fulfilment' && input.canonicalObjectId) {
     const object = await getFulfilment(input.phone, input.canonicalObjectId);
     return object ? { ok: true, object } : { ok: false, code: 'foreign_or_missing_fulfilment' };
@@ -187,6 +192,37 @@ async function verifyExactOwner(input: CanonicalCapabilityExecutionInput): Promi
 
 async function dispatchCanonicalAction(input: CanonicalCapabilityExecutionInput, object?: any): Promise<CanonicalCapabilityExecutionResult> {
   const args = input.arguments || {};
+  if (input.capability === 'airtime') {
+    const operationId = String(input.canonicalObjectId || args.operationId || '').trim();
+    if (['status', 'inspect'].includes(input.action)) {
+      if (!operationId) return invalidResult(input, 'needs_user', 'Tell me which airtime purchase you want Kurukoo to inspect.', 'airtime_operation_id_required');
+      const operation = object || await getAirtimeOperation(input.phone, operationId);
+      if (!operation) return invalidResult(input, 'unauthorized', 'That airtime purchase is not available to this account.', 'foreign_or_missing_airtime_operation');
+      return baseResult(input, operation.status === 'completed' ? 'completed' : operation.status === 'pending_provider' ? 'externally_pending' : operation.status === 'blocked' ? 'external_unavailable' : operation.status === 'failed' ? 'failed' : 'needs_user', `Airtime purchase status: ${operation.status}.`, { canonicalObjectId: operation.id, canonicalFacts: { airtimeOperation: operation }, evidenceLevel: operation.status === 'completed' ? 'verified_external_evidence' : 'canonical_service', externalActivation: operation.status === 'pending_provider' ? 'repository_ready_external_activation' : 'locally_available' });
+    }
+    if (['prepare', 'quote'].includes(input.action)) {
+      const recipient = String(args.recipient || args.phone || '').trim();
+      const amountMinor = Number(args.amountMinor ?? (Number(args.amount) * 100));
+      if (!recipient || !Number.isFinite(amountMinor) || amountMinor <= 0) return invalidResult(input, 'needs_user', 'Provide the recipient phone number and a positive airtime amount before continuing.', 'airtime_requirements_missing');
+      try {
+        const operation = await prepareAirtimeOperation({ ownerPhone: input.phone, recipient, amountMinor, currency: typeof args.currency === 'string' ? args.currency : 'NGN', network: typeof args.network === 'string' ? args.network : undefined, economicRequestId: typeof args.economicRequestId === 'string' ? args.economicRequestId : undefined, idempotencyKey: input.idempotencyKey });
+        return baseResult(input, 'completed', `I prepared ${operation.currency} ${(operation.amountMinor / 100).toFixed(2)} airtime for ${operation.recipient}. Review the recipient, network and amount, then explicitly confirm purchase.`, { canonicalObjectId: operation.id, canonicalFacts: { airtimeOperation: operation }, evidenceLevel: 'canonical_service', nextActions: [{ action: 'purchase', label: 'Buy this airtime', confirmationRequired: true }] });
+      } catch (error) {
+        return invalidResult(input, 'invalid', error instanceof Error ? error.message : 'Airtime preparation failed.', 'airtime_prepare_failed');
+      }
+    }
+    if (input.action === 'purchase') {
+      if (!operationId) return invalidResult(input, 'needs_user', 'Prepare and select the exact airtime purchase before continuing.', 'airtime_operation_id_required');
+      try {
+        const operation = await purchaseAirtime({ ownerPhone: input.phone, operationId, idempotencyKey: input.idempotencyKey });
+        const status: ExecutorStatus = operation.status === 'completed' ? 'completed' : operation.status === 'pending_provider' ? 'externally_pending' : operation.status === 'blocked' ? 'external_unavailable' : 'failed';
+        const message = operation.status === 'pending_provider' ? 'The airtime request was accepted by the provider and is awaiting its status evidence. Kurukoo has not claimed delivery.' : operation.status === 'completed' ? 'The provider callback has verified the airtime outcome.' : 'The airtime purchase was not completed.';
+        return baseResult(input, status, message, { canonicalObjectId: operation.id, canonicalFacts: { airtimeOperation: operation }, evidenceLevel: operation.status === 'completed' ? 'verified_external_evidence' : 'canonical_service', externalActivation: operation.status === 'pending_provider' ? 'repository_ready_external_activation' : 'unavailable_external_dependency', nextActions: [{ action: 'status', label: 'Check airtime status' }] });
+      } catch (error) {
+        return invalidResult(input, 'stale_context', error instanceof Error ? error.message : 'Airtime purchase could not continue.', 'airtime_purchase_failed');
+      }
+    }
+  }
   if (input.capability === 'fulfilment') {
     const fulfilmentId = String(input.canonicalObjectId || args.fulfilmentId || '').trim();
     if (!fulfilmentId) return invalidResult(input, 'needs_user', 'Tell me which fulfilment you want Kurukoo to use.', 'fulfilment_id_required');

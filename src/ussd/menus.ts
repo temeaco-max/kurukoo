@@ -1,69 +1,83 @@
-import { getDb } from '../database.js';
+import { getDb, saveDb } from '../database.js';
 import { appendChatMessage } from '../services/chatConversationService.js';
+import { prepareAirtimeOperation, purchaseAirtime, getAirtimeOperation } from '../services/airtimeService.js';
 
-export async function handleUssdRequest(phoneNumber: string, text: string): Promise<string> {
-    const phone = String(phoneNumber || '').trim();
-    if (!phone) return 'END Unable to identify your Kurukoo account. Please try again.';
+interface UssdSessionState { mode?: 'airtime_amount' | 'airtime_confirm' | 'provider_request'; operationId?: string; updatedAt: string; }
 
-    const db = await getDb();
-    let response = '';
-    const parts = text ? text.split('*') : [];
-    const level = parts.length;
+function normalizePhone(phoneNumber: string): string {
+  const phone = String(phoneNumber || '').trim().replace(/[\s-]/g, '');
+  if (!phone) return '';
+  if (phone.startsWith('+')) return phone;
+  if (phone.startsWith('0') && phone.length === 11) return `+234${phone.slice(1)}`;
+  return `+${phone}`;
+}
 
-    const stmt = db.prepare(`SELECT id, title, options FROM service_categories ORDER BY id ASC`);
-    const categories: any[] = [];
-    while (stmt.step()) {
-        const obj = stmt.getAsObject();
-        try { obj.options = JSON.parse(obj.options as string); } catch { obj.options = []; }
-        categories.push(obj);
-    }
-    stmt.free();
+function sessionKey(phone: string, supplied?: string): string { return String(supplied || `ussd:${phone}`).slice(0, 256); }
+function parseState(value: unknown): UssdSessionState { try { return { ...(JSON.parse(String(value || '{}')) || {}), updatedAt: new Date().toISOString() }; } catch { return { updatedAt: new Date().toISOString() }; } }
 
-    if (!text) {
-        let menuStr = `CON Welcome to Kurukoo (*7000#)\n`;
-        categories.forEach((cat, index) => { menuStr += `${index + 1}. ${cat.title}\n`; });
-        menuStr += `${categories.length + 1}. Check Balance / Reload\n${categories.length + 2}. Emergency SOS`;
-        response = menuStr;
+async function ensureUssdSessionTable(): Promise<void> {
+  const db = await getDb();
+  db.run(`CREATE TABLE IF NOT EXISTS ussd_sessions (session_id TEXT PRIMARY KEY, phone TEXT NOT NULL, state_json TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
+  saveDb();
+}
+async function readSession(sessionId: string): Promise<UssdSessionState> {
+  await ensureUssdSessionTable(); const db = await getDb(); const rows = db.exec('SELECT state_json FROM ussd_sessions WHERE session_id=? LIMIT 1', [sessionId]);
+  return parseState(rows[0]?.values?.[0]?.[0]);
+}
+async function writeSession(sessionId: string, phone: string, state: UssdSessionState): Promise<void> {
+  await ensureUssdSessionTable(); const db = await getDb();
+  db.run(`INSERT INTO ussd_sessions(session_id,phone,state_json,updated_at) VALUES(?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(session_id) DO UPDATE SET state_json=excluded.state_json,updated_at=CURRENT_TIMESTAMP`, [sessionId, phone, JSON.stringify({ ...state, updatedAt: new Date().toISOString() })]); saveDb();
+}
+async function clearSession(sessionId: string): Promise<void> { const db = await getDb(); db.run('DELETE FROM ussd_sessions WHERE session_id=?', [sessionId]); saveDb(); }
+function amountMinor(input: string): number | null { const value = Number(String(input || '').replace(/[₦,\s]/g, '')); return Number.isFinite(value) && value > 0 ? Math.round(value * 100) : null; }
+function mask(phone: string): string { return phone.length < 8 ? phone : `${phone.slice(0, 4)}••••${phone.slice(-4)}`; }
+
+async function recordConversation(phone: string, text: string, response: string): Promise<void> {
+  const conversation = await appendChatMessage({ phone, sender: 'user', content: text || 'HOME', channel: 'ussd', metadata: { channel: 'ussd', inbound: true } });
+  await appendChatMessage({ phone, sender: 'assistant', content: response, channel: 'ussd', conversationId: conversation.conversationId, metadata: { channel: 'ussd', outbound: true } });
+}
+
+export async function handleUssdRequest(phoneNumber: string, text: string, meta: { sessionId?: string; serviceCode?: string } = {}): Promise<string> {
+  const phone = normalizePhone(phoneNumber);
+  if (!phone) return 'END Unable to identify your Kurukoo account. Please try again.';
+  const sessionId = sessionKey(phone, meta.sessionId);
+  const state = await readSession(sessionId);
+  const parts = String(text || '').split('*').filter(Boolean);
+  let response = '';
+
+  if (!parts.length) {
+    await clearSession(sessionId);
+    response = 'CON Welcome to Kurukoo\n1. Buy airtime\n2. Find a provider\n3. Check airtime request';
+  } else if (parts[0] === '1') {
+    if (parts.length === 1) {
+      await writeSession(sessionId, phone, { mode: 'airtime_amount', updatedAt: new Date().toISOString() });
+      response = 'CON How much airtime should Kurukoo prepare in NGN?';
+    } else if (parts.length === 2) {
+      const minor = amountMinor(parts[1]);
+      if (!minor) response = 'CON Enter a valid positive airtime amount in NGN.';
+      else {
+        const operation = await prepareAirtimeOperation({ ownerPhone: phone, recipient: phone, amountMinor: minor, currency: 'NGN', idempotencyKey: `ussd:airtime:${sessionId}:${minor}` });
+        await writeSession(sessionId, phone, { mode: 'airtime_confirm', operationId: operation.id, updatedAt: new Date().toISOString() });
+        response = `CON Buy NGN ${(minor / 100).toFixed(2)} airtime for ${mask(phone)}?\n1. Confirm\n2. Cancel`;
+      }
     } else {
-        const mainSelection = parseInt(parts[0], 10);
-        if (mainSelection > 0 && mainSelection <= categories.length) {
-            const cat = categories[mainSelection - 1];
-            if (level === 1) {
-                let submenuStr = `CON Select Option for ${cat.title}:\n`;
-                (cat.options as string[]).forEach((opt, index) => { submenuStr += `${index + 1}. ${opt}\n`; });
-                response = submenuStr;
-            } else {
-                response = `END Your request for ${cat.title} has been received and dispatched to nearby providers.`;
-            }
-        } else if (mainSelection === categories.length + 1) {
-            const stmt2 = db.prepare(`SELECT COALESCE(points_balance, 0) as points FROM memory_profiles WHERE phone = ?`);
-            stmt2.bind([phone]);
-            let bal = 0;
-            if (stmt2.step()) bal = Number(stmt2.getAsObject().points || 0);
-            stmt2.free();
-            response = `END Your Kurukoo balance is ${bal} Points. Dial *7000*1# to top up.`;
-        } else if (mainSelection === categories.length + 2) {
-            response = `END Emergency SOS triggered. Local emergency services and trusted contacts alerted with your location.`;
-        } else {
-            response = `END Invalid selection. Thank you for using Kurukoo.`;
-        }
+      const operationId = state.operationId || (await prepareAirtimeOperation({ ownerPhone: phone, recipient: phone, amountMinor: amountMinor(parts[1]) || 0, currency: 'NGN', idempotencyKey: `ussd:airtime:${sessionId}:${amountMinor(parts[1]) || 0}` })).id;
+      if (parts[2] !== '1') { await clearSession(sessionId); response = 'END Airtime purchase cancelled. No provider request was sent.'; }
+      else {
+        const operation = await purchaseAirtime({ ownerPhone: phone, operationId, idempotencyKey: `ussd:airtime:purchase:${sessionId}:${operationId}` });
+        await clearSession(sessionId);
+        response = operation.status === 'pending_provider' ? 'END Airtime purchase was accepted and is awaiting provider confirmation.' : operation.status === 'completed' ? 'END Airtime delivery was confirmed.' : 'END Airtime purchase was not completed.';
+      }
     }
+  } else if (parts[0] === '2') {
+    if (parts.length === 1) { await writeSession(sessionId, phone, { mode: 'provider_request', updatedAt: new Date().toISOString() }); response = 'CON Reply with what you need and your area. Example: plumber in Ikeja'; }
+    else { await clearSession(sessionId); response = 'END Your request was recorded in the Kurukoo conversation. Continue in Web Chat or SMS to review matching providers and quotes.'; }
+  } else if (parts[0] === '3') {
+    const operationId = state.operationId;
+    const operation = operationId ? await getAirtimeOperation(phone, operationId) : null;
+    response = operation ? `END Airtime request status: ${operation.status}.` : 'END No active airtime request is linked to this USSD session.';
+  } else response = 'END Invalid selection. Please dial again.';
 
-    const conversation = await appendChatMessage({
-        phone,
-        sender: 'user',
-        content: text || 'HOME',
-        channel: 'ussd',
-        metadata: { channel: 'ussd', inbound: true }
-    });
-    await appendChatMessage({
-        phone,
-        sender: 'assistant',
-        content: response,
-        channel: 'ussd',
-        conversationId: conversation.conversationId,
-        metadata: { channel: 'ussd', outbound: true }
-    });
-
-    return response;
+  await recordConversation(phone, text || 'HOME', response);
+  return response;
 }

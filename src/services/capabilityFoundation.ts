@@ -30,6 +30,16 @@ function registerBuiltInOperations():void { const registrations=[
   {capability:'reminder',family:'reminder',actions:['create','cancel','inspect','status'],owner:['reminderService'],risk:'low_risk' as const,activationState:'locally_available' as const},
   {capability:'referral',family:'network-growth',actions:['invite','claim','inspect','status'],owner:['referralService'],risk:'low_risk' as const,activationState:'locally_available' as const},
 ]; for(const entry of registrations){if(!getCapabilityRegistration(entry.capability)) registerCapabilities([{descriptor:operationDescriptor(entry.capability,entry.family,entry.actions,entry.owner,entry.risk,entry.activationState),namespace:'kurukoo.core',version:'1',aliases:entry.aliases||[],source:'core-operation'}]);}
+  if(!getCapabilityRegistration('airtime')) registerCapabilities([{
+    descriptor: operationDescriptor('airtime','telecom-commerce',['prepare','quote','purchase','status'],['airtimeService','canonicalCapabilityExecutor'],'confirmation_required','repository_ready_external_activation'),
+    namespace:'kurukoo.airtime', version:'1', aliases:['top_up','topup'], source:'airtimeService',
+    actionContracts:[
+      { action:'prepare', risk:'low_risk', confirmationRequired:false, permissions:['authenticated_owner'], activationState:'locally_available', owner:['airtimeService'] },
+      { action:'quote', risk:'read_only', confirmationRequired:false, permissions:['authenticated_owner'], activationState:'locally_available', owner:['airtimeService'] },
+      { action:'status', risk:'read_only', confirmationRequired:false, permissions:['authenticated_owner'], activationState:'locally_available', owner:['airtimeService'] },
+      { action:'purchase', risk:'confirmation_required', confirmationRequired:true, permissions:['authenticated_owner'], activationState:'repository_ready_external_activation', owner:['airtimeService','canonicalCapabilityExecutor'] },
+    ],
+  }]);
   if(!getCapabilityRegistration('fulfilment')) registerCapabilities([{
     descriptor: operationDescriptor('fulfilment','network-fulfilment',['get','update_requirements','find_offers','list_offers','select_offer','create_inquiry','get_inquiry','resume','confirm','execute'],['canonicalFulfilmentService','canonicalCapabilityExecutor','agentToolRegistry'],'low_risk','repository_ready_external_activation'),
     namespace:'kurukoo.fulfilment', version:'1', aliases:[], source:'canonical-fulfilment',

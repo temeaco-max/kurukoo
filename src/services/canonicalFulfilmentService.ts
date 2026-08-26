@@ -553,3 +553,23 @@ export function fulfilmentSupportsProviderInquiry(mechanism: string): boolean {
 export function canonicalFulfilmentPersistenceMode(): 'canonical' {
   return getCanonicalPersistenceMode() === 'postgres' ? 'canonical' : 'canonical';
 }
+
+export function providerInquiryReference(inquiryId: string): string {
+  const compact = String(inquiryId || '').replace(/[^a-z0-9]/gi, '');
+  return `KQ${compact.slice(-12).toUpperCase()}`;
+}
+
+export async function findOpenProviderInquiryForSms(input: { providerPhone: string; reference?: string }): Promise<ProviderInquiry | null> {
+  await ensureCanonicalFulfilmentSchema();
+  const phone = String(input.providerPhone || '').trim();
+  if (!phone) return null;
+  const normalizedReference = String(input.reference || '').trim().replace(/^#/, '').toUpperCase();
+  const normalizeProviderPhone = (value: string | undefined) => String(value || '').replace(/[^0-9]/g, '');
+  const candidates = (await (await getCanonicalStore()).all<any>("SELECT * FROM provider_inquiries WHERE status IN ('pending','sent','responded') ORDER BY updated_at DESC", [])).map(rowToInquiry).filter(inquiry => normalizeProviderPhone(inquiry.providerPhone) === normalizeProviderPhone(phone));
+  if (!candidates.length) return null;
+  if (normalizedReference) {
+    const matched = candidates.filter(inquiry => providerInquiryReference(inquiry.id) === normalizedReference);
+    return matched.length === 1 ? matched[0] : null;
+  }
+  return candidates.length === 1 ? candidates[0] : null;
+}

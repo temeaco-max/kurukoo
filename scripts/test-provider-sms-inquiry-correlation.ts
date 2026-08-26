@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict';
+import { createFulfilment, createProviderInquiry, findOpenProviderInquiryForSms, listOffers, providerInquiryReference } from '../src/services/canonicalFulfilmentService.js';
+import { handleSmsWebhook } from '../src/channels/sms.js';
+import { getCanonicalStore } from '../src/services/canonicalStore.js';
+
+const stamp = Date.now();
+const owner = `provider-sms-owner-${stamp}`;
+const providerPhone = '+2348012345678';
+const fulfilment = await createFulfilment({ id: `provider-sms-fulfilment-${stamp}`, ownerPhone: owner, skill: 'order_food', mechanism: 'marketplace_purchase', requirements: { item: 'suya', quantity: 2, location: 'Ikeja' }, requiredInputs: ['item', 'quantity', 'location'], missingInputs: [] });
+const inquiry = await createProviderInquiry({ id: `provider-sms-inquiry-${stamp}`, fulfilmentId: fulfilment.id, ownerPhone: owner, providerId: 'provider-suya-1', providerPhone, providerName: 'Suya Seller', question: 'Do you have two portions of suya in Ikeja?', requestedFields: ['availability', 'price', 'delivery'] });
+const storedInquiry = await (await getCanonicalStore()).one<any>('SELECT provider_phone, status FROM provider_inquiries WHERE id=? LIMIT 1', [inquiry.id]);
+assert.equal(String(storedInquiry?.provider_phone), providerPhone);
+assert.equal(String(storedInquiry?.status), 'pending');
+const allOpen = await (await getCanonicalStore()).all<any>("SELECT id, provider_phone, status FROM provider_inquiries WHERE status IN ('pending','sent','responded') ORDER BY updated_at DESC LIMIT 100", []);
+assert.ok(allOpen.some(row => String(row.id) === inquiry.id));
+assert.equal((await findOpenProviderInquiryForSms({ providerPhone, reference: providerInquiryReference(inquiry.id) }))?.id, inquiry.id);
+const sourceId = `at-provider-${stamp}`;
+const inbound = { id: sourceId, from: providerPhone.slice(1), text: `Yes, 6k. Delivery available. ${providerInquiryReference(inquiry.id)}` };
+const first = await handleSmsWebhook(inbound);
+assert.equal(first.status, 'success');
+const offers = await listOffers(owner, fulfilment.id);
+assert.equal(offers.length, 1);
+assert.equal(offers[0]?.source, 'provider_inquiry');
+assert.equal(offers[0]?.priceMinor, 600000);
+assert.equal(offers[0]?.evidenceLevel, 'provider_confirmed');
+const duplicate = await handleSmsWebhook(inbound);
+assert.equal(duplicate.status, 'success');
+assert.equal(duplicate.duplicate, true);
+assert.equal((await listOffers(owner, fulfilment.id)).length, 1);
+
+console.log('Provider SMS inquiry correlation regression passed: durable reference, provider identity, idempotency, and canonical Offer creation.');
