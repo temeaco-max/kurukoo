@@ -2,6 +2,7 @@
   const APP_START = '/chat/';
   const PENDING_KEY = 'kurukoo_pwa_pending_messages_v1';
   let deferredInstallPrompt = null;
+  let lastConnectivityState = null;
 
   function loadStylesheet(href) {
     if (document.querySelector(`link[data-kurukoo-visual="${href}"]`)) return;
@@ -186,15 +187,20 @@
 
   function updateConnectivityState() {
     const online = navigator.onLine;
+    const recovered = lastConnectivityState === false && online;
     setPwaState(online ? 'online' : 'offline');
-    if (!isAppSurface()) return;
-    if (online) {
-      showNotice('Back online. Kurukoo can continue your conversation.', { tone: 'online', timeout: 4200 });
-      renderPendingNotice();
-    } else {
-      showNotice('You’re offline. Cached Kurukoo pages remain available; new messages can be saved for manual retry.', { tone: 'offline' });
-      renderPendingNotice();
+    if (!isAppSurface()) {
+      lastConnectivityState = online;
+      return;
     }
+    // A healthy first load is not actionable feedback. Reserve a banner for a real recovery or offline state.
+    if (recovered) {
+      showNotice('Back online. Kurukoo can continue your conversation.', { tone: 'online', timeout: 4200 });
+    } else if (!online) {
+      showNotice('You’re offline. Cached Kurukoo pages remain available; new messages can be saved for manual retry.', { tone: 'offline' });
+    }
+    renderPendingNotice();
+    lastConnectivityState = online;
   }
 
   function routeLegacyStart() {
@@ -205,7 +211,6 @@
 
   async function registerWorker() {
     ensureClientVisualAuthority();
-    if (isAppSurface() && navigator.onLine) showNotice('Checking Kurukoo connection…', { tone: 'loading' });
     if (!("serviceWorker" in navigator)) {
       setPwaState('unsupported');
       return;
@@ -213,7 +218,7 @@
     try {
       const registration = await navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
       setPwaState(navigator.onLine ? 'registered' : 'offline');
-      if (navigator.onLine && isAppSurface()) showNotice('Kurukoo is ready to continue your conversation.', { tone: 'online', timeout: 2600 });
+      // Registration state is retained in the document dataset; a healthy first load does not need a blocking banner.
       registration.addEventListener('updatefound', () => {
         const worker = registration.installing;
         if (!worker) return;
