@@ -28,6 +28,7 @@ export interface UnifiedAIOptions {
   skipMemory?: boolean;
   conversational?: boolean;
   contextHint?: ConversationalContextHint;
+  classificationPrompt?: string;
 }
 export interface AIResponse {
   provider: string;
@@ -172,7 +173,22 @@ function naturalFallback(prompt: string): string {
   if (/explain (?:that|it) more simply|simpler/.test(text)) return 'Of course. I’ll keep it simpler: tell me the one part that feels unclear, and I’ll explain just that.';
   if (/what did you mean|what do you mean/.test(text)) return 'I may not have been clear. Tell me which part you mean, and I’ll restate it plainly.';
   if (/\biphone\s+15\b.*\biphone\s+16\b|difference between.*iphone/.test(text)) return 'The practical differences depend on the exact models, price and condition. If you tell me whether you care most about camera, battery, performance or value, I can compare those trade-offs without assuming current prices.';
+  if (/\b(?:phone|iphone|android|screen|battery|charging)\b/.test(text)) return 'That sounds frustrating. A phone that drains quickly or has a screen that goes black can be caused by battery health, an app or update, charging, or the display itself. If you want, tell me which symptom is happening most often and I’ll help you narrow down the safest next step without starting a repair request.';
+  if (/\b(?:laptop|computer|macbook|keyboard|wifi)\b/.test(text)) return 'That can be disruptive. Tell me what the laptop or computer is doing—for example, whether it will not start, freezes, shows an error, or has a display problem—and I’ll help you narrow down the next safe step without arranging anything yet.';
+  if (/\b(?:washing machine|fridge|refrigerator|oven|dishwasher|appliance)\b/.test(text)) return 'That sounds inconvenient. Tell me what the appliance is doing, such as leaking, making a noise, not powering on, or not cooling, and I’ll help you work out the safest next step without starting a service request.';
   return 'I’m with you. Tell me a little more about what you mean, and I’ll help you work it out.';
+}
+
+function needsTopicRelevantLocalFallback(prompt: string, response: AIResponse): boolean {
+  if (!['SmolLM2', 'Kurukoo Template'].includes(response.provider)) return false;
+  const source = String(prompt || '').toLowerCase();
+  const reply = String(response.text || '').toLowerCase();
+  const topics = [
+    { prompt: /\b(?:phone|iphone|android|screen|battery|charging)\b/, reply: /\b(?:phone|iphone|android|screen|battery|charg(?:e|ing)|display|device)\b/ },
+    { prompt: /\b(?:laptop|computer|macbook|keyboard|wifi)\b/, reply: /\b(?:laptop|computer|macbook|keyboard|wifi|device)\b/ },
+    { prompt: /\b(?:washing machine|fridge|refrigerator|oven|dishwasher|appliance)\b/, reply: /\b(?:washing machine|fridge|refrigerator|oven|dishwasher|appliance)\b/ },
+  ];
+  return topics.some(topic => topic.prompt.test(source) && !topic.reply.test(reply));
 }
 
 function fallback(intent?: FastTextResult | null, quotaNote?: string, prompt = ''): AIResponse {
@@ -248,7 +264,8 @@ function estimatePromptTokens(prompt: string, systemPrompt?: string): number {
 export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions = {}): Promise<AIResponse> {
   const started = Date.now();
   const preferred = options.provider || 'auto';
-  const classification = classifyWithFastText(prompt);
+  const classificationPrompt = String(options.classificationPrompt || prompt);
+  const classification = classifyWithFastText(classificationPrompt);
 
   if (preferred === 'local_intent') {
     const response: AIResponse = {
@@ -271,7 +288,7 @@ export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions =
   const tokenEst = estimatePromptTokens(prompt, options.systemPrompt);
   const quota = await checkAiQuota(options.phone, kind, tokenEst);
   if (!quota.allowed || quota.downgradeToTemplate) {
-    const response = { ...fallback(classification, quota.reason ? `⏳ ${quota.reason}. Using a short reply instead.` : undefined, prompt), quotaRemaining: quota.remaining };
+    const response = { ...fallback(classification, quota.reason ? `⏳ ${quota.reason}. Using a short reply instead.` : undefined, classificationPrompt), quotaRemaining: quota.remaining };
     rememberAiRoutingDiagnostic({ requestedProvider: preferred, requestedModel: requestedModelFor(preferred), attemptedProviders: [], actualProvider: response.provider, actualModel: response.model, executionMode: 'deterministic_fallback', fallbackReason: quota.reason || 'quota_downgrade', success: false });
     return response;
   }
@@ -297,16 +314,17 @@ export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions =
 
   const { systemPrompt, memoryTokens } = await resolveSystemPrompt(prompt, options, classification, route);
   const fallbackWithDiagnostic = (reason: string): AIResponse => {
-    const response = fallback(classification, undefined, prompt);
+    const response = fallback(classification, undefined, classificationPrompt);
     rememberAiRoutingDiagnostic({ requestedProvider: preferred, requestedModel: requestedModelFor(route as AIProvider), attemptedProviders, actualProvider: response.provider, actualModel: response.model, executionMode: 'deterministic_fallback', fallbackReason: reason, success: false });
     return response;
   };
 
   const afterSuccess = async (response: AIResponse, actual?: { provider: string; model: string }): Promise<AIResponse> => {
-    const emotionalPrompt = /\b(?:frustrated|overwhelmed|stressed|having a bad day)\b/i.test(prompt);
+    const emotionalPrompt = /\b(?:frustrated|overwhelmed|stressed|having a bad day)\b/i.test(classificationPrompt);
     const genericOverview = /find services, coordinate work, manage requests, and answer everyday questions/i.test(response.text || '');
-    const safeResponse = emotionalPrompt && genericOverview
-      ? { ...response, provider: 'Kurukoo Template', model: 'template-fallback', text: naturalFallback(prompt), cost: '$0.00' }
+    const needsRelevantFallback = genericOverview || needsTopicRelevantLocalFallback(classificationPrompt, response);
+    const safeResponse = (emotionalPrompt && genericOverview) || needsRelevantFallback
+      ? { ...response, provider: 'Kurukoo Template', model: 'template-fallback', text: naturalFallback(classificationPrompt), cost: '$0.00' }
       : response;
     await recordAiUsage(options.phone, kind, (memoryTokens || 0) + tokenEst + Math.ceil((safeResponse.text || '').length / 4));
     const runtime = safeResponse.provider === 'SmolLM2' || safeResponse.provider === 'Kurukoo Template' ? getSmolLM2RuntimeStatus() : null;
@@ -403,8 +421,9 @@ export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions =
         confidence: classification?.confidence,
         memoryTokens,
       };
-      cacheSet(key, response);
-      return afterSuccess(response);
+      const safeResponse = await afterSuccess(response);
+      cacheSet(key, safeResponse);
+      return safeResponse;
     } catch {
       /* continue */
     }

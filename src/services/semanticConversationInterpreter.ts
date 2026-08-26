@@ -177,6 +177,7 @@ export async function interpretConversationSemantics(input: SemanticConversation
       threadId: input.threadId,
       conversational: false,
       contextHint: input.contextHint,
+      classificationPrompt: input.message,
       temperature: 0,
       skipMemory: true,
     });

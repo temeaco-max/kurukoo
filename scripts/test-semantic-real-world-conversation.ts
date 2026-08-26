@@ -31,7 +31,7 @@ const cases = [
       assistantReply: '',
       semanticInterpretation: semantic({ intent: 'phone_battery_problem', speechAct: 'conversation', goalStatements: ['Improve phone reliability'], entities: { device: 'phone', issue: 'battery' } }),
     }),
-    expect: () => assert.equal(turn.shouldAvoidAction, true),
+    expect: (turn: any) => assert.equal(turn.shouldAvoidAction, true),
   },
   {
     name: 'negation blocks an apparent action',
@@ -41,7 +41,7 @@ const cases = [
       assistantReply: '',
       semanticInterpretation: semantic({ mode: 'exploration', speechAct: 'rejection', intent: 'explore_without_booking', explicitAuthorization: false, responseStrategy: 'answer' }),
     }),
-    expect: () => { assert.equal(turn.shouldAvoidAction, true); assert.notEqual(turn.actionPosture, 'execute'); },
+    expect: (turn: any) => { assert.equal(turn.shouldAvoidAction, true); assert.notEqual(turn.actionPosture, 'execute'); },
   },
   {
     name: 'reference resolution can preserve ambiguity',
@@ -51,7 +51,7 @@ const cases = [
       assistantReply: '',
       semanticInterpretation: semantic({ mode: 'reference', speechAct: 'question', intent: 'compare_other_option', requiresClarification: true, responseStrategy: 'clarify', references: [{ text: 'the other one', confidence: 0.41 }] }),
     }),
-    expect: () => { assert.equal(turn.mode, 'reference'); assert.equal(turn.shouldAvoidAction, true); assert.match(turn.responseRequirements.join('\n'), /clarif/i); },
+    expect: (turn: any) => { assert.equal(turn.mode, 'reference'); assert.equal(turn.shouldAvoidAction, true); assert.match(turn.responseRequirements.join('\n'), /clarif/i); },
   },
   {
     name: 'multi-goal turn should retain both goals',
@@ -61,7 +61,7 @@ const cases = [
       assistantReply: '',
       semanticInterpretation: semantic({ mode: 'action', speechAct: 'request', intent: 'find_mechanic_and_create_reminder', explicitAuthorization: true, responseStrategy: 'propose', goalStatements: ['Find a mechanic tomorrow', 'Call landlord tonight'], entities: { date: 'tomorrow', reminderTime: 'tonight' } }),
     }),
-    expect: () => { assert.equal(turn.semanticInterpretation?.goalStatements.length, 2); assert.equal(turn.shouldRequireCanonicalAction, true); },
+    expect: (turn: any) => { assert.equal(turn.semanticInterpretation?.goalStatements.length, 2); assert.equal(turn.shouldRequireCanonicalAction, true); },
   },
   {
     name: 'topic interruption should not erase prior goal',
@@ -73,7 +73,7 @@ const cases = [
       activeGoals: ['Find a mechanic tomorrow'],
       semanticInterpretation: semantic({ intent: 'ask_weather', topicShift: true, responseStrategy: 'answer' }),
     }),
-    expect: () => { assert.equal(turn.goalState.currentGoal, 'Find a mechanic tomorrow'); assert.equal(turn.shouldAvoidAction, true); },
+    expect: (turn: any) => { assert.equal(turn.goalState.currentGoal, 'Find a mechanic tomorrow'); assert.equal(turn.shouldAvoidAction, true); },
   },
   {
     name: 'control command remains control',
@@ -83,7 +83,7 @@ const cases = [
       assistantReply: '',
       semanticInterpretation: semantic({ mode: 'control', speechAct: 'instruction', intent: 'pause_current_goal', responseStrategy: 'control' }),
     }),
-    expect: () => assert.equal(turn.mode, 'control'),
+    expect: (turn: any) => assert.equal(turn.mode, 'control'),
   },
   {
     name: 'confirmation is not proof of external success',
@@ -93,7 +93,7 @@ const cases = [
       assistantReply: '',
       semanticInterpretation: semantic({ mode: 'action', speechAct: 'confirmation', intent: 'confirm_selected_option', explicitAuthorization: true, responseStrategy: 'propose' }),
     }),
-    expect: () => { assert.equal(turn.shouldRequireCanonicalAction, true); assert.match(turn.responseRequirements.join('\n'), /canonical/i); },
+    expect: (turn: any) => { assert.equal(turn.shouldRequireCanonicalAction, true); assert.match(turn.responseRequirements.join('\n'), /canonical/i); },
   },
   {
     name: 'safety language does not create unsupported emergency fulfilment',
@@ -103,11 +103,11 @@ const cases = [
       assistantReply: '',
       semanticInterpretation: semantic({ mode: 'exploration', speechAct: 'question', intent: 'explore_safety_options', capabilityHint: 'safety', responseStrategy: 'answer' }),
     }),
-    expect: () => { assert.equal(turn.shouldAvoidAction, true); assert.notEqual(turn.actionPosture, 'execute'); },
+    expect: (turn: any) => { assert.equal(turn.shouldAvoidAction, true); assert.notEqual(turn.actionPosture, 'execute'); },
   },
 ];
 
-for (const item of cases) item.expect();
+for (const item of cases) item.expect(item.turn);
 
 assert.equal(cases.length, 8);
 console.log(`semantic real-world conversation suite passed: ${cases.length} cases`);
