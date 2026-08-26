@@ -1,15 +1,10 @@
 import { PLATFORM_FEATURE_VISUAL_CONTRACTS, type PlatformFeatureVisualContract } from './platformFeatureVisualRegistry.js';
-import { canonicalizeUrl } from './canonicalUrlRegistry.js';
-
 /**
  * Canonical product-facing projection of the feature registry.
- * Historical visual contracts may contain compatibility URLs; future UI/navigation
- * code MUST consume this projection instead of PLATFORM_FEATURE_VISUAL_CONTRACTS directly.
+ * Feature source data is canonical. Future UI/navigation code MUST consume this projection
+ * instead of introducing route aliases or surface-specific URL rewrites.
  */
-export const CANONICAL_PLATFORM_FEATURE_CONTRACTS: readonly PlatformFeatureVisualContract[] = PLATFORM_FEATURE_VISUAL_CONTRACTS.map(feature => ({
-  ...feature,
-  webSurface: canonicalizeUrl(feature.webSurface),
-}));
+export const CANONICAL_PLATFORM_FEATURE_CONTRACTS: readonly PlatformFeatureVisualContract[] = PLATFORM_FEATURE_VISUAL_CONTRACTS;
 
 export function getCanonicalPlatformFeatureVisualContract(id: string): PlatformFeatureVisualContract | undefined {
   return CANONICAL_PLATFORM_FEATURE_CONTRACTS.find(feature => feature.id === id);

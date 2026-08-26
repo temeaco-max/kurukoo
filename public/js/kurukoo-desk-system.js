@@ -7,37 +7,6 @@
   let accountName = 'Your account';
   let accountPhone = '';
   const section = document.body.dataset.appSection || '';
-  const legacyToCanonical = (pathname) => {
-    const direct = {
-      '/app': '/desk','/app/agent': '/chat','/app/discover': '/discover','/app/requests': '/requests','/app/tasks': '/tasks','/app/connect': '/connect','/app/reminders': '/reminders','/app/saved': '/saved','/app/cart': '/cart','/app/agents': '/agents','/app/capabilities': '/capabilities','/app/opportunities': '/opportunities','/app/wallet': '/wallet','/app/points': '/points','/app/top-up': '/top-up','/app/subscriptions': '/subscriptions','/app/checkout': '/checkout','/app/confirmations': '/confirmations','/app/memory': '/memory','/app/artifacts': '/artifacts','/app/prayer': '/prayer','/app/call': '/call','/app/notifications': '/notifications','/app/safety': '/safety','/app/settings': '/settings'
-    };
-    if (direct[pathname]) return direct[pathname];
-    if (pathname.startsWith('/app/requests/')) return pathname.replace('/app/requests/', '/requests/');
-    if (pathname.startsWith('/app/tasks/')) return pathname.replace('/app/tasks/', '/tasks/');
-    if (pathname.startsWith('/app/agents/')) return pathname.replace('/app/agents/', '/agents/');
-    if (pathname.startsWith('/app/opportunities/')) return pathname.replace('/app/opportunities/', '/opportunities/');
-    if (pathname.startsWith('/app/connections/')) return pathname.replace('/app/connections/', '/connections/');
-    if (pathname.startsWith('/app/memory/')) return pathname.replace('/app/memory/', '/memory/');
-    if (pathname.startsWith('/app/artifacts/')) return pathname.replace('/app/artifacts/', '/artifacts/');
-    return pathname;
-  };
-
-  const normalizeLinks = () => {
-    document.querySelectorAll('a[href]').forEach((anchor) => {
-      const raw = anchor.getAttribute('href');
-      if (!raw || raw.startsWith('#') || raw.startsWith('mailto:') || raw.startsWith('tel:') || raw.startsWith('javascript:')) return;
-      try {
-        const url = new URL(raw, window.location.origin);
-        if (url.origin !== window.location.origin) return;
-        const canonical = legacyToCanonical(url.pathname);
-        if (canonical !== url.pathname) {
-          url.pathname = canonical;
-          anchor.setAttribute('href', `${url.pathname}${url.search}${url.hash}`);
-        }
-      } catch {}
-    });
-  };
-
   const closeAll = () => document.querySelectorAll('.k-desk-drawer:not([hidden])').forEach((panel) => {
     panel.hidden = true;
     document.querySelector(`[aria-controls="${panel.id}"]`)?.setAttribute('aria-expanded', 'false');
@@ -91,7 +60,7 @@
       const payload = await response.json(); const items = Array.isArray(payload) ? payload : Array.isArray(payload.notifications) ? payload.notifications : [];
       if (!items.length) { body.innerHTML = '<div class="k-desk-empty-state"><strong>You are up to date.</strong><p>No notifications need your attention.</p></div>'; return; }
       body.replaceChildren(); const list=document.createElement('div'); list.className='k-desk-notification-list';
-      items.slice(0,30).forEach((item)=>{ const row=document.createElement('article'); row.className=`k-desk-notification${item.read||item.readAt?'':' is-unread'}`; const title=String(item.title||item.type||'Kurukoo update'); const message=String(item.body||item.message||''); const target=legacyToCanonical(String(item.link||item.href||'/notifications')); row.innerHTML=`<div><strong>${title}</strong><p>${message}</p></div><a href="${target}">${item.actionLabel||'Open'}</a>`; list.appendChild(row); });
+      items.slice(0,30).forEach((item)=>{ const row=document.createElement('article'); row.className=`k-desk-notification${item.read||item.readAt?'':' is-unread'}`; const title=String(item.title||item.type||'Kurukoo update'); const message=String(item.body||item.message||''); const target=String(item.link||item.href||'/notifications'); row.innerHTML=`<div><strong>${title}</strong><p>${message}</p></div><a href="${target}">${item.actionLabel||'Open'}</a>`; list.appendChild(row); });
       body.appendChild(list); const all=document.createElement('a'); all.className='k-desk-drawer-primary'; all.href='/notifications'; all.textContent='View all notifications →'; body.appendChild(all);
     } catch (error) { body.innerHTML=`<div class="k-desk-empty-state"><strong>Notifications are unavailable</strong><p>${String(error?.message||'Open Notifications for the full state.')}</p><a href="/notifications">Open Notifications →</a></div>`; }
   };
@@ -214,7 +183,6 @@
   };
 
   const boot = () => {
-    normalizeLinks();
     const host=document.querySelector('.k-app-header-actions'); if(!host) return;
     const identity = host.querySelector('.k-app-identity');
     accountName = identity?.querySelector('strong')?.textContent?.trim() || 'Your account';
@@ -227,7 +195,6 @@
     controls.forEach((control) => host.appendChild(control));
     wireDrawer(search,renderSearch); wireDrawer(notifications,renderNotifications); wireDrawer(profile,renderProfile); wireDrawer(workspace,renderOsWorkspace); wireDrawer(context,renderContext);
     document.addEventListener('keydown',(event)=>{if(event.key==='Escape')closeAll();});
-    const observer=new MutationObserver(()=>normalizeLinks()); observer.observe(document.body,{subtree:true,childList:true});
     if(!document.querySelector('link[data-kurukoo-os-components]')){const link=document.createElement('link');link.rel='stylesheet';link.href='/css/kurukoo-os-components.css?v=1';link.dataset.kurukooOsComponents='true';document.head.appendChild(link);}
     renderDeskComposition();
   };

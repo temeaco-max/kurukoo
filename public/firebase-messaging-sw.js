@@ -22,7 +22,7 @@ async function initialiseMessaging() {
       const title = String(notification.title || data.title || 'Kurukoo');
       const body = String(notification.body || data.body || 'You have a new Kurukoo update.');
       const link = String(data.link || '');
-      const target = link || '/app/notifications';
+      const target = link || '/notifications';
       self.registration.showNotification(title, {
         body,
         icon: ICON_URL,
@@ -42,7 +42,7 @@ self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim(
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const link = String(event.notification?.data?.link || '/app/notifications');
+  const link = String(event.notification?.data?.link || '/notifications');
   event.waitUntil((async () => {
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     for (const client of windows) {

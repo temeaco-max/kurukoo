@@ -15,7 +15,8 @@ assert(login.includes('Continue securely.') && login.includes('Your name'), 'log
 assert(login.includes('auth-step-name') && login.includes('auth-step-phone') && login.includes('auth-step-code'), 'name, phone, and OTP steps must exist');
 assert(login.includes("fetch('/api/auth/request-magic-link'") && login.includes("fetch('/api/auth/request-otp'") && login.includes("/api/auth/verify-otp"), 'login must use canonical magic-link and phone OTP endpoints');
 assert(login.includes('credentials:\'same-origin\''), 'OTP requests must retain same-origin browser credentials');
-assert(login.includes('safeReturnTo') && login.includes('url.origin === window.location.origin'), 'return navigation must reject cross-origin targets');
+assert(login.includes("returnTo || '/desk'") && login.includes('safeReturnTo') && login.includes('url.origin === window.location.origin'), 'return navigation must default to Desk and reject cross-origin targets');
+assert(authRoutes.includes("sanitizeReturnPath(challenge.returnPath) || '/desk'"), 'completed authenticated sessions must default to Desk when no safe deep link is supplied');
 assert(!login.includes('/js/kurukoo-auth.js'), 'login must not retain a competing legacy auth controller');
 assert(!login.includes('Continue with Google') && !login.includes('Continue with Apple') && !login.includes('Continue with Telegram'), 'unsupported SSO buttons must not be presented as configured');
 assert(authRoutes.includes("const AUTH_COOKIE = 'kurukoo_auth'"), 'browser auth must have a named cookie boundary');

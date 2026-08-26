@@ -109,39 +109,3 @@ export const CANONICAL_URLS = {
     live: '/live',
   },
 } as const;
-
-export const LEGACY_URL_ALIASES = {
-  '/app': CANONICAL_URLS.desk.home,
-  '/app/agent': CANONICAL_URLS.conversation.agent,
-  '/app/discover': CANONICAL_URLS.desk.discover,
-  '/app/topics': CANONICAL_URLS.desk.topics,
-  '/app/requests': CANONICAL_URLS.desk.requests,
-  '/app/reminders': CANONICAL_URLS.desk.reminders,
-  '/app/saved': CANONICAL_URLS.desk.saved,
-  '/app/cart': CANONICAL_URLS.desk.cart,
-  '/app/tasks': CANONICAL_URLS.desk.tasks,
-  '/app/connect': CANONICAL_URLS.desk.connect,
-  '/app/agents': CANONICAL_URLS.desk.agents,
-  '/app/capabilities': CANONICAL_URLS.desk.capabilities,
-  '/app/opportunities': CANONICAL_URLS.desk.opportunities,
-  '/app/wallet': CANONICAL_URLS.desk.wallet,
-  '/app/points': CANONICAL_URLS.desk.points,
-  '/app/top-up': CANONICAL_URLS.desk.topUp,
-  '/app/subscriptions': CANONICAL_URLS.desk.subscriptions,
-  '/app/checkout': CANONICAL_URLS.desk.checkout,
-  '/app/confirmations': CANONICAL_URLS.desk.confirmations,
-  '/app/memory': CANONICAL_URLS.desk.memory,
-  '/app/artifacts': CANONICAL_URLS.desk.artifacts,
-  '/app/prayer': CANONICAL_URLS.desk.prayer,
-  '/app/call': CANONICAL_URLS.desk.call,
-  '/app/notifications': CANONICAL_URLS.desk.notifications,
-  '/app/safety': CANONICAL_URLS.desk.safety,
-  '/web': CANONICAL_URLS.desk.home,
-  '/workspace': CANONICAL_URLS.desk.home,
-  '/subscription': CANONICAL_URLS.desk.subscriptions,
-  '/confirmation': CANONICAL_URLS.desk.confirmations,
-} as const;
-
-export function canonicalizeUrl(pathname: string): string {
-  return LEGACY_URL_ALIASES[pathname as keyof typeof LEGACY_URL_ALIASES] ?? pathname;
-}

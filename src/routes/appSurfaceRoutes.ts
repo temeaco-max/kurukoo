@@ -39,9 +39,6 @@ const surfaceMap = new Map([
   ['settings', { title: 'Settings', eyebrow: 'Your Kurukoo preferences', description: 'Manage account, security, privacy, memory, notifications, connections, accessibility and product preferences in one place.', cta: '/settings', ctaLabel: 'Open Settings' }],
 ]);
 
-const legacySurfaceAliases: Record<string, string> = {
-  '/app': '/desk', '/app/agent': '/chat', '/web': '/desk', '/workspace': '/desk', '/subscription': '/subscriptions', '/confirmation': '/requests',
-};
 
 const cleanCanonicalSections: Record<string, string> = {
   '/desk': 'desk', '/discover': 'discover', '/topics': 'topics', '/requests': 'requests', '/reminders': 'reminders', '/saved': 'saved', '/cart': 'cart', '/tasks': 'tasks', '/connect': 'connect', '/agents': 'agents', '/capabilities': 'capabilities', '/opportunities': 'opportunities', '/wallet': 'wallet', '/points': 'points', '/top-up': 'top-up', '/subscriptions': 'subscriptions', '/checkout': 'checkout', '/confirmations': 'confirmations', '/memory': 'memory', '/artifacts': 'artifacts', '/prayer': 'prayer', '/call': 'call', '/notifications': 'notifications', '/safety': 'safety', '/settings': 'settings',
@@ -118,7 +115,5 @@ for (const resource of ['requests','tasks','reminders','opportunities','agents',
   });
 }
 
-for (const [legacy, canonical] of Object.entries(legacySurfaceAliases)) router.get(legacy, (_req, res) => res.redirect(308, canonical));
-for (const section of surfaceMap.keys()) if (section !== 'desk') router.get(`/app/${section}`, optionalAuthenticateUser, (_req, res) => res.redirect(308, `/${section}`));
 
 export default router;

@@ -82,4 +82,4 @@ No second mobile notification endpoint exists.
 
 ## Important boundaries
 
-Credentials are never returned by `/api/fcm/config`. Device tokens are never returned by `/api/fcm/register`. A successful FCM HTTP response means Firebase accepted the message; it is not proof that the device rendered it. Physical-device delivery therefore remains a runtime validation step.
+Credentials are never returned by `/api/fcm/config`. Device tokens are never returned by `/api/fcm/register`. A successful FCM HTTP response means Firebase accepted the message; it is not proof that the device rendered it. Physical device delivery therefore remains a runtime validation step.

@@ -64,16 +64,16 @@ if (!topicRoutes.includes("router.get('/topics'")) failures.push('Topics public/
 if (!topicRoutes.includes("router.get('/topics/:slug'")) failures.push('Topic detail route missing');
 
 const appRouter = read('src/routes/appSurfaceRoutes.ts');
-if (!appRouter.includes("'/app': '/desk'")) failures.push('Canonical Web App root compatibility alias missing');
-if (!appRouter.includes('for (const section of surfaceMap.keys())')) failures.push('Canonical Web App dynamic section routing is missing');
-for (const route of CLIENT_SURFACES.filter(s => s.family === 'web' && s.route.startsWith('/app/')).map(s => s.route.replace('/app/', ''))) if (!appRouter.includes(`['${route}'`)) failures.push(`Canonical Web App surface ${route} missing from surface map`);
+if (!appRouter.includes("'/desk': 'desk'")) failures.push('Canonical Web App desk route is missing');
+if (!appRouter.includes('cleanCanonicalSections')) failures.push('Canonical Web App direct section routing is missing');
+for (const route of CLIENT_SURFACES.filter(s => s.family === 'web' && /^\/(desk|requests|tasks|connect|agents|capabilities|opportunities|wallet|points|top-up|subscriptions|checkout|confirmations|memory|artifacts|prayer|call|notifications|safety|settings)$/.test(s.route)).map(s => s.route.slice(1))) if (!appRouter.includes(`'/${route}'`)) failures.push(`Canonical Web App surface ${route} missing from direct route map`);
 
 const app = read('views/app.ejs');
 if (!app.includes('k-app-section-<%= section %>')) failures.push('Authenticated Web App lacks explicit section identity hook');
 if (!app.includes('href="/topics"')) failures.push('Authenticated Web App navigation is missing Topics');
 if (!app.includes("section === 'topics'")) failures.push('Authenticated Web App has no Topics representation');
 if (!app.includes('href="/topics"')) failures.push('Authenticated Web App Topics surface does not connect to canonical Topics frontend');
-for (const route of ['/app/reminders', '/app/saved', '/app/cart']) if (!appRouter.includes(`['${route.replace('/app/', '')}'`)) failures.push(`Authenticated Web App surface map missing ${route}`);
+for (const route of ['reminders', 'saved', 'cart']) if (!appRouter.includes(`'/${route}'`)) failures.push(`Authenticated Web App direct route map missing ${route}`);
 
 const head = read('views/_partials/head.ejs');
 if (!head.includes('/css/kurukoo-screen-set-convergence.css')) failures.push('Shared screen-set convergence stylesheet is not loaded');
@@ -86,7 +86,8 @@ const appShell = read('public/js/kurukoo-app-shell.js');
 if (!appShell.includes('kurukoo-webapp-pixel-refinement')) failures.push('Web App runtime does not mount pixel refinement authority');
 if (!appShell.includes('kurukoo-webapp-screen-refinement')) failures.push('Web App runtime does not mount sequential screen refinement authority');
 if (!appShell.includes('kurukoo-webapp-agent-refinement')) failures.push('Web App runtime does not mount first-screen Agent refinement authority');
-if (!appShell.includes("path==='/app/agent'")) failures.push('Web App Agent page-specific refinement is not scoped to the Agent route');
+if (!appShell.includes("path==='/chat'")) failures.push('Web App Agent page-specific refinement is not scoped to the Agent route');
+if (appShell.includes('/app/agent')) failures.push('Web App runtime retains a legacy Agent alias');
 if (!appShell.includes('kurukoo-os-final')) failures.push('Web App runtime does not mount OS final authority');
 
 const chat = read('public/chat/index.html');
