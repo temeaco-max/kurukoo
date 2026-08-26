@@ -45,6 +45,12 @@ function hasExternalOutcomeClaim(trace: AgentExecutionTraceEvent[]): boolean {
   );
 }
 
+function executionRequiresEvidence(trace: AgentExecutionTraceEvent[]): boolean {
+  return trace.some((event) =>
+    ['tool_started', 'tool_completed', 'tool_failed', 'evidence_recorded'].includes(event.kind),
+  );
+}
+
 export async function evaluateAgentObjective(
   input: AgentObjectiveEvaluationInput,
 ): Promise<AgentObjectiveEvaluation> {
@@ -58,7 +64,7 @@ export async function evaluateAgentObjective(
     capabilityAllowed: input.capabilityAllowed,
     authorizationSatisfied: input.authorizationSatisfied,
     dependenciesSatisfied: input.dependenciesSatisfied,
-    evidenceRequired: input.evidenceRequired,
+    evidenceRequired: Boolean(input.evidenceRequired || executionRequiresEvidence(trace)),
     evidencePresent,
     externalOutcomeClaimed: hasExternalOutcomeClaim(trace),
     externallyVerified,
