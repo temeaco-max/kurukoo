@@ -26,14 +26,14 @@
   const nextAction = (request) => {
     const id = String(request?.id || '').trim();
     const skill = humanize(request?.skill || request?.category || 'request');
-    const exactPrompt = `Continue my ${skill} request ${id}`;
+    const continuationPrompt = `Continue my ${skill} request.`;
     if (['awaiting_confirmation', 'reserved', 'payment_pending'].includes(String(request?.status || ''))) {
-      return { label: 'Review request', href: `/confirmation?request=${encodeURIComponent(id)}` };
+      return { label: 'Review request', href: `/confirmations?request=${encodeURIComponent(id)}` };
     }
     if (String(request?.status || '') === 'completed') {
-      return { label: 'View confirmation', href: `/confirmation?request=${encodeURIComponent(id)}` };
+      return { label: 'View confirmation', href: `/confirmations?request=${encodeURIComponent(id)}` };
     }
-    return { label: 'Continue in Chat', href: `/chat?prompt=${encodeURIComponent(exactPrompt)}` };
+    return { label: 'Continue in Chat', href: `/chat?prompt=${encodeURIComponent(continuationPrompt)}` };
   };
 
   const parseRequirements = (request) => {
@@ -76,9 +76,9 @@
       const row = document.createElement('div');
       row.className = 'requests-convergence-goal-row';
       const action = document.createElement('a');
-      action.href = `/chat?prompt=${encodeURIComponent(`Continue my agent objective ${linkedGoal.id}`)}`;
-      action.textContent = continuation.ready ? 'Continue goal' : 'Review blocker';
-      action.setAttribute('aria-label', continuation.ready ? 'Continue Agent Goal' : 'Review Agent Goal blocker');
+      action.href = `/chat?prompt=${encodeURIComponent(continuation.ready ? 'Continue the objective for this request.' : 'Show me what this request is waiting for.')}`;
+      action.textContent = continuation.ready ? 'Continue in Chat' : 'Review what is waiting';
+      action.setAttribute('aria-label', continuation.ready ? 'Continue this request objective in Chat' : 'Review what this request is waiting for');
       row.appendChild(action); meta.appendChild(row);
     } catch {
       // Continuation is enrichment only; request truth remains canonical.
@@ -102,7 +102,6 @@
     const meta = document.createElement('div');
     meta.className = 'requests-convergence-meta';
     meta.setAttribute('aria-label', 'Request context');
-    appendMetaRow(meta, 'Request ID', requestId);
     appendMetaRow(meta, 'Created', formatDate(request.created_at || request.createdAt));
     if (request.updated_at || request.updatedAt) appendMetaRow(meta, 'Updated', formatDate(request.updated_at || request.updatedAt));
     appendMetaRow(meta, 'Payment', paymentState(request));
@@ -119,11 +118,12 @@
           const goals = Array.isArray(goalData.goals) ? goalData.goals : [];
           const linkedGoal = goals.find(g => String(g.economicRequestId || '') === String(request.id));
           if (linkedGoal) {
-            const goalStatus = String(linkedGoal.status || '').replace(/_/g, ' ');
+            const goalStatus = String(linkedGoal.status || '').toLowerCase();
+            const goalStateLabel = { active: 'Working', waiting: 'Waiting', waiting_on_dependency: 'Waiting for earlier work', needs_user: 'Your input is needed', blocked: 'Paused safely', completed: 'Completed', failed: 'Needs review', cancelled: 'Stopped' };
             const goalRow = document.createElement('div'); goalRow.className = 'requests-convergence-goal-row';
-            const goalLabel = document.createElement('span'); goalLabel.className = 'requests-convergence-goal-label'; goalLabel.textContent = `Agent Goal · ${goalStatus}`;
-            const goalAction = document.createElement('a'); goalAction.href = `/chat?prompt=${encodeURIComponent(`Show me my agent objective ${linkedGoal.id || ''}`)}`; goalAction.textContent = 'Open goal';
-            goalAction.setAttribute('aria-label', 'Open Agent Goal for this request');
+            const goalLabel = document.createElement('span'); goalLabel.className = 'status-pill requests-convergence-goal-label'; goalLabel.dataset.state = goalStatus; goalLabel.textContent = `Objective · ${goalStateLabel[goalStatus] || 'Updating'}`;
+            const goalAction = document.createElement('a'); goalAction.href = `/chat?prompt=${encodeURIComponent('Show me the next step for this request objective.')}`; goalAction.textContent = 'Open in Chat';
+            goalAction.setAttribute('aria-label', 'Open this request objective in Chat');
             goalRow.append(goalLabel, goalAction); meta.appendChild(goalRow);
             await appendGoalContinuation(meta, linkedGoal);
           }

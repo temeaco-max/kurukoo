@@ -11,8 +11,11 @@ const extensions = read('public/js/kurukoo-app-extensions.js');
 const bridge = read('src/middleware/apiV1Bridge.ts');
 const nativeIntent = read('mobile/kurukoo-mobile/app/+native-intent.tsx');
 
-for (const token of ['legacyToCanonical', "'/app/agent': '/chat'", "'/app/requests': '/requests'", "'/app/tasks': '/tasks'", "'/app/connect': '/connect'"]) {
-  assert.ok(desk.includes(token), `Desk canonical URL mapping missing: ${token}`);
+for (const token of ["href:'/chat'", "href:'/requests'", "href:'/tasks'", "href:'/connect'"]) {
+  assert.ok(desk.includes(token), `Desk direct canonical URL is missing: ${token}`);
+}
+for (const legacy of ['/app/agent', '/app/requests', '/app/tasks', '/app/connect']) {
+  assert.ok(!desk.includes(legacy), `Desk must not retain legacy workspace alias ${legacy}`);
 }
 for (const token of ['kurukoo-drawer-search', 'kurukoo-drawer-notifications', 'kurukoo-drawer-profile', 'k-desk-icon-button', 'Search Kurukoo', 'Ask Agent']) {
   assert.ok(desk.includes(token), `Desk shell capability missing: ${token}`);
@@ -26,4 +29,4 @@ assert.ok(bridge.includes('X-Kurukoo-Api-Version'), 'Versioned API bridge must a
 assert.ok(nativeIntent.includes("/^\\/requests\\//"), 'Native intent resolver must map canonical Request resources.');
 assert.ok(nativeIntent.includes("/^\\/chat\\//"), 'Native intent resolver must map canonical conversation resources.');
 
-console.log('Desk system contract passed: clean URLs, search/notification/account drawers, authenticated mounting, API version boundary and native resource mapping are present.');
+console.log('Desk system contract passed: direct canonical URLs, search/notification/account drawers, authenticated mounting, API version boundary and native resource mapping are present.');

@@ -1,6 +1,8 @@
 (() => {
   'use strict';
   if (!document.body?.classList.contains('k-app-page')) return;
+  if (document.documentElement.dataset.kurukooAppConvergence === 'true') return;
+  document.documentElement.dataset.kurukooAppConvergence = 'true';
   const api = async (url, options={}) => { const r=await fetch(url,{credentials:'same-origin',...options,headers:{Accept:'application/json',...(options.headers||{})}}); const t=r.headers.get('content-type')||''; const p=t.includes('application/json')?await r.json():{message:await r.text()}; if(!r.ok)throw new Error(p.error||p.message||`Request failed (${r.status})`); return p; };
   const live = msg => { let n=document.querySelector('[data-kurukoo-app-live]'); if(!n){n=document.createElement('div');n.className='k-sr-only';n.dataset.kurukooAppLive='';n.setAttribute('aria-live','polite');document.body.appendChild(n)} n.textContent=msg; };
   const section = document.body.dataset.appSection || document.querySelector('[data-app-section]')?.dataset.appSection || (location.pathname.match(/^\/app\/([^/?#]+)/)?.[1] || 'agent');

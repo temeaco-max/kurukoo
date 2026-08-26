@@ -142,13 +142,13 @@
     today.appendChild(todayList);
 
     const continueCard = makeDeskModule('continue-conversation','Continue conversation','Pick up where you left off','Continue with the same Agent relationship and exact source context.',[{label:'Open Chat',href:'/chat',tone:'primary'}]);
-    const agentObjectivesCard = makeDeskModule('agent-objectives','Agent objectives','What Kurukoo is doing','Active objectives remain owner-scoped, evidence-bound and resumable from their canonical Goal lifecycle.',[{label:'Open Agents',href:'/agents',tone:'primary'}]);
+    const agentObjectivesCard = makeDeskModule('agent-objectives','Agent objectives','What Kurukoo is doing','See active objectives, what needs your attention and the next confirmed step.',[{label:'Open Agents',href:'/agents',tone:'primary'}]);
     agentObjectivesCard.appendChild(makeDeskState('empty','No active Agent objectives','When an objective is active, waiting, blocked or needs your input, its truthful progress appears here.',{label:'Ask Agent',href:'/chat'}));
-    const requestCard = makeDeskModule('active-requests','Active requests','Work in motion','Request state stays owned by the canonical Economic Request lifecycle.',[{label:'View Requests',href:'/requests',tone:'primary'}]);
+    const requestCard = makeDeskModule('active-requests','Active requests','Work in motion','Follow requests here, then continue with the details in Requests when you are ready.',[{label:'View Requests',href:'/requests',tone:'primary'}]);
     requestCard.appendChild(makeDeskState('empty','No active requests are surfaced here yet','Desk does not invent provider, payment or fulfilment status.',{label:'Open Requests',href:'/requests'}));
-    const taskCard = makeDeskModule('tasks-reminders','Tasks & reminders','Work to finish','Use the canonical Tasks and reminder context without creating a parallel queue.',[{label:'View Tasks',href:'/tasks',tone:'primary'}]);
+    const taskCard = makeDeskModule('tasks-reminders','Tasks & reminders','Work to finish','Keep task and reminder follow-through visible, with details available in Tasks.',[{label:'View Tasks',href:'/tasks',tone:'primary'}]);
     taskCard.appendChild(makeDeskState('empty','No task state is surfaced here yet','Desk preserves the task authority and continues to the source surface.',{label:'Open Tasks',href:'/tasks'}));
-    const opportunityCard = makeDeskModule('opportunity-radar','Opportunity radar','Useful possibilities, clearly attributed','Relevant opportunities remain evidence-bound and continue into Discover.',[{label:'Explore Discover',href:'/discover',tone:'primary'}]);
+    const opportunityCard = makeDeskModule('opportunity-radar','Opportunity radar','Useful possibilities, clearly attributed','Explore relevant opportunities in Discover, with their source and availability made clear.',[{label:'Explore Discover',href:'/discover',tone:'primary'}]);
     opportunityCard.appendChild(makeDeskState('unavailable','Live opportunity availability is deployment-dependent','No current provider or availability claim is inferred locally.'));
     const pointsCard = makeDeskModule('points','Points','Your closed-loop Points','Points remain distinct from cash settlement and external payment rails.',[{label:'Open Points',href:'/points',tone:'primary'}]);
     const pointsValue=document.createElement('div'); pointsValue.className='k-desk-points-value'; pointsValue.dataset.deskPointsValue='true'; pointsValue.textContent='Loading balance…'; pointsCard.appendChild(pointsValue);
@@ -162,9 +162,9 @@
     [today,continueCard,agentObjectivesCard,requestCard,taskCard,opportunityCard,pointsCard,topicsCard,guideCard,sponsorCard,channelsCard].forEach((card)=>main.appendChild(card));
 
     const pulse=makeDeskModule('pulse','Pulse','What is moving around your work','A contextual activity/timeline view belongs in the right rail.',[{label:'Open Notifications',href:'/notifications'}]);
-    pulse.appendChild(makeDeskState('empty','No live pulse is surfaced in this static state','Current notifications and activities remain available from their canonical sources.'));
+    pulse.appendChild(makeDeskState('empty','No live pulse is surfaced in this static state','Current notifications and activity are available from their usual places.'));
     const safety=makeDeskModule('safety-check-in','Safety check-in','Stay in control of safety context','Safety support is explicit, consent-bound and never represented as emergency-service delivery.',[{label:'Open Safety',href:'/safety'}]);
-    safety.appendChild(makeDeskState('ready','Safety controls are available','Use the canonical Safety surface for check-ins and trusted-contact management.',{label:'Open Safety',href:'/safety'}));
+    safety.appendChild(makeDeskState('ready','Safety controls are available','Use Safety for check-ins and trusted-contact management.',{label:'Open Safety',href:'/safety'}));
     const activity=makeDeskModule('activity-summary','Activity summary','A compact view of your recent activity','Desk provides orientation; detailed analytics remain owned by the relevant surfaces.',[{label:'Open Tasks',href:'/tasks',tone:'secondary'},{label:'Open Requests',href:'/requests',tone:'secondary'}]);
     const activityMetrics = document.createElement('div'); activityMetrics.className = 'k-desk-activity-metrics'; [['Tasks', '—'], ['Requests', '—'], ['Agent goals', '—']].forEach(([label, value]) => { const item = document.createElement('div'); item.innerHTML = `<span>${label}</span><strong>${value}</strong>`; activityMetrics.appendChild(item); }); activity.appendChild(activityMetrics);
     [pulse,safety,activity].forEach((card)=>rail.appendChild(card));

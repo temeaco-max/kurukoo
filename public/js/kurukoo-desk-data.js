@@ -32,10 +32,11 @@
     'paid', 'in_fulfillment', 'fulfilled',
   ]);
 
-  const flowRow = (label, href, detail) => {
+  const flowRow = (label, href, detail, state = '') => {
     const a = document.createElement('a');
     a.className = 'k-desk-flow-item';
     a.href = href;
+    if (state) a.dataset.state = state;
     a.innerHTML = `<span>${esc(label)}${detail ? `<small class="k-desk-item-meta">${esc(detail)}</small>` : ''}</span><strong>Open →</strong>`;
     return a;
   };
@@ -45,8 +46,10 @@
     module.querySelectorAll('.k-desk-state, .k-desk-live-list').forEach((node) => node.remove());
     const wrap = document.createElement('div');
     wrap.className = `k-desk-state k-desk-state-${state}`;
+    wrap.dataset.state = state;
     const pill = document.createElement('span');
     pill.className = 'k-desk-state-pill';
+    pill.dataset.state = state;
     pill.textContent = state === 'unavailable' ? 'Unavailable' : state === 'empty' ? 'Nothing here yet' : state === 'ready' ? 'Ready' : state === 'attention' ? 'Needs attention' : state === 'progress' ? 'In progress' : state;
     const strong = document.createElement('strong');
     strong.textContent = title;
@@ -71,19 +74,19 @@
     }
     const list = document.createElement('div');
     list.className = 'k-desk-live-list';
-    rows.forEach(({ label, href, detail }) => list.appendChild(flowRow(label, href, detail)));
+    rows.forEach(({ label, href, detail, status }) => list.appendChild(flowRow(label, href, detail, status)));
     module.appendChild(list);
   };
 
   const goalPresenceLabel = (status) => ({
     active: 'Working',
-    waiting: 'Waiting',
-    waiting_on_dependency: 'Waiting on another objective',
-    needs_user: 'Needs your input',
-    blocked: 'Blocked',
+    waiting: 'Waiting for an update',
+    waiting_on_dependency: 'Waiting for earlier work',
+    needs_user: 'Your input is needed',
+    blocked: 'Paused safely',
     completed: 'Completed',
-    cancelled: 'Cancelled',
-    failed: 'Failed',
+    cancelled: 'Stopped',
+    failed: 'Needs review',
     expired: 'Expired',
   }[String(status || '').toLowerCase()] || humanize(status));
 
@@ -110,6 +113,13 @@
     return safe.length ? `Waiting on: ${safe.slice(0, 2).join(', ')}` : blockedBy.length ? 'Waiting on a prerequisite objective' : '';
   };
 
+  const safeNextActionLabel = (nextAction) => {
+    const value = String(nextAction || '').trim().slice(0, 160);
+    if (!value) return '';
+    if (/(?:goal:|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|token|secret|prompt|argument|payload|canonical|capability|runtime|executor|worker|trace)/i.test(value)) return 'Kurukoo will continue this objective when it is ready.';
+    return value;
+  };
+
   const goalRow = (goal, continuation, trace, order = 0) => {
     const goalStatus = String(goal?.status || '').toLowerCase();
     const objective = String(goal?.objective || goal?.summary || 'Agent objective').slice(0, 100);
@@ -117,7 +127,7 @@
     const blockers = Array.isArray(continuation?.blockedBy) ? continuation.blockedBy.filter(Boolean).slice(0, 2) : [];
     const detail = [
       goalPresenceLabel(goalStatus),
-      safeBlockedByLabel(blockers) || (continuation?.nextAction ? `Next: ${continuation.nextAction}` : ''),
+      safeBlockedByLabel(blockers) || (safeNextActionLabel(continuation?.nextAction) ? `Next: ${safeNextActionLabel(continuation?.nextAction)}` : ''),
       latest ? `Latest: ${goalActivityLabel(latest)}` : '',
       latest?.createdAt ? formatDate(latest.createdAt) : formatDate(goal?.updatedAt || goal?.updated_at),
     ].filter(Boolean).join(' · ');
@@ -272,7 +282,7 @@
         ...cont.slice(0, 2).map((row) => ({ ...row, label: `Continue · ${row.label}` })),
       ];
       if (hierarchy.length) {
-        hierarchy.forEach((row) => todayList.appendChild(flowRow(row.label, row.href, row.detail)));
+        hierarchy.forEach((row) => todayList.appendChild(flowRow(row.label, row.href, row.detail, row.status)));
       } else {
         todayList.appendChild(flowRow('Ask Kurukoo', '/chat', 'Nothing needs attention right now'));
         todayList.appendChild(flowRow('Open Requests', '/requests', 'No active economic requests'));

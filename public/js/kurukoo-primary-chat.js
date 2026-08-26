@@ -1476,45 +1476,58 @@
     if (!card || !statusEl || !summary || !list || !pause || !cancel) return;
     if (!goal) { card.hidden = true; card.dataset.goalAvailable = 'false'; return; }
     card.hidden = false; card.dataset.goalAvailable = 'true'; card.dataset.goalId = String(goal.id || '');
-    const goalStatus = String(goal.status || 'checking');
-    statusEl.textContent = goalStatus.replace(/_/g, ' ');
-    // Show a truthful objective summary: what Kurukoo is doing + what it needs + next step
+    const goalStatus = String(goal.status || 'checking').toLowerCase();
+    const stateLabel = {
+      active: 'Working', waiting: 'Waiting', waiting_on_dependency: 'Waiting for earlier work', needs_user: 'Your input is needed',
+      blocked: 'Paused', completed: 'Completed', cancelled: 'Stopped', failed: 'Needs review', expired: 'Expired',
+    };
+    statusEl.textContent = stateLabel[goalStatus] || 'Checking';
+    statusEl.dataset.state = goalStatus;
+    card.dataset.objectiveState = goalStatus;
+    // Keep the objective clear while deriving all activity wording from persisted Goal state.
     const objective = String(goal.objective || 'Current objective');
     const currentSummary = String(goal.summary || '');
-    summary.textContent = currentSummary || objective;
-    // What Kurukoo is doing - derived from status
-    const doingText = goalStatus === 'active' ? 'Kurukoo is following the canonical plan for this objective.'
-      : goalStatus === 'waiting' ? 'Kurukoo is waiting for the next verified event or re-check.'
+    summary.textContent = objective;
+    const doingText = goalStatus === 'active' ? (currentSummary || 'Kurukoo is working on the next step.')
+      : goalStatus === 'waiting_on_dependency' ? 'Kurukoo is waiting for earlier work in this objective to finish.'
+      : goalStatus === 'waiting' ? 'Kurukoo is waiting for the next confirmed update.'
       : goalStatus === 'needs_user' ? 'Kurukoo has paused for your decision.'
-      : goalStatus === 'blocked' ? 'Kurukoo cannot continue until the blocker is resolved.'
+      : goalStatus === 'blocked' ? 'Kurukoo has paused safely until the blocker is resolved.'
       : goalStatus === 'completed' ? 'Kurukoo completed this objective.'
       : goalStatus === 'cancelled' ? 'You asked Kurukoo to stop following up on this objective.'
-      : goalStatus === 'failed' ? 'Kurukoo paused this goal after repeated safe failures.'
-      : 'Kurukoo is checking the current objective.';
+      : goalStatus === 'failed' ? 'Kurukoo paused this objective for review.'
+      : 'Kurukoo is checking this objective.';
     if (doing) doing.textContent = doingText;
-    // What Kurukoo needs
-    const needsText = goalStatus === 'needs_user' ? (currentSummary || 'Confirmation or a response on the next step.')
-      : goalStatus === 'waiting' ? 'More evidence from the canonical source before re-checking.'
-      : goalStatus === 'blocked' ? 'Verified information to unblock the capability path.'
-      : goalStatus === 'active' ? (goal.plan?.requiredInputs?.length ? goal.plan.requiredInputs.join(', ') : 'The next capability to run on the plan.')
+    const needsText = goalStatus === 'needs_user' ? (currentSummary || 'Your approval or a response on the next step.')
+      : goalStatus === 'waiting_on_dependency' ? 'Nothing from you right now. The next step depends on earlier work.'
+      : goalStatus === 'waiting' ? 'Nothing from you right now. Kurukoo is waiting for a confirmed update.'
+      : goalStatus === 'blocked' ? 'More verified information is needed before this can continue.'
+      : goalStatus === 'active' ? (goal.plan?.requiredInputs?.length ? goal.plan.requiredInputs.join(', ') : 'Nothing from you right now.')
       : 'No further input is required right now.';
     if (needs) needs.textContent = needsText;
-    // Next step
-    const nextText = goalStatus === 'needs_user' ? 'Reply with your decision in Chat.'
-      : goalStatus === 'waiting' ? 'Kurukoo will re-check when the next event arrives.'
-      : goalStatus === 'active' ? (currentSummary || 'Kurukoo continues the plan automatically.')
-      : goalStatus === 'blocked' ? 'Update the request or context to resume.'
-      : goalStatus === 'cancelled' || goalStatus === 'completed' ? 'No further action required.'
+    const nextText = goalStatus === 'needs_user' ? 'Reply in Chat when you are ready to decide.'
+      : goalStatus === 'waiting_on_dependency' ? 'Kurukoo will continue when the earlier work is complete.'
+      : goalStatus === 'waiting' ? 'Kurukoo will continue when the next confirmed update arrives.'
+      : goalStatus === 'active' ? 'Kurukoo is continuing this objective.'
+      : goalStatus === 'blocked' ? 'Review the blocker in Chat before continuing.'
+      : goalStatus === 'cancelled' || goalStatus === 'completed' ? 'No further action is required.'
       : 'Continue in Chat when you are ready.';
     if (next) next.textContent = nextText;
-    // Agent Presence: derive from goal status for live presence indicator
-    const presenceMap = { active: 'working', waiting: 'waiting', needs_user: 'needs-attention', blocked: 'blocked', completed: 'idle', cancelled: 'idle', failed: 'idle', expired: 'idle' };
+    // Agent Presence remains a lightweight state signal; it never implies external progress.
+    const presenceMap = { active: 'working', waiting: 'waiting', waiting_on_dependency: 'waiting', needs_user: 'needs-attention', blocked: 'blocked', completed: 'idle', cancelled: 'idle', failed: 'idle', expired: 'idle' };
     const presence = presenceMap[goalStatus] || 'idle';
     window.KurukooAgentPresence?.set?.(presence, 'agent-goal');
     list.replaceChildren();
     (Array.isArray(events) ? events.slice(-4) : []).forEach(event => {
       const row = makeElement('div', 'agent-goal-event');
-      row.textContent = `${String(event.result || 'update').replace(/_/g, ' ')} · ${String(event.detail || event.action || '').slice(0, 180)}`;
+      const result = String(event?.result || '').toLowerCase();
+      const activity = result === 'success' ? 'A confirmed step was recorded.'
+        : result === 'waiting' ? 'Kurukoo is waiting for the next update.'
+        : result === 'needs_user' ? 'Your input is needed before the next step.'
+        : result === 'blocked' ? 'Kurukoo paused safely while it waits for more information.'
+        : result === 'failed' ? 'A step needs review before continuing.'
+        : 'Kurukoo recorded an update on this objective.';
+      row.textContent = activity;
       list.appendChild(row);
     });
     if (!list.childElementCount) list.appendChild(makeElement('div', 'empty-state', 'Kurukoo will show confirmed activity here.'));

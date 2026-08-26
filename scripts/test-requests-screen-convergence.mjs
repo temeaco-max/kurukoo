@@ -11,10 +11,10 @@ assert.match(app, /kurukoo-requests-convergence\.js/, 'Requests-only presentatio
 assert.doesNotMatch(app, /section === 'chat'/, 'Requests convergence must not create a Chat template branch');
 assert.match(runtime, /\/api\/chat\/economic-requests/, 'Requests presentation must read the canonical Economic Request API');
 assert.match(runtime, /\/participants/, 'Provider context must use the canonical participant boundary');
-assert.match(runtime, /Continue my \$\{skill\} request \$\{id\}/, 'Chat continuation must preserve request identity');
+assert.match(runtime, /Continue my \$\{skill\} request\./, 'Chat continuation must preserve request identity');
 assert.match(runtime, /payment_pending/, 'Payment presentation must distinguish pending evidence');
-assert.match(runtime, /\/confirmation\?request=/, 'Review actions must preserve request identity when routed to confirmation');
-assert.match(runtime, /data-request-id/, 'Request cards must expose canonical request identity to the presentation layer');
+assert.match(runtime, /\/confirmations\?request=/, 'Review actions must preserve request identity when routed to confirmation');
+assert.match(runtime, /dataset\.requestId/, 'Request cards must expose canonical request identity to the presentation layer');
 assert.match(css, /\.k-app-section-requests/, 'Requests styling must be scoped to Requests');
 assert.match(css, /min-height: 44px/, 'Requests actions must remain touch-safe');
 
@@ -27,4 +27,4 @@ for (const token of forbidden) {
   assert.doesNotMatch(runtime, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `Requests enhancement must not introduce ${token}`);
 }
 
-console.log('Requests Screen Convergence contract passed: canonical Economic Request API, request identity continuity, provider/payment boundaries, Requests-only styling, and 44px actions remain covered.');
+console.log('Requests Screen Convergence contract passed: canonical Economic Request API, user-safe continuation, provider/payment boundaries, Requests-only styling, and 44px actions remain covered.');

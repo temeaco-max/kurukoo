@@ -28,7 +28,7 @@ assert.match(css, /k-app-section-notifications/);
 assert.match(css, /min-width:44px|min-height:44px/);
 assert.match(app, /section === 'notifications'/);
 assert.match(surfaceRoutes, /section === 'notifications'/);
-assert.match(surfaceRoutes, /kurukoo-notifications-convergence\\.css/);
-assert.match(surfaceRoutes, /kurukoo-notifications-convergence\\.js/);
+assert.match(surfaceRoutes, /kurukoo-notifications-convergence\.css/);
+assert.match(surfaceRoutes, /kurukoo-notifications-convergence\.js/);
 
 console.log('Notifications convergence contract passed.');

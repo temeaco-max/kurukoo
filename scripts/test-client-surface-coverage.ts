@@ -19,6 +19,7 @@ for (const file of [
   'public/css/kurukoo-visual-system.css',
   'public/css/kurukoo-os-final.css',
   'public/css/kurukoo-os-workspace-final.css',
+  'public/css/kurukoo-os-visual-advancement.css',
   'public/css/kurukoo-webapp-pixel-refinement.css',
   'public/css/kurukoo-webapp-screen-refinement.css',
   'public/css/kurukoo-webapp-agent-refinement.css',
@@ -79,6 +80,20 @@ if (!deskSystem.includes("makeDeskModule('agent-objectives'")) failures.push('De
 for (const marker of ['/api/agent/goals', '/continuation', '/trace?limit=3', 'waiting_on_dependency', 'goalActivityLabel', 'goalPresenceLabel', 'safeBlockedByLabel', 'goalStatusPriority']) if (!deskData.includes(marker)) failures.push(`Desk Agent objective projection is missing ${marker}`);
 for (const marker of ['slice(0, 4)', 'for (const { goal } of goalDetails)', 'Waiting on a prerequisite objective']) if (!deskData.includes(marker)) failures.push(`Desk Agent objective projection is missing bounded safe hydration ${marker}`);
 if (deskData.includes('raw tool arguments') || deskData.includes('provider secrets') || deskData.includes('blockers.join')) failures.push('Desk Agent objective projection must not expose internal execution details or raw dependency identifiers');
+for (const marker of ['Waiting for earlier work', 'Your input is needed', 'dataset.state = state']) if (!deskData.includes(marker)) failures.push(`Desk visual Objective language or state hook is missing ${marker}`);
+const visualAdvancement = read('public/css/kurukoo-os-visual-advancement.css');
+for (const marker of ['Final OS visual system', 'status-pill', 'waiting_on_dependency', 'needs_user', 'k-app-list-loading::before', 'prefers-reduced-motion']) if (!visualAdvancement.includes(marker)) failures.push(`Shared authenticated visual state authority is missing ${marker}`);
+const requestClient = read('public/js/kurukoo-requests-convergence.js');
+for (const forbidden of ['Request ID', '/confirmation?request=', 'Continue my agent objective ${linkedGoal.id}', 'Show me my agent objective ${linkedGoal.id']) if (requestClient.includes(forbidden)) failures.push(`Requests surface exposes a retired route or internal identifier pattern: ${forbidden}`);
+for (const marker of ['/confirmations?request=', 'Objective ·', 'Continue the objective for this request.']) if (!requestClient.includes(marker)) failures.push(`Requests surface is missing safe Objective continuation marker ${marker}`);
+const notificationClient = read('public/js/kurukoo-notifications-convergence.js');
+if (notificationClient.includes('Context ${item.context_id}')) failures.push('Notifications surface exposes raw context identifiers');
+for (const marker of ['actionLabelFor', 'Review and decide', 'Continue in Chat']) if (!notificationClient.includes(marker)) failures.push(`Notifications surface lacks user-safe action wording ${marker}`);
+const taskClient = read('public/js/kurukoo-tasks-convergence.js');
+for (const forbidden of ['Task #${escape(task.id)}', 'Task ${task?.id || \'\'}', 'task ${task?.id || \'\'}']) if (taskClient.includes(forbidden)) failures.push(`Tasks surface exposes an internal task identifier: ${forbidden}`);
+for (const marker of ['Part of an objective', 'Part of a request', 'Waiting for earlier work']) if (!taskClient.includes(marker)) failures.push(`Tasks surface lacks user-safe Objective/task continuity marker ${marker}`);
+const primaryChat = read('public/js/kurukoo-primary-chat.js');
+for (const marker of ['waiting_on_dependency', 'Waiting for earlier work', 'dataset.objectiveState', 'A confirmed step was recorded.']) if (!primaryChat.includes(marker)) failures.push(`Chat Objective presentation is missing ${marker}`);
 if (!app.includes('k-app-section-<%= section %>')) failures.push('Authenticated Web App lacks explicit section identity hook');
 if (!app.includes('href="/topics"')) failures.push('Authenticated Web App navigation is missing Topics');
 if (!app.includes("section === 'topics'")) failures.push('Authenticated Web App has no Topics representation');
@@ -121,7 +136,7 @@ for (const marker of ['k-route-contact', 'k-route-pricing', 'k-route-explore', '
 const platformCss = read('public/css/kurukoo-platform-state-visual.css');
 for (const marker of ['k-platform-status', 'offline-page', 'chat-runtime-banner']) if (!platformCss.includes(marker)) failures.push(`Platform lifecycle visual authority is missing ${marker}`);
 const chatCompletionCss = read('public/css/kurukoo-chat-visual-completion.css');
-for (const marker of ['chat-content', 'composer', 'chat-inspector']) if (!chatCompletionCss.includes(marker)) failures.push(`Chat visual completion authority is missing ${marker}`);
+for (const marker of ['chat-content', 'composer', 'chat-inspector', 'data-objective-state', 'agent-goal-event']) if (!chatCompletionCss.includes(marker)) failures.push(`Chat visual completion authority is missing ${marker}`);
 const workspaceCompletionCss = read('public/css/kurukoo-workspace-visual-completion.css');
 for (const marker of ['chat-template-shell', 'workspace-hero-card', 'workspace-panel']) if (!workspaceCompletionCss.includes(marker)) failures.push(`Workspace visual completion authority is missing ${marker}`);
 const pixelCss = read('public/css/kurukoo-webapp-pixel-refinement.css');
@@ -166,4 +181,4 @@ const surfaceIds = new Set(CLIENT_SURFACES.map(surface => surface.id));
 for (const required of ['web-marketing', 'web-how-it-works', 'web-explore', 'web-discover-public', 'web-topics-public', 'web-network', 'web-channels', 'web-resources', 'web-help', 'web-partners', 'web-advertise', 'web-chat', 'web-topics', 'web-requests', 'web-reminders', 'web-saved', 'web-cart', 'web-tasks', 'web-connect', 'web-agents', 'web-capabilities', 'web-opportunities', 'web-wallet', 'web-points', 'web-top-up', 'web-subscriptions', 'web-checkout', 'web-confirmations', 'web-memory', 'web-notifications', 'web-artifacts', 'web-prayer', 'web-call', 'web-safety', 'pwa-shell', 'native-ios', 'native-android', 'admin-control-room', 'admin-providers', 'admin-compliance', 'admin-settings']) if (!surfaceIds.has(required)) failures.push(`Client surface registry missing ${required}`);
 
 if (failures.length) { console.error('Kurukoo client-surface coverage failed:'); failures.forEach(failure => console.error(`- ${failure}`)); process.exit(1); }
-console.log(`Kurukoo client-surface coverage passed: ${CLIENT_SURFACES.length} declared client surfaces and ${CLIENT_FEATURE_ENTRYPOINTS.length} historical capability entrypoints; public teaching, final visual completion, lifecycle states, Chat/Workspace authorities, pixel refinement, sequential Web App screen refinements, first-screen Agent refinement, API docs, Resources, Topics/community, Provider network, Admin/Agents, PWA/native authorities and five-domain mobile navigation present.`);
+console.log(`Kurukoo client-surface coverage passed: ${CLIENT_SURFACES.length} declared client surfaces and ${CLIENT_FEATURE_ENTRYPOINTS.length} historical capability entrypoints; shared calm lifecycle states, user-safe Objective continuity, identifier redaction, Chat/Workspace authorities, PWA/native authorities and five-domain mobile navigation are present.`);
