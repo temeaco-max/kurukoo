@@ -83,6 +83,44 @@ db.run(`UPDATE agent_goals SET status='blocked', next_action_at=datetime('now','
 const blockedEventCount = (await listAgentGoalEvents(owner, checkpointGoal!.id)).length;
 assert.equal((await runAgentGoal(checkpointGoal!.id, owner))?.status, 'blocked', 'Direct runtime re-entry must preserve a blocked checkpoint.');
 assert.equal((await listAgentGoalEvents(owner, checkpointGoal!.id)).length, blockedEventCount, 'Blocked re-entry must not record tool activity or create a worker spin.');
+
+const budgetOwner = `+234810${String(Date.now()).slice(-7)}`;
+await upsertProfile(budgetOwner, 'Budget Checkpoint Owner');
+const budgetRequest = await createEconomicRequest({ id: `agent-budget-${Date.now()}`, phone: budgetOwner, skill: 'find_worker', requirements: { location: 'Ikeja', description: 'Budget checkpoint proof' } });
+const budgetGoal = await createConversationGoal({ phone: budgetOwner, conversationId: 'conversation-budget-checkpoint', skill: 'find_worker', objective: 'Stop safely when the bounded action budget is exhausted.', economicRequestId: budgetRequest.id });
+assert.equal(budgetGoal?.status, 'active', 'A request-linked budget fixture must begin on the canonical active path.');
+const exhaustedContext = {
+  executionId: `budget-exhausted-${Date.now()}`,
+  budget: { maxActions: 1, maxRetries: 1, maxElapsedMs: 120000, maxConcurrentGoals: 10 },
+  usage: { actions: 1, retries: 0, startedAtMs: Date.now(), estimatedCostMinor: 0 },
+};
+const budgetStopped = await runAgentGoal(budgetGoal!.id, budgetOwner, exhaustedContext as any);
+assert.equal(budgetStopped?.status, 'needs_user', 'Action-budget exhaustion must become a durable explicit user checkpoint.');
+assert.equal(budgetStopped?.nextActionAt, undefined, 'A budget checkpoint must be unscheduled rather than retried automatically.');
+const budgetTrace = await listAgentExecutionTrace(budgetOwner, budgetGoal!.id);
+assert.ok(budgetTrace.some(event => event.kind === 'execution_stopped' && event.status === 'needs_user' && event.reason === 'max_actions'), 'Action-budget exhaustion must retain a durable, correlated stop trace.');
+const budgetEventCount = (await listAgentGoalEvents(budgetOwner, budgetGoal!.id)).length;
+assert.equal((await runAgentGoal(budgetGoal!.id, budgetOwner, exhaustedContext as any))?.status, 'needs_user', 'A budget checkpoint must not re-enter without an explicit canonical resume.');
+assert.equal((await listAgentGoalEvents(budgetOwner, budgetGoal!.id)).length, budgetEventCount, 'Re-entering an action-budget checkpoint must not create a worker spin.');
+
+const concurrencyOwner = `+234811${String(Date.now()).slice(-7)}`;
+await upsertProfile(concurrencyOwner, 'Concurrency Checkpoint Owner');
+const occupiedRequest = await createEconomicRequest({ id: `agent-concurrency-occupied-${Date.now()}`, phone: concurrencyOwner, skill: 'find_worker', requirements: { location: 'Ikeja', description: 'Occupy concurrency budget' } });
+const occupiedGoal = await createConversationGoal({ phone: concurrencyOwner, conversationId: 'conversation-concurrency-occupied', skill: 'find_worker', objective: 'Occupy one owned concurrency slot.', economicRequestId: occupiedRequest.id });
+assert.equal(occupiedGoal?.status, 'active', 'The concurrency fixture must retain one separate active Goal.');
+const concurrencyRequest = await createEconomicRequest({ id: `agent-concurrency-${Date.now()}`, phone: concurrencyOwner, skill: 'find_worker', requirements: { location: 'Ikeja', description: 'Concurrency checkpoint proof' } });
+const concurrencyGoal = await createConversationGoal({ phone: concurrencyOwner, conversationId: 'conversation-concurrency-checkpoint', skill: 'find_worker', objective: 'Stop safely when another owned goal occupies the concurrency budget.', economicRequestId: concurrencyRequest.id });
+assert.equal(concurrencyGoal?.status, 'active', 'A concurrency fixture must begin on the canonical active path.');
+const concurrencyStopped = await runAgentGoal(concurrencyGoal!.id, concurrencyOwner, {
+  executionId: `concurrency-exhausted-${Date.now()}`,
+  budget: { maxActions: 2, maxRetries: 1, maxElapsedMs: 120000, maxConcurrentGoals: 1 },
+  usage: { actions: 0, retries: 0, startedAtMs: Date.now(), estimatedCostMinor: 0 },
+} as any);
+assert.equal(concurrencyStopped?.status, 'blocked', 'Concurrent-goal exhaustion must become a durable blocked checkpoint.');
+assert.equal(concurrencyStopped?.nextActionAt, undefined, 'A concurrency checkpoint must not be scheduled for automatic re-entry.');
+const concurrencyTrace = await listAgentExecutionTrace(concurrencyOwner, concurrencyGoal!.id);
+assert.ok(concurrencyTrace.some(event => event.kind === 'execution_stopped' && event.status === 'blocked' && event.reason === 'max_concurrent_goals'), 'Concurrent-goal exhaustion must retain a durable stop trace.');
+
 db.run(`UPDATE agent_goals SET next_action_at=datetime('now','-1 minute') WHERE id=?`, [goal.id]);
 const due = await runDueAgentGoals();
 assert.ok(due.some(item => item.id === goal.id), 'Due goals must re-enter only through the bounded worker pass');
@@ -98,4 +136,4 @@ assert.deepEqual(await runDueAgentGoals(), [], 'The worker must remain inactive 
 process.env.KURUKOO_AGENT_ENABLED = 'false';
 process.env.KURUKOO_AGENT_AUTONOMOUS = 'false';
 assert.equal(await createConversationGoal({ phone: owner, skill: 'find_worker', objective: 'Disabled runtime', economicRequestId: request.id }), null, 'Disabled runtime must preserve normal chat behaviour without creating goals');
-console.log('Agent runtime regression passed: persistent owned goals, idempotency, bounded tools, waiting-only worker re-entry, non-retry checkpoints, canonical capability outcome persistence, durable execution trace, budget policy, quality evaluation, cancellation, disabled mode, and high-risk denial.');
+console.log('Agent runtime regression passed: persistent owned goals, idempotency, bounded tools, waiting-only worker re-entry, non-retry checkpoints, durable action/concurrency budget checkpoints, canonical capability outcome persistence, durable execution trace, quality evaluation, cancellation, disabled mode, and high-risk denial.');
