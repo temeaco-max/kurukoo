@@ -17,7 +17,7 @@ process.env.KURUKOO_AGENT_MAX_ELAPSED_MS = '120000';
 const { upsertProfile } = await import('../src/routes/authRoutes.js');
 const { createEconomicRequest } = await import('../src/services/skillFlows.js');
 const { executeAgentTool, listAgentTools } = await import('../src/services/agentToolRegistry.js');
-const { cancelAgentGoal, createConversationGoal, getAgentGoal, goalTimeline, listAgentGoals, runAgentGoal, runDueAgentGoals } = await import('../src/services/agentRuntime.js');
+const { cancelAgentGoal, createConversationGoal, getAgentGoal, goalTimeline, listAgentGoalEvents, listAgentGoals, runAgentGoal, runDueAgentGoals } = await import('../src/services/agentRuntime.js');
 const { listAgentExecutionTrace } = await import('../src/services/agentExecutionTrace.js');
 const { syncAgentGoalFromCapabilityResult } = await import('../src/services/agentCapabilityOutcomeService.js');
 const { getDb } = await import('../src/database.js');
@@ -74,6 +74,15 @@ assert.match(String(projected?.summary), /Canonical capability outcome recorded/
 assert.ok((await goalTimeline(projector, "conversation-capability-projection")).events.some(event => event.action === 'skill.find_worker:observe'), 'Capability outcome must create one durable Goal event');
 
 const db = await getDb();
+const checkpointGoal = await createConversationGoal({ phone: owner, conversationId: 'conversation-nonretry-checkpoint', skill: 'find_worker', objective: 'Wait for my explicit confirmation before any consequential action.' });
+assert.equal(checkpointGoal?.status, 'needs_user', 'A consequential Goal must begin at an explicit user checkpoint.');
+const needsUserEventCount = (await listAgentGoalEvents(owner, checkpointGoal!.id)).length;
+assert.equal((await runAgentGoal(checkpointGoal!.id, owner))?.status, 'needs_user', 'Direct runtime re-entry must preserve a needs_user checkpoint.');
+assert.equal((await listAgentGoalEvents(owner, checkpointGoal!.id)).length, needsUserEventCount, 'Needs-user re-entry must not record tool activity or create a worker spin.');
+db.run(`UPDATE agent_goals SET status='blocked', next_action_at=datetime('now','-1 minute') WHERE id=?`, [checkpointGoal!.id]);
+const blockedEventCount = (await listAgentGoalEvents(owner, checkpointGoal!.id)).length;
+assert.equal((await runAgentGoal(checkpointGoal!.id, owner))?.status, 'blocked', 'Direct runtime re-entry must preserve a blocked checkpoint.');
+assert.equal((await listAgentGoalEvents(owner, checkpointGoal!.id)).length, blockedEventCount, 'Blocked re-entry must not record tool activity or create a worker spin.');
 db.run(`UPDATE agent_goals SET next_action_at=datetime('now','-1 minute') WHERE id=?`, [goal.id]);
 const due = await runDueAgentGoals();
 assert.ok(due.some(item => item.id === goal.id), 'Due goals must re-enter only through the bounded worker pass');
@@ -89,4 +98,4 @@ assert.deepEqual(await runDueAgentGoals(), [], 'The worker must remain inactive 
 process.env.KURUKOO_AGENT_ENABLED = 'false';
 process.env.KURUKOO_AGENT_AUTONOMOUS = 'false';
 assert.equal(await createConversationGoal({ phone: owner, skill: 'find_worker', objective: 'Disabled runtime', economicRequestId: request.id }), null, 'Disabled runtime must preserve normal chat behaviour without creating goals');
-console.log('Agent runtime regression passed: persistent owned goals, idempotency, bounded tools, waiting and worker re-entry, canonical capability outcome persistence, durable execution trace, budget policy, quality evaluation, cancellation, disabled mode, and high-risk denial.');
+console.log('Agent runtime regression passed: persistent owned goals, idempotency, bounded tools, waiting-only worker re-entry, non-retry checkpoints, canonical capability outcome persistence, durable execution trace, budget policy, quality evaluation, cancellation, disabled mode, and high-risk denial.');
