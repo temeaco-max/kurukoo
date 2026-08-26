@@ -145,7 +145,7 @@
       const label = `${skill}${id ? ` · ${id.slice(0, 8)}` : ''}`;
       const detail = `Status: ${humanize(status)}${req.updated_at || req.updatedAt ? ` · ${formatDate(req.updated_at || req.updatedAt)}` : ''}`;
       if (actionNeededStatuses.has(status)) {
-        attention.push({ label, detail, href: `/confirmation?request=${encodeURIComponent(id)}` });
+        attention.push({ label, detail, href: `/confirmations?request=${encodeURIComponent(id)}` });
       } else if (progressStatuses.has(status)) {
         progress.push({ label, detail, href: `/chat?prompt=${encodeURIComponent(`Continue my ${skill} request ${id}`)}` });
       } else if (['completed', 'fulfilled'].includes(status)) {
@@ -224,7 +224,7 @@
         .map((r) => ({
           label: humanize(r.skill || r.category || 'request'),
           detail: humanize(r.status),
-          href: `/confirmation?request=${encodeURIComponent(String(r.id || ''))}`,
+          href: `/confirmations?request=${encodeURIComponent(String(r.id || ''))}`,
         }));
       const progressRows = requests
         .filter((r) => progressStatuses.has(String(r.status || '').toLowerCase()))

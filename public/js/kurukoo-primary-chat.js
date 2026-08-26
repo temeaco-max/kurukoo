@@ -63,7 +63,7 @@
     if (label) icon.setAttribute('data-icon-label', label);
     return icon;
   };
-  const surfacePaths = { cart: '/cart', points: '/points', topup: '/top-up', subscription: '/subscription', requests: '/requests', reminders: '/reminders', saved: '/saved', tasks: '/tasks', 'daily-picks': '/daily-picks', discover: '/discover', connect: '/channels', memory: '/memory', safety: '/safety', settings: '/settings', topics: '/topics' };
+  const surfacePaths = { cart: '/cart', points: '/points', topup: '/top-up', subscription: '/subscriptions', requests: '/requests', reminders: '/reminders', saved: '/saved', tasks: '/tasks', 'daily-picks': '/discover', discover: '/discover', connect: '/connect', memory: '/memory', safety: '/safety', settings: '/settings', topics: '/topics' };
   const surfaceTitles = { cart: 'Cart', points: 'Points', topup: 'Top up', subscription: 'Subscription', requests: 'Requests', reminders: 'Reminders', saved: 'Saved & offers', tasks: 'Tasks', 'daily-picks': 'Daily Picks', discover: 'Discover', connect: 'Connect', memory: 'Memory', safety: 'Safety & check-ins', settings: 'Settings', topics: 'Topics' };
   function updateSurfaceHeader(view = null) {
     const title = $('header-context-title'); const back = $('surface-header-back');

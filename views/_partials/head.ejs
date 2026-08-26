@@ -15,11 +15,11 @@
         const faqItems = Array.isArray(typeof faqs !== 'undefined' ? faqs : undefined) ? faqs : [];
         const safeJson = (value) => JSON.stringify(value).replace(/</g, '\u003c').replace(/>/g, '\u003e').replace(/&/g, '\u0026');
         const currentPath = typeof reqPath !== 'undefined' ? String(reqPath) : '';
-        const workspacePaths = ['/requests','/reminders','/saved','/cart','/points','/tasks','/daily-picks','/memory','/safety','/call','/settings','/top-up','/subscription','/connect','/confirmation','/whatsapp-linked-device'];
+        const workspacePaths = ['/requests','/reminders','/saved','/cart','/points','/tasks','/discover','/memory','/safety','/call','/settings','/top-up','/subscriptions','/connect','/confirmations','/whatsapp-linked-device'];
         const isWorkspacePage = workspacePaths.some((path) => currentPath === path || currentPath.startsWith(`${path}/`));
         const isAuthPage = currentPath === '/login' || currentPath.startsWith('/auth');
         const routeSlug = currentPath.replace(/^\/+|\/+$/g, '').replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'home';
-        const screenSet = currentPath.startsWith('/cart') || currentPath.startsWith('/subscription') || currentPath.startsWith('/top-up') ? 'commerce' : currentPath.startsWith('/confirmation') ? 'confirmation' : currentPath.startsWith('/connect') || currentPath.startsWith('/whatsapp-linked-device') ? 'platform' : currentPath.startsWith('/partners') || currentPath.startsWith('/opportunities') ? 'network' : currentPath.startsWith('/agents') ? 'agents' : currentPath.startsWith('/admin') ? 'operations' : currentPath.startsWith('/resources') || currentPath.startsWith('/topics') || currentPath.startsWith('/legal') ? 'content' : 'public';
+        const screenSet = currentPath.startsWith('/cart') || currentPath.startsWith('/subscriptions') || currentPath.startsWith('/top-up') ? 'commerce' : currentPath.startsWith('/confirmations') ? 'confirmation' : currentPath.startsWith('/connect') || currentPath.startsWith('/whatsapp-linked-device') ? 'platform' : currentPath.startsWith('/partners') || currentPath.startsWith('/opportunities') ? 'network' : currentPath.startsWith('/agents') ? 'agents' : currentPath.startsWith('/admin') ? 'operations' : currentPath.startsWith('/resources') || currentPath.startsWith('/topics') || currentPath.startsWith('/legal') ? 'content' : 'public';
         const bodyClass = `${isWorkspacePage ? 'k-workspace-page' : isAuthPage ? 'k-auth-page' : 'k-public-page'} k-route-${routeSlug} k-screen-set-${screenSet}`;
     %>
     <title><%= seoTitle %></title>

@@ -54,8 +54,11 @@ for (const required of ['food','groceries','errands','logistics','parcels','fuel
 const publicRoutes = read('src/routes/publicRoutes.ts');
 const topicRoutes = read('src/routes/topicRoutes.ts');
 const contentRoutes = read('src/routes/contentRoutes.ts');
-const publicRouteExpectations = ['/chat', '/requests', '/tasks', '/connect', '/discover', '/points', '/top-up', '/subscription', '/call', '/how-it-works', '/explore', '/network', '/channels', '/help', '/partners', '/advertise', '/about', '/contact', '/pricing', '/blog', '/careers', '/api-docs'];
-for (const route of publicRouteExpectations) if (!publicRoutes.includes(`router.get('${route}'`)) failures.push(`Public/compatibility Web route missing ${route}`);
+const publicRouteExpectations = ['/chat', '/discover', '/how-it-works', '/explore', '/network', '/channels', '/help', '/partners', '/advertise', '/about', '/contact', '/pricing', '/blog', '/careers', '/api-docs'];
+const publicWorkspaceDuplicates = ['/requests', '/tasks', '/connect', '/points', '/top-up', '/subscription', '/call', '/confirmation', '/daily-picks'];
+const retiredSingularAliases = ['/subscription', '/confirmation', '/daily-picks'];
+for (const route of publicRouteExpectations) if (!publicRoutes.includes(`router.get('${route}'`)) failures.push(`Public Web route missing ${route}`);
+for (const route of publicWorkspaceDuplicates) if (publicRoutes.includes(`router.get('${route}'`)) failures.push(`Public router retains duplicate workspace route ${route}`);
 if (!contentRoutes.includes("router.get('/resources'")) failures.push('Resources public route missing');
 if (!contentRoutes.includes("router.get('/resources/:slug'")) failures.push('Resource detail route missing');
 if (!contentRoutes.includes("router.get('/api/resources'")) failures.push('Resources API list route missing');
@@ -67,6 +70,7 @@ const appRouter = read('src/routes/appSurfaceRoutes.ts');
 if (!appRouter.includes("'/desk': 'desk'")) failures.push('Canonical Web App desk route is missing');
 if (!appRouter.includes('cleanCanonicalSections')) failures.push('Canonical Web App direct section routing is missing');
 for (const route of CLIENT_SURFACES.filter(s => s.family === 'web' && /^\/(desk|requests|tasks|connect|agents|capabilities|opportunities|wallet|points|top-up|subscriptions|checkout|confirmations|memory|artifacts|prayer|call|notifications|safety|settings)$/.test(s.route)).map(s => s.route.slice(1))) if (!appRouter.includes(`'/${route}'`)) failures.push(`Canonical Web App surface ${route} missing from direct route map`);
+for (const route of retiredSingularAliases) if (appRouter.includes(`'${route}'`)) failures.push(`Canonical Web App must not expose retired alias ${route}`);
 
 const app = read('views/app.ejs');
 if (!app.includes('k-app-section-<%= section %>')) failures.push('Authenticated Web App lacks explicit section identity hook');

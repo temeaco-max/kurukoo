@@ -5,17 +5,6 @@ const expected = [
     '/explore',
     '/explore/:slug',
     '/p/:providerSlug',
-    '/requests',
-    '/reminders',
-    '/saved',
-    '/cart',
-    '/confirmation',
-    '/points',
-    '/tasks',
-    '/daily-picks',
-    '/memory',
-    '/safety',
-    '/call',
     '/admin',
     '/admin/',
     '/admin/login',
@@ -43,10 +32,6 @@ const expected = [
     '/topics',
     '/topics/:slug',
     '/login',
-    '/settings',
-    '/top-up',
-    '/subscription',
-    '/connect',
     '/api/proactive/feed',
     '/api/chat/sponsored',
     '/ads/:id/click',
@@ -59,7 +44,10 @@ const expected = [
 
 const stack = (publicRouter as any).stack || [];
 const routes = stack.filter((layer: any) => layer.route).map((layer: any) => layer.route.path);
+const retiredWorkspaceAliases = ['/requests','/reminders','/saved','/cart','/confirmation','/points','/tasks','/daily-picks','/memory','/safety','/call','/settings','/top-up','/subscription','/connect'];
 const missing = expected.filter(path => !routes.includes(path));
+const retired = retiredWorkspaceAliases.filter(path => routes.includes(path));
 if (missing.length) throw new Error(`Public route module is missing: ${missing.join(', ')}`);
+if (retired.length) throw new Error(`Public route module must not retain workspace aliases: ${retired.join(', ')}`);
 if (routes.length !== expected.length) { const unexpected = routes.filter((route: string) => !expected.includes(route)); throw new Error(`Public route module has unexpected routes: ${unexpected.join(', ')}`); }
 console.log(`Public route module contract passed: ${routes.length} routes.`);

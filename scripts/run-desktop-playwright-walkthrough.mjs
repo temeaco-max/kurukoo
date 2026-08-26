@@ -7,7 +7,7 @@ const baseUrl = String(process.env.KURUKOO_E2E_BASE_URL || '').replace(/\/$/, ''
 if (!baseUrl) throw new Error('KURUKOO_E2E_BASE_URL is required');
 const viewports = String(process.env.KURUKOO_E2E_VIEWPORTS || '1440x900,1280x800').split(',').map((value) => { const [width, height] = value.trim().split('x').map(Number); if (!width || !height) throw new Error(`Invalid viewport ${value}`); return { width, height }; });
 const headed = process.env.KURUKOO_E2E_HEADED === 'true';
-const localAuth = process.env.KURUKOO_E2E_LOCAL_AUTH === 'true';
+const useLocalAuth = process.env.KURUKOO_E2E_LOCAL_AUTH === 'true';
 const testPhone = String(process.env.KURUKOO_TEST_PHONE || '08030000000');
 const authCookieInput = String(process.env.KURUKOO_E2E_AUTH_COOKIE || '').trim();
 const adminTokenInput = String(process.env.KURUKOO_E2E_ADMIN_TOKEN || '').trim();
@@ -15,19 +15,19 @@ const outputDir = path.resolve(process.env.KURUKOO_E2E_OUTPUT || 'artifacts/desk
 const failOnConsole = process.env.KURUKOO_E2E_FAIL_CONSOLE !== 'false';
 
 const publicRoutes = ['/', '/explore', '/discover', '/network', '/topics', '/channels', '/about', '/help', '/how-it-works', '/resources', '/pricing', '/contact', '/partners', '/advertise', '/blog', '/careers', '/legal', '/api-docs', '/chat'];
-const appRoutes = ['/app', '/app/agent', '/app/discover', '/app/topics', '/app/requests', '/app/reminders', '/app/saved', '/app/cart', '/app/tasks', '/app/connect', '/app/agents', '/app/capabilities', '/app/opportunities', '/app/wallet', '/app/points', '/app/top-up', '/app/subscriptions', '/app/checkout', '/app/confirmations', '/app/memory', '/app/artifacts', '/app/prayer', '/app/call', '/app/notifications', '/app/safety'];
+const appRoutes = ['/desk', '/chat', '/discover', '/topics', '/requests', '/reminders', '/saved', '/cart', '/tasks', '/connect', '/agents', '/capabilities', '/opportunities', '/wallet', '/points', '/top-up', '/subscriptions', '/checkout', '/confirmations', '/memory', '/artifacts', '/prayer', '/call', '/notifications', '/safety'];
 const adminRoutes = ['/admin/', '/admin/?section=conversations', '/admin/?section=providers', '/admin/?section=economic', '/admin/?section=moderation', '/admin/?section=compliance', '/admin/?section=notifications', '/admin/?section=connectors', '/admin/?section=settings', '/admin/?section=seo', '/admin/ai-agents.html', '/admin/users.html', '/admin/pricing.html', '/admin/referrals.html', '/admin/commissions.html', '/admin/partnerships.html', '/admin/scam.html', '/admin/social.html', '/admin/artists.html', '/admin/celebrity.html', '/admin/analytics.html', '/admin/revenue.html', '/admin/marketing.html', '/admin/ads.html', '/admin/content.html', '/admin/curation.html', '/admin/future.html'];
 const routeChecks = {
-  '/app': ['a[href="/chat"]'], '/app/agent': ['a[href="/chat"]'], '/app/cart': ['a[href*="/app/checkout"], a[href*="/checkout"]'],
-  '/app/checkout': ['a[href*="/app/confirmations"], a[href*="/confirmation"], a[href="/chat"]'],
-  '/app/confirmations': ['a[href="/chat"], a[href="/app/requests"], a[href="/app/agent"]'],
-  '/app/requests': ['a[href="/chat"], a[href="/app/agent"]'], '/app/tasks': ['a[href="/chat"], a[href="/app/agent"]'],
-  '/app/connect': ['a[href="/chat"], a[href="/app/agent"]'], '/app/memory': ['a[href="/chat"], a[href="/app/agent"]'],
-  '/app/notifications': ['a[href="/chat"], a[href="/app/agent"]'], '/app/safety': ['a[href="/chat"], a[href="/app/agent"]'],
+  '/desk': ['a[href="/chat"]'], '/cart': ['a[href*="/checkout"]'],
+  '/checkout': ['a[href*="/confirmations"], a[href="/chat"]'],
+  '/confirmations': ['a[href="/chat"], a[href="/requests"]'],
+  '/requests': ['a[href="/chat"]'], '/tasks': ['a[href="/chat"]'],
+  '/connect': ['a[href="/chat"]'], '/memory': ['a[href="/chat"]'],
+  '/notifications': ['a[href="/chat"]'], '/safety': ['a[href="/chat"]'],
 };
 
 async function localAuth() {
-  if (!localAuth) return { authCookie: authCookieInput, adminToken: adminTokenInput };
+  if (!useLocalAuth) return { authCookie: authCookieInput, adminToken: adminTokenInput };
   const headers = { 'content-type': 'application/json' };
   const otpRequest = await fetch(`${baseUrl}/api/auth/request-otp`, { method: 'POST', headers, body: JSON.stringify({ phone: testPhone }) });
   if (!otpRequest.ok) throw new Error(`Local user OTP request failed: HTTP ${otpRequest.status}`);
