@@ -18,6 +18,8 @@ assert.match(webClient, /\/api\/fcm\/register/);
 assert.match(webClient, /vapidKey/);
 assert.match(webClient, /Notification\.requestPermission/);
 assert.match(webClient, /Never prompt automatically|never prompt automatically/i);
+assert.match(webClient, /k-settings-notification-optin/, 'web notification permission must be offered from the Settings preferences surface');
+assert.doesNotMatch(webClient, /document\.querySelector\('\.k-app-header-actions'\)/, 'web notification permission must not mount as a duplicate global-header CTA');
 assert.match(worker, /firebase-messaging/);
 assert.match(worker, /onBackgroundMessage/);
 assert.match(worker, /notificationclick/);

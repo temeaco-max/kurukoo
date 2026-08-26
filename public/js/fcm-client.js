@@ -109,13 +109,13 @@
     if (document.getElementById('kurukoo-enable-notifications')) return;
     if (!('Notification' in window) || !('serviceWorker' in navigator) || Notification.permission !== 'default') return;
 
-    const host = document.querySelector('.k-app-header-actions');
+    const host = document.getElementById('k-settings-notification-optin');
     if (!host) return;
 
     const button = document.createElement('button');
     button.id = 'kurukoo-enable-notifications';
     button.type = 'button';
-    button.className = 'k-app-notification-optin';
+    button.className = 'k-settings-notification-optin';
     button.textContent = 'Turn on alerts';
     button.addEventListener('click', async () => {
       button.disabled = true;
@@ -136,7 +136,7 @@
         button.disabled = false;
       }
     });
-    host.prepend(button);
+    host.append(button);
   };
 
   const loadAppAssets = () => {

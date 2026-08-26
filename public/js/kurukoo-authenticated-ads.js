@@ -2,7 +2,7 @@
   'use strict';
   const bootstrap = async () => {
     const isAuthenticatedSurface = document.body?.classList.contains('k-app-page') || document.body?.classList.contains('workspace-page');
-    if (!isAuthenticatedSurface || document.querySelector('[data-kurukoo-auth-left-rail-ad]')) return;
+    if (!isAuthenticatedSurface || document.querySelector('.k-reference-shell') || document.querySelector('[data-kurukoo-auth-left-rail-ad]')) return;
 
     const rail = document.querySelector('.k-app-sidebar') || document.querySelector('.workspace-sidebar');
     if (!rail) return;

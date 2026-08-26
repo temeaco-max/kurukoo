@@ -6,6 +6,8 @@ const read = (relative: string) => readFileSync(resolve(process.cwd(), relative)
 const app = read('views/app.ejs');
 const shellCss = read('public/css/kurukoo-product-os-revamp.css');
 const workspaceRuntime = read('public/js/kurukoo-workspace.js');
+const appShellRuntime = read('public/js/kurukoo-app-shell.js');
+const authenticatedAdsRuntime = read('public/js/kurukoo-authenticated-ads.js');
 const primaryChatRuntime = read('public/js/kurukoo-primary-chat.js');
 const publicHome = read('views/index.ejs');
 const publicNav = read('views/_partials/nav.ejs');
@@ -50,6 +52,7 @@ assert.ok(app.includes('k-reference-new-conversation'), 'New conversation must b
 assert.ok(!app.includes('k-app-header-location'), 'reference shell must not duplicate section titles in the application header');
 assert.ok(!app.includes('Continue from Desk, a detail, or Chat.'), 'generic duplicated workspace guidance must be removed');
 assert.ok(!app.includes('href="/settings" class="k-app-primary"'), 'settings must not use a primary CTA that loops to itself');
+assert.ok(app.includes('Explore capabilities'), 'low-frequency product discovery must remain reachable through the structured header overflow');
 assert.match(app, /if \(section !== 'settings'\)/, 'Settings must omit the shared generic page title and CTA so its dedicated hub is the single page heading');
 assert.match(app, /section === 'discover'.*href="\/topics".*href="\/opportunities"/s, 'Discover must lead to adjacent community and opportunity workflows rather than to itself');
 assert.match(app, /section === 'opportunities'.*href="\/discover".*href="\/network"/s, 'Opportunities must link to the related discovery and network workflows');
@@ -64,9 +67,13 @@ for (const marker of [
   '.k-reference-sheet',
   '.k-reference-mobile-more-sheet',
   'min-height: 44px',
+  'k-app-mobile-menu { display: none; }',
+  'k-app-mobile-menu { display: grid; }',
 ]) assert.ok(shellCss.includes(marker), `reference responsive visual rule is missing: ${marker}`);
 
 assert.ok(workspaceRuntime.includes('referenceMobileMore'), 'mobile More control must be managed by the shared workspace runtime');
+assert.ok(appShellRuntime.includes("document.querySelector('.k-reference-shell')"), 'focused reference shells must suppress the inherited floating feature launcher');
+assert.ok(authenticatedAdsRuntime.includes("document.querySelector('.k-reference-shell')"), 'reference workspaces must suppress legacy left-rail campaign injection and retain only the Agent-owned sponsored placement');
 assert.ok(workspaceRuntime.includes('toggleChatSidebar'), 'drawer control must use the shared navigation behavior');
 assert.ok(primaryChatRuntime.includes("$('new-chat')"), 'Chat runtime must retain canonical new-conversation behavior');
 

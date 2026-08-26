@@ -55,6 +55,8 @@ body.k-app-page .k-reference-header-start,
 body.k-app-page .k-reference-header-actions { display: flex; min-width: 0; align-items: center; }
 body.k-app-page .k-reference-header-start { gap: 14px; }
 body.k-app-page .k-reference-header-actions { gap: 3px; margin-left: auto; }
+body.k-app-page .k-app-mobile-menu { display: none; }
+
 body.k-app-page .k-reference-brand { gap: 8px; color: var(--kr-orange-dark); font-size: 16px; font-weight: 790; letter-spacing: -.035em; text-decoration: none; }
 body.k-app-page .k-reference-brand img { width: 27px; height: 27px; object-fit: contain; }
 body.k-app-page .k-reference-agent-switcher { display: inline-grid; grid-template-columns: 30px auto 16px; align-items: center; gap: 8px; min-width: 176px; color: var(--kr-ink); text-decoration: none; }
@@ -208,6 +210,12 @@ body.k-app-page .k-settings-card h3 { margin: 1px 0 5px; color: var(--kr-ink); f
 body.k-app-page .k-settings-card p { margin: 0; color: var(--kr-ink-soft); font-size: 11px; line-height: 1.5; }
 body.k-app-page .k-settings-card a { grid-column: 2; align-self: end; color: var(--kr-orange-dark); font-size: 11px; font-weight: 760; text-decoration: none; }
 body.k-app-page .k-settings-card a:hover { text-decoration: underline; }
+body.k-app-page .k-settings-card-actions { grid-column: 2; display: flex; align-items: center; gap: 13px; align-self: end; }
+body.k-app-page .k-settings-card-actions a { grid-column: auto; }
+body.k-app-page .k-settings-notification-optin { min-height: 0; padding: 0; border: 0; color: var(--kr-ink-soft); background: transparent; font: 700 11px/1 Inter, sans-serif; cursor: pointer; }
+body.k-app-page .k-settings-notification-optin:hover { color: var(--kr-orange-dark); text-decoration: underline; }
+body.k-app-page .k-settings-notification-optin:disabled { cursor: wait; opacity: .65; }
+@media (max-width: 767px) { body.k-app-page .k-settings-card-actions { gap: 14px; } }
 
 /* Agent: central transcript plus a native live context rail. */
 body.k-app-page.k-app-section-chat .k-app-main { grid-column: 2 / 4; display: grid; grid-template-columns: minmax(0, 1fr) 304px; height: auto; overflow: hidden; background: #fff; }
