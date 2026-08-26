@@ -9,6 +9,7 @@ const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kurukoo-native-'));
 process.env.DB_PATH = path.join(tempDir, 'native.sqlite');
 process.env.JWT_SECRET = 'native-assistance-test-secret-0123456789';
 process.env.KURUKOO_DISABLE_LISTEN = 'true';
+process.env.KURUKOO_CONTACT_CONSENT_EXPOSE_DEV_LINK = 'true';
 
 const { app } = await import('../src/index.js');
 const { getDb, saveDb } = await import('../src/database.js');
@@ -25,6 +26,7 @@ const {
   completeCheckIn,
   processExpiredCheckIns,
 } = await import('../src/services/safetyService.js');
+const { createTrustedContactConsentRequest, respondToTrustedContactConsent } = await import('../src/services/trustedContactService.js');
 
 const phone = '+2348010000000';
 const otherPhone = '+2348010000001';
@@ -53,9 +55,13 @@ try {
     name: 'Sarah',
     phone: '+2348020000000',
     relationship: 'friend',
-    activate: true,
   });
-  assert.equal(contact.status, 'active', 'Explicitly activated safety contact should be active');
+  const consentRequest = await createTrustedContactConsentRequest(phone, contact.id, 'sms');
+  const consentToken = new URL(consentRequest.consent_url || 'http://localhost/?token=missing').searchParams.get('token');
+  assert.ok(consentToken, 'Development safety fixture should expose its controlled consent token');
+  assert.deepEqual(await respondToTrustedContactConsent(consentToken!, 'accept'), { status: 'accepted', contactId: contact.id });
+  const activeContact = (await listSafetyContacts(phone)).find(entry => entry.id === contact.id);
+  assert.equal(activeContact?.status, 'active', 'Only explicit contact consent should activate a safety contact');
   assert.equal((await listSafetyContacts(phone)).length, 1, 'Owner should list safety contacts');
   const checkIn = await startCheckIn(phone, {
     contactId: contact.id,
@@ -159,11 +165,15 @@ try {
   const routeContact = await fetch(`${baseUrl}/api/safety/contacts`, {
     method: 'POST',
     headers: authFor(phone),
-    body: JSON.stringify({ name: 'Route contact', phone: '+2348020000011', activate: true }),
+    body: JSON.stringify({ name: 'Route contact', phone: '+2348020000011' }),
   });
   const routeContactPayload = await routeContact.json() as { contact?: { id?: string } };
   assert.equal(routeContact.status, 201, 'Authenticated owner should create a safety contact through the canonical route');
   assert.ok(routeContactPayload.contact?.id, 'Safety-contact route should return the owner-scoped record');
+  const routeContactActivation = await fetch(`${baseUrl}/api/safety/contacts/${routeContactPayload.contact?.id}/activate`, {
+    method: 'POST', headers: authFor(phone), body: JSON.stringify({ consentConfirmed: true }),
+  });
+  assert.equal(routeContactActivation.status, 200, 'A contact must be explicitly activated before a check-in can use it');
 
   const pendingContact = await fetch(`${baseUrl}/api/safety/contacts`, {
     method: 'POST',

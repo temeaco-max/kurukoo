@@ -288,6 +288,11 @@ export async function executeCanonicalCapabilityProposal(input: CanonicalCapabil
   const descriptor = getCanonicalOperationDescriptor(input.capability);
   const owner = await verifyExactOwner(input);
   const policy = descriptor ? deriveCapabilityInteractionPolicy(descriptor) : undefined;
+  if (input.phone.startsWith('anon_') && !descriptor?.permissions.includes('guest_initial_help')) {
+    const result = invalidResult(input, 'unauthorized', 'Please verify your identity before using this capability. Emergency initial help remains available without registration.', 'guest_access_required');
+    await persistResult(input, idempotencyKey, result);
+    return result;
+  }
   const confirmationRequired = input.confirmationRequired ?? policy?.confirmation === 'explicit';
   const validation = validateCapabilityProposal({ ...input, confirmationRequired }, descriptor, { ownerVerified: true, objectVerified: owner.ok, stale: false, confirmationGranted: Boolean(input.confirmationGranted) });
   if (!validation.valid) {

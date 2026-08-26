@@ -7,10 +7,12 @@ const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kurukoo-reminder-safety-c
 process.env.DB_PATH = path.join(tempDir, 'flow.sqlite');
 process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.KURUKOO_DISABLE_LISTEN = 'true';
+process.env.KURUKOO_CONTACT_CONSENT_EXPOSE_DEV_LINK = 'true';
 
 const { getDb } = await import('../src/database.js');
 const { createReminder, cancelReminder } = await import('../src/services/reminderService.js');
-const { addSafetyContact, startCheckIn, completeCheckIn } = await import('../src/services/safetyService.js');
+const { addSafetyContact, listSafetyContacts, startCheckIn, completeCheckIn } = await import('../src/services/safetyService.js');
+const { createTrustedContactConsentRequest, respondToTrustedContactConsent } = await import('../src/services/trustedContactService.js');
 const { getCoordinatorTelemetry } = await import('../src/services/coordinatorStore.js');
 
 const phone = '+2348095550101';
@@ -32,8 +34,12 @@ try {
     name: privateContactName,
     phone: '+2348095550102',
     relationship: 'trusted contact',
-    activate: true,
   });
+  const consent = await createTrustedContactConsentRequest(phone, contact.id, 'sms');
+  const token = new URL(consent.consent_url || 'http://localhost/?token=missing').searchParams.get('token');
+  assert.ok(token, 'Controlled coordinator fixture should expose its consent token');
+  assert.deepEqual(await respondToTrustedContactConsent(token!, 'accept'), { status: 'accepted', contactId: contact.id });
+  assert.equal((await listSafetyContacts(phone)).find(entry => entry.id === contact.id)?.status, 'active');
   const checkIn = await startCheckIn(phone, {
     contactId: contact.id,
     durationMinutes: 10,

@@ -1059,14 +1059,19 @@
       messageEl.querySelector('.bubble')?.appendChild(holder);
       return;
     }
-    if (card.type === 'emergency') {
-      const holder = makeElement('section', 'emergency-chat-card'); holder.setAttribute('aria-label', 'Emergency assistance');
-      const heading = makeChildren('div', 'emergency-chat-card__heading', [makeIcon('safety', 'Emergency'), makeElement('strong', '', 'Emergency mode')]);
-      const service = makeElement('p', 'emergency-chat-card__service', `${String(card.service?.serviceType || card.session?.serviceType || 'emergency')} · ${String(card.status || card.session?.dialState || 'unavailable').replaceAll('_', ' ')}`);
-      const location = makeElement('p', 'emergency-chat-card__location', `Location: ${card.locationStatus === 'approximate' ? 'approximate location shared' : 'not known yet'}`);
-      const truth = makeElement('p', 'emergency-chat-card__truth', 'Kurukoo is a coordination interface, not an emergency responder. Connection and dispatch are never claimed without evidence.');
+    if (card.type === 'emergency' || card.type === 'emergency_dispatch') {
+      const holder = makeElement('section', 'emergency-chat-card'); holder.setAttribute('aria-label', 'Emergency assistance'); holder.dataset.state = String(card.status || card.session?.dialState || 'unavailable');
+      if (card.status !== 'ended') holder.setAttribute('aria-live', 'assertive');
+      const serviceType = String(card.service?.serviceType || card.service || card.session?.serviceType || 'emergency');
+      const serviceLabels = { ambulance: 'Medical help', police: 'Police', fire: 'Fire service', national: 'Emergency services', emergency: 'Emergency services' };
+      const status = String(card.status || card.session?.dialState || 'unavailable');
+      const statusLabels = { dial_requested: 'Ready for you to call', unavailable: 'Use the verified local route', externally_pending: 'Ready for you to call', dial_unavailable: 'Calling is not available here', ended: 'Emergency mode ended', connected: 'Connection evidence received', failed: 'Could not prepare the call route' };
+      const heading = makeChildren('div', 'emergency-chat-card__heading', [makeIcon('safety', 'Emergency'), makeElement('strong', '', status === 'ended' ? 'Emergency mode ended' : 'Emergency help')]);
+      const service = makeElement('p', 'emergency-chat-card__service', `${serviceLabels[serviceType] || 'Emergency services'} · ${statusLabels[status] || 'Emergency route ready'}`);
+      const location = makeElement('p', 'emergency-chat-card__location', `Location: ${card.locationStatus === 'approximate' || card.session?.location ? 'approximate location available' : 'not known yet'}`);
+      const truth = makeElement('p', 'emergency-chat-card__truth', 'Call the verified emergency number yourself if you are in immediate danger. Kurukoo does not claim connection or dispatch without evidence.');
       const actions = makeElement('div', 'emergency-chat-card__actions');
-      (Array.isArray(card.actions) ? card.actions : []).forEach(action => { const button = makeElement(action.href ? 'a' : 'button', 'emergency-chat-card__action', action.label || action.id); if (action.href) { button.href = action.href; button.setAttribute('aria-label', action.label || action.id); } else { button.type = 'button'; button.addEventListener('click', () => { if (action.canonicalAction === 'emergency.end') sendMessage('Actually this is not an emergency anymore.'); else if (action.canonicalAction === 'emergency.location') sendMessage('I do not know exactly where I am. Help me share an approximate location.'); }); } actions.appendChild(button); });
+      (Array.isArray(card.actions) ? card.actions : []).forEach(action => { const label = String(action.label || (action.id === 'dial' ? 'Call emergency services' : action.id === 'end' ? 'End emergency mode' : action.id === 'share_location' ? 'Share approximate location' : 'Continue')); const button = makeElement(action.href ? 'a' : 'button', 'emergency-chat-card__action', label); if (action.href) { button.href = action.href; button.setAttribute('aria-label', label); } else { button.type = 'button'; button.addEventListener('click', () => { if (action.canonicalAction === 'emergency.end' || action.id === 'end') sendMessage('Actually this is not an emergency anymore.'); else if (action.canonicalAction === 'emergency.location' || action.id === 'share_location') sendMessage('I do not know exactly where I am. Help me share an approximate location.'); }); } actions.appendChild(button); });
       holder.append(heading, service, location, truth, actions); messageEl.querySelector('.bubble')?.appendChild(holder); return;
     }
 

@@ -32,7 +32,6 @@ router.post('/safety/contacts', async (req: AuthRequest, res) => {
       name: String(req.body?.name || ''),
       phone: String(req.body?.phone || ''),
       relationship: req.body?.relationship ? String(req.body.relationship) : undefined,
-      activate: req.body?.activate === true,
     });
     res.status(201).json({ success: true, contact });
   } catch (e: any) { res.status(400).json({ success: false, error: e.message || 'Unable to save safety contact' }); }

@@ -8,6 +8,7 @@ import { generateConversationalResponse } from './conversationalGenerationServic
 import { resolveConversationPriority } from './conversationPriorityService.js';
 import { executeCanonicalCapabilityProposal } from './canonicalCapabilityExecutor.js';
 import { requestMagicLink, isMagicLinkAuthEnabled, sanitizeReturnPath } from './authChallengeService.js';
+import { handleEmergencyTurn } from './emergencyService.js';
 
 export type AuthState = 'none' | 'awaiting_name' | 'awaiting_phone' | 'awaiting_otp' | 'awaiting_email_phone' | 'awaiting_email_otp';
 
@@ -55,9 +56,14 @@ export async function handleConversationalAuth(guestPhone: string, text: string)
   const priority = resolveConversationPriority(text);
   if (priority.kind === 'emergency') {
     await setAuthState(guestPhone, 'none', {});
-    const service = /ambulance/i.test(text) ? 'ambulance' : /police/i.test(text) ? 'police' : /fire/i.test(text) ? 'fire' : 'national';
-    const result = await executeCanonicalCapabilityProposal({ capability: 'safety', action: 'emergency_dispatch', arguments: { service, country: 'NG' }, phone: guestPhone, channel: 'chat', idempotencyKey: `auth-emergency:${guestPhone}:${service}:${text.trim().toLowerCase()}` });
-    return { reply: result.message, cardData: { type: 'emergency_dispatch', canonicalAction: 'safety.emergency_dispatch', service, status: result.status, ...(result.canonicalFacts || {}), actions: result.nextActions, recovery: result.retryRecovery, guestAllowed: true, authenticationRequired: false, preservePriorContext: true } };
+    const emergency = await handleEmergencyTurn(guestPhone, text);
+    if (emergency) {
+      return {
+        reply: `${emergency.reply} You do not need to register before seeking immediate help.`,
+        cardData: { ...emergency.cardData, type: 'emergency_dispatch', canonicalAction: 'safety.emergency_dispatch', service: emergency.session?.serviceType, status: 'externally_pending', guestAllowed: true, authenticationRequired: false, preservePriorContext: true },
+      };
+    }
+    return { reply: 'This may be an emergency. Call your local emergency number now; you do not need to register before seeking immediate help.', cardData: { type: 'emergency_dispatch', canonicalAction: 'safety.emergency_dispatch', status: 'externally_pending', guestAllowed: true, authenticationRequired: false, preservePriorContext: true } };
   }
 
   const { state, data } = await getAuthState(guestPhone);

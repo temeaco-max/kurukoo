@@ -64,7 +64,7 @@ async function ensureSafetySchema() {
   `);
 }
 
-export async function addSafetyContact(ownerPhone: string, input: { name: string; phone: string; relationship?: string; activate?: boolean }): Promise<SafetyContact> {
+export async function addSafetyContact(ownerPhone: string, input: { name: string; phone: string; relationship?: string }): Promise<SafetyContact> {
   await ensureSafetySchema();
   if (!input.name.trim() || !input.phone.trim()) throw new Error('Contact name and phone are required');
   const db = await getDb();
@@ -73,7 +73,7 @@ export async function addSafetyContact(ownerPhone: string, input: { name: string
     `INSERT INTO user_safety_contacts (id, owner_phone, name, phone, relationship, status)
      VALUES (?, ?, ?, ?, ?, ?)
      ON CONFLICT(owner_phone, phone) DO UPDATE SET name=excluded.name, relationship=excluded.relationship, status=excluded.status`,
-    [id, ownerPhone, input.name.trim(), input.phone.trim(), input.relationship?.trim() || null, input.activate ? 'active' : 'pending']
+    [id, ownerPhone, input.name.trim(), input.phone.trim(), input.relationship?.trim() || null, 'pending']
   );
   saveDb();
   const result = db.exec('SELECT * FROM user_safety_contacts WHERE owner_phone = ? AND phone = ?', [ownerPhone, input.phone.trim()]);
