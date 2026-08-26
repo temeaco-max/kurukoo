@@ -51,6 +51,8 @@ secrets/
 /ml/behaviour/
 /ml/datasets/kurukoo-os-v1.*
 /ml/datasets/kurukoo-training-v2.*
+/ml/datasets/kurukoo-accepted-v1.*
+/ml/datasets/kurukoo-core-v2.reviewed.*
 /ml/datasets/kurukoo-teacher-candidates.jsonl
 /ml/datasets/kurukoo-teacher-candidates.summary.json
 /ml/artifacts/

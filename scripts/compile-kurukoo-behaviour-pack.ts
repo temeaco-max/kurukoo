@@ -1,7 +1,9 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { getKnownSkills, getEconomicCategory, getSkillCapabilities, getSkillFlow, getSkillRequirements } from '../src/services/skillFlows.js';
+import { getSkillFlow } from '../src/services/skillFlows.js';
+import { getAllConvergedSkillNames, getConvergedSkillBehaviour } from '../src/services/skillBehaviourConvergence.js';
+import { buildSkillExecutionContract } from '../src/services/skillExecutionContract.js';
 import { listUniversalCapabilities } from '../src/services/universalCapabilityProtocol.js';
 import { listAgentTools } from '../src/services/agentToolRegistry.js';
 
@@ -84,14 +86,16 @@ const activationStates = {
 };
 
 const skills = [] as any[];
-for (const skill of getKnownSkills().sort()) {
+for (const skill of getAllConvergedSkillNames().sort()) {
   const flow = await getSkillFlow(skill);
+  const contract = buildSkillExecutionContract(skill);
+  const behaviour = getConvergedSkillBehaviour(skill);
   skills.push({
     skill,
-    family: getEconomicCategory(skill) || 'uncategorized',
-    mode: flow?.mode || 'economic',
-    capabilities: getSkillCapabilities(skill),
-    requirements: getSkillRequirements(skill),
+    family: contract.category || 'uncategorized',
+    mode: contract.mode || behaviour.mode || 'economic',
+    capabilities: contract.capabilities,
+    requirements: contract.requirements,
     flow: flow ? { questionSet: flow.question_set, postMatchAction: flow.post_match_action, paymentModel: flow.payment_model, fulfillmentInstructions: flow.fulfillment_instructions } : null,
     trainingInvariants: { mustPreserve: ['owner identity','exact context','truth boundary','canonical execution boundary'], mayNotInvent: ['availability','quote','payment','evidence','completion'] }
   });
@@ -112,7 +116,7 @@ const agentTools = listAgentTools().map(tool => ({
 
 const pack = {
   schemaVersion: '1', packVersion, sourceCommit,
-  sourceOfTruth: ['BLUEPRINT.md','src/services/skillFlows.ts','src/services/universalCapabilityProtocol.ts','src/services/agentToolRegistry.ts','src/services/contextArbitration.ts','src/services/canonicalChatTurnService.ts','src/services/agentRuntime.ts','src/services/memoryProfile.ts','src/services/nearbyPulse.ts','src/services/capabilityPortfolioService.ts'],
+  sourceOfTruth: ['BLUEPRINT.md','src/services/skillFlows.ts','src/services/skillBehaviourConvergence.ts','src/services/skillExecutionContract.ts','src/services/universalCapabilityProtocol.ts','src/services/agentToolRegistry.ts','src/services/contextArbitration.ts','src/services/canonicalChatTurnService.ts','src/services/agentRuntime.ts','src/services/memoryProfile.ts','src/services/nearbyPulse.ts','src/services/capabilityPortfolioService.ts'],
   constitution, agentRuntime, behaviourFamilies, skills, capabilities, agentTools, truthBoundary, safetyBoundary, activationStates,
   coverage: { skillCount: skills.length, capabilityCount: capabilities.length, agentToolCount: agentTools.length, behaviourFamilyCount: behaviourFamilies.length, families: [...new Set(skills.map(item => item.family))].sort(), modes: [...new Set(skills.map(item => item.mode))].sort() }
 };

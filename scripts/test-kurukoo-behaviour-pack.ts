@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
+import { getAllConvergedSkillNames } from '../src/services/skillBehaviourConvergence.js';
 
 const packPath = path.join(process.cwd(), 'ml', 'behaviour', 'latest.json');
 if (!fs.existsSync(packPath)) {
@@ -12,6 +13,9 @@ const pack = JSON.parse(fs.readFileSync(packPath, 'utf8')) as any;
 const requiredTop = ['schemaVersion','packVersion','packHash','sourceCommit','constitution','agentRuntime','skills','capabilities','agentTools','behaviourFamilies','truthBoundary','safetyBoundary'];
 for (const key of requiredTop) if (!(key in pack)) throw new Error(`Behaviour pack missing ${key}`);
 if (!pack.skills.length) throw new Error('Behaviour pack contains no skills.');
+const canonicalSkills = getAllConvergedSkillNames();
+const packedSkills = new Set(pack.skills.map((skill: any) => String(skill.skill)));
+if (packedSkills.size !== canonicalSkills.length || canonicalSkills.some(skill => !packedSkills.has(skill))) throw new Error('Behaviour pack must include every converged canonical skill.');
 if (!pack.capabilities.length) throw new Error('Behaviour pack contains no capabilities.');
 if (!pack.agentTools.length) throw new Error('Behaviour pack contains no agent tools.');
 if (!pack.behaviourFamilies.length) throw new Error('Behaviour pack contains no behavioural families.');

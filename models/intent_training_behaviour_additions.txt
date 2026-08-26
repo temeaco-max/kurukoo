@@ -154,3 +154,21 @@ __label__prayer help me pray
 __label__support_triage how do I use this feature
 __label__support_triage I need help with my Kurukoo account
 __label__support_triage why is my request not moving
+__label__greeting how body
+__label__greeting my guy how far
+__label__greeting wetin dey happen boss
+__label__greeting good day boss
+__label__general_question what problem does kurukoo solve
+__label__general_question is kurukoo free or paid
+__label__general_question explain your prices and fees
+__label__general_question what kind of help can i get here
+__label__advertising my sponsored promotion has disappeared
+__label__advertising i paid for a campaign but cannot see it
+__label__appliance_repairer my power generator needs a repair technician
+__label__appliance_repairer help me get someone for a faulty generator
+__label__window_cleaner can someone clean the windows at my home
+__label__window_cleaner i need a person to wash outside windows
+__label__unknown can you solve a made up space maths puzzle
+__label__unknown tell me the population of an imaginary planet
+__label__unknown write a spell that changes the colour of the moon
+__label__unknown what is the answer to a nonsense word game

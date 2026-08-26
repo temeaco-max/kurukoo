@@ -4,10 +4,12 @@ import { classifyWithFastText, getFastTextRuntimeStatus } from '../src/services/
 const runtime = getFastTextRuntimeStatus();
 assert.equal(runtime.modelState, 'real', `expected a real FastText binary, got ${runtime.modelState}`);
 assert.equal(runtime.realModelPresent, true, 'realModelPresent must be true when the binary is valid');
+assert.ok(runtime.trainingExamples > 500, `expected merged training corpus coverage, received ${runtime.trainingExamples} examples`);
 console.log(`FastText executable availability: ${runtime.executableAvailable ? 'available' : 'not configured in this host; deterministic routing rules remain active'}`);
 
 const cases: Array<[string, string]> = [
   ['hello', 'greeting'],
+  ['how far my guy', 'greeting'],
   ['Thanks', 'thanks'],
   ['yes', 'confirmation'],
   ['I need a taxi to Ikeja', 'ride_request'],
@@ -20,6 +22,9 @@ const cases: Array<[string, string]> = [
   ['How do I fix a leaking tap?', 'how_to'],
   ['How do I unlink my phone?', 'how_to'],
   ['How do I top up my wallet?', 'how_to'],
+  ['What are Kurukoo fees for?', 'general_question'],
+  ['I need an MOT appointment next week', 'mot_booking'],
+  ['Can you solve a made up space maths puzzle?', 'unknown'],
 ];
 
 let failures = 0;
@@ -40,6 +45,7 @@ if (runtime.executableAvailable) {
   const modelPathCases: Array<[string, string]> = [
     ['my fridge stopped cooling', 'find_worker'],
     ['need a dj for a party', 'find_worker'],
+    ['abeg i dey look for a cleaner around my area', 'find_worker'],
   ];
   let modelSourceCount = 0;
   for (const [query, expected] of modelPathCases) {
