@@ -4,7 +4,8 @@ import { getProfile, getMemoryFacts, updateProfile } from './memoryProfile.js';
 import { delegateToAgentForSkill } from './aiAgentService.js';
 import { getContextualIntentSuggestions, getEconomicCategory, getKnownSkills, getSkillFlow } from './skillFlows.js';
 import { classifyWithFastText } from './fastTextService.js';
-import { advanceStorefront, previewStorefrontCard, startStorefrontSession, tryResumeStorefront } from './agenticStorefront.js';
+import { previewStorefrontCard, tryResumeStorefront } from './agenticStorefront.js';
+import { advanceFulfilmentStorefront as advanceStorefront, startFulfilmentStorefrontSession as startStorefrontSession } from './fulfilmentStorefrontBridge.js';
 import { searchKnownEconomicOffers } from './economicParticipants.js';
 import { listReminders } from './reminderService.js';
 import { listSafetyContacts } from './safetyService.js';
@@ -137,10 +138,15 @@ function extractFollowUpPatch(q: string, skill: string): Record<string, unknown>
   if (skill === 'find_worker') { const location = q.match(/\b(?:in|at)\s+([a-z][a-z\s-]{2,40})$/i)?.[1] || (q.includes('ikeja') ? 'Ikeja' : undefined); if (location) patch.location = location.trim().replace(/[.!?]+$/, ''); if (/\b(tomorrow|today|tonight|evening|morning|afternoon|this week)\b/i.test(q)) patch.time = q.trim(); if (!location && !patch.time && /^(the )?(bathroom|kitchen|roof|car|phone|fridge|sink)\b/i.test(q)) patch.service = q.trim().replace(/[.!?]+$/, ''); }
   if (skill === 'order_food') {
     const quantity = q.match(/\bfor\s+(\d+)\s*(?:people|persons)?\b/i)?.[1]; if (quantity) patch.quantity = quantity;
+    const portions = q.match(/\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*(portion(?:s)?|piece(?:s)?|pack(?:s)?|plate(?:s)?|serving(?:s)?)\b/i);
+    if (portions) { const words: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 }; patch.quantity = /^\d+$/.test(portions[1]) ? Number(portions[1]) : words[portions[1].toLowerCase()]; patch.unit = portions[2].toLowerCase(); }
     const food = extractFoodOrderSlots(q);
     if (food.items) patch.items = food.items;
+    if (food.quantity !== undefined) patch.quantity = food.quantity;
+    if (food.unit) patch.unit = food.unit;
     if (food.location) patch.location = food.location;
-    if (!food.items && !locationCorrection) {
+    if (!food.location) { const location = q.match(/\b(?:in|at|near)\s+([A-Za-z][A-Za-z .'-]{1,50}?)(?=$|[,.!?])/i)?.[1]?.trim(); if (location) patch.location = location; }
+    if (!food.items && !locationCorrection && !portions && !patch.location) {
       const items = q.replace(/\bfor\s+\d+\s*(?:people|persons)?\b/i, '').trim().replace(/[.!?]+$/, '');
       if (items && !/^(in|at)\b/i.test(items) && !food.location) patch.items = items;
     }
@@ -229,7 +235,7 @@ export async function routeIntent(query: string, phone?: string, provider?: AIPr
       if (directSkill === 'product_sourcing') { const offers = await searchKnownEconomicOffers(query, 3); if (offers.length) return { skill: directSkill, reply: `I found ${offers.length === 1 ? 'one known seller offer' : `${offers.length} known seller offers`} matching that product. Choose one to continue through the existing Economic Request flow.`, cardData: { type: 'agentic_storefront', stage: 'offer_review', skill: directSkill, title: 'Known seller offers', message: 'These are verified seller references, not a stock or payment confirmation.', knownOffers: offers, escrowProtected: false, progress: 55 } }; }
       const workerMatch = q.match(/\b(plumber|plumb|electrician|electrical|mechanic|carpenter|tailor|cleaner|clean|cleaning|housekeeping|technician|painter|paint|painting|decorator|decorating|tiler|tiling|roofer|roofing|mason|welder)\b/i)?.[1]; const worker = workerMatch ? (/^plumb/i.test(workerMatch) ? 'plumber' : /^electri/i.test(workerMatch) ? 'electrician' : /^clean|^housekeep/i.test(workerMatch) ? 'house_cleaner' : /^paint/i.test(workerMatch) ? 'painter' : /^decorat/i.test(workerMatch) ? 'decorator' : /^til/i.test(workerMatch) ? 'tiler' : /^roof/i.test(workerMatch) ? 'roofer' : workerMatch.toLowerCase()) : undefined;
       const foodSlots = directSkill === 'order_food' ? extractFoodOrderSlots(query) : {};
-      const seed: Record<string, unknown> = directSkill === 'find_worker' && worker ? { service: worker } : directSkill === 'product_sourcing' ? { product: query.trim() } : directSkill === 'verified_artist' ? { event_type: query.trim() } : directSkill === 'order_food' ? { ...(foodSlots.items ? { items: foodSlots.items } : {}), ...(foodSlots.location ? { location: foodSlots.location } : {}), ...extractFollowUpPatch(q, directSkill) } : {};
+      const seed: Record<string, unknown> = directSkill === 'find_worker' && worker ? { service: worker } : directSkill === 'product_sourcing' ? { product: query.trim() } : directSkill === 'verified_artist' ? { event_type: query.trim() } : directSkill === 'order_food' ? { ...(foodSlots.items ? { items: foodSlots.items } : {}), ...(foodSlots.quantity !== undefined ? { quantity: foodSlots.quantity } : {}), ...(foodSlots.unit ? { unit: foodSlots.unit } : {}), ...(foodSlots.location ? { location: foodSlots.location } : {}), ...extractFollowUpPatch(q, directSkill) } : {};
       const fromTo = query.match(/\bfrom\s+(.+?)\s+to\s+(.+?)(?=\s+(?:tomorrow|today|on\s+\w+)|[.!?]|$)/i); if (fromTo && (directSkill === 'ride_request' || directSkill === 'ride')) { seed.origin = fromTo[1].trim(); seed.destination = fromTo[2].trim(); }
       const departure = query.match(/\b(today|tonight|tomorrow(?:\s+(?:morning|afternoon|evening|night))?|this\s+weekend|next\s+week|saturday|sunday|monday|tuesday|wednesday|thursday|friday)\b/i); if (departure && (directSkill === 'ride_request' || directSkill === 'ride')) seed.departure_time = departure[1];
       if (extractedEntities.location) seed.location = extractedEntities.location; if (extractedEntities.items && directSkill === 'order_food') seed.items = extractedEntities.items; if (extractedEntities.date) seed.date = extractedEntities.date; if (extractedEntities.time) seed.time = extractedEntities.time; if (extractedEntities.budget !== undefined) seed.budget = extractedEntities.budget; if (extractedEntities.quantity !== undefined) seed.quantity = extractedEntities.quantity; if (extractedEntities.product) seed.product = extractedEntities.product;

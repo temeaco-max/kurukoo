@@ -1,0 +1,4429 @@
+{
+  "generatedAt": "2026-08-26T15:00:54.912Z",
+  "totalSkills": 241,
+  "boundSkills": 241,
+  "mechanismCounts": {
+    "booking": 39,
+    "communication_relay": 2,
+    "information_lookup": 2,
+    "local_discovery": 2,
+    "marketplace_purchase": 32,
+    "procurement": 1,
+    "provider_dispatch": 15,
+    "service_request": 148
+  },
+  "catalogueEnabled": 74,
+  "providerInquiryEnabled": 239,
+  "confirmationRequired": 237,
+  "rows": [
+    {
+      "skill": "ac_remote_bridge",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "accessibility",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "budgetMinor",
+        "preferences"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "accounting_clerk",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "affidavit_assistant",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "akara_hot_seller",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "allotment_sitter",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "ambulance_finder",
+      "mechanism": "provider_dispatch",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "ankara_seamstress",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "appliance_repairer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "diagnosis",
+        "repair record",
+        "safety test"
+      ]
+    },
+    {
+      "skill": "artisan_registry",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "budgetMinor",
+        "preferences"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "babysitter",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "bakery",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "bar_triage",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "basketball_player",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "bead_maker",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "bereavement_admin",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "bicycle_repairer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "service record",
+        "test ride/functional check"
+      ]
+    },
+    {
+      "skill": "bill_payment_runner",
+      "mechanism": "provider_dispatch",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "bin_day",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "budgetMinor",
+        "preferences"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "boat_operator",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "boiler_repairer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "service record",
+        "safety status",
+        "completion"
+      ]
+    },
+    {
+      "skill": "boiler_service",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "borehole_water",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "delivery confirmation",
+        "supplier evidence where available"
+      ]
+    },
+    {
+      "skill": "borrowed_iou",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "buy_car",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "buy_ticket",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "canopy_rental",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "car_boot",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "car_washer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "carer_break",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "caterer",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "cement_price_checker",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "budgetMinor",
+        "preferences"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "charity_shop",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "childcare_search",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "provider verification",
+        "booking/attendance confirmation"
+      ]
+    },
+    {
+      "skill": "city_tour_guide",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "clothes_bend_down",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "cold_chain_operator",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "comedian",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "console_repairer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "intake",
+        "diagnosis",
+        "repair/test",
+        "return"
+      ]
+    },
+    {
+      "skill": "contract_reviewer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "copywriter",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "couch_to_5k",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "council_tax",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "budgetMinor",
+        "preferences"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "counselor",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "creative_block",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "creek_guide",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "data_reseller",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "daycare_operator",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "dentist_appointment",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "appointment confirmation"
+      ]
+    },
+    {
+      "skill": "digital_declutter",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "digital_executor",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "dispatch_rider",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "dj",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "doctor_appointment",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "document_courier",
+      "mechanism": "provider_dispatch",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "dog_breeder",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "driving_test_booking",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "official booking reference"
+      ]
+    },
+    {
+      "skill": "earbuds_repairer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "diagnosis",
+        "test"
+      ]
+    },
+    {
+      "skill": "electrician",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "emergency",
+      "mechanism": "provider_dispatch",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "energy_logger",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "energy_tariff",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "ev_charging",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "event_bouncer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "event_finder",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "event_mc",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "farm_shop",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "find_worker",
+      "mechanism": "local_discovery",
+      "requiredInputs": [
+        "item",
+        "location"
+      ],
+      "optionalInputs": [
+        "timing",
+        "preferences"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": false,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "fire_service_contact",
+      "mechanism": "communication_relay",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "first_flat",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "fish_seller",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "fitness_trainer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "flight_alert",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "flood_line",
+      "mechanism": "provider_dispatch",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "flyer_distributor",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "food_nearby",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "football_club_founder",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "football_player",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "football_viewing_center",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "fresh_veg_hawker",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "fumigation_agent",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "funeral_wishes",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "gas_refill",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "delivery/pickup confirmation"
+      ]
+    },
+    {
+      "skill": "genealogy",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "generator_fuel_delivery",
+      "mechanism": "provider_dispatch",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "delivery confirmation"
+      ]
+    },
+    {
+      "skill": "generator_repairer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "gift_finder",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "gp_appointment",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "appointment confirmation"
+      ]
+    },
+    {
+      "skill": "graphic_designer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "grocery_reminder",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "grocery_shopper",
+      "mechanism": "provider_dispatch",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "group_savings_organiser",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "haulage_driver",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "hausa_translator",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "herbal_practitioner",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "home_hairdresser",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "home_tutor",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "hotel_deals",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "house_agent",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "house_cleaner",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "hydro_outage",
+      "mechanism": "information_lookup",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": false,
+      "confirmationRequired": false,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "utility status/source"
+      ]
+    },
+    {
+      "skill": "igbo_tutor",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "ijaw_voice",
+      "mechanism": "communication_relay",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "inbox_zero",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "informal_taxi",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "insurance_renewal",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "inverter_installer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "jamb_form_assistant",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "job_tracker",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "keke_driver",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "key_cutter",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "handover"
+      ]
+    },
+    {
+      "skill": "kunu_seller",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "land_surveyor",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "language_tutor",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "laptop_repairer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "intake condition",
+        "diagnosis",
+        "repair record",
+        "functional test",
+        "return confirmation"
+      ]
+    },
+    {
+      "skill": "laundry_man",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "laundry_pickup",
+      "mechanism": "provider_dispatch",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "pickup",
+        "return",
+        "service receipt"
+      ]
+    },
+    {
+      "skill": "league_admin",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "legal_draftsman",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "lga_office_directory",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "budgetMinor",
+        "preferences"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "live_band",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "local_courier",
+      "mechanism": "provider_dispatch",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "pickup",
+        "tracking",
+        "delivery proof"
+      ]
+    },
+    {
+      "skill": "locksmith",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "arrival",
+        "service record",
+        "customer completion"
+      ]
+    },
+    {
+      "skill": "lost_pet",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "lounge_promoter",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "makeup_artist",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "manicurist",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "market_shopper",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "purchase receipt",
+        "delivery/pickup confirmation"
+      ]
+    },
+    {
+      "skill": "match_organizer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "mechanic",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "medicine_delivery",
+      "mechanism": "provider_dispatch",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "micro_bookkeeper",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "micro_volunteer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "mobile_barber",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "mot_booking",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "booking reference",
+        "test outcome where available"
+      ]
+    },
+    {
+      "skill": "mot_reminder",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "motorbike_repairer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "diagnosis",
+        "repair record",
+        "test/return"
+      ]
+    },
+    {
+      "skill": "moving_house",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "museum_quiet",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "neighbourhood_handyman",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "before/after where useful",
+        "completion confirmation"
+      ]
+    },
+    {
+      "skill": "neighbourhood_watch",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "night_guard",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "night_walk",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "nin_passport_guidance",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "budgetMinor",
+        "preferences"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "nursery_nurse",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "okada_rider",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "orange_hawker",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "order_food",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "items",
+        "quantity",
+        "location"
+      ],
+      "optionalInputs": [
+        "quantity",
+        "delivery_time"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "parcel_pickup",
+      "mechanism": "provider_dispatch",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "handover",
+        "tracking",
+        "delivery confirmation"
+      ]
+    },
+    {
+      "skill": "parking_appeal",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "budgetMinor",
+        "preferences"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "pet_taxi",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "pet_weight",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "phone_accessory_hawker",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "phone_repair",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "description",
+        "location",
+        "timing"
+      ],
+      "optionalInputs": [
+        "budgetMinor",
+        "preferences"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "phone_repairer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "device_or_asset",
+        "issue",
+        "location"
+      ],
+      "optionalInputs": [
+        "urgency",
+        "parts_preference"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "photographer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "pidgin_interpreter",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "pitch_manager",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "plumber",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "pos_agent",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "transaction receipt"
+      ]
+    },
+    {
+      "skill": "poultry_farmer",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "prayer_partner",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "pride_events",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "product_sourcing",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "product"
+      ],
+      "optionalInputs": [
+        "quantity",
+        "budget",
+        "location",
+        "deadline"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "property_manager",
+      "mechanism": "local_discovery",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": false,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "provider/job record",
+        "communication log"
+      ]
+    },
+    {
+      "skill": "public_address_system",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "puff_puff_hawker",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "queue_stander",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "recharge_card_seller",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "religious_book_seller",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "rental_tracker",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "repair",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "device_or_asset",
+        "issue",
+        "location"
+      ],
+      "optionalInputs": [
+        "urgency"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "retirement_coach",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "ride_request",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "origin",
+        "destination"
+      ],
+      "optionalInputs": [
+        "departure_time"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "rider",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "right_to_roam",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "roadside_mechanic",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "roasted_corn_vendor",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "room_to_rent",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "rubbish_removal",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "collection confirmation",
+        "waste receipt where applicable"
+      ]
+    },
+    {
+      "skill": "running_beacon",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "sachet_water_distributor",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "sad_lamp",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "school_admissions",
+      "mechanism": "information_lookup",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": false,
+      "confirmationRequired": false,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "application guidance/source",
+        "submission confirmation where integrated"
+      ]
+    },
+    {
+      "skill": "school_run",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "school_run_uk",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "authorized driver verification",
+        "pickup/dropoff confirmation"
+      ]
+    },
+    {
+      "skill": "second_hand_phones",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "security_patrol",
+      "mechanism": "provider_dispatch",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "security_personnel",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "service",
+        "location",
+        "date_time"
+      ],
+      "optionalInputs": [
+        "duration"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "shoe_cobbler",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "short_let_host",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "shuttle_driver",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "side_hustle",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "sketch_prompt",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "skill_swap",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "sleep_tracker",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "smart_tv_bridge",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "smartwatch_repairer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "diagnosis",
+        "repair/test"
+      ]
+    },
+    {
+      "skill": "snow_removal",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "service completion",
+        "before/after evidence where appropriate"
+      ]
+    },
+    {
+      "skill": "social_media_manager",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "solar_panel_technician",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "spa_masseuse",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "speaker_repairer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "diagnosis",
+        "functional test"
+      ]
+    },
+    {
+      "skill": "sports_analyst",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "sports_coach",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "sports_event_host",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "street_food_cart",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "street_party",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "suit_tailor",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "survey_taker",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "suya_vendor",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "swep_alert",
+      "mechanism": "provider_dispatch",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "tablet_repairer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "intake",
+        "repair",
+        "functional test",
+        "return"
+      ]
+    },
+    {
+      "skill": "tailor_fashion_designer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "tanker_water_supplier",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "tax_assistant",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "budget"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "taxi_quick",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "team_captain",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "tennis_partner",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "thrift_collector_ajo",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "towing_service",
+      "mechanism": "provider_dispatch",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "train_check",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "truck_pusher",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "tv_repairer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "diagnosis",
+        "repair",
+        "functional test"
+      ]
+    },
+    {
+      "skill": "urban_explorer",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "vehicle_recovery",
+      "mechanism": "provider_dispatch",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "arrival",
+        "handover",
+        "destination confirmation"
+      ]
+    },
+    {
+      "skill": "verified_artist",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "vet_assistant",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "vinyl_wantlist",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "vulcaniser",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "walking_group",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "warranty_tracker",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "waste_collector",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "wheelbarrow_boy",
+      "mechanism": "booking",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "wholesale_rice_tracker",
+      "mechanism": "procurement",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "budgetMinor",
+        "currency",
+        "timing",
+        "preferences"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "wifi_installer",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "window_cleaner",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "service completion"
+      ]
+    },
+    {
+      "skill": "winter_tire_service",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "service"
+      ],
+      "optionalInputs": [
+        "location",
+        "time"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "service record",
+        "vehicle handover/return confirmation"
+      ]
+    },
+    {
+      "skill": "word_of_day",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "yoruba_transcriber",
+      "mechanism": "service_request",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing"
+      ],
+      "catalogueEnabled": false,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    },
+    {
+      "skill": "zobo_seller",
+      "mechanism": "marketplace_purchase",
+      "requiredInputs": [
+        "objective"
+      ],
+      "optionalInputs": [
+        "location",
+        "timing",
+        "quantity"
+      ],
+      "catalogueEnabled": true,
+      "providerInquiryEnabled": true,
+      "confirmationRequired": true,
+      "executorAvailability": "canonical_capability_executor",
+      "evidenceRequirements": [
+        "canonical execution evidence"
+      ]
+    }
+  ]
+}

@@ -8,7 +8,8 @@ import { handleSafetyContactInput, setSafetyCaptureState } from './safetyService
 import { createCompoundGoalIfRecognized } from './compoundGoalLifecycle.js';
 import { cancelAgentGoal, createConversationGoal, getAgentGoal, goalTimeline, pauseAgentGoal, resumeAgentGoal } from './agentRuntime.js';
 import { buildAgentBrief, isAgentBriefQuestion } from './agentBriefService.js';
-import { advanceStorefront, resumeStorefrontFromRequest, tryResumeStorefront } from './agenticStorefront.js';
+import { resumeStorefrontFromRequest, tryResumeStorefront } from './agenticStorefront.js';
+import { advanceFulfilmentStorefront as advanceStorefront } from './fulfilmentStorefrontBridge.js';
 import { getEconomicRequest } from './skillFlows.js';
 import type { IntentRoutingResult } from '../types.js';
 import { persistCoordinatorEvent } from './coordinatorStore.js';
@@ -82,6 +83,8 @@ function extractRequirementPatch(message: string, card: any, current: any): Reco
   }
   const location = text.match(/\b(?:in|at|near|around|within)\s+([A-Za-z][A-Za-z .'-]{1,50}?)(?=\s+(?:tomorrow|today|on|for|with|and|,|\.|!|\?|$))/i);
   if (location) setFirst(['location', 'venue', 'city', 'venue_or_city', 'origin'], location[1].trim());
+  const quantity = text.match(/\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*(portion(?:s)?|piece(?:s)?|pack(?:s)?|plate(?:s)?|serving(?:s)?)\b/i);
+  if (quantity) { const values: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 }; setFirst(['quantity', 'qty'], /^\d+$/.test(quantity[1]) ? Number(quantity[1]) : values[quantity[1].toLowerCase()]); setFirst(['unit'], quantity[2].toLowerCase()); }
   const hasMissingLocationSlot = ['location', 'city', 'venue', 'venue_or_city'].some(name => keys.has(name) && (current?.requirements?.[name] == null || String(current.requirements[name]).trim() === ''));
   if (!location && !Object.prototype.hasOwnProperty.call(patch, 'location') && hasMissingLocationSlot && /^[A-Za-z][A-Za-z .'-]{1,40}[.!?]?$/.test(text)) setFirst(['location', 'city', 'venue', 'venue_or_city'], text.replace(/[.!?]+$/, '').trim());
   const service = text.match(/\b(plumb(?:er|ing)?|electri(?:cian|cal)?|paint(?:er|ing)?|decorat(?:or|ing)?|til(?:er|ing)?|roof(?:er|ing)?|mason|welder|mechanic|carpenter|cleaner|clean|cleaning|housekeeping|tailor|charger|cater(?:ing|er)?|food|ride)\b/i);
@@ -91,7 +94,8 @@ function extractRequirementPatch(message: string, card: any, current: any): Reco
     setFirst(['service', 'skill', 'job', 'description', 'product'], normalized);
   }
   const currentMissing = fields.filter((field: any) => field?.required && (current?.requirements?.[field.key] == null || String(current.requirements[field.key]).trim() === '')).map((field: any) => field.key);
-  if (!Object.keys(patch).length && currentMissing.length === 1 && text.length <= 120) patch[currentMissing[0]] = text.replace(/[.!?]+$/, '').trim();
+  const informationalQuestion = /^(?:what|how|why|where|when|who|which|tell me about|explain|can you explain)\b/i.test(text);
+  if (!Object.keys(patch).length && currentMissing.length === 1 && text.length <= 120 && !informationalQuestion) patch[currentMissing[0]] = text.replace(/[.!?]+$/, '').trim();
   return patch;
 }
 

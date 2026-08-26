@@ -22,7 +22,9 @@ import { getDiscoveryEntity } from './discoveryNetwork.js';
 import { controlConnectedResource, getConnectedResource, viewConnectedResource } from './connectedResourceService.js';
 import { getExecutionAdapter } from './capabilityExecutionAdapterBridgeV2.js';
 import { resolveExecutableCapabilityPlan } from './capabilityFoundationIntegration.js';
-import { getCapabilityRegistration } from './capabilityRegistry.js';
+import { getCapabilityRegistration, getCapabilityActionContract } from './capabilityRegistry.js';
+import { createProviderInquiry, getFulfilment, listOffers, listProviderInquiries, selectOffer, transitionFulfilment, updateFulfilmentRequirements } from './canonicalFulfilmentService.js';
+import { getFulfilmentSkillBinding, resolveMissingFulfilmentInputs } from './fulfilmentSkillBindings.js';
 
 type ExecutorStatus = UniversalCapabilityResult['status'] | 'in_progress' | 'external_unavailable' | 'stale_context' | 'unauthorized' | 'invalid';
 
@@ -176,11 +178,65 @@ async function verifyExactOwner(input: CanonicalCapabilityExecutionInput): Promi
     const object = await getConnectedResource(input.phone, input.canonicalObjectId);
     return object ? { ok: true, object } : { ok: false, code: 'foreign_or_missing_connected_resource' };
   }
+  if (capability === 'fulfilment' && input.canonicalObjectId) {
+    const object = await getFulfilment(input.phone, input.canonicalObjectId);
+    return object ? { ok: true, object } : { ok: false, code: 'foreign_or_missing_fulfilment' };
+  }
   return { ok: true };
 }
 
 async function dispatchCanonicalAction(input: CanonicalCapabilityExecutionInput, object?: any): Promise<CanonicalCapabilityExecutionResult> {
   const args = input.arguments || {};
+  if (input.capability === 'fulfilment') {
+    const fulfilmentId = String(input.canonicalObjectId || args.fulfilmentId || '').trim();
+    if (!fulfilmentId) return invalidResult(input, 'needs_user', 'Tell me which fulfilment you want Kurukoo to use.', 'fulfilment_id_required');
+    const fulfilment = object || await getFulfilment(input.phone, fulfilmentId);
+    if (!fulfilment) return invalidResult(input, 'unauthorized', 'That fulfilment is not available to this account.', 'foreign_or_missing_fulfilment');
+    if (['get', 'resume'].includes(input.action)) return baseResult(input, 'completed', `This fulfilment is currently ${fulfilment.status}.`, { canonicalObjectId: fulfilment.id, canonicalFacts: { fulfilment }, evidenceLevel: 'canonical_service', nextActions: [{ action: 'list_offers', label: 'View current offers' }, { action: 'get_inquiry', label: 'View provider inquiry status' }] });
+    if (['find_offers', 'list_offers'].includes(input.action)) {
+      const offers = await listOffers(input.phone, fulfilment.id);
+      return baseResult(input, 'completed', offers.length ? `I found ${offers.length} current canonical offer${offers.length === 1 ? '' : 's'}.` : 'There are no current canonical offers yet.', { canonicalObjectId: fulfilment.id, canonicalFacts: { fulfilmentId: fulfilment.id, offers }, evidenceLevel: offers.length ? 'canonical_service' : 'none', nextActions: offers.length ? [{ action: 'select_offer', label: 'Select an exact offer' }] : [{ action: 'create_inquiry', label: 'Prepare a provider inquiry' }] });
+    }
+    if (input.action === 'get_inquiry') {
+      const inquiries = await listProviderInquiries(input.phone, fulfilment.id, { includeClosed: true });
+      return baseResult(input, 'completed', inquiries.length ? `I found ${inquiries.length} provider inquir${inquiries.length === 1 ? 'y' : 'ies'} for this fulfilment.` : 'There are no provider inquiries for this fulfilment.', { canonicalObjectId: fulfilment.id, canonicalFacts: { fulfilmentId: fulfilment.id, inquiries }, evidenceLevel: 'canonical_service', nextActions: inquiries.length ? [{ action: 'resume', label: 'Resume fulfilment' }] : [{ action: 'create_inquiry', label: 'Prepare a provider inquiry' }] });
+    }
+    if (input.action === 'update_requirements') {
+      const patch = args.patch && typeof args.patch === 'object' && !Array.isArray(args.patch) ? args.patch as Record<string, unknown> : {};
+      const binding = getFulfilmentSkillBinding(fulfilment.skill);
+      if (!binding) return invalidResult(input, 'invalid', 'This fulfilment has no reusable skill binding.', 'fulfilment_binding_missing');
+      const missing = resolveMissingFulfilmentInputs(binding, { ...fulfilment.requirements, ...patch });
+      const updated = await updateFulfilmentRequirements(input.phone, fulfilment.id, patch, missing);
+      return baseResult(input, 'completed', missing.length ? `I recorded the available requirements. Still needed: ${missing.join(', ')}.` : 'The fulfilment requirements are complete and ready for discovery.', { canonicalObjectId: updated.id, canonicalFacts: { fulfilment: updated }, evidenceLevel: 'canonical_service', nextActions: missing.length ? [{ action: 'update_requirements', label: 'Provide the remaining requirements' }] : [{ action: 'find_offers', label: 'Find current offers' }] });
+    }
+    if (input.action === 'select_offer') {
+      const offerId = String(args.offerId || '').trim();
+      if (!offerId) return invalidResult(input, 'needs_user', 'Select an exact current offer before continuing.', 'offer_id_required');
+      try {
+        const selected = await selectOffer(input.phone, fulfilment.id, offerId);
+        return baseResult(input, 'completed', 'The exact offer is selected and awaits your explicit confirmation.', { canonicalObjectId: selected.fulfilment.id, canonicalFacts: { fulfilment: selected.fulfilment, offer: selected.offer }, evidenceLevel: 'canonical_service', nextActions: [{ action: 'confirm', label: 'Proceed with this offer', confirmationRequired: true }] });
+      } catch (error) {
+        return invalidResult(input, 'stale_context', error instanceof Error ? error.message : 'That offer is no longer selectable.', 'offer_not_selectable');
+      }
+    }
+    if (input.action === 'create_inquiry') {
+      const providerId = String(args.providerId || '').trim();
+      const question = String(args.question || '').trim();
+      if (!providerId || !question) return invalidResult(input, 'needs_user', 'A provider identity and inquiry question are required.', 'provider_inquiry_details_required');
+      const inquiry = await createProviderInquiry({ fulfilmentId: fulfilment.id, ownerPhone: input.phone, providerId, providerPhone: typeof args.providerPhone === 'string' ? args.providerPhone : undefined, providerName: typeof args.providerName === 'string' ? args.providerName : undefined, question, requestedFields: Array.isArray(args.requestedFields) ? args.requestedFields.map(String).slice(0, 12) : ['availability', 'price', 'delivery'], id: typeof args.inquiryId === 'string' ? args.inquiryId : undefined });
+      return baseResult(input, 'externally_pending', 'The provider inquiry is recorded and ready for delivery through the configured channel. Kurukoo has not claimed delivery or a provider response.', { canonicalObjectId: fulfilment.id, canonicalFacts: { fulfilmentId: fulfilment.id, inquiry }, evidenceLevel: 'canonical_service', externalActivation: 'repository_ready_external_activation', nextActions: [{ action: 'get_inquiry', label: 'Check inquiry status' }] });
+    }
+    if (input.action === 'confirm') {
+      if (fulfilment.status !== 'awaiting_confirmation') return invalidResult(input, 'stale_context', 'This fulfilment is not awaiting confirmation for the selected offer.', 'fulfilment_not_awaiting_confirmation');
+      const updated = await transitionFulfilment(input.phone, fulfilment.id, 'confirmed');
+      return baseResult(input, 'externally_pending', 'Your confirmation is recorded. Kurukoo will now use the existing payment and execution boundaries; no payment, provider dispatch, or completion has been claimed.', { canonicalObjectId: updated.id, canonicalFacts: { fulfilment: updated }, evidenceLevel: 'canonical_service', externalActivation: 'repository_ready_external_activation', nextActions: [{ action: 'execute', label: 'Continue through the canonical execution boundary', confirmationRequired: true }] });
+    }
+    if (input.action === 'execute') {
+      if (fulfilment.status !== 'confirmed') return invalidResult(input, 'stale_context', 'This fulfilment must be explicitly confirmed before execution can continue.', 'fulfilment_not_confirmed');
+      const updated = await transitionFulfilment(input.phone, fulfilment.id, 'in_fulfillment');
+      return baseResult(input, 'externally_pending', 'The canonical execution boundary is active. External payment, provider transport, and completion evidence remain required before Kurukoo can claim fulfilment.', { canonicalObjectId: updated.id, canonicalFacts: { fulfilment: updated }, evidenceLevel: 'canonical_service', externalActivation: 'repository_ready_external_activation', nextActions: [{ action: 'status', label: 'Check execution status' }] });
+    }
+  }
   if (input.capability === 'safety' && input.action === 'emergency_dispatch') {
     const service = String(args.service || 'emergency').toLowerCase() as 'national' | 'police' | 'ambulance' | 'fire' | 'disaster';
     const country = String(args.country || 'NG').toUpperCase();
@@ -293,7 +349,8 @@ export async function executeCanonicalCapabilityProposal(input: CanonicalCapabil
   const descriptor = getCanonicalOperationDescriptor(input.capability);
   const owner = await verifyExactOwner(input);
   const policy = descriptor ? deriveCapabilityInteractionPolicy(descriptor) : undefined;
-  const confirmationRequired = input.confirmationRequired ?? policy?.confirmation === 'explicit';
+  const actionContract = getCapabilityActionContract(input.capability, input.action);
+  const confirmationRequired = input.confirmationRequired ?? actionContract?.confirmationRequired ?? policy?.confirmation === 'explicit';
   const validation = validateCapabilityProposal({ ...input, confirmationRequired }, descriptor, { ownerVerified: true, objectVerified: owner.ok, stale: false, confirmationGranted: Boolean(input.confirmationGranted) });
   if (!validation.valid) {
     const result = invalidResult(input, validation.code === 'missing_confirmation' ? 'confirmation_required' : validation.code === 'foreign_context' ? 'unauthorized' : validation.code === 'stale_context' ? 'stale_context' : 'invalid', validation.message || 'This capability action could not be accepted.', validation.code || 'invalid');

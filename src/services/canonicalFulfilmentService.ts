@@ -23,6 +23,41 @@ export type OfferStatus = 'candidate' | 'available' | 'unavailable' | 'expired' 
 export type InquiryStatus = 'pending' | 'sent' | 'responded' | 'no_response' | 'declined' | 'expired' | 'cancelled';
 export type EvidenceLevel = 'none' | 'source_attributed' | 'provider_confirmed' | 'externally_verified';
 
+const FULFILMENT_TRANSITIONS: Record<FulfilmentStatus, FulfilmentStatus[]> = {
+  draft: ['gathering_requirements', 'searching', 'cancelled', 'blocked', 'failed'],
+  gathering_requirements: ['searching', 'cancelled', 'blocked', 'failed'],
+  searching: ['inquiry_pending', 'offers_ready', 'cancelled', 'blocked', 'failed'],
+  inquiry_pending: ['searching', 'offers_ready', 'cancelled', 'blocked', 'failed'],
+  offers_ready: ['awaiting_confirmation', 'searching', 'inquiry_pending', 'cancelled', 'blocked', 'failed'],
+  awaiting_confirmation: ['confirmed', 'offers_ready', 'cancelled', 'blocked', 'failed'],
+  confirmed: ['in_fulfillment', 'cancelled', 'blocked', 'failed'],
+  in_fulfillment: ['fulfilled', 'cancelled', 'blocked', 'failed'],
+  fulfilled: ['completed', 'blocked', 'failed'],
+  completed: [],
+  cancelled: [],
+  blocked: ['searching', 'inquiry_pending', 'offers_ready', 'cancelled', 'failed'],
+  failed: ['searching', 'inquiry_pending', 'cancelled'],
+};
+
+export function getAllowedFulfilmentTransitions(status: FulfilmentStatus): FulfilmentStatus[] {
+  return [...(FULFILMENT_TRANSITIONS[status] || [])];
+}
+
+function assertFulfilmentTransition(from: FulfilmentStatus, to: FulfilmentStatus): void {
+  if (from === to) return;
+  if (!getAllowedFulfilmentTransitions(from).includes(to)) throw new Error(`Invalid fulfilment transition: ${from} -> ${to}`);
+}
+
+function isExpired(validUntil: string | undefined, at = Date.now()): boolean {
+  if (!validUntil) return false;
+  const timestamp = Date.parse(validUntil);
+  return Number.isFinite(timestamp) && timestamp <= at;
+}
+
+function stableResponseKey(input: { inquiryId: string; evidenceRef?: string; idempotencyKey?: string }): string {
+  return String(input.idempotencyKey || input.evidenceRef || '').trim() || `provider-response:${input.inquiryId}`;
+}
+
 export interface FulfilmentRequirements {
   item?: string;
   description?: string;
@@ -181,6 +216,14 @@ export async function ensureCanonicalFulfilmentSchema(): Promise<void> {
   await store.run(`CREATE INDEX IF NOT EXISTS idx_fulfilments_request ON fulfilments(economic_request_id)`);
   await store.run(`CREATE INDEX IF NOT EXISTS idx_fulfilment_offers_owner ON fulfilment_offers(owner_phone,fulfilment_id,status,updated_at DESC)`);
   await store.run(`CREATE INDEX IF NOT EXISTS idx_provider_inquiries_owner ON provider_inquiries(owner_phone,fulfilment_id,status,updated_at DESC)`);
+  await store.run(`CREATE TABLE IF NOT EXISTS provider_inquiry_response_events (
+    idempotency_key TEXT PRIMARY KEY,
+    inquiry_id TEXT NOT NULL,
+    owner_phone TEXT NOT NULL,
+    offer_id TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`);
+  await store.run(`CREATE INDEX IF NOT EXISTS idx_provider_inquiry_response_events_inquiry ON provider_inquiry_response_events(inquiry_id,owner_phone,created_at DESC)`);
 }
 
 function rowToFulfilment(row: any): Fulfilment {
@@ -260,13 +303,13 @@ async function assertOwner(store: Awaited<ReturnType<typeof getCanonicalStore>>,
 async function lifecycleEvent(fulfilment: Fulfilment, action: string, payload: Record<string, unknown>): Promise<void> {
   await persistCoordinatorEvent({
     id: `fulfilment:${fulfilment.id}:${action}:${Date.now()}`,
-    type: `fulfilment.${action}`,
+    type: 'fulfilment.state_changed',
     occurredAt: now(),
     producer: 'canonicalFulfilmentService',
     correlationId: `fulfilment:${fulfilment.id}`,
     ownerPhone: fulfilment.ownerPhone.startsWith('anon_') ? undefined : fulfilment.ownerPhone,
     economicRequestId: fulfilment.economicRequestId,
-    payload: { fulfilmentId: fulfilment.id, ...payload },
+    payload: { fulfilmentId: fulfilment.id, action, ...payload },
     sensitivity: fulfilment.ownerPhone.startsWith('anon_') ? 'public' : 'personal',
     provenance: { source: 'canonical_service', sourceId: fulfilment.id, evidenceLevel: 'persisted_state' },
     policy: { autonomousAllowed: false, confirmationRequired: 'none' },
@@ -288,6 +331,8 @@ export async function createFulfilment(input: {
   await ensureCanonicalFulfilmentSchema();
   const id = input.id || crypto.randomUUID();
   const store = await getCanonicalStore();
+  const existing = await store.one<any>('SELECT * FROM fulfilments WHERE id=? AND owner_phone=? LIMIT 1', [id, input.ownerPhone]);
+  if (existing) return rowToFulfilment(existing);
   await store.run(`INSERT INTO fulfilments(id,owner_phone,skill,mechanism,economic_request_id,status,requirements_json,required_inputs_json,missing_inputs_json) VALUES(?,?,?,?,?,?,?,?,?)`, [
     id, input.ownerPhone, input.skill, input.mechanism, input.economicRequestId || null,
     input.missingInputs?.length ? 'gathering_requirements' : 'searching',
@@ -328,6 +373,7 @@ export async function transitionFulfilment(ownerPhone: string, id: string, statu
   await ensureCanonicalFulfilmentSchema();
   const store = await getCanonicalStore();
   const current = await assertOwner(store, id, ownerPhone);
+  assertFulfilmentTransition(current.status, status);
   await store.run('UPDATE fulfilments SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND owner_phone=?', [status, id, ownerPhone]);
   const updated = (await getFulfilment(ownerPhone, id))!;
   await lifecycleEvent(updated, 'state_changed', { fromStatus: current.status, toStatus: status });
@@ -339,23 +385,27 @@ export async function createOffer(input: Omit<Offer, 'createdAt' | 'updatedAt' |
   const store = await getCanonicalStore();
   await assertOwner(store, input.fulfilmentId, input.ownerPhone);
   const id = input.id || crypto.randomUUID();
+  const existing = await store.one<any>('SELECT * FROM fulfilment_offers WHERE id=? AND owner_phone=? LIMIT 1', [id, input.ownerPhone]);
+  if (existing) return rowToOffer(existing);
+  const status = isExpired(input.validUntil) ? 'expired' : input.status || 'candidate';
   await store.run(`INSERT INTO fulfilment_offers(id,fulfilment_id,owner_phone,provider_id,provider_phone,provider_name,title,description,source,status,price_minor,currency,quantity,unit,availability,location,delivery,valid_until,evidence_level,evidence_ref,source_ref,metadata_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, [
-    id,input.fulfilmentId,input.ownerPhone,input.providerId||null,input.providerPhone||null,input.providerName||null,input.title,input.description||null,input.source,input.status||'candidate',input.priceMinor??null,input.currency||null,input.quantity??null,input.unit||null,input.availability||null,input.location||null,input.delivery||null,input.validUntil||null,input.evidenceLevel,input.evidenceRef||null,input.sourceRef||null,json(input.metadata||{}),
+    id,input.fulfilmentId,input.ownerPhone,input.providerId||null,input.providerPhone||null,input.providerName||null,input.title,input.description||null,input.source,status,input.priceMinor??null,input.currency||null,input.quantity??null,input.unit||null,input.availability||null,input.location||null,input.delivery||null,input.validUntil||null,input.evidenceLevel,input.evidenceRef||null,input.sourceRef||null,json(input.metadata||{}),
   ]);
   const row = await store.one<any>('SELECT * FROM fulfilment_offers WHERE id=? AND owner_phone=? LIMIT 1', [id, input.ownerPhone]);
   const offer = rowToOffer(row);
   const fulfilment = (await getFulfilment(input.ownerPhone, input.fulfilmentId))!;
   await lifecycleEvent(fulfilment, 'offer_created', { offerId: offer.id, source: offer.source, providerId: offer.providerId, evidenceLevel: offer.evidenceLevel });
-  if (['available','candidate'].includes(offer.status)) await transitionFulfilment(input.ownerPhone, input.fulfilmentId, 'offers_ready');
+  if (['available','candidate'].includes(offer.status) && ['searching','inquiry_pending','offers_ready'].includes(fulfilment.status)) await transitionFulfilment(input.ownerPhone, input.fulfilmentId, 'offers_ready');
   return offer;
 }
 
-export async function listOffers(ownerPhone: string, fulfilmentId: string, options: { status?: OfferStatus; limit?: number } = {}): Promise<Offer[]> {
+export async function listOffers(ownerPhone: string, fulfilmentId: string, options: { status?: OfferStatus; limit?: number; includeExpired?: boolean } = {}): Promise<Offer[]> {
   await ensureCanonicalFulfilmentSchema();
   const store = await getCanonicalStore();
   await assertOwner(store, fulfilmentId, ownerPhone);
+  await store.run(`UPDATE fulfilment_offers SET status='expired',updated_at=CURRENT_TIMESTAMP WHERE fulfilment_id=? AND owner_phone=? AND status IN ('candidate','available','selected') AND valid_until IS NOT NULL AND valid_until <= ?`, [fulfilmentId, ownerPhone, now()]);
   const limit = Math.max(1, Math.min(100, Math.floor(Number(options.limit) || 50)));
-  const sql = options.status ? 'SELECT * FROM fulfilment_offers WHERE fulfilment_id=? AND owner_phone=? AND status=? ORDER BY updated_at DESC LIMIT ?' : 'SELECT * FROM fulfilment_offers WHERE fulfilment_id=? AND owner_phone=? ORDER BY updated_at DESC LIMIT ?';
+  const sql = options.status ? 'SELECT * FROM fulfilment_offers WHERE fulfilment_id=? AND owner_phone=? AND status=? ORDER BY updated_at DESC LIMIT ?' : options.includeExpired ? 'SELECT * FROM fulfilment_offers WHERE fulfilment_id=? AND owner_phone=? ORDER BY updated_at DESC LIMIT ?' : `SELECT * FROM fulfilment_offers WHERE fulfilment_id=? AND owner_phone=? AND status <> 'expired' ORDER BY updated_at DESC LIMIT ?`;
   const args = options.status ? [fulfilmentId, ownerPhone, options.status, limit] : [fulfilmentId, ownerPhone, limit];
   return (await store.all<any>(sql, args)).map(rowToOffer);
 }
@@ -366,6 +416,13 @@ export async function selectOffer(ownerPhone: string, fulfilmentId: string, offe
   const fulfilment = await assertOwner(store, fulfilmentId, ownerPhone);
   const row = await store.one<any>('SELECT * FROM fulfilment_offers WHERE id=? AND fulfilment_id=? AND owner_phone=? LIMIT 1', [offerId, fulfilmentId, ownerPhone]);
   if (!row) throw new Error('Offer not found');
+  const candidate = rowToOffer(row);
+  if (candidate.status === 'expired' || isExpired(candidate.validUntil)) {
+    await store.run(`UPDATE fulfilment_offers SET status='expired',updated_at=CURRENT_TIMESTAMP WHERE id=? AND owner_phone=?`, [offerId, ownerPhone]);
+    throw new Error('Offer has expired');
+  }
+  if (!['candidate','available','selected'].includes(candidate.status)) throw new Error('Offer is not selectable');
+  assertFulfilmentTransition(fulfilment.status, 'awaiting_confirmation');
   await store.run('UPDATE fulfilment_offers SET status=CASE WHEN id=? THEN \'selected\' ELSE CASE WHEN status=\'selected\' THEN \'available\' ELSE status END END,updated_at=CURRENT_TIMESTAMP WHERE fulfilment_id=? AND owner_phone=?', [offerId, fulfilmentId, ownerPhone]);
   await store.run('UPDATE fulfilments SET selected_offer_id=?,status=\'awaiting_confirmation\',updated_at=CURRENT_TIMESTAMP WHERE id=? AND owner_phone=?', [offerId, fulfilmentId, ownerPhone]);
   const selected = rowToOffer((await store.one<any>('SELECT * FROM fulfilment_offers WHERE id=?', [offerId]))!);
@@ -379,6 +436,8 @@ export async function createProviderInquiry(input: { fulfilmentId: string; owner
   const store = await getCanonicalStore();
   const fulfilment = await assertOwner(store, input.fulfilmentId, input.ownerPhone);
   const id = input.id || crypto.randomUUID();
+  const existing = await store.one<any>('SELECT * FROM provider_inquiries WHERE id=? AND owner_phone=? LIMIT 1', [id, input.ownerPhone]);
+  if (existing) return rowToInquiry(existing);
   await store.run(`INSERT INTO provider_inquiries(id,fulfilment_id,owner_phone,provider_id,provider_phone,provider_name,question,requested_fields_json,status,expires_at) VALUES(?,?,?,?,?,?,?,?,?,?)`, [id,input.fulfilmentId,input.ownerPhone,input.providerId||null,input.providerPhone||null,input.providerName||null,input.question,json(input.requestedFields||[]),'pending',input.expiresAt||null]);
   await transitionFulfilment(input.ownerPhone, input.fulfilmentId, 'inquiry_pending');
   const row = await store.one<any>('SELECT * FROM provider_inquiries WHERE id=? AND owner_phone=? LIMIT 1', [id,input.ownerPhone]);
@@ -387,20 +446,49 @@ export async function createProviderInquiry(input: { fulfilmentId: string; owner
   return inquiry;
 }
 
+export async function listProviderInquiries(ownerPhone: string, fulfilmentId: string, options: { includeClosed?: boolean; limit?: number } = {}): Promise<ProviderInquiry[]> {
+  await ensureCanonicalFulfilmentSchema();
+  const store = await getCanonicalStore();
+  await assertOwner(store, fulfilmentId, ownerPhone);
+  await store.run(`UPDATE provider_inquiries SET status='expired',updated_at=CURRENT_TIMESTAMP WHERE fulfilment_id=? AND owner_phone=? AND status IN ('pending','sent') AND expires_at IS NOT NULL AND expires_at <= ?`, [fulfilmentId, ownerPhone, now()]);
+  const limit = Math.max(1, Math.min(100, Math.floor(Number(options.limit) || 50)));
+  const sql = options.includeClosed ? 'SELECT * FROM provider_inquiries WHERE fulfilment_id=? AND owner_phone=? ORDER BY updated_at DESC LIMIT ?' : `SELECT * FROM provider_inquiries WHERE fulfilment_id=? AND owner_phone=? AND status NOT IN ('declined','expired','cancelled') ORDER BY updated_at DESC LIMIT ?`;
+  return (await store.all<any>(sql, [fulfilmentId, ownerPhone, limit])).map(rowToInquiry);
+}
+
+export async function expireProviderInquiries(ownerPhone: string, fulfilmentId: string, at: string = now()): Promise<ProviderInquiry[]> {
+  await ensureCanonicalFulfilmentSchema();
+  const store = await getCanonicalStore();
+  await assertOwner(store, fulfilmentId, ownerPhone);
+  await store.run(`UPDATE provider_inquiries SET status='no_response',updated_at=CURRENT_TIMESTAMP WHERE fulfilment_id=? AND owner_phone=? AND status='sent' AND expires_at IS NOT NULL AND expires_at <= ?`, [fulfilmentId, ownerPhone, at]);
+  return listProviderInquiries(ownerPhone, fulfilmentId, { includeClosed: true });
+}
+
 export async function markProviderInquirySent(ownerPhone: string, inquiryId: string): Promise<ProviderInquiry> {
   await ensureCanonicalFulfilmentSchema();
   const store = await getCanonicalStore();
   const row = await store.one<any>('SELECT * FROM provider_inquiries WHERE id=? AND owner_phone=? LIMIT 1',[inquiryId,ownerPhone]);
   if (!row) throw new Error('Provider inquiry not found');
+  const inquiry = rowToInquiry(row);
+  if (inquiry.status !== 'pending') return inquiry;
   await store.run('UPDATE provider_inquiries SET status=\'sent\',sent_at=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND owner_phone=?',[now(),inquiryId,ownerPhone]);
   return rowToInquiry((await store.one<any>('SELECT * FROM provider_inquiries WHERE id=? AND owner_phone=?',[inquiryId,ownerPhone]))!);
 }
 
-export async function recordProviderInquiryResponse(input: { ownerPhone: string; inquiryId: string; response: Record<string, unknown>; evidenceLevel?: EvidenceLevel; evidenceRef?: string; offer?: Omit<Offer, 'fulfilmentId' | 'ownerPhone' | 'createdAt' | 'updatedAt' | 'status' | 'id'> }): Promise<{ inquiry: ProviderInquiry; offer?: Offer }> {
+export async function recordProviderInquiryResponse(input: { ownerPhone: string; inquiryId: string; response: Record<string, unknown>; evidenceLevel?: EvidenceLevel; evidenceRef?: string; idempotencyKey?: string; providerIdentity?: string; offer?: Omit<Offer, 'fulfilmentId' | 'ownerPhone' | 'createdAt' | 'updatedAt' | 'status'> }): Promise<{ inquiry: ProviderInquiry; offer?: Offer; duplicate?: boolean }> {
   await ensureCanonicalFulfilmentSchema();
   const store = await getCanonicalStore();
   const row = await store.one<any>('SELECT * FROM provider_inquiries WHERE id=? AND owner_phone=? LIMIT 1',[input.inquiryId,input.ownerPhone]);
   if (!row) throw new Error('Provider inquiry not found');
+  const original = rowToInquiry(row);
+  if (input.providerIdentity && input.providerIdentity !== original.providerId && input.providerIdentity !== original.providerPhone) throw new Error('Provider identity does not match the inquiry');
+  const key = stableResponseKey(input);
+  const replay = await store.one<any>('SELECT offer_id FROM provider_inquiry_response_events WHERE idempotency_key=? AND inquiry_id=? AND owner_phone=? LIMIT 1', [key, input.inquiryId, input.ownerPhone]);
+  if (replay) {
+    const inquiry = rowToInquiry((await store.one<any>('SELECT * FROM provider_inquiries WHERE id=? AND owner_phone=?',[input.inquiryId,input.ownerPhone]))!);
+    const offerRow = replay.offer_id ? await store.one<any>('SELECT * FROM fulfilment_offers WHERE id=? AND owner_phone=? LIMIT 1', [String(replay.offer_id), input.ownerPhone]) : undefined;
+    return { inquiry, offer: offerRow ? rowToOffer(offerRow) : undefined, duplicate: true };
+  }
   const responseEvidence = input.evidenceLevel || 'provider_confirmed';
   await store.run('UPDATE provider_inquiries SET status=\'responded\',response_json=?,evidence_level=?,evidence_ref=?,responded_at=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND owner_phone=?',[json(input.response),responseEvidence,input.evidenceRef||null,now(),input.inquiryId,input.ownerPhone]);
   const inquiry = rowToInquiry((await store.one<any>('SELECT * FROM provider_inquiries WHERE id=? AND owner_phone=?',[input.inquiryId,input.ownerPhone]))!);
@@ -409,7 +497,8 @@ export async function recordProviderInquiryResponse(input: { ownerPhone: string;
   if (input.offer) {
     offer = await createOffer({ ...input.offer, fulfilmentId: inquiry.fulfilmentId, ownerPhone: input.ownerPhone, source: 'provider_inquiry', evidenceLevel: responseEvidence, evidenceRef: input.evidenceRef || input.inquiryId });
   }
-  await lifecycleEvent(fulfilment, 'provider_response_recorded', { inquiryId:input.inquiryId, evidenceLevel:responseEvidence, offerId:offer?.id });
+  await store.run('INSERT INTO provider_inquiry_response_events(idempotency_key,inquiry_id,owner_phone,offer_id) VALUES(?,?,?,?)', [key, input.inquiryId, input.ownerPhone, offer?.id || null]);
+  await lifecycleEvent(fulfilment, 'provider_response_recorded', { inquiryId:input.inquiryId, evidenceLevel:responseEvidence, offerId:offer?.id, idempotencyKey:key });
   return { inquiry, offer };
 }
 

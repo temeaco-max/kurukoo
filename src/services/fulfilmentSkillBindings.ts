@@ -1,3 +1,6 @@
+import { getEconomicCategory, getSkillCapabilities, getSkillRequirements } from './skillFlows.js';
+import { getAllCatalogueSkillNames, getSkillExtension } from './skillCatalogueConvergence.js';
+
 export type FulfilmentMechanism =
   | 'marketplace_purchase'
   | 'service_request'
@@ -138,3 +141,49 @@ registerSkillsToFulfilmentMechanism(['find_worker','find_provider','local_busine
 registerSkillsToFulfilmentMechanism(['courier','delivery','pickup','field_service'], 'provider_dispatch');
 registerSkillsToFulfilmentMechanism(['search','research','lookup','compare','local_information'], 'information_lookup');
 registerSkillsToFulfilmentMechanism(['contact_provider','message_provider','request_quote'], 'communication_relay');
+
+function mechanismForSkillCoverage(skill: string): FulfilmentMechanism {
+  const normalized = skill.toLowerCase();
+  const extension = getSkillExtension(normalized);
+  const category = String(extension?.category || getEconomicCategory(normalized) || '').toLowerCase();
+  const capabilities = getSkillCapabilities(normalized);
+  if (extension?.mode === 'information' || /(?:information|government|legal|finance|education|news|content)/.test(category) && !capabilities.includes('fulfillment')) return 'information_lookup';
+  if (/(?:message|contact|communication|voice|call|topic|reply|share)/.test(normalized)) return 'communication_relay';
+  if (/(?:transport|mobility|events|entertainment|travel|hospitality|childcare)/.test(category) || /(?:ride|flight|hotel|appointment|booking|ticket)/.test(normalized)) return 'booking';
+  if (/(?:errands|delivery|courier|dispatch)/.test(category) || /(?:courier|delivery|pickup|towing|recovery)/.test(normalized)) return 'provider_dispatch';
+  if (/(?:classifieds|marketplace|food|drink|agriculture|produce|fashion|apparel|water|beverage|retail)/.test(category) || /(?:buy|order|grocery|shop|source|supplier|product|gas_refill)/.test(normalized)) return 'marketplace_purchase';
+  if (/(?:business|office|wholesale|procurement)/.test(category) || /(?:wholesale|procurement|office_supplies|equipment|parts)/.test(normalized)) return 'procurement';
+  if (extension?.mode === 'coordination' || /(?:discovery|local|nearby)/.test(normalized)) return 'local_discovery';
+  return 'service_request';
+}
+
+function registerConvergedSkillCoverage(): void {
+  for (const skill of getAllCatalogueSkillNames()) {
+    if (getFulfilmentSkillBinding(skill)) continue;
+    const mechanism = mechanismForSkillCoverage(skill);
+    const generic = genericBindings.find(item => item.mechanism === mechanism)!;
+    const requirements = getSkillRequirements(skill);
+    const extension = getSkillExtension(skill);
+    const requiredInputs = requirements.filter(item => item.required).map(item => item.key);
+    const optionalInputs = requirements.filter(item => !item.required).map(item => item.key);
+    const hasExternalFulfilment = getSkillCapabilities(skill).some(capability => ['fulfillment', 'payment', 'reservation', 'quote'].includes(capability));
+    registerFulfilmentSkillBinding({
+      skill,
+      ...generic,
+      mechanism,
+      requiredInputs: requiredInputs.length ? requiredInputs : extension?.requirements.map(value => value.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '').toLowerCase()).filter(Boolean) || generic.requiredInputs,
+      optionalInputs: optionalInputs.length ? optionalInputs : extension?.optional.map(value => value.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '').toLowerCase()).filter(Boolean) || generic.optionalInputs,
+      catalogueFirst: mechanism === 'marketplace_purchase' || mechanism === 'procurement' || mechanism === 'booking' || mechanism === 'local_discovery',
+      providerInquiryFallback: ['marketplace_purchase', 'service_request', 'booking', 'procurement', 'local_discovery', 'provider_dispatch', 'communication_relay'].includes(mechanism),
+      confirmationRequired: hasExternalFulfilment && mechanism !== 'information_lookup' && mechanism !== 'local_discovery',
+      notes: `Catalogue-driven reusable ${mechanism} binding for the converged skill catalogue.`,
+    });
+  }
+}
+
+registerConvergedSkillCoverage();
+
+// Food quantity is required by the canonical Fulfilment resolver even though the
+// older Economic Request prompt treats it as an optional capture field.
+const canonicalFoodBinding = getFulfilmentSkillBinding('order_food');
+if (canonicalFoodBinding) registerFulfilmentSkillBinding({ ...canonicalFoodBinding, requiredInputs: [...canonicalFoodBinding.requiredInputs.filter(key => key !== 'quantity' && key !== 'location'), 'quantity', 'location'] });

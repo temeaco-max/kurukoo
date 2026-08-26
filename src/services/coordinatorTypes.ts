@@ -3,6 +3,7 @@ import type { AgentToolName, AgentToolResult } from './agentToolRegistry.js';
 export type CoordinatorEventType =
   | 'agent.goal.due'
   | 'economic_request.state_changed'
+  | 'fulfilment.state_changed'
   | 'notification.action_required'
   | 'chat.turn.completed'
   | 'memory.context.retrieved'

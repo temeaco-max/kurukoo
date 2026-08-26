@@ -64,16 +64,21 @@ function parseProduct(text: string): string | undefined {
 
 const FOOD_ITEM_PATTERN = /\b(?:rice|yam|plantain|jollof|egusi|amala|ewedu|suya|bread|chicken|beans|noodles|meal|groceries?)\b/gi;
 
-export function extractFoodOrderSlots(text: string): { items?: string; location?: string; delivery?: boolean } {
+export function extractFoodOrderSlots(text: string): { items?: string; location?: string; quantity?: number; unit?: string; delivery?: boolean } {
   const query = String(text || '').trim();
   const location = parseLocation(query);
+  const numericQuantity = query.match(/\b(\d+)\s*(portion(?:s)?|piece(?:s)?|pack(?:s)?|plate(?:s)?|serving(?:s)?)?\b/i);
+  const wordQuantity = query.match(/\b(one|two|three|four|five|six|seven|eight|nine|ten)\s*(portion(?:s)?|piece(?:s)?|pack(?:s)?|plate(?:s)?|serving(?:s)?)?\b/i);
+  const wordValues: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
+  const quantity = numericQuantity ? Number(numericQuantity[1]) : wordQuantity ? wordValues[wordQuantity[1].toLowerCase()] : undefined;
+  const unit = (numericQuantity?.[2] || wordQuantity?.[2] || '').toLowerCase() || undefined;
   const delivery = /\b(?:deliver(?:ed|y)?|bring|send)\b/i.test(query) || undefined;
   const found = [...query.matchAll(FOOD_ITEM_PATTERN)].map(match => match[0].toLowerCase());
   const unique = [...new Set(found)];
   const explicitFoodIntent = /\b(?:order|buy|get|need|want|deliver(?:ed|y)?|bring|send|food|meal|grocer(?:y|ies))\b/i.test(query);
   const contextualFoodIntent = unique.length >= 2 && Boolean(location);
   if (!unique.length || (!explicitFoodIntent && !contextualFoodIntent)) return {};
-  return { items: unique.join(' and '), ...(location ? { location } : {}), ...(delivery ? { delivery: true } : {}) };
+  return { items: unique.join(' and '), ...(quantity ? { quantity } : {}), ...(unit ? { unit } : {}), ...(location ? { location } : {}), ...(delivery ? { delivery: true } : {}) };
 }
 
 export function isFoodOrderExpression(text: string): boolean {
