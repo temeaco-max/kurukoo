@@ -55,8 +55,12 @@ describe("Kurukoo visual contract", () => {
     expect(firstLaunchSource).toContain('changeButton: { minWidth: 60, minHeight: 44, alignItems: "flex-end", justifyContent: "center" }');
   });
 
-  it("keeps the native feature-compass overflow action at the shared 44px interaction rhythm", () => {
-    expect(nativeTabSource).toContain("accessibilityLabel=\"Explore all Kurukoo features\"");
-    expect(nativeTabSource).toContain("compass: { position: 'absolute', right: 14, bottom: 80, minWidth: 76, minHeight: 44, height: 44, borderRadius: 22");
+  it("keeps the native consumer navigation focused and accessible", () => {
+    for (const screen of ['name="index" options={{ title: "Agent" }}', 'name="discover" options={{ title: "Discover" }}', 'name="requests" options={{ title: "Requests" }}', 'name="tasks" options={{ title: "Tasks" }}', 'name="more" options={{ title: "More" }}']) expect(nativeTabSource).toContain(screen);
+    expect(nativeTabSource).toContain('name="connect" options={{ href: null }}');
+    expect(nativeTabSource).toContain('tabBarButton: HapticTab');
+    expect(nativeTabSource).toContain('height: 64 + bottomPadding');
+    expect(nativeTabSource).not.toContain('Explore all Kurukoo features');
+    expect(nativeTabSource).not.toContain('compass: {');
   });
 });

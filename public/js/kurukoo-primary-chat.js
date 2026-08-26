@@ -34,6 +34,35 @@
   }
   let activityTimer = null;
   let activityStageIndex = 0;
+  let composerPlaceholderTimer = null;
+  let composerPlaceholderIndex = 0;
+  const composerExamples = [
+    'Get me a taxi',
+    'How do I earn on Kurukoo?',
+    'Remind me to call Mum at 8',
+    'Where is the nearest football team I can join?',
+    'How can I become a contributor?',
+    'Help me grow my business',
+  ];
+  function stopRotatingComposerPlaceholder() { if (composerPlaceholderTimer) { window.clearTimeout(composerPlaceholderTimer); composerPlaceholderTimer = null; } }
+  function startRotatingComposerPlaceholder() {
+    stopRotatingComposerPlaceholder();
+    if (!input || state.authStep !== 'none') return;
+    const typeExample = () => {
+      if (!input || state.authStep !== 'none' || state.busy || input.value) return;
+      const example = composerExamples[composerPlaceholderIndex % composerExamples.length];
+      let cursor = 0;
+      const write = () => {
+        if (!input || state.authStep !== 'none' || state.busy || input.value) return;
+        input.placeholder = `Ask anything: ${example.slice(0, cursor)}`;
+        if (cursor < example.length) { cursor += 1; composerPlaceholderTimer = window.setTimeout(write, 24); return; }
+        composerPlaceholderIndex += 1;
+        composerPlaceholderTimer = window.setTimeout(typeExample, 2600);
+      };
+      write();
+    };
+    typeExample();
+  }
   const pinStorageKey = () => `kurukoo_pins_${state.conversationId || 'draft'}`;
   function savePinnedMessages() { try { localStorage.setItem(pinStorageKey(), JSON.stringify(state.pinnedMessages)); } catch {} }
   function loadPinnedMessages() { try { const parsed = JSON.parse(localStorage.getItem(pinStorageKey()) || '[]'); state.pinnedMessages = Array.isArray(parsed) ? parsed.slice(0, 12) : []; } catch { state.pinnedMessages = []; } renderPinnedMessages(); }
@@ -67,35 +96,21 @@
   const surfaceTitles = { cart: 'Cart', points: 'Points', topup: 'Top up', subscription: 'Subscription', requests: 'Requests', reminders: 'Reminders', saved: 'Saved & offers', tasks: 'Tasks', 'daily-picks': 'Daily Picks', discover: 'Discover', connect: 'Connect', memory: 'Memory', safety: 'Safety & check-ins', settings: 'Settings', topics: 'Topics' };
   function updateSurfaceHeader(view = null) {
     const title = $('header-context-title'); const back = $('surface-header-back');
-    if (title) title.textContent = view ? (surfaceTitles[view] || 'Workspace') : 'Kurukoo';
-    if (back) { back.hidden = !view; back.setAttribute('aria-label', view ? `Back from ${surfaceTitles[view] || 'workspace'}` : 'Back to conversation'); }
+    if (title) title.textContent = view ? (surfaceTitles[view] || 'Workspace') : 'Coordinate what matters';
+    if (back) { back.hidden = !view; back.setAttribute('aria-label', view ? `Back from ${surfaceTitles[view] || 'workspace'}` : 'Back to Agent'); }
   }
   function updateSurfaceContext(view = null) {
     const inspector = $('chat-inspector'); if (!inspector) return;
-    const title = $('inspector-title'); if (title) title.textContent = view ? (surfaceTitles[view] || 'Context') : 'Context';
-    inspector.setAttribute('aria-label', view ? `${surfaceTitles[view] || 'Workspace'} context` : 'Conversation context');
-    if (state.surfaceContextTimer) window.clearTimeout(state.surfaceContextTimer);
-    inspector.classList.add('is-swapping');
-    const cards = Array.from(inspector.querySelectorAll('[data-context-card]'));
-    const goal = $('agent-goal-card');
-    if (goal && !goal.dataset.contextCard) cards.push(goal);
-    cards.forEach(card => {
+    const userFacingViews = new Set(['requests', 'tasks', 'reminders', 'discover', 'daily-picks']);
+    const relevantView = userFacingViews.has(String(view || '')) ? String(view) : '';
+    const title = $('inspector-title'); if (title) title.textContent = relevantView ? (surfaceTitles[relevantView] || 'Details') : 'Details';
+    inspector.hidden = !relevantView;
+    inspector.setAttribute('aria-label', relevantView ? `${surfaceTitles[relevantView] || 'Workspace'} details` : 'Relevant conversation details');
+    Array.from(inspector.querySelectorAll('[data-context-card]')).forEach(card => {
       const tokens = String(card.dataset.contextCard || '').split(/\s+/).filter(Boolean);
-      const relevant = card.id === 'agent-goal-card'
-        ? (!view || (['tasks','requests','reminders'].includes(view) && card.dataset.goalAvailable === 'true'))
-        : (!view || tokens.includes('all') || tokens.includes(view));
-      card.hidden = false;
-      card.classList.toggle('is-context-leaving', !relevant);
-      card.classList.toggle('is-context-entering', relevant);
+      const relevant = Boolean(relevantView && tokens.includes(relevantView));
+      card.hidden = !relevant;
     });
-    state.surfaceContextTimer = window.setTimeout(() => {
-      cards.forEach(card => {
-        const leaving = card.classList.contains('is-context-leaving');
-        if (leaving) card.hidden = true;
-        card.classList.remove('is-context-leaving', 'is-context-entering');
-      });
-      inspector.classList.remove('is-swapping');
-    }, 220);
   }
   function leaveWorkspaceSurface() {
     state.surfaceView = null; updateSurfaceHeader(null); updateSurfaceContext(null); chatContent.replaceChildren(); if (state.messages.length) renderMessages(state.messages); else renderWelcome();
@@ -219,11 +234,6 @@
       const data = await response.json();
       state.radarLive = Boolean(data.active);
       setRadarActive(state.radarActive);
-      const nudgeKey = `kurukoo_pulse_nudge_${data.active ? 'live' : data.eligibleToBroadcast ? 'provider' : 'consumer'}`;
-      if (data.nudge && !sessionStorage.getItem(nudgeKey)) {
-        sessionStorage.setItem(nudgeKey, '1');
-        pushAgentSurfaceToast(data.active ? 'Nearby Pulse is live' : 'Nearby Radar is ready', data.nudge, false);
-      }
     } catch {}
   }
   $('radar-toggle')?.addEventListener('click', () => setRadarActive(!state.radarActive));
@@ -424,10 +434,12 @@
 
   function setAuthComposerStep(step = 'none') {
     state.authStep = step;
+    stopRotatingComposerPlaceholder();
     if (!input) return;
     const prompts = { name: 'Type your name…', phone: 'Type your phone number…', otp: 'Type the 6-digit code…' };
-    input.placeholder = prompts[step] || (state.displayName ? 'Tell Kurukoo what you need…' : 'Tell Kurukoo what you need…');
-    input.setAttribute('aria-label', step === 'name' ? 'Your name' : step === 'phone' ? 'Your phone number' : step === 'otp' ? 'Verification code' : 'Message Kurukoo');
+    input.placeholder = prompts[step] || 'Ask anything…';
+    input.setAttribute('aria-label', step === 'name' ? 'Your name' : step === 'phone' ? 'Your phone number' : step === 'otp' ? 'Verification code' : 'Ask Kurukoo');
+    if (step === 'none') startRotatingComposerPlaceholder();
   }
 
   function renderWelcomeAuth(step = 'name') {
@@ -683,12 +695,78 @@
       const wrap = appendStreamBubble();
       setMarkdown(wrap.querySelector('.markdown-body'), card.message || 'Delivery provider selected.');
       renderCard(card, wrap);
+      renderProviderConversationCard(wrap, { requestId, providerPhone: String(data.participant?.providerPhone || providerPhone || ''), providerName: String(data.participant?.providerName || 'selected delivery provider') });
       state.messages.push({ role: 'assistant', text: card.message || '', id: null });
       scroll.scrollTop = scroll.scrollHeight;
     } catch (error) {
       const wrap = appendStreamBubble();
       setMarkdown(wrap.querySelector('.markdown-body'), `Could not select that delivery provider. **${escapeText(error.message)}**`);
     } finally { state.busy = false; if (send) send.disabled = false; }
+  }
+
+  function renderProviderConversationCard(messageEl, { requestId, providerPhone, providerName = 'selected provider' }) {
+    if (!messageEl || !requestId || !providerPhone || messageEl.querySelector('[data-provider-conversation]')) return;
+    const card = makeElement('section', 'provider-conversation-card');
+    card.dataset.providerConversation = 'true';
+    const heading = makeElement('div', 'provider-conversation-heading');
+    const copy = makeElement('div');
+    copy.append(makeElement('span', 'provider-conversation-eyebrow', 'Confirmed delivery coordination'), makeElement('strong', '', `Message ${providerName}`), makeElement('p', '', 'Start a private request-linked conversation. Calling and nearby activity become available only when this selected participant and deployment are ready.'));
+    heading.append(copy);
+    const status = makeElement('p', 'provider-conversation-status', 'No communication session is open yet.');
+    const actions = makeElement('div', 'provider-conversation-actions');
+    const start = makeElement('button', 'sf-btn sf-secondary', 'Message provider'); start.type = 'button';
+    const call = makeElement('button', 'sf-btn sf-secondary provider-call-action'); call.type = 'button'; call.hidden = true; call.setAttribute('aria-label', `Call ${providerName}`); call.title = `Call ${providerName}`; call.append(makeIcon('call'));
+    const radar = makeElement('a', 'sf-btn sf-secondary', 'Open Nearby Radar'); radar.href = '/discover'; radar.hidden = true;
+    actions.append(start, call, radar);
+    const composer = makeElement('div', 'provider-message-composer'); composer.hidden = true;
+    const message = document.createElement('textarea'); message.rows = 2; message.maxLength = 4000; message.placeholder = `Message ${providerName} about this delivery…`; message.setAttribute('aria-label', `Message ${providerName}`);
+    const sendMessageToProvider = makeElement('button', 'sf-btn sf-primary', 'Send message'); sendMessageToProvider.type = 'button';
+    composer.append(message, sendMessageToProvider);
+    card.append(heading, status, actions, composer);
+    messageEl.appendChild(card);
+    let session = null;
+    let refreshTimer = null;
+    const updateSessionState = payload => {
+      const current = payload?.session || payload;
+      if (!current?.id) return;
+      session = current;
+      const stateLabel = String(current.state || 'created').replace(/_/g, ' ');
+      const tracking = current.lastLocationAt ? ` Nearby tracking was updated ${new Date(current.lastLocationAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.` : ' Nearby activity will appear only after the provider shares it.';
+      status.textContent = `Conversation is ${stateLabel}.${current.roomId ? ' Secure browser calling is available when WebRTC is enabled.' : ' Calling is not enabled for this session in this deployment.'}${tracking}`;
+      start.textContent = 'Conversation open'; start.disabled = true;
+      composer.hidden = false;
+      call.hidden = !current.roomId;
+      radar.hidden = !current.lastLocationAt;
+      if (current.roomId) call.onclick = () => { window.location.assign(`/call?session=${encodeURIComponent(current.id)}`); };
+      if (current.lastLocationAt) radar.href = `/discover?providerSession=${encodeURIComponent(current.id)}`;
+    };
+    const refreshSession = async () => {
+      if (!session?.id) return;
+      try { const response = await fetch(`/api/provider-communication/sessions/${encodeURIComponent(session.id)}`, { credentials: 'same-origin' }); const data = await response.json().catch(() => ({})); if (response.ok && data.success) updateSessionState(data.session); } catch {}
+    };
+    const openSession = async () => {
+      start.disabled = true; status.textContent = 'Opening a private request-linked conversation…';
+      try {
+        const response = await fetch('/api/provider-communication/sessions', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ providerPhone, economicRequestId: requestId, mode: 'webrtc_tracking' }) });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) throw new Error(data.error || 'Could not open the provider conversation.');
+        updateSessionState(data.session);
+        refreshTimer = window.setInterval(refreshSession, 15000);
+      } catch (error) { start.disabled = false; status.textContent = error?.message || 'Could not open the provider conversation.'; }
+    };
+    start.addEventListener('click', () => { void openSession(); });
+    sendMessageToProvider.addEventListener('click', async () => {
+      const content = String(message.value || '').trim();
+      if (!content || !session?.id) return;
+      sendMessageToProvider.disabled = true;
+      try {
+        const response = await fetch(`/api/provider-communication/sessions/${encodeURIComponent(session.id)}/messages`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content }) });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) throw new Error(data.error || 'Message could not be sent.');
+        message.value = ''; status.textContent = 'Message sent in this request-linked conversation.'; void refreshSession();
+      } catch (error) { status.textContent = error?.message || 'Message could not be sent.'; } finally { sendMessageToProvider.disabled = false; }
+    });
+    window.addEventListener('pagehide', () => { if (refreshTimer) window.clearInterval(refreshTimer); }, { once: true });
   }
 
   function renderAgenticStorefront(card, messageEl) {
@@ -1289,7 +1367,7 @@
       if (surfaceActive) pushAgentSurfaceToast('Kurukoo could not finish that', error.message || 'Please try again from the composer.', true);
       const bubble = surfaceActive ? null : chatContent.querySelector('.message.assistant:last-child .markdown-body');
       if (bubble) setMarkdown(bubble, `I’m having trouble completing that right now. **Please try again.**\n\n_${escapeAttr(error.message)}_`);
-    } finally { state.controller = null; setTypingStatus('complete'); setComposerBusy(false); if (state.authStep !== 'none') setAuthComposerStep(state.authStep); else input.placeholder = state.displayName ? 'Tell Kurukoo what you need…' : 'Tell Kurukoo what you need…'; input.focus(); loadPoints(); loadReminders(); loadSafety(); loadAgentGoal(); }
+    } finally { state.controller = null; setTypingStatus('complete'); setComposerBusy(false); setAuthComposerStep(state.authStep !== 'none' ? state.authStep : 'none'); input.focus(); loadPoints(); loadReminders(); loadSafety(); loadAgentGoal(); }
   }
 
   function updateModelStatus(data) { const label = $('model-badge'); if (label && data.model) label.textContent = data.model; }
@@ -1297,7 +1375,8 @@
   function renderNotifications(notifications = []) {
     const list = $('notifications-list'); const summary = $('notifications-summary');
     if (list) list.replaceChildren();
-    const items = Array.isArray(notifications) ? notifications : [];
+    const isPromotionalNotification = (item) => /^ask kurukoo$/i.test(String(item?.title || '').trim()) && /kurukoo promotion/i.test(String(item?.body || ''));
+    const items = (Array.isArray(notifications) ? notifications : []).filter(item => !isPromotionalNotification(item));
     const unreadItems = items.filter(item => item?.status === 'unread');
     const unread = unreadItems.length;
     const toastRegion = $('chat-toast-region');
@@ -1905,15 +1984,13 @@
 
   function renderWelcome() {
     chatContent.replaceChildren();
+    const returning = Boolean(!state.isGuest && (state.messages.length || state.conversationId));
     const greeting = state.isGuest
-      ? 'Welcome to Kurukoo. I’m designed to help you directly, organise a reminder, keep you safe, or coordinate people and services to fulfil your request. Can I take your name?'
-      : `Welcome back${state.displayName ? `, ${state.displayName}` : ''}. What would you like to get done today?`;
+      ? 'Hi, I’m Kurukoo. I can help you figure things out, coordinate a request, remember something, or find useful local options. What should I call you?'
+      : returning
+        ? `Welcome back${state.displayName ? `, ${state.displayName}` : ''}. What would you like to move forward?`
+        : `Hi${state.displayName ? `, ${state.displayName}` : ''}. I’m Kurukoo. What would you like to get done today?`;
     createMessage('assistant', greeting, null, null, false);
-    const qa = makeElement('div', 'quick-actions welcome-quick-actions'); qa.id = 'quick-actions';
-    [['I need a ride request', 'Ride'], ['I have a food request', 'Food'], ['I need repair help', 'Repair'], ['I want to discuss a work request', 'Work']].forEach(([p, l]) => {
-      const b = makeElement('button', '', l); b.dataset.prompt = p; qa.appendChild(b);
-    });
-    chatContent.appendChild(qa); wireQuickActions(qa);
     if (state.isGuest) { void startGuestAuth().then(step => renderWelcomeAuth(step)); }
     else setAuthComposerStep('none');
   }

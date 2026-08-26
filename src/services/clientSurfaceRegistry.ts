@@ -1,6 +1,6 @@
 export type ClientFamily = 'web' | 'pwa' | 'native' | 'admin';
 export type SurfaceState = 'represented' | 'implemented' | 'contract_tested' | 'external_activation' | 'device_verification';
-export type PrimaryNavigation = 'agent' | 'discover' | 'requests' | 'tasks' | 'connect' | 'marketing' | 'workspace' | 'admin' | 'secondary';
+export type PrimaryNavigation = 'agent' | 'discover' | 'requests' | 'tasks' | 'connect' | 'more' | 'marketing' | 'workspace' | 'admin' | 'secondary';
 
 export interface ClientSurface {
   id: string;
@@ -105,7 +105,7 @@ export const CLIENT_SURFACES: readonly ClientSurface[] = [
   { id: 'admin-roadmap', label: 'Admin Roadmap', family: 'admin', route: '/admin/roadmap', primaryNavigation: 'admin', semanticOwners: ['adminRoutes'], states: ['represented', 'implemented'], responsive: true },
 ];
 
-export const MOBILE_PRIMARY_NAVIGATION = ['agent', 'discover', 'requests', 'tasks', 'connect'] as const;
+export const MOBILE_PRIMARY_NAVIGATION = ['agent', 'discover', 'requests', 'tasks', 'more'] as const;
 export const DESKTOP_AUTHENTICATED_HOME = 'web-desk' as const;
 
 export function getClientSurface(id: string): ClientSurface | undefined { return CLIENT_SURFACES.find(surface => surface.id === id); }

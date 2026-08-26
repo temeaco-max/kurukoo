@@ -9,14 +9,9 @@
   <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/css/site.css?v=1.2.1">
   <link rel="stylesheet" href="/css/kurukoo-client-foundation.css?v=2">
-  <link rel="stylesheet" href="/css/kurukoo-workspace.css?v=5">
-  <link rel="stylesheet" href="/css/kurukoo-os-final.css?v=visual4">
-  <link rel="stylesheet" href="/css/kurukoo-desktop-final.css?v=1">
-  <link rel="stylesheet" href="/css/kurukoo-os-visual-advancement.css?v=1">
   <link rel="stylesheet" href="/css/kurukoo-product-os-convergence.css?v=1">
   <% if (section === 'chat') { %>
   <link rel="stylesheet" href="/css/kurukoo-chat.css?v=18">
-  <link rel="stylesheet" href="/css/kurukoo-chat-visual-completion.css?v=1">
   <% } %>
   <% if (section === 'requests') { %>
   <link rel="stylesheet" href="/css/kurukoo-requests-convergence.css?v=1">
@@ -28,30 +23,27 @@
   <script src="/js/fcm-client.js?v=routes2" defer></script>
 </head>
 <body class="k-app-page workspace-page k-app-section-<%= section %><%= section === 'chat' ? ' kurukoo-chat-page' : '' %>" data-workspace-section="<%= section %>" data-app-section="<%= section %>" data-display-name="<%= displayName %>">
-  <% const icon = (name) => `<svg class="k-app-icon" aria-hidden="true"><use href="/icons/kurukoo-icons.svg#${name}"></use></svg>`; %>
+  <% const icon = (name) => `<svg class="k-app-icon" aria-hidden="true"><use href="/icons/kurukoo-icons.svg#${name}"></use></svg>`; const accountInitial = (String(displayName || '').match(/[a-z]/i) || ['K'])[0].toUpperCase(); %>
   <div class="k-app-shell k-reference-shell <%= section === 'chat' ? 'chat-template-shell' : '' %>">
     <header class="k-app-header k-reference-app-header" aria-label="Kurukoo workspace controls">
       <div class="k-reference-header-start">
         <button class="k-app-icon-button k-app-mobile-menu header-drawer" id="open-sidebar" type="button" aria-label="Open workspace navigation" aria-expanded="false"><%- icon('menu') %></button>
         <a href="/desk" class="k-app-brand k-reference-brand" aria-label="Open your Kurukoo Desk"><img src="/assets/brand/logo-icon.png" alt="" width="28" height="28"><span>Kurukoo</span></a>
-        <a class="k-reference-agent-switcher" href="/chat" aria-label="Open Agent workspace"><span class="k-reference-agent-mark"><%- icon('chat') %></span><span><strong>Agent</strong><small>Coordinate what matters</small></span><%- icon('more') %></a>
+        <a class="k-reference-agent-switcher" href="/chat" aria-label="Open Agent workspace" title="Open Agent"><span class="k-reference-agent-mark"><img src="/assets/brand/logo-icon.png" alt="" width="18" height="18"></span><span><strong>Agent</strong><small>Coordinate what matters</small></span><%- icon('more') %></a>
       </div>
       <div class="k-app-header-actions k-reference-header-actions">
-        <a class="k-reference-header-control k-reference-header-search" id="k-reference-header-search" href="/discover" aria-label="Search Discover"><%- icon('search') %><span>Search</span></a>
-        <a class="k-reference-header-control" id="header-nearby-radar" href="/discover" aria-label="Open Nearby Radar"><span class="k-reference-radar-pulse" aria-hidden="true"></span><%- icon('radar') %><span class="k-reference-control-label">Nearby</span></a>
-        <a class="k-reference-header-control" id="header-call" href="/call" aria-label="Open Kurukoo Call"><%- icon('call') %><span class="k-reference-control-label">Call</span></a>
+        <a class="k-reference-header-control k-reference-header-search" id="k-reference-header-search" href="/discover" aria-label="Search Kurukoo" title="Search Kurukoo"><%- icon('search') %><span>Search Kurukoo</span></a>
+        <a class="k-reference-header-control" id="header-nearby-radar" href="/discover" aria-label="Open Nearby Radar" title="Nearby Radar"><span class="k-reference-control-icon"><%- icon('radar') %><span class="k-reference-radar-pulse" aria-hidden="true"></span></span><span class="k-reference-control-label">Nearby</span></a>
         <% if (section === 'chat') { %>
-        <button class="k-reference-header-control k-reference-new-conversation" id="new-chat" type="button" aria-label="Start a new conversation"><%- icon('edit') %><span class="k-reference-control-label">New</span></button>
-        <button class="k-reference-header-control" id="notification-toggle" type="button" aria-label="Show notifications" aria-controls="chat-inspector" aria-expanded="false"><%- icon('notification') %><span class="notification-badge" id="notification-badge" hidden>0</span><span class="k-reference-control-label">Updates</span></button>
-        <button class="k-reference-header-control" id="memory-toggle" type="button" aria-label="Open conversation context" aria-controls="chat-inspector" aria-expanded="false"><%- icon('saved') %><span class="k-reference-control-label">Context</span></button>
+        <button class="k-reference-header-control k-reference-new-conversation" id="new-chat" type="button" aria-label="Start a new conversation" title="New conversation"><%- icon('chat') %><span class="k-reference-control-label">New</span></button>
+        <a class="k-reference-header-control" id="header-notifications" href="/notifications" aria-label="Open notifications" title="Updates"><%- icon('notification') %><span class="notification-badge" id="notification-badge" hidden>0</span><span class="k-reference-control-label">Updates</span></a>
         <% } else { %>
-        <a class="k-reference-header-control" id="header-messages" href="/chat" aria-label="Open Agent conversations"><%- icon('chat') %><span class="k-reference-control-label">Agent</span></a>
-        <a class="k-reference-header-control" id="header-notifications" href="/notifications" aria-label="Open notifications"><%- icon('notification') %><span class="k-reference-control-label">Updates</span></a>
+        <a class="k-reference-header-control" id="header-messages" href="/chat" aria-label="Open Agent conversations" title="Messages"><%- icon('chat') %><span class="k-reference-control-label">Messages</span></a>
+        <a class="k-reference-header-control" id="header-notifications" href="/notifications" aria-label="Open notifications" title="Updates"><%- icon('notification') %><span class="k-reference-control-label">Updates</span></a>
         <% } %>
-        <a class="k-reference-header-control" id="header-points" href="/points" aria-label="Open points balance"><%- icon('points') %><span class="k-reference-control-label">Points</span></a>
-        <a class="k-reference-header-control" id="header-cart" href="/cart" aria-label="Open cart"><%- icon('cart') %><span class="k-reference-control-label">Cart</span></a>
-        <a class="k-reference-account-button" id="header-account" href="/settings" aria-label="Open account and settings"><span><%= String(displayName || 'K').slice(0, 1).toUpperCase() %></span></a>
-        <details class="k-reference-header-overflow"><summary class="k-reference-header-control" id="header-drawer" aria-label="Open more workspace controls"><%- icon('more') %></summary><div class="k-reference-header-menu"><a href="/explore">Explore capabilities</a><a href="/call">Kurukoo Call</a><a href="/points">Points</a><a href="/cart">Cart</a><a href="/settings">Settings</a><a href="/channels">Connections</a><a href="/help">Help &amp; support</a></div></details>
+        <a class="k-reference-header-control" id="header-points" href="/points" aria-label="Open points balance" title="Points"><%- icon('points') %><span class="k-reference-control-label">Points</span></a>
+        <a class="k-reference-header-control" id="header-cart" href="/cart" aria-label="Open cart" title="Cart"><%- icon('cart') %><span class="k-reference-control-label">Cart</span></a>
+        <details class="k-reference-account-menu" id="header-account"><summary class="k-reference-account-button" aria-label="Open account and configuration" title="Account and settings"><span><%= accountInitial %></span></summary><div class="k-reference-account-menu-panel"><div class="k-reference-account-menu-heading"><strong><%= displayName || 'Your account' %></strong><span>Account and configuration</span></div><a href="/settings">Settings</a><a href="/subscriptions">Plan and subscription</a><a href="/wallet">Wallet and billing</a><a href="/notifications">Notifications</a><a href="/channels">Connections</a><a href="/memory">Memory and privacy</a><a href="/safety">Safety and check-ins</a><a href="/help">Help and support</a><a href="/explore">Explore capabilities</a><button type="button" id="workspace-logout">Log out</button></div></details>
       </div>
     </header>
     <aside class="k-app-sidebar k-reference-sidebar" id="chat-sidebar" aria-label="Kurukoo application navigation">
@@ -66,30 +58,25 @@
       <div class="k-app-divider"></div>
       <nav class="k-app-nav k-reference-secondary-nav" aria-label="Supporting workspace">
         <a class="<%= section === 'reminders' ? 'active' : '' %>" href="/reminders"><%- icon('reminder') %><span>Reminders</span></a>
-        <a class="<%= section === 'connect' ? 'active' : '' %>" href="/connect"><%- icon('channels') %><span>Connect</span></a>
-        <a class="<%= section === 'memory' ? 'active' : '' %>" href="/memory"><%- icon('saved') %><span>Memory</span></a>
-        <a class="<%= section === 'safety' ? 'active' : '' %>" href="/safety"><%- icon('safety') %><span>Safety</span></a>
       </nav>
       <% if (section === 'chat') { %>
       <section class="k-app-sidebar-conversation k-reference-conversation-nav" aria-label="Agent conversation utilities">
-        <div class="k-app-sidebar-section-head"><span>Recent conversations</span><button class="k-app-sidebar-text" type="button" id="sidebar-more-toggle" aria-controls="sidebar-more-items" aria-expanded="false">View all</button></div>
+        <div class="k-app-sidebar-section-head"><span>History</span><button class="k-app-sidebar-text" type="button" id="sidebar-more-toggle" aria-controls="sidebar-more-items" aria-expanded="false">View all</button></div>
         <div class="k-app-history-list" id="history-list"></div>
         <div class="k-app-sidebar-radar"><button type="button" id="radar-toggle" class="radar-toggle is-active" aria-pressed="true"><span class="k-app-radar-mark"></span><span><strong>Nearby Radar</strong><small id="radar-status">Ready when you are</small></span></button></div>
         <button class="k-app-sponsored" id="sidebar-promo" type="button" aria-label="Open sponsored local service" hidden><img src="" alt="" loading="lazy"><span class="sidebar-sponsored-tag">Sponsored</span></button>
-        <div class="k-app-sidebar-more" id="sidebar-more-items" hidden><a href="/saved">Saved items</a><a href="/notifications">Updates</a><a href="/settings#k-settings-privacy">Memory and privacy</a></div>
+        <a class="k-app-sidebar-advertise" href="/advertise"><%- icon('discover') %><span>Promote on Kurukoo</span></a>
+        <div class="k-app-sidebar-more" id="sidebar-more-items" hidden><a href="/saved">Saved items</a><a href="/notifications">Updates</a><a href="/advertise">Advertising</a></div>
       </section>
       <% } %>
-      <div class="k-reference-account-nav">
-        <a class="<%= section === 'settings' ? 'active' : '' %>" href="/settings"><%- icon('settings') %><span>Settings</span></a>
-        <details><summary><span class="k-reference-account-avatar"><%= String(displayName || 'K').slice(0, 1).toUpperCase() %></span><span><strong><%= displayName || 'Your account' %></strong><small>Account and plan</small></span><%- icon('more') %></summary><div><a href="/subscriptions">Subscription</a><a href="/wallet">Wallet and billing</a><a href="/channels">Connected channels</a><button type="button" id="workspace-logout">Log out</button></div></details>
-      </div>
+
     </aside>
     <main class="k-app-main">
       <% if (section === 'chat') { %>
         <%- include('partials/chat-workspace') %>
       <% } else { %>
       <div class="k-app-container">
-        <% if (section !== 'settings') { %>
+        <% if (!['settings', 'call'].includes(section)) { %>
         <div class="k-app-eyebrow"><%= selected.eyebrow %></div>
         <div class="k-app-title-row">
           <div><h1><%= selected.title %></h1><p><%= selected.description %></p></div>
@@ -171,7 +158,7 @@
         <% } else if (section === 'prayer') { %>
           <section class="k-app-card"><span class="k-app-card-label">Prayer Companion</span><h2>A first-class Kurukoo agent.</h2><p>Prayer requests can become personalized written prayers, routines, reminders and voice experiences through the existing Agent Runtime and voice/artifact boundaries.</p><a href="/chat?prompt=I%20would%20like%20a%20prayer" class="k-app-primary">Start a prayer conversation</a></section>
         <% } else if (section === 'call') { %>
-          <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label">AI voice</span><h2>Talk to Kurukoo.</h2><p>Realtime AI voice uses the canonical conversation and tool boundary.</p><a href="/chat?voice=1" class="k-app-primary">Open AI voice</a></article><article class="k-app-card"><span class="k-app-card-label">Kurukoo Call</span><h2>Realtime peer communication.</h2><p>WebRTC calling uses the canonical identity and signalling layer; production relay/provider readiness remains externally gated.</p><a href="/channels" class="k-app-card-action">Review channel readiness →</a></article></section>
+          <%- include('partials/call-workspace') %>
         <% } else if (section === 'safety') { %>
           <section class="k-app-card"><span class="k-app-card-label">Safety</span><h2>Explicit, consent-bound safety support.</h2><p>Manage check-ins, trusted contacts and safety continuity without implying emergency-service delivery.</p><a href="/settings#k-settings-safety" class="k-app-primary">Review safety preferences</a></section>
         <% } else if (section === 'discover') { %>
@@ -218,6 +205,9 @@
   <script src="/js/kurukoo-tasks-convergence.js?v=1" defer></script>
   <% } %>
   <script src="/js/kurukoo-app-shell.js?v=5" defer></script>
+  <% if (section === 'call') { %>
+  <script src="/js/kurukoo-call.js?v=2" defer></script>
+  <% } %>
   <% if (section === 'chat') { %>
   <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js" async></script>
   <script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.11.1/highlight.min.js" async></script>

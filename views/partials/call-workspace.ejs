@@ -1,0 +1,35 @@
+<section class="k-call-workspace" aria-labelledby="call-workspace-title">
+  <header class="k-call-workspace-header">
+    <div>
+      <span class="k-app-card-label">Conversation call</span>
+      <h2 id="call-workspace-title">Call a confirmed participant</h2>
+      <p id="call-status">Calls start only from a selected provider conversation with an enabled secure calling service.</p>
+    </div>
+    <a class="k-app-card-action" href="/chat">Return to Agent <span aria-hidden="true">→</span></a>
+  </header>
+  <div class="k-call-workspace-grid">
+    <section class="k-call-stage" aria-label="Call video">
+      <div class="k-call-video-stage">
+        <video id="remote-video" autoplay playsinline aria-label="Remote participant video"></video>
+        <video id="local-video" autoplay playsinline muted aria-label="Your camera preview"></video>
+        <div id="video-placeholder">Your camera preview appears after you explicitly start a call.</div>
+      </div>
+      <div class="k-call-controls" aria-label="Call controls">
+        <button type="button" class="k-app-primary" id="start-call">Start call</button>
+        <button type="button" class="k-app-secondary" id="mute-call">Mute</button>
+        <button type="button" class="k-app-secondary" id="camera-call">Camera</button>
+        <button type="button" class="k-app-danger" id="end-call">End call</button>
+      </div>
+    </section>
+    <aside class="k-call-readiness" aria-label="Call readiness">
+      <h3>Call safety and readiness</h3>
+      <p>Kurukoo uses browser WebRTC media with server-controlled signalling. Credentials and participant contact details are never placed in the call URL.</p>
+      <dl>
+        <div><dt>Microphone</dt><dd id="mic-state">Off</dd></div>
+        <div><dt>Camera</dt><dd id="camera-state">Off</dd></div>
+        <div><dt>Connection</dt><dd id="connection-state">Not connected</dd></div>
+      </dl>
+      <p class="k-call-readiness-note">If realtime calling is not enabled for this conversation, the status will explain the setup boundary instead of placing a call.</p>
+    </aside>
+  </div>
+</section>

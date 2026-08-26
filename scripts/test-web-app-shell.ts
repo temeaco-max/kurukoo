@@ -29,7 +29,7 @@ for (const marker of ['grid-template-columns: 224px minmax(0, 1fr) 304px','k-ref
 
 assert.ok(fcm.includes('k-settings-notification-optin'), 'Notification opt-in must mount from Settings preferences.');
 assert.doesNotMatch(fcm, /document\.querySelector\('\.k-app-header-actions'\)/, 'Notification opt-in must not occupy the global header.');
-assert.ok(appShell.includes("document.querySelector('.k-reference-shell')"), 'Focused reference shell must suppress the inherited feature launcher.');
+assert.ok(!appShell.includes('k-feature-compass'), 'Shared runtime must not recreate the retired floating feature compass.');
 assert.ok(workspaceRuntime.includes('referenceMobileMore'), 'Shared workspace runtime must own the mobile More sheet.');
 assert.ok(chat.includes('id="message-input"'), 'Shared Agent partial must retain its canonical composer.');
 assert.ok(chat.includes('id="chat-inspector"'), 'Shared Agent partial must retain integrated context inspection.');

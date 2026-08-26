@@ -6,10 +6,12 @@ const chatSource = readFileSync(resolve(process.cwd(), "app/(tabs)/index.tsx"), 
 const radarSource = readFileSync(resolve(process.cwd(), "app/(tabs)/discover.tsx"), "utf8");
 
 describe("experience feedback contract", () => {
-  it("keeps Chat loading and empty states inside the canonical composer surface", () => {
+  it("keeps Chat loading and empty states inside the clean canonical Agent surface", () => {
     expect(chatSource).toContain('"loading" | "ready" | "empty"');
     expect(chatSource).toContain("Preparing your conversation");
-    expect(chatSource).toContain("No conversation to show yet");
+    expect(chatSource).toContain("Let’s get something moving");
+    expect(chatSource).toContain("Welcome back");
+    expect(chatSource).toContain("Ask anything:");
     expect(chatSource).toContain("Ask Kurukoo");
     expect(chatSource).toContain("Kurukoo is typing");
     expect(chatSource).toContain("Read by Kurukoo");

@@ -62,6 +62,8 @@ If a feature exists in the OS but is not useful as a full standalone navigation 
 
 Do not hide a capability simply because an external provider is not configured. Show the appropriate readiness/disabled/setup-required state.
 
+Calls and participant messaging are represented only after a canonical provider or peer conversation exists. A selected-provider conversation can expose request-linked messaging, a Call icon when its session reports an enabled WebRTC room, and a Nearby Radar handoff only after the provider has shared tracking activity. Global header controls must not imply a call target or active external channel.
+
 ## Client navigation rule
 
 ### Mobile/PWA primary navigation
@@ -70,9 +72,9 @@ Do not hide a capability simply because an external provider is not configured. 
 2. Discover
 3. Requests
 4. Tasks
-5. Connect
+5. More
 
-Secondary areas include Wallet, Points, Top Up, Subscriptions, Profile, Memory, Artifacts, Notifications, Capabilities and Settings.
+Connect, Wallet, Points, Top Up, Subscriptions, Profile, Memory, Artifacts, Notifications, Capabilities and Settings remain reachable through More/account configuration rather than competing for a high-frequency tab.
 
 ### Web App
 

@@ -1,57 +1,67 @@
-// Kurukoo mobile visual authority: shared warm cards, Space Grotesk hierarchy, truthful readiness tone, and canonical surface continuation.
+// Kurukoo mobile More authority: account configuration and lower-frequency personal work only.
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 
-import { ActionButton, SectionCard, StatusPill, SurfaceHeader } from "@/components/kurukoo-ui";
+import { ActionButton, SectionCard, SurfaceHeader } from "@/components/kurukoo-ui";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 
-const links = [
-  { title: "Capability Portfolio", detail: "Your multi-skill identity, Pulse, agents, voice and artifacts", state: "Ready", route: "/surface/capabilities" },
-  { title: "Artifact history", detail: "Play voice notes, review transcripts, and inspect storage ownership", state: "Available", route: "/surface/artifacts" },
-  { title: "Notifications", detail: "Review pending, verified and not-delivered outcomes", state: "4 updates", route: "/surface/notifications" },
-  { title: "Requests", detail: "Review active, waiting and completed work with evidence", state: "3 items", route: "/surface/requests" },
-  { title: "Reminders", detail: "Edit, pause and continue saved conversation context", state: "3 items", route: "/surface/reminders" },
-  { title: "Connect channels", detail: "WhatsApp, Telegram, email and other access points", state: "Ready for activation", kind: "connect" },
-  { title: "Memory and privacy", detail: "Review provenance-backed memories and revoke context", state: "In your control", kind: "memory" },
-  { title: "Safety and check-ins", detail: "Protective interruptions, trusted contacts and check-ins", state: "Available", kind: "safety" },
-  { title: "Cart and checkout", detail: "Review sourced offers and confirm before payment", state: "Protected", kind: "checkout" },
-  { title: "Partners workspace", detail: "Review opportunity coordination, trust and evidence", state: "Candidate network", kind: "partners" },
-  { title: "Agents workspace", detail: "Review bounded goals, tool policy and pause controls", state: "Policy governed", kind: "agents" },
-  { title: "Admin operations", detail: "Review activation prerequisites, evidence and policy controls", state: "Needs activation", kind: "admin" },
-];
-const toneForState = (state: string): "neutral" | "success" | "warning" => {
-  if (state === "Ready" || state === "Available") return "success";
-  if (state === "Needs activation" || state === "Ready for activation") return "warning";
-  return "neutral";
+type MoreItem = {
+  title: string;
+  detail: string;
+  action: string;
+  route?: "/surface/artifacts" | "/surface/notifications" | "/surface/reminders" | "/feature-compass";
+  kind?: "connect" | "memory" | "safety" | "checkout";
 };
+
+const accountItems: MoreItem[] = [
+  { title: "Notifications", detail: "Review updates and choose how Kurukoo can get your attention.", action: "Open notifications", route: "/surface/notifications" },
+  { title: "Connections", detail: "Manage the channels and devices you choose to connect.", action: "Manage connections", kind: "connect" },
+  { title: "Memory and privacy", detail: "Review the personal context you have chosen to keep available.", action: "Review privacy", kind: "memory" },
+  { title: "Safety and check-ins", detail: "Manage trusted contacts and consent-bound check-ins.", action: "Open safety", kind: "safety" },
+];
+
+const continuityItems: MoreItem[] = [
+  { title: "Reminders", detail: "Review follow-ups that are still useful to you.", action: "Open reminders", route: "/surface/reminders" },
+  { title: "Activity and saved items", detail: "Review your saved voice notes, transcripts, and owned artifacts.", action: "Open activity", route: "/surface/artifacts" },
+  { title: "Cart and checkout", detail: "Review sourced offers before any confirmation or payment step.", action: "Review cart", kind: "checkout" },
+];
+
+function openItem(item: MoreItem) {
+  if (item.route) {
+    router.push(item.route);
+    return;
+  }
+  if (item.kind) router.push({ pathname: "/surface/[kind]", params: { kind: item.kind } });
+}
+
+function MoreItemCard({ item }: { item: MoreItem }) {
+  const colors = useColors();
+  return <SectionCard><Text style={[styles.title, { color: colors.foreground }]}>{item.title}</Text><Text style={[styles.detail, { color: colors.muted }]}>{item.detail}</Text><ActionButton label={item.action} variant="ghost" onPress={() => openItem(item)} /></SectionCard>;
+}
 
 export default function MoreScreen() {
   const colors = useColors();
   return (
     <ScreenContainer className="px-5 pt-3" edges={["top", "left", "right"]}>
       <ScrollView contentContainerStyle={styles.content}>
-        <SurfaceHeader eyebrow="Your Kurukoo" title="Everything stays connected" right={<StatusPill label="Available" tone="success" />} />
-        <Text style={[styles.intro, { color: colors.muted }]}>Your conversations, reminders and saved context stay connected to your profile. Choose a surface without leaving the operating system.</Text>
-        {links.map((item) => (
-          <SectionCard key={item.title}>
-            <View style={styles.header}><View style={styles.copy}><Text style={[styles.title, { color: colors.foreground }]}>{item.title}</Text><Text style={[styles.detail, { color: colors.muted }]}>{item.detail}</Text></View><StatusPill label={item.state} tone={toneForState(item.state)} /></View>
-            <ActionButton label="Open surface" variant="ghost" onPress={() => { if ("route" in item) { router.push(item.route as "/surface/capabilities" | "/surface/artifacts" | "/surface/requests" | "/surface/reminders" | "/surface/notifications"); } else if (item.kind) { router.push({ pathname: "/surface/[kind]", params: { kind: item.kind } }); } }} />
-          </SectionCard>
-        ))}
-        <SectionCard style={styles.checkoutCard}><Text style={[styles.kicker, { color: colors.primary }]}>Checkout promise</Text><Text style={[styles.title, { color: colors.foreground }]}>No hidden handoffs</Text><Text style={[styles.detail, { color: colors.muted }]}>Kurukoo shows the offer, source, price state, confirmation step and external payment boundary before anything proceeds.</Text><ActionButton label="Review a demo offer" onPress={() => router.push({ pathname: "/surface/[kind]", params: { kind: "confirmation" } })} /></SectionCard>
+        <SurfaceHeader eyebrow="Account" title="Settings and your Kurukoo" />
+        <Text style={[styles.intro, { color: colors.muted }]}>Manage personal preferences and lower-frequency work without crowding the things you do most often.</Text>
+        <View style={styles.group}><Text style={[styles.groupTitle, { color: colors.foreground }]}>Account and preferences</Text>{accountItems.map((item) => <MoreItemCard key={item.title} item={item} />)}</View>
+        <View style={styles.group}><Text style={[styles.groupTitle, { color: colors.foreground }]}>Your continuity</Text>{continuityItems.map((item) => <MoreItemCard key={item.title} item={item} />)}</View>
+        <SectionCard style={styles.exploreCard}><Text style={[styles.kicker, { color: colors.primary }]}>Explore</Text><Text style={[styles.title, { color: colors.foreground }]}>See what Kurukoo can help with</Text><Text style={[styles.detail, { color: colors.muted }]}>Browse capabilities when you are looking for a new way to use Kurukoo. This does not interrupt your current work.</Text><ActionButton label="Explore capabilities" variant="secondary" onPress={() => router.push("/feature-compass")} /></SectionCard>
       </ScrollView>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: 30, gap: 16 },
+  content: { paddingBottom: 30, gap: 18 },
   intro: { fontFamily: "Inter_400Regular", fontSize: 15, lineHeight: 22 },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 12 },
-  copy: { flex: 1, gap: 6 },
+  group: { gap: 10 },
+  groupTitle: { fontFamily: "SpaceGrotesk_600SemiBold", fontSize: 18, lineHeight: 24 },
   kicker: { fontFamily: "Inter_700Bold", fontSize: 11, letterSpacing: 0.7, textTransform: "uppercase" },
   title: { fontFamily: "SpaceGrotesk_600SemiBold", fontSize: 17, lineHeight: 23 },
-  detail: { fontFamily: "Inter_400Regular", fontSize: 14, lineHeight: 21 },
-  checkoutCard: { marginTop: 4 },
+  detail: { marginTop: 6, fontFamily: "Inter_400Regular", fontSize: 14, lineHeight: 21 },
+  exploreCard: { gap: 2 },
 });

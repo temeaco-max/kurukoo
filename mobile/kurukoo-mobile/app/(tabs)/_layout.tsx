@@ -1,6 +1,6 @@
-import { Tabs, useRouter } from "expo-router";
-// Kurukoo native tab authority: five primary destinations plus a contextual feature-compass overflow action.
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Tabs } from "expo-router";
+// Kurukoo native tab authority: five high-frequency consumer destinations shared with the responsive product shell.
+import { Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { HapticTab } from "@/components/haptic-tab";
@@ -12,13 +12,13 @@ const tabIcons = {
   discover: "map.fill",
   requests: "list.bullet.rectangle.fill",
   tasks: "checklist",
-  connect: "link.circle.fill",
+  more: "ellipsis.circle.fill",
+  connect: "ellipsis.circle.fill",
 } as const;
 
 export default function TabLayout() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const bottomPadding = Platform.OS === "web" ? 10 : Math.max(insets.bottom, 8);
 
   return (
@@ -45,14 +45,11 @@ export default function TabLayout() {
         <Tabs.Screen name="discover" options={{ title: "Discover" }} />
         <Tabs.Screen name="requests" options={{ title: "Requests" }} />
         <Tabs.Screen name="tasks" options={{ title: "Tasks" }} />
-        <Tabs.Screen name="connect" options={{ title: "Connect" }} />
+        <Tabs.Screen name="more" options={{ title: "More" }} />
+        <Tabs.Screen name="connect" options={{ href: null }} />
       </Tabs>
-      <Pressable accessibilityRole="button" accessibilityLabel="Explore all Kurukoo features" onPress={() => router.push('/feature-compass')} style={({ pressed }) => [styles.compass, { backgroundColor: colors.primary }, pressed && styles.pressed]}>
-        <Text style={styles.compassIcon}>✦</Text>
-        <Text style={styles.compassLabel}>Explore</Text>
-      </Pressable>
     </View>
   );
 }
 
-const styles = StyleSheet.create({ root: { flex: 1 }, compass: { position: 'absolute', right: 14, bottom: 80, minWidth: 76, minHeight: 44, height: 44, borderRadius: 22, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, elevation: 4, shadowColor: '#000', shadowOpacity: 0.14, shadowRadius: 8, shadowOffset: { width: 0, height: 3 } }, compassIcon: { color: '#fff', fontFamily: 'SpaceGrotesk_700Bold', fontSize: 15 }, compassLabel: { color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 11 }, pressed: { opacity: 0.82 }, });
+const styles = StyleSheet.create({ root: { flex: 1 } });

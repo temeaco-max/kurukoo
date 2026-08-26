@@ -8,8 +8,7 @@ const shellRuntime = readFileSync(resolve(process.cwd(), 'public/js/kurukoo-desk
 const appShellRuntime = readFileSync(resolve(process.cwd(), 'public/js/kurukoo-app-shell.js'), 'utf8');
 const sharedAppTemplate = readFileSync(resolve(process.cwd(), 'views/app.ejs'), 'utf8');
 const componentCss = readFileSync(resolve(process.cwd(), 'public/css/kurukoo-os-components.css'), 'utf8');
-const finalCss = readFileSync(resolve(process.cwd(), 'public/css/kurukoo-os-final.css'), 'utf8');
-const pixelCss = readFileSync(resolve(process.cwd(), 'public/css/kurukoo-webapp-pixel-refinement.css'), 'utf8');
+const finalCss = readFileSync(resolve(process.cwd(), 'public/css/kurukoo-product-os-revamp.css'), 'utf8');
 const providerCss = readFileSync(resolve(process.cwd(), 'public/css/provider-communication.css'), 'utf8');
 const presenceRuntime = readFileSync(resolve(process.cwd(), 'public/js/kurukoo-agent-presence.js'), 'utf8');
 const icons = readFileSync(resolve(process.cwd(), 'public/icons/kurukoo-icons.svg'), 'utf8');
@@ -32,15 +31,12 @@ assert.ok(componentCss.includes('.kos-opportunity-card'));
 assert.ok(componentCss.includes('.kos-context-drawer'));
 assert.ok(componentCss.includes('data-ko-state="approval-required"'));
 assert.ok(componentCss.includes('data-agent-presence="listening"'));
-assert.ok(finalCss.includes('.k-app-page .k-app-nav'));
-assert.ok(finalCss.includes('.ko-communication-actions'));
-assert.ok(finalCss.includes('[data-state="approval-required"]'));
-assert.ok(finalCss.includes('.ko-empty,.empty-state'));
-assert.ok(finalCss.includes('--kc-accent:var(--ko-primary)'));
-assert.ok(pixelCss.includes('--kwa-ink:var(--ko-ink)'));
-assert.ok(pixelCss.includes('--kwa-accent:var(--ko-primary)'));
-assert.ok(pixelCss.includes('.k-app-ask{min-height:44px'));
-assert.ok(pixelCss.includes('background:var(--ko-primary)'));
+assert.ok(finalCss.includes('k-reference-app-header'));
+assert.ok(finalCss.includes('k-reference-sidebar'));
+assert.ok(finalCss.includes('k-app-section-chat'));
+assert.ok(finalCss.includes('k-chat-workspace.chat-main'));
+assert.ok(finalCss.includes('composer-wrap'));
+assert.ok(finalCss.includes('k-mobile-tabbar'));
 assert.ok(providerCss.includes('var(--ko-primary'));
 assert.ok(providerCss.includes('min-height:44px'));
 assert.ok(providerCss.includes('button[disabled]'));
@@ -50,9 +46,12 @@ for (const [label, href] of [['Desk','/desk'],['Agent','/chat'],['Requests','/re
   assert.ok(appShellRuntime.includes(`{label:'${label}',href:'${href}'`), `mobile/app navigation must use canonical ${label} route ${href}`);
 }
 assert.ok(appShellRuntime.includes('const createSecondaryNav=()=>{}'));
-assert.ok(appShellRuntime.includes("if(path==='/chat')"), 'Agent route refinement must use the canonical Chat route');
+assert.ok(appShellRuntime.includes('kurukoo-product-os-revamp-runtime'), 'shared app runtime must load the final reference authority');
+assert.ok(!appShellRuntime.includes('k-feature-compass'), 'shared app runtime must not retain the retired floating feature compass');
 assert.doesNotMatch(appShellRuntime, /\/app\//, 'App shell must not retain legacy route aliases');
-assert.ok(appShellRuntime.includes("if(path==='/call')"));
+assert.ok(!appShellRuntime.includes("if(path==='/call')"), 'shared runtime must not inject the retired standalone provider communication surface');
+assert.ok(sharedAppTemplate.includes("section === 'call'"), 'shared authenticated template must own the focused Call surface');
+assert.ok(sharedAppTemplate.includes('/js/kurukoo-call.js?v=2'), 'shared Call surface must load the canonical WebRTC client');
 assert.ok(appShellRuntime.includes("path==='/top-up'||path==='/points'"));
 
 assert.match(surfaceRegistry, /label: 'Agent'.*route: '\/chat'/s, 'surface registry Agent must be /chat');

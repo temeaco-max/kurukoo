@@ -8,13 +8,14 @@ describe("Chat composer control contract", () => {
   const webApp = readFileSync(resolve(webRoot, "views/app.ejs"), "utf8");
   const foundation = readFileSync(resolve(webRoot, "public/css/kurukoo-client-foundation.css"), "utf8");
 
-  it("keeps every mobile composer control connected to an action", () => {
-    expect(mobile).toContain('accessibilityLabel="Show conversation context"');
-    expect(mobile).toContain('onPress={() => setShowContext(true)}');
-    expect(mobile).toContain('accessibilityLabel="Clear draft"');
-    expect(mobile).toContain('onPress={() => setDraft("")}');
+  it("keeps every visible mobile composer control connected to an action", () => {
+    expect(mobile).toContain('accessibilityLabel="Ask Kurukoo"');
+    expect(mobile).toContain('accessibilityLabel={showVoiceCapture ? "Hide voice note recorder" : "Record a voice note"}');
+    expect(mobile).toContain('onPress={() => setShowVoiceCapture((value) => !value)}');
     expect(mobile).toContain('onSubmitEditing={() => void ask()}');
     expect(mobile).toContain('sending ? stopGenerating() : void ask()');
+    expect(mobile).not.toContain('accessibilityLabel="Show conversation context"');
+    expect(mobile).not.toContain('accessibilityLabel="Clear draft"');
   });
 
   it("keeps the canonical Web App represented without referencing the removed duplicate website", () => {

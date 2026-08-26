@@ -25,7 +25,7 @@ for (const pathname of ['/desk', '/chat', '/requests', '/tasks', '/notifications
   assert.match(routes, new RegExp(`['\"]${pathname.replace('/', '\\/')}['\"]|router\\.get\\(['\"]${pathname.replace('/', '\\/')}`), `Canonical route must remain available: ${pathname}`);
 }
 
-for (const expected of ['Desk', 'Agent', 'Requests', 'Tasks', 'Updates', 'Discover', 'Connect', 'Memory', 'Safety', 'Settings']) {
+for (const expected of ['Desk', 'Agent', 'Requests', 'Tasks', 'Discover', 'Reminders', 'Settings']) {
   assert.match(app, new RegExp(`>${expected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}<`), `Authenticated hierarchy should expose ${expected}`);
 }
 assert.match(app, /aria-label="Supporting workspace"/, 'Secondary destinations must be grouped rather than crowding primary navigation');
@@ -50,10 +50,17 @@ assert.match(manifest, /views\/partials\/chat-workspace\.ejs/, 'The authenticate
 assert.match(app, /id="chat-sidebar"/, 'Chat history, nearby radar, and sponsored placement must remain in the shared sidebar');
 assert.match(app, /id="history-list"/, 'Chat history must remain available from the shared sidebar');
 assert.match(app, /id="sidebar-promo"/, 'Sponsored placement must remain explicit in the shared Chat sidebar');
-assert.match(chat, /id="header-context-title"/, 'Chat must retain its integrated conversation subheader state hook');
-assert.match(chat, /What would you like to move forward\?/, 'Chat landing copy should orient around a personal need-to-outcome model');
-for (const label of ['Current work', 'Work in progress', 'What is happening', 'What is needed from you', 'Next actions']) {
-  assert.match(chat, new RegExp(label), `Chat context should expose ${label}`);
+assert.match(app, /Promote on Kurukoo/, 'Advertising management must remain a deliberate shared-rail destination');
+assert.match(app, /id="header-account"/, 'Account configuration must be available from the top-right header control');
+assert.match(app, /Account and configuration/, 'The account menu must group configuration links in one user-owned location');
+assert.match(app, />History</, 'Conversation history should use the concise History label');
+assert.match(chat, /id="header-context-title"/, 'Chat must retain its integrated Agent subheader state hook');
+assert.match(chat, /How can Kurukoo help today\?/, 'Chat landing copy should orient around a clear personal action');
+assert.doesNotMatch(chat, /id="quick-actions"|id="composer-quick-actions"/, 'Chat should not repeat generic prompt chips above or beside the composer');
+assert.match(chat, /placeholder="Ask anything…"/, 'The Agent composer must begin from an open-ended ask');
+assert.match(chat, /id="chat-inspector"[^>]*hidden/, 'Default conversation details must stay hidden until a relevant user task requires them');
+for (const label of ['Active work', 'Work in progress', 'What is happening', 'What is needed from you', 'Next actions']) {
+  assert.match(chat, new RegExp(label), `Relevant Agent details should retain ${label}`);
 }
 assert.match(requests, /Continue with Kurukoo/, 'Requests must offer a contextual return to Chat');
 assert.match(tasks, /Part of a request/, 'Tasks must show their request relationship');

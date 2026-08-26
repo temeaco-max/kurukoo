@@ -11,19 +11,11 @@ const requireFile = (relativePath: string, reason: string) => { if (!exists(rela
 
 for (const file of [
   'public/css/kurukoo-client-foundation.css',
-  'public/css/kurukoo-screen-set-convergence.css',
-  'public/css/kurukoo-visual-completion.css',
-  'public/css/kurukoo-platform-state-visual.css',
-  'public/css/kurukoo-chat-visual-completion.css',
-  'public/css/kurukoo-workspace-visual-completion.css',
-  'public/css/kurukoo-visual-system.css',
-  'public/css/kurukoo-os-final.css',
-  'public/css/kurukoo-os-workspace-final.css',
-  'public/css/kurukoo-os-visual-advancement.css',
-  'public/css/kurukoo-webapp-pixel-refinement.css',
-  'public/css/kurukoo-webapp-screen-refinement.css',
-  'public/css/kurukoo-webapp-agent-refinement.css',
-] as const) requireFile(file, 'Web visual authority');
+  'public/css/kurukoo-product-os-convergence.css',
+  'public/css/kurukoo-product-os-revamp.css',
+  'public/css/kurukoo-chat.css',
+  'public/css/kurukoo-desk-system.css',
+] as const) requireFile(file, 'Active authenticated visual authority');
 requireFile('mobile/kurukoo-mobile/lib/visual-contract.ts', 'Native visual authority');
 requireFile('mobile/kurukoo-mobile/components/kurukoo-ui.tsx', 'Native shared visual primitives');
 requireFile('mobile/kurukoo-mobile/components/work-surface-detail.tsx', 'Native work surface visual convergence');
@@ -82,8 +74,8 @@ for (const marker of ['/api/agent/goals', '/continuation', '/trace?limit=3', 'wa
 for (const marker of ['slice(0, 4)', 'for (const { goal } of goalDetails)', 'Waiting on a prerequisite objective']) if (!deskData.includes(marker)) failures.push(`Desk Agent objective projection is missing bounded safe hydration ${marker}`);
 if (deskData.includes('raw tool arguments') || deskData.includes('provider secrets') || deskData.includes('blockers.join')) failures.push('Desk Agent objective projection must not expose internal execution details or raw dependency identifiers');
 for (const marker of ['Waiting for earlier work', 'Your input is needed', 'dataset.state = state']) if (!deskData.includes(marker)) failures.push(`Desk visual Objective language or state hook is missing ${marker}`);
-const visualAdvancement = read('public/css/kurukoo-os-visual-advancement.css');
-for (const marker of ['Final OS visual system', 'status-pill', 'waiting_on_dependency', 'needs_user', 'k-app-list-loading::before', 'prefers-reduced-motion']) if (!visualAdvancement.includes(marker)) failures.push(`Shared authenticated visual state authority is missing ${marker}`);
+const sharedRevamp = read('public/css/kurukoo-product-os-revamp.css');
+for (const marker of ['k-reference-app-header', 'k-reference-sidebar', 'k-chat-workspace', 'k-app-section-chat', 'prefers-reduced-motion']) if (!sharedRevamp.includes(marker)) failures.push(`Shared authenticated reference authority is missing ${marker}`);
 const requestClient = read('public/js/kurukoo-requests-convergence.js');
 for (const forbidden of ['Request ID', '/confirmation?request=', 'Continue my agent objective ${linkedGoal.id}', 'Show me my agent objective ${linkedGoal.id']) if (requestClient.includes(forbidden)) failures.push(`Requests surface exposes a retired route or internal identifier pattern: ${forbidden}`);
 for (const marker of ['/confirmations?request=', 'Objective ·', 'Continue the objective for this request.']) if (!requestClient.includes(marker)) failures.push(`Requests surface is missing safe Objective continuation marker ${marker}`);
@@ -112,12 +104,9 @@ if (!head.includes('k-route-${routeSlug}')) failures.push('Route-level screen-se
 if (!head.includes('k-screen-set-${screenSet}')) failures.push('Screen-set classification hook is missing');
 
 const appShell = read('public/js/kurukoo-app-shell.js');
-if (!appShell.includes('kurukoo-webapp-pixel-refinement')) failures.push('Web App runtime does not mount pixel refinement authority');
-if (!appShell.includes('kurukoo-webapp-screen-refinement')) failures.push('Web App runtime does not mount sequential screen refinement authority');
-if (!appShell.includes('kurukoo-webapp-agent-refinement')) failures.push('Web App runtime does not mount first-screen Agent refinement authority');
-if (!appShell.includes("path==='/chat'")) failures.push('Web App Agent page-specific refinement is not scoped to the Agent route');
+if (!appShell.includes('kurukoo-product-os-revamp-runtime')) failures.push('Web App runtime does not mount the final reference authority');
 if (appShell.includes('/app/agent')) failures.push('Web App runtime retains a legacy Agent alias');
-if (!appShell.includes('kurukoo-os-final')) failures.push('Web App runtime does not mount OS final authority');
+for (const retired of ['kurukoo-webapp-pixel-refinement', 'kurukoo-webapp-screen-refinement', 'kurukoo-webapp-agent-refinement', 'kurukoo-os-final']) if (appShell.includes(retired)) failures.push(`Web App runtime retains retired visual layer ${retired}`);
 
 const chat = read('views/partials/chat-workspace.ejs');
 if (!app.includes("section === 'chat'")) failures.push('Shared authenticated shell has no Chat composition branch');
@@ -148,12 +137,7 @@ const chatCompletionCss = read('public/css/kurukoo-chat-visual-completion.css');
 for (const marker of ['chat-content', 'composer', 'chat-inspector', 'data-objective-state', 'agent-goal-event']) if (!chatCompletionCss.includes(marker)) failures.push(`Chat visual completion authority is missing ${marker}`);
 const workspaceCompletionCss = read('public/css/kurukoo-workspace-visual-completion.css');
 for (const marker of ['chat-template-shell', 'workspace-hero-card', 'workspace-panel']) if (!workspaceCompletionCss.includes(marker)) failures.push(`Workspace visual completion authority is missing ${marker}`);
-const pixelCss = read('public/css/kurukoo-webapp-pixel-refinement.css');
-for (const marker of ['k-app-shell', 'k-app-sidebar', 'k-app-title-row', 'k-app-card', 'k-mobile-tabbar', 'workspace-page']) if (!pixelCss.includes(marker)) failures.push(`Pixel refinement authority is missing ${marker}`);
-const screenCss = read('public/css/kurukoo-webapp-screen-refinement.css');
-for (const marker of ['k-app-section-discover', 'k-app-section-requests', 'k-app-section-tasks', 'k-app-section-connect', 'k-app-section-checkout', 'k-app-section-memory', 'k-app-section-agents']) if (!screenCss.includes(marker)) failures.push(`Sequential Web App screen refinement is missing ${marker}`);
-const agentCss = read('public/css/kurukoo-webapp-agent-refinement.css');
-for (const marker of ['.k-app-grid.two .k-app-card:first-child', '.k-app-grid.two .k-app-card:nth-child(2)']) if (!agentCss.includes(marker)) failures.push(`First-screen Agent refinement is missing ${marker}`);
+for (const marker of ['k-reference-app-header', 'k-reference-sidebar', 'k-app-section-chat', 'k-chat-workspace.chat-main', 'composer-wrap', 'k-mobile-tabbar']) if (!sharedRevamp.includes(marker)) failures.push(`Final Web App reference authority is missing ${marker}`);
 
 const nativeUi = read('mobile/kurukoo-mobile/components/kurukoo-ui.tsx');
 for (const marker of ['PlatformStateBanner', 'EvidenceRow', 'ContinuityBand', 'StatusPill']) if (!nativeUi.includes(`function ${marker}`)) failures.push(`Native shared visual primitive missing ${marker}`);
@@ -167,10 +151,10 @@ for (const section of ['providers', 'compliance', 'settings']) if (!adminJs.incl
 const agentAdminCss = read('public/css/admin-console.css');
 for (const marker of ['runtime-readiness-card', 'agent-actions', 'test-agent-card']) if (!agentAdminCss.includes(marker)) failures.push(`Agent operational visual layer is missing ${marker}`);
 
-for (const file of ['index.tsx', 'discover.tsx', 'requests.tsx', 'tasks.tsx', 'connect.tsx']) requireFile(`mobile/kurukoo-mobile/app/(tabs)/${file}`, 'Native surface');
+for (const file of ['index.tsx', 'discover.tsx', 'requests.tsx', 'tasks.tsx', 'more.tsx', 'connect.tsx']) requireFile(`mobile/kurukoo-mobile/app/(tabs)/${file}`, 'Native surface');
 
 const mobileTabs = read('mobile/kurukoo-mobile/app/(tabs)/_layout.tsx');
-const tabExpectations: Record<string, string> = { agent: 'name="index" options={{ title: "Agent" }}', discover: 'name="discover" options={{ title: "Discover" }}', requests: 'name="requests" options={{ title: "Requests" }}', tasks: 'name="tasks" options={{ title: "Tasks" }}', connect: 'name="connect" options={{ title: "Connect" }}' };
+const tabExpectations: Record<string, string> = { agent: 'name="index" options={{ title: "Agent" }}', discover: 'name="discover" options={{ title: "Discover" }}', requests: 'name="requests" options={{ title: "Requests" }}', tasks: 'name="tasks" options={{ title: "Tasks" }}', more: 'name="more" options={{ title: "More" }}' };
 for (const domain of MOBILE_PRIMARY_NAVIGATION) { const expected = tabExpectations[domain]; if (!expected || !mobileTabs.includes(expected)) failures.push(`Native primary navigation missing ${domain}`); }
 
 const registryFamilies = new Set(CLIENT_SURFACES.map(surface => surface.family));

@@ -20,7 +20,7 @@ const viewports = [
 ];
 const routes = [
   { path: '/desk', required: ['Kurukoo Brief', 'What needs you now', 'Recent outcomes'], selector: '[data-desk-convergence]' },
-  { path: '/chat', required: ['What would you like to move forward?'], domRequired: ['Current work'], selector: '#message-input', contextControl: '#memory-toggle' },
+  { path: '/chat', required: ['How can Kurukoo help today?', 'Coordinate what matters', 'History'], selector: '#message-input', focusedAgent: true },
   { path: '/requests', required: ['Requests Kurukoo is moving forward', 'Needs you'], selector: '[data-requests-list]' },
   { path: '/tasks', required: ['Small steps that move work forward', 'Ready to do'], selector: '[data-tasks-list]' },
   { path: '/notifications', required: ['Changes and decisions that matter'], selector: '[data-notifications-root]' },
@@ -32,6 +32,7 @@ const routes = [
   { path: '/wallet', required: ['Economic balances and payment evidence', 'Plan and billing'], selector: '.k-app-container' },
   { path: '/reminders', required: ['Create and review scheduled help', 'Pause, resume or cancel without losing context'], selector: '.k-app-container' },
   { path: '/safety', required: ['Safety context, trusted contacts and check-ins'], selector: '.k-app-container' },
+  { path: '/call', required: ['Call a confirmed participant', 'Call safety and readiness', 'Start call'], selector: '.k-call-workspace' },
 ];
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -151,9 +152,9 @@ try {
           viewportWidth: innerWidth,
           horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 2,
           visibleError: /internal server error|application error|unable to render/i.test(document.body.innerText),
-          contextControlVisible: ${route.contextControl ? `(() => { const node = document.querySelector(${JSON.stringify(route.contextControl)}); if (!node) return false; const style = getComputedStyle(node); return style.display !== 'none' && style.visibility !== 'hidden'; })()` : 'true'},
+          focusedAgent: ${route.focusedAgent ? `(() => { const input = document.querySelector('#message-input'); const inspector = document.querySelector('#chat-inspector'); return Boolean(input) && !document.querySelector('#quick-actions, #composer-quick-actions') && Boolean(inspector?.hidden) && Boolean(document.querySelector('#header-account.k-reference-account-menu')); })()` : 'true'},
           referenceShell: Boolean(document.querySelector('.k-reference-shell, .k-reference-app-header, .k-reference-sidebar')),
-          globalToolsPresent: ['k-reference-header-search','header-nearby-radar','header-call','header-points','header-cart','header-account','header-drawer'].every((id) => Boolean(document.getElementById(id))),
+          globalToolsPresent: ['k-reference-header-search','header-nearby-radar','header-points','header-cart','header-account'].every((id) => Boolean(document.getElementById(id))) && !document.getElementById('header-call') && Boolean(document.querySelector('.k-ask-kurukoo-launcher')),
           agentCreationScoped: (location.pathname === '/chat' || location.pathname === '/chat/') ? Boolean(document.querySelector('#new-chat.k-reference-new-conversation')) : !document.querySelector('#new-chat'),
           desktopPaneModel: innerWidth > 1024 ? Boolean(document.querySelector('.k-reference-sidebar')) && ((location.pathname === '/chat' || location.pathname === '/chat/') ? Boolean(document.querySelector('.chat-inspector')) : Boolean(document.querySelector('.k-reference-context-rail'))) : true,
           tabletDrawerModel: innerWidth > 767 && innerWidth <= 1024 ? Boolean(document.querySelector('#open-sidebar')) && Boolean(document.querySelector('.k-reference-sidebar')) : true,
@@ -166,7 +167,7 @@ try {
           ...(route.domRequired || []).map((expected) => ({ expected: `${expected} (inspector)`, pass: layout.domText.toLowerCase().includes(expected.toLowerCase()) })),
         ];
         const pass = layout.url === route.path.replace(/\/$/, '') || layout.url === `${route.path.replace(/\/$/, '')}/`;
-        const finalPass = pass && layout.hasShell && layout.referenceShell && layout.globalToolsPresent && layout.agentCreationScoped && layout.desktopPaneModel && layout.tabletDrawerModel && layout.mobileMoreModel && layout.mobileMoreInteraction && layout.selectorVisible && layout.contextControlVisible && !layout.horizontalOverflow && !layout.visibleError && textChecks.every((check) => check.pass);
+        const finalPass = pass && layout.hasShell && layout.referenceShell && layout.globalToolsPresent && layout.agentCreationScoped && layout.desktopPaneModel && layout.tabletDrawerModel && layout.mobileMoreModel && layout.mobileMoreInteraction && layout.selectorVisible && layout.focusedAgent && !layout.horizontalOverflow && !layout.visibleError && textChecks.every((check) => check.pass);
         const screenshot = await cdp.send('Page.captureScreenshot', { format: 'png', fromSurface: true });
         const safeRoute = route.path.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '') || 'root';
         await fs.writeFile(path.join(outputDir, `${viewport.name}-${safeRoute}.png`), Buffer.from(screenshot.data, 'base64'));
@@ -178,7 +179,7 @@ try {
   }
   const failed = results.filter((result) => !result.pass);
   await fs.writeFile(path.join(outputDir, 'report.json'), JSON.stringify({ baseUrl, generatedAt: new Date().toISOString(), results, summary: { total: results.length, passed: results.length - failed.length, failed: failed.length } }, null, 2));
-  console.log(JSON.stringify({ summary: { total: results.length, passed: results.length - failed.length, failed: failed.length }, failures: failed.map((result) => ({ viewport: result.viewport, route: result.route, overflow: result.layout.horizontalOverflow, selectorVisible: result.layout.selectorVisible, referenceShell: result.layout.referenceShell, globalToolsPresent: result.layout.globalToolsPresent, agentCreationScoped: result.layout.agentCreationScoped, desktopPaneModel: result.layout.desktopPaneModel, tabletDrawerModel: result.layout.tabletDrawerModel, mobileMoreModel: result.layout.mobileMoreModel, mobileMoreInteraction: result.layout.mobileMoreInteraction, missingText: result.textChecks.filter((check) => !check.pass).map((check) => check.expected) })) }, null, 2));
+  console.log(JSON.stringify({ summary: { total: results.length, passed: results.length - failed.length, failed: failed.length }, failures: failed.map((result) => ({ viewport: result.viewport, route: result.route, overflow: result.layout.horizontalOverflow, selectorVisible: result.layout.selectorVisible, referenceShell: result.layout.referenceShell, globalToolsPresent: result.layout.globalToolsPresent, agentCreationScoped: result.layout.agentCreationScoped, desktopPaneModel: result.layout.desktopPaneModel, tabletDrawerModel: result.layout.tabletDrawerModel, mobileMoreModel: result.layout.mobileMoreModel, mobileMoreInteraction: result.layout.mobileMoreInteraction, focusedAgent: result.layout.focusedAgent, missingText: result.textChecks.filter((check) => !check.pass).map((check) => check.expected) })) }, null, 2));
   if (failed.length) process.exitCode = 1;
 } finally {
   if (!chrome.killed) chrome.kill('SIGTERM');

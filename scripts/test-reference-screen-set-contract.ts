@@ -16,16 +16,14 @@ for (const marker of [
   'k-reference-app-header',
   'k-reference-header-search',
   'header-nearby-radar',
-  'header-call',
   'header-messages',
   'header-notifications',
   'header-points',
   'header-cart',
   'header-account',
-  'header-drawer',
+  'k-reference-account-menu',
   'k-reference-primary-nav',
   'k-reference-secondary-nav',
-  'k-reference-account-nav',
   'k-reference-context-rail',
   'k-reference-mobile-more',
   'k-settings-hub',
@@ -47,13 +45,15 @@ for (const [label, href] of [
   ['Channels', '/channels'],
 ] as const) assert.ok(app.includes(`href="${href}"`), `${label} must retain the canonical destination ${href}`);
 
+assert.ok(!app.includes('id="header-call"'), 'global Call must not appear without a confirmed conversation participant');
+assert.ok(app.includes('partials/call-workspace'), 'Call must use the shared readiness-aware workspace when opened from a confirmed participant conversation');
 assert.ok(app.includes('id="new-chat"'), 'New conversation must stay wired to the canonical conversation runtime');
 assert.ok(app.includes('k-reference-new-conversation'), 'New conversation must be visually and semantically scoped to agent workflow');
 assert.ok(!app.includes('k-app-header-location'), 'reference shell must not duplicate section titles in the application header');
 assert.ok(!app.includes('Continue from Desk, a detail, or Chat.'), 'generic duplicated workspace guidance must be removed');
 assert.ok(!app.includes('href="/settings" class="k-app-primary"'), 'settings must not use a primary CTA that loops to itself');
-assert.ok(app.includes('Explore capabilities'), 'low-frequency product discovery must remain reachable through the structured header overflow');
-assert.match(app, /if \(section !== 'settings'\)/, 'Settings must omit the shared generic page title and CTA so its dedicated hub is the single page heading');
+assert.ok(app.includes('Explore capabilities'), 'low-frequency product discovery must remain reachable through the structured account/configuration menu');
+assert.match(app, /if \(!\['settings', 'call'\]\.includes\(section\)\)/, 'Settings and the focused Call workspace must omit the shared generic page title and CTA so each dedicated surface has one clear heading');
 assert.match(app, /section === 'discover'.*href="\/topics".*href="\/opportunities"/s, 'Discover must lead to adjacent community and opportunity workflows rather than to itself');
 assert.match(app, /section === 'opportunities'.*href="\/discover".*href="\/network"/s, 'Opportunities must link to the related discovery and network workflows');
 
@@ -72,7 +72,14 @@ for (const marker of [
 ]) assert.ok(shellCss.includes(marker), `reference responsive visual rule is missing: ${marker}`);
 
 assert.ok(workspaceRuntime.includes('referenceMobileMore'), 'mobile More control must be managed by the shared workspace runtime');
-assert.ok(appShellRuntime.includes("document.querySelector('.k-reference-shell')"), 'focused reference shells must suppress the inherited floating feature launcher');
+assert.ok(!appShellRuntime.includes('k-feature-compass'), 'shared runtime must not revive the retired feature compass panel');
+assert.ok(appShellRuntime.includes('k-ask-kurukoo-launcher'), 'shared runtime must restore the standalone Ask Kurukoo launcher');
+assert.ok(appShellRuntime.includes("window.location.assign('/chat')"), 'Ask Kurukoo launcher must route to the canonical Agent surface outside Chat');
+assert.ok(primaryChatRuntime.includes('renderProviderConversationCard'), 'provider messaging/calling controls must render only from the exact selected-provider conversation context');
+assert.ok(primaryChatRuntime.includes('/api/provider-communication/sessions'), 'provider messaging controls must use the canonical participant-scoped communication API');
+assert.ok(primaryChatRuntime.includes('current.roomId'), 'Call must be offered only when the provider session reports a real WebRTC room');
+assert.ok(primaryChatRuntime.includes('provider-call-action'), 'confirmed-provider Call must remain a contextual conversation action');
+assert.ok(primaryChatRuntime.includes('Call ${providerName}'), 'contextual Call must retain an accessible participant-specific name');
 assert.ok(authenticatedAdsRuntime.includes("document.querySelector('.k-reference-shell')"), 'reference workspaces must suppress legacy left-rail campaign injection and retain only the Agent-owned sponsored placement');
 assert.ok(workspaceRuntime.includes('toggleChatSidebar'), 'drawer control must use the shared navigation behavior');
 assert.ok(primaryChatRuntime.includes("$('new-chat')"), 'Chat runtime must retain canonical new-conversation behavior');
