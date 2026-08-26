@@ -1183,6 +1183,8 @@
   function pushAgentSurfaceToast(title, detail, needsResponse = false) {
     const region = $('chat-toast-region'); if (!region) return;
     const toast = makeElement('div', 'chat-toast chat-toast-agent');
+    toast.setAttribute('role', needsResponse ? 'alert' : 'status');
+    toast.setAttribute('aria-live', needsResponse ? 'assertive' : 'polite');
     const copy = makeElement('div', 'chat-toast-copy'); copy.append(makeElement('strong', '', title || 'Kurukoo update'), makeElement('span', '', String(detail || '').slice(0, 360)));
     const close = makeElement('button', 'chat-toast-close'); close.type = 'button'; close.setAttribute('aria-label', 'Dismiss Kurukoo update'); close.title = 'Dismiss'; close.append(makeIcon('close', 'Dismiss')); close.addEventListener('click', () => toast.remove());
     if (needsResponse) toast.dataset.needsResponse = 'true';
@@ -1211,7 +1213,14 @@
     bubble.appendChild(status);
   }
   async function sendMessage(raw) {
-    const text = String(raw || input.value || '').trim(); if (!text || state.busy || !(await ensureIdentity())) return;
+    const text = String(raw || input.value || '').trim();
+    if (!text || state.busy) return;
+    if (!(await ensureIdentity())) {
+      input?.setAttribute('aria-invalid', 'true');
+      pushAgentSurfaceToast('Kurukoo is unavailable', 'Your message is still in the composer. Check your connection and try again.', true);
+      return;
+    }
+    input?.removeAttribute('aria-invalid');
     const surfaceActive = Boolean(state.surfaceView);
     state.controller = new AbortController(); setComposerBusy(true); setConnection(true); input.value = ''; clearComposerDraft();
     let attachment = state.attached;

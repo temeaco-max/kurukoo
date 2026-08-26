@@ -94,6 +94,7 @@ for (const forbidden of ['Task #${escape(task.id)}', 'Task ${task?.id || \'\'}',
 for (const marker of ['Part of an objective', 'Part of a request', 'Waiting for earlier work']) if (!taskClient.includes(marker)) failures.push(`Tasks surface lacks user-safe Objective/task continuity marker ${marker}`);
 const primaryChat = read('public/js/kurukoo-primary-chat.js');
 for (const marker of ['waiting_on_dependency', 'Waiting for earlier work', 'dataset.objectiveState', 'A confirmed step was recorded.']) if (!primaryChat.includes(marker)) failures.push(`Chat Objective presentation is missing ${marker}`);
+for (const marker of ["input?.setAttribute('aria-invalid', 'true')", 'Kurukoo is unavailable', 'Your message is still in the composer', "toast.setAttribute('role', needsResponse ? 'alert' : 'status')"]) if (!primaryChat.includes(marker)) failures.push(`Chat unavailability feedback is missing ${marker}`);
 if (!app.includes('k-app-section-<%= section %>')) failures.push('Authenticated Web App lacks explicit section identity hook');
 if (!app.includes('href="/topics"')) failures.push('Authenticated Web App navigation is missing Topics');
 if (!app.includes("section === 'topics'")) failures.push('Authenticated Web App has no Topics representation');
