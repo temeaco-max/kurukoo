@@ -1435,6 +1435,8 @@
         state.notifiedTrustChallengeIds.add(challenge.id);
         if (!toastRegion) return;
         const toast = makeElement('div', 'chat-toast chat-toast--approval');
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
         const copy = makeElement('div');
         copy.append(makeElement('strong', '', 'Approve this Kurukoo device'), makeElement('span', '', 'A new browser is asking to continue your account.'));
         const actions = makeElement('div', 'chat-toast-actions');
