@@ -12,7 +12,8 @@ export interface AgentObjectiveEvaluationInput {
   evidenceRequired?: boolean;
 }
 
-export interface AgentObjectiveEvaluation extends AgentQualityDecision {
+export interface AgentObjectiveEvaluation extends Omit<AgentQualityDecision, 'verdict'> {
+  verdict: 'pass' | 'needs_user' | 'blocked' | 'failed';
   traceCount: number;
   latestStatus?: string;
   evidencePresent: boolean;
@@ -69,5 +70,6 @@ export async function evaluateAgentObjective(
     externalOutcomeClaimed: hasExternalOutcomeClaim(trace),
     externallyVerified,
   });
-  return { ...decision, traceCount: trace.length, latestStatus, evidencePresent, externallyVerified };
+  const verdict: AgentObjectiveEvaluation['verdict'] = decision.verdict === 'fail' ? 'failed' : decision.verdict;
+  return { ...decision, verdict, traceCount: trace.length, latestStatus, evidencePresent, externallyVerified };
 }
