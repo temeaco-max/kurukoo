@@ -142,6 +142,8 @@
     today.appendChild(todayList);
 
     const continueCard = makeDeskModule('continue-conversation','Continue conversation','Pick up where you left off','Continue with the same Agent relationship and exact source context.',[{label:'Open Chat',href:'/chat',tone:'primary'}]);
+    const agentObjectivesCard = makeDeskModule('agent-objectives','Agent objectives','What Kurukoo is doing','Active objectives remain owner-scoped, evidence-bound and resumable from their canonical Goal lifecycle.',[{label:'Open Agents',href:'/agents',tone:'primary'}]);
+    agentObjectivesCard.appendChild(makeDeskState('empty','No active Agent objectives','When an objective is active, waiting, blocked or needs your input, its truthful progress appears here.',{label:'Ask Agent',href:'/chat'}));
     const requestCard = makeDeskModule('active-requests','Active requests','Work in motion','Request state stays owned by the canonical Economic Request lifecycle.',[{label:'View Requests',href:'/requests',tone:'primary'}]);
     requestCard.appendChild(makeDeskState('empty','No active requests are surfaced here yet','Desk does not invent provider, payment or fulfilment status.',{label:'Open Requests',href:'/requests'}));
     const taskCard = makeDeskModule('tasks-reminders','Tasks & reminders','Work to finish','Use the canonical Tasks and reminder context without creating a parallel queue.',[{label:'View Tasks',href:'/tasks',tone:'primary'}]);
@@ -157,7 +159,7 @@
     const channelsCard = makeDeskModule('connected-channels','Connected channels','Your communication readiness','Channel connection and delivery state remain owned by Connect and external activation boundaries.',[{label:'Manage Connect',href:'/connect',tone:'primary'}]);
     channelsCard.appendChild(makeDeskState('ready','Channel readiness lives in Connect','Desk keeps this module lightweight and contextual.',{label:'Open Connect',href:'/connect'}));
 
-    [today,continueCard,requestCard,taskCard,opportunityCard,pointsCard,topicsCard,guideCard,sponsorCard,channelsCard].forEach((card)=>main.appendChild(card));
+    [today,continueCard,agentObjectivesCard,requestCard,taskCard,opportunityCard,pointsCard,topicsCard,guideCard,sponsorCard,channelsCard].forEach((card)=>main.appendChild(card));
 
     const pulse=makeDeskModule('pulse','Pulse','What is moving around your work','A contextual activity/timeline view belongs in the right rail.',[{label:'Open Notifications',href:'/notifications'}]);
     pulse.appendChild(makeDeskState('empty','No live pulse is surfaced in this static state','Current notifications and activities remain available from their canonical sources.'));

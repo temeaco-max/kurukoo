@@ -75,6 +75,61 @@
     module.appendChild(list);
   };
 
+  const goalPresenceLabel = (status) => ({
+    active: 'Working',
+    waiting: 'Waiting',
+    waiting_on_dependency: 'Waiting on another objective',
+    needs_user: 'Needs your input',
+    blocked: 'Blocked',
+    completed: 'Completed',
+    cancelled: 'Cancelled',
+    failed: 'Failed',
+    expired: 'Expired',
+  }[String(status || '').toLowerCase()] || humanize(status));
+
+  const goalActivityLabel = (event) => {
+    const kind = String(event?.kind || '');
+    const status = String(event?.status || '');
+    if (kind === 'goal_started') return 'Kurukoo started working on this objective';
+    if (kind === 'tool_call' && status === 'started') return 'Kurukoo is carrying out the next step';
+    if (kind === 'tool_call' && status === 'completed') return 'Kurukoo completed a step and checked the result';
+    if (kind === 'authorization') return status === 'satisfied' ? 'Permission checks passed' : 'Permission is required before continuing';
+    if (kind === 'evidence') return 'Supporting evidence was recorded';
+    if (kind === 'outcome') return status === 'completed' ? 'Kurukoo verified the recorded outcome' : `Kurukoo updated this objective: ${humanize(status)}`;
+    if (kind === 'quality_evaluated') return status === 'pass' ? 'Kurukoo checked the recorded outcome' : 'Kurukoo paused safely while it checks the outcome';
+    if (kind === 'execution_stopped') return 'Kurukoo paused safely at its execution limit';
+    if (kind === 'continuation') return 'Kurukoo scheduled the next step';
+    return 'Kurukoo updated this objective';
+  };
+
+  const safeBlockedByLabel = (blockedBy) => {
+    const safe = blockedBy
+      .map((value) => String(value || '').trim())
+      .filter((value) => value && value.length <= 140)
+      .filter((value) => !/(?:^goal:|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|token|secret|prompt|argument|payload)/i.test(value));
+    return safe.length ? `Waiting on: ${safe.slice(0, 2).join(', ')}` : blockedBy.length ? 'Waiting on a prerequisite objective' : '';
+  };
+
+  const goalRow = (goal, continuation, trace, order = 0) => {
+    const goalStatus = String(goal?.status || '').toLowerCase();
+    const objective = String(goal?.objective || goal?.summary || 'Agent objective').slice(0, 100);
+    const latest = Array.isArray(trace) && trace.length ? trace[trace.length - 1] : null;
+    const blockers = Array.isArray(continuation?.blockedBy) ? continuation.blockedBy.filter(Boolean).slice(0, 2) : [];
+    const detail = [
+      goalPresenceLabel(goalStatus),
+      safeBlockedByLabel(blockers) || (continuation?.nextAction ? `Next: ${continuation.nextAction}` : ''),
+      latest ? `Latest: ${goalActivityLabel(latest)}` : '',
+      latest?.createdAt ? formatDate(latest.createdAt) : formatDate(goal?.updatedAt || goal?.updated_at),
+    ].filter(Boolean).join(' · ');
+    return {
+      status: goalStatus,
+      order,
+      label: objective,
+      detail,
+      href: '/agents',
+    };
+  };
+
   const waitForComposition = () => new Promise((resolve) => {
     const found = document.querySelector('[data-desk-convergence="phase1"]');
     if (found) return resolve(found);
@@ -121,6 +176,26 @@
       ? (Array.isArray(goalsR.value?.goals) ? goalsR.value.goals : Array.isArray(goalsR.value) ? goalsR.value : [])
       : [];
     const points = pointsR.ok ? Number(pointsR.value?.points ?? pointsR.value?.balance ?? 0) : null;
+    const goalContinuations = new Map();
+    const goalTraces = new Map();
+    const visibleGoalStatuses = new Set(['active', 'waiting', 'waiting_on_dependency', 'needs_user', 'blocked']);
+    const goalStatusPriority = { needs_user: 0, blocked: 1, waiting_on_dependency: 2, active: 3, waiting: 4 };
+    const goalDetails = goals
+      .map((goal, order) => ({ goal, order, status: String(goal?.status || '').toLowerCase() }))
+      .filter(({ status }) => visibleGoalStatuses.has(status))
+      .sort((a, b) => (goalStatusPriority[a.status] ?? 99) - (goalStatusPriority[b.status] ?? 99) || a.order - b.order)
+      .slice(0, 4);
+    if (goalsR.ok) {
+      for (const { goal } of goalDetails) {
+        const goalId = String(goal?.id || '');
+        if (!goalId) continue;
+        const continuationR = await settle(api(`/api/agent/goals/${encodeURIComponent(goalId)}/continuation`));
+        const traceR = await settle(api(`/api/agent/goals/${encodeURIComponent(goalId)}/trace?limit=3`));
+        if (continuationR.ok && continuationR.value?.continuation) goalContinuations.set(goalId, continuationR.value.continuation);
+        if (traceR.ok && Array.isArray(traceR.value?.trace)) goalTraces.set(goalId, traceR.value.trace);
+      }
+    }
+    const goalRows = goals.map((goal, order) => goalRow(goal, goalContinuations.get(String(goal?.id || '')), goalTraces.get(String(goal?.id || '')), order));
 
     const attention = [];
     const progress = [];
@@ -180,20 +255,11 @@
       else progress.push({ label, detail, href });
     });
 
-    // Agent Goals: surface real, owner-scoped Agent Goals in today's flow
-    goals.forEach((goal) => {
-      const goalStatus = String(goal.status || '').toLowerCase();
-      const id = String(goal.id || '').slice(0, 8);
-      const label = `${String(goal.objective || goal.summary || 'Agent goal').slice(0, 80)}${id ? ` · ${id}` : ''}`;
-      const detail = `Status: ${humanize(goalStatus)}`;
-      const href = `/chat?prompt=${encodeURIComponent(`Show me my agent objective ${goal.id || ''}`)}`;
-      if (['needs_user', 'blocked'].includes(goalStatus)) {
-        attention.push({ label, detail, href });
-      } else if (['active', 'waiting'].includes(goalStatus)) {
-        progress.push({ label, detail, href });
-      } else if (['completed', 'cancelled', 'failed', 'expired'].includes(goalStatus)) {
-        cont.push({ label, detail, href });
-      }
+    // Agent Goals: consume the existing owner-scoped continuation and trace projections.
+    goalRows.forEach((row) => {
+      if (['needs_user', 'blocked'].includes(row.status)) attention.push(row);
+      else if (['active', 'waiting', 'waiting_on_dependency'].includes(row.status)) progress.push(row);
+      else if (['completed', 'cancelled', 'failed', 'expired'].includes(row.status)) cont.push(row);
     });
 
     const today = composition.querySelector('[data-desk-module="today-flow"]');
@@ -212,6 +278,16 @@
         todayList.appendChild(flowRow('Open Requests', '/requests', 'No active economic requests'));
         todayList.appendChild(flowRow('Open Tasks', '/tasks', 'No task work waiting'));
       }
+    }
+
+    const agentObjectives = composition.querySelector('[data-desk-module="agent-objectives"]');
+    if (!goalsR.ok) {
+      setModuleState(agentObjectives, 'unavailable', 'Agent objective state unavailable', 'Kurukoo could not read your canonical objective activity.', { label: 'Open Agents', href: '/agents' });
+    } else {
+      const visibleGoalRows = goalRows
+        .filter((row) => visibleGoalStatuses.has(row.status))
+        .sort((a, b) => (goalStatusPriority[a.status] ?? 99) - (goalStatusPriority[b.status] ?? 99) || a.order - b.order);
+      setModuleList(agentObjectives, visibleGoalRows.slice(0, 6), 'No active Agent objectives', 'No Agent objective is currently active, waiting, blocked or awaiting your input.', '/agents');
     }
 
     const requestCard = composition.querySelector('[data-desk-module="active-requests"]');

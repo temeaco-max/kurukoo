@@ -73,6 +73,12 @@ for (const route of CLIENT_SURFACES.filter(s => s.family === 'web' && /^\/(desk|
 for (const route of retiredSingularAliases) if (appRouter.includes(`'${route}'`)) failures.push(`Canonical Web App must not expose retired alias ${route}`);
 
 const app = read('views/app.ejs');
+const deskSystem = read('public/js/kurukoo-desk-system.js');
+const deskData = read('public/js/kurukoo-desk-data.js');
+if (!deskSystem.includes("makeDeskModule('agent-objectives'")) failures.push('Desk lacks a dedicated canonical Agent objectives module');
+for (const marker of ['/api/agent/goals', '/continuation', '/trace?limit=3', 'waiting_on_dependency', 'goalActivityLabel', 'goalPresenceLabel', 'safeBlockedByLabel', 'goalStatusPriority']) if (!deskData.includes(marker)) failures.push(`Desk Agent objective projection is missing ${marker}`);
+for (const marker of ['slice(0, 4)', 'for (const { goal } of goalDetails)', 'Waiting on a prerequisite objective']) if (!deskData.includes(marker)) failures.push(`Desk Agent objective projection is missing bounded safe hydration ${marker}`);
+if (deskData.includes('raw tool arguments') || deskData.includes('provider secrets') || deskData.includes('blockers.join')) failures.push('Desk Agent objective projection must not expose internal execution details or raw dependency identifiers');
 if (!app.includes('k-app-section-<%= section %>')) failures.push('Authenticated Web App lacks explicit section identity hook');
 if (!app.includes('href="/topics"')) failures.push('Authenticated Web App navigation is missing Topics');
 if (!app.includes("section === 'topics'")) failures.push('Authenticated Web App has no Topics representation');
