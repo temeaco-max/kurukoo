@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 const staged = execFileSync('git', ['diff', '--cached', '--no-ext-diff', '--unified=0'], {
   encoding: 'utf8',
   stdio: ['ignore', 'pipe', 'pipe'],
+  maxBuffer: 64 * 1024 * 1024,
 });
 const additions = staged
   .split('\n')

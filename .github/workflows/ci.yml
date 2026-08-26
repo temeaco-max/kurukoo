@@ -90,6 +90,8 @@ jobs:
         run: NODE_ENV=development node scripts/production-preflight.mjs
       - name: Infrastructure manifests
         run: cp .env.example .env && POSTGRES_PASSWORD=ci-only-dont-use docker compose -f docker-compose.production.yml config --quiet
+      - name: Production deployment contract
+        run: npm run test:production-deployment-contract
       - name: Build production container
         run: docker build --file Dockerfile --tag kurukoo:ci .
       - run: npm audit --omit=dev --audit-level=critical
@@ -166,12 +168,14 @@ jobs:
           OUT3=$(NODE_ENV=production KURUKOO_DATABASE_MODE=postgres KURUKOO_POSTGRES_APPLICATION_INTEGRATED=true \
             JWT_SECRET="$JWT" node scripts/production-preflight.mjs 2>&1 || true)
           echo "$OUT3" | grep -q '"status": "blocked"' || { echo "FAIL: missing DATABASE_URL was not blocked"; exit 1; }
-          echo "== case 4: all technical requirements satisfied -> activation technically possible =="
+          echo "== case 4: technical flags cannot override legacy SQL.js call surfaces =="
           OUT4=$(NODE_ENV=production KURUKOO_DATABASE_MODE=postgres KURUKOO_POSTGRES_APPLICATION_INTEGRATED=true \
+            KURUKOO_SECRET_SOURCE=secret_manager \
+            KURUKOO_STORAGE_MODE=object_storage \
             DATABASE_URL="postgres://postgres:postgres@localhost:5432/kurukoo_domain_ci" JWT_SECRET="$JWT" \
             node scripts/production-preflight.mjs 2>&1 || true)
           echo "$OUT4"
-          if echo "$OUT4" | grep -q '"status": "blocked"'; then echo "FAIL: fully satisfied environment must not be blocked"; exit 1; fi
+          echo "$OUT4" | grep -q '"status": "blocked"' || { echo "FAIL: legacy SQL.js call surfaces were not blocked"; exit 1; }
           echo "FAIL-CLOSED MATRIX OK"
 
   fasttext:

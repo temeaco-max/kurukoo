@@ -192,10 +192,10 @@ router.post('/complete-challenge', authRateLimit, async (req, res) => {
       db.run('UPDATE memory_profiles SET email_verified_at = CURRENT_TIMESTAMP WHERE phone = ?', [challenge.phone]);
       saveDb();
       const session = await finalizeAuthenticatedSession(challenge.phone, res, { name: challenge.name, email, guestPhone: challenge.guestPhone });
-      return res.json({ success: true, ...session, provisional: true, returnPath: sanitizeReturnPath(challenge.returnPath) || '/chat', message: 'Email credential connected. Your identity remains provisional until you prove a phone or channel.' });
+      return res.json({ success: true, ...session, provisional: true, returnPath: sanitizeReturnPath(challenge.returnPath) || '/desk', message: 'Email credential connected. Your identity remains provisional until you prove a phone or channel.' });
     }
     const session = await finalizeAuthenticatedSession(challenge.phone, res, { name: challenge.name, email, guestPhone: challenge.guestPhone });
-    res.json({ success: true, ...session, provisional: false, returnPath: sanitizeReturnPath(challenge.returnPath) || '/chat', message: challenge.purpose === 'push_reauth' ? 'Sign-in approved from your existing Kurukoo device.' : 'You are signed in.' });
+    res.json({ success: true, ...session, provisional: false, returnPath: sanitizeReturnPath(challenge.returnPath) || '/desk', message: challenge.purpose === 'push_reauth' ? 'Sign-in approved from your existing Kurukoo device.' : 'You are signed in.' });
   } catch (error: any) { console.error('[Auth] complete-challenge failed:', error); res.status(500).json({ success: false, message: error.message || 'Unable to complete sign-in link' }); }
 });
 

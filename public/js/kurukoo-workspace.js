@@ -36,6 +36,22 @@
   };
 
   const humanize = (value) => String(value || 'Not yet available').replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+  const stateTone = (value) => {
+    const state = String(value || '').toLowerCase();
+    if (['active', 'requested', 'awaiting_match', 'partially_matched', 'matched', 'quoting', 'paid', 'in_fulfillment', 'in_progress'].includes(state)) return 'active';
+    if (['waiting', 'waiting_on_dependency', 'quoted', 'reserved'].includes(state)) return 'waiting';
+    if (['needs_user', 'awaiting_confirmation', 'payment_pending', 'needs-input'].includes(state)) return 'needs_user';
+    if (['blocked', 'failed', 'cancelled', 'expired', 'rejected', 'unavailable', 'disabled'].includes(state)) return state === 'cancelled' || state === 'expired' ? 'unavailable' : state;
+    if (['completed', 'approved', 'fulfilled', 'connected', 'ready', 'verified'].includes(state)) return 'completed';
+    return '';
+  };
+  const stateLabel = (value) => ({
+    active: 'Working', requested: 'Working', awaiting_match: 'Waiting for a match', partially_matched: 'Working', matched: 'Working', quoting: 'Working', paid: 'Working', in_fulfillment: 'Working', in_progress: 'In progress',
+    waiting: 'Waiting', waiting_on_dependency: 'Waiting for earlier work', quoted: 'Waiting for your choice', reserved: 'Waiting for your choice',
+    needs_user: 'Your input is needed', awaiting_confirmation: 'Your input is needed', payment_pending: 'Your input is needed',
+    blocked: 'Paused safely', failed: 'Needs review', cancelled: 'Stopped', expired: 'Expired', rejected: 'Unavailable', unavailable: 'Unavailable', disabled: 'Disabled',
+    completed: 'Completed', approved: 'Completed', fulfilled: 'Completed', connected: 'Connected', ready: 'Ready', verified: 'Verified', available: 'Available',
+  }[String(value || '').toLowerCase()] || humanize(value));
   const clear = (element) => { if (element) element.replaceChildren(); };
   const setEmpty = (selector, visible) => qs(selector)?.toggleAttribute('hidden', !visible);
 
@@ -46,7 +62,7 @@
     const heading = document.createElement('h3'); heading.textContent = title; card.appendChild(heading);
     if (detail) { const paragraph = document.createElement('p'); paragraph.textContent = detail; card.appendChild(paragraph); }
     const footer = document.createElement('div'); footer.className = 'workspace-data-card-footer';
-    if (state) { const status = document.createElement('span'); status.className = 'status-pill'; status.textContent = state; footer.appendChild(status); }
+    if (state) { const status = document.createElement('span'); status.className = 'status-pill'; status.dataset.state = stateTone(state); status.textContent = stateLabel(state); card.dataset.state = status.dataset.state; footer.appendChild(status); }
     if (action) footer.appendChild(action);
     if (footer.childNodes.length) card.appendChild(footer);
     return card;
@@ -76,7 +92,7 @@
         action.className = 'workspace-text-action';
         action.href = `/chat?prompt=${encodeURIComponent(`Continue my ${request.skill || 'request'}`)}`;
         action.textContent = 'Continue in chat';
-        list.appendChild(makeDataCard({ eyebrow: humanize(request.category || 'Request'), title: humanize(request.skill || request.category || 'Request'), detail: requestSummary(request), state: humanize(request.status), action }));
+        list.appendChild(makeDataCard({ eyebrow: humanize(request.category || 'Request'), title: humanize(request.skill || request.category || 'Request'), detail: requestSummary(request), state: request.status, action }));
       });
       list.setAttribute('aria-busy', 'false');
       setEmpty('[data-requests-empty]', requests.length === 0);
@@ -205,7 +221,7 @@
           action.textContent = status === 'in_progress' ? 'Continue task context' : 'Open source context';
           action.setAttribute('aria-label', `${action.textContent}: ${taskTitle(task)}`);
         }
-        list.appendChild(makeDataCard({ eyebrow: humanize(task.category || task.kind || 'Task'), title: taskTitle(task), detail: taskDetail(task), state: humanize(status), action }));
+        list.appendChild(makeDataCard({ eyebrow: humanize(task.category || task.kind || 'Task'), title: taskTitle(task), detail: taskDetail(task), state: status, action }));
       });
       list.setAttribute('aria-busy', 'false');
       setEmpty('[data-tasks-empty]', tasks.length === 0);
@@ -237,7 +253,7 @@
       reminders.forEach((reminder) => {
         const cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'workspace-text-action'; cancel.textContent = 'Cancel reminder';
         cancel.addEventListener('click', () => cancelReminder(reminder.id, cancel));
-        list.appendChild(makeDataCard({ eyebrow: formatDate(reminder.dueAt || reminder.due_at), title: reminder.title || 'Reminder', detail: reminder.note || 'Created from your Kurukoo conversation.', state: humanize(reminder.status || 'upcoming'), action: cancel }));
+        list.appendChild(makeDataCard({ eyebrow: formatDate(reminder.dueAt || reminder.due_at), title: reminder.title || 'Reminder', detail: reminder.note || 'Created from your Kurukoo conversation.', state: reminder.status || 'upcoming', action: cancel }));
       });
       setEmpty('[data-reminders-empty]', reminders.length === 0);
       return reminders;

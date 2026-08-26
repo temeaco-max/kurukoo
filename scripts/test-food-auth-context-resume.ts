@@ -31,6 +31,7 @@ await new Promise<void>((resolve, reject) => { server.once('listening', resolve)
 const address = server.address() as AddressInfo;
 const baseUrl = `http://127.0.0.1:${address.port}`;
 const { handleConversationalAuth, setAuthState } = await import('../src/services/conversationalAuthService.js');
+const { getFulfilmentForEconomicRequest } = await import('../src/services/canonicalFulfilmentService.js');
 
 async function turn(message: string, cookie = '', conversationId?: string): Promise<{ done: StreamDone; cookie: string; authCookie: string }> {
   const response = await fetch(`${baseUrl}/api/chat/stream`, {
@@ -102,10 +103,17 @@ try {
   assert.equal(authCard?.fields?.find((field: any) => field.key === 'location')?.value, 'Ikeja');
   assert.match(String(authenticated.done.fullReply || ''), /resumed the exact request/i, 'Authentication completion must truthfully report continuity.');
   assert.ok(authenticated.authCookie, 'In-chat authentication must attach an authenticated session cookie.');
+  const authenticatedFulfilment = await getFulfilmentForEconomicRequest(process.env.KURUKOO_TEST_PHONE!, resumeRequestId);
+  assert.equal(authenticatedFulfilment?.skill, 'order_food', 'The real Chat request must retain its durable fulfilment projection after authentication.');
+  assert.equal(authenticatedFulfilment?.ownerPhone, process.env.KURUKOO_TEST_PHONE, 'Guest fulfilment ownership must migrate to the authenticated account with its request.');
+  assert.equal(authenticatedFulfilment?.requirements.items, 'rice and yam');
 
   const correction = await turn('Change location to Lekki', authenticated.authCookie, resumeConversationId);
   assert.equal(correction.done.cardData?.requestId, resumeRequestId, 'Correction must target the exact authenticated request.');
   assert.equal(correction.done.cardData?.fields?.find((field: any) => field.key === 'location')?.value, 'Lekki');
+  const correctedFulfilment = await getFulfilmentForEconomicRequest(process.env.KURUKOO_TEST_PHONE!, resumeRequestId);
+  assert.equal(correctedFulfilment?.id, authenticatedFulfilment?.id, 'Corrections must update the same fulfilment record as the exact request.');
+  assert.equal(correctedFulfilment?.requirements.location, 'Lekki', 'Fulfilment requirements must follow the canonical Chat correction.');
 
   const interruption = await turn('What is Kurukoo?', authenticated.authCookie, resumeConversationId);
   assert.notEqual(interruption.done.cardData?.requestId, resumeRequestId, 'An informational interruption must not masquerade as an updated request card.');

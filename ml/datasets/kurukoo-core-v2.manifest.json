@@ -1,0 +1,116 @@
+{
+  "datasetVersion": "kurukoo-core-v2",
+  "generatedAt": "2026-08-26T01:43:34.085Z",
+  "exampleCount": 2397,
+  "splitCounts": {
+    "train": 1912,
+    "validation": 219,
+    "test": 266,
+    "golden": 279,
+    "adversarial": 2118
+  },
+  "fileSha256": {
+    "all": "33b92805c36b38a8ebdb94df2f186499693515e8b68b1852be349d5675f6eb45",
+    "train": "3ea90bc34de702b7e17a1edbfc24e167bf5ef953d3abc0799ccddbaac3da20f0",
+    "validation": "f0e227ca8cdff2af8a9a98b6ae00c3783ac669eb57980a6c195c8617a23d6978",
+    "test": "1576a5ebef9a0223408da56ffabab53b1d763e939711c9c948814d38c4664aac",
+    "golden": "54b3395aeb2f4af17ff7bca0990e9b2368369cf9adfe6ee8ad939be0d99d8428",
+    "adversarial": "c415e89a6e21280b7218de6e6f9e449939aa341771b15265854886c14a76eef7"
+  },
+  "evaluationSets": {
+    "golden": {
+      "count": 279,
+      "status": "candidate_requires_human_curation"
+    },
+    "adversarial": {
+      "count": 2118,
+      "status": "candidate_requires_human_curation"
+    }
+  },
+  "skillCount": 241,
+  "directCapabilityCount": 38,
+  "skillExampleCount": 2169,
+  "capabilityExampleCount": 228,
+  "familyCount": 56,
+  "variantCount": 9,
+  "capabilityVariantCount": 6,
+  "actorCoverage": [
+    "consumer",
+    "provider",
+    "business",
+    "contributor",
+    "agent",
+    "support_operator"
+  ],
+  "channelCoverage": [
+    "web_chat",
+    "pwa",
+    "whatsapp",
+    "telegram",
+    "sms",
+    "ussd",
+    "email",
+    "voice",
+    "linked_device"
+  ],
+  "localeCoverage": [
+    "ng:en",
+    "ng:pidgin",
+    "ng:hausa-influenced",
+    "gh:en",
+    "gb:en",
+    "ca:en",
+    "ca:fr"
+  ],
+  "surfaceCoverage": [
+    "memory",
+    "reminders",
+    "notifications",
+    "points",
+    "subscriptions",
+    "topics",
+    "media",
+    "support",
+    "products",
+    "orders",
+    "cart",
+    "discovery",
+    "provider_interaction",
+    "safety",
+    "consent",
+    "payment_boundary",
+    "locale",
+    "dialect",
+    "agent_representation",
+    "commercial_ledger"
+  ],
+  "variantCoverage": [
+    "normal",
+    "ambiguity",
+    "interruption",
+    "correction",
+    "unavailable",
+    "consent",
+    "channel",
+    "recovery",
+    "linked_device",
+    "inspect",
+    "action",
+    "pidgin",
+    "hausa_influenced"
+  ],
+  "sourceOfTruth": [
+    "src/services/skillCatalogueConvergence.ts",
+    "src/services/skillBehaviourConvergence.ts",
+    "src/services/skillExecutionContract.ts",
+    "src/services/capabilityFoundation.ts",
+    "src/services/capabilityRegistry.ts",
+    "src/services/canonicalChatTurnService.ts",
+    "src/services/featureFlags.ts"
+  ],
+  "teacherOutputAllowed": true,
+  "teacherOutputTrustedAutomatically": false,
+  "productionUserDataIncluded": false,
+  "trainingIsNotRuntimeAuthority": true,
+  "status": "candidate_dataset_requires_validation_and_curation"
+}

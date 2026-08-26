@@ -19,6 +19,7 @@ import { evaluateAgentWork } from '../src/services/agentQualityGate.js';
 import { createConversationGoal, completeAgentGoal, getAgentGoal } from '../src/services/agentRuntime.js';
 import { createCompoundGoalIfRecognized } from '../src/services/compoundGoalLifecycle.js';
 import { syncSubGoalStatusesWithDependencies } from '../src/services/agentEconomicRequestOrchestrator.js';
+import { syncAgentGoalFromCapabilityResult } from '../src/services/agentCapabilityOutcomeService.js';
 
 let pass = 0, failCount = 0;
 process.env.KURUKOO_AGENT_ENABLED = 'true';
@@ -72,6 +73,15 @@ async function main() {
   await completionAndCompoundChecks();
 }
 
+async function completeCompoundChild(phone: string, goalId: string, skill: string, evidence: string) {
+  for (let index = 0; index < 4; index++) {
+    await syncAgentGoalFromCapabilityResult({ phone, goalId, capability: `skill.${skill}`, action: 'prepare_action', idempotencyKey: `${goalId}:quality-runtime:${index}`, outcome: { status: 'completed', capability: `skill.${skill}`, action: 'prepare_action', message: 'Fake provider reports the deterministic lifecycle step completed.', evidence } });
+    const current = await getAgentGoal(phone, goalId);
+    if (current?.status !== 'active') return current;
+  }
+  return getAgentGoal(phone, goalId);
+}
+
 async function completionAndCompoundChecks() {
   // ---- Completion gating: local vs external ----
   const A = `qri-owner-a-${Date.now()}`;
@@ -104,10 +114,10 @@ async function completionAndCompoundChecks() {
   if (res) {
     const parentBlocked = await completeAgentGoal(P, res.parentGoal.id);
     check('D2 parent blocked while children pending', parentBlocked?.status !== 'completed', parentBlocked?.status);
-    await completeAgentGoal(P, res.subGoals[0].id);
+    await completeCompoundChild(P, res.subGoals[0].id, res.subGoals[0].goalType, 'verified fake-provider repair receipt');
     const midParent = await completeAgentGoal(P, res.parentGoal.id);
     check('D3 parent still incomplete with one child open', midParent?.status !== 'completed', midParent?.status);
-    await completeAgentGoal(P, res.subGoals[1].id);
+    await completeCompoundChild(P, res.subGoals[1].id, res.subGoals[1].goalType, 'verified fake-provider sale receipt');
     await syncSubGoalStatusesWithDependencies(P, res.parentGoal.id);
     const parent = await getAgentGoal(P, res.parentGoal.id);
     check('D4 parent completes after children pass', parent?.status === 'completed', parent?.status);

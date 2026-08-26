@@ -34,10 +34,10 @@
       if (!payload?.success || !payload?.identity) return;
       account.classList.remove('is-logged-out');
       account.classList.add('is-logged-in');
-      account.href = '/app/agent';
-      account.title = 'Open your Kurukoo Web App';
-      account.setAttribute('aria-label', 'Open your Kurukoo Web App');
-      label.textContent = 'Open app';
+      account.href = '/desk';
+      account.title = 'Open your Kurukoo desk';
+      account.setAttribute('aria-label', 'Open your Kurukoo desk');
+      label.textContent = 'Open desk';
     } catch {
       // Anonymous public browsing remains the default; no auth claim is made on failure.
     }

@@ -39,13 +39,11 @@ require(appConfig.includes('KURUKOO_PUBLIC_BASE_URL'), 'Native build config must
 require(appConfig.includes('associatedDomains'), 'iOS Universal Links must be configurable from the canonical HTTPS origin.');
 require(appConfig.includes('scheme: "https"') && appConfig.includes('publicHost'), 'Android App Links must be configurable from the canonical HTTPS origin.');
 
-require(deskSystem.includes("'/app/agent': '/chat'"), 'Authenticated web runtime must canonicalize Agent to /chat.');
-require(!deskSystem.includes("'/app/agent': '/desk'"), 'Desk system must not canonicalize Agent to Desk.');
-require(deskLiveHydration.includes("'/app/agent': '/chat'"), 'Desk live hydration must canonicalize Agent to /chat.');
-require(!deskLiveHydration.includes("'/app/agent': '/desk'"), 'Desk live hydration must not canonicalize Agent to Desk.');
-require(osLiveHydration.includes("'/app/agent': '/chat'"), 'OS live hydration must canonicalize Agent to /chat.');
-require(!osLiveHydration.includes("'/app/agent': '/desk'"), 'OS live hydration must not canonicalize Agent to Desk.');
-require(deskSystem.includes("'/app/requests': '/requests'"), 'Authenticated web runtime must canonicalize Requests.');
+for (const [name, source] of [['Desk system', deskSystem], ['Desk live hydration', deskLiveHydration], ['OS live hydration', osLiveHydration]] as const) {
+  require(!source.includes('/app/agent'), `${name} must not retain the retired Agent workspace alias.`);
+  require(!source.includes('/app/requests'), `${name} must not retain the retired Requests workspace alias.`);
+}
+for (const token of ["href:'/chat'", "href:'/requests'"]) require(deskSystem.includes(token), `Desk must link directly to ${token}.`);
 require(deskSystem.includes("'kurukoo-drawer-search'"), 'Desk search drawer must remain mounted.');
 require(deskSystem.includes("'kurukoo-drawer-notifications'"), 'Desk notifications drawer must remain mounted.');
 require(deskSystem.includes("'kurukoo-drawer-profile'"), 'Desk account drawer must remain mounted.');
@@ -58,4 +56,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('Cross-client routing contract passed: canonical Agent/Chat aliasing, Web routes, Desk system drawers, live hydration, /api/v1 bridge, native deep links, and HTTPS app-link configuration are aligned.');
+console.log('Cross-client routing contract passed: direct canonical Web routes, Desk system drawers, live hydration, /api/v1 bridge, native deep links, and HTTPS app-link configuration are aligned.');

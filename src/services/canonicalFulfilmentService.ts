@@ -25,7 +25,7 @@ export type EvidenceLevel = 'none' | 'source_attributed' | 'provider_confirmed' 
 
 const FULFILMENT_TRANSITIONS: Record<FulfilmentStatus, FulfilmentStatus[]> = {
   draft: ['gathering_requirements', 'searching', 'cancelled', 'blocked', 'failed'],
-  gathering_requirements: ['searching', 'cancelled', 'blocked', 'failed'],
+  gathering_requirements: ['searching', 'inquiry_pending', 'cancelled', 'blocked', 'failed'],
   searching: ['inquiry_pending', 'offers_ready', 'cancelled', 'blocked', 'failed'],
   inquiry_pending: ['searching', 'offers_ready', 'cancelled', 'blocked', 'failed'],
   offers_ready: ['awaiting_confirmation', 'searching', 'inquiry_pending', 'cancelled', 'blocked', 'failed'],
@@ -349,6 +349,14 @@ export async function getFulfilment(ownerPhone: string, id: string): Promise<Ful
   return row ? rowToFulfilment(row) : null;
 }
 
+export async function getFulfilmentForEconomicRequest(ownerPhone: string, economicRequestId: string): Promise<Fulfilment | null> {
+  await ensureCanonicalFulfilmentSchema();
+  const requestId = String(economicRequestId || '').trim();
+  if (!requestId) return null;
+  const row = await (await getCanonicalStore()).one<any>('SELECT * FROM fulfilments WHERE owner_phone=? AND economic_request_id=? ORDER BY updated_at DESC LIMIT 1', [ownerPhone, requestId]);
+  return row ? rowToFulfilment(row) : null;
+}
+
 export async function listFulfilments(ownerPhone: string, options: { includeClosed?: boolean; limit?: number } = {}): Promise<Fulfilment[]> {
   await ensureCanonicalFulfilmentSchema();
   const limit = Math.max(1, Math.min(100, Math.floor(Number(options.limit) || 50)));
@@ -462,6 +470,17 @@ export async function expireProviderInquiries(ownerPhone: string, fulfilmentId: 
   await assertOwner(store, fulfilmentId, ownerPhone);
   await store.run(`UPDATE provider_inquiries SET status='no_response',updated_at=CURRENT_TIMESTAMP WHERE fulfilment_id=? AND owner_phone=? AND status='sent' AND expires_at IS NOT NULL AND expires_at <= ?`, [fulfilmentId, ownerPhone, at]);
   return listProviderInquiries(ownerPhone, fulfilmentId, { includeClosed: true });
+}
+
+export async function getOpenProviderInquiry(ownerPhone: string, fulfilmentId: string, providerPhone?: string): Promise<ProviderInquiry | null> {
+  await ensureCanonicalFulfilmentSchema();
+  const store = await getCanonicalStore();
+  const sql = providerPhone
+    ? "SELECT * FROM provider_inquiries WHERE owner_phone=? AND fulfilment_id=? AND provider_phone=? AND status IN ('pending','sent') ORDER BY updated_at DESC LIMIT 1"
+    : "SELECT * FROM provider_inquiries WHERE owner_phone=? AND fulfilment_id=? AND status IN ('pending','sent') ORDER BY updated_at DESC LIMIT 1";
+  const args = providerPhone ? [ownerPhone, fulfilmentId, providerPhone] : [ownerPhone, fulfilmentId];
+  const row = await store.one<any>(sql, args);
+  return row ? rowToInquiry(row) : null;
 }
 
 export async function markProviderInquirySent(ownerPhone: string, inquiryId: string): Promise<ProviderInquiry> {

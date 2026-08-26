@@ -9,7 +9,7 @@
     if (actions && identity && !actions.querySelector('[data-os-profile]')) {
       const name = identity.querySelector('strong')?.textContent?.trim() || 'Account';
       const initials = name.split(/\s+/).map(part => part[0] || '').join('').slice(0,2).toUpperCase() || 'K';
-      const notify = document.createElement('a'); notify.className='os-header-notify'; notify.href='/app/notifications'; notify.setAttribute('aria-label','Notifications'); notify.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>';
+      const notify = document.createElement('a'); notify.className='os-header-notify'; notify.href='/notifications'; notify.setAttribute('aria-label','Notifications'); notify.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>';
       const profile = document.createElement('a'); profile.className='os-profile'; profile.href='/settings'; profile.dataset.osProfile=''; profile.setAttribute('aria-label','Open account settings'); profile.innerHTML=`<span class="os-profile-avatar">${initials}</span><span class="os-profile-copy"><strong>${escapeHtml(name)}</strong><small>Profile</small></span><span class="os-profile-chevron">⌄</span>`;
       actions.appendChild(notify); actions.appendChild(profile);
     }

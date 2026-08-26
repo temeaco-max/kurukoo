@@ -25,6 +25,10 @@ const casual = await queryUnifiedAI('How are you?', { phone, conversational: tru
 assert.match(casual.text, /here|ready|going|help/i, 'ordinary conversation needs a natural response');
 assert.doesNotMatch(casual.text, /Intent:|skill|provider|route|memory/i, 'ordinary conversation must not leak internal routing');
 
+const phoneProblemReply = await queryUnifiedAI('My phone battery dies by lunchtime and I need it for work.', { phone, conversational: true });
+assert.match(phoneProblemReply.text, /phone|battery|charging|display|device/i, 'a phone problem needs input-relevant guidance');
+assert.doesNotMatch(phoneProblemReply.text, /find services, coordinate work, manage requests, and answer everyday questions/i, 'a phone problem must not receive a generic platform overview');
+
 for (const problem of [
   'My phone has been acting weird since yesterday.',
   'Something is wrong with my washing machine.',

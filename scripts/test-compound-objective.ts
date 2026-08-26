@@ -1,17 +1,34 @@
 /**
  * Compound objective lifecycle test — 12 phases.
  * Covers: recognition, skill inference, goal creation, dependency attachment,
- * waiting_on_dependency, completion unblocking, parent completion policy,
+ * waiting_on_dependency, evidence-gated completion, parent completion policy,
  * failure/cancel propagation, idempotency, owner isolation, restart persistence.
  */
 import { recognizeCompoundObjective, resolveSubGoalSkill } from '../src/services/compoundObjectiveResolver.js';
 import { createCompoundGoalIfRecognized } from '../src/services/compoundGoalLifecycle.js';
-import { createConversationGoal, completeAgentGoal, failAgentGoal, cancelAgentGoal, getAgentGoal, listSubGoals } from '../src/services/agentRuntime.js';
+import { createConversationGoal, failAgentGoal, cancelAgentGoal, getAgentGoal, listSubGoals } from '../src/services/agentRuntime.js';
 import { refreshAgentGoalDependencies, syncSubGoalStatusesWithDependencies } from '../src/services/agentEconomicRequestOrchestrator.js';
 import { getCanonicalStore } from '../src/services/canonicalStore.js';
+import { syncAgentGoalFromCapabilityResult } from '../src/services/agentCapabilityOutcomeService.js';
 
 let pass = 0, failCount = 0;
 function check(name: string, cond: boolean, detail?: unknown) { if (cond) { pass++; console.log('PASS', name); } else { failCount++; console.log('FAIL', name, detail !== undefined ? JSON.stringify(detail) : ''); } }
+
+async function completeThroughCanonicalOutcome(phone: string, goalId: string, capability: string, evidence: string) {
+  for (let index = 0; index < 4; index++) {
+    await syncAgentGoalFromCapabilityResult({
+      phone,
+      goalId,
+      capability: `skill.${capability}`,
+      action: 'prepare_action',
+      idempotencyKey: `${goalId}:verified-test-outcome:${index}`,
+      outcome: { status: 'completed', capability: `skill.${capability}`, action: 'prepare_action', message: 'Fake provider reports the deterministic lifecycle step completed.', evidence },
+    });
+    const current = await getAgentGoal(phone, goalId);
+    if (current?.status !== 'active') return current;
+  }
+  return getAgentGoal(phone, goalId);
+}
 
 async function main() {
   const OBJECTIVE = 'Fix my laptop and sell it when it is ready';
@@ -36,14 +53,14 @@ async function main() {
   check('P4b dependency edge exists', deps.length >= 1 && String(deps[0].blockedBy).startsWith('goal:'), deps[0]);
   check('P4c dependency linked to goalId', deps[0]?.goalId === sale.id || String(deps[0]?.blockedBy) === `goal:${sale.id}`);
 
-  await completeAgentGoal(A, repair.id);
+  await completeThroughCanonicalOutcome(A, repair.id, repair.goalType, 'verified fake-provider repair receipt');
   await syncSubGoalStatusesWithDependencies(A, res!.parentGoal.id);
   const saleAfter = await getAgentGoal(A, sale.id);
   check('P5 sale active after repair completed', saleAfter?.status === 'active', saleAfter?.status);
   const rep1 = await getAgentGoal(A, repair.id);
   check('P5b repair completed', rep1?.status === 'completed');
 
-  await completeAgentGoal(A, sale.id);
+  await completeThroughCanonicalOutcome(A, sale.id, sale.goalType, 'verified fake-provider sale receipt');
   await syncSubGoalStatusesWithDependencies(A, res!.parentGoal.id);
   const parentDone = await getAgentGoal(A, res!.parentGoal.id);
   check('P6 parent completed when all children completed', parentDone?.status === 'completed', parentDone?.status);
@@ -68,7 +85,7 @@ async function main() {
 
   const resD1 = await createCompoundGoalIfRecognized({ phone: 'user_d_compound', objective: OBJECTIVE });
   const dup = resD1 ? await createCompoundGoalIfRecognized({ phone: 'user_d_compound', objective: OBJECTIVE }) : 'unavailable';
-  check('P9 no duplicate parent for same active objective', dup === null, typeof dup === 'object' ? dup?.parentGoal.id : dup);
+  check('P9 no duplicate parent for same active objective', typeof dup === 'object' && dup?.parentGoal.id === resD1?.parentGoal.id, typeof dup === 'object' ? dup?.parentGoal.id : dup);
   const again = await createConversationGoal({ phone: A, skill: 'laptop_repairer', objective: 'Fix my laptop', persistWhenDisabled: true });
   const subsA = await listSubGoals(A, res!.parentGoal.id);
   check('P9b sub-goal count stable', subsA.length === 2, subsA.length);

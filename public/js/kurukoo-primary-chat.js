@@ -63,7 +63,7 @@
     if (label) icon.setAttribute('data-icon-label', label);
     return icon;
   };
-  const surfacePaths = { cart: '/cart', points: '/points', topup: '/top-up', subscription: '/subscription', requests: '/requests', reminders: '/reminders', saved: '/saved', tasks: '/tasks', 'daily-picks': '/daily-picks', discover: '/discover', connect: '/channels', memory: '/memory', safety: '/safety', settings: '/settings', topics: '/topics' };
+  const surfacePaths = { cart: '/cart', points: '/points', topup: '/top-up', subscription: '/subscriptions', requests: '/requests', reminders: '/reminders', saved: '/saved', tasks: '/tasks', 'daily-picks': '/discover', discover: '/discover', connect: '/connect', memory: '/memory', safety: '/safety', settings: '/settings', topics: '/topics' };
   const surfaceTitles = { cart: 'Cart', points: 'Points', topup: 'Top up', subscription: 'Subscription', requests: 'Requests', reminders: 'Reminders', saved: 'Saved & offers', tasks: 'Tasks', 'daily-picks': 'Daily Picks', discover: 'Discover', connect: 'Connect', memory: 'Memory', safety: 'Safety & check-ins', settings: 'Settings', topics: 'Topics' };
   function updateSurfaceHeader(view = null) {
     const title = $('header-context-title'); const back = $('surface-header-back');
@@ -1059,14 +1059,19 @@
       messageEl.querySelector('.bubble')?.appendChild(holder);
       return;
     }
-    if (card.type === 'emergency') {
-      const holder = makeElement('section', 'emergency-chat-card'); holder.setAttribute('aria-label', 'Emergency assistance');
-      const heading = makeChildren('div', 'emergency-chat-card__heading', [makeIcon('safety', 'Emergency'), makeElement('strong', '', 'Emergency mode')]);
-      const service = makeElement('p', 'emergency-chat-card__service', `${String(card.service?.serviceType || card.session?.serviceType || 'emergency')} · ${String(card.status || card.session?.dialState || 'unavailable').replaceAll('_', ' ')}`);
-      const location = makeElement('p', 'emergency-chat-card__location', `Location: ${card.locationStatus === 'approximate' ? 'approximate location shared' : 'not known yet'}`);
-      const truth = makeElement('p', 'emergency-chat-card__truth', 'Kurukoo is a coordination interface, not an emergency responder. Connection and dispatch are never claimed without evidence.');
+    if (card.type === 'emergency' || card.type === 'emergency_dispatch') {
+      const holder = makeElement('section', 'emergency-chat-card'); holder.setAttribute('aria-label', 'Emergency assistance'); holder.dataset.state = String(card.status || card.session?.dialState || 'unavailable');
+      if (card.status !== 'ended') holder.setAttribute('aria-live', 'assertive');
+      const serviceType = String(card.service?.serviceType || card.service || card.session?.serviceType || 'emergency');
+      const serviceLabels = { ambulance: 'Medical help', police: 'Police', fire: 'Fire service', national: 'Emergency services', emergency: 'Emergency services' };
+      const status = String(card.status || card.session?.dialState || 'unavailable');
+      const statusLabels = { dial_requested: 'Ready for you to call', unavailable: 'Use the verified local route', externally_pending: 'Ready for you to call', dial_unavailable: 'Calling is not available here', ended: 'Emergency mode ended', connected: 'Connection evidence received', failed: 'Could not prepare the call route' };
+      const heading = makeChildren('div', 'emergency-chat-card__heading', [makeIcon('safety', 'Emergency'), makeElement('strong', '', status === 'ended' ? 'Emergency mode ended' : 'Emergency help')]);
+      const service = makeElement('p', 'emergency-chat-card__service', `${serviceLabels[serviceType] || 'Emergency services'} · ${statusLabels[status] || 'Emergency route ready'}`);
+      const location = makeElement('p', 'emergency-chat-card__location', `Location: ${card.locationStatus === 'approximate' || card.session?.location ? 'approximate location available' : 'not known yet'}`);
+      const truth = makeElement('p', 'emergency-chat-card__truth', 'Call the verified emergency number yourself if you are in immediate danger. Kurukoo does not claim connection or dispatch without evidence.');
       const actions = makeElement('div', 'emergency-chat-card__actions');
-      (Array.isArray(card.actions) ? card.actions : []).forEach(action => { const button = makeElement(action.href ? 'a' : 'button', 'emergency-chat-card__action', action.label || action.id); if (action.href) { button.href = action.href; button.setAttribute('aria-label', action.label || action.id); } else { button.type = 'button'; button.addEventListener('click', () => { if (action.canonicalAction === 'emergency.end') sendMessage('Actually this is not an emergency anymore.'); else if (action.canonicalAction === 'emergency.location') sendMessage('I do not know exactly where I am. Help me share an approximate location.'); }); } actions.appendChild(button); });
+      (Array.isArray(card.actions) ? card.actions : []).forEach(action => { const label = String(action.label || (action.id === 'dial' ? 'Call emergency services' : action.id === 'end' ? 'End emergency mode' : action.id === 'share_location' ? 'Share approximate location' : 'Continue')); const button = makeElement(action.href ? 'a' : 'button', 'emergency-chat-card__action', label); if (action.href) { button.href = action.href; button.setAttribute('aria-label', label); } else { button.type = 'button'; button.addEventListener('click', () => { if (action.canonicalAction === 'emergency.end' || action.id === 'end') sendMessage('Actually this is not an emergency anymore.'); else if (action.canonicalAction === 'emergency.location' || action.id === 'share_location') sendMessage('I do not know exactly where I am. Help me share an approximate location.'); }); } actions.appendChild(button); });
       holder.append(heading, service, location, truth, actions); messageEl.querySelector('.bubble')?.appendChild(holder); return;
     }
 
@@ -1183,6 +1188,8 @@
   function pushAgentSurfaceToast(title, detail, needsResponse = false) {
     const region = $('chat-toast-region'); if (!region) return;
     const toast = makeElement('div', 'chat-toast chat-toast-agent');
+    toast.setAttribute('role', needsResponse ? 'alert' : 'status');
+    toast.setAttribute('aria-live', needsResponse ? 'assertive' : 'polite');
     const copy = makeElement('div', 'chat-toast-copy'); copy.append(makeElement('strong', '', title || 'Kurukoo update'), makeElement('span', '', String(detail || '').slice(0, 360)));
     const close = makeElement('button', 'chat-toast-close'); close.type = 'button'; close.setAttribute('aria-label', 'Dismiss Kurukoo update'); close.title = 'Dismiss'; close.append(makeIcon('close', 'Dismiss')); close.addEventListener('click', () => toast.remove());
     if (needsResponse) toast.dataset.needsResponse = 'true';
@@ -1211,7 +1218,14 @@
     bubble.appendChild(status);
   }
   async function sendMessage(raw) {
-    const text = String(raw || input.value || '').trim(); if (!text || state.busy || !(await ensureIdentity())) return;
+    const text = String(raw || input.value || '').trim();
+    if (!text || state.busy) return;
+    if (!(await ensureIdentity())) {
+      input?.setAttribute('aria-invalid', 'true');
+      pushAgentSurfaceToast('Kurukoo is unavailable', 'Your message is still in the composer. Check your connection and try again.', true);
+      return;
+    }
+    input?.removeAttribute('aria-invalid');
     const surfaceActive = Boolean(state.surfaceView);
     state.controller = new AbortController(); setComposerBusy(true); setConnection(true); input.value = ''; clearComposerDraft();
     let attachment = state.attached;
@@ -1426,6 +1440,8 @@
         state.notifiedTrustChallengeIds.add(challenge.id);
         if (!toastRegion) return;
         const toast = makeElement('div', 'chat-toast chat-toast--approval');
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
         const copy = makeElement('div');
         copy.append(makeElement('strong', '', 'Approve this Kurukoo device'), makeElement('span', '', 'A new browser is asking to continue your account.'));
         const actions = makeElement('div', 'chat-toast-actions');
@@ -1476,45 +1492,58 @@
     if (!card || !statusEl || !summary || !list || !pause || !cancel) return;
     if (!goal) { card.hidden = true; card.dataset.goalAvailable = 'false'; return; }
     card.hidden = false; card.dataset.goalAvailable = 'true'; card.dataset.goalId = String(goal.id || '');
-    const goalStatus = String(goal.status || 'checking');
-    statusEl.textContent = goalStatus.replace(/_/g, ' ');
-    // Show a truthful objective summary: what Kurukoo is doing + what it needs + next step
+    const goalStatus = String(goal.status || 'checking').toLowerCase();
+    const stateLabel = {
+      active: 'Working', waiting: 'Waiting', waiting_on_dependency: 'Waiting for earlier work', needs_user: 'Your input is needed',
+      blocked: 'Paused', completed: 'Completed', cancelled: 'Stopped', failed: 'Needs review', expired: 'Expired',
+    };
+    statusEl.textContent = stateLabel[goalStatus] || 'Checking';
+    statusEl.dataset.state = goalStatus;
+    card.dataset.objectiveState = goalStatus;
+    // Keep the objective clear while deriving all activity wording from persisted Goal state.
     const objective = String(goal.objective || 'Current objective');
     const currentSummary = String(goal.summary || '');
-    summary.textContent = currentSummary || objective;
-    // What Kurukoo is doing - derived from status
-    const doingText = goalStatus === 'active' ? 'Kurukoo is following the canonical plan for this objective.'
-      : goalStatus === 'waiting' ? 'Kurukoo is waiting for the next verified event or re-check.'
+    summary.textContent = objective;
+    const doingText = goalStatus === 'active' ? (currentSummary || 'Kurukoo is working on the next step.')
+      : goalStatus === 'waiting_on_dependency' ? 'Kurukoo is waiting for earlier work in this objective to finish.'
+      : goalStatus === 'waiting' ? 'Kurukoo is waiting for the next confirmed update.'
       : goalStatus === 'needs_user' ? 'Kurukoo has paused for your decision.'
-      : goalStatus === 'blocked' ? 'Kurukoo cannot continue until the blocker is resolved.'
+      : goalStatus === 'blocked' ? 'Kurukoo has paused safely until the blocker is resolved.'
       : goalStatus === 'completed' ? 'Kurukoo completed this objective.'
       : goalStatus === 'cancelled' ? 'You asked Kurukoo to stop following up on this objective.'
-      : goalStatus === 'failed' ? 'Kurukoo paused this goal after repeated safe failures.'
-      : 'Kurukoo is checking the current objective.';
+      : goalStatus === 'failed' ? 'Kurukoo paused this objective for review.'
+      : 'Kurukoo is checking this objective.';
     if (doing) doing.textContent = doingText;
-    // What Kurukoo needs
-    const needsText = goalStatus === 'needs_user' ? (currentSummary || 'Confirmation or a response on the next step.')
-      : goalStatus === 'waiting' ? 'More evidence from the canonical source before re-checking.'
-      : goalStatus === 'blocked' ? 'Verified information to unblock the capability path.'
-      : goalStatus === 'active' ? (goal.plan?.requiredInputs?.length ? goal.plan.requiredInputs.join(', ') : 'The next capability to run on the plan.')
+    const needsText = goalStatus === 'needs_user' ? (currentSummary || 'Your approval or a response on the next step.')
+      : goalStatus === 'waiting_on_dependency' ? 'Nothing from you right now. The next step depends on earlier work.'
+      : goalStatus === 'waiting' ? 'Nothing from you right now. Kurukoo is waiting for a confirmed update.'
+      : goalStatus === 'blocked' ? 'More verified information is needed before this can continue.'
+      : goalStatus === 'active' ? (goal.plan?.requiredInputs?.length ? goal.plan.requiredInputs.join(', ') : 'Nothing from you right now.')
       : 'No further input is required right now.';
     if (needs) needs.textContent = needsText;
-    // Next step
-    const nextText = goalStatus === 'needs_user' ? 'Reply with your decision in Chat.'
-      : goalStatus === 'waiting' ? 'Kurukoo will re-check when the next event arrives.'
-      : goalStatus === 'active' ? (currentSummary || 'Kurukoo continues the plan automatically.')
-      : goalStatus === 'blocked' ? 'Update the request or context to resume.'
-      : goalStatus === 'cancelled' || goalStatus === 'completed' ? 'No further action required.'
+    const nextText = goalStatus === 'needs_user' ? 'Reply in Chat when you are ready to decide.'
+      : goalStatus === 'waiting_on_dependency' ? 'Kurukoo will continue when the earlier work is complete.'
+      : goalStatus === 'waiting' ? 'Kurukoo will continue when the next confirmed update arrives.'
+      : goalStatus === 'active' ? 'Kurukoo is continuing this objective.'
+      : goalStatus === 'blocked' ? 'Review the blocker in Chat before continuing.'
+      : goalStatus === 'cancelled' || goalStatus === 'completed' ? 'No further action is required.'
       : 'Continue in Chat when you are ready.';
     if (next) next.textContent = nextText;
-    // Agent Presence: derive from goal status for live presence indicator
-    const presenceMap = { active: 'working', waiting: 'waiting', needs_user: 'needs-attention', blocked: 'blocked', completed: 'idle', cancelled: 'idle', failed: 'idle', expired: 'idle' };
+    // Agent Presence remains a lightweight state signal; it never implies external progress.
+    const presenceMap = { active: 'working', waiting: 'waiting', waiting_on_dependency: 'waiting', needs_user: 'needs-attention', blocked: 'blocked', completed: 'idle', cancelled: 'idle', failed: 'idle', expired: 'idle' };
     const presence = presenceMap[goalStatus] || 'idle';
     window.KurukooAgentPresence?.set?.(presence, 'agent-goal');
     list.replaceChildren();
     (Array.isArray(events) ? events.slice(-4) : []).forEach(event => {
       const row = makeElement('div', 'agent-goal-event');
-      row.textContent = `${String(event.result || 'update').replace(/_/g, ' ')} · ${String(event.detail || event.action || '').slice(0, 180)}`;
+      const result = String(event?.result || '').toLowerCase();
+      const activity = result === 'success' ? 'A confirmed step was recorded.'
+        : result === 'waiting' ? 'Kurukoo is waiting for the next update.'
+        : result === 'needs_user' ? 'Your input is needed before the next step.'
+        : result === 'blocked' ? 'Kurukoo paused safely while it waits for more information.'
+        : result === 'failed' ? 'A step needs review before continuing.'
+        : 'Kurukoo recorded an update on this objective.';
+      row.textContent = activity;
       list.appendChild(row);
     });
     if (!list.childElementCount) list.appendChild(makeElement('div', 'empty-state', 'Kurukoo will show confirmed activity here.'));

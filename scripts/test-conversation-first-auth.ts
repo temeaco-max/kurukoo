@@ -156,8 +156,8 @@ try {
   assert.equal(authenticatedRequests.status, 200, 'Authenticated users should access the canonical Request Hub');
 
   const legacyWeb = await fetch(`${baseUrl}/web`, { redirect: 'manual' });
-  assert.equal(legacyWeb.status, 308, 'The deprecated Request Hub alias should permanently resolve to Desk');
-  assert.equal(legacyWeb.headers.get('location'), '/desk');
+  assert.equal(legacyWeb.status, 404, 'The deprecated Request Hub alias must be retired instead of adding a compatibility redirect');
+  assert.equal(legacyWeb.headers.get('location'), null, 'A retired Request Hub alias must not issue a navigation redirect');
 
   const logout = await fetch(`${baseUrl}/api/auth/logout`, { method: 'POST', headers: { Cookie: authCookie } });
   assert.equal(logout.status, 200, 'Canonical logout should succeed');

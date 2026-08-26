@@ -12,58 +12,6 @@
     return payload;
   };
 
-  const canonicalize = (value) => {
-    try {
-      const url = new URL(String(value || ''), window.location.origin);
-      if (url.origin !== window.location.origin) return value;
-      const direct = {
-        '/app': '/desk',
-        '/app/agent': '/chat',
-        '/app/discover': '/discover',
-        '/app/requests': '/requests',
-        '/app/tasks': '/tasks',
-        '/app/connect': '/connect',
-        '/app/reminders': '/reminders',
-        '/app/saved': '/saved',
-        '/app/cart': '/cart',
-        '/app/agents': '/agents',
-        '/app/opportunities': '/opportunities',
-        '/app/wallet': '/wallet',
-        '/app/points': '/points',
-        '/app/top-up': '/top-up',
-        '/app/subscriptions': '/subscriptions',
-        '/app/checkout': '/checkout',
-        '/app/confirmations': '/confirmations',
-        '/app/memory': '/memory',
-        '/app/artifacts': '/artifacts',
-        '/app/prayer': '/prayer',
-        '/app/call': '/call',
-        '/app/notifications': '/notifications',
-        '/app/safety': '/safety',
-        '/app/settings': '/settings',
-      };
-      if (direct[url.pathname]) url.pathname = direct[url.pathname];
-      else if (url.pathname.startsWith('/app/requests/')) url.pathname = url.pathname.replace('/app/requests/', '/requests/');
-      else if (url.pathname.startsWith('/app/tasks/')) url.pathname = url.pathname.replace('/app/tasks/', '/tasks/');
-      else if (url.pathname.startsWith('/app/agents/')) url.pathname = url.pathname.replace('/app/agents/', '/agents/');
-      else if (url.pathname.startsWith('/app/opportunities/')) url.pathname = url.pathname.replace('/app/opportunities/', '/opportunities/');
-      else if (url.pathname.startsWith('/app/connections/')) url.pathname = url.pathname.replace('/app/connections/', '/connections/');
-      else if (url.pathname.startsWith('/app/memory/')) url.pathname = url.pathname.replace('/app/memory/', '/memory/');
-      else if (url.pathname.startsWith('/app/artifacts/')) url.pathname = url.pathname.replace('/app/artifacts/', '/artifacts/');
-      return `${url.pathname}${url.search}${url.hash}`;
-    } catch {
-      return value;
-    }
-  };
-
-  const normalizeLinks = () => {
-    document.querySelectorAll('a[href]').forEach((anchor) => {
-      const href = anchor.getAttribute('href');
-      const canonical = canonicalize(href);
-      if (canonical && canonical !== href) anchor.setAttribute('href', canonical);
-    });
-  };
-
   const notificationButton = () => document.querySelector('.k-desk-header-notifications');
 
   const ensureBadge = () => {
@@ -118,11 +66,8 @@
   };
 
   const boot = () => {
-    normalizeLinks();
     hydratePoints();
     hydrateNotifications();
-    const observer = new MutationObserver(() => normalizeLinks());
-    observer.observe(document.body, { subtree: true, childList: true });
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });

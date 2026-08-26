@@ -89,25 +89,26 @@ No repository operation provisions Cloud SQL, changes IAM/DNS, migrates live dat
 
 ## Cloud Run proving configuration
 
-The current proving profile remains conservative:
+The current proving profile remains conservative and intentionally non-promotable until the remaining gates pass:
 
 - Cloud Run: 4 vCPU
 - memory: 4 GiB
 - concurrency: 1
 - request timeout: 300 seconds
 - minimum instances: 0
-- maximum instances: 1 while SQL.js remains the local persistence owner
+- maximum instances: 1 until distributed worker ownership is certified
 - `KURUKOO_SMOLLM2_LOCAL=true`
 - `SMOLLM2_MODEL=HuggingFaceTB/SmolLM2-1.7B-Instruct`
 - `SMOLLM2_DTYPE=q4`
 - model cache: `/tmp/huggingface`
 - background workers: one application worker only; external execution disabled
+- artifact storage: local storage is explicitly blocked for Cloud Run; protected object storage must be implemented and selected before promotion
 
 These are repository proving defaults, not claims about the cheapest production configuration.
 
 ## Secrets
 
-Do not put API keys, database credentials or JWT secrets in `cloudbuild.yaml`, the Docker image, frontend bundles or Git.
+Do not put API keys, database credentials or JWT secrets in `cloudbuild.yaml`, the Docker image, frontend bundles or Git. The checked-in Cloud Build path injects `JWT_SECRET` and `DATABASE_URL` from Secret Manager references and declares `KURUKOO_SECRET_SOURCE=secret_manager`; the service manifest carries the same contract. The referenced secret names are configuration placeholders and must exist with least-privilege IAM before any real deployment attempt.
 
 For the eventual minimal Google Cloud configuration, use one Cloud SQL for PostgreSQL instance and one Secret Manager-backed `DATABASE_URL` injected into Cloud Run. The service should connect through the Cloud SQL connector/socket rather than exposing a public database address. Expected non-secret runtime settings are `KURUKOO_DATABASE_MODE=postgres`, `KURUKOO_POSTGRES_POOL_MAX`, `KURUKOO_POSTGRES_IDLE_TIMEOUT_SECONDS`, `KURUKOO_POSTGRES_CONNECT_TIMEOUT_SECONDS`, and `KURUKOO_POSTGRES_SSL`; production credentials remain external and must not be committed.
 
@@ -115,7 +116,7 @@ For the eventual minimal Google Cloud configuration, use one Cloud SQL for Postg
 
 `/health` reports application/database health plus persistence readiness.
 
-`/readyz` verifies that the configured persistence mode is safe for the deployment environment. SQL.js + Cloud Run remains `not_ready`; PostgreSQL is `ready_for_external_config` only after the application adapter integration gate passes.
+`/readyz` verifies that the configured persistence mode is safe for the deployment environment. SQL.js + Cloud Run remains `not_ready`; PostgreSQL is safe only after the complete application call-surface migration, managed-database verification, secret injection, and protected storage gates pass. Cloud Build runs production preflight before deploy and rejects a revision whose Cloud Run Ready condition is not true after deploy.
 
 ## Workers and shared coordination
 

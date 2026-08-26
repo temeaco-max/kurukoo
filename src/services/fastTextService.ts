@@ -23,7 +23,14 @@ const classificationCache = new Map<string, { result: FastTextResult | null; exp
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const STOP_WORDS = new Set(['a','an','and','are','as','at','be','by','can','do','for','from','get','help','i','in','is','it','me','my','need','of','on','or','please','the','this','to','want','with','you']);
 function modelPath(): string { return path.join(process.cwd(), 'models', 'kurukoo_intent.bin'); }
-function trainingPath(): string { return path.join(process.cwd(), 'models', 'intent_training_data.txt'); }
+function trainingPaths(): string[] {
+  const modelsDir = path.join(process.cwd(), 'models');
+  return [
+    path.join(modelsDir, 'intent_training_data.txt'),
+    path.join(modelsDir, 'intent_training_behaviour_additions.txt'),
+    path.join(modelsDir, 'intent_training_skill_hints.txt'),
+  ];
+}
 function normalize(query: string): string { return query.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(); }
 function meaningfulTokens(query: string): string[] { return normalize(query).split(/\s+/).filter(token => token.length > 1 && !STOP_WORDS.has(token)); }
 function isRealBinaryModel(binPath: string): boolean { try { if (!fs.existsSync(binPath)) return false; const stats=fs.statSync(binPath); if(stats.size<100)return false; return !fs.readFileSync(binPath).subarray(0,32).toString('utf8').includes('DUMMY_FASTTEXT'); } catch { return false; } }
@@ -39,7 +46,7 @@ function isFastTextExecutableAvailable(): boolean {
   } catch { return false; }
 }
 export function getFastTextRuntimeStatus(rootDir=process.cwd()): FastTextRuntimeStatus { const binPath=path.join(rootDir,'models','kurukoo_intent.bin'); const modelState=getModelState(binPath); const realModelPresent=modelState==='real'; const executableAvailable=realModelPresent&&isFastTextExecutableAvailable(); return {modelState,realModelPresent,executableAvailable,ready:realModelPresent&&executableAvailable,modelPath:binPath,trainingExamples:trainingSet.length}; }
-function loadTrainingData(): void { try { const filePath=trainingPath(); if(!fs.existsSync(filePath))return; trainingSet=[]; trainingExact.clear(); for(const line of fs.readFileSync(filePath,'utf8').split(/\r?\n/)){ if(!line.startsWith('__label__'))continue; const spaceIdx=line.indexOf(' '); if(spaceIdx===-1)continue; const label=line.slice(9,spaceIdx).trim(); const normalized=normalize(line.slice(spaceIdx+1)); const tokens=new Set(meaningfulTokens(normalized)); const entry={label,tokens,normalized}; trainingSet.push(entry); if(normalized.length>=3 && !trainingExact.has(normalized)) trainingExact.set(normalized,label); } console.log(`[FastText] loaded ${trainingSet.length} training examples`); } catch(err){console.error('[FastText] training-data load failed:',err);} }
+function loadTrainingData(): void { try { trainingSet=[]; trainingExact.clear(); const seen = new Set<string>(); for(const filePath of trainingPaths()){ if(!fs.existsSync(filePath))continue; for(const line of fs.readFileSync(filePath,'utf8').split(/\r?\n/)){ if(!line.startsWith('__label__'))continue; const spaceIdx=line.indexOf(' '); if(spaceIdx===-1)continue; const label=line.slice(9,spaceIdx).trim(); const normalized=normalize(line.slice(spaceIdx+1)); if(!normalized)continue; const key=`${label}\u0000${normalized}`; if(seen.has(key))continue; seen.add(key); const tokens=new Set(meaningfulTokens(normalized)); const entry={label,tokens,normalized}; trainingSet.push(entry); if(normalized.length>=3 && !trainingExact.has(normalized)) trainingExact.set(normalized,label); } } console.log(`[FastText] loaded ${trainingSet.length} merged training examples from ${trainingPaths().filter(fs.existsSync).length} corpus files`); } catch(err){console.error('[FastText] training-data load failed:',err);} }
 export function initializeFastText(): void { classificationCache.clear(); const binaryModelPath=modelPath(); fastTextReady=isRealBinaryModel(binaryModelPath)&&isFastTextExecutableAvailable(); loadTrainingData(); const status=getFastTextRuntimeStatus(); console.log(`[FastText] modelState=${status.modelState}, ready=${fastTextReady}, trainingExamples=${trainingSet.length}`); }
 initializeFastText();
 
@@ -48,6 +55,7 @@ initializeFastText();
 // ordinary chat into an unknown-intent failure.
 const conversationActRules: Array<[RegExp,string]> = [
   [/^(hi|hello|hey|hiya|howdy|greetings|good morning|good afternoon|good evening|hello there)[!,. ]*$/i,'greeting'],
+  [/\b(how far|how body|wetin dey happen)\b/i,'greeting'],
   [/^(thanks|thank you|thx|cheers|much appreciated)[!,. ]*$/i,'thanks'],
   [/^(bye|goodbye|see you|see ya|talk later)[!,. ]*$/i,'farewell'],
   [/^(yes|yeah|yep|yup|okay|ok|sure|alright|go ahead)[!,. ]*$/i,'confirmation'],
@@ -59,24 +67,26 @@ const conversationActRules: Array<[RegExp,string]> = [
   [/\b(cancel|stop|never mind|forget that)\b/i,'cancel'],
 ];
 const blueprintRules: Array<[RegExp,string]> = [
-  [/\b(help me stay safe|keep me safe|i(?:'|’)m not safe|i feel unsafe|i feel in danger|protect me|safety help|need help staying safe)\b/i,'emergency'],
+  [/\b(help me stay safe|keep me safe|i(?:'|’)m not safe|i am not safe|i feel unsafe|i feel in danger|protect me|safety help|need help staying safe)\b/i,'emergency'],
   [/\b(emergency|sos|police|accident|hospital|immediate danger|life[- ]threatening|unsafe|danger)\b/i,'emergency'],
   [/\b(bin day|rubbish collection|bins? go out|waste collection)\b/i,'bin_day'],
   [/\b(hotel|booking accommodation|hotel deal|stay overnight)\b/i,'hotel_deals'],
+  [/\b(kurukoo)\b.*\b(make money|pricing|price|fee|payment method|what can i use|what does it do)\b|\b(make money|pricing|price|fee|payment method)\b.*\b(kurukoo)\b|\b(tell me about|explain)\b.{0,30}\b(payment methods?|kurukoo)\b/i,'general_question'],
+  [/\b(promoted post|sponsored promotion|advert campaign|campaign).{0,40}\b(not showing|disappeared|cannot see|can.t see|missing|problem)\b/i,'advertising'],
   [/\b(okada|motorbike|motorcycle)\b/i,'okada_rider'],
   [/\b(keke|tricycle)\b/i,'keke_driver'],
   [/\b(ride|okada|keke|taxi|cab|transport|driver)\b/i,'ride_request'],
-  [/\b(food|suya|rice|bread|grocery|groceries|meal|restaurant|caterer)\b/i,'order_food'],
-  [/\b(tv|television|smart tv).{0,40}\b(repair|broken|no picture|no sound|fix)\b/i,'tv_repairer'],
+  [/\b(food|suya|rice|bread|grocery|groceries|meal|restaurant|caterer|moi moi|amala|ewedu)\b/i,'order_food'],
+  [/\b(tv|television|smart tv).{0,40}\b(repair|broken|no picture|no sound|fix|screen.{0,10}lines)\b/i,'tv_repairer'],
   [/\b(iphone|phone|smartphone|android|samsung(?: galaxy)?|pixel|mobile).{0,40}\b(screen|repair(?:ed|ing)?|broken|damaged|smashed|fix|not working|cracked|won't turn on|not charging)\b/i,'phone_repairer'],
-  [/\b(laptop|macbook|dell laptop|lenovo laptop|hp laptop).{0,40}\b(repair(?:ed|ing)?|broken|damaged|fix|won't turn on|not charging)\b/i,'laptop_repairer'],
-  [/\b(tablet|ipad|galaxy tab|surface).{0,40}\b(repair|broken|damaged|fix|not working)\b/i,'tablet_repairer'],
+  [/\b(laptop|macbook|dell laptop|lenovo laptop|hp laptop).{0,40}\b(repair(?:ed|ing)?|broken|damaged|fix|screen|won't turn on|not charging|won't boot|will not boot)\b/i,'laptop_repairer'],
+  [/\b(tablet|ipad|galaxy tab|surface).{0,40}\b(repair|broken|damaged|fix|not working|won't turn on)\b/i,'tablet_repairer'],
   [/\b(ps5|ps4|xbox|nintendo switch|playstation).{0,40}\b(repair|broken|fix|not working|won't turn on)\b/i,'console_repairer'],
-  [/\b(apple watch|galaxy watch|garmin|fitbit).{0,40}\b(repair|broken|fix|not working)\b/i,'smartwatch_repairer'],
-  [/\b(airpods|airpod|galaxy buds|wireless earbuds).{0,40}\b(repair|broken|not working|fix)\b|\b(repair|broken|not working|fix)\b.{0,40}\b(airpods|airpod|galaxy buds|wireless earbuds)\b/i,'earbuds_repairer'],
+  [/\b(apple watch|galaxy watch|garmin|fitbit).{0,40}\b(repair|broken|fix|not working|won't turn on)\b/i,'smartwatch_repairer'],
+  [/\b(airpods|airpod|galaxy buds|wireless earbuds).{0,40}\b(repair|broken|not working|fix|one side works|one side not working)\b|\b(repair|broken|not working|fix)\b.{0,40}\b(airpods|airpod|galaxy buds|wireless earbuds)\b/i,'earbuds_repairer'],
   [/\b(bluetooth speaker|bose speaker|jbl speaker|wireless speaker).{0,40}\b(repair|broken|no sound|fix)\b/i,'speaker_repairer'],
-  [/\b(washing machine|fridge|refrigerator|oven|dishwasher).{0,40}\b(repair|broken|leak|fix|not working)\b/i,'appliance_repairer'],
-  [/\b(bicycle|bike).{0,40}\b(repair|broken|fix|damaged|puncture)\b/i,'bicycle_repairer'],
+  [/\b(washing machine|fridge|refrigerator|oven|dishwasher|generator).{0,40}\b(repair|broken|leak|fix|not working|not cooling|won't start|will not start)\b/i,'appliance_repairer'],
+  [/\b(bicycle|bike).{0,40}\b(repair|broken|fix|damaged|punctur(?:e|ed))\b/i,'bicycle_repairer'],
   [/\b(motorbike|motorcycle).{0,40}\b(repair|broken|fault|fix)\b/i,'motorbike_repairer'],
   [/\b(my car|my vehicle).{0,40}\b(broken down|won't start|tow|recovery)\b/i,'vehicle_recovery'],
   [/\b(plumber|electrician|mechanic|repair|fix|artisan|worker|painter|carpenter|tailor|cobbler|shoe maker)\b/i,'find_worker'],
@@ -90,7 +100,7 @@ const blueprintRules: Array<[RegExp,string]> = [
   [/\b(unlink|unpair|disconnect).{0,40}\b(device|phone|laptop|tablet)\b/i,'unlink_device'],
   [/\b(gp appointment|book.*gp|see my doctor)\b/i,'gp_appointment'],
   [/\b(dentist|dental appointment)\b/i,'dentist_appointment'],
-  [/\b(mot test|book my mot|mot booking)\b/i,'mot_booking'],
+  [/\b(mot test|book my mot|mot booking|mot).{0,40}\b(book|next week|due|appointment|test)\b/i,'mot_booking'],
   [/\b(driving test|test centre|test center).{0,20}\b(book|slot|test)\b/i,'driving_test_booking'],
   [/\b(snow removal|snow plowing|clear my driveway)\b/i,'snow_removal'],
   [/\b(winter tyre|winter tire).{0,20}\b(change|service|booking)\b/i,'winter_tire_service'],
@@ -102,7 +112,7 @@ const blueprintRules: Array<[RegExp,string]> = [
   [/\b(cooking gas|gas refill|lpg refill)\b/i,'gas_refill'],
   [/\b(parcel pickup|pick up my parcel|drop off this parcel)\b/i,'parcel_pickup'],
   [/\b(locksmith|locked out|door lock repair)\b/i,'locksmith'],
-  [/\b(boiler repair|heating engineer|boiler broken)\b/i,'boiler_repairer'],
+  [/\b(boiler repair|heating engineer|boiler broken|boiler.{0,20}making noise)\b/i,'boiler_repairer'],
   [/\b(rubbish removal|junk removal|waste removal)\b/i,'rubbish_removal'],
   [/\b(window cleaner|window cleaning)\b/i,'window_cleaner'],
   [/\b(key cutting|cut me a key|spare key)\b/i,'key_cutter'],

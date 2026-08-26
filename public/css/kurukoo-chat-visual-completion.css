@@ -116,3 +116,25 @@
 .kurukoo-chat-page .chat-inspector .inspector-card + .inspector-card{margin-top:10px!important}
 .kurukoo-chat-page .quick-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0}
 @media(max-width:900px){.kurukoo-chat-page .chat-sidebar{width:100%!important}}
+
+
+/* Objective presence — lightweight state communication within the existing Chat inspector. */
+.kurukoo-chat-page #agent-goal-card[data-objective-state]{border-left:3px solid var(--ko-border,#e6ded5)}
+.kurukoo-chat-page #agent-goal-card[data-objective-state="active"]{border-left-color:#315e8a}
+.kurukoo-chat-page #agent-goal-card[data-objective-state="waiting"],
+.kurukoo-chat-page #agent-goal-card[data-objective-state="waiting_on_dependency"]{border-left-color:#756d63}
+.kurukoo-chat-page #agent-goal-card[data-objective-state="needs_user"]{border-left-color:#b87928}
+.kurukoo-chat-page #agent-goal-card[data-objective-state="blocked"],
+.kurukoo-chat-page #agent-goal-card[data-objective-state="failed"]{border-left-color:#b5483d}
+.kurukoo-chat-page #agent-goal-card[data-objective-state="completed"]{border-left-color:#2e8060}
+.kurukoo-chat-page #agent-goal-status[data-state="active"]{background:#eaf0f7;border-color:#c8d7e7;color:#315e8a}
+.kurukoo-chat-page #agent-goal-status[data-state="waiting"],
+.kurukoo-chat-page #agent-goal-status[data-state="waiting_on_dependency"]{background:#f2efeb;border-color:#ddd6cf;color:#756d63}
+.kurukoo-chat-page #agent-goal-status[data-state="needs_user"]{background:#fbf1df;border-color:#ecd8b8;color:#9a6520}
+.kurukoo-chat-page #agent-goal-status[data-state="blocked"],
+.kurukoo-chat-page #agent-goal-status[data-state="failed"]{background:#fbecea;border-color:#edc9c4;color:#9c3c33}
+.kurukoo-chat-page #agent-goal-status[data-state="completed"]{background:#eaf4ee;border-color:#c9dfd1;color:#2e8060}
+.kurukoo-chat-page #agent-goal-events{display:grid;gap:7px}
+.kurukoo-chat-page .agent-goal-event{padding:9px 10px;border:1px solid var(--chat-border,var(--ko-border,#e6ded5));border-radius:10px;background:var(--ko-surface-2,#fbf8f4);color:var(--ko-muted,#6d665f);font-size:12px;line-height:1.45}
+.kurukoo-chat-page .agent-goal-presence{min-height:30px}
+@media(prefers-reduced-motion:reduce){.kurukoo-chat-page #agent-goal-card[data-objective-state]{transition:none}}

@@ -1,6 +1,8 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { ensureCapabilityFoundation } from '../src/services/capabilityFoundation.js';
+import { listCapabilityRegistrations, type CapabilityRegistration } from '../src/services/capabilityRegistry.js';
 import { getAllConvergedSkillNames, getConvergedSkillBehaviour } from '../src/services/skillBehaviourConvergence.js';
 import { buildSkillExecutionContract } from '../src/services/skillExecutionContract.js';
 
@@ -10,7 +12,7 @@ const actors = ['consumer', 'provider', 'business', 'contributor', 'agent', 'sup
 const channels = ['web_chat', 'pwa', 'whatsapp', 'telegram', 'sms', 'ussd', 'email', 'voice', 'linked_device'];
 const locales = ['ng:en', 'ng:pidgin', 'ng:hausa-influenced', 'gh:en', 'gb:en', 'ca:en', 'ca:fr'];
 const surfaces = ['memory', 'reminders', 'notifications', 'points', 'subscriptions', 'topics', 'media', 'support', 'products', 'orders', 'cart', 'discovery', 'provider_interaction', 'safety', 'consent', 'payment_boundary', 'locale', 'dialect', 'agent_representation', 'commercial_ledger'];
-const variants = [
+const skillVariants = [
   { key: 'normal', user: (skill: string) => `I need help with ${skill.replaceAll('_', ' ')}.`, lifecycle: 'requested' },
   { key: 'ambiguity', user: (skill: string) => `Can you handle ${skill.replaceAll('_', ' ')} for me, or do I need to find someone myself?`, lifecycle: 'clarifying' },
   { key: 'interruption', user: (skill: string) => `Before we continue with ${skill.replaceAll('_', ' ')}, I need to ask about something else.`, lifecycle: 'paused' },
@@ -21,24 +23,76 @@ const variants = [
   { key: 'recovery', user: (skill: string) => `The ${skill.replaceAll('_', ' ')} request did not complete. Help me recover or resume it without creating a duplicate.`, lifecycle: 'failed' },
   { key: 'linked_device', user: (skill: string) => `I am continuing my ${skill.replaceAll('_', ' ')} request from a linked device. Keep the same identity and object context.`, lifecycle: 'resumed' },
 ];
+const capabilityVariants = [
+  { key: 'inspect', user: (name: string) => `Please show me the current status for ${name}.`, lifecycle: 'requested' },
+  { key: 'action', user: (name: string, action: string) => `I need help to ${action.replaceAll('_', ' ')} ${name}.`, lifecycle: 'clarifying' },
+  { key: 'consent', user: (name: string, action: string) => `Before you ${action.replaceAll('_', ' ')} ${name}, tell me what needs my confirmation.`, lifecycle: 'awaiting_confirmation' },
+  { key: 'recovery', user: (name: string) => `The ${name} step did not finish. Help me resume the same item without making a duplicate.`, lifecycle: 'failed' },
+  { key: 'pidgin', user: (name: string) => `Abeg, help me check ${name} and tell me the next safe step.`, lifecycle: 'requested' },
+  { key: 'hausa_influenced', user: (name: string) => `Please help me with ${name}; ask only the details you still need.`, lifecycle: 'clarifying' },
+];
 
-function createExample(skill: string, skillIndex: number, index: number) {
+function compactName(value: string): string {
+  return String(value || '').replace(/^atomic\./, '').replace(/^skill\./, '').replaceAll('_', ' ').replaceAll('.', ' ').replace(/\s+/g, ' ').trim();
+}
+
+function directCapabilityName(registration: CapabilityRegistration): string {
+  const alias = [...(registration.aliases || []), registration.descriptor.capability]
+    .map(compactName)
+    .find(Boolean);
+  return alias || compactName(registration.descriptor.capability);
+}
+
+function skillAssistantTarget(skill: string, contract: any, variant: string): string {
+  const name = compactName(skill);
+  const required = contract.requirements.filter((requirement: any) => requirement.required).map((requirement: any) => requirement.label).slice(0, 3);
+  const details = required.length ? ` I still need ${required.join(', ')} before I can prepare a truthful next step.` : '';
+  const boundary = contract.requiresPayment || contract.requiresProvider || contract.requiresEvidence
+    ? ' I will not claim a provider, payment, availability, or completion until the canonical service has evidence.'
+    : ' I will keep the same context and use the canonical owner for any recorded change.';
+  if (variant === 'ambiguity') return `I can help you decide what ${name} support is appropriate. I will clarify the outcome before creating or changing anything.${boundary}`;
+  if (variant === 'interruption') return `I will keep the ${name} context resumable while we discuss the other question. I will not replace it or create a duplicate.${boundary}`;
+  if (variant === 'correction') return `I will update the exact ${name} context you mean after confirming the changed detail. I will not create a second request.${boundary}`;
+  if (variant === 'unavailable') return `If no verified option is available for ${name}, I will say so clearly and keep the next safe option visible. I will not invent a match.${boundary}`;
+  if (variant === 'consent') return `I will explain any consent or confirmation needed for ${name} before a consequential action. Nothing irreversible will happen from this message alone.${boundary}`;
+  if (variant === 'channel' || variant === 'linked_device') return `I can continue the same ${name} context when identity and object ownership match. I will not create a duplicate merely because the channel changed.${boundary}`;
+  if (variant === 'recovery') return `I can inspect and recover the same ${name} context without claiming it completed. I will preserve its exact identity and any available evidence.${boundary}`;
+  return `I can help with ${name}.${details}${boundary}`;
+}
+
+function capabilityAssistantTarget(registration: CapabilityRegistration, action: string, variant: string): string {
+  const descriptor = registration.descriptor;
+  const name = directCapabilityName(registration);
+  const actionName = action.replaceAll('_', ' ');
+  const confirmation = descriptor.confirmationRequired ? ` I will ask for explicit confirmation before ${actionName}.` : '';
+  const activation = descriptor.activationState === 'repository_ready_external_activation'
+    ? ' Any external outcome still requires the configured provider and canonical evidence.'
+    : ' I will use the registered canonical owner and preserve the current context.';
+  if (variant === 'recovery') return `I can inspect the same ${name} operation and help recover it without creating a duplicate.${confirmation}${activation}`;
+  if (variant === 'consent') return `I can explain what ${name} can do and what confirmation is required before ${actionName}.${confirmation}${activation}`;
+  if (variant === 'pidgin') return `I fit help check the ${name} matter and tell you the next safe step. I no go claim say anything don finish without record.${activation}`;
+  if (variant === 'hausa_influenced') return `I can help with ${name} and ask only for the details still needed. I will not claim an external result without evidence.${activation}`;
+  return `I can inspect ${name} in the current context and prepare the ${actionName} step safely.${confirmation}${activation}`;
+}
+
+function createSkillExample(skill: string, skillIndex: number, index: number) {
   const contract = buildSkillExecutionContract(skill);
   const pack = getConvergedSkillBehaviour(skill);
-  const ordinal = skillIndex * variants.length + index;
-  const variant = variants[index % variants.length];
+  const ordinal = skillIndex * skillVariants.length + index;
+  const variant = skillVariants[index % skillVariants.length];
   const actor = actors[ordinal % actors.length];
   const channel = channels[ordinal % channels.length];
   const locale = locales[ordinal % locales.length];
   const surface = surfaces[ordinal % surfaces.length];
   return {
-    exampleId: `${datasetVersion}:${skill}:${variant.key}:${index}`,
+    exampleId: `${datasetVersion}:skill:${skill}:${variant.key}:${index}`,
     datasetVersion,
     messages: [
       { role: 'user', content: variant.user(skill), actor, channel, locale },
-      { role: 'assistant', content: 'Interpret the objective, preserve active context, gather only the required information, use Memory Profile context without exposing provenance, and state any unavailable capability or external dependency truthfully.', mode: 'semantic_interpreter' },
+      { role: 'assistant', content: skillAssistantTarget(skill, contract, variant.key), mode: 'semantic_interpreter' },
     ],
     labels: {
+      targetType: 'skill',
       skill,
       family: contract.category || 'uncategorized',
       mode: contract.mode,
@@ -69,14 +123,64 @@ function createExample(skill: string, skillIndex: number, index: number) {
   };
 }
 
+function createCapabilityExample(registration: CapabilityRegistration, capabilityIndex: number, index: number) {
+  const descriptor = registration.descriptor;
+  const ordinal = capabilityIndex * capabilityVariants.length + index;
+  const variant = capabilityVariants[index % capabilityVariants.length];
+  const action = descriptor.actions[index % Math.max(1, descriptor.actions.length)] || 'inspect';
+  const name = directCapabilityName(registration);
+  const actor = actors[ordinal % actors.length];
+  const channel = channels[ordinal % channels.length];
+  const locale = locales[ordinal % locales.length];
+  const surface = surfaces[(ordinal + skillVariants.length) % surfaces.length];
+  return {
+    exampleId: `${datasetVersion}:capability:${descriptor.capability}:${variant.key}:${index}`,
+    datasetVersion,
+    messages: [
+      { role: 'user', content: variant.user(name, action), actor, channel, locale },
+      { role: 'assistant', content: capabilityAssistantTarget(registration, action, variant.key), mode: 'semantic_interpreter' },
+    ],
+    labels: {
+      targetType: 'capability',
+      capability: descriptor.capability,
+      action,
+      actions: descriptor.actions,
+      family: descriptor.family,
+      mode: descriptor.mode,
+      variant: variant.key,
+      lifecycle: variant.lifecycle,
+      owners: descriptor.owner,
+      risk: descriptor.risk,
+      confirmationRequired: descriptor.confirmationRequired,
+      activationState: descriptor.activationState,
+      actor,
+      channel,
+      locale,
+      surface,
+      canonicalEntry: 'canonicalChatTurnService',
+      authorityBoundary: 'canonical_domain_services',
+      forbiddenClaims: ['invented availability', 'invented provider verification', 'invented payment', 'invented evidence', 'direct state mutation by model', 'fabricated Memory Profile facts'],
+    },
+    provenance: { source: 'canonical Kurukoo capability registry', generatedBy: 'deterministic repository generator', teacherGenerated: false, productionUserData: false, reviewed: false },
+    quality: { status: 'candidate', requiresReview: true, scenarioFamily: 'capability-action-boundary' },
+    privacy: { containsPersonalData: false, synthetic: true },
+  };
+}
+
 function hashFile(filePath: string) {
   return crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
 }
 function writeJsonl(filePath: string, rows: unknown[]) { fs.writeFileSync(filePath, `${rows.map((row) => JSON.stringify(row)).join('\n')}\n`); }
 
 fs.mkdirSync(outputDir, { recursive: true });
+ensureCapabilityFoundation();
 const skills = getAllConvergedSkillNames();
-const rows = skills.flatMap((skill, skillIndex) => variants.map((_, index) => createExample(skill, skillIndex, index)));
+const directCapabilities = listCapabilityRegistrations()
+  .filter(registration => registration.descriptor.kind === 'operation')
+  .sort((left, right) => left.descriptor.capability.localeCompare(right.descriptor.capability));
+const skillRows = skills.flatMap((skill, skillIndex) => skillVariants.map((_, index) => createSkillExample(skill, skillIndex, index)));
+const capabilityRows = directCapabilities.flatMap((registration, capabilityIndex) => capabilityVariants.map((_, index) => createCapabilityExample(registration, capabilityIndex, index)));
+const rows = [...skillRows, ...capabilityRows];
 const splitFor = (row: (typeof rows)[number]) => {
   const bucket = crypto.createHash('sha256').update(row.exampleId).digest().readUInt16BE(0) % 100;
   return bucket < 80 ? 'train' : bucket < 90 ? 'validation' : 'test';
@@ -88,8 +192,8 @@ for (const split of ['all', 'train', 'validation', 'test']) {
   writeJsonl(filePath, splitRows);
   files[split] = filePath;
 }
-const goldenRows = rows.filter((row) => row.labels.variant === 'normal');
-const adversarialRows = rows.filter((row) => ['ambiguity', 'interruption', 'correction', 'unavailable', 'consent', 'recovery', 'linked_device'].includes(row.labels.variant));
+const goldenRows = rows.filter((row) => row.labels.variant === 'normal' || (row.labels.targetType === 'capability' && row.labels.variant === 'inspect'));
+const adversarialRows = rows.filter((row) => !['normal', 'inspect'].includes(row.labels.variant));
 for (const [name, setRows] of [['golden', goldenRows], ['adversarial', adversarialRows]] as const) {
   const filePath = path.join(outputDir, `${datasetVersion}.${name}.jsonl`);
   writeJsonl(filePath, setRows);
@@ -103,14 +207,18 @@ const manifest = {
   fileSha256: Object.fromEntries(Object.entries(files).map(([key, filePath]) => [key, hashFile(filePath)])),
   evaluationSets: { golden: { count: goldenRows.length, status: 'candidate_requires_human_curation' }, adversarial: { count: adversarialRows.length, status: 'candidate_requires_human_curation' } },
   skillCount: skills.length,
+  directCapabilityCount: directCapabilities.length,
+  skillExampleCount: skillRows.length,
+  capabilityExampleCount: capabilityRows.length,
   familyCount: new Set(rows.map((row) => row.labels.family)).size,
-  variantCount: variants.length,
+  variantCount: skillVariants.length,
+  capabilityVariantCount: capabilityVariants.length,
   actorCoverage: [...new Set(rows.map((row) => row.labels.actor))],
   channelCoverage: [...new Set(rows.map((row) => row.labels.channel))],
   localeCoverage: [...new Set(rows.map((row) => row.labels.locale))],
   surfaceCoverage: [...new Set(rows.map((row) => row.labels.surface))],
   variantCoverage: [...new Set(rows.map((row) => row.labels.variant))],
-  sourceOfTruth: ['src/services/skillCatalogueConvergence.ts', 'src/services/skillBehaviourConvergence.ts', 'src/services/skillExecutionContract.ts', 'src/services/canonicalChatTurnService.ts', 'src/services/featureFlags.ts'],
+  sourceOfTruth: ['src/services/skillCatalogueConvergence.ts', 'src/services/skillBehaviourConvergence.ts', 'src/services/skillExecutionContract.ts', 'src/services/capabilityFoundation.ts', 'src/services/capabilityRegistry.ts', 'src/services/canonicalChatTurnService.ts', 'src/services/featureFlags.ts'],
   teacherOutputAllowed: true,
   teacherOutputTrustedAutomatically: false,
   productionUserDataIncluded: false,

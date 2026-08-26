@@ -17,7 +17,7 @@ export interface OutcomeContext {
 function actionList(state:OutcomeState, requestId:string, communicationSessionId?:string):OutcomeContext['actions'] {
   const actions:OutcomeContext['actions']=[];
   if(['draft','needs_input','requested'].includes(state)) actions.push({id:'continue',label:'Continue',method:'chat'});
-  if(state==='awaiting_confirmation') actions.push({id:'confirm',label:'Review and confirm',method:'open',href:`/confirmation?request=${encodeURIComponent(requestId)}`,requiresConfirmation:true});
+  if(state==='awaiting_confirmation') actions.push({id:'confirm',label:'Review and confirm',method:'open',href:`/confirmations?request=${encodeURIComponent(requestId)}`,requiresConfirmation:true});
   if(state==='awaiting_match') actions.push({id:'refresh',label:'Find providers',method:'get'});
   if(['quoted','payment_pending'].includes(state)) actions.push({id:'pay',label:'Continue to payment',method:'open',href:`/payment?request=${encodeURIComponent(requestId)}`,requiresConfirmation:true});
   if(['matched','accepted','arrived','in_progress','in_fulfillment'].includes(state)&&communicationSessionId) actions.push({id:'communicate',label:'Contact provider',method:'open',href:`/call?session=${encodeURIComponent(communicationSessionId)}`});

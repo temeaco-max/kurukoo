@@ -168,7 +168,7 @@
         const data = payload?.data || {};
         const title = String(notification.title || data.title || 'Kurukoo');
         const body = String(notification.body || data.body || 'You have a new Kurukoo update.');
-        const target = String(data.link || '/app/notifications');
+        const target = String(data.link || '/notifications');
         const notice = new Notification(title, {
           body,
           icon: '/assets/icons/icon-192.svg',

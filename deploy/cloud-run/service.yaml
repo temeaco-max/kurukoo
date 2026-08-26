@@ -9,9 +9,8 @@ spec:
     metadata:
       annotations:
         autoscaling.knative.dev/minScale: "0"
-        # SQL.js remains single-process only. This cap removes replica-level split-brain risk,
-        # but it does not make container-local storage durable. Startup remains blocked below
-        # until a shared durable persistence adapter is implemented and activated.
+        # PostgreSQL is the intended durable substrate. Keep one instance until every
+        # process-local worker owner has distributed lease/queue semantics and evidence.
         autoscaling.knative.dev/maxScale: "1"
         run.googleapis.com/startup-cpu-boost: "true"
     spec:
@@ -47,7 +46,9 @@ spec:
             - name: KURUKOO_CLOUD_RUN
               value: "true"
             - name: KURUKOO_DATABASE_MODE
-              value: "sqljs"
+              value: "postgres"
+            - name: KURUKOO_POSTGRES_APPLICATION_INTEGRATED
+              value: "false"
             - name: KURUKOO_PERSISTENT_STATE_REQUIRED
               value: "true"
             - name: KURUKOO_JOB_MODE
@@ -74,6 +75,20 @@ spec:
               value: /tmp/huggingface
             - name: KURUKOO_EXTERNAL_EXECUTION_ENABLED
               value: "false"
+            - name: KURUKOO_SECRET_SOURCE
+              value: "secret_manager"
+            - name: KURUKOO_STORAGE_MODE
+              value: "local"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: kurukoo-jwt-secret
+                  key: latest
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: kurukoo-database-url
+                  key: latest
             - name: KURUKOO_COORDINATOR_TEACHER_ENABLED
               value: "false"
             - name: KURUKOO_COORDINATOR_PROMOTION_ENABLED

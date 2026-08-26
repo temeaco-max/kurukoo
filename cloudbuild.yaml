@@ -5,6 +5,28 @@ steps:
   - name: gcr.io/cloud-builders/docker
     args: ['push', '$_IMAGE']
 
+  # This gate intentionally runs before deploy. It fails closed until the full
+  # async PostgreSQL call-surface migration has been completed and explicitly
+  # authorized by the release owner.
+  - name: node:22-bookworm-slim
+    entrypoint: bash
+    secretEnv: ['JWT_SECRET', 'DATABASE_URL']
+    args:
+      - -ceu
+      - |
+        npm ci --omit=dev --ignore-scripts --no-audit --no-fund
+        NODE_ENV=production \
+        KURUKOO_CLOUD_RUN=true \
+        KURUKOO_DATABASE_MODE=postgres \
+        KURUKOO_POSTGRES_APPLICATION_INTEGRATED="$_POSTGRES_APPLICATION_INTEGRATED" \
+        KURUKOO_PERSISTENT_STATE_REQUIRED=true \
+        KURUKOO_JOB_MODE=in_process \
+        KURUKOO_WORKERS=1 \
+        KURUKOO_EXTERNAL_EXECUTION_ENABLED=false \
+        KURUKOO_SECRET_SOURCE=secret_manager \
+        KURUKOO_STORAGE_MODE=local \
+        node scripts/production-preflight.mjs
+
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
     entrypoint: gcloud
     args:
@@ -32,8 +54,28 @@ steps:
       - '--port'
       - '8080'
       - '--set-env-vars'
-      - 'NODE_ENV=production,KURUKOO_SMOLLM2_LOCAL=$_SMOLLM2_LOCAL,SMOLLM2_MODEL=$_SMOLLM2_MODEL,SMOLLM2_FALLBACK_MODEL=$_SMOLLM2_FALLBACK_MODEL,SMOLLM2_DTYPE=$_SMOLLM2_DTYPE,KURUKOO_CLOUD_RUN_REQUIRE_MODEL=$_REQUIRE_MODEL,HOST=0.0.0.0,PORT=8080'
+      - 'NODE_ENV=production,HOST=0.0.0.0,PORT=8080,KURUKOO_CLOUD_RUN=true,KURUKOO_DATABASE_MODE=postgres,KURUKOO_POSTGRES_APPLICATION_INTEGRATED=$_POSTGRES_APPLICATION_INTEGRATED,KURUKOO_PERSISTENT_STATE_REQUIRED=true,KURUKOO_JOB_MODE=in_process,KURUKOO_WORKERS=1,KURUKOO_EXTERNAL_EXECUTION_ENABLED=false,KURUKOO_SECRET_SOURCE=secret_manager,KURUKOO_STORAGE_MODE=local,KURUKOO_SMOLLM2_LOCAL=$_SMOLLM2_LOCAL,SMOLLM2_MODEL=$_SMOLLM2_MODEL,SMOLLM2_FALLBACK_MODEL=$_SMOLLM2_FALLBACK_MODEL,SMOLLM2_DTYPE=$_SMOLLM2_DTYPE,KURUKOO_CLOUD_RUN_REQUIRE_MODEL=$_REQUIRE_MODEL'
+      - '--set-secrets'
+      - 'JWT_SECRET=$_JWT_SECRET_NAME:latest,DATABASE_URL=$_DATABASE_URL_SECRET_NAME:latest'
       - '--quiet'
+
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        ready=$(gcloud run services describe "$_SERVICE" --region "$_REGION" --format='value(status.conditions[?type="Ready"].status)')
+        test "$ready" = "True" || { echo "Cloud Run revision is not Ready: $ready"; exit 1; }
+        echo "Cloud Run revision is Ready; external smoke and core-journey verification remain mandatory before promotion."
+
+timeout: 1800s
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/$_JWT_SECRET_NAME/versions/latest
+      env: JWT_SECRET
+    - versionName: projects/$PROJECT_ID/secrets/$_DATABASE_URL_SECRET_NAME/versions/latest
+      env: DATABASE_URL
 
 images:
   - '$_IMAGE'
@@ -47,7 +89,10 @@ substitutions:
   _CONCURRENCY: '1'
   _TIMEOUT: '300s'
   _MIN_INSTANCES: '0'
-  _MAX_INSTANCES: '3'
+  _MAX_INSTANCES: '1'
+  _JWT_SECRET_NAME: kurukoo-jwt-secret
+  _DATABASE_URL_SECRET_NAME: kurukoo-database-url
+  _POSTGRES_APPLICATION_INTEGRATED: 'false'
   _SMOLLM2_LOCAL: 'true'
   _SMOLLM2_MODEL: HuggingFaceTB/SmolLM2-1.7B-Instruct
   _SMOLLM2_FALLBACK_MODEL: HuggingFaceTB/SmolLM2-1.7B-Instruct

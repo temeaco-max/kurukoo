@@ -61,12 +61,17 @@ def legacy_metadata(row: dict) -> dict:
     return row.get("metadata") or row.get("labels") or {}
 
 
-def legacy_admission(row: dict, valid_skills: set[str]) -> tuple[bool, str]:
+def legacy_admission(row: dict, valid_skills: set[str], valid_capabilities: set[str]) -> tuple[bool, str]:
     provenance = row.get("provenance") or {}
     privacy = row.get("privacy") or {}
     meta = legacy_metadata(row)
     skill = str(meta.get("skill") or row.get("skill") or "")
-    if skill not in valid_skills:
+    target_type = str(meta.get("targetType") or row.get("targetType") or "skill")
+    capability = str(meta.get("capability") or row.get("capability") or "")
+    if target_type == "capability":
+        if capability not in valid_capabilities:
+            return False, "capability_not_in_current_behaviour_pack"
+    elif skill not in valid_skills:
         return False, "skill_not_in_current_behaviour_pack"
     if provenance.get("productionUserData") is True or privacy.get("containsPersonalData") is True:
         return False, "privacy_or_production_data"
@@ -172,11 +177,12 @@ def main() -> int:
     if not pack_path.exists(): raise SystemExit("Behaviour Pack missing; compile it before corpus reconciliation.")
     pack = json.loads(pack_path.read_text(encoding="utf-8"))
     valid_skills = {item["skill"] for item in pack.get("skills", [])}
-    if not valid_skills or not pack.get("packHash"): raise SystemExit("Behaviour Pack is incomplete or missing its stable hash.")
+    valid_capabilities = {item["capability"] for item in pack.get("capabilities", [])}
+    if not valid_skills or not valid_capabilities or not pack.get("packHash"): raise SystemExit("Behaviour Pack is incomplete or missing its stable hash.")
     legacy_rows, os_rows = read_jsonl(legacy_path), read_jsonl(os_path)
     accepted_legacy, quarantine = [], Counter()
     for row in legacy_rows:
-        ok, reason = legacy_admission(row, valid_skills)
+        ok, reason = legacy_admission(row, valid_skills, valid_capabilities)
         if ok: accepted_legacy.append(legacy_materialize(row, pack))
         else: quarantine[reason] += 1
     accepted_os = [os_materialize(row, pack) for row in os_rows if row.get("packHash") == pack["packHash"]]

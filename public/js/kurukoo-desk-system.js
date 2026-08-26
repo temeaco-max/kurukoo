@@ -7,37 +7,6 @@
   let accountName = 'Your account';
   let accountPhone = '';
   const section = document.body.dataset.appSection || '';
-  const legacyToCanonical = (pathname) => {
-    const direct = {
-      '/app': '/desk','/app/agent': '/chat','/app/discover': '/discover','/app/requests': '/requests','/app/tasks': '/tasks','/app/connect': '/connect','/app/reminders': '/reminders','/app/saved': '/saved','/app/cart': '/cart','/app/agents': '/agents','/app/capabilities': '/capabilities','/app/opportunities': '/opportunities','/app/wallet': '/wallet','/app/points': '/points','/app/top-up': '/top-up','/app/subscriptions': '/subscriptions','/app/checkout': '/checkout','/app/confirmations': '/confirmations','/app/memory': '/memory','/app/artifacts': '/artifacts','/app/prayer': '/prayer','/app/call': '/call','/app/notifications': '/notifications','/app/safety': '/safety','/app/settings': '/settings'
-    };
-    if (direct[pathname]) return direct[pathname];
-    if (pathname.startsWith('/app/requests/')) return pathname.replace('/app/requests/', '/requests/');
-    if (pathname.startsWith('/app/tasks/')) return pathname.replace('/app/tasks/', '/tasks/');
-    if (pathname.startsWith('/app/agents/')) return pathname.replace('/app/agents/', '/agents/');
-    if (pathname.startsWith('/app/opportunities/')) return pathname.replace('/app/opportunities/', '/opportunities/');
-    if (pathname.startsWith('/app/connections/')) return pathname.replace('/app/connections/', '/connections/');
-    if (pathname.startsWith('/app/memory/')) return pathname.replace('/app/memory/', '/memory/');
-    if (pathname.startsWith('/app/artifacts/')) return pathname.replace('/app/artifacts/', '/artifacts/');
-    return pathname;
-  };
-
-  const normalizeLinks = () => {
-    document.querySelectorAll('a[href]').forEach((anchor) => {
-      const raw = anchor.getAttribute('href');
-      if (!raw || raw.startsWith('#') || raw.startsWith('mailto:') || raw.startsWith('tel:') || raw.startsWith('javascript:')) return;
-      try {
-        const url = new URL(raw, window.location.origin);
-        if (url.origin !== window.location.origin) return;
-        const canonical = legacyToCanonical(url.pathname);
-        if (canonical !== url.pathname) {
-          url.pathname = canonical;
-          anchor.setAttribute('href', `${url.pathname}${url.search}${url.hash}`);
-        }
-      } catch {}
-    });
-  };
-
   const closeAll = () => document.querySelectorAll('.k-desk-drawer:not([hidden])').forEach((panel) => {
     panel.hidden = true;
     document.querySelector(`[aria-controls="${panel.id}"]`)?.setAttribute('aria-expanded', 'false');
@@ -91,7 +60,7 @@
       const payload = await response.json(); const items = Array.isArray(payload) ? payload : Array.isArray(payload.notifications) ? payload.notifications : [];
       if (!items.length) { body.innerHTML = '<div class="k-desk-empty-state"><strong>You are up to date.</strong><p>No notifications need your attention.</p></div>'; return; }
       body.replaceChildren(); const list=document.createElement('div'); list.className='k-desk-notification-list';
-      items.slice(0,30).forEach((item)=>{ const row=document.createElement('article'); row.className=`k-desk-notification${item.read||item.readAt?'':' is-unread'}`; const title=String(item.title||item.type||'Kurukoo update'); const message=String(item.body||item.message||''); const target=legacyToCanonical(String(item.link||item.href||'/notifications')); row.innerHTML=`<div><strong>${title}</strong><p>${message}</p></div><a href="${target}">${item.actionLabel||'Open'}</a>`; list.appendChild(row); });
+      items.slice(0,30).forEach((item)=>{ const row=document.createElement('article'); row.className=`k-desk-notification${item.read||item.readAt?'':' is-unread'}`; const title=String(item.title||item.type||'Kurukoo update'); const message=String(item.body||item.message||''); const target=String(item.link||item.href||'/notifications'); row.innerHTML=`<div><strong>${title}</strong><p>${message}</p></div><a href="${target}">${item.actionLabel||'Open'}</a>`; list.appendChild(row); });
       body.appendChild(list); const all=document.createElement('a'); all.className='k-desk-drawer-primary'; all.href='/notifications'; all.textContent='View all notifications →'; body.appendChild(all);
     } catch (error) { body.innerHTML=`<div class="k-desk-empty-state"><strong>Notifications are unavailable</strong><p>${String(error?.message||'Open Notifications for the full state.')}</p><a href="/notifications">Open Notifications →</a></div>`; }
   };
@@ -173,11 +142,13 @@
     today.appendChild(todayList);
 
     const continueCard = makeDeskModule('continue-conversation','Continue conversation','Pick up where you left off','Continue with the same Agent relationship and exact source context.',[{label:'Open Chat',href:'/chat',tone:'primary'}]);
-    const requestCard = makeDeskModule('active-requests','Active requests','Work in motion','Request state stays owned by the canonical Economic Request lifecycle.',[{label:'View Requests',href:'/requests',tone:'primary'}]);
+    const agentObjectivesCard = makeDeskModule('agent-objectives','Agent objectives','What Kurukoo is doing','See active objectives, what needs your attention and the next confirmed step.',[{label:'Open Agents',href:'/agents',tone:'primary'}]);
+    agentObjectivesCard.appendChild(makeDeskState('empty','No active Agent objectives','When an objective is active, waiting, blocked or needs your input, its truthful progress appears here.',{label:'Ask Agent',href:'/chat'}));
+    const requestCard = makeDeskModule('active-requests','Active requests','Work in motion','Follow requests here, then continue with the details in Requests when you are ready.',[{label:'View Requests',href:'/requests',tone:'primary'}]);
     requestCard.appendChild(makeDeskState('empty','No active requests are surfaced here yet','Desk does not invent provider, payment or fulfilment status.',{label:'Open Requests',href:'/requests'}));
-    const taskCard = makeDeskModule('tasks-reminders','Tasks & reminders','Work to finish','Use the canonical Tasks and reminder context without creating a parallel queue.',[{label:'View Tasks',href:'/tasks',tone:'primary'}]);
+    const taskCard = makeDeskModule('tasks-reminders','Tasks & reminders','Work to finish','Keep task and reminder follow-through visible, with details available in Tasks.',[{label:'View Tasks',href:'/tasks',tone:'primary'}]);
     taskCard.appendChild(makeDeskState('empty','No task state is surfaced here yet','Desk preserves the task authority and continues to the source surface.',{label:'Open Tasks',href:'/tasks'}));
-    const opportunityCard = makeDeskModule('opportunity-radar','Opportunity radar','Useful possibilities, clearly attributed','Relevant opportunities remain evidence-bound and continue into Discover.',[{label:'Explore Discover',href:'/discover',tone:'primary'}]);
+    const opportunityCard = makeDeskModule('opportunity-radar','Opportunity radar','Useful possibilities, clearly attributed','Explore relevant opportunities in Discover, with their source and availability made clear.',[{label:'Explore Discover',href:'/discover',tone:'primary'}]);
     opportunityCard.appendChild(makeDeskState('unavailable','Live opportunity availability is deployment-dependent','No current provider or availability claim is inferred locally.'));
     const pointsCard = makeDeskModule('points','Points','Your closed-loop Points','Points remain distinct from cash settlement and external payment rails.',[{label:'Open Points',href:'/points',tone:'primary'}]);
     const pointsValue=document.createElement('div'); pointsValue.className='k-desk-points-value'; pointsValue.dataset.deskPointsValue='true'; pointsValue.textContent='Loading balance…'; pointsCard.appendChild(pointsValue);
@@ -188,12 +159,12 @@
     const channelsCard = makeDeskModule('connected-channels','Connected channels','Your communication readiness','Channel connection and delivery state remain owned by Connect and external activation boundaries.',[{label:'Manage Connect',href:'/connect',tone:'primary'}]);
     channelsCard.appendChild(makeDeskState('ready','Channel readiness lives in Connect','Desk keeps this module lightweight and contextual.',{label:'Open Connect',href:'/connect'}));
 
-    [today,continueCard,requestCard,taskCard,opportunityCard,pointsCard,topicsCard,guideCard,sponsorCard,channelsCard].forEach((card)=>main.appendChild(card));
+    [today,continueCard,agentObjectivesCard,requestCard,taskCard,opportunityCard,pointsCard,topicsCard,guideCard,sponsorCard,channelsCard].forEach((card)=>main.appendChild(card));
 
     const pulse=makeDeskModule('pulse','Pulse','What is moving around your work','A contextual activity/timeline view belongs in the right rail.',[{label:'Open Notifications',href:'/notifications'}]);
-    pulse.appendChild(makeDeskState('empty','No live pulse is surfaced in this static state','Current notifications and activities remain available from their canonical sources.'));
+    pulse.appendChild(makeDeskState('empty','No live pulse is surfaced in this static state','Current notifications and activity are available from their usual places.'));
     const safety=makeDeskModule('safety-check-in','Safety check-in','Stay in control of safety context','Safety support is explicit, consent-bound and never represented as emergency-service delivery.',[{label:'Open Safety',href:'/safety'}]);
-    safety.appendChild(makeDeskState('ready','Safety controls are available','Use the canonical Safety surface for check-ins and trusted-contact management.',{label:'Open Safety',href:'/safety'}));
+    safety.appendChild(makeDeskState('ready','Safety controls are available','Use Safety for check-ins and trusted-contact management.',{label:'Open Safety',href:'/safety'}));
     const activity=makeDeskModule('activity-summary','Activity summary','A compact view of your recent activity','Desk provides orientation; detailed analytics remain owned by the relevant surfaces.',[{label:'Open Tasks',href:'/tasks',tone:'secondary'},{label:'Open Requests',href:'/requests',tone:'secondary'}]);
     const activityMetrics = document.createElement('div'); activityMetrics.className = 'k-desk-activity-metrics'; [['Tasks', '—'], ['Requests', '—'], ['Agent goals', '—']].forEach(([label, value]) => { const item = document.createElement('div'); item.innerHTML = `<span>${label}</span><strong>${value}</strong>`; activityMetrics.appendChild(item); }); activity.appendChild(activityMetrics);
     [pulse,safety,activity].forEach((card)=>rail.appendChild(card));
@@ -214,7 +185,6 @@
   };
 
   const boot = () => {
-    normalizeLinks();
     const host=document.querySelector('.k-app-header-actions'); if(!host) return;
     const identity = host.querySelector('.k-app-identity');
     accountName = identity?.querySelector('strong')?.textContent?.trim() || 'Your account';
@@ -227,7 +197,6 @@
     controls.forEach((control) => host.appendChild(control));
     wireDrawer(search,renderSearch); wireDrawer(notifications,renderNotifications); wireDrawer(profile,renderProfile); wireDrawer(workspace,renderOsWorkspace); wireDrawer(context,renderContext);
     document.addEventListener('keydown',(event)=>{if(event.key==='Escape')closeAll();});
-    const observer=new MutationObserver(()=>normalizeLinks()); observer.observe(document.body,{subtree:true,childList:true});
     if(!document.querySelector('link[data-kurukoo-os-components]')){const link=document.createElement('link');link.rel='stylesheet';link.href='/css/kurukoo-os-components.css?v=1';link.dataset.kurukooOsComponents='true';document.head.appendChild(link);}
     renderDeskComposition();
   };
