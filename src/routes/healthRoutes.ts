@@ -10,6 +10,7 @@ import { getNetworkMetricSnapshot, metricsPrometheus } from '../services/observa
 import { getExternalIntegrationOperationalStatus } from '../services/externalIntegrationOperationalStatus.js';
 import { migrationReadiness } from '../services/migrationRunner.js';
 import { getPersistenceReadiness } from '../services/persistenceReadiness.js';
+import { getAfricaTalkingReadiness } from '../services/africaTalkingReadiness.js';
 
 const router = Router();
 const startedAt = Date.now();
@@ -44,6 +45,16 @@ router.get('/health', async (_req, res) => {
     try { safetyCount = Number((await store.one<any>(`SELECT COUNT(*) AS count FROM safety_checkins WHERE status = 'active'`))?.count || 0); } catch {}
     res.json({ status: 'ok', service: 'kurukoo', uptime_seconds: Math.floor((Date.now() - startedAt) / 1000), database: 'ok', persistence: getPersistenceReadiness(), active_requests: requestCount, scheduled_reminders: reminderCount, active_check_ins: safetyCount, observability: getNetworkMetricSnapshot(), migrations: await migrationSnapshot(), ...runtimeSnapshot(), ...capabilitySnapshot(), timestamp: new Date().toISOString() });
   } catch (error) { console.error('[Health] check failed:', error); res.status(503).json({ status: 'degraded', service: 'kurukoo', database: 'unavailable', timestamp: new Date().toISOString() }); }
+});
+router.get('/ready', async (_req, res) => {
+  try {
+    const store = await getCanonicalStore(); await store.one('SELECT 1');
+    const africaTalking = getAfricaTalkingReadiness();
+    res.json({ status: 'ready', service: 'kurukoo', checks: { database: 'ok' }, channels: { africa_talking: africaTalking }, external_completion_proven: false, note: 'This endpoint reports configuration only. It does not send traffic or prove provider acceptance, handset delivery, airtime completion, or public callback reachability.', timestamp: new Date().toISOString() });
+  } catch (error) {
+    console.error('[Channel readiness] check failed:', error);
+    res.status(503).json({ status: 'not_ready', service: 'kurukoo', database: 'unavailable', channels: { africa_talking: getAfricaTalkingReadiness() }, external_completion_proven: false, timestamp: new Date().toISOString() });
+  }
 });
 router.get('/readyz', async (_req, res) => {
   try {

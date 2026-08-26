@@ -112,9 +112,16 @@ export async function createTrustedContactConsentRequest(ownerPhone: string, con
   const body = `Kurukoo is asking you to become ${contactData.name}'s trusted safety contact. Review and consent here: ${consentUrl}`;
 
   if (channel === 'sms') {
-    const result = await sendSmsText(contactData.phone, body);
-    deliveryState = result.ok ? 'accepted' : result.reason === 'sms_provider_not_configured' ? 'not_configured' : 'failed';
-    provider = result.provider;
+    if (!readiness.smsConfigured) {
+      // Do not invoke the transport when credentials are absent: this is a pending consent
+      // request with no delivery claim, not a failed provider delivery.
+      deliveryState = 'not_configured';
+      provider = null;
+    } else {
+      const result = await sendSmsText(contactData.phone, body);
+      deliveryState = result.ok ? 'accepted' : result.reason === 'sms_provider_not_configured' ? 'not_configured' : 'failed';
+      provider = result.provider;
+    }
   } else {
     const result = await sendEmail(String(recipientEmail).trim(), 'Kurukoo trusted-contact consent', body, { idempotencyKey: `trusted-contact-consent:${id}`, sensitive: true });
     deliveryState = result.ok ? 'accepted' : result.provider === 'disabled' ? 'not_configured' : 'failed';
