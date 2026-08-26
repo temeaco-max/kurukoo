@@ -138,3 +138,22 @@ registerSkillsToFulfilmentMechanism(['find_worker','find_provider','local_busine
 registerSkillsToFulfilmentMechanism(['courier','delivery','pickup','field_service'], 'provider_dispatch');
 registerSkillsToFulfilmentMechanism(['search','research','lookup','compare','local_information'], 'information_lookup');
 registerSkillsToFulfilmentMechanism(['contact_provider','message_provider','request_quote'], 'communication_relay');
+
+// Canonical Chat uses these current skill identifiers and requirement keys. Keep
+// the mechanism shared while preserving the request owner's collected fields.
+registerSkillsToFulfilmentMechanism(['order_food'], 'marketplace_purchase', {
+  requiredInputs: ['items', 'location'],
+  optionalInputs: ['quantity', 'delivery_time', 'dietary_requirements'],
+});
+registerSkillsToFulfilmentMechanism(['product_sourcing'], 'marketplace_purchase', {
+  requiredInputs: ['product'],
+  optionalInputs: ['quantity', 'budget', 'location', 'deadline'],
+});
+registerSkillsToFulfilmentMechanism(['repair'], 'service_request', {
+  requiredInputs: ['device_or_asset', 'issue', 'location'],
+  optionalInputs: ['urgency', 'parts_preference'],
+});
+registerSkillsToFulfilmentMechanism(['find_worker'], 'local_discovery', {
+  requiredInputs: ['service', 'location'],
+  optionalInputs: ['time', 'budget'],
+});
