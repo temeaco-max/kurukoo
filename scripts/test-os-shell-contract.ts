@@ -20,7 +20,7 @@ for (const required of [
   'Search Kurukoo','Notifications','Account','/points','/cart','/chat','/requests','/tasks','/discover','/connect','/topics','/saved','/reminders','/memory','/safety','/settings'
 ]) assert.ok(shellRuntime.includes(required), `Desk shell missing ${required}`);
 assert.ok(shellRuntime.includes("'k-desk-search-trigger'"));
-assert.ok(sharedAppTemplate.includes('data-surface-view="cart"'), 'shared authenticated header must expose the cart action');
+assert.ok(sharedAppTemplate.includes('id="header-cart"'), 'shared authenticated header must expose the cart action');
 assert.ok(sharedAppTemplate.includes('aria-label="Open cart"'), 'shared cart action must remain accessible');
 assert.ok(shellRuntime.includes('renderOsWorkspace'));
 assert.ok(shellRuntime.includes('renderContext'));
