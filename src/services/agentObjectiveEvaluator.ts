@@ -19,11 +19,20 @@ export interface AgentObjectiveEvaluation extends AgentQualityDecision {
   externallyVerified: boolean;
 }
 
-function hasVerifiedOutcome(trace: AgentExecutionTraceEvent[]): boolean {
+function hasEvidenceRecord(trace: AgentExecutionTraceEvent[]): boolean {
   return trace.some((event) =>
-    event.kind === 'evidence' &&
+    ['evidence', 'evidence_recorded', 'tool_completed'].includes(event.kind) &&
+    Boolean(String(event.evidence || '').trim()),
+  );
+}
+
+function hasExternallyVerifiedOutcome(trace: AgentExecutionTraceEvent[]): boolean {
+  return trace.some((event) =>
+    ['evidence', 'evidence_recorded', 'outcome', 'tool_completed'].includes(event.kind) &&
     Boolean(event.evidence) &&
-    /verified|confirmed|validated/i.test(String(event.status || '') + ' ' + String(event.evidence || '')),
+    /verified|confirmed|validated|external_verification/i.test(
+      `${event.status || ''} ${event.reason || ''} ${event.evidence || ''}`,
+    ),
   );
 }
 
@@ -40,8 +49,8 @@ export async function evaluateAgentObjective(
   input: AgentObjectiveEvaluationInput,
 ): Promise<AgentObjectiveEvaluation> {
   const trace = await listAgentExecutionTrace(input.ownerPhone, input.goalId, 200);
-  const evidencePresent = hasVerifiedOutcome(trace);
-  const externallyVerified = evidencePresent;
+  const evidencePresent = hasEvidenceRecord(trace);
+  const externallyVerified = hasExternallyVerifiedOutcome(trace);
   const latestStatus = trace.length ? trace[trace.length - 1]?.status : undefined;
   const decision = evaluateAgentWork({
     objective: input.objective,
