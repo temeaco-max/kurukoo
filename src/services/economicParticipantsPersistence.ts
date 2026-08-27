@@ -3,6 +3,7 @@ import { getCanonicalStore } from './canonicalStore.js';
 import { getEconomicRequest, createEconomicRequest } from './economicRequestPersistence.js';
 import { persistCoordinatorEvent } from './coordinatorStore.js';
 import { sendFcmPush } from './pushNotifications.js';
+import { validateCustodyEvidenceUpdate } from './custodyEvidence.js';
 import type { EconomicOffer, EconomicParticipant, EconomicParticipantRole, EconomicParticipantStatus, EconomicOfferStatus, EconomicOfferProvenance, KnownEconomicOffer } from './economicParticipantsSqljs.js';
 import type { FindWorkerResult } from './find-worker.js';
 const ROLES=['seller','delivery_provider','service_provider','external_platform','agent'] as const;const STATUSES=['invited','offered','selected','confirmed','handover_pending','handed_over','collected','in_progress','completion_reported','delivered','declined','withdrawn'] as const;
@@ -30,7 +31,9 @@ export async function updateEconomicParticipant(i:any){
   if(!isOwner&&!isDirectParticipant)throw new Error('Request ownership or participant identity is required');
   const status=(i.status||row.status) as EconomicParticipantStatus;
   if(!(STATUSES as readonly string[]).includes(status))throw new Error('Unsupported participant status');
-  const old=parsed(row.evidence_json),subs=Array.isArray(old._submissions)?old._submissions.slice(-19):[],next={...old,...evidence(i.evidence),_submissions:[...subs,{actor_phone:actor,actor_scope:isOwner?'request_owner':'participant',submitted_at:new Date().toISOString(),status,verification:'submitted_unverified'}]};
+  const submittedEvidence=evidence(i.evidence);
+  validateCustodyEvidenceUpdate({role,status,isOwner,isDirectParticipant,evidence:submittedEvidence});
+  const old=parsed(row.evidence_json),subs=Array.isArray(old._submissions)?old._submissions.slice(-19):[],next={...old,...submittedEvidence,_submissions:[...subs,{actor_phone:actor,actor_scope:isOwner?'request_owner':'participant',submitted_at:new Date().toISOString(),status,verification:'submitted_unverified'}]};
   await s.run(`UPDATE economic_participants SET status=?,evidence_json=? WHERE id=?`,[status,JSON.stringify(next),Number(row.id)]);
   if(!isOwner&&String(row.status)!==status){
     const participantLabel=role==='delivery_provider'?'delivery provider':role==='service_provider'?'provider':role==='seller'?'seller':'participant';

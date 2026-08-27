@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { getDb, saveDb } from '../database.js';
 import { createEconomicRequest, getEconomicRequest, type EconomicRequest } from './skillFlows.js';
+import { validateCustodyEvidenceUpdate } from './custodyEvidence.js';
 import { find_worker, type FindWorkerResult } from './find-worker.js';
 import { persistCoordinatorEvent } from './coordinatorStore.js';
 
@@ -504,11 +505,13 @@ export async function updateEconomicParticipant(input: {
   const isDirectParticipant = role !== 'agent' && providerPhone === actorPhone;
   if (!isOwner && !isDirectParticipant) throw new Error('Request ownership or participant identity is required');
   const status = input.status === undefined ? String(row.status) as EconomicParticipantStatus : normalizeStatus(input.status);
+  const submittedEvidence = cleanEvidence(input.evidence);
+  validateCustodyEvidenceUpdate({ role, status, isOwner, isDirectParticipant, evidence: submittedEvidence });
   const priorEvidence = parseEvidence(row.evidence_json);
   const priorSubmissions = Array.isArray(priorEvidence._submissions) ? priorEvidence._submissions.slice(-19) : [];
   const evidence = {
     ...priorEvidence,
-    ...cleanEvidence(input.evidence),
+    ...submittedEvidence,
     _submissions: [
       ...priorSubmissions,
       {
