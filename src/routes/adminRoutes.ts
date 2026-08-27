@@ -32,6 +32,7 @@ import { issueUserToken, upsertProfile } from './authRoutes.js';
 import { getConfiguredTestName, getConfiguredTestPhone, getDevelopmentTestAuthStatus } from '../services/devTestAuthService.js';
 import { getProfile, updateProfile } from '../services/memoryProfile.js';
 import { getPilotReadiness } from '../services/pilotReadiness.js';
+import { getProviderOutcomeOperations } from '../services/providerOutcomeOperations.js';
 import { getExternalIntegrationReadiness } from '../services/externalIntegrationReadiness.js';
 import { createAdCampaign, getAdCampaigns, updateAdCampaign } from '../services/adManager.js';
 import { testMistralConnection } from '../services/mistralService.js';
@@ -551,6 +552,18 @@ router.get('/countries', authenticateAdmin, (_req: AuthRequest, res) => {
 router.get('/pilot-readiness', authenticateAdmin, async (_req: AuthRequest, res) => {
   try { res.json(getPilotReadiness()); }
   catch { res.status(500).json({ error: 'Unable to read pilot readiness' }); }
+});
+
+router.get('/outcomes/operations', authenticateAdmin, async (req: AuthRequest, res) => {
+  try {
+    const operations = await getProviderOutcomeOperations({
+      limit: req.query.limit,
+      category: typeof req.query.category === 'string' ? req.query.category : undefined,
+    });
+    res.json({ success: true, operations, boundary: 'read_only_canonical_outcome_projection' });
+  } catch {
+    res.status(500).json({ success: false, error: 'Unable to read provider outcome operations.' });
+  }
 });
 
 router.get('/external-integrations', authenticateAdmin, (_req: AuthRequest, res) => {
