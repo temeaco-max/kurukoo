@@ -10,6 +10,7 @@ import { drainPendingExecutionRequests } from '../services/executionConnector.js
 import { isWhatsAppLinkedDeviceConfigured, startWhatsAppLinkedDevice, stopWhatsAppLinkedDevice } from '../services/whatsappLinkedDeviceService.js';
 import { markAgentWorkerCycleCompleted, markAgentWorkerCycleFailed, markAgentWorkerCycleStarted, markAgentWorkerStarted, markAgentWorkerStopped, notifyGoalIfNeeded, recordAgentWorkerRun, reenterDueDeferredGoals, runDueAgentGoals } from '../services/agentRuntime.js';
 import { runRecurringSubscriptionBillingPass } from '../services/commercialBillingService.js';
+import { runProviderInquiryFollowUpPass } from '../services/providerInquiryFollowUpService.js';
 
 const backgroundTimers: Array<ReturnType<typeof setInterval> | ReturnType<typeof setTimeout>> = [];
 let backgroundServicesStarted = false;
@@ -29,6 +30,14 @@ export async function startBackgroundServices(): Promise<void> {
     backgroundTimers.push(setInterval(logHeartbeat, 5 * 60 * 1000));
 
     backgroundTimers.push(setInterval(() => runRecurringSubscriptionBillingPass().then(result => { if (result.attempted) console.log(`[CommercialBilling] attempted=${result.attempted} renewed=${result.renewed} failed=${result.failed}`); }).catch(error => console.error('Error running recurring subscription billing pass:', error)), 60 * 60 * 1000));
+
+    const providerInquiryIntervalMs = Math.max(60_000, Math.min(60 * 60_000, Number(process.env.KURUKOO_PROVIDER_INQUIRY_WORKER_INTERVAL_MS || 5 * 60_000)));
+    const runProviderInquiryFollowUp = async () => {
+        const result = await runProviderInquiryFollowUpPass({ limit: Number(process.env.KURUKOO_PROVIDER_INQUIRY_WORKER_BATCH || 20) });
+        if (result.markedNoResponse) console.log(`[ProviderInquiryWorker] marked_no_response=${result.markedNoResponse}`);
+    };
+    backgroundTimers.push(setTimeout(() => runProviderInquiryFollowUp().catch((error) => console.error('Error running provider inquiry follow-up:', error)), 5_000));
+    backgroundTimers.push(setInterval(() => runProviderInquiryFollowUp().catch((error) => console.error('Error running provider inquiry follow-up:', error)), providerInquiryIntervalMs));
 
     if (isFcmConfigured()) {
         const runFcmCycle = async () => { await requeueDueFcmFailures(); await drainFcmQueue(); };

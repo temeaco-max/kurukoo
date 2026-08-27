@@ -605,7 +605,7 @@
     if (send) send.disabled = true;
     try {
       const idempotencyKey = `chat:${state.conversationId || 'draft'}:${requestId}:${action}:${Object.entries(fields || {}).sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => `${key}=${String(value || '').slice(0, 120)}`).join('|')}`.slice(0, 180);
-      const executorAction = !state.isGuest && ['cancel', 'select_provider', 'update'].includes(action);
+      const executorAction = !state.isGuest && ['cancel', 'update'].includes(action);
       const res = executorAction
         ? await fetch('/api/chat/action', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
@@ -617,7 +617,29 @@
         });
       if (res.status === 401) { await ensureIdentity(); throw new Error('Session expired'); }
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.success) throw new Error(data.error || 'Could not update request');
+      if (!res.ok || !data.success) {
+        const identity = data?.identity;
+        if (identity?.nextUpgrade === 'name') {
+          setConnection(true);
+          const wrap = appendStreamBubble();
+          const message = 'I have kept this exact request unchanged. Before you select a provider or send a contact request, please enter your name so Kurukoo can keep the action tied to your account.';
+          setMarkdown(wrap.querySelector('.markdown-body'), message);
+          state.messages.push({ role: 'assistant', text: message, id: null });
+          if (input) { input.placeholder = 'Enter your name to continue safely…'; input.focus(); }
+          return;
+        }
+        if (identity?.nextUpgrade?.kind === 'connect_channel' || identity?.nextUpgrade?.kind === 'verify_phone') {
+          setConnection(true);
+          const wrap = appendStreamBubble();
+          const ctaHref = String(identity.nextUpgrade.ctaHref || '/connect');
+          const ctaLabel = String(identity.nextUpgrade.ctaLabel || 'Open Connect');
+          const message = `I kept this exact request unchanged. Before Kurukoo contacts a provider, you need to prove your number through a connected or verified delivery channel. No provider message has been sent. [${ctaLabel}](${ctaHref})`;
+          setMarkdown(wrap.querySelector('.markdown-body'), message);
+          state.messages.push({ role: 'assistant', text: message, id: null });
+          return;
+        }
+        throw new Error(data.error || 'Could not update request');
+      }
       const card = executorAction ? data.result?.canonicalFacts?.card : data.card;
       const message = executorAction ? (data.result?.message || card?.message || 'The exact request was updated.') : (card?.message || 'Updated.');
       markStorefrontStepSuperseded(messageEl);
@@ -789,10 +811,23 @@
       const providers = makeElement('ul', 'storefront-providers');
       card.providers.forEach((provider, index) => {
         const item = makeElement('li', index === 0 ? 'top' : '');
-        item.append(
+        const details = makeElement('div');
+        details.append(
           makeElement('strong', '', provider.name || 'Provider'),
           makeElement('span', '', `Profile details · listed rate ${String(provider.hourly_rate || 0)} ${String(provider.currency || 'local currency')}`)
         );
+        item.appendChild(details);
+        if (card.requestId && provider.phone) {
+          const choose = makeElement('button', 'sf-btn sf-primary', `Choose ${String(provider.name || 'provider')}`);
+          choose.type = 'button';
+          choose.dataset.sfAction = 'select_provider';
+          choose.addEventListener('click', () => {
+            const fields = collectStorefrontFields(holder);
+            fields.providerPhone = String(provider.phone);
+            void advanceStorefront(card.requestId, 'select_provider', fields, messageEl);
+          });
+          item.appendChild(choose);
+        }
         providers.appendChild(item);
       });
       holder.appendChild(providers);
@@ -852,7 +887,7 @@
       holder.appendChild(execution);
     }
 
-    const actions = Array.isArray(card.actions) ? card.actions : [];
+    const actions = (Array.isArray(card.actions) ? card.actions : []).filter(action => !(action?.id === 'select_provider' && Array.isArray(card.providers) && card.providers.length));
     if (actions.length) {
       const actionGroup = makeElement('div', 'storefront-actions');
       actions.forEach(action => {

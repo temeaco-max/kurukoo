@@ -14,6 +14,8 @@ export type CoordinatorEventType =
   | 'fulfilment.offer_selected'
   | 'fulfilment.provider_inquiry_created'
   | 'fulfilment.provider_response_recorded'
+  | 'fulfilment.provider_inquiry_no_response'
+  | 'fulfilment.provider_inquiry_retry_superseded'
   | 'payment.webhook.verified'
   | 'operator.policy_changed'
   | 'reminder.state_changed'

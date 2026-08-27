@@ -23,7 +23,7 @@ export type OfferStatus = 'candidate' | 'available' | 'unavailable' | 'expired' 
 export type InquiryStatus = 'pending' | 'sent' | 'responded' | 'no_response' | 'declined' | 'expired' | 'cancelled';
 export type EvidenceLevel = 'none' | 'source_attributed' | 'provider_confirmed' | 'externally_verified';
 export type ProviderInquiryDispatchStatus = 'planned' | 'attempted' | 'accepted' | 'submitted' | 'buffered' | 'delivered' | 'failed' | 'rejected' | 'unknown';
-type FulfilmentLifecycleAction = 'created' | 'requirements_updated' | 'state_changed' | 'offer_created' | 'offer_selected' | 'provider_inquiry_created' | 'provider_response_recorded';
+type FulfilmentLifecycleAction = 'created' | 'requirements_updated' | 'state_changed' | 'offer_created' | 'offer_selected' | 'provider_inquiry_created' | 'provider_response_recorded' | 'provider_inquiry_no_response' | 'provider_inquiry_retry_superseded';
 
 export interface FulfilmentRequirements {
   item?: string;
@@ -471,11 +471,53 @@ export async function getLatestProviderInquiry(ownerPhone: string, fulfilmentId:
   await ensureCanonicalFulfilmentSchema();
   const store = await getCanonicalStore();
   const sql = providerPhone
-    ? "SELECT * FROM provider_inquiries WHERE owner_phone=? AND fulfilment_id=? AND provider_phone=? ORDER BY updated_at DESC LIMIT 1"
-    : "SELECT * FROM provider_inquiries WHERE owner_phone=? AND fulfilment_id=? ORDER BY updated_at DESC LIMIT 1";
+    ? "SELECT * FROM provider_inquiries WHERE owner_phone=? AND fulfilment_id=? AND provider_phone=? AND status NOT IN ('cancelled','declined','expired') ORDER BY updated_at DESC, created_at DESC LIMIT 1"
+    : "SELECT * FROM provider_inquiries WHERE owner_phone=? AND fulfilment_id=? AND status NOT IN ('cancelled','declined','expired') ORDER BY updated_at DESC, created_at DESC LIMIT 1";
   const args = providerPhone ? [ownerPhone, fulfilmentId, providerPhone] : [ownerPhone, fulfilmentId];
   const row = await store.one<any>(sql, args);
   return row ? rowToInquiry(row) : null;
+}
+
+export async function getProviderInquirySmsDispatch(ownerPhone: string, inquiryId: string): Promise<ProviderInquirySmsDispatch | null> {
+  await ensureCanonicalFulfilmentSchema();
+  const row = await (await getCanonicalStore()).one<any>('SELECT * FROM provider_inquiry_sms_dispatches WHERE inquiry_id=? AND owner_phone=? LIMIT 1', [inquiryId, ownerPhone]);
+  return row ? rowToSmsDispatch(row) : null;
+}
+
+export async function supersedeProviderInquiryForRetry(input: { ownerPhone: string; inquiryId: string; reason: string }): Promise<ProviderInquiry> {
+  await ensureCanonicalFulfilmentSchema();
+  const store = await getCanonicalStore();
+  const row = await store.one<any>('SELECT * FROM provider_inquiries WHERE id=? AND owner_phone=? LIMIT 1', [input.inquiryId, input.ownerPhone]);
+  if (!row) throw new Error('Provider inquiry not found');
+  const current = rowToInquiry(row);
+  if (current.status !== 'pending') throw new Error('Only an unsent provider inquiry can be retried');
+  await store.run('UPDATE provider_inquiries SET status=\'cancelled\',response_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND owner_phone=?', [json({ outcome: 'contact_not_sent', reason: input.reason, observedAt: now() }), input.inquiryId, input.ownerPhone]);
+  const updated = rowToInquiry((await store.one<any>('SELECT * FROM provider_inquiries WHERE id=? AND owner_phone=? LIMIT 1', [input.inquiryId, input.ownerPhone]))!);
+  const fulfilment = (await getFulfilment(input.ownerPhone, updated.fulfilmentId))!;
+  await lifecycleEvent(fulfilment, 'provider_inquiry_retry_superseded', { inquiryId: updated.id, reason: input.reason });
+  return updated;
+}
+
+export async function expireDueProviderInquiries(input: { now?: string; limit?: number } = {}): Promise<ProviderInquiry[]> {
+  await ensureCanonicalFulfilmentSchema();
+  const store = await getCanonicalStore();
+  const observedAt = input.now || now();
+  const limit = Math.max(1, Math.min(100, Math.floor(Number(input.limit) || 20)));
+  const rows = await store.all<any>("SELECT * FROM provider_inquiries WHERE status IN ('pending','sent') AND expires_at IS NOT NULL AND expires_at <= ? ORDER BY expires_at ASC LIMIT ?", [observedAt, limit]);
+  const expired: ProviderInquiry[] = [];
+  for (const row of rows) {
+    const inquiry = rowToInquiry(row);
+    const mutation = await store.run("UPDATE provider_inquiries SET status='no_response',response_json=?,evidence_level='none',evidence_ref=?,responded_at=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND owner_phone=? AND status IN ('pending','sent')", [json({ outcome: 'no_response', observedAt, source: 'provider_inquiry_expiry_worker' }), `timeout:${inquiry.id}:${observedAt}`, observedAt, inquiry.id, inquiry.ownerPhone]);
+    if (!mutation.rowCount) continue;
+    const updatedRow = await store.one<any>('SELECT * FROM provider_inquiries WHERE id=? AND owner_phone=? LIMIT 1', [inquiry.id, inquiry.ownerPhone]);
+    if (!updatedRow) continue;
+    const updated = rowToInquiry(updatedRow);
+    if (updated.status !== 'no_response') continue;
+    const fulfilment = await getFulfilment(updated.ownerPhone, updated.fulfilmentId);
+    if (fulfilment) await lifecycleEvent(fulfilment, 'provider_inquiry_no_response', { inquiryId: updated.id, expiresAt: updated.expiresAt, observedAt });
+    expired.push(updated);
+  }
+  return expired;
 }
 
 export async function markProviderInquirySent(ownerPhone: string, inquiryId: string): Promise<ProviderInquiry> {
@@ -563,7 +605,7 @@ export async function findOpenProviderInquiryForSms(input: { providerPhone: stri
   const phone = normalizedPhone(input.providerPhone);
   if (!phone) return null;
   const reference = String(input.reference || '').trim().replace(/^#/, '').toUpperCase();
-  const statusClause = reference ? "('pending','sent','responded')" : "('pending','sent')";
+  const statusClause = reference ? "('pending','sent','responded','no_response')" : "('pending','sent')";
   const candidates = (await (await getCanonicalStore()).all<any>(`SELECT * FROM provider_inquiries WHERE status IN ${statusClause} ORDER BY updated_at DESC`, [])).map(rowToInquiry).filter(inquiry => normalizedPhone(inquiry.providerPhone) === phone);
   if (!candidates.length) return null;
   if (reference) {

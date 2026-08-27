@@ -176,15 +176,16 @@ export async function sendProviderInquirySms(ownerPhone: string, inquiryId: stri
 
   // The transport may have accepted a message before a timeout/error was observed.
   // Preserve the uncertainty instead of sending a second message automatically.
+  const explicitlyRejected = /(?:failed|rejected|invalid|error)/i.test(String(delivery.providerStatus || ''));
   await recordProviderInquirySmsDispatch({
     ownerPhone,
     inquiryId,
     providerMessageId: delivery.messageId,
-    status: delivery.messageId ? smsDispatchStatus(delivery.providerStatus || 'failed') : 'unknown',
+    status: delivery.messageId && explicitlyRejected ? 'rejected' : 'unknown',
     failureReason: delivery.reason || 'sms_provider_request_failed',
     raw: { provider: delivery.provider, providerStatus: delivery.providerStatus || null },
   });
-  return { status: delivery.messageId ? 'failed' : 'delivery_uncertain', inquiryId, reference: dispatch.reference, messageId: delivery.messageId, reason: delivery.reason };
+  return { status: delivery.messageId && explicitlyRejected ? 'failed' : 'delivery_uncertain', inquiryId, reference: dispatch.reference, messageId: delivery.messageId, reason: delivery.reason };
 }
 
 async function reflectProviderReplyOnEconomicRequest(input: {
@@ -286,7 +287,10 @@ export async function handleSmsWebhook(body: any): Promise<{ status: string; res
   const inboundText = String(body?.Body || body?.body || body?.text || body?.message || '').trim();
   const providerPhone = normalizedPhone(body?.From || body?.from || body?.phoneNumber);
   if (inboundText && providerPhone) {
-    const inquiry = await findOpenProviderInquiryForSms({ providerPhone, reference: providerReferenceFromText(inboundText) });
+    const reference = providerReferenceFromText(inboundText);
+    // Provider evidence must echo the reference supplied in Kurukoo's outbound inquiry.
+    // Phone identity alone is not a sufficient correlation key.
+    const inquiry = reference ? await findOpenProviderInquiryForSms({ providerPhone, reference }) : null;
     if (inquiry) {
       const sourceRef = String(body?.MessageId || body?.messageId || body?.id || '').trim() || `provider-sms:${inquiry.id}:${inboundText.slice(0, 96)}`;
       const parsed = parseProviderReply(inboundText);

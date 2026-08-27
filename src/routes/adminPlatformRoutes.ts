@@ -9,6 +9,7 @@ import { listAiProviderHealth } from '../services/aiProviderHealth.js';
 import { getAiUsageSummary } from '../services/aiCostTelemetry.js';
 import { listUnknownIntentReviewCandidates, reviewUnknownIntentCandidate } from '../services/unknownIntentReviewService.js';
 import { getAdminConfigDefinitions, getAdminConfigStatus } from '../services/adminConfigMetadata.js';
+import { runProviderInquiryFollowUpPass } from '../services/providerInquiryFollowUpService.js';
 
 const router = Router();
 router.use(authenticateAdmin);
@@ -38,6 +39,17 @@ router.post('/activate', async (_req: AuthRequest, res) => {
 router.get('/external-probe', async (req: AuthRequest, res) => {
   try { const phone = String(req.query.phone || '').trim(); res.json({ success: true, contractVersion: 'external-probe-v1', ...(await probeConfiguredExternalProviders(phone)), aiProviderHealth: listAiProviderHealth() }); }
   catch (error) { console.error('[AdminPlatform] external probe failed:', error); res.status(502).json({ success: false, error: error instanceof Error ? error.message : 'External probe failed.' }); }
+});
+
+router.post('/provider-inquiries/follow-up', async (req: AuthRequest, res) => {
+  try {
+    const limit = Math.max(1, Math.min(100, Number(req.body?.limit || 20)));
+    const result = await runProviderInquiryFollowUpPass({ limit });
+    res.json({ success: true, contractVersion: 'provider-inquiry-follow-up-v1', ...result });
+  } catch (error) {
+    console.error('[AdminPlatform] provider inquiry follow-up failed:', error);
+    res.status(500).json({ success: false, error: 'Unable to run provider inquiry follow-up.' });
+  }
 });
 
 router.get('/ai-usage', async (req: AuthRequest, res) => {

@@ -6,7 +6,15 @@ import { encryptData, getProfile } from './memoryProfile.js';
  * A new user should understand Kurukoo in one sentence and get to useful work
  * immediately. Profile enrichment is optional and can continue from normal Chat.
  */
-export async function isOnboarding(phone: string): Promise<boolean> {
+function isExplicitTaskRequest(text: string): boolean {
+    return /\b(?:find|arrange|repair|fix|book|hire|need|order|buy|source|schedule|remind|help\s+with|someone\s+to)\b/i.test(String(text || ''));
+}
+
+function isLikelyNameOnly(text: string): boolean {
+    return /^[a-z][a-z'’-]{1,39}(?:\s+[a-z][a-z'’-]{1,39}){0,2}$/i.test(String(text || '').trim());
+}
+
+export async function isOnboarding(phone: string, initialMessage = ''): Promise<boolean> {
     const db = await getDb();
     const profile = await getProfile(phone, 'progressive_onboarding');
     let onboarding = false;
@@ -16,6 +24,9 @@ export async function isOnboarding(phone: string): Promise<boolean> {
         onboarding = prefs.onboarding_complete !== true;
     }
     if (!onboarding) return false;
+
+    // Optional profile enrichment must never consume an explicit user task.
+    if (isExplicitTaskRequest(initialMessage)) return false;
 
     // A supplied identity is enough to let the conversational system continue.
     // Remaining profile enrichment can happen progressively instead of blocking.
@@ -28,7 +39,7 @@ export async function isOnboarding(phone: string): Promise<boolean> {
         active.bind([phone]);
         const hasActiveRequest = active.step();
         active.free();
-        if (hasActiveRequest) return false;
+        if (hasActiveRequest && !isLikelyNameOnly(initialMessage)) return false;
     } catch {
         // If the optional request table is unavailable during early bootstrap,
         // preserve the original onboarding behaviour rather than crashing Chat.
