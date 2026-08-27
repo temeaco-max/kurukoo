@@ -25,6 +25,10 @@ assert.equal(getFulfilmentMechanismForSkill('food_order'), 'marketplace_purchase
 assert.equal(getFulfilmentMechanismForSkill('hotel_deals'), 'booking', 'Accommodation must continue through the shared booking lifecycle.');
 assert.equal(getFulfilmentMechanismForSkill('rental_tracker'), 'booking', 'Property search must retain the shared verified-terms inquiry lifecycle.');
 assert.equal(getFulfilmentMechanismForSkill('job_tracker'), 'local_discovery', 'Job search must continue through the shared provider/discovery lifecycle.');
+assert.equal(getFulfilmentMechanismForSkill('home_tutor'), 'service_request', 'Tutoring must continue through the shared service-request lifecycle.');
+assert.deepEqual(getFulfilmentSkillBinding('home_tutor')?.optionalInputs, ['subject', 'level', 'curriculum', 'location', 'delivery_mode', 'schedule', 'budget', 'tutor_preference', 'duration', 'contact_preference'], 'Tutoring context must remain available to the shared fulfilment lifecycle.');
+assert.ok(getFulfilmentSkillBinding('job_tracker')?.optionalInputs.includes('work_mode'), 'Job discovery must retain work-mode context.');
+assert.ok(getFulfilmentSkillBinding('job_tracker')?.optionalInputs.includes('cv_reference'), 'Job discovery must retain the candidate CV reference.');
 assert.equal(getFulfilmentMechanismForSkill('wifi_installer'), 'service_request', 'Internet setup and repair must continue through the shared service-request lifecycle.');
 assert.equal(getFulfilmentMechanismForSkill('doctor_appointment'), 'booking', 'Healthcare appointments must reuse the shared booking lifecycle.');
 const healthcareBinding = getFulfilmentSkillBinding('doctor_appointment');
