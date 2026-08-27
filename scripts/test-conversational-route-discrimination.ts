@@ -22,4 +22,21 @@ for (const prompt of explicitActions) {
   assert.ok(result.cardData, `Explicit action should retain a canonical preview/card boundary: ${prompt}`);
 }
 
-console.log(`Conversational route discrimination regression passed: ${exploratory.length} exploratory and ${explicitActions.length} explicit action cases.`);
+const deviceSupportRequests = [
+  'My iPhone is running slowly. Check it.',
+  'My MacBook is slow.',
+  'Check my Wi-Fi.',
+  "My TV won't connect to Wi-Fi.",
+  'Check whether my camera is online.',
+];
+for (const prompt of deviceSupportRequests) {
+  const result = await routeIntent(prompt, '+2348030000099');
+  const card = result.cardData as { type?: string; stage?: string; requestId?: string; message?: string } | undefined;
+  assert.equal(result.skill, 'device_support', `Device troubleshooting must use the canonical device-support skill: ${prompt}`);
+  assert.equal(card?.type, 'agentic_storefront', `Device troubleshooting must use the existing canonical outcome card: ${prompt}`);
+  assert.equal(card?.stage, 'information', `Device troubleshooting must be information-first until escalation is required: ${prompt}`);
+  assert.equal(card?.requestId, undefined, `Device troubleshooting must not create an Economic Request before physical work is established: ${prompt}`);
+  assert.doesNotMatch(String(card?.message || ''), /I found .*provider|choose .*provider|provider options|quote|payment|booking/i, `Device troubleshooting must not prematurely claim or solicit provider work: ${prompt}`);
+}
+
+console.log(`Conversational route discrimination regression passed: ${exploratory.length} exploratory, ${explicitActions.length} explicit action, and ${deviceSupportRequests.length} information-first device-support cases.`);

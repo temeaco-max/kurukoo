@@ -125,7 +125,7 @@ export const SKILL_BEHAVIOUR_PACKS: Record<string, SkillBehaviourPack> = {
   },
   phone_repairer: {
     skill: 'phone_repairer',
-    aliases: ['phone repair', 'iphone repair', 'phone repairer', 'screen repair', 'mobile repair'],
+    aliases: ['phone repair', 'iphone repair', 'phone repairer', 'screen repair', 'mobile repair', 'broken screen', 'screen is broken', 'cracked screen', 'shattered screen', 'not charging'],
     mission: 'Coordinate diagnosis, matching, quotation, repair, optional collection/return and evidence for a phone-repair job when physical or provider intervention is required.',
     required: ['device', 'issue'],
     optional: ['location', 'pickup_required', 'return_required', 'deadline', 'parts_preference', 'warranty', 'data_privacy_concern', 'photos', 'prior_diagnostics'],

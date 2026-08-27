@@ -196,6 +196,18 @@ async function dispatchCanonicalAction(input: CanonicalCapabilityExecutionInput,
     if (!resourceId) return invalidResult(input, 'needs_user', 'Tell me which connected device or resource to control.', 'connected_resource_required');
     const resource = await getConnectedResource(input.phone, resourceId);
     if (!resource) return invalidResult(input, 'unauthorized', 'That connected device is not available to this account.', 'foreign_or_missing_connected_resource');
+    if (['status', 'observe', 'diagnose'].includes(command)) {
+      const observedResource = { id: resource.id, kind: resource.kind, label: resource.label, vendor: resource.vendor || null, protocol: resource.protocol, capabilities: resource.capabilities, status: resource.status, lastSeenAt: resource.lastSeenAt };
+      const lastState = resource.metadata.lastState;
+      const hasObservation = lastState !== undefined;
+      return baseResult(input, hasObservation ? 'completed' : 'externally_pending', hasObservation
+        ? `I inspected the recorded state for ${resource.label}. The latest device observation is available for review; this is not a live connection test.`
+        : `${resource.label} is active as a connected resource, but it has not exposed a device observation to Kurukoo yet. I have not claimed that it is online, healthy, or diagnosed.`, {
+        canonicalFacts: { resource: observedResource, observedState: hasObservation ? lastState : null, observedAt: hasObservation ? String(resource.metadata.lastStateAt || resource.lastSeenAt) : null, liveObservation: false },
+        evidenceLevel: 'canonical_service', externalActivation: 'repository_ready_external_activation',
+        nextActions: hasObservation ? [{ action: 'continue_diagnosis', label: 'Continue diagnosis in Chat' }] : [{ action: 'configure_observation', label: 'Configure an authorised observation adapter' }],
+      });
+    }
     if (['view', 'inspect', 'show'].includes(command)) {
       const view = await viewConnectedResource(input.phone, resourceId);
       if (!view?.media.length) return baseResult(input, 'externally_pending', `The connected ${resource.kind} is registered, but it does not currently expose a view stream to Kurukoo.`, { canonicalFacts: { resource, viewAvailable: false }, evidenceLevel: 'canonical_service', externalActivation: 'repository_ready_external_activation', nextActions: [{ action: 'configure_view', label: 'Configure an authorised view/stream' }] });
