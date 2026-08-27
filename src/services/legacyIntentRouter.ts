@@ -357,6 +357,21 @@ function extractBookingPreferenceSlots(q: string, skill: string): Record<string,
   return patch;
 }
 
+function extractJobSearchSlots(q: string): Record<string, unknown> {
+  const patch: Record<string, unknown> = {};
+  const roleMatch = q.match(/\b(?:find|need|want|looking for|search(?:ing)? for|apply(?:ing)? for)\s+(?:me\s+)?(?:an?\s+)?([a-z][a-z /-]{2,60}?)\s+(?:job|jobs|role|position|vacancy|vacancies)\b/i)?.[1]
+    || q.match(/\b(?:job|role|position)\s+(?:as|in|for)\s+(?:an?\s+)?([a-z][a-z /-]{2,60}?)(?=\s+(?:in|at|near|around|today|tomorrow|this|next|with|under|for)\b|[.!?]|$)/i)?.[1];
+  if (roleMatch) {
+    const role = roleMatch.replace(/\b(?:remote|hybrid|on[ -]?site|full[ -]?time|part[ -]?time|contract|temporary|internship)\b/gi, '').replace(/\s+/g, ' ').trim();
+    if (role) patch.role = role;
+  }
+  const workMode = q.match(/\b(remote|hybrid|on[ -]?site)\b/i)?.[1];
+  if (workMode) patch.work_mode = workMode.toLowerCase().replace(/\s+/g, '-');
+  const employmentType = q.match(/\b(full[ -]?time|part[ -]?time|contract|temporary|internship)\b/i)?.[1];
+  if (employmentType) patch.employment_type = employmentType.toLowerCase().replace(/\s+/g, '-');
+  return patch;
+}
+
 function extractFollowUpPatch(q: string, skill: string): Record<string, unknown> {
   const patch: Record<string, unknown> = {};
   const locationCorrection = q.match(/\b(?:change|correct|update|set)\s+(?:the\s+)?(?:location|delivery area|area)\s+(?:to|as)\s+(.+?)(?:[.!?]|$)/i)?.[1]?.trim();
@@ -597,7 +612,7 @@ export async function routeIntent(query: string, phone?: string, provider?: AIPr
       const priorObservation = (directSkill === 'repair' || directSkill === 'phone_repair' || directSkill === 'phone_repairer') ? await recentDeviceObservation(phone, threadId, query) : undefined;
       const airtimePhone = directSkill === 'buy_airtime' ? query.match(/\b(?:\+234|234|0)(?:[\s-]?\d){10}\b/)?.[0]?.replace(/[\s-]/g, '') : undefined;
       const airtimeAmount = directSkill === 'buy_airtime' ? query.match(/(?:₦|ngn\s*)\s*(\d[\d,]*(?:\.\d{1,2})?)/i)?.[1] : undefined;
-      const seed: Record<string, unknown> = directSkill === 'buy_airtime' ? { objective: 'Airtime purchase', ...(airtimePhone ? { recipient_phone: airtimePhone } : {}), ...(airtimeAmount ? { amount_minor: Math.round(Number(airtimeAmount.replace(/,/g, '')) * 100), currency: 'NGN' } : {}) } : directSkill === 'find_worker' && worker ? { service: worker } : (directSkill === 'repair' || directSkill === 'phone_repair' || directSkill === 'phone_repairer') ? { ...extractRepairSlots(query), ...(priorObservation ? { prior_diagnostics: priorObservation } : {}) } : directSkill === 'doctor_appointment' ? extractHealthcareSlots(query) : directSkill === 'device_support' ? { problem: query.trim(), desired_action: 'diagnose' } : directSkill === 'product_sourcing' ? { product: query.trim() } : directSkill === 'verified_artist' ? { event_type: query.trim() } : directSkill === 'order_food' ? { ...(foodSlots.items ? { items: foodSlots.items } : {}), ...(foodSlots.location ? { location: foodSlots.location } : {}), ...extractFollowUpPatch(query, directSkill) } : ['hotel_deals','rental_tracker'].includes(String(directSkill)) ? { objective: query.trim(), ...extractBookingPreferenceSlots(query, directSkill), ...extractFollowUpPatch(query, directSkill) } : ['job_tracker','mechanic','roadside_mechanic','wifi_installer'].includes(String(directSkill)) ? { objective: query.trim(), ...extractFollowUpPatch(query, directSkill) } : {};
+      const seed: Record<string, unknown> = directSkill === 'buy_airtime' ? { objective: 'Airtime purchase', ...(airtimePhone ? { recipient_phone: airtimePhone } : {}), ...(airtimeAmount ? { amount_minor: Math.round(Number(airtimeAmount.replace(/,/g, '')) * 100), currency: 'NGN' } : {}) } : directSkill === 'find_worker' && worker ? { service: worker } : (directSkill === 'repair' || directSkill === 'phone_repair' || directSkill === 'phone_repairer') ? { ...extractRepairSlots(query), ...(priorObservation ? { prior_diagnostics: priorObservation } : {}) } : directSkill === 'doctor_appointment' ? extractHealthcareSlots(query) : directSkill === 'device_support' ? { problem: query.trim(), desired_action: 'diagnose' } : directSkill === 'product_sourcing' ? { product: query.trim() } : directSkill === 'verified_artist' ? { event_type: query.trim() } : directSkill === 'order_food' ? { ...(foodSlots.items ? { items: foodSlots.items } : {}), ...(foodSlots.location ? { location: foodSlots.location } : {}), ...extractFollowUpPatch(query, directSkill) } : ['hotel_deals','rental_tracker'].includes(String(directSkill)) ? { objective: query.trim(), ...extractBookingPreferenceSlots(query, directSkill), ...extractFollowUpPatch(query, directSkill) } : directSkill === 'job_tracker' ? { objective: query.trim(), ...extractJobSearchSlots(query), ...extractFollowUpPatch(query, directSkill) } : ['mechanic','roadside_mechanic','wifi_installer'].includes(String(directSkill)) ? { objective: query.trim(), ...extractFollowUpPatch(query, directSkill) } : {};
       const fromTo = query.match(/\bfrom\s+(.+?)\s+to\s+(.+?)(?=\s+(?:tomorrow|today|on\s+\w+)|[.!?]|$)/i); if (fromTo && (directSkill === 'ride_request' || directSkill === 'ride')) { seed.origin = fromTo[1].trim(); seed.destination = fromTo[2].trim(); }
       if (directSkill === 'ride_request' || directSkill === 'ride') {
         const destinationMatch = query.match(/\b(?:get|take|drive|bring)\s+me\s+to\s+(.+?)(?=\s+(?:tomorrow|today|tonight|by\s+\d|at\s+\d|on\s+\w+)|[.!?]|$)/i) || query.match(/\b(?:need|want)\s+to\s+be\s+in\s+(.+?)(?=\s+(?:tomorrow|today|tonight|by\s+\d|at\s+\d|on\s+\w+)|[.!?]|$)/i);
