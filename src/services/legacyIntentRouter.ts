@@ -24,11 +24,12 @@ import { recordChannelDispatch } from './channelDeliveryState.js';
 import type { IntentRoutingResult } from '../types.js';
 import { extractConversationalEntities, extractFoodOrderSlots, isFoodOrderExpression, validateConversationalEntities } from './conversationalExtraction.js';
 
-const ACTION_INTENTS = new Set(['ride_request', 'order_food', 'find_worker', 'universal_vendor_order', 'sports_matchmaking', 'event_coverage', 'how_to_video', 'security_booking', 'circle_create', 'artist_booking', 'national_events', 'subscription', 'advertising', 'autonomous_agent', 'referral', 'nearby_pulse_start', 'nearby_pulse_stop']);
-const STOREFRONT_INTENTS = new Set(['ride_request', 'order_food', 'find_worker', 'universal_vendor_order', 'security_booking']);
+const ACTION_INTENTS = new Set(['ride_request', 'order_food', 'buy_airtime', 'find_worker', 'universal_vendor_order', 'sports_matchmaking', 'event_coverage', 'how_to_video', 'security_booking', 'circle_create', 'artist_booking', 'national_events', 'subscription', 'advertising', 'autonomous_agent', 'referral', 'nearby_pulse_start', 'nearby_pulse_stop']);
+const STOREFRONT_INTENTS = new Set(['ride_request', 'order_food', 'buy_airtime', 'find_worker', 'universal_vendor_order', 'security_booking']);
 
 const CANONICAL_ALIASES: Array<[RegExp, string]> = [
   [/\b(jollof|fried rice|meal for|food for)\b/, 'order_food'],
+  [/\b(?:buy|send|get|top[ -]?up|recharge)\b.*\b(?:airtime|credit)\b|\b(?:airtime|credit)\b.*\b(?:buy|send|top[ -]?up|recharge)\b/, 'buy_airtime'],
   [/\b(buy|purchase|get)\b.*\b(car|vehicle)\b|\b(car|vehicle)\b.*\b(buy|purchase)\b/, 'buy_car'],
   [/\b(buy|purchase|get)\b.*\btickets?\b|\btickets?\b.*\b(buy|purchase|get)\b/, 'buy_ticket'],
   [/\b(phone|device|laptop|computer|screen)\b.*\brepair\b|\brepair\b.*\b(phone|device|laptop|computer|screen)\b/, 'repair'],
@@ -51,6 +52,7 @@ const CANONICAL_ALIASES: Array<[RegExp, string]> = [
 function skillForIntent(intent: string): string {
   if (intent === 'ride_request') return 'ride_request';
   if (intent === 'order_food' || intent === 'universal_vendor_order') return 'order_food';
+  if (intent === 'buy_airtime') return 'buy_airtime';
   if (intent === 'find_worker') return 'find_worker';
   if (intent === 'security_booking') return 'security_personnel';
   if (intent === 'artist_booking') return 'verified_artist';
@@ -558,7 +560,9 @@ export async function routeIntent(query: string, phone?: string, provider?: AIPr
       const workerMatch = q.match(/\b(plumber|plumb|electrician|electrical|mechanic|carpenter|tailor|cleaner|clean|cleaning|housekeeping|technician|teacher|tutor|tutoring|teach(?:ing)?|lesson|lessons|guitar|painter|paint|painting|decorator|decorating|tiler|tiling|roofer|roofing|mason|welder)\b/i)?.[1]; const worker = workerMatch ? (/^plumb/i.test(workerMatch) ? 'plumber' : /^electri/i.test(workerMatch) ? 'electrician' : /^clean|^housekeep/i.test(workerMatch) ? 'house_cleaner' : /^guitar/i.test(workerMatch) ? 'guitar_teacher' : /^(?:teach|tutor|lesson)/i.test(workerMatch) ? 'teacher' : /^paint/i.test(workerMatch) ? 'painter' : /^decorat/i.test(workerMatch) ? 'decorator' : /^til/i.test(workerMatch) ? 'tiler' : /^roof/i.test(workerMatch) ? 'roofer' : workerMatch.toLowerCase()) : undefined;
       const foodSlots = directSkill === 'order_food' ? extractFoodOrderSlots(query) : {};
       const priorObservation = (directSkill === 'repair' || directSkill === 'phone_repair' || directSkill === 'phone_repairer') ? await recentDeviceObservation(phone, threadId, query) : undefined;
-      const seed: Record<string, unknown> = directSkill === 'find_worker' && worker ? { service: worker } : (directSkill === 'repair' || directSkill === 'phone_repair' || directSkill === 'phone_repairer') ? { ...extractRepairSlots(query), ...(priorObservation ? { prior_diagnostics: priorObservation } : {}) } : directSkill === 'doctor_appointment' ? extractHealthcareSlots(query) : directSkill === 'device_support' ? { problem: query.trim(), desired_action: 'diagnose' } : directSkill === 'product_sourcing' ? { product: query.trim() } : directSkill === 'verified_artist' ? { event_type: query.trim() } : directSkill === 'order_food' ? { ...(foodSlots.items ? { items: foodSlots.items } : {}), ...(foodSlots.location ? { location: foodSlots.location } : {}), ...extractFollowUpPatch(query, directSkill) } : ['hotel_deals','rental_tracker','job_tracker','wifi_installer'].includes(String(directSkill)) ? { objective: query.trim(), ...extractFollowUpPatch(query, directSkill) } : {};
+      const airtimePhone = directSkill === 'buy_airtime' ? query.match(/\b(?:\+234|234|0)(?:[\s-]?\d){10}\b/)?.[0]?.replace(/[\s-]/g, '') : undefined;
+      const airtimeAmount = directSkill === 'buy_airtime' ? query.match(/(?:₦|ngn\s*)\s*(\d[\d,]*(?:\.\d{1,2})?)/i)?.[1] : undefined;
+      const seed: Record<string, unknown> = directSkill === 'buy_airtime' ? { objective: 'Airtime purchase', ...(airtimePhone ? { recipient_phone: airtimePhone } : {}), ...(airtimeAmount ? { amount_minor: Math.round(Number(airtimeAmount.replace(/,/g, '')) * 100), currency: 'NGN' } : {}) } : directSkill === 'find_worker' && worker ? { service: worker } : (directSkill === 'repair' || directSkill === 'phone_repair' || directSkill === 'phone_repairer') ? { ...extractRepairSlots(query), ...(priorObservation ? { prior_diagnostics: priorObservation } : {}) } : directSkill === 'doctor_appointment' ? extractHealthcareSlots(query) : directSkill === 'device_support' ? { problem: query.trim(), desired_action: 'diagnose' } : directSkill === 'product_sourcing' ? { product: query.trim() } : directSkill === 'verified_artist' ? { event_type: query.trim() } : directSkill === 'order_food' ? { ...(foodSlots.items ? { items: foodSlots.items } : {}), ...(foodSlots.location ? { location: foodSlots.location } : {}), ...extractFollowUpPatch(query, directSkill) } : ['hotel_deals','rental_tracker','job_tracker','wifi_installer'].includes(String(directSkill)) ? { objective: query.trim(), ...extractFollowUpPatch(query, directSkill) } : {};
       const fromTo = query.match(/\bfrom\s+(.+?)\s+to\s+(.+?)(?=\s+(?:tomorrow|today|on\s+\w+)|[.!?]|$)/i); if (fromTo && (directSkill === 'ride_request' || directSkill === 'ride')) { seed.origin = fromTo[1].trim(); seed.destination = fromTo[2].trim(); }
       if (directSkill === 'ride_request' || directSkill === 'ride') {
         const destinationMatch = query.match(/\b(?:get|take|drive|bring)\s+me\s+to\s+(.+?)(?=\s+(?:tomorrow|today|tonight|by\s+\d|at\s+\d|on\s+\w+)|[.!?]|$)/i) || query.match(/\b(?:need|want)\s+to\s+be\s+in\s+(.+?)(?=\s+(?:tomorrow|today|tonight|by\s+\d|at\s+\d|on\s+\w+)|[.!?]|$)/i);

@@ -154,6 +154,13 @@ registerSkillsToFulfilmentMechanism(['product_sourcing'], 'marketplace_purchase'
   requiredInputs: ['product'],
   optionalInputs: ['quantity', 'budget', 'location', 'deadline', 'delivery', 'delivery_address', 'delivery_provider', 'tracking_reference'],
 });
+registerSkillsToFulfilmentMechanism(['buy_airtime'], 'marketplace_purchase', {
+  requiredInputs: ['recipient_phone', 'amount_minor'],
+  optionalInputs: ['currency', 'network'],
+  catalogueFirst: false,
+  providerInquiryFallback: false,
+  confirmationRequired: true,
+});
 registerSkillsToFulfilmentMechanism(['repair', 'phone_repairer'], 'service_request', {
   requiredInputs: ['device_or_asset', 'issue', 'location'],
   optionalInputs: ['urgency', 'parts_preference', 'collection_address', 'delivery_address', 'delivery_provider', 'tracking_reference'],
