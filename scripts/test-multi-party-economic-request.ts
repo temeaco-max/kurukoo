@@ -13,7 +13,7 @@ const { createEconomicRequest, getEconomicRequest, transitionEconomicRequest } =
 const { attachEconomicOffer, addEconomicParticipant, getEconomicRequestCoordination, updateEconomicParticipant, searchKnownEconomicOffers, startKnownOfferEconomicRequest, getDeliveryCandidates, selectDeliveryCandidate } = await import('../src/services/economicParticipants.js');
 const { lockEscrowForEconomicRequest, runEscrowPass } = await import('../src/services/tradeEngine.js');
 const { createDispute } = await import('../src/services/disputeResolution.js');
-const { resumeStorefrontFromRequest } = await import('../src/services/agenticStorefront.js');
+const { resumeStorefrontFromRequest, advanceStorefront } = await import('../src/services/agenticStorefront.js');
 const { createAIAgent } = await import('../src/services/aiAgentService.js');
 const { createOpenIntention } = await import('../src/services/deferredRequestService.js');
 const { routeIntent } = await import('../src/services/intentRouter.js');
@@ -236,7 +236,7 @@ assert.deepEqual(escrowRow, [buyerPhone, primaryProviderPhone, 8000, 'held'], 'e
 
 await updateEconomicParticipant({
   requestId,
-  ownerPhone: buyerPhone,
+  actorPhone: sellerPhone,
   role: 'seller',
   providerPhone: sellerPhone,
   status: 'handed_over',
@@ -248,7 +248,7 @@ assert.equal(handoverCard?.participants?.find((participant) => participant.role 
 
 await updateEconomicParticipant({
   requestId,
-  ownerPhone: buyerPhone,
+  actorPhone: deliveryPhone,
   role: 'delivery_provider',
   providerPhone: deliveryPhone,
   status: 'collected',
@@ -259,6 +259,36 @@ assert.equal(deliveryCard?.stage, 'delivery_in_progress', 'storefront projects d
 const postCollection = await getEconomicRequestCoordination(requestId);
 assert.equal(postCollection.participants.find((participant) => participant.role === 'seller')?.evidence.handover_receipt, 'seller-handover-001');
 assert.equal(postCollection.participants.find((participant) => participant.role === 'delivery_provider')?.evidence.collection_receipt, 'delivery-collection-001');
+
+await assert.rejects(
+  () => updateEconomicParticipant({ requestId, actorPhone: buyerPhone, role: 'delivery_provider', providerPhone: deliveryPhone, status: 'delivered', evidence: { delivery_reference: 'forged-owner-delivery-001' } }),
+  /only the selected delivery provider/i,
+  'the request owner cannot fabricate a provider delivery report',
+);
+await assert.rejects(
+  () => updateEconomicParticipant({ requestId, actorPhone: deliveryPhone, role: 'delivery_provider', providerPhone: deliveryPhone, status: 'delivered', evidence: {} }),
+  /delivery.*reference/i,
+  'delivery reporting requires a durable provider, recipient, or tracking reference',
+);
+const deliveryReported = await updateEconomicParticipant({
+  requestId,
+  actorPhone: deliveryPhone,
+  role: 'delivery_provider',
+  providerPhone: deliveryPhone,
+  status: 'delivered',
+  evidence: { delivery_reference: 'delivery-receipt-001', tracking_reference: 'tracking-001' },
+});
+assert.equal(deliveryReported.status, 'delivered');
+const deliveryConfirmationCard = await resumeStorefrontFromRequest(buyerPhone, requestId);
+assert.equal(deliveryConfirmationCard?.stage, 'delivery_confirmation', 'provider-reported delivery must be shown as a confirmation task rather than auto-completion');
+assert.equal(deliveryConfirmationCard?.actions?.some(action => action.id === 'confirm_delivery_receipt'), true);
+const deliveryReceiptConfirmation = await advanceStorefront(buyerPhone, requestId, {}, 'confirm_delivery_receipt');
+assert.equal(deliveryReceiptConfirmation.stage, 'coordination', 'owner confirmation should record the custody event without closing the primary request');
+const confirmedCoordination = await getEconomicRequestCoordination(requestId);
+const confirmedDelivery = confirmedCoordination.participants.find((participant) => participant.role === 'delivery_provider');
+assert.equal(confirmedDelivery?.status, 'confirmed');
+assert.equal(confirmedDelivery?.evidence.owner_confirmation, 'confirmed_by_explicit_storefront_action');
+assert.equal((await getEconomicRequest(requestId))?.status, 'in_fulfillment', 'delivery receipt does not bypass product/service completion, payment, or dispute policy');
 
 await assert.rejects(
   () => createDispute(deliveryPhone, String(locked.orderId), 'delivery participant cannot dispute buyer order'),
