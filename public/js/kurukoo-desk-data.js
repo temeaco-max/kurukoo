@@ -25,6 +25,7 @@
   };
 
   const settle = (promise) => promise.then((value) => ({ ok: true, value })).catch((error) => ({ ok: false, error }));
+  const isSelfPromotion = (item) => String(item?.title || '').trim() === 'Ask Kurukoo';
 
   const actionNeededStatuses = new Set(['awaiting_confirmation', 'reserved', 'payment_pending']);
   const progressStatuses = new Set([
@@ -177,7 +178,7 @@
       ? (Array.isArray(tasksR.value) ? tasksR.value : Array.isArray(tasksR.value?.tasks) ? tasksR.value.tasks : [])
       : [];
     const notifications = notificationsR.ok
-      ? (Array.isArray(notificationsR.value?.notifications) ? notificationsR.value.notifications : Array.isArray(notificationsR.value) ? notificationsR.value : [])
+      ? (Array.isArray(notificationsR.value?.notifications) ? notificationsR.value.notifications : Array.isArray(notificationsR.value) ? notificationsR.value : []).filter((item) => !isSelfPromotion(item))
       : [];
     const reminders = remindersR.ok
       ? (Array.isArray(remindersR.value?.reminders) ? remindersR.value.reminders : Array.isArray(remindersR.value) ? remindersR.value : [])
@@ -279,7 +280,12 @@
       if (attention.length) {
         attention.slice(0, 5).forEach((row) => todayList.appendChild(flowRow(row.label, row.href, row.detail, 'attention')));
       } else {
-        todayList.appendChild(flowRow('Nothing needs attention right now', '/chat', 'Tell Kurukoo what you need when you are ready'));
+        const quiet = document.createElement('div');
+        quiet.className = 'k-desk-flow-quiet';
+        const title = document.createElement('strong'); title.textContent = 'Nothing needs attention right now';
+        const copy = document.createElement('span'); copy.textContent = 'Use Ask Kurukoo when you are ready to start something new.';
+        quiet.append(title, copy);
+        todayList.appendChild(quiet);
       }
     }
 

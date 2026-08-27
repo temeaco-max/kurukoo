@@ -424,3 +424,90 @@ body.k-app-page .pwa-status-region:empty { display: none !important; }
 .k-call-readiness-note { font-size: 11px !important; }
 @media (max-width: 767px) { .k-ask-kurukoo-launcher { right: 14px; bottom: 76px; min-height: 40px; padding: 0 12px; font-size: 11px; } .k-call-workspace { padding: 15px 0; } .k-call-workspace-header, .k-call-workspace-grid { display: grid; grid-template-columns: 1fr; } .k-call-video-stage { min-height: min(63vw, 310px); } .k-call-stage, .k-call-readiness { border-radius: 12px; } }
 @media (prefers-reduced-motion: reduce) { .k-ask-kurukoo-launcher { transition: none; } }
+
+/* Full-canvas correction: the shared grid owns placement; legacy workspace offsets must not consume a second left rail. */
+body.k-app-page .k-app-main { margin-left: 0 !important; padding: 0 !important; }
+
+/* Desk and Discover each provide their own relevant navigation and context. A generic second inspector only narrows their primary work canvas. */
+body.k-app-page.k-app-section-desk .k-reference-context-rail,
+body.k-app-page.k-app-section-discover .k-reference-context-rail { display: none; }
+body.k-app-page.k-app-section-desk .k-app-main,
+body.k-app-page.k-app-section-discover .k-app-main { grid-column: 2 / 4; }
+body.k-app-page.k-app-section-desk .k-app-container,
+body.k-app-page.k-app-section-discover .k-app-container { width: min(100%, 1320px); padding-inline: clamp(30px, 4vw, 58px); }
+
+/* Desk uses the recovered width for readable operating modules rather than a compressed card column. */
+body.k-app-page.k-app-section-desk .k-desk-convergence { grid-template-columns: minmax(0, 1fr) minmax(264px, 300px); gap: 22px; }
+body.k-app-page.k-app-section-desk .k-desk-convergence-main { gap: 18px; }
+@media (max-width: 1180px) {
+  body.k-app-page.k-app-section-desk .k-desk-convergence { grid-template-columns: minmax(0, 1fr) minmax(248px, 280px); }
+}
+@media (max-width: 1024px) {
+  body.k-app-page.k-app-section-desk .k-app-main,
+  body.k-app-page.k-app-section-discover .k-app-main { grid-column: auto; }
+}
+
+/* Quiet Desk modules retain their canonical live-data anchors without repeating heavy nested empty cards. */
+body.k-app-page.k-app-section-desk .k-desk-module .k-desk-state-empty {
+  display: grid;
+  gap: 4px;
+  min-height: 0;
+  margin-top: 14px;
+  padding: 11px 0 0;
+  border: 0;
+  border-top: 1px solid var(--kr-line);
+  border-radius: 0;
+  background: transparent;
+}
+body.k-app-page.k-app-section-desk .k-desk-module .k-desk-state-empty .k-desk-state-pill { display: none; }
+body.k-app-page.k-app-section-desk .k-desk-module .k-desk-state-empty strong { color: var(--kr-ink); font-size: 12px; }
+body.k-app-page.k-app-section-desk .k-desk-module .k-desk-state-empty > span { color: var(--kr-muted); font-size: 11px; line-height: 1.45; }
+body.k-app-page.k-app-section-desk .k-desk-module .k-desk-state-empty a { width: max-content; min-height: 28px; padding: 0; color: var(--kr-orange-dark); background: transparent; }
+
+/* Phone Desk guard: the operating brief and its secondary information are sequential, never a competing side-by-side dashboard. */
+@media (max-width: 767px) {
+  body.k-app-page.k-app-section-desk .k-desk-convergence { display: block !important; width: 100%; }
+  body.k-app-page.k-app-section-desk .k-desk-convergence-main,
+  body.k-app-page.k-app-section-desk .k-desk-convergence-rail { display: grid !important; grid-template-columns: minmax(0, 1fr) !important; width: 100%; min-width: 0; }
+  body.k-app-page.k-app-section-desk .k-desk-convergence-rail { position: static !important; margin-top: 16px; }
+  body.k-app-page.k-app-section-desk .k-desk-module { grid-column: auto !important; }
+}
+
+/* On phones, the persistent Agent tab is the owned Ask Kurukoo entry point; a floating duplicate would cover scrollable work. */
+@media (max-width: 767px) {
+  body.k-app-page .k-ask-kurukoo-launcher { display: none !important; }
+}
+
+/* Quiet-state interaction geometry: keep the status readable and its next action separate. */
+body.k-app-page.k-app-section-desk .k-desk-module .k-desk-state.k-desk-state-empty {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 14px;
+  min-height: 0 !important;
+  margin-top: 14px !important;
+  padding: 12px 0 0 !important;
+  border: 0 !important;
+  border-top: 1px solid var(--kr-line) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+body.k-app-page.k-app-section-desk .k-desk-module .k-desk-state.k-desk-state-empty strong,
+body.k-app-page.k-app-section-desk .k-desk-module .k-desk-state.k-desk-state-empty > span { grid-column: 1; }
+body.k-app-page.k-app-section-desk .k-desk-module .k-desk-state.k-desk-state-empty a {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  white-space: nowrap;
+}
+
+body.k-app-page.k-app-section-desk .k-desk-flow-quiet {
+  display: grid;
+  gap: 4px;
+  min-height: 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--kr-line);
+  color: var(--kr-muted);
+}
+body.k-app-page.k-app-section-desk .k-desk-flow-quiet strong { color: var(--kr-ink); font-size: 12px; }
+body.k-app-page.k-app-section-desk .k-desk-flow-quiet span { font-size: 11px; line-height: 1.45; }

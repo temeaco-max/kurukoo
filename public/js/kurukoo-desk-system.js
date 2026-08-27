@@ -6,6 +6,7 @@
 
   let accountName = String(document.body?.dataset.displayName || 'Your account');
   let accountPhone = '';
+  const greetingName = () => (/^[+\d\s().-]{7,}$/.test(accountName) ? '' : accountName);
   const section = document.body.dataset.appSection || '';
   const closeAll = () => document.querySelectorAll('.k-desk-drawer:not([hidden])').forEach((panel) => {
     panel.hidden = true;
@@ -128,8 +129,9 @@
     const main = document.createElement('div'); main.className='k-desk-convergence-main';
     const rail = document.createElement('aside'); rail.className='k-desk-convergence-rail'; rail.setAttribute('aria-label','Desk context inspector');
 
-    const welcome = makeDeskModule('welcome','Kurukoo Brief',`Good to see you, ${accountName}.`,'Here is the work that needs you, what Kurukoo is moving forward, and where to continue.',[{
-      label:'Tell Kurukoo what you need',href:'/chat',tone:'primary'
+    const friendlyName = greetingName();
+    const welcome = makeDeskModule('welcome','Kurukoo Brief',friendlyName ? `Good to see you, ${friendlyName}.` : 'Good to see you.','Here is the work that needs you, what Kurukoo is moving forward, and where to continue.',[{
+      label:'Ask Kurukoo',href:'/chat',tone:'primary'
     }]);
     welcome.classList.add('is-hero');
     const presence = document.createElement('div'); presence.className='k-desk-presence'; presence.dataset.agentPresence='idle';
@@ -138,7 +140,7 @@
 
     const today = makeDeskModule('today-flow','Needs attention','What needs you now','Decisions, missing information, and time-sensitive follow-through appear here first.');
     const todayList=document.createElement('div'); todayList.className='k-desk-flow-list';
-    [['Tell Kurukoo what you need','/chat'],['Review requests','/requests'],['See next actions','/tasks']].forEach(([label,href])=>{const row=document.createElement('a');row.className='k-desk-flow-item';row.href=href;row.innerHTML=`<span>${label}</span><strong>Open →</strong>`;todayList.appendChild(row);});
+    [['Ask Kurukoo','/chat'],['Review requests','/requests'],['See next actions','/tasks']].forEach(([label,href])=>{const row=document.createElement('a');row.className='k-desk-flow-item';row.href=href;row.innerHTML=`<span>${label}</span><strong>Open →</strong>`;todayList.appendChild(row);});
     today.appendChild(todayList);
 
     const agentObjectivesCard = makeDeskModule('agent-objectives','Working now','What Kurukoo is keeping moving','See active work, what is waiting, and the next confirmed step without managing internal machinery.',[{label:'View work overview',href:'/agents',tone:'primary'}]);
