@@ -89,7 +89,15 @@ db.run(
 );
 
 try {
-  const initial = await startStorefrontSession(customerPhone, 'find_worker', { service: 'plumber', location: 'Ikeja' }, { forceNew: true });
+  const initial = await startStorefrontSession(customerPhone, 'find_worker', {
+    service: 'plumber',
+    location: 'Ikeja',
+    task_scope: 'Replace the leaking kitchen sink pipe',
+    tools_required: 'Bring pipe wrench and leak detector',
+    access_instructions: 'Call at the estate gate before entering',
+    onsite_contact: 'Chidi, +2348012345678',
+    urgency: 'today',
+  }, { forceNew: true });
   assert.ok(initial.requestId, 'A real storefront request must receive an Economic Request identity.');
   assert.equal(initial.skill, 'find_worker');
   assert.ok(initial.providers?.some(provider => provider.phone === providerPhone), 'The canonical storefront must project the verified local provider without treating it as a quote.');
@@ -99,6 +107,10 @@ try {
   assert.equal(fulfilment?.mechanism, 'local_discovery', 'The current find_worker flow must bind to the reusable fulfilment mechanism.');
   assert.equal(fulfilment?.requirements.service, 'plumber');
   assert.equal(fulfilment?.requirements.location, 'Ikeja');
+  assert.equal(fulfilment?.requirements.task_scope, 'Replace the leaking kitchen sink pipe', 'Worker task scope must remain attached to the canonical fulfilment.');
+  assert.equal(fulfilment?.requirements.tools_required, 'Bring pipe wrench and leak detector', 'Worker equipment constraints must survive into provider matching.');
+  assert.equal(fulfilment?.requirements.access_instructions, 'Call at the estate gate before entering', 'Site-access context must survive into provider matching.');
+  assert.equal(fulfilment?.requirements.urgency, 'today', 'Urgency must remain a request context field rather than a claim of provider availability.');
 
   const selected = await advanceStorefront(customerPhone, requestId, { providerPhone }, 'select_provider');
   assert.match(selected.message, /selected/i, 'Provider selection must stay explicit before a quote is requested.');

@@ -167,7 +167,8 @@ registerSkillsToFulfilmentMechanism(['repair', 'phone_repairer'], 'service_reque
 });
 registerSkillsToFulfilmentMechanism(['find_worker'], 'local_discovery', {
   requiredInputs: ['service', 'location'],
-  optionalInputs: ['time', 'budget', 'delivery_address', 'delivery_provider', 'tracking_reference'],
+  optionalInputs: ['time', 'budget', 'task_scope', 'skills_required', 'tools_required', 'materials_preference', 'access_instructions', 'onsite_contact', 'task_duration', 'urgency', 'safety_requirements', 'payment_model', 'delivery_address', 'delivery_provider', 'tracking_reference'],
+  notes: 'Keep task scope and site conditions available for verified worker matching and quotes; a provider response is not task completion.',
 });
 registerSkillsToFulfilmentMechanism(['hotel_deals'], 'booking', {
   requiredInputs: ['objective'],
