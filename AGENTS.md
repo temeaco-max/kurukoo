@@ -1,10 +1,24 @@
 # Kurukoo agent build rules
 
-Reference `/BLUEPRINT.md` for canonical architecture, schema, capabilities and product intent.
+Reference `/BLUEPRINT.md` for canonical architecture and long-range product intent, `/docs/architecture/CURRENT_PRODUCT_TRUTH.md` for current-state truth, and `/docs/product/KURUKOO_USER_OUTCOME_CONTRACT.md` for the user-outcome lens that must guide every implementation decision.
+
+## Product north star — user outcome first
+
+> **Kurukoo is a service that helps people get things done.**
+>
+> You tell Kurukoo what you need, want, notice, or are worried about.
+>
+> Kurukoo understands the situation, works out what it can do, takes appropriate action, gets help from people or services when necessary, keeps you informed, and remembers what matters.
+
+Users do not need to understand skills, capabilities, agents, MCP, connectors, Economic Requests, evidence machinery, or internal services. Those are implementation means. Engineering work must begin with the user outcome and then reuse the existing Kurukoo machinery to produce it.
+
+Do not let the current feature, vertical, page, integration, or PR become the definition of Kurukoo. The whole service remains in scope: personal assistance, everyday work, discovery, providers, services, products, memory, tasks, reminders, safety, economic coordination, agents, connected devices, IoT, external channels, physical execution, and future capabilities.
 
 ## Canonical engineering authorities
 
+- `/BLUEPRINT.md` — canonical product/architecture intent and long-range scope.
 - `/docs/architecture/CURRENT_PRODUCT_TRUTH.md` — **single current-state product truth authority**.
+- `/docs/product/KURUKOO_USER_OUTCOME_CONTRACT.md` — canonical user-outcome interpretation and product experience contract.
 - `/docs/architecture/KURUKOO_BUILD_CONVERGENCE_CONTRACT.md` — build/convergence rules.
 - `/docs/architecture/CLIENT_APPLICATION_CONVERGENCE.md` — Web/PWA/native client boundaries.
 - `/docs/architecture/BLUEPRINT_TRUTH.md` — architecture interpretation and historical reconciliation context.
@@ -24,17 +38,28 @@ Each dimension must be classified `VERIFIED`, `PARTIAL`, `UNVERIFIED`, `BLOCKED_
 ## Non-negotiable build principles
 
 - `main` is the only canonical integration branch for the platform OS build.
-- Build for outcomes, not feature accumulation.
+- Build for user outcomes, not feature accumulation or internal architectural milestones.
 - Connect existing capabilities before creating new ones.
 - Repair or repurpose existing systems before replacing them.
-- Create a new subsystem only when a genuine architectural capability gap has been established.
+- Do not create a new subsystem, vertical engine, agent family, device layer, notification layer, provider system, or other parallel authority when existing Kurukoo primitives can be composed or extended.
+- Remove artificial product restrictions where existing capabilities can reasonably support the user's need.
+- Preserve genuine safety, privacy, consent, authorization, evidence, security, legal, and truthfulness boundaries; these are not artificial capability ceilings.
 - Treat Chat as the universal conversational control surface over canonical services, not as a second backend.
 - Preserve one canonical identity, conversation, memory, presence, economic lifecycle, policy boundary and action protocol.
 - AI may interpret, reason, communicate and coordinate, but canonical services own authority, mutation, execution and evidence.
 - Never claim external activation, availability, payment, fulfilment or evidence that has not actually been established.
 - Tests are evidence of behaviour; documentation is intent/state; neither substitutes for a working implementation.
 - Every change must be checked against the whole Kurukoo system, not only the local file or feature being edited.
+- Every meaningful feature must consider the user-facing experience, authenticated OS experience, relevant agent/capability/tool composition, connected resources where applicable, memory/continuity, notification/channel continuity, human/provider escalation, and internal operator observability where applicable.
 - Reconcile useful work from other branches into `main`; discard duplicate/superseded architecture rather than allowing long-lived divergence.
+
+## Capability expansion rule
+
+When a user asks Kurukoo to do something new, first ask what the existing system can already do with composition. A need should be mapped across existing skills, behaviour instructions, capabilities, agent tools, connected resources, AI/model adapters, canonical services, Economic Requests, providers, physical participants, evidence and notification/channel mechanisms before introducing a new abstraction.
+
+Kurukoo should prefer direct help before escalation. If it can safely inspect, diagnose, explain, monitor, or resolve a problem with available and authorised capabilities, it should do so before asking the user to find a human. If it cannot, it should carry the useful context into the best available next step rather than making the user start again.
+
+“Total functionality” means maximising useful capability and reducing unnecessary product restrictions. It does **not** mean bypassing permissions, authorization, safety, privacy, or evidence requirements.
 
 ## Client architecture — locked
 
@@ -48,6 +73,14 @@ Kurukoo is ONE OS exposed through multiple clients:
 Web and Mobile have two intentional visual systems. They share semantic design tokens, component meaning, interaction semantics, status/evidence language and product concepts, but may differ in layout/navigation/native mechanics.
 
 Never create separate client-side sources of truth for identity, memory, requests, capabilities, agents, artifacts, providers, payments or subscriptions.
+
+## Surface perspective rule
+
+Public/user-facing surfaces answer: **What can Kurukoo do for me, what is happening, what do you need from me, what happened, and what can I do next?** They should use plain language and lead with outcomes, examples, status, choices and next actions.
+
+Admin/operator/provider/developer surfaces answer: **What is happening inside the service, what owns it, what is enabled, what failed, what evidence exists, what needs intervention, and what is safe to change?** They may expose technical identifiers, lifecycle states, connector health, agent execution, evidence, audit data, deployment state and recovery controls.
+
+Neither perspective may create a separate source of truth.
 
 ## Feature representation rule
 
