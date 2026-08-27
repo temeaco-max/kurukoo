@@ -23,6 +23,9 @@ router.post('/rides/quick', authenticateUser, async (req: AuthRequest, res) => {
       vehicleType: req.body?.vehicleType,
       pickupAt: req.body?.pickupAt,
       passengers: req.body?.passengers,
+      budgetMinor: req.body?.budgetMinor ?? req.body?.budget_minor,
+      accessibility: req.body?.accessibility,
+      safetyRequirements: req.body?.safetyRequirements ?? req.body?.safety_requirements,
       note: req.body?.note,
       maxProviders: req.body?.maxProviders,
     });

@@ -3,6 +3,7 @@ import { getCanonicalPersistenceMode } from './canonicalPersistence.js';
 import { getCanonicalStore } from './canonicalStore.js';
 import { persistCoordinatorEvent } from './coordinatorStore.js';
 import { sendFcmPush } from './pushNotifications.js';
+import { getFulfilmentSkillBinding, resolveMissingFulfilmentInputs } from './fulfilmentSkillBindings.js';
 
 export type FulfilmentStatus =
   | 'draft'
@@ -657,6 +658,40 @@ export function buildProviderInquiryQuestion(input: { item: string; quantity?: n
 
 export function fulfilmentSupportsProviderInquiry(mechanism: string): boolean {
   return ['marketplace_purchase','service_request','booking','procurement','local_discovery','provider_dispatch'].includes(mechanism);
+}
+
+/**
+ * Keep every entry point that creates an Economic Request attached to the same
+ * canonical fulfilment record. This intentionally shares slot state rather
+ * than introducing per-vertical fulfilment models.
+ */
+export async function syncCanonicalFulfilmentForEconomicRequest(input: {
+  ownerPhone: string;
+  economicRequestId: string;
+  skill: string;
+  requirements: FulfilmentRequirements;
+}): Promise<Fulfilment | null> {
+  const binding = getFulfilmentSkillBinding(input.skill);
+  if (!binding) return null;
+  const missingInputs = resolveMissingFulfilmentInputs(binding, input.requirements);
+  const existing = await getFulfilmentForEconomicRequest(input.ownerPhone, input.economicRequestId);
+  if (!existing) {
+    return createFulfilment({
+      ownerPhone: input.ownerPhone,
+      skill: input.skill,
+      mechanism: binding.mechanism,
+      requirements: input.requirements,
+      requiredInputs: binding.requiredInputs,
+      missingInputs,
+      economicRequestId: input.economicRequestId,
+    });
+  }
+  if (['completed', 'cancelled', 'failed'].includes(existing.status)) return existing;
+  const requirementsChanged = Object.entries(input.requirements).some(([key, value]) => existing.requirements[key] !== value);
+  const missingChanged = existing.missingInputs.join('|') !== missingInputs.join('|');
+  return requirementsChanged || missingChanged
+    ? updateFulfilmentRequirements(input.ownerPhone, existing.id, input.requirements, missingInputs)
+    : existing;
 }
 
 export function canonicalFulfilmentPersistenceMode(): 'canonical' {

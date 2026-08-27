@@ -346,7 +346,7 @@ function initEconomicParticipantTables(database: any) {
       role TEXT NOT NULL CHECK(role IN ('seller', 'delivery_provider', 'service_provider', 'external_platform', 'agent')),
       provider_phone TEXT NOT NULL,
       capability TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'invited' CHECK(status IN ('invited', 'offered', 'selected', 'confirmed', 'handover_pending', 'handed_over', 'collected', 'in_progress', 'delivered', 'declined', 'withdrawn')),
+      status TEXT NOT NULL DEFAULT 'invited' CHECK(status IN ('invited', 'offered', 'selected', 'confirmed', 'handover_pending', 'handed_over', 'collected', 'in_progress', 'completion_reported', 'delivered', 'declined', 'withdrawn')),
       evidence_json TEXT NOT NULL DEFAULT '{}',
       added_at TEXT DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(request_id, role, provider_phone)
@@ -356,11 +356,11 @@ function initEconomicParticipantTables(database: any) {
     CREATE INDEX IF NOT EXISTS idx_economic_offers_seller_status ON economic_offers(seller_phone, status);
   `);
 
-  // Existing databases created before generic service execution used a role
-  // constraint that excluded service_provider. Rebuild only that table while
-  // preserving all participant rows and indexes; no participant is fabricated.
+  // Rebuild older participant tables when their lifecycle constraint cannot
+  // represent a provider completion report awaiting owner confirmation. Preserve
+  // all rows and indexes; the migration never fabricates participant evidence.
   const participantSchema = database.exec("SELECT sql FROM sqlite_master WHERE type='table' AND name='economic_participants'")[0]?.values?.[0]?.[0];
-  if (typeof participantSchema === 'string' && !participantSchema.includes("'service_provider'")) {
+  if (typeof participantSchema === 'string' && (!participantSchema.includes("'service_provider'") || !participantSchema.includes("'completion_reported'"))) {
     database.run(`
       BEGIN;
       CREATE TABLE economic_participants_migrated (
@@ -369,7 +369,7 @@ function initEconomicParticipantTables(database: any) {
         role TEXT NOT NULL CHECK(role IN ('seller', 'delivery_provider', 'service_provider', 'external_platform', 'agent')),
         provider_phone TEXT NOT NULL,
         capability TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'invited' CHECK(status IN ('invited', 'offered', 'selected', 'confirmed', 'handover_pending', 'handed_over', 'collected', 'in_progress', 'delivered', 'declined', 'withdrawn')),
+        status TEXT NOT NULL DEFAULT 'invited' CHECK(status IN ('invited', 'offered', 'selected', 'confirmed', 'handover_pending', 'handed_over', 'collected', 'in_progress', 'completion_reported', 'delivered', 'declined', 'withdrawn')),
         evidence_json TEXT NOT NULL DEFAULT '{}',
         added_at TEXT DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(request_id, role, provider_phone)

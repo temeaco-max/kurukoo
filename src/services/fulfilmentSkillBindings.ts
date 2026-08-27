@@ -136,6 +136,11 @@ registerSkillsToFulfilmentMechanism(['ride','flight','hotel','artist_booking','a
 registerSkillsToFulfilmentMechanism(['wholesale','business_procurement','office_supplies','equipment','parts'], 'procurement');
 registerSkillsToFulfilmentMechanism(['find_worker','find_provider','local_business','discover'], 'local_discovery');
 registerSkillsToFulfilmentMechanism(['courier','delivery','pickup','field_service'], 'provider_dispatch');
+registerSkillsToFulfilmentMechanism(['ride_request'], 'provider_dispatch', {
+  requiredInputs: ['origin', 'destination'],
+  optionalInputs: ['departure_time', 'passengers', 'vehicle_type', 'budget', 'accessibility', 'safety_requirements', 'note'],
+  notes: 'Use the shared provider-dispatch and evidence lifecycle; a provider acceptance or report is not a completed journey.',
+});
 registerSkillsToFulfilmentMechanism(['search','research','lookup','compare','local_information'], 'information_lookup');
 registerSkillsToFulfilmentMechanism(['contact_provider','message_provider','request_quote'], 'communication_relay');
 

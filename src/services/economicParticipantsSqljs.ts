@@ -23,6 +23,7 @@ export const ECONOMIC_PARTICIPANT_STATUSES = [
   'handed_over',
   'collected',
   'in_progress',
+  'completion_reported',
   'delivered',
   'declined',
   'withdrawn',

@@ -12,7 +12,7 @@ process.env.DB_PATH=path.join(os.tmpdir(),`kurukoo-dispatch-${process.pid}-${Dat
 const { getDb } = await import('../src/database.js');
 const { createEconomicRequest } = await import('../src/services/skillFlows.js');
 const { addPoints, getPointsBalance } = await import('../src/services/pointsEngine.js');
-const { broadcastDispatch, acceptDispatchLead, markDispatchArrived, completeDispatch } = await import('../src/services/economicDispatchCoordinator.js');
+const { broadcastDispatch, acceptDispatchLead, markDispatchArrived, completeDispatch, confirmDispatchCompletion } = await import('../src/services/economicDispatchCoordinator.js');
 const { getProviderCommunicationSession } = await import('../src/services/providerCommunicationService.js');
 const { createServiceReview } = await import('../src/services/serviceReviewService.js');
 
@@ -38,10 +38,14 @@ const arrived=await markDispatchArrived({leadId:first.id,providerPhone:first.pro
 assert.equal(arrived.status,'arrived');
 const arrivedSession=await getProviderCommunicationSession(String(accepted.communicationSessionId));
 assert.equal(arrivedSession?.state,'arrived','arrival updates the shared communication session');
-const completed=await completeDispatch({leadId:first.id,providerPhone:first.providerPhone,evidence:{pickup_confirmed:true,dropoff_confirmed:true}});
+const reported=await completeDispatch({leadId:first.id,providerPhone:first.providerPhone,evidence:{trip_reference:'dispatch-test-trip-7001',completed_at:new Date().toISOString(),pickup_confirmed:true,dropoff_confirmed:true}});
+assert.equal(reported.status,'completion_reported','provider-reported completion must await owner confirmation');
+const awaitingConfirmation=await getProviderCommunicationSession(String(accepted.communicationSessionId));
+assert.equal(awaitingConfirmation?.state,'completion_reported','the shared communication session must remain truthful while completion awaits confirmation');
+const completed=await confirmDispatchCompletion({leadId:first.id,ownerPhone:customer});
 assert.equal(completed.status,'completed');
 const after=await getProviderCommunicationSession(String(accepted.communicationSessionId));
-assert.equal(after?.state,'completed','completion closes the shared communication session');
+assert.equal(after?.state,'completed','owner-confirmed completion closes the shared communication session');
 const review=await createServiceReview({requestId:request.id,reviewerPhone:customer,providerPhone:first.providerPhone,rating:5,feedback:'Good trip'});
 assert.equal(review.rating,5);
 const skills=db.exec('SELECT rating,jobs_completed FROM skills WHERE phone=? AND skill=?',[first.providerPhone,'okada_rider']);
