@@ -3,30 +3,8 @@ name: Provider SMS Loop
 on:
   pull_request:
     branches: [main]
-    paths:
-      - src/channels/sms.ts
-      - src/index.ts
-      - src/services/agenticStorefront.ts
-      - src/services/canonicalFulfilmentService.ts
-      - src/services/channelDeliveryState.ts
-      - scripts/test-africastalking-sms-callback.ts
-      - scripts/test-fulfilment-storefront-integration.ts
-      - package.json
-      - package-lock.json
-      - .github/workflows/provider-sms-loop.yml
   push:
     branches: [main]
-    paths:
-      - src/channels/sms.ts
-      - src/index.ts
-      - src/services/agenticStorefront.ts
-      - src/services/canonicalFulfilmentService.ts
-      - src/services/channelDeliveryState.ts
-      - scripts/test-africastalking-sms-callback.ts
-      - scripts/test-fulfilment-storefront-integration.ts
-      - package.json
-      - package-lock.json
-      - .github/workflows/provider-sms-loop.yml
 
 permissions:
   contents: read
