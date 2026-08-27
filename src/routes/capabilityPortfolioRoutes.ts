@@ -48,7 +48,12 @@ router.patch('/:skill', async (req: AuthRequest, res) => {
   if (status !== undefined && !statuses.includes(status)) return res.status(400).json({ error: 'Invalid capability status' });
   if (availability !== undefined && !availabilityValues.includes(availability)) return res.status(400).json({ error: 'Invalid capability availability' });
   if (availability === 'live') return res.status(400).json({ error: 'Use /:skill/live with explicit coordinates.' });
-  return res.json({ success: true, capability: await setCapabilityState(phone, String(req.params.skill), { status, availability, kind: req.body?.kind, metadata: req.body?.metadata }) });
+  try {
+    return res.json({ success: true, capability: await setCapabilityState(phone, String(req.params.skill), { status, availability, kind: req.body?.kind, metadata: req.body?.metadata }) });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to update capability readiness';
+    return res.status(/verification|required|operator-governed/i.test(message) ? 409 : 422).json({ success: false, error: message });
+  }
 });
 
 router.post('/:skill/live', async (req: AuthRequest, res) => {
@@ -60,7 +65,12 @@ router.post('/:skill/live', async (req: AuthRequest, res) => {
   if (!skill || !Number.isFinite(lat) || !Number.isFinite(lng)) return res.status(400).json({ error: 'skill, lat and lng are required' });
   const result = await activatePulse(phone, skill, lat, lng);
   if (!result.success) return res.status(403).json(result);
-  return res.json({ success: true, capability: await setCapabilityState(phone, skill, { availability: 'live', status: 'active' }), pulse: result });
+  try {
+    return res.json({ success: true, capability: await setCapabilityState(phone, skill, { availability: 'live', status: 'active' }), pulse: result });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to activate capability readiness';
+    return res.status(/verification|required/i.test(message) ? 409 : 422).json({ success: false, error: message, pulse: result });
+  }
 });
 
 router.delete('/:skill/live', async (req: AuthRequest, res) => {
