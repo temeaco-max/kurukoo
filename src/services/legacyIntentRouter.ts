@@ -15,6 +15,7 @@ import { getAssistanceOutcome } from './assistanceOutcomeService.js';
 import { resolveConversationPriority } from './conversationPriorityService.js';
 import { executeCanonicalCapabilityProposal } from './canonicalCapabilityExecutor.js';
 import { listConnectedResources } from './connectedResourceService.js';
+import { listChatMessages } from './chatConversationService.js';
 import type { IntentRoutingResult } from '../types.js';
 import { extractConversationalEntities, extractFoodOrderSlots, isFoodOrderExpression, validateConversationalEntities } from './conversationalExtraction.js';
 
@@ -142,6 +143,26 @@ function deviceResourceMatches(query: string, resource: { kind: string; label: s
   if (/\b(?:phone|iphone|ipad|tablet|android)\b/.test(text)) return ['phone', 'tablet'].includes(resource.kind);
   if (/\b(?:wi-?fi|router|internet|network)\b/.test(text)) return ['phone', 'tablet', 'laptop', 'desktop', 'iot', 'other'].includes(resource.kind);
   return true;
+}
+
+async function recentDeviceObservation(phone: string, threadId: string | undefined, query: string): Promise<Record<string, unknown> | undefined> {
+  const rows = await listChatMessages(phone, threadId ? { conversationId: threadId, limit: 40 } : { limit: 40 });
+  for (let index = rows.length - 1; index >= 0; index -= 1) {
+    let card: any;
+    try { card = rows[index]?.card_data ? (typeof rows[index].card_data === 'string' ? JSON.parse(rows[index].card_data) : rows[index].card_data) : null; } catch { card = null; }
+    if (!card || card.type !== 'device_support' || !card.resource || typeof card.resource !== 'object') continue;
+    const resource = card.resource as Record<string, unknown>;
+    const label = String(resource.label || '').trim();
+    const kind = String(resource.kind || '').trim().toLowerCase();
+    const text = query.toLowerCase();
+    const sameResource = Boolean(label && text.includes(label.toLowerCase())) || Boolean(kind && new RegExp(`\\b${kind.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\b`, 'i').test(text));
+    if (!sameResource) continue;
+    let observedState: unknown = card.observedState;
+    try { observedState = JSON.parse(JSON.stringify(observedState)); } catch { observedState = String(observedState || '').slice(0, 500); }
+    const boundedState = typeof observedState === 'string' ? observedState.slice(0, 500) : observedState;
+    return { source: 'canonical_chat_device_support', resource: { label, kind, vendor: resource.vendor || null }, observedState: boundedState ?? null, observedAt: card.observedAt || null, evidenceLevel: card.evidenceLevel || 'canonical_service', liveObservation: card.liveObservation === true };
+  }
+  return undefined;
 }
 
 async function inspectConnectedResourceForDeviceSupport(phone: string | undefined, query: string, threadId?: string): Promise<IntentRoutingResult | null> {
@@ -273,11 +294,12 @@ export async function routeIntent(query: string, phone?: string, provider?: AIPr
       if (directSkill === 'product_sourcing') { const offers = await searchKnownEconomicOffers(query, 3); if (offers.length) return { skill: directSkill, reply: `I found ${offers.length === 1 ? 'one known seller offer' : `${offers.length} known seller offers`} matching that product. Choose one to continue through the existing Economic Request flow.`, cardData: { type: 'agentic_storefront', stage: 'offer_review', skill: directSkill, title: 'Known seller offers', message: 'These are verified seller references, not a stock or payment confirmation.', knownOffers: offers, escrowProtected: false, progress: 55 } }; }
       const workerMatch = q.match(/\b(plumber|plumb|electrician|electrical|mechanic|carpenter|tailor|cleaner|clean|cleaning|housekeeping|technician|painter|paint|painting|decorator|decorating|tiler|tiling|roofer|roofing|mason|welder)\b/i)?.[1]; const worker = workerMatch ? (/^plumb/i.test(workerMatch) ? 'plumber' : /^electri/i.test(workerMatch) ? 'electrician' : /^clean|^housekeep/i.test(workerMatch) ? 'house_cleaner' : /^paint/i.test(workerMatch) ? 'painter' : /^decorat/i.test(workerMatch) ? 'decorator' : /^til/i.test(workerMatch) ? 'tiler' : /^roof/i.test(workerMatch) ? 'roofer' : workerMatch.toLowerCase()) : undefined;
       const foodSlots = directSkill === 'order_food' ? extractFoodOrderSlots(query) : {};
-      const seed: Record<string, unknown> = directSkill === 'find_worker' && worker ? { service: worker } : directSkill === 'repair' ? extractRepairSlots(query) : directSkill === 'device_support' ? { problem: query.trim(), desired_action: 'diagnose' } : directSkill === 'product_sourcing' ? { product: query.trim() } : directSkill === 'verified_artist' ? { event_type: query.trim() } : directSkill === 'order_food' ? { ...(foodSlots.items ? { items: foodSlots.items } : {}), ...(foodSlots.location ? { location: foodSlots.location } : {}), ...extractFollowUpPatch(query, directSkill) } : {};
+      const priorObservation = (directSkill === 'repair' || directSkill === 'phone_repair') ? await recentDeviceObservation(phone, threadId, query) : undefined;
+      const seed: Record<string, unknown> = directSkill === 'find_worker' && worker ? { service: worker } : (directSkill === 'repair' || directSkill === 'phone_repair') ? { ...extractRepairSlots(query), ...(priorObservation ? { prior_diagnostics: priorObservation } : {}) } : directSkill === 'device_support' ? { problem: query.trim(), desired_action: 'diagnose' } : directSkill === 'product_sourcing' ? { product: query.trim() } : directSkill === 'verified_artist' ? { event_type: query.trim() } : directSkill === 'order_food' ? { ...(foodSlots.items ? { items: foodSlots.items } : {}), ...(foodSlots.location ? { location: foodSlots.location } : {}), ...extractFollowUpPatch(query, directSkill) } : {};
       const fromTo = query.match(/\bfrom\s+(.+?)\s+to\s+(.+?)(?=\s+(?:tomorrow|today|on\s+\w+)|[.!?]|$)/i); if (fromTo && (directSkill === 'ride_request' || directSkill === 'ride')) { seed.origin = fromTo[1].trim(); seed.destination = fromTo[2].trim(); }
       const departure = query.match(/\b(today|tonight|tomorrow(?:\s+(?:morning|afternoon|evening|night))?|this\s+weekend|next\s+week|saturday|sunday|monday|tuesday|wednesday|thursday|friday)\b/i); if (departure && (directSkill === 'ride_request' || directSkill === 'ride')) seed.departure_time = departure[1];
       if (extractedEntities.location && !seed.location) seed.location = extractedEntities.location; if (extractedEntities.items && directSkill === 'order_food') seed.items = extractedEntities.items; if (extractedEntities.date) seed.date = extractedEntities.date; if (extractedEntities.time) seed.time = extractedEntities.time; if (extractedEntities.budget !== undefined) seed.budget = extractedEntities.budget; if (extractedEntities.quantity !== undefined) seed.quantity = extractedEntities.quantity; if (extractedEntities.product) seed.product = extractedEntities.product;
-      const card = await startStorefrontSession(phone, directSkill, seed, { forceNew: contextHint?.relation === 'create' }); const reply = directSkill === 'product_sourcing' ? `${card.message} I’ll only show a product card when a verified seller reference is available; I will not invent stock, price, or delivery.` : card.message; const progressStage = card.stage === 'information' ? 'information' : card.stage === 'safety' ? 'safety' : card.stage === 'coordination' ? 'coordination' : card.stage === 'slot_fill' || card.stage === 'intent_extraction' ? 'understanding' : card.stage === 'catalog_match' || card.stage === 'offer_review' || card.stage === 'quote_review' ? 'checking' : card.stage === 'complete' ? 'complete' : 'coordinating'; const canonicalAction = card.requestId ? 'economic_request.start' : `skill_flow.${card.stage}`;
+      const card = await startStorefrontSession(phone, directSkill, seed, { forceNew: contextHint?.relation === 'create' }); const reply = directSkill === 'product_sourcing' ? `${card.message} I’ll only show a product card when a verified seller reference is available; I will not invent stock, price, or delivery.` : (directSkill === 'repair' || directSkill === 'phone_repair') && priorObservation ? `${card.message} I attached the earlier recorded device observation as context for the repair provider. It is not a live diagnosis, so the provider must independently confirm the fault.` : card.message; const progressStage = card.stage === 'information' ? 'information' : card.stage === 'safety' ? 'safety' : card.stage === 'coordination' ? 'coordination' : card.stage === 'slot_fill' || card.stage === 'intent_extraction' ? 'understanding' : card.stage === 'catalog_match' || card.stage === 'offer_review' || card.stage === 'quote_review' ? 'checking' : card.stage === 'complete' ? 'complete' : 'coordinating'; const canonicalAction = card.requestId ? 'economic_request.start' : `skill_flow.${card.stage}`;
       return { skill: directSkill, reply, cardData: { ...decorateCardWithSuggestions(card, directSkill), extractedEntities, extractionSource: 'deterministic', canonicalAction, progressStage }, extractedEntities: extractedEntities as Record<string, unknown>, extractionSource: 'deterministic', canonicalAction, progressStage };
     } catch (e) { console.warn('[Router] storefront start failed:', e); }
   }

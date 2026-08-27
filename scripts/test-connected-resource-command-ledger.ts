@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { registerConnectedResource, activateConnectedResource, controlConnectedResource } from '../src/services/connectedResourceService.js';
 import { routeIntent } from '../src/services/intentRouter.js';
 import { processCanonicalChatTurn } from '../src/services/canonicalChatTurnService.js';
+import { getEconomicRequest } from '../src/services/skillFlows.js';
 
 const phone = `+234809${String(Date.now()).slice(-7)}`;
 const { resource, challenge } = await registerConnectedResource({
@@ -52,5 +53,14 @@ const chatTurn = await processCanonicalChatTurn({ phone, message: 'Check my Work
 assert.equal(chatTurn.cardData?.type, 'device_support');
 assert.equal(chatTurn.cardData?.status, 'completed');
 assert.match(chatTurn.reply, /recorded state|not a live connection test/i);
+
+const repairTurn = await routeIntent('Please find a phone repairer for my Work MacBook screen is broken in Ikeja.', phone, undefined, undefined, chatTurn.conversationId);
+assert.equal(repairTurn.skill, 'phone_repair');
+assert.ok(repairTurn.cardData?.requestId);
+const repairRequest = await getEconomicRequest(String(repairTurn.cardData.requestId));
+assert.equal(repairRequest?.requirements?.prior_diagnostics?.source, 'canonical_chat_device_support');
+assert.equal(repairRequest?.requirements?.prior_diagnostics?.resource?.label, 'Work MacBook');
+assert.equal(repairRequest?.requirements?.prior_diagnostics?.liveObservation, false);
+assert.match(repairTurn.reply, /attached the earlier recorded device observation/i);
 
 console.log('Connected-resource command ledger regression passed: owner scope, capability gating, truthful MQTT readiness, persisted command identity, idempotent replay, and canonical device observation evidence.');
