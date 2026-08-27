@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import crypto from 'node:crypto';
-import fs from 'node:fs';
 import initSqlJs from 'sql.js';
 
 const require = createRequire(import.meta.url);
