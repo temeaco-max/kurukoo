@@ -7,52 +7,10 @@ import {
   type CompoundGoalDependency,
 } from './agentEconomicRequestOrchestrator.js';
 
-export interface AgentGoalContinuation {
-  goalId: string;
-  goalStatus: string;
-  economicLink: AgentEconomicLink | null;
-  dependencies: CompoundGoalDependency[];
-  ready: boolean;
-  nextAction: string;
-  blockedBy: string[];
-}
-
-function nextAction(goalStatus: string, economicLink: AgentEconomicLink | null, dependencies: CompoundGoalDependency[], ready: boolean): string {
-  if (goalStatus === 'completed') return 'review the completed goal';
-  if (goalStatus === 'cancelled' || goalStatus === 'failed' || goalStatus === 'expired') return 'review the terminal goal state';
-  if (!ready) {
-    const blocker = dependencies.find(item => item.status === 'blocked' || item.status === 'waiting');
-    if (blocker?.blockedBy) return `wait for ${blocker.blockedBy} before continuing`;
-    if (blocker) return `wait for the ${blocker.skill} dependency to become ready`;
-    return 'wait for the current objective dependencies';
-  }
-  if (economicLink) return economicLink.nextAction;
-  if (goalStatus === 'needs_user') return 'provide the requested input or confirmation';
-  if (goalStatus === 'blocked') return 'resolve the blocker before continuing';
-  if (goalStatus === 'waiting') return 'wait for the next agent event';
-  return 'continue the objective through the canonical capability path';
-}
-
-export async function getAgentGoalContinuation(phone: string, goalId: string): Promise<AgentGoalContinuation | null> {
-  const owner = String(phone || '').trim();
-  if (!owner || !goalId) return null;
-  const goal = await getAgentGoal(owner, goalId);
-  if (!goal) return null;
-
-  const economicLink = await getAgentEconomicRequestLink(owner, goalId);
-  const dependencies = await refreshAgentGoalDependencies(owner, goalId);
-  const ready = dependencies.every(item => ['ready', 'completed'].includes(item.status));
-  const blockedBy = dependencies
-    .filter(item => item.status === 'blocked' || item.status === 'waiting')
-    .map(item => item.blockedBy || item.skill);
-
-  return {
-    goalId: goal.id,
-    goalStatus: goal.status,
-    economicLink,
-    dependencies,
-    ready,
-    nextAction: nextAction(goal.status, economicLink, dependencies, ready),
-    blockedBy: [...new Set(blockedBy)],
-  };
-}
+export type UserFacingWorkState = 'i_can' | 'working_on_it' | 'waiting_for' | 'i_need_you' | 'done';
+export interface AgentGoalContinuation { goalId: string; goalStatus: string; economicLink: AgentEconomicLink | null; dependencies: CompoundGoalDependency[]; ready: boolean; nextAction: string; blockedBy: string[]; userFacingState: UserFacingWorkState; situation: string; }
+function nextAction(goalStatus:string,economicLink:AgentEconomicLink|null,dependencies:CompoundGoalDependency[],ready:boolean):string{if(goalStatus==='completed')return'review the completed goal';if(['cancelled','failed','expired'].includes(goalStatus))return'review the terminal goal state';if(!ready){const blocker=dependencies.find(item=>item.status==='blocked'||item.status==='waiting');if(blocker?.blockedBy)return`wait for ${blocker.blockedBy} before continuing`;if(blocker)return`wait for the ${blocker.skill} dependency to become ready`;return'wait for the current objective dependencies';}if(economicLink)return economicLink.nextAction;if(goalStatus==='needs_user')return'provide the requested input or confirmation';if(goalStatus==='blocked')return'resolve the blocker before continuing';if(goalStatus==='waiting')return'wait for the next agent event';return'continue the objective through the canonical capability path';}
+function userState(goalStatus:string,ready:boolean,economicLink:AgentEconomicLink|null):UserFacingWorkState{if(goalStatus==='completed')return'done';if(goalStatus==='needs_user'||goalStatus==='blocked')return'i_need_you';if(!ready||goalStatus==='waiting')return'waiting_for';return economicLink?'working_on_it':'i_can';}
+function situation(state:UserFacingWorkState,next:string,blockedBy:string[]):string{if(state==='done')return'This work is complete.';if(state==='i_need_you')return`I need your input to continue: ${next}.`;if(state==='waiting_for')return`I’m working on this and waiting for ${blockedBy[0]||'the next update'}.`;if(state==='working_on_it')return`I’m working on this. Next: ${next}.`;return`I can continue this work. Next: ${next}.`;}
+export async function getAgentGoalContinuation(phone:string,goalId:string):Promise<AgentGoalContinuation|null>{const owner=String(phone||'').trim();if(!owner||!goalId)return null;const goal=await getAgentGoal(owner,goalId);if(!goal)return null;const economicLink=await getAgentEconomicRequestLink(owner,goalId);const dependencies=await refreshAgentGoalDependencies(owner,goalId);const ready=dependencies.every(item=>['ready','completed'].includes(item.status));const blockedBy=[...new Set(dependencies.filter(item=>item.status==='blocked'||item.status==='waiting').map(item=>item.blockedBy||item.skill))];const action=nextAction(goal.status,economicLink,dependencies,ready);const state=userState(goal.status,ready,economicLink);return{goalId:goal.id,goalStatus:goal.status,economicLink,dependencies,ready,nextAction:action,blockedBy,userFacingState:state,situation:situation(state,action,blockedBy)};}
+export { listAgentGoalDependencies };
