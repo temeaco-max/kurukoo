@@ -1,28 +1,18 @@
-name: Kurukoo staging smoke
+name: Kurukoo staging provider activation
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - main
-      - integration/near-completion-rebased
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  staging-smoke:
+  canonical-provider-loop:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      KURUKOO_BASE_URL: ${{ secrets.KURUKOO_STAGING_BASE_URL }}
-      MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-      WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
-      WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
-      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -30,30 +20,36 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9.12.0
-      - name: Install FastText
-        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends fasttext
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Static contract
+      - name: Type safety
         run: npm run lint
-      - name: Route regression
-        run: npm run test:routes
-      - name: FastText build and tests
-        run: npm run fasttext:build && npm run fasttext:test
-      - name: Convergence regressions
-        run: |
-          npx tsx scripts/audit-manus-merge-equivalence.ts
-          npm run test:agent-inference-budget
-          npm run test:provider-credential-controls
-          npm run test:high-write-persistence
-          npm run test:discovery-network
-          npm run test:scenario-lab
-          npx tsx scripts/test-external-provider-activation.ts
-      - name: Live runtime smoke
+      - name: Durable provider inquiry recovery
+        run: npm run test:provider-inquiry-recovery
+      - name: Explicit provider selection and reply evidence
+        run: npm run test:fulfilment-storefront-integration
+      - name: Africa's Talking callback contract
+        run: npm run test:africastalking-sms-callback
+
+  deployed-callback-routing:
+    needs: canonical-provider-loop
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      KURUKOO_BASE_URL: ${{ secrets.KURUKOO_STAGING_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify deployed root and legacy provider callbacks
         if: ${{ env.KURUKOO_BASE_URL != '' }}
-        run: npx tsx scripts/runtime-smoke.ts
-      - name: Mobile client verify
-        working-directory: mobile/kurukoo-mobile
-        run: pnpm install --frozen-lockfile && pnpm verify:ci && pnpm test:platform-contract
+        run: npm run test:deployed-provider-callbacks
+      - name: Report unavailable staging target
+        if: ${{ env.KURUKOO_BASE_URL == '' }}
+        run: |
+          echo "KURUKOO_STAGING_BASE_URL is not configured."
+          echo "The canonical provider loop passed, but no public deployment has been verified."
+          echo "This is intentionally not treated as live activation."

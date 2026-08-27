@@ -21,8 +21,8 @@ globalThis.fetch = async () => {
   outboundAttempts += 1;
   if (sendMode === 'network_error') throw new Error('simulated_socket_timeout');
   if (sendMode === 'rejected') return new Response(JSON.stringify({
-    SMSMessageData: { Message: 'Rejected', Recipients: [{ status: 'Rejected', number: '+2347000000812', messageId: `at-rejected-${outboundAttempts}` }] },
-  }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    SMSMessageData: { Message: 'Sent to 0/1 Total Cost: 0', Recipients: [{ status: 'DoNotDisturbRejection', number: '+2347000000812', messageId: `at-rejected-${outboundAttempts}` }] },
+  }), { status: 409, headers: { 'Content-Type': 'application/json' } });
   return new Response(JSON.stringify({
     SMSMessageData: { Message: 'Sent', Recipients: [{ status: 'Sent', number: '+2347000000812', messageId: `at-accepted-${outboundAttempts}` }] },
   }), { status: 201, headers: { 'Content-Type': 'application/json' } });
@@ -147,7 +147,7 @@ try {
     passed: true,
     assertions: [
       'missing information is clarified', 'no-provider state remains truthful', 'declined contact sends nothing',
-      'explicit rejection permits an explicit retry', 'delivery is distinct from response', 'non-response is durable and idempotent',
+      'documented final provider rejection permits an explicit retry', 'delivery is distinct from response', 'non-response is durable and idempotent',
       'malformed replies cannot become evidence', 'late referenced replies repair no-response truthfully',
       'stale requests fail closed', 'network uncertainty blocks duplicate contact',
     ],
