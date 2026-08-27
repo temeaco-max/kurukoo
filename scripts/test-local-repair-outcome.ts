@@ -11,6 +11,7 @@ process.env.KURUKOO_PAY_PROVIDER = 'sandbox';
 const { getDb, saveDb } = await import('../src/database.js');
 const { startStorefrontSession, advanceStorefront } = await import('../src/services/agenticStorefront.js');
 const { getEconomicRequest } = await import('../src/services/skillFlows.js');
+const { getFulfilmentForEconomicRequest } = await import('../src/services/canonicalFulfilmentService.js');
 const { authorizeProviderConnector, getExecutionRequestsForRequest } = await import('../src/services/executionConnector.js');
 
 const db = await getDb();
@@ -38,11 +39,23 @@ const initial = await startStorefrontSession(customerPhone, 'repair', {
   issue: 'Cracked screen and intermittent charging',
   location: 'Ikeja',
   urgency: 'today',
+  fulfilment_method: 'pickup_return',
+  collection_address: '12 Allen Avenue, Ikeja',
+  delivery_address: '14 Allen Avenue, Ikeja',
+  parts_preference: 'genuine screen',
+  diagnostic_authorization: 'diagnosis_before_repair',
 });
 assert.equal(initial.stage, 'catalog_match', 'complete repair requirements must reach canonical provider discovery');
 assert.equal(initial.providers?.[0]?.phone, providerPhone, 'repair discovery must return the verified phone_repairer provider');
 assert.equal(initial.actions?.some(action => action.id === 'select_provider'), true, 'Chat must require explicit provider selection');
 assert.ok(initial.requestId, 'the canonical Economic Request must be persisted');
+const intakeFulfilment = await getFulfilmentForEconomicRequest(customerPhone, initial.requestId!);
+assert.equal(intakeFulfilment?.mechanism, 'service_request', 'repair must compose with the existing shared service fulfillment mechanism');
+assert.equal(intakeFulfilment?.requirements.fulfilment_method, 'pickup_return');
+assert.equal(intakeFulfilment?.requirements.collection_address, '12 Allen Avenue, Ikeja');
+assert.equal(intakeFulfilment?.requirements.delivery_address, '14 Allen Avenue, Ikeja');
+assert.equal(intakeFulfilment?.requirements.parts_preference, 'genuine screen');
+assert.equal(intakeFulfilment?.requirements.diagnostic_authorization, 'diagnosis_before_repair');
 
 const selected = await advanceStorefront(customerPhone, initial.requestId!, { providerPhone }, 'select_provider', 'local-repair:select-provider');
 assert.equal(selected.stage, 'quote_review', 'provider selection must reach the existing quote review card');

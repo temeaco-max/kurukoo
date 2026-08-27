@@ -163,7 +163,7 @@ registerSkillsToFulfilmentMechanism(['buy_airtime'], 'marketplace_purchase', {
 });
 registerSkillsToFulfilmentMechanism(['repair', 'phone_repairer'], 'service_request', {
   requiredInputs: ['device_or_asset', 'issue', 'location'],
-  optionalInputs: ['urgency', 'parts_preference', 'collection_address', 'delivery_address', 'delivery_provider', 'tracking_reference'],
+  optionalInputs: ['urgency', 'parts_preference', 'diagnostic_authorization', 'fulfilment_method', 'collection_address', 'delivery_address', 'delivery_provider', 'tracking_reference'],
 });
 registerSkillsToFulfilmentMechanism(['find_worker'], 'local_discovery', {
   requiredInputs: ['service', 'location'],
