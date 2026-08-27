@@ -316,11 +316,11 @@ function extractRepairSlots(q: string): Record<string, unknown> {
   const locationMatches = [...q.matchAll(/\b(?:in|around)\s+([a-z][a-z -]{2,40}?)(?=\s*(?:[,.!?]|$|\b(?:today|tomorrow|tonight|this|next|for|and|with)\b))/ig)];
   const location = locationMatches.at(-1)?.[1]?.trim() || q.match(/\bnear\s+(?!me\b)([a-z][a-z -]{2,40}?)(?=\s*(?:[,.!?]|$|\b(?:today|tomorrow|tonight|this|next|for|and|with)\b))/i)?.[1]?.trim();
   const urgency = q.match(/\b(today|tonight|tomorrow(?:\s+(?:morning|afternoon|evening))?|asap|urgent(?:ly)?|this week)\b/i)?.[1];
-  const pickupReturn = /\b(?:pick(?:\s|-)?up|collect).{0,80}\b(?:return|bring(?:\s+it)?\s+back|deliver(?:\s+it)?\s+back)\b|\bpickup(?:\s|-)?and(?:\s|-)?return\b/i.test(q);
+  const pickupReturn = /\b(?:collect|pick(?:\s+(?:it|the\s+(?:device|phone|item)))?\s*(?:-|\s)?\s*up).{0,80}\b(?:return|bring(?:\s+it)?\s+back|deliver(?:\s+it)?\s+back)\b|\bpickup(?:\s|-)?and(?:\s|-)?return\b/i.test(q);
   const onsite = /\b(?:come to me|at my (?:home|office|place)|on[ -]?site|home visit)\b/i.test(q);
   const parts = q.match(/\b(?:genuine|original|oem|compatible|aftermarket|used)\s+(?:parts?|screen|battery|replacement)\b/i)?.[0];
   const diagnostic = /\b(?:diagnos(?:e|is)|inspect(?:ion)?|check first|quote first)\b/i.test(q);
-  const collectionAddress = q.match(/\b(?:collect|pick(?:\s|-)?up)\s+(?:it\s+)?(?:from|at)\s+([^.!?]{3,120})/i)?.[1]?.trim();
+  const collectionAddress = q.match(/\b(?:collect|pick(?:\s+(?:it|the\s+(?:device|phone|item)))?\s*(?:-|\s)?\s*up)\s+(?:it\s+)?(?:from|at)\s+([^.!?]{3,120}?)(?=\s+\b(?:and\s+)?(?:return|bring|deliver)\b|[.!?]|$)/i)?.[1]?.trim();
   const returnAddress = q.match(/\b(?:return|bring|deliver)\s+(?:it\s+)?(?:to|back to)\s+([^.!?]{3,120})/i)?.[1]?.trim();
   if (device) patch.device_or_asset = device;
   if (issue) patch.issue = issue;

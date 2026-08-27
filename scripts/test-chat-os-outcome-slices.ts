@@ -140,6 +140,15 @@ assert.equal(healthcareRequest?.requirements.accessibility, 'wheelchair access',
 assert.equal(healthcareRequest?.requirements.insurance_context, 'NHIA', 'Healthcare routing must preserve insurance context without claiming eligibility.');
 assert.match(healthcare.reply, /(?:verified provider|appointment|availability|confirm)/i, 'Healthcare response must remain a coordination state rather than a diagnosis or booking claim.');
 
+const repair = await routeIntent('I need my iPhone 13 repaired for a cracked screen. Pick it up from 12 Allen Avenue in Ikeja and return it to 14 Allen Avenue. Diagnose it first.', makeDomainPhone(44), undefined, createContext, `${conversationId}-repair-pickup-return`);
+assert.equal(repair.skill, 'repair', 'A phone repair request must enter the existing repair outcome rather than a generic worker route.');
+assert.equal(repair.cardData?.type, 'agentic_storefront');
+const repairRequest = await getEconomicRequest(repair.cardData?.requestId || '');
+assert.equal(repairRequest?.requirements.fulfilment_method, 'pickup_return', 'Repair coordination must retain the requested pickup-and-return method.');
+assert.equal(repairRequest?.requirements.collection_address, '12 Allen Avenue in Ikeja', 'Repair coordination must retain the requested collection address.');
+assert.equal(repairRequest?.requirements.delivery_address, '14 Allen Avenue', 'Repair coordination must retain the requested return address.');
+assert.equal(repairRequest?.requirements.diagnostic_authorization, 'diagnosis_before_repair', 'Repair coordination must retain the customer’s diagnostic authorization.');
+
 for (const [offset, message, firstSkill] of [
   [61, 'I need somewhere to stay next week.', 'hotel_deals'],
   [67, 'Sort out my internet.', 'wifi_installer'],
