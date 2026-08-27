@@ -46,8 +46,16 @@ function recipientFromPayload(payload: any): Record<string, unknown> | undefined
   return Array.isArray(recipients) ? recipients[0] : undefined;
 }
 
+function isExplicitSmsRejection(value: unknown): boolean {
+  // Africa's Talking can surface final rejections as either "Rejected" or
+  // named statuses such as "DoNotDisturbRejection" and "InvalidPhoneNumber".
+  // These mean the provider did not receive an inquiry, unlike a timeout or a
+  // malformed response where retrying could duplicate a real message.
+  return /(?:rejected|rejection|invalid(?:senderid|phonenumber)?|userinblacklist|userdoesnotexist|absentsubscriber|expired|unsupportednumbertype|couldnotroute)/i.test(String(value || ''));
+}
+
 function acceptedStatus(value: unknown): boolean {
-  return !/(?:failed|rejected|invalid|error|none)/i.test(String(value || ''));
+  return !isExplicitSmsRejection(value) && !/(?:failed|error|none)/i.test(String(value || ''));
 }
 
 function smsDispatchStatus(value: unknown): ProviderInquiryDispatchStatus {
@@ -176,7 +184,7 @@ export async function sendProviderInquirySms(ownerPhone: string, inquiryId: stri
 
   // The transport may have accepted a message before a timeout/error was observed.
   // Preserve the uncertainty instead of sending a second message automatically.
-  const explicitlyRejected = /(?:failed|rejected|invalid|error)/i.test(String(delivery.providerStatus || ''));
+  const explicitlyRejected = isExplicitSmsRejection(delivery.providerStatus);
   await recordProviderInquirySmsDispatch({
     ownerPhone,
     inquiryId,

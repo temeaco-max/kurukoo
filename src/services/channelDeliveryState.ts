@@ -97,13 +97,24 @@ export async function recordChannelDeliveryReport(input: {
   await ensureChannelDeliverySchema();
   const store = await getCanonicalStore();
   const status = normalizeProviderStatus(input.status);
-  await store.run(`INSERT INTO channel_delivery_states(channel,provider,provider_message_id,phone,status,failure_reason,raw_json)
-    VALUES(?,?,?,?,?,?,?) ON CONFLICT(channel,provider,provider_message_id) DO UPDATE SET
-      phone=COALESCE(excluded.phone,channel_delivery_states.phone),
-      status=excluded.status,
-      failure_reason=excluded.failure_reason,
-      raw_json=excluded.raw_json,
-      updated_at=CURRENT_TIMESTAMP`, [input.channel, input.provider, providerMessageId, input.phone || null, status, input.failureReason || null, JSON.stringify(input.raw || {})]);
+  // A delivery report must only enrich a message Kurukoo actually dispatched. Creating
+  // state for arbitrary external IDs would make an uncorrelated callback look like a
+  // real delivery observation and would pollute the durable transport ledger.
+  await store.run(`UPDATE channel_delivery_states SET
+      phone=COALESCE(?, phone),
+      status=?,
+      failure_reason=?,
+      raw_json=?,
+      updated_at=CURRENT_TIMESTAMP
+    WHERE channel=? AND provider=? AND provider_message_id=?`, [
+    input.phone || null,
+    status,
+    input.failureReason || null,
+    JSON.stringify(input.raw || {}),
+    input.channel,
+    input.provider,
+    providerMessageId,
+  ]);
   return getChannelDeliveryState(input.channel, input.provider, providerMessageId);
 }
 
