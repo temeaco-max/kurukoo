@@ -18,6 +18,30 @@ router.get('/notifications', authenticateUser, async (req: AuthRequest, res) => 
   }
 });
 
+router.get('/notifications/summary', authenticateUser, async (req: AuthRequest, res) => {
+  try {
+    const notifications = await getInternalNotifications(phoneFromRequest(req), 100);
+    const unread = notifications.filter((notification: any) => !notification.read && !notification.read_at);
+    const actionable = unread.filter((notification: any) => {
+      const text = `${notification.title || ''} ${notification.body || ''}`.toLowerCase();
+      return Boolean(notification.link) || /action|confirm|approve|quote|update|ready|complete|waiting|needs|request|task|booking|order/.test(text);
+    });
+    res.json({
+      success: true,
+      unreadCount: unread.length,
+      actionableCount: actionable.length,
+      latest: unread.slice(0, 5),
+      returnToChatPrompt: unread.length > 0
+        ? actionable.length > 0
+          ? 'Welcome back. You have updates that may need your attention. Would you like an update?'
+          : 'Welcome back. You have updates from Kurukoo. Would you like an update?'
+        : null,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message || 'Unable to load notification summary' });
+  }
+});
+
 router.post('/notifications/:id/read', authenticateUser, async (req: AuthRequest, res) => {
   try {
     const id = Number(req.params.id);
