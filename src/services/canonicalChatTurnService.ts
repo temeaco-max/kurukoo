@@ -3,7 +3,7 @@ import { getMemoryFacts, getProfile, recordMemoryFact } from './memoryProfile.js
 import { isOnboarding, handleOnboardingInput } from './progressiveOnboarding.js';
 import { routeIntent } from './intentRouter.js';
 import { generateConversationalResponse } from './conversationalGenerationService.js';
-import { getAuthState, setAuthState, handleConversationalAuth } from './conversationalAuthService.js';
+import { getAuthState, setAuthState, handleConversationalAuth, isPlausibleConversationalName } from './conversationalAuthService.js';
 import { handleSafetyContactInput, setSafetyCaptureState } from './safetyService.js';
 import { createCompoundGoalIfRecognized } from './compoundGoalLifecycle.js';
 import { recognizeCompoundObjective } from './compoundObjectiveResolver.js';
@@ -62,7 +62,17 @@ async function continueFirstBriefItem(phone: string, brief: any): Promise<{ repl
 function isNewGuestRequestAfterAuthPrompt(message: string): boolean {
   const text = message.trim();
   if (!text || text.length < 3) return false;
-  return /[?]/.test(text) || /^(also\b|please\s+(?:find|help|get|book|arrange|coordinate|source)\b|can you\b|could you\b|would you\b|what\b|how\b|where\b|when\b|why\b|i\s+(?:need|want|would like|am looking|can)|help\b|give me\b|find\b|show\b|compare\b|plan\b|remind\b|get\b|book\b|check\b|someone\b|anyone\b)/i.test(text) || isFoodOrderExpression(text) || /\b(?:clean|cleaning|housekeeping|house|home|flat|weekend|tomorrow|today|phone|screen|laptop|computer|acting\s+(?:weird|strange)|not\s+working|problem|issue|repair|fix)\b/i.test(text);
+  // Fast-path keyword matches for common continuation shapes, kept for cheap
+  // early exit. The real guard is the fallback below: anything that could not
+  // plausibly be an answer to "what's your name?" must never be routed into
+  // the identity-collection flow, whatever words it happens to contain. This
+  // avoids a growing keyword blocklist silently missing legitimate task
+  // continuations (e.g. symptom descriptions like "it freezes and the fan is
+  // loud") and having them wrongly rejected as "not a name".
+  if (/[?]/.test(text) || /^(also\b|please\s+(?:find|help|get|book|arrange|coordinate|source)\b|can you\b|could you\b|would you\b|what\b|how\b|where\b|when\b|why\b|i\s+(?:need|want|would like|am looking|can)|help\b|give me\b|find\b|show\b|compare\b|plan\b|remind\b|get\b|book\b|check\b|someone\b|anyone\b)/i.test(text)) return true;
+  if (isFoodOrderExpression(text)) return true;
+  if (/\b(?:clean|cleaning|housekeeping|house|home|flat|weekend|tomorrow|today|phone|screen|laptop|computer|acting\s+(?:weird|strange)|not\s+working|problem|issue|repair|fix)\b/i.test(text)) return true;
+  return !isPlausibleConversationalName(text);
 }
 
 function extractInlineIdentityName(message: string): string | undefined {
