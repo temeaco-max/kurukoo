@@ -186,6 +186,10 @@ registerSkillsToFulfilmentMechanism(['job_tracker'], 'local_discovery', {
   requiredInputs: ['objective'],
   optionalInputs: ['location', 'timing', 'salary_expectation', 'employment_type'],
 });
+registerSkillsToFulfilmentMechanism(['mechanic', 'roadside_mechanic'], 'service_request', {
+  requiredInputs: ['objective', 'location'],
+  optionalInputs: ['vehicle_make', 'vehicle_model', 'vehicle_year', 'registration', 'mileage', 'symptoms', 'service_type', 'parts_preference', 'pickup_required', 'urgency', 'budget', 'contact_preference'],
+});
 registerSkillsToFulfilmentMechanism(['wifi_installer'], 'service_request', {
   requiredInputs: ['objective'],
   optionalInputs: ['location', 'timing', 'connection_type', 'provider', 'symptoms'],
