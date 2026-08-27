@@ -100,10 +100,13 @@ app.set('view engine', 'ejs'); app.set('views', path.join(process.cwd(), 'views'
 app.use((_req,res,next)=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','SAMEORIGIN');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');res.setHeader('Permissions-Policy','camera=(self), microphone=(self), geolocation=(self), payment=()');if(production)res.setHeader('Strict-Transport-Security','max-age=31536000; includeSubDomains');next();});
 app.use(compression({threshold:1024}));
 app.use(express.static(path.join(process.cwd(),'public'),{index:false,fallthrough:true,setHeaders:(res,filePath)=>{const lower=filePath.toLowerCase();if(lower.endsWith('.html')||lower.endsWith('/sw.js')||lower.endsWith('/manifest.json')||/\.(?:css|js)$/.test(lower)){res.setHeader('Cache-Control','no-cache, must-revalidate');return;}if(/\.(?:svg|png|jpe?g|webp|woff2?)$/.test(lower))res.setHeader('Cache-Control','public, max-age=604800, stale-while-revalidate=86400');}}));
+// Africa's Talking sends callback payloads as application/x-www-form-urlencoded.
+app.use(express.urlencoded({ extended: false, limit: process.env.CHAT_ATTACHMENT_BODY_LIMIT || '35mb' }));
 app.use(express.json({limit:process.env.CHAT_ATTACHMENT_BODY_LIMIT||'35mb',verify:(req,_res,buf)=>{(req as any).rawBody=Buffer.from(buf);}}));
 app.use('/',systemRoutes); app.use('/',authChallengePublicRoutes); app.use('/',mcpAppRoutes);
 app.use('/api/v1',apiV1Bridge);
-app.use('/api',channelRoutes); app.use('/api',circleRoutes); app.use('/api/economic-requests',economicRequestRouter); app.use('/api/admin/platform',adminPlatformRoutes);
+// Africa's Talking callbacks are configured at root paths; retain API-prefixed aliases for existing integrations.
+app.use('/',channelRoutes); app.use('/api',channelRoutes); app.use('/api',circleRoutes); app.use('/api/economic-requests',economicRequestRouter); app.use('/api/admin/platform',adminPlatformRoutes);
 app.use('/api/admin',adminDisputeRoutes); app.use('/api/admin',adminRoutes); app.use('/api/admin',adminFcmRoutes); app.use('/api/admin/cline',adminClineRoutes); app.use('/api/admin',adminProviderVerificationRoutes);
 app.use('/api',stripeAgentPointsWebhookRoutes); app.use('/api',paymentRoutes); app.use('/api',userRoutes); app.use('/api/auth',authRoutes); app.use('/api',providerVerificationRoutes);
 app.use('/api/advertising',authenticatedAdvertisingRoutes);

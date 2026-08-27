@@ -7,10 +7,31 @@ const dbPath = path.join(os.tmpdir(), `kurukoo-fulfilment-storefront-${process.p
 process.env.DB_PATH = dbPath;
 process.env.NODE_ENV = 'production';
 process.env.KURUKOO_PAY_PROVIDER = 'sandbox';
+process.env.FF_SMS = 'true';
+process.env.AFRICASTALKING_API_KEY = 'test-provider-key';
+process.env.AFRICASTALKING_USERNAME = 'sandbox';
+process.env.AFRICASTALKING_SENDER_ID = 'kurukoo';
+
+let outboundCalls = 0;
+const originalFetch = globalThis.fetch;
+globalThis.fetch = async (input, init) => {
+  outboundCalls += 1;
+  assert.match(String(input), /api\.sandbox\.africastalking\.com\/version1\/messaging$/, 'Sandbox SMS delivery must use the sandbox endpoint.');
+  assert.equal(init?.method, 'POST');
+  return new Response(JSON.stringify({
+    SMSMessageData: {
+      Message: 'Sent to 1/1 Total Cost: NGN 0.0000',
+      Recipients: [{ status: 'Sent', number: '+2347000000412', messageId: 'at-outbound-001', cost: 'NGN 0.0000' }],
+    },
+  }), { status: 201, headers: { 'Content-Type': 'application/json' } });
+};
 
 const { getDb, saveDb } = await import('../src/database.js');
-const { startStorefrontSession, advanceStorefront } = await import('../src/services/agenticStorefront.js');
-const { getFulfilmentForEconomicRequest, getOpenProviderInquiry } = await import('../src/services/canonicalFulfilmentService.js');
+const { startStorefrontSession, advanceStorefront, resumeStorefrontFromRequest } = await import('../src/services/agenticStorefront.js');
+const { getFulfilmentForEconomicRequest, getOpenProviderInquiry, getFulfilment, listOffers } = await import('../src/services/canonicalFulfilmentService.js');
+const { getChannelDeliveryState } = await import('../src/services/channelDeliveryState.js');
+const { getEconomicRequest } = await import('../src/services/skillFlows.js');
+const { handleSmsWebhook } = await import('../src/channels/sms.js');
 
 const db = await getDb();
 const customerPhone = '+2347000000411';
@@ -45,30 +66,77 @@ try {
   assert.equal(fulfilment?.requirements.location, 'Ikeja');
 
   const selected = await advanceStorefront(customerPhone, requestId, { providerPhone }, 'select_provider');
-  assert.match(selected.message, /selected/i, 'Provider selection must stay explicit before a quote is prepared.');
+  assert.match(selected.message, /selected/i, 'Provider selection must stay explicit before a quote is requested.');
 
   const inquiryCard = await advanceStorefront(customerPhone, requestId, {}, 'request_quote');
-  assert.equal(inquiryCard.title, 'Quote inquiry prepared');
-  assert.match(inquiryCard.message, /No message has been sent/i, 'Preparing an inquiry must not claim provider delivery.');
-  assert.match(inquiryCard.message, /no quote has been received/i, 'Preparing an inquiry must not claim provider confirmation.');
+  assert.equal(inquiryCard.title, 'Quote inquiry sent');
+  assert.match(inquiryCard.message, /accepted the message/i, 'The customer must see the true provider-network acceptance state.');
+  assert.equal(outboundCalls, 1, 'A consented quote request must produce exactly one provider SMS attempt.');
 
   const inquiry = await getOpenProviderInquiry(customerPhone, fulfilment!.id, providerPhone);
-  assert.equal(inquiry?.status, 'pending', 'The provider inquiry must remain pending until a real delivery or response is recorded.');
-  assert.equal(inquiry?.sentAt, undefined, 'No provider message may be implied without channel delivery evidence.');
+  assert.equal(inquiry?.status, 'sent', 'The provider inquiry must move to sent only after a provider-network acceptance response.');
+  assert.ok(inquiry?.sentAt, 'The canonical inquiry must retain a send timestamp.');
+
+  const dispatch = await getChannelDeliveryState('sms', 'africastalking', 'at-outbound-001');
+  assert.equal(dispatch?.status, 'submitted', 'The outbound provider message must retain the provider message ID and initial status.');
+
+  const deliveryReport = await handleSmsWebhook({ id: 'at-outbound-001', status: 'Success', phoneNumber: providerPhone, networkCode: '99999' });
+  assert.equal(deliveryReport.deliveryStatus, 'delivered', 'A carrier delivery report must update the same durable dispatch record.');
+  assert.equal((await getChannelDeliveryState('sms', 'africastalking', 'at-outbound-001'))?.status, 'delivered');
+
+  const reference = inquiry!.id.replace(/[^a-z0-9]/gi, '').slice(-12).toUpperCase();
+  const providerReply = await handleSmsWebhook({
+    From: providerPhone,
+    Body: `Available today. Final price is NGN 25,000. Delivery available. Reference: KQ${reference}`,
+    MessageId: 'at-inbound-001',
+  });
+  assert.equal(providerReply.status, 'success');
+  assert.match(providerReply.response || '', /recorded/i);
+
+  const respondedFulfilment = await getFulfilment(customerPhone, fulfilment!.id);
+  assert.equal(respondedFulfilment?.status, 'offers_ready', 'A provider response must create a canonical offer and advance fulfilment truthfully.');
+  const offers = await listOffers(customerPhone, fulfilment!.id);
+  assert.equal(offers.length, 1, 'Exactly one provider response must materialize into one canonical offer.');
+  assert.equal(offers[0]?.priceMinor, 2_500_000, 'Provider price parsing must retain NGN minor units.');
+  assert.equal(offers[0]?.evidenceLevel, 'provider_confirmed');
+
+  const quotedRequest = await getEconomicRequest(requestId);
+  assert.equal(quotedRequest?.status, 'quoted', 'A provider-confirmed price must advance the same customer request into quote review.');
+  assert.equal(quotedRequest?.quote?.source, 'provider_sms_response');
+  assert.equal(quotedRequest?.quote?.amount_minor, 2_500_000);
+
+  const resumed = await resumeStorefrontFromRequest(customerPhone, requestId);
+  assert.equal(resumed?.title, 'Provider quote', 'The request surface must show the provider-confirmed quote after the reply is recorded.');
+  assert.match(resumed?.message || '', /25[,_]?000/i);
+
+  const duplicateReply = await handleSmsWebhook({
+    From: providerPhone,
+    Body: `Available today. Final price is NGN 25,000. Delivery available. Reference: KQ${reference}`,
+    MessageId: 'at-inbound-001',
+  });
+  assert.equal(duplicateReply.duplicate, true, 'A replayed inbound provider callback must not create another offer or notification.');
+  assert.equal((await listOffers(customerPhone, fulfilment!.id)).length, 1, 'Inbound callback replay must remain idempotent.');
 
   const replayedInquiryCard = await advanceStorefront(customerPhone, requestId, {}, 'request_quote');
-  assert.equal(replayedInquiryCard.title, 'Quote inquiry prepared');
-  const replayedInquiry = await getOpenProviderInquiry(customerPhone, fulfilment!.id, providerPhone);
-  assert.equal(replayedInquiry?.id, inquiry?.id, 'Repeated quote actions must reuse the same unresolved inquiry.');
+  assert.equal(replayedInquiryCard.title, 'Quote inquiry already sent');
+  assert.equal(outboundCalls, 1, 'A replayed customer action must never send a duplicate real-world SMS.');
 
   console.log(JSON.stringify({
     passed: true,
     requestId,
     fulfilmentId: fulfilment?.id,
     inquiryId: inquiry?.id,
-    truths: ['provider selected by user', 'inquiry prepared', 'delivery not claimed', 'quote not claimed'],
+    truths: [
+      'provider selected by explicit customer action',
+      'one outbound provider SMS accepted and delivery-reported',
+      'provider reply persisted as evidence',
+      'provider-confirmed quote attached to the same request',
+      'customer notification queued',
+      'outbound and inbound replays do not duplicate side effects',
+    ],
   }, null, 2));
 } finally {
+  globalThis.fetch = originalFetch;
   saveDb(true);
   try { fs.rmSync(dbPath, { force: true }); } catch { /* temporary database cleanup is best-effort */ }
 }
