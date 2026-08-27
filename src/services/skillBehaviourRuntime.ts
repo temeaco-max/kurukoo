@@ -47,11 +47,23 @@ export async function buildRuntimeSkillInstruction(phone: string | undefined, te
   const contract = buildSkillExecutionContract(pack.skill);
   const contractInstruction = buildSkillExecutionContractPrompt(contract);
   if (BIN_DAY.skill === pack.skill) return `${buildSkillBehaviourInstruction(pack)}\n${contractInstruction}${memory}`;
-  const repairSignal = /\b(?:repair|fix|broken|damaged|screen|battery|charging|no power|not working)\b/i.test(text);
-  if (repairSignal) {
+
+  const explicitPhysicalRepair = /\b(?:repair|repairer|technician|fix|broken|damaged|replace|replacement|screen repair|battery replacement|charging port|parts?|collection|pickup)\b/i.test(text);
+  const deviceOutcome = /\b(?:device|phone|tablet|laptop|computer|desktop|tv|television|smartwatch|watch|camera|printer|router|modem|speaker|console|appliance|smart device|wifi|wi-fi|internet|network)\b/i.test(text);
+
+  // A device problem is first an outcome to understand and solve. Only add the
+  // repair-taxonomy prompt when the user actually asks for physical repair or
+  // the conversation has already established that physical intervention is needed.
+  // This keeps direct diagnostics/remediation from being forced through provider intake.
+  if (deviceOutcome && explicitPhysicalRepair) {
     const family = identifyDeviceFamily(text);
     const repairQuestions = getRepairIntakeQuestions(text);
-    return `${buildConvergedSkillInstruction(phone, text, hints)}\n${contractInstruction}\n--- Device taxonomy guidance ---\n${family ? `Recognised family: ${family.manufacturer} ${family.domain}.` : 'Device family not yet resolved.'}\nAsk/confirm: ${repairQuestions.join('; ')}.\nNever infer exact part compatibility from brand alone.\n--- End device taxonomy guidance ---\n${memory}`;
+    return `${buildConvergedSkillInstruction(phone, text, hints)}\n${contractInstruction}\n--- Device repair guidance ---\n${family ? `Recognised family: ${family.manufacturer} ${family.domain}.` : 'Device family not yet resolved.'}\nAsk/confirm only what is materially required for the physical repair: ${repairQuestions.join('; ')}.\nNever infer exact part compatibility from brand alone.\nCarry existing diagnostic evidence forward and do not restart intake.\n--- End device repair guidance ---\n${memory}`;
   }
+
+  if (deviceOutcome) {
+    return `${buildConvergedSkillInstruction(phone, text, hints)}\n${contractInstruction}\n--- Direct outcome guidance ---\nTreat this as a request to understand, diagnose, maintain, monitor or safely resolve the user's device/network problem. Use connected-resource context, available observation/diagnostic/control tools and existing permissions before asking for provider-style intake. Ask only for information that is actually needed to proceed. If direct resolution is unavailable or unsafe, preserve the diagnostic context and continue into the appropriate repair/provider capability without restarting the user's story.\n--- End direct outcome guidance ---\n${memory}`;
+  }
+
   return `${buildConvergedSkillInstruction(phone, text, hints)}\n${contractInstruction}${memory}`;
 }
