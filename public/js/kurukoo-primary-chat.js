@@ -1979,7 +1979,7 @@
       : `Welcome back${state.displayName ? `, ${state.displayName}` : ''}. What would you like to get done today?`;
     createMessage('assistant', greeting, null, null, false);
     const qa = makeElement('div', 'quick-actions welcome-quick-actions'); qa.id = 'quick-actions';
-    [['I need a ride request', 'Ride'], ['I have a food request', 'Food'], ['I need repair help', 'Repair'], ['I want to discuss a work request', 'Work']].forEach(([p, l]) => {
+    [['Help me get somewhere', 'Get somewhere'], ['Remind me about something', 'Set a reminder'], ['Check a device or connection', 'Check a device'], ['Find someone to help with this', 'Find help']].forEach(([p, l]) => {
       const b = makeElement('button', '', l); b.dataset.prompt = p; qa.appendChild(b);
     });
     chatContent.appendChild(qa); wireQuickActions(qa);
@@ -2034,7 +2034,7 @@
       await Promise.all([loadPoints(), loadMemory(), loadNotifications(), loadTaskContext(), loadReminders(), loadSafety(), loadAgentGoal()]);
     loadProactiveInspector();
     loadNearbyInspector(state.surfaceView);
-      if ($('welcome')) await loadAgentBrief();
+      await loadAgentBrief();
     }
   });
 
