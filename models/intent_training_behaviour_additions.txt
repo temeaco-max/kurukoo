@@ -172,3 +172,79 @@ __label__unknown can you solve a made up space maths puzzle
 __label__unknown tell me the population of an imaginary planet
 __label__unknown write a spell that changes the colour of the moon
 __label__unknown what is the answer to a nonsense word game
+__label__device_support my phone is running slow
+__label__device_support my laptop is very slow
+__label__device_support can you check my device
+__label__device_support check what's wrong with my computer
+__label__device_support can you diagnose my laptop
+__label__device_support my tablet keeps freezing
+__label__device_support my phone keeps crashing
+__label__device_support my computer has a virus
+__label__device_support check my storage
+__label__device_support clean up my device
+__label__device_support my battery is draining quickly
+__label__device_support my device is overheating
+__label__device_support check my wifi
+__label__device_support my wifi is slow
+__label__device_support my internet keeps dropping
+__label__device_support check my router
+__label__device_support my printer won't connect
+__label__device_support my bluetooth isn't working
+__label__device_support check my smart tv
+__label__device_support check my connected devices
+__label__device_support something is wrong with my technology
+__label__device_support help me fix this device
+__label__device_support see if you can fix it yourself
+__label__device_support diagnose this before finding a repairer
+__label__help_request help me with this
+__label__help_request can you sort this out
+__label__help_request i need help getting this done
+__label__help_request can you take care of this
+__label__help_request please handle this for me
+__label__help_request can you figure this out
+__label__help_request i don't know what to do about this
+__label__help_request can you deal with this
+__label__help_request make this happen for me
+__label__help_request get this sorted
+__label__check_request check this for me
+__label__check_request can you check something for me
+__label__check_request have a look at this
+__label__check_request find out what's happening
+__label__check_request can you investigate this
+__label__fix_request fix this for me
+__label__fix_request can you fix this
+__label__fix_request sort this problem out
+__label__fix_request make it work again
+__label__fix_request get this working
+__label__find_request find someone who can do this
+__label__find_request find me someone to help
+__label__find_request who can help me with this
+__label__find_request get me a suitable person
+__label__book_request book this for me
+__label__book_request arrange this for me
+__label__book_request can you make the booking
+__label__buy_request find and buy this for me
+__label__buy_request can you get this for me
+__label__buy_request order this for me
+__label__organise_request organise this for me
+__label__organise_request coordinate this for me
+__label__organise_request arrange everything for this
+__label__monitor_request keep an eye on this
+__label__monitor_request watch this for me
+__label__monitor_request tell me if anything changes
+__label__contact_request contact them for me
+__label__contact_request get in touch with them
+__label__contact_request send them a message for me
+__label__schedule_request schedule this for me
+__label__schedule_request remind me about this
+__label__clean_request clean this up for me
+__label__clean_request remove the clutter
+__label__connect_request connect this for me
+__label__connect_request help me connect this device
+__label__recover_request help me recover this
+__label__recover_request get my account back
+__label__general_outcome_request i need to get something done
+__label__general_outcome_request i need you to handle something
+__label__general_outcome_request i have a problem can you deal with it
+__label__general_outcome_request i need something sorted
+__label__general_outcome_request can you take care of everything
