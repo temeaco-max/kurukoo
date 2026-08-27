@@ -158,6 +158,10 @@ function getFallbackResponse(prompt: string): string {
   if (/\b(?:ambiguous|which one|same one|that one|the other|relative reference|option 1|option 2)\b/.test(q)) return 'Which request or item do you mean? Tell me its name or number, and I will keep your other active context unchanged.';
   if (/\b(?:correct|correction|instead|update the same|not another)\b/.test(q)) return 'What should I change in the same request? I will update that request rather than create a duplicate.';
   if (/\b(?:interrupted|pause|resume|come back|topic resumption|continue)\b/.test(q)) return 'I can pause this thread and keep the earlier request safe. Tell me which thread you want to continue.';
+  if (/\b(?:plan|schedule|organise|organize|day|today)\b/.test(q)) return 'I can help you make a simple plan. Tell me the time you have, your first priority, and anything that must happen today.';
+  if (/\b(?:taxi|ride|transport|driver|journey)\b/.test(q)) return 'I can help you start a ride request. Tell me your pickup area, destination, and when you need to travel.';
+  if (/\b(?:remind|reminder|call mum|call mom)\b/.test(q)) return 'I can help create a reminder. Tell me what to remember and the date and time you want it.';
+  if (/\b(?:earn|contributor|contribute|business|customers)\b/.test(q)) return 'I can help you explore ways to earn, contribute, or grow a business. Which of those would you like to start with?';
   if (q.includes('price') || q.includes('cost')) return 'I can help check a market price. Tell me the item and your area.';
   if (q.includes('weather')) return 'Tell me your city and I can route a weather request for you.';
   if (q.includes('help') || q.includes('support')) return 'I can help with a service request, payment, dispute, profile, or earning opportunity.';

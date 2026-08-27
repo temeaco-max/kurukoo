@@ -32,8 +32,8 @@
         <a class="k-reference-agent-switcher" href="/chat" aria-label="Open Agent workspace" title="Open Agent"><span class="k-reference-agent-mark"><img src="/assets/brand/logo-icon.png" alt="" width="18" height="18"></span><span><strong>Agent</strong><small>Coordinate what matters</small></span><%- icon('more') %></a>
       </div>
       <div class="k-app-header-actions k-reference-header-actions">
-        <a class="k-reference-header-control k-reference-header-search" id="k-reference-header-search" href="/discover" aria-label="Search Kurukoo" title="Search Kurukoo"><%- icon('search') %><span>Search Kurukoo</span></a>
-        <a class="k-reference-header-control" id="header-nearby-radar" href="/discover" aria-label="Open Nearby Radar" title="Nearby Radar"><span class="k-reference-control-icon"><%- icon('radar') %><span class="k-reference-radar-pulse" aria-hidden="true"></span></span><span class="k-reference-control-label">Nearby</span></a>
+        <form class="k-reference-header-search" id="k-reference-header-search" action="/discover" method="get" role="search"><%- icon('search') %><label class="sr-only" for="k-reference-header-search-input">Search Kurukoo</label><input id="k-reference-header-search-input" name="q" type="search" placeholder="Search Kurukoo" autocomplete="off"><button type="submit" aria-label="Search Kurukoo" title="Search Kurukoo"><%- icon('arrow-right') %></button></form>
+        <a class="k-reference-header-control" id="header-nearby-radar" href="/discover?view=nearby#nearby-radar" aria-label="Open Nearby Radar" title="Nearby Radar"><span class="k-reference-control-icon"><%- icon('radar') %><span class="k-reference-radar-pulse" aria-hidden="true"></span></span><span class="k-reference-control-label">Nearby</span></a>
         <% if (section === 'chat') { %>
         <button class="k-reference-header-control k-reference-new-conversation" id="new-chat" type="button" aria-label="Start a new conversation" title="New conversation"><%- icon('chat') %><span class="k-reference-control-label">New</span></button>
         <a class="k-reference-header-control" id="header-notifications" href="/notifications" aria-label="Open notifications" title="Updates"><%- icon('notification') %><span class="notification-badge" id="notification-badge" hidden>0</span><span class="k-reference-control-label">Updates</span></a>
@@ -63,7 +63,7 @@
       <section class="k-app-sidebar-conversation k-reference-conversation-nav" aria-label="Agent conversation utilities">
         <div class="k-app-sidebar-section-head"><span>History</span><button class="k-app-sidebar-text" type="button" id="sidebar-more-toggle" aria-controls="sidebar-more-items" aria-expanded="false">View all</button></div>
         <div class="k-app-history-list" id="history-list"></div>
-        <div class="k-app-sidebar-radar"><button type="button" id="radar-toggle" class="radar-toggle is-active" aria-pressed="true"><span class="k-app-radar-mark"></span><span><strong>Nearby Radar</strong><small id="radar-status">Ready when you are</small></span></button></div>
+        <div class="k-app-sidebar-radar"><a href="/discover?view=nearby#nearby-radar" id="radar-toggle" class="radar-toggle is-active" aria-label="Open Nearby Radar"><span class="k-app-radar-mark"></span><span><strong>Nearby Radar</strong><small id="radar-status">Explore nearby</small></span><%- icon('arrow-right') %></a></div>
         <button class="k-app-sponsored" id="sidebar-promo" type="button" aria-label="Open sponsored local service" hidden><img src="" alt="" loading="lazy"><span class="sidebar-sponsored-tag">Sponsored</span></button>
         <a class="k-app-sidebar-advertise" href="/advertise"><%- icon('discover') %><span>Promote on Kurukoo</span></a>
         <div class="k-app-sidebar-more" id="sidebar-more-items" hidden><a href="/saved">Saved items</a><a href="/notifications">Updates</a><a href="/advertise">Advertising</a></div>

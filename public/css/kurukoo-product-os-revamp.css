@@ -95,8 +95,15 @@ body.k-app-page .k-reference-header-control .k-app-icon { width: 17px; height: 1
 body.k-app-page .k-reference-control-label { max-width: 0; overflow: hidden; opacity: 0; text-overflow: ellipsis; white-space: nowrap; transition: max-width .16s ease, opacity .16s ease; }
 body.k-app-page .k-reference-header-control:hover .k-reference-control-label,
 body.k-app-page .k-reference-header-control:focus-visible .k-reference-control-label { max-width: 84px; opacity: 1; }
-body.k-app-page .k-reference-header-search { min-width: 224px; justify-content: flex-start; padding: 0 12px; border-color: var(--kr-line); color: var(--kr-muted); background: #fff; }
-body.k-app-page .k-reference-header-search:hover { background: #fff; border-color: #d8d3c8; }
+body.k-app-page .k-reference-header-search { display: flex; flex: 0 1 clamp(244px, 24vw, 360px); width: clamp(244px, 24vw, 360px); min-width: 0; min-height: 38px; align-items: center; gap: 8px; padding: 0 7px 0 12px; border: 1px solid var(--kr-line); border-radius: 9px; color: var(--kr-muted); background: #fff; transition: border-color .16s ease, box-shadow .16s ease; }
+body.k-app-page .k-reference-header-search:hover { border-color: #d8d3c8; }
+body.k-app-page .k-reference-header-search:focus-within { border-color: #dd9d85; box-shadow: 0 0 0 3px rgba(201, 92, 44, .08); }
+body.k-app-page .k-reference-header-search > .k-app-icon { flex: 0 0 auto; width: 16px; height: 16px; }
+body.k-app-page .k-reference-header-search input { width: 100%; min-width: 0; padding: 0; border: 0; outline: 0; color: var(--kr-ink); background: transparent; font: 600 12px/1 Inter, sans-serif; }
+body.k-app-page .k-reference-header-search input::placeholder { color: var(--kr-muted); opacity: 1; }
+body.k-app-page .k-reference-header-search button { display: grid; flex: 0 0 25px; width: 25px; height: 25px; place-items: center; padding: 0; border: 0; border-radius: 6px; color: var(--kr-orange-dark); background: transparent; cursor: pointer; }
+body.k-app-page .k-reference-header-search button:hover, body.k-app-page .k-reference-header-search button:focus-visible { outline: none; background: var(--kr-orange-soft); }
+body.k-app-page .k-reference-header-search button .k-app-icon { width: 14px; height: 14px; }
 body.k-app-page .k-reference-control-icon { position: relative; display: grid; width: 18px; height: 18px; place-items: center; }
 body.k-app-page .k-reference-control-icon .k-app-icon { position: relative; z-index: 1; }
 body.k-app-page .k-reference-radar-pulse { position: absolute; top: 50%; left: 50%; z-index: 2; width: 5px; height: 5px; border-radius: 50%; background: var(--kr-green); box-shadow: 0 0 0 3px var(--kr-green-soft); pointer-events: none; transform: translate(-50%, -50%); }
@@ -151,6 +158,9 @@ body.k-app-page .k-reference-conversation-nav .k-app-history-list { max-height: 
 body.k-app-page .k-reference-conversation-nav .k-app-history-list button,
 body.k-app-page .k-reference-conversation-nav .k-app-history-list a { min-height: 34px; padding: 7px 8px; border-radius: 7px; font-size: 11px; }
 body.k-app-page .k-reference-conversation-nav .k-app-sidebar-radar { border-color: #dceee7; border-radius: 9px; background: #f5fbf8; }
+body.k-app-page .k-reference-conversation-nav .radar-toggle { text-decoration: none; }
+body.k-app-page .k-reference-conversation-nav .radar-toggle:hover strong, body.k-app-page .k-reference-conversation-nav .radar-toggle:focus-visible strong { color: var(--kr-orange-dark); }
+body.k-app-page .k-reference-conversation-nav .radar-toggle:focus-visible { border-radius: 7px; outline: 2px solid rgba(201, 92, 44, .55); outline-offset: 3px; }
 body.k-app-page .k-reference-conversation-nav .k-app-sponsored { position: relative; display: grid; width: 100%; min-height: 138px; max-height: 176px; overflow: hidden; border: 1px solid var(--kr-line); border-radius: 9px; background: #f7f5f0; }
 body.k-app-page .k-reference-conversation-nav .k-app-sponsored img { width: 100%; height: 100%; min-height: 138px; object-fit: cover; }
 body.k-app-page .k-reference-conversation-nav .k-app-sponsored .sidebar-sponsored-tag { position: absolute; top: 7px; left: 7px; padding: 4px 6px; border-radius: 99px; color: #fff; background: rgba(28, 28, 28, .72); font-size: 8px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
@@ -278,7 +288,7 @@ body.k-app-page .pwa-status-region:empty { display: none !important; }
 /* Tablet: one work canvas, drawers for navigation and context. */
 @media (max-width: 1180px) {
   body.k-app-page .k-reference-shell { grid-template-columns: 208px minmax(0, 1fr) 280px !important; }
-  body.k-app-page .k-reference-header-search { min-width: 116px; }
+  body.k-app-page .k-reference-header-search { flex-basis: clamp(152px, 22vw, 244px); width: clamp(152px, 22vw, 244px); }
   body.k-app-page .k-reference-app-header .k-app-notification-optin,
   body.k-app-page #header-call,
   body.k-app-page #header-points,

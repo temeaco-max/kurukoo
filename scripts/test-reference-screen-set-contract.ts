@@ -45,6 +45,10 @@ for (const [label, href] of [
   ['Channels', '/channels'],
 ] as const) assert.ok(app.includes(`href="${href}"`), `${label} must retain the canonical destination ${href}`);
 
+assert.match(app, /<form class="k-reference-header-search" id="k-reference-header-search" action="\/discover" method="get" role="search">/, 'header search must be a real accessible form that hands queries to Discover');
+assert.match(app, /id="k-reference-header-search-input" name="q" type="search"/, 'header search must expose a named query input rather than a decorative link');
+assert.match(app, /id="header-nearby-radar" href="\/discover\?view=nearby#nearby-radar"/, 'header Nearby Radar must open the approximate discovery surface');
+assert.match(app, /id="radar-toggle" class="radar-toggle is-active" aria-label="Open Nearby Radar"/, 'Agent-side Nearby Radar must be an explicit discovery handoff, not an invisible local switch');
 assert.ok(!app.includes('id="header-call"'), 'global Call must not appear without a confirmed conversation participant');
 assert.ok(app.includes('partials/call-workspace'), 'Call must use the shared readiness-aware workspace when opened from a confirmed participant conversation');
 assert.ok(app.includes('id="new-chat"'), 'New conversation must stay wired to the canonical conversation runtime');
@@ -69,6 +73,8 @@ for (const marker of [
   'min-height: 44px',
   'k-app-mobile-menu { display: none; }',
   'k-app-mobile-menu { display: grid; }',
+  'k-reference-header-search input',
+  'k-reference-header-search:focus-within',
 ]) assert.ok(shellCss.includes(marker), `reference responsive visual rule is missing: ${marker}`);
 
 assert.ok(workspaceRuntime.includes('referenceMobileMore'), 'mobile More control must be managed by the shared workspace runtime');
@@ -83,6 +89,8 @@ assert.ok(primaryChatRuntime.includes('Call ${providerName}'), 'contextual Call 
 assert.ok(authenticatedAdsRuntime.includes("document.querySelector('.k-reference-shell')"), 'reference workspaces must suppress legacy left-rail campaign injection and retain only the Agent-owned sponsored placement');
 assert.ok(workspaceRuntime.includes('toggleChatSidebar'), 'drawer control must use the shared navigation behavior');
 assert.ok(primaryChatRuntime.includes("$('new-chat')"), 'Chat runtime must retain canonical new-conversation behavior');
+assert.ok(primaryChatRuntime.includes('function setRadarAvailability()'), 'Agent runtime must present Nearby Radar as a destination-aware availability cue');
+assert.ok(!primaryChatRuntime.includes("$('radar-toggle')?.addEventListener('click', () => setRadarActive(!state.radarActive))"), 'Agent runtime must not restore the retired invisible Nearby Radar toggle');
 
 assert.ok(publicHome.includes('Try Kurukoo free'), 'public homepage must make low-commitment product entry explicit');
 assert.ok(publicNav.includes('Try Kurukoo free'), 'public navigation must not present Chat as the only product entry');

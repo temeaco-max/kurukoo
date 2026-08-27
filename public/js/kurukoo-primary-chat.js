@@ -6,7 +6,7 @@
     activeStorefrontId: null,
     nativeAssistance: { reminders: [], checkIns: [] },
     lastCapabilityResult: null,
-    pinnedMessages: [], surfaceView: null, canonicalContextAction: null, notifiedNotificationIds: new Set(), notifiedTrustChallengeIds: new Set(), radarActive: localStorage.getItem('kurukoo_radar_enabled') !== '0', radarLive: false, lastAgentBriefId: null
+    pinnedMessages: [], surfaceView: null, canonicalContextAction: null, notifiedNotificationIds: new Set(), notifiedTrustChallengeIds: new Set(), radarActive: true, radarLive: false, lastAgentBriefId: null
   };
   const $ = id => document.getElementById(id);
   const chatContent = $('chat-content'), scroll = $('chat-scroll'), input = $('message-input'), send = $('send-message'), stop = $('stop-generation');
@@ -220,12 +220,16 @@
     const pulse = $('header-presence-pulse'); if (pulse) pulse.classList.toggle('is-active', state.radarActive && ok);
     const label = $('connection-label'); if (label) label.textContent = String(text).toLowerCase();
   };
-  function setRadarActive(active) {
-    state.radarActive = Boolean(active); localStorage.setItem('kurukoo_radar_enabled', state.radarActive ? '1' : '0');
-    const toggle = $('radar-toggle'); if (toggle) { toggle.setAttribute('aria-pressed', String(state.radarActive)); toggle.classList.toggle('is-active', state.radarActive); toggle.setAttribute('aria-label', state.radarActive ? 'Nearby Radar ready' : 'Turn on Nearby Radar'); }
-    const status = $('radar-status'); if (status) status.textContent = state.radarActive ? (state.radarLive ? 'Live' : 'Ready') : 'Off';
-    const pulse = $('header-presence-pulse'); if (pulse) pulse.classList.toggle('is-active', state.radarActive && !$('connection-status')?.classList.contains('offline'));
-    const header = $('connection-status'); if (header) header.classList.toggle('radar-active', state.radarActive);
+  function setRadarAvailability() {
+    const radar = $('radar-toggle');
+    if (radar) {
+      radar.classList.add('is-active');
+      radar.setAttribute('aria-label', 'Open Nearby Radar');
+    }
+    const status = $('radar-status');
+    if (status) status.textContent = 'Explore nearby';
+    const pulse = $('header-presence-pulse');
+    if (pulse) pulse.classList.toggle('is-active', !$('connection-status')?.classList.contains('offline'));
   }
   async function loadPulseReadiness() {
     try {
@@ -233,11 +237,9 @@
       if (!response.ok) return;
       const data = await response.json();
       state.radarLive = Boolean(data.active);
-      setRadarActive(state.radarActive);
     } catch {}
   }
-  $('radar-toggle')?.addEventListener('click', () => setRadarActive(!state.radarActive));
-  setRadarActive(state.radarActive);
+  setRadarAvailability();
   void loadPulseReadiness();
   restoreComposerDraft();
   const moreToggle = $('sidebar-more-toggle'); const moreItems = $('sidebar-more-items');

@@ -20,7 +20,7 @@ const viewports = [
 ];
 const routes = [
   { path: '/desk', required: ['Kurukoo Brief', 'What needs you now', 'Recent outcomes'], selector: '[data-desk-convergence]' },
-  { path: '/chat', required: ['How can Kurukoo help today?', 'Coordinate what matters', 'History'], selector: '#message-input', focusedAgent: true },
+  { path: '/chat', required: ['Coordinate what matters', 'History'], selector: '#message-input', focusedAgent: true },
   { path: '/requests', required: ['Requests Kurukoo is moving forward', 'Needs you'], selector: '[data-requests-list]' },
   { path: '/tasks', required: ['Small steps that move work forward', 'Ready to do'], selector: '[data-tasks-list]' },
   { path: '/notifications', required: ['Changes and decisions that matter'], selector: '[data-notifications-root]' },

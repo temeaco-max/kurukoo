@@ -46,3 +46,13 @@
 @media(max-width:640px){
   .discover-os-action,.discover-os-action--primary{min-height:44px!important;width:100%;box-sizing:border-box}
 }
+
+/* Shared-app canvas correction: the desktop shell has fixed rails, so Discover cannot reserve a wide second column at every viewport. */
+.k-app-section-discover .discover-os-header { grid-template-columns: minmax(360px, 1.1fr) minmax(260px, .9fr); }
+.k-app-section-discover .discover-os-header__copy { min-width: 0; }
+.k-app-section-discover .discover-os-header__copy h1 { max-width: 12ch; overflow-wrap: anywhere; }
+.k-app-section-discover .discover-os-header__controls { min-width: 0; }
+@media (max-width: 1180px) {
+  .k-app-section-discover .discover-os-header { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .k-app-section-discover .discover-os-header__copy h1 { max-width: 15ch; }
+}
