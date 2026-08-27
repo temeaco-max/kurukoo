@@ -105,6 +105,21 @@ for (const [message, expectedSkill] of [
   assert.equal(outcome.cardData?.type, 'agentic_storefront', `Broad outcome should enter the canonical storefront: ${message}`);
 }
 
+const property = await routeIntent('Find a 2 bedroom furnished flat near a bus stop in Yaba with security.', makeDomainPhone(35), undefined, createContext, `${conversationId}-property-preferences`);
+assert.equal(property.skill, 'rental_tracker');
+const propertyRequest = await getEconomicRequest(property.cardData?.requestId || '');
+assert.equal(propertyRequest?.requirements.bedrooms, 2, 'Property discovery must retain bedroom requirements.');
+assert.equal(propertyRequest?.requirements.furnishing, 'furnished', 'Property discovery must retain furnishing preferences.');
+assert.equal(propertyRequest?.requirements.security_requirements, 'security_requested', 'Property discovery must retain safety requirements without asserting building security.');
+assert.match(String(propertyRequest?.requirements.transport_proximity || ''), /bus stop/i, 'Property discovery must retain transport-proximity preferences.');
+
+const hotel = await routeIntent('Find a hotel in Yaba for 3 guests with 2 rooms and wheelchair access.', makeDomainPhone(36), undefined, createContext, `${conversationId}-hotel-preferences`);
+assert.equal(hotel.skill, 'hotel_deals');
+const hotelRequest = await getEconomicRequest(hotel.cardData?.requestId || '');
+assert.equal(hotelRequest?.requirements.guest_count, 3, 'Hotel discovery must retain guest count.');
+assert.equal(hotelRequest?.requirements.room_count, 2, 'Hotel discovery must retain room count.');
+assert.equal(hotelRequest?.requirements.accessibility_requirements, 'accessibility_requested', 'Hotel discovery must retain accessibility needs without asserting a room is accessible.');
+
 const charger = await routeIntent('Buy me a replacement charger', makeDomainPhone(31), undefined, createContext, `${conversationId}-charger`);
 assert.equal(charger.skill, 'product_sourcing');
 assert.equal(charger.cardData?.type, 'agentic_storefront');

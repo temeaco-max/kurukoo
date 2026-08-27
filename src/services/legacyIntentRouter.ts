@@ -334,6 +334,29 @@ function extractRepairSlots(q: string): Record<string, unknown> {
   return patch;
 }
 
+function extractBookingPreferenceSlots(q: string, skill: string): Record<string, unknown> {
+  const patch: Record<string, unknown> = {};
+  if (skill === 'rental_tracker') {
+    const bedrooms = q.match(/\b(\d+)\s*(?:-|\s)?bed(?:room)?s?\b/i)?.[1];
+    if (bedrooms) patch.bedrooms = Number(bedrooms);
+    const bathrooms = q.match(/\b(\d+)\s*(?:-|\s)?bath(?:room)?s?\b/i)?.[1];
+    if (bathrooms) patch.bathrooms = Number(bathrooms);
+    const furnishing = q.match(/\b(furnished|unfurnished|semi[-\s]?furnished)\b/i)?.[1];
+    if (furnishing) patch.furnishing = furnishing.toLowerCase().replace(/\s+/g, '-');
+    if (/\b(?:security|gated|gatehouse|guard)\b/i.test(q)) patch.security_requirements = 'security_requested';
+    const transport = q.match(/\b(?:near|close to|walking distance to)\s+([^,.!?]{2,60})/i)?.[1]?.trim();
+    if (transport) patch.transport_proximity = transport;
+  }
+  if (skill === 'hotel_deals') {
+    const guests = q.match(/\bfor\s+(\d+)\s*(?:guests?|people|persons?)\b/i)?.[1];
+    if (guests) patch.guest_count = Number(guests);
+    const rooms = q.match(/\b(\d+)\s*rooms?\b/i)?.[1];
+    if (rooms) patch.room_count = Number(rooms);
+    if (/\b(?:wheelchair|step[-\s]?free|accessible room|mobility access)\b/i.test(q)) patch.accessibility_requirements = 'accessibility_requested';
+  }
+  return patch;
+}
+
 function extractFollowUpPatch(q: string, skill: string): Record<string, unknown> {
   const patch: Record<string, unknown> = {};
   const locationCorrection = q.match(/\b(?:change|correct|update|set)\s+(?:the\s+)?(?:location|delivery area|area)\s+(?:to|as)\s+(.+?)(?:[.!?]|$)/i)?.[1]?.trim();
@@ -542,7 +565,7 @@ export async function routeIntent(query: string, phone?: string, provider?: AIPr
   const explicitProductOutcome = !explicitRepairOutcome && /\b(?:buy|order|get|find|replace|replacement)\b/i.test(q) && /\b(?:charger|cable|phone|laptop|product|item|groceries)\b/i.test(q);
   const explicitProviderOutcome = /\b(?:find|hire|book|get|need)\b/i.test(q) && /\b(?:someone|person|plumber|teacher|tutor|mechanic|electrician|cleaner|technician|guitar)\b/i.test(q);
   if (phone && /\b(?:keep an eye on|tell me if anything changes|watch for|monitor|keep checking)\b/i.test(q)) return { skill: 'autonomous_agent', reply: 'I can keep an exact, bounded watch on this. I need the resource or subject, the change to look for, and—where relevant—notification permission. I will not claim monitoring has started until the observation and notification capability are recorded.', cardData: { type: 'monitoring_setup', status: 'needs_user', target: /\b(?:my|this)\s+([a-z0-9 -]{2,50})/i.exec(q)?.[1]?.trim() || null, requirement: 'target_and_change_condition', actions: [{ id: 'define_condition', label: 'Define what should count as a change' }, { id: 'connect_resource', label: 'Connect an observable resource' }, { id: 'enable_notifications', label: 'Enable notifications for changes' }], truthful: true }, canonicalAction: 'monitoring.setup', progressStage: 'understanding', extractionSource: 'deterministic' };
-  const outcomeSkill = explicitFoodOutcome ? 'order_food' : explicitAutomotiveServiceOutcome ? 'find_worker' : explicitTransportOutcome ? 'ride_request' : explicitAccommodationOutcome ? 'hotel_deals' : explicitHouseholdServiceOutcome ? 'find_worker' : explicitPropertyOutcome ? 'rental_tracker' : explicitJobOutcome ? 'job_tracker' : explicitTutorOutcome ? 'find_worker' : explicitInternetServiceOutcome ? 'wifi_installer' : explicitRepairOutcome ? 'phone_repairer' : explicitHealthcareOutcome ? 'doctor_appointment' : explicitProductOutcome ? 'product_sourcing' : explicitProviderOutcome ? 'find_worker' : null;
+  const outcomeSkill = explicitFoodOutcome ? 'order_food' : explicitAutomotiveServiceOutcome ? 'find_worker' : explicitAccommodationOutcome ? 'hotel_deals' : explicitHouseholdServiceOutcome ? 'find_worker' : explicitPropertyOutcome ? 'rental_tracker' : explicitTransportOutcome ? 'ride_request' : explicitJobOutcome ? 'job_tracker' : explicitTutorOutcome ? 'find_worker' : explicitInternetServiceOutcome ? 'wifi_installer' : explicitRepairOutcome ? 'phone_repairer' : explicitHealthcareOutcome ? 'doctor_appointment' : explicitProductOutcome ? 'product_sourcing' : explicitProviderOutcome ? 'find_worker' : null;
   const directSkill = outcomeSkill || matchCanonicalSkill(q) || (isFoodOrderExpression(query) ? 'order_food' : null);
   const extractedEntities = validateConversationalEntities(extractConversationalEntities(query, directSkill || undefined), directSkill || undefined);
   if (directSkill === 'device_support') {
@@ -573,7 +596,7 @@ export async function routeIntent(query: string, phone?: string, provider?: AIPr
       const priorObservation = (directSkill === 'repair' || directSkill === 'phone_repair' || directSkill === 'phone_repairer') ? await recentDeviceObservation(phone, threadId, query) : undefined;
       const airtimePhone = directSkill === 'buy_airtime' ? query.match(/\b(?:\+234|234|0)(?:[\s-]?\d){10}\b/)?.[0]?.replace(/[\s-]/g, '') : undefined;
       const airtimeAmount = directSkill === 'buy_airtime' ? query.match(/(?:₦|ngn\s*)\s*(\d[\d,]*(?:\.\d{1,2})?)/i)?.[1] : undefined;
-      const seed: Record<string, unknown> = directSkill === 'buy_airtime' ? { objective: 'Airtime purchase', ...(airtimePhone ? { recipient_phone: airtimePhone } : {}), ...(airtimeAmount ? { amount_minor: Math.round(Number(airtimeAmount.replace(/,/g, '')) * 100), currency: 'NGN' } : {}) } : directSkill === 'find_worker' && worker ? { service: worker } : (directSkill === 'repair' || directSkill === 'phone_repair' || directSkill === 'phone_repairer') ? { ...extractRepairSlots(query), ...(priorObservation ? { prior_diagnostics: priorObservation } : {}) } : directSkill === 'doctor_appointment' ? extractHealthcareSlots(query) : directSkill === 'device_support' ? { problem: query.trim(), desired_action: 'diagnose' } : directSkill === 'product_sourcing' ? { product: query.trim() } : directSkill === 'verified_artist' ? { event_type: query.trim() } : directSkill === 'order_food' ? { ...(foodSlots.items ? { items: foodSlots.items } : {}), ...(foodSlots.location ? { location: foodSlots.location } : {}), ...extractFollowUpPatch(query, directSkill) } : ['hotel_deals','rental_tracker','job_tracker','wifi_installer'].includes(String(directSkill)) ? { objective: query.trim(), ...extractFollowUpPatch(query, directSkill) } : {};
+      const seed: Record<string, unknown> = directSkill === 'buy_airtime' ? { objective: 'Airtime purchase', ...(airtimePhone ? { recipient_phone: airtimePhone } : {}), ...(airtimeAmount ? { amount_minor: Math.round(Number(airtimeAmount.replace(/,/g, '')) * 100), currency: 'NGN' } : {}) } : directSkill === 'find_worker' && worker ? { service: worker } : (directSkill === 'repair' || directSkill === 'phone_repair' || directSkill === 'phone_repairer') ? { ...extractRepairSlots(query), ...(priorObservation ? { prior_diagnostics: priorObservation } : {}) } : directSkill === 'doctor_appointment' ? extractHealthcareSlots(query) : directSkill === 'device_support' ? { problem: query.trim(), desired_action: 'diagnose' } : directSkill === 'product_sourcing' ? { product: query.trim() } : directSkill === 'verified_artist' ? { event_type: query.trim() } : directSkill === 'order_food' ? { ...(foodSlots.items ? { items: foodSlots.items } : {}), ...(foodSlots.location ? { location: foodSlots.location } : {}), ...extractFollowUpPatch(query, directSkill) } : ['hotel_deals','rental_tracker'].includes(String(directSkill)) ? { objective: query.trim(), ...extractBookingPreferenceSlots(query, directSkill), ...extractFollowUpPatch(query, directSkill) } : ['job_tracker','wifi_installer'].includes(String(directSkill)) ? { objective: query.trim(), ...extractFollowUpPatch(query, directSkill) } : {};
       const fromTo = query.match(/\bfrom\s+(.+?)\s+to\s+(.+?)(?=\s+(?:tomorrow|today|on\s+\w+)|[.!?]|$)/i); if (fromTo && (directSkill === 'ride_request' || directSkill === 'ride')) { seed.origin = fromTo[1].trim(); seed.destination = fromTo[2].trim(); }
       if (directSkill === 'ride_request' || directSkill === 'ride') {
         const destinationMatch = query.match(/\b(?:get|take|drive|bring)\s+me\s+to\s+(.+?)(?=\s+(?:tomorrow|today|tonight|by\s+\d|at\s+\d|on\s+\w+)|[.!?]|$)/i) || query.match(/\b(?:need|want)\s+to\s+be\s+in\s+(.+?)(?=\s+(?:tomorrow|today|tonight|by\s+\d|at\s+\d|on\s+\w+)|[.!?]|$)/i);
