@@ -6,7 +6,8 @@
     activeStorefrontId: null,
     nativeAssistance: { reminders: [], checkIns: [] },
     lastCapabilityResult: null,
-    pinnedMessages: [], surfaceView: null, canonicalContextAction: null, resumeCanonicalContextOnLoad: false, notifiedNotificationIds: new Set(), notifiedTrustChallengeIds: new Set(), radarActive: localStorage.getItem('kurukoo_radar_enabled') !== '0', radarLive: false, lastAgentBriefId: null
+    pinnedMessages: [], surfaceView: null, canonicalContextAction: null, resumeCanonicalContextOnLoad: false, notifiedNotificationIds: new Set(), notifiedTrustChallengeIds: new Set(), radarActive: localStorage.getItem('kurukoo_radar_enabled') !== '0', radarLive: false, lastAgentBriefId: null,
+    currentAssistantArticle: null
   };
   const $ = id => document.getElementById(id);
   const chatContent = $('chat-content'), scroll = $('chat-scroll'), input = $('message-input'), send = $('send-message'), stop = $('stop-generation');
@@ -517,6 +518,7 @@
   function appendStreamBubble() {
     $('welcome')?.remove();
     const wrap = document.createElement('article'); wrap.className = 'message assistant message-enter message-streaming'; wrap.dataset.messageState = 'incoming'; wrap.hidden = true;
+    state.currentAssistantArticle = wrap; window.KurukooTurnState?.mount?.(wrap); window.KurukooTurnState?.setStatus?.(wrap, 'working', activityStages[activityStageIndex]);
 
     const avatar = makeElement('div', 'avatar'); avatar.setAttribute('aria-hidden', 'true');
     const img = document.createElement('img'); img.src = '/assets/brand/logo-icon.png'; img.alt = 'K'; img.width = 20;
@@ -1544,6 +1546,7 @@
   }
   function createBackgroundStreamBubble() {
     const wrap = makeElement('article', 'message assistant message-streaming'); wrap.hidden = true;
+    state.currentAssistantArticle = wrap; window.KurukooTurnState?.mount?.(wrap); window.KurukooTurnState?.setStatus?.(wrap, 'working', 'Kurukoo is working on this…');
     const bubble = makeElement('div', 'bubble'); bubble.append(makeElement('div', 'thinking', 'Kurukoo is working…'), makeElement('div', 'markdown-body')); wrap.appendChild(bubble); return wrap;
   }
   function applyCapabilityResult(result, assistant) {
@@ -1600,7 +1603,7 @@
             if (data.phone) localStorage.setItem('kurukoo_user_phone', data.phone);
           }
           if (data.type === 'metadata') updateModelStatus(data);
-          if (data.type === 'status') setTypingStatus(data.status, data.label);
+          if (data.type === 'status') { setTypingStatus(data.status, data.label); if (window.KurukooTurnState) window.KurukooTurnState.setStatus(assistant, data.status, data.label); }
           if (data.type === 'agent_goal') renderAgentGoal(data.goal, []);
           if (data.type === 'capability_result') applyCapabilityResult(data.result, assistant);
           if (data.type === 'thought' && thinking) thinking.hidden = false;
@@ -1610,6 +1613,7 @@
           }
           if (data.type === 'done') {
             setTypingStatus('complete');
+            if (window.KurukooTurnState) window.KurukooTurnState.done(assistant);
             if (assistant.hidden) { assistant.hidden = false; assistant.classList.remove('message-streaming'); assistant.classList.add('message-arrived'); }
 
             assistant.dataset.messageId = data.messageId || '';
@@ -1631,8 +1635,8 @@
       if (!full) output.textContent = 'I could not complete that request. Please try again.';
       await refreshHistory();
     } catch (error) {
-      if (error?.name === 'AbortError') { setConnection(true); setTypingStatus('complete'); assistant.hidden = false; assistant.classList.remove('message-streaming'); assistant.classList.add('message-arrived'); if (!full) setMarkdown(output, 'Generation stopped.'); return; }
-      setConnection(false, 'Connection issue'); setTypingStatus('error'); if (!surfaceActive) { assistant.hidden = false; assistant.classList.remove('message-streaming'); assistant.classList.add('message-arrived'); }
+      if (error?.name === 'AbortError') { setConnection(true); setTypingStatus('complete'); assistant.hidden = false; assistant.classList.remove('message-streaming'); assistant.classList.add('message-arrived'); if (!full) setMarkdown(output, 'Generation stopped.'); if (window.KurukooTurnState) window.KurukooTurnState.done(assistant); return; }
+      setConnection(false, 'Connection issue'); setTypingStatus('error'); if (window.KurukooTurnState) window.KurukooTurnState.setStatus(assistant, 'offline', 'Connection lost — reconnecting…'); if (!surfaceActive) { assistant.hidden = false; assistant.classList.remove('message-streaming'); assistant.classList.add('message-arrived'); }
       if (surfaceActive) pushAgentSurfaceToast('Kurukoo could not finish that', error.message || 'Please try again from the composer.', true);
       const bubble = surfaceActive ? null : chatContent.querySelector('.message.assistant:last-child .markdown-body');
       if (bubble) setMarkdown(bubble, `I’m having trouble completing that right now. **Please try again.**\n\n_${escapeAttr(error.message)}_`);
@@ -2008,7 +2012,7 @@
       const url = new URL('/api/chat/history', location.origin); if (state.conversationId) url.searchParams.set('conversationId', state.conversationId); url.searchParams.set('limit', '60');
       const res = await fetch(url, { credentials: 'same-origin' }); if (!res.ok) return; const data = await res.json(); if (data.messages?.length) state.messages = data.messages.map(m => ({ role: m.sender === 'user' ? 'user' : 'assistant', text: m.content, id: m.id })); const list = $('history-list'); if (!list) return; list.replaceChildren();
       data.conversations.forEach(c => addHistoryItem(c, c.id === state.conversationId));
-      if (!state.surfaceView && data.messages?.length && chatContent.querySelectorAll('.message').length === 0) renderMessages(data.messages);
+      if (!state.surfaceView && data.messages?.length && chatContent.querySelectorAll('.message').length === 0) { renderMessages(data.messages); if (!sessionStorage.getItem('kurukoo_returning_shown')) { sessionStorage.setItem('kurukoo_returning_shown','1'); window.KurukooTurnState?.showReturningUser?.(); } }
     } catch { setConnection(false, 'Offline'); }
     loadAgentGoal();
   }

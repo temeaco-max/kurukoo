@@ -233,3 +233,65 @@ button,a{min-height:44px}
 
 /* Final compatibility bridge for public visual-completion aliases. */
 :root{--kc-accent:var(--ko-primary);--kc-accent-strong:var(--ko-primary-strong);--kc-ink:var(--ko-ink);--kc-muted:var(--ko-muted);--kc-surface:var(--ko-bg);--kc-border:var(--ko-border);--kc-raised:var(--ko-surface);--kc-success:var(--ko-success);--kc-warning:var(--ko-warning);--kc-danger:var(--ko-danger);--kc-radius:var(--ko-radius)}
+
+/* ————————— OS lifecycle turn-state grammar —————————
+   One coherent treatment for the journey of a single request across
+   Chat and the OS work/composer surfaces:
+     I can  →  I’m working on it  →  Waiting for …  →  I need you  →  Done
+   plus loading/spinner, success, offline/reconnect and returning-user states.
+   Presentation only; the canonical turn/service owners remain source of truth. */
+
+.ko-turn-state{
+  display:inline-flex;align-items:center;gap:6px;
+  min-height:26px;padding:5px 10px;border-radius:999px;
+  font:700 11px/1 Inter,system-ui,sans-serif;
+  background:var(--ko-surface-2);border:1px solid var(--ko-border);
+  color:var(--ko-muted);box-shadow:var(--ko-shadow);
+  transition:background-color var(--ko-motion-fast),border-color var(--ko-motion-fast),color var(--ko-motion-fast);
+  white-space:nowrap;
+}
+.ko-turn-state[data-stage="ready"]{background:#E7F3ED;color:var(--ko-success);border-color:#D4E8DC}        /* I can */
+.ko-turn-state[data-stage="working"]{background:#F8ECD8;color:var(--ko-warning);border-color:#ECDDBF}  /* working on it */
+.ko-turn-state[data-stage="waiting"]{background:#F8ECD8;color:var(--ko-warning);border-color:#ECDDBF}  /* waiting for … */
+.ko-turn-state[data-stage="needs-you"]{background:#FBEDEA;color:var(--ko-danger);border-color:#EBCFC9}  /* I need you */
+.ko-turn-state[data-stage="done"]{background:#E7F3ED;color:var(--ko-success);border-color:#D4E8DC}       /* Done */
+.ko-turn-state[data-stage="offline"]{background:#FBEDEA;color:var(--ko-danger);border-color:#EBCFC9}     /* offline/reconnect */
+
+.ko-turn-state__label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ko-turn-state__spinner{
+  width:14px;height:14px;border:2px solid rgba(36,34,31,.15);
+  border-top-color:var(--ko-warning);border-radius:50%;
+  animation:ko-spin 1.1s linear infinite;
+}
+.ko-turn-state[data-stage="done"] .ko-turn-state__spinner{animation:none;border-top-color:var(--ko-success)}
+.ko-turn-state__icon{width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center}
+@keyframes ko-spin{to{transform:rotate(360deg)}}
+
+/* Assistant turn header hosts the live stage bar */
+.message.assistant .message-turn-state{
+  display:inline-flex;align-items:center;gap:6px;margin:0 0 6px;
+}
+.message.assistant.working .message-turn-state[data-stage] .ko-turn-state__spinner,
+.message.assistant.working .message-turn-state[data-stage="working"]{visibility:visible}
+.message.assistant[data-turn-state="done"] .message-turn-state[data-stage="done"]{opacity:1}
+
+/* Returning-user: surface state on restore so people know continuity worked */
+.ko-returning-user{
+  display:inline-flex;align-items:center;gap:8px;margin:12px 0;padding:10px 12px;
+  border-radius:var(--ko-radius);background:var(--ko-surface-2);border:1px solid var(--ko-border)
+}
+.ko-returning-user .ko-returning-user__mark{width:24px;height:24px;border-radius:999px;background:var(--ko-primary);color:#fff;font:700 11px/1 "Space Grotesk",Inter,sans-serif;display:grid;place-items:center}
+.ko-returning-user__text{font:500 13px/1.35 Inter,system-ui,sans-serif;color:var(--ko-ink)}
+
+/* Offline / reconnect banner (Chat + OS surfaces) */
+.ko-offline-reconnect{
+  display:inline-flex;align-items:center;gap:8px;margin:12px 0;padding:10px 12px;
+  border-radius:var(--ko-radius);border:1px solid var(--ko-danger);
+  background:rgba(181,72,61,.08);color:var(--ko-danger);font:600 13px/1 Inter,system-ui,sans-serif
+}
+.ko-offline-reconnect .ko-offline-reconnect__btn{margin-left:auto;font:700 12px/1 Inter,system-ui,sans-serif;color:#fff;background:var(--ko-primary);border:1px solid var(--ko-primary);border-radius:var(--ko-radius-sm);padding:4px 10px;cursor:pointer;transition:background-color var(--ko-motion-fast)}
+.ko-offline-reconnect .ko-offline-reconnect__btn:hover{background:var(--ko-primary-strong)}
+
+/* Surface empty/loading states reuse the canonical grammar */
+.ko-surface-loading{padding:24px 0;color:var(--ko-muted);font-size:13px;display:inline-flex;align-items:center;gap:10px}
+.ko-surface-loading .ko-turn-state__spinner{margin:0}

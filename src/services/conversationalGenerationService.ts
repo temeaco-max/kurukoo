@@ -33,8 +33,18 @@ function needsCanonicalRelevanceFallback(prompt: string, responseText: string): 
     && /\b(?:user has not previously used kurukoo|ensure you have the following knowledge)\b/.test(reply);
 }
 
-function canonicalRelevanceFallback(prompt: string): string {
+function canonicalRelevanceFallback(prompt: string, context?: { activeGoal?: string; activeGoals?: string[]; pendingFields?: string[]; knownFacts?: string[]; canonicalAction?: string; cardType?: string }): string {
   if (/\bwhat should i know before using kurukoo\b/i.test(prompt)) return 'Kurukoo can help you talk through everyday questions, keep useful context, set reminders, and coordinate requests. It will ask for the details needed before an action, and it will not claim a provider, price, payment, or completion without evidence.';
+  if (context) {
+    const label = context.activeGoal || (context.activeGoals?.[0]) || '';
+    const pending = Array.isArray(context.pendingFields) && context.pendingFields.length ? context.pendingFields[0] : '';
+    const known = Array.isArray(context.knownFacts) && context.knownFacts.length ? context.knownFacts[0] : '';
+    // Continuation must stay truthful: only reference goals/evidence that already exist in state.
+    if (label && pending) return `I’m still working on ${label}. I need this from you: ${pending}.`;
+    if (label && known) return `I’m continuing ${label}. From what you’ve told me: ${known}. What would you like to do next for it?`;
+    if (label) return `I’m still working on ${label}. Tell me the detail that matters most and I’ll keep the next step clear and safe.`;
+    if (known) return `I remember you mentioned: ${known}. Tell me the one detail that matters most and I’ll keep the next step clear and safe.`;
+  }
   return 'I’m here to help with the point you raised. Tell me the one detail that matters most, and I’ll keep the next step clear and safe.';
 }
 
@@ -71,7 +81,7 @@ export async function generateConversationalResponse(input: ConversationalGenera
 
   let response = base; let assessment = assess(input, contract, response.text); let attempts = 1; let escalated = false; if (presentNaturalized) attempts += 1;
   if (generationMode === 'generate' && needsCanonicalRelevanceFallback(input.prompt, response.text)) {
-    response = { ...response, provider: 'Kurukoo Template', model: 'template-fallback', text: canonicalRelevanceFallback(input.prompt), cost: '$0.00' };
+    response = { ...response, provider: 'Kurukoo Template', model: 'template-fallback', text: canonicalRelevanceFallback(input.prompt, { activeGoal: input.currentGoal, activeGoals: input.activeGoals, pendingFields: input.pendingFields, knownFacts: input.knownFacts, canonicalAction: input.canonicalAction, cardType: input.cardType }), cost: '$0.00' };
     assessment = assess(input, contract, response.text);
     attempts += 1;
     escalated = true;
