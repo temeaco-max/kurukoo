@@ -1,217 +1,228 @@
 # Kurukoo — How It Works
 
-**Page type:** Single-page scroll with dropdown nav from "How It Works" in header
+**Page type:** Public user-facing explanation
 **URL:** `/how-it-works`
-**Audience:** Consumers, providers, and business owners — all in one page
+**Audience:** People who want help getting things done, plus people who provide or operate services on Kurukoo
 
----
+## Product promise
 
-## Page Structure
+> **Kurukoo is a service that helps people get things done.**
+>
+> You tell Kurukoo what you need, want, notice, or are worried about.
+>
+> Kurukoo understands the situation, works out what it can do, takes appropriate action, gets help from people or services when necessary, keeps you informed, and remembers what matters.
 
-1. Hero: One Number, Every Hustle
-2. How Requests Work (5-step flow)
-3. How Earning Works (5-step flow)
-4. Kurukoo Guarantee (escrow, trusted sellers, dispute resolution)
-5. Points and Subscription
-6. Works on Any Phone
+The page should explain the experience in user language. Do not lead with technical architecture, marketplace terminology, internal lifecycle names, or a list of implementation components.
 
 ---
 
 ## 1. Hero
 
-**Headline:**  
-One number. Every hustle. All in one conversation.
+**Headline:**
+Tell Kurukoo what you need. Let it help.
 
-**Subhead:**  
-Kurukoo is the platform that turns your WhatsApp into an economic superpower. Request services. Offer skills. Run a business. All from the same phone number.
+**Subhead:**
+Start with a conversation. Kurukoo works out what you need, what it can do itself, what it needs from you, and when another person or service can help.
 
-**CTA:**  
-[Open Chat — it's free]
+**CTA:**
+Start chatting
+
+**Supporting line:**
+One Kurukoo. Many ways to get things done.
 
 ---
 
-## 2. How Requests Work
+## 2. The experience
 
-**Section headline:**  
-How requesting a service works
+**Section headline:**
+Start with what you need — not a form.
 
-**Subhead:**  
-Five steps from message to job done.
-
-| Step | What happens | What you see |
+| Step | What you do | What Kurukoo does |
 |---|---|---|
-| 1 | You send a message | WhatsApp or USSD: "I need a plumber" |
-| 2 | Kurukoo finds matches | Inline cards with provider ratings, distance, price |
-| 3 | You pick one | Tap a card or say "book the first one" |
-| 4 | Payment is held safely | Kurukoo Guarantee: payment in escrow, not released yet |
-| 5 | Job done, you confirm | Provider finishes → you tap "Done" → payment released |
+| 1 | Tell Kurukoo what you need in your own words. | Understands the situation and keeps the useful context together. |
+| 2 | Answer anything it genuinely needs to know. | Uses available information, connected resources and relevant context so you do not repeat yourself unnecessarily. |
+| 3 | Let Kurukoo help. | Gives advice, checks something, organises a task, finds an option, takes an authorised action, or starts the right kind of request. |
+| 4 | Wait only when the work needs time or another participant. | Keeps the work moving and tells you when something needs your attention. |
+| 5 | See what happened. | Reports the result clearly, including uncertainty or anything that still needs to be done. |
 
-**Key trust message:**  
-Your money is safe until you confirm the job is done. If the provider doesn't deliver, you get a full refund. No arguments. No chase.
-
----
-
-## 3. How Earning Works
-
-**Section headline:**  
-How offering your skills works
-
-**Subhead:**  
-Five steps from sign-up to getting paid.
-
-| Step | What happens | What you see |
-|---|---|---|
-| 1 | You send a message | WhatsApp: "I want to offer my skills. I do phone repairs." |
-| 2 | Kurukoo builds your profile | Progressive questions: location, availability, rates, portfolio |
-| 3 | You go live | Toggle "Available for work" in chat or PWA |
-| 4 | Kurukoo matches you | Push notification: "New job: phone repair in Lekki. Accept?" |
-| 5 | You get paid | Buyer confirms → escrow releases → money hits your account |
-
-**Earnings split:**  
-You keep ~85% of every job. Kurukoo takes ~15% to cover coordination, payment processing, and support.
+**Key message:**
+Kurukoo handles the complexity where it can. You stay in control of important decisions and actions.
 
 ---
 
-## 4. Kurukoo Guarantee
+## 3. Kurukoo can help directly
 
-**Section headline:**  
-Kurukoo Guarantee — You confirm, we deliver.
+**Section headline:**
+Sometimes the fastest way to help is to do it with you.
 
-**Subhead:**  
-Every transaction is protected. Here's how.
+Kurukoo should not send you to another person when it can safely solve the problem itself.
 
-### 4.1 How Escrow Works
+### Examples
 
-1. **Buyer commits first.** You agree on a price. Payment is collected upfront and held in escrow via OPay or Moniepoint.
-2. **Seller doesn't get paid yet.** Their portion stays in escrow. Kurukoo's coordination cut is already accounted for.
-3. **Delivery is arranged.** Kurukoo dispatches a trusted delivery person to collect the item from the seller.
-4. **You confirm receipt.** Once you get the item, you tap "Done" in the chat.
-5. **Money is released.** Seller gets paid. Delivery person gets paid. Kurukoo gets its cut.
+**“My phone is running slowly. Check it.”**
 
-### 4.2 If Something Goes Wrong
+When the device and permissions make diagnostics available, Kurukoo can inspect what it can, explain what it finds, offer safe fixes, and check whether the result improved the problem.
 
-| Scenario | What happens |
-|---|---|
-| Item not delivered | Delivery person is not paid. Seller gets refunded. Buyer gets full refund.
-| Item damaged on delivery | Buyer gets full refund. Seller and delivery person are flagged for review.
-| Buyer doesn't confirm | After 48 hours, delivery proof is reviewed. If proof is clear, payment is released automatically.
+**“Check my Wi-Fi.”**
 
-### 4.3 Trust Requirements
+Kurukoo can use the diagnostics available from your device or connected network resources, explain what it can establish, and suggest or perform an appropriate next step when authorised.
 
-To participate in Kurukoo Guarantee, sellers and delivery persons must:
+**“My laptop won't connect to the printer.”**
 
-- Have a completed profile with verified phone number
-- Maintain a minimum trust score (set by platform)
-- Accept Kurukoo's dispute resolution process
+Kurukoo can work through the problem using the information and tools available to it, rather than forcing you to select a support category first.
 
-**Note:** Not all skills require Kurukoo Guarantee. Simple service bookings (plumbing, repairs) may use direct payment between parties. Kurukoo Guarantee applies when platform coordination involves physical delivery or high-value transactions.
+**“Keep an eye on this.”**
+
+Where monitoring is supported, Kurukoo can continue the job and notify you when the agreed condition needs your attention.
+
+**Important:** Kurukoo only claims what it can actually establish. Device and platform permissions, available tools, external services, safety requirements and evidence can affect what it is able to do.
 
 ---
 
-## 5. Points and Subscription
+## 4. When another person or service is needed
 
-**Section headline:**  
-Points with real value. Subscriptions that make sense.
+**Section headline:**
+If Kurukoo cannot do it alone, it can help find who can.
 
-### 5.1 Points
+**Body:**
+A problem may need physical access, specialist equipment, a provider, a business, a delivery service, or another participant. Kurukoo can carry the useful context into the next step so you do not have to explain everything again.
 
-- **1 Point = N1.** No conversion. No complexity.
-- **Earn Points:** Daily login (+1), referrals (+200), jobs completed (+1 to +5), Daily Pick engagement (+1).
-- **Spend Points:** Boost your listing, buy lead credits, upgrade subscription, pay for premium features.
-- **No expiry.** Points don't expire. Save them or spend them.
+### Example
 
-### 5.2 Subscription Tiers
+> “My laptop won't charge.”
 
-| Tier | Price/month | Best for | Key benefits |
-|---|---|---|---|
-| Base | N500 | Casual users | Basic access, daily Points, standard support |
-| Plus | N1,500 | Regular users | Higher lead quota, priority matching, 1 free boost/month |
-| Business | N5,000 | Power users & businesses | Unlimited leads, 10 free boosts/month, verified storefront, analytics |
+Kurukoo checks what it can. If the evidence points to a physical problem it cannot safely resolve remotely, it can tell you that plainly and ask whether you want it to find an appropriate repair provider.
 
-**Note:** Subscription is optional. You can use Kurukoo for free with basic access. Paid tiers unlock more leads, more visibility, and more features.
+If you agree, Kurukoo can use the supported request and provider flow to coordinate the next step, including obtaining a quote where that path is available.
 
 ---
 
-## 6. Works on Any Phone
+## 5. It can work with more than one kind of thing
 
-**Section headline:**  
-No smartphone? No app store? No problem.
+**Section headline:**
+Your need comes first.
 
-Kurukoo is built for Africa's real device landscape. You don't need a R200,000 iPhone. You don't need 2GB of free storage. You just need a phone that can send a message.
+Kurukoo is not limited to phones or repairs. Depending on the available capabilities and services, you can ask it about:
 
-### 6.1 WhatsApp (Primary)
+- phones, tablets, laptops, desktops and other technology;
+- Wi-Fi, networks and connected devices;
+- TVs, cameras, smart devices and IoT resources;
+- food, groceries and everyday purchases;
+- rides, deliveries and errands;
+- repairs and other skilled work;
+- reminders, tasks and follow-ups;
+- places, services, events and opportunities;
+- products, sourcing and business services;
+- people and providers who can help;
+- work that needs to continue while you are away.
 
-- **Who uses it:** 95% of Nigerian smartphone users
-- **What you need:** Any smartphone with WhatsApp installed
-- **What you get:** Full Kurukoo experience — chat, cards, payments, push notifications
-- **Cost:** Free (standard WhatsApp data charges apply)
-
-### 6.2 USSD *7000# (Fallback)
-
-- **Who uses it:** Feature phone users (Nokia, Tecno, etc.)
-- **What you need:** Any mobile phone, no data, no smartphone
-- **What you get:** Menu-based access to core services — find providers, check balance, top up Points
-- **Cost:** Free (standard USSD charges may apply on some networks)
-
-### 6.3 PWA (Power Users)
-
-- **Who uses it:** Smartphone users who want the full experience
-- **What you need:** Chrome on Android (8.0+) or Safari on iOS (14+)
-- **What you get:** Rich interface, offline mode, voice input, live map, dashboard
-- **How to get it:** Visit `kurukoo.com` → tap "Add to Home Screen"
+These are examples, not a fixed list of everything Kurukoo can become capable of helping with.
 
 ---
 
-## FAQ (Inline, Accordion Style)
+## 6. You do not need to know how it works
 
-### Do I need to download an app?
-No. Kurukoo works in WhatsApp, USSD, or your browser. No app store. No downloads. No updates.
+**Section headline:**
+Just tell Kurukoo what you want done.
 
-### Is Kurukoo free?
-Yes. Basic access is free. You can request services, offer skills, and use core features without paying. Paid subscriptions unlock more leads, more visibility, and advanced features.
+Kurukoo may use AI, skills, tools, connected resources, external services, providers, agents, memory, notifications or other systems behind the scenes. You do not need to choose which one.
 
-### How does Kurukoo Guarantee work?
-When you order through Kurukoo, your payment is held in escrow until you confirm the job is done. If the provider doesn't deliver, you get a full refund. We coordinate the whole process.
+What matters to you is:
 
-### What are Points?
-Points are Kurukoo's internal currency. 1 Point = N1. You earn Points by engaging with the platform (daily login, referrals, jobs). You spend Points on boosts, subscriptions, and premium features.
+**What can you do?**
 
-### How do I get paid as a provider?
-When a buyer confirms the job is done, payment is released from escrow to your account. This happens instantly via OPay or Moniepoint. No waiting. No chasing invoices.
+**What do you need from me?**
 
-### Is my data safe?
-Yes. Your data is encrypted, never sold to third parties, and you can delete your account anytime. See our Privacy Policy for details.
+**What happened?**
 
-### Can I use Kurukoo in other countries?
-Kurukoo is built for Nigeria first, with Ghana and the UK coming soon. The same platform, different skills and pricing per country.
+**What happens next?**
 
 ---
 
-## Final CTA
+## 7. Kurukoo keeps you informed
 
-**Headline:**  
-Ready to get going?
+**Section headline:**
+You don't have to keep checking.
 
-**Subhead:**  
-Open WhatsApp. Send a message. That's it.
+If you are in Chat, Kurukoo can show important updates there. If you are away, supported notifications or channels can let you know that something needs your attention.
 
-**Primary CTA:**  
-[Open WhatsApp Chat]
+When you come back, Kurukoo should show meaningful things that happened while you were away and let you continue the underlying work from the same place.
 
-**Secondary CTA:**  
-[Try on USSD *7000#]
+Examples:
 
-**Small print:**  
-No download. No registration form. No credit card. Just start.
+> **Welcome back. Three things happened while you were away.**
+>
+> Laptop check completed.
+>
+> Repair quote received.
+>
+> Reminder due this afternoon.
+>
+> **Would you like an update?**
 
----
-
-## Related Pages
-
-- `pricing_copy.md` — detailed subscription and Points pricing
-- `explore_copy.md` — 45 service categories with descriptions
-- `how_it_works_copy.md` — this document
+External channels are ways of reaching you, not separate Kurukoo assistants. Availability depends on the channel being configured and independently verified.
 
 ---
 
-*Last updated: 2026-07-31*
+## 8. If Kurukoo needs your permission
+
+**Section headline:**
+You stay in control.
+
+Kurukoo should ask for permission when access to a device, location, microphone, notifications, contacts, account, payment, external communication or consequential action genuinely requires it.
+
+Permission should be requested when it becomes useful, not collected simply because Kurukoo might need it later.
+
+For important actions, Kurukoo should make clear:
+
+- what it wants to do;
+- why it needs to do it;
+- what will happen;
+- what it cannot establish;
+- and what you can choose instead.
+
+---
+
+## 9. For people who provide help
+
+**Section headline:**
+Kurukoo can bring work to you too.
+
+Providers, businesses, contributors and other participants can describe what they can do. When a user needs that capability, Kurukoo can help coordinate the request and keep the relevant conversation and evidence together.
+
+Providers can also use Kurukoo to help carry out work, understand a customer's requirements, follow appropriate instructions, record progress and return useful evidence.
+
+The provider experience is part of the same service; it is not a disconnected marketplace workflow.
+
+---
+
+## 10. For people running Kurukoo
+
+The internal operator experience is different from the consumer experience. Admin and operations surfaces should expose the detail needed to run the service: requests, lifecycle state, agents, tools, connected resources, providers, evidence, permissions, failures, external integrations, notifications, audits, recovery and deployment status.
+
+Those surfaces operate on the same underlying Kurukoo state and are not another consumer product.
+
+---
+
+## FAQ
+
+### What can I ask Kurukoo to do?
+Start with what you need. Kurukoo can help with everyday questions and tasks, devices and technology, services, providers, purchases, travel, reminders, discovery, connected resources and other supported needs. Its capabilities grow through the same service rather than requiring a separate app for every category.
+
+### Can Kurukoo fix my device?
+Sometimes. If the device exposes the information and controls needed, Kurukoo can diagnose and safely resolve some problems. If the problem requires physical repair or another capability it does not have, Kurukoo can help you find someone who can.
+
+### Does Kurukoo know what device I am using?
+It can use device information that the current client, operating system and permissions make available. It should not claim access to information that the platform does not expose.
+
+### Does Kurukoo always need a human provider?
+No. Kurukoo should help directly when it can. A person or external service is brought in when the task genuinely requires one or when you choose that route.
+
+### Will Kurukoo remember things?
+When you choose to keep useful information in your profile, Kurukoo can use it to make future conversations and tasks more helpful. You remain in control of that information.
+
+### What if Kurukoo cannot do something?
+It should say so clearly, explain what it was able to establish, and offer the best available next step rather than pretending that the task was completed.
+
+### How will I know when something happens?
+Kurukoo can show updates in Chat and, where configured and permitted, use supported notifications or external channels. When you return, the same work can be continued from its canonical state.
