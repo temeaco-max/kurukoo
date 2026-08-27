@@ -1,0 +1,52 @@
+name: Provider SMS Loop
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - src/channels/sms.ts
+      - src/index.ts
+      - src/services/agenticStorefront.ts
+      - src/services/canonicalFulfilmentService.ts
+      - src/services/channelDeliveryState.ts
+      - scripts/test-africastalking-sms-callback.ts
+      - scripts/test-fulfilment-storefront-integration.ts
+      - package.json
+      - package-lock.json
+      - .github/workflows/provider-sms-loop.yml
+  push:
+    branches: [main]
+    paths:
+      - src/channels/sms.ts
+      - src/index.ts
+      - src/services/agenticStorefront.ts
+      - src/services/canonicalFulfilmentService.ts
+      - src/services/channelDeliveryState.ts
+      - scripts/test-africastalking-sms-callback.ts
+      - scripts/test-fulfilment-storefront-integration.ts
+      - package.json
+      - package-lock.json
+      - .github/workflows/provider-sms-loop.yml
+
+permissions:
+  contents: read
+
+jobs:
+  provider-sms-loop:
+    name: provider-sms-loop
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify configured callback routes
+        run: npm run test:africastalking-sms-callback
+      - name: Verify provider request-to-outcome loop
+        run: npm run test:fulfilment-storefront-integration
+      - name: Type-check changed integration
+        run: npm run lint
