@@ -83,6 +83,7 @@ export const SKILL_BEHAVIOUR_PACKS: Record<string, SkillBehaviourPack> = {
       'If direct remediation is available and safe, offer or perform it with the appropriate user authorisation and verify the result afterwards.',
       'If direct remediation is unavailable or unsafe, explain what was established and offer the next best path, including a provider where appropriate.',
       'Carry diagnostic evidence and user-approved context into any downstream repair/provider request.',
+      'When a human provider takes over, Kurukoo may act as a repair copilot: present the known symptoms and evidence, guide the provider through the appropriate diagnostic/repair instructions, capture progress and evidence, and return a clear outcome to the user. The provider remains responsible for physical actions that require their judgement, authorization or professional competence.',
     ],
   },
   repair: {
@@ -118,6 +119,7 @@ export const SKILL_BEHAVIOUR_PACKS: Record<string, SkillBehaviourPack> = {
       'Do not reduce repair to a phone-only experience. Treat phones, tablets, computers, TVs, printers, routers, cameras, appliances, connected devices and other repairable assets as valid requests when the available system can support them.',
       'When Kurukoo has enough evidence to solve the problem itself, solve it before offering a provider.',
       'When a provider is necessary, hand over the problem, known device information and diagnostic evidence so the user does not repeat the same intake.',
+      'Kurukoo can guide a provider through diagnostic and repair instructions, collect evidence and keep the user informed while the provider performs the physical work.',
       'Do not promise a repair, price, part, arrival time or completion until the relevant provider or execution evidence exists.',
     ],
   },
@@ -137,7 +139,7 @@ export const SKILL_BEHAVIOUR_PACKS: Record<string, SkillBehaviourPack> = {
     ],
     completionEvidence: ['intake condition', 'prior diagnostic evidence where available', 'repair action/diagnosis', 'parts or service record', 'functional test result', 'collection/return confirmation where applicable', 'customer completion confirmation'],
     failureModes: ['no compatible part', 'no provider today', 'collection unavailable', 'repair exceeds quoted scope', 'device condition changes', 'return window missed', 'provider cancellation'],
-    instructions: [...COMMON, 'For broken screens, ask model and location only when needed; do not assume genuine or compatible parts until the user chooses or the provider quotes them.', 'For liquid damage, advise against powering/charging when appropriate and route to diagnosis rather than promising a repair.', 'If pickup and return are requested, treat logistics as part of the same outcome rather than a separate unrelated conversation.', 'Preserve customer privacy: do not request passcodes unless the provider workflow explicitly requires a test state and the user understands the implications.', 'If Kurukoo has already diagnosed the device, do not make the user repeat the diagnosis; carry the evidence into the provider handoff.'],
+    instructions: [...COMMON, 'For broken screens, ask model and location only when needed; do not assume genuine or compatible parts until the user chooses or the provider quotes them.', 'For liquid damage, advise against powering/charging when appropriate and route to diagnosis rather than promising a repair.', 'If pickup and return are requested, treat logistics as part of the same outcome rather than a separate unrelated conversation.', 'Preserve customer privacy: do not request passcodes unless the provider workflow explicitly requires a test state and the user understands the implications.', 'If Kurukoo has already diagnosed the device, do not make the user repeat the diagnosis; carry the evidence into the provider handoff.', 'Where the provider workflow supports it, Kurukoo can guide the technician through diagnostic steps and capture the repair evidence needed to close the user’s outcome.'],
   },
   hotel_booking: {
     skill: 'hotel_booking',
