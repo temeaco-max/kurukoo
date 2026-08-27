@@ -45,8 +45,8 @@ for (const [label, href] of [
   ['Channels', '/channels'],
 ] as const) assert.ok(app.includes(`href="${href}"`), `${label} must retain the canonical destination ${href}`);
 
-assert.match(app, /<form class="k-reference-header-search" id="k-reference-header-search" action="\/discover" method="get" role="search">/, 'header search must be a real accessible form that hands queries to Discover');
-assert.match(app, /id="k-reference-header-search-input" name="q" type="search"/, 'header search must expose a named query input rather than a decorative link');
+assert.match(app, /<form class="k-reference-header-search" id="k-reference-header-search" action="\/chat" method="get" role="search" data-agent-command>/, 'header command must be a real accessible form that hands tasks to Agent');
+assert.match(app, /id="k-reference-header-search-input" name="prompt" type="search" placeholder="Ask Kurukoo anything…"/, 'header command must expose an Agent prompt input rather than a decorative or Discover-bound link');
 assert.match(app, /id="header-nearby-radar" href="\/discover\?view=nearby#nearby-radar"/, 'header Nearby Radar must open the approximate discovery surface');
 assert.match(app, /id="radar-toggle" class="radar-toggle is-active" aria-label="Open Nearby Radar"/, 'Agent-side Nearby Radar must be an explicit discovery handoff, not an invisible local switch');
 assert.ok(!app.includes('id="header-call"'), 'global Call must not appear without a confirmed conversation participant');
@@ -79,6 +79,9 @@ for (const marker of [
 
 assert.ok(workspaceRuntime.includes('referenceMobileMore'), 'mobile More control must be managed by the shared workspace runtime');
 assert.ok(!appShellRuntime.includes('k-feature-compass'), 'shared runtime must not revive the retired feature compass panel');
+assert.ok(appShellRuntime.includes('wireAgentCommand'), 'shared runtime must own the header Agent command behavior');
+assert.ok(appShellRuntime.includes("event.key.toLowerCase()==='k'"), 'shared runtime must retain the Agent command keyboard shortcut');
+assert.ok(appShellRuntime.includes("window.location.assign('/chat')"), 'the Agent command handoff must retain the canonical Agent destination');
 assert.ok(appShellRuntime.includes('k-ask-kurukoo-launcher'), 'shared runtime must restore the standalone Ask Kurukoo launcher');
 assert.ok(appShellRuntime.includes("window.location.assign('/chat')"), 'Ask Kurukoo launcher must route to the canonical Agent surface outside Chat');
 assert.ok(primaryChatRuntime.includes('renderProviderConversationCard'), 'provider messaging/calling controls must render only from the exact selected-provider conversation context');

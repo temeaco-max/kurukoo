@@ -19,7 +19,7 @@
   <% if (section === 'tasks') { %>
   <link rel="stylesheet" href="/css/kurukoo-tasks-convergence.css?v=1">
   <% } %>
-  <link rel="stylesheet" href="/css/kurukoo-product-os-revamp.css?v=2">
+  <link rel="stylesheet" href="/css/kurukoo-product-os-revamp.css?v=4">
   <script src="/js/fcm-client.js?v=routes2" defer></script>
 </head>
 <body class="k-app-page workspace-page k-app-section-<%= section %><%= section === 'chat' ? ' kurukoo-chat-page' : '' %>" data-workspace-section="<%= section %>" data-app-section="<%= section %>" data-display-name="<%= displayName %>">
@@ -31,8 +31,8 @@
         <a href="/desk" class="k-app-brand k-reference-brand" aria-label="Open your Kurukoo Desk"><img src="/assets/brand/logo-icon.png" alt="" width="28" height="28"><span>Kurukoo</span></a>
         <a class="k-reference-agent-switcher" href="/chat" aria-label="Open Agent workspace" title="Open Agent"><span class="k-reference-agent-mark"><img src="/assets/brand/logo-icon.png" alt="" width="18" height="18"></span><span><strong>Agent</strong><small>Coordinate what matters</small></span><%- icon('more') %></a>
       </div>
+      <form class="k-reference-header-search" id="k-reference-header-search" action="/chat" method="get" role="search" data-agent-command><%- icon('sparkles') %><label class="sr-only" for="k-reference-header-search-input">Ask Kurukoo anything</label><input id="k-reference-header-search-input" name="prompt" type="search" placeholder="Ask Kurukoo anything…" autocomplete="off"><kbd aria-hidden="true">⌘ K</kbd><button type="submit" aria-label="Continue with Agent" title="Continue with Agent"><%- icon('arrow-right') %></button></form>
       <div class="k-app-header-actions k-reference-header-actions">
-        <form class="k-reference-header-search" id="k-reference-header-search" action="/discover" method="get" role="search"><%- icon('search') %><label class="sr-only" for="k-reference-header-search-input">Search Kurukoo</label><input id="k-reference-header-search-input" name="q" type="search" placeholder="Search Kurukoo" autocomplete="off"><button type="submit" aria-label="Search Kurukoo" title="Search Kurukoo"><%- icon('arrow-right') %></button></form>
         <a class="k-reference-header-control" id="header-nearby-radar" href="/discover?view=nearby#nearby-radar" aria-label="Open Nearby Radar" title="Nearby Radar"><span class="k-reference-control-icon"><%- icon('radar') %><span class="k-reference-radar-pulse" aria-hidden="true"></span></span><span class="k-reference-control-label">Nearby</span></a>
         <% if (section === 'chat') { %>
         <button class="k-reference-header-control k-reference-new-conversation" id="new-chat" type="button" aria-label="Start a new conversation" title="New conversation"><%- icon('chat') %><span class="k-reference-control-label">New</span></button>
@@ -204,7 +204,7 @@
   <% if (section === 'tasks') { %>
   <script src="/js/kurukoo-tasks-convergence.js?v=1" defer></script>
   <% } %>
-  <script src="/js/kurukoo-app-shell.js?v=5" defer></script>
+  <script src="/js/kurukoo-app-shell.js?v=6" defer></script>
   <% if (section === 'call') { %>
   <script src="/js/kurukoo-call.js?v=2" defer></script>
   <% } %>
@@ -213,7 +213,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.11.1/highlight.min.js" async></script>
   <script src="/js/kurukoo-speech-output.js?v=1" defer></script>
   <script src="/js/kurukoo-agent-presence.js?v=1" defer></script>
-  <script src="/js/kurukoo-primary-chat.js?v=22" defer></script>
+  <script src="/js/kurukoo-primary-chat.js?v=23" defer></script>
   <script type="module" src="/js/kurukoo-voice.js?v=1"></script>
   <script src="/js/kurukoo-qr.js?v=1" defer></script>
   <script src="/js/kurukoo-pwa.js?v=6" defer></script>

@@ -2035,8 +2035,9 @@
   ensureIdentity().then(async ok => {
     applyWorkspaceIdentityState();
     if (ok) {
-      await registerCurrentDeviceTrust();
-      await refreshHistory();
+      const historyReady = refreshHistory();
+      void registerCurrentDeviceTrust();
+      await historyReady;
       await Promise.all([loadPoints(), loadMemory(), loadNotifications(), loadTaskContext(), loadReminders(), loadSafety(), loadAgentGoal()]);
     loadProactiveInspector();
     loadNearbyInspector(state.surfaceView);

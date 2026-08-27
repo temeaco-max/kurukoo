@@ -345,18 +345,32 @@ body.k-app-page .pwa-status-region:empty { display: none !important; }
   body.k-app-page .k-settings-grid { grid-template-columns: 1fr; }
   body.k-app-page .k-settings-card { min-height: 110px; }
 
-  body.k-app-page.k-app-section-chat .k-app-main { height: calc(100dvh - 60px - 64px); margin-top: 60px; padding-top: 0; }
-  body.k-app-page.k-app-section-chat .k-chat-workspace.chat-main { height: 100%; padding-bottom: 118px; }
+  body.k-app-page.k-app-section-chat .k-app-main { min-height: calc(100dvh - 60px - 64px); height: calc(100dvh - 60px - 64px); margin-top: 60px; padding-top: 0; }
+  body.k-app-page.k-app-section-chat .k-chat-workspace.chat-main {
+    box-sizing: border-box;
+    grid-template-rows: 52px minmax(0, 1fr) auto;
+    height: 100%;
+    padding-bottom: 0;
+  }
   body.k-app-page.k-app-section-chat .k-chat-subheader { min-height: 52px; padding: 0 16px; }
   body.k-app-page.k-app-section-chat .k-chat-subheader-status { display: none; }
-  body.k-app-page.k-app-section-chat .chat-scroll { height: calc(100% - 52px); padding-bottom: 118px; }
+  body.k-app-page.k-app-section-chat .chat-scroll { height: auto; min-height: 0; padding-bottom: 0; }
   body.k-app-page.k-app-section-chat .chat-content { padding: 31px 20px 24px; }
   body.k-app-page.k-app-section-chat .welcome-logo { width: 31px; height: 31px; }
   body.k-app-page.k-app-section-chat .welcome h1 { font-size: 31px; }
   body.k-app-page.k-app-section-chat .welcome p { font-size: 14px; }
   body.k-app-page.k-app-section-chat .quick-actions { display: grid; grid-template-columns: 1fr; }
   body.k-app-page.k-app-section-chat .quick-actions button { justify-content: flex-start; min-height: 44px; }
-  body.k-app-page.k-app-section-chat .composer-wrap { position: absolute !important; right: 0; bottom: 0; left: 0; z-index: 25; width: 100%; padding: 8px 12px 12px; }
+  body.k-app-page.k-app-section-chat .composer-wrap {
+    position: relative !important;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    z-index: 1;
+    box-sizing: border-box;
+    width: 100%;
+    padding: 8px 12px 10px;
+  }
   body.k-app-page.k-app-section-chat .composer-quick-actions { display: none; }
   body.k-app-page.k-app-section-chat .chat-inspector { top: 60px !important; height: calc(100dvh - 60px); }
   body.k-app-page.k-app-section-chat .pwa-status-region { top: 68px !important; right: 12px !important; left: 12px !important; bottom: auto !important; }
@@ -511,3 +525,242 @@ body.k-app-page.k-app-section-desk .k-desk-flow-quiet {
 }
 body.k-app-page.k-app-section-desk .k-desk-flow-quiet strong { color: var(--kr-ink); font-size: 12px; }
 body.k-app-page.k-app-section-desk .k-desk-flow-quiet span { font-size: 11px; line-height: 1.45; }
+
+/* Workspace composition authority — shared high-density operating canvas. */
+body.k-app-page {
+  --kr-workspace-green: #133f39;
+  --kr-workspace-green-strong: #0d302b;
+  --kr-workspace-mint: #e5f1ec;
+  --kr-workspace-paper: #faf9f5;
+  --kr-workspace-line: #e7e5dd;
+  background: var(--kr-workspace-paper);
+}
+body.k-app-page .k-reference-shell {
+  grid-template-columns: 224px minmax(0, 1fr) 304px;
+  background: var(--kr-workspace-paper);
+}
+body.k-app-page .k-reference-app-header {
+  display: grid;
+  grid-template-columns: minmax(252px, 1fr) minmax(340px, 500px) auto;
+  gap: 20px;
+  min-height: 66px;
+  height: 66px;
+  padding: 0 24px;
+  border-bottom-color: var(--kr-workspace-line);
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 1px 0 rgba(25, 35, 31, .025);
+}
+body.k-app-page .k-reference-header-start { gap: 12px; }
+body.k-app-page .k-reference-brand { color: var(--kr-workspace-green); font-size: 17px; letter-spacing: -.04em; }
+body.k-app-page .k-reference-brand img { width: 29px; height: 29px; }
+body.k-app-page .k-reference-agent-switcher { min-width: 154px; }
+body.k-app-page .k-reference-agent-mark { background: #e9754d; }
+body.k-app-page .k-reference-header-search {
+  grid-column: 2;
+  justify-self: stretch;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 8px 0 14px;
+  border-color: #e5e3da;
+  border-radius: 11px;
+  background: #fbfaf7;
+  box-shadow: 0 2px 10px rgba(22, 41, 35, .035);
+}
+body.k-app-page .k-reference-header-search > .k-app-icon { color: #7b817b; }
+body.k-app-page .k-reference-header-search input { font-size: 12px; font-weight: 560; }
+body.k-app-page .k-reference-header-search kbd {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 6px;
+  border: 1px solid #e2e0d8;
+  border-radius: 5px;
+  color: #87877f;
+  background: #fff;
+  font: 700 9px/1 Inter, sans-serif;
+}
+body.k-app-page .k-reference-header-search button { color: var(--kr-workspace-green); }
+body.k-app-page .k-reference-header-actions { grid-column: 3; margin-left: 0; gap: 2px; }
+body.k-app-page .k-reference-header-control:hover,
+body.k-app-page .k-reference-header-control:focus-visible { color: var(--kr-workspace-green); border-color: #d5e2da; background: #eff6f2; }
+body.k-app-page .k-reference-account-button { color: var(--kr-workspace-green); background: #eef5f1; border-color: #dbeae2; }
+
+body.k-app-page .k-reference-sidebar {
+  padding: 18px 12px 24px;
+  border-right: 0;
+  background: linear-gradient(180deg, var(--kr-workspace-green), var(--kr-workspace-green-strong));
+  color: rgba(255, 255, 255, .84);
+}
+body.k-app-page .k-reference-sidebar .k-app-sidebar-label { color: rgba(255, 255, 255, .48); }
+body.k-app-page .k-reference-sidebar .k-app-divider { background: rgba(255, 255, 255, .12); }
+body.k-app-page .k-reference-sidebar .k-app-nav a {
+  position: relative;
+  min-height: 42px;
+  margin: 2px 0;
+  border: 0;
+  border-radius: 9px;
+  color: rgba(255, 255, 255, .76);
+  font-size: 12px;
+  font-weight: 680;
+}
+body.k-app-page .k-reference-sidebar .k-app-nav a .k-app-icon { color: #afc9c0; }
+body.k-app-page .k-reference-sidebar .k-app-nav a:hover { color: #fff; background: rgba(255, 255, 255, .09); }
+body.k-app-page .k-reference-sidebar .k-app-nav a.active { color: #fff; background: rgba(255, 255, 255, .16); }
+body.k-app-page .k-reference-sidebar .k-app-nav a.active::after { content: ''; position: absolute; top: 10px; right: -12px; width: 3px; height: 22px; border-radius: 3px 0 0 3px; background: #f37952; }
+body.k-app-page .k-reference-sidebar .k-app-nav a.active .k-app-icon { color: #fff; }
+body.k-app-page .k-reference-sidebar .k-reference-conversation-nav { margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, .12); }
+body.k-app-page .k-reference-sidebar .k-app-sidebar-section-head { color: rgba(255, 255, 255, .56); }
+body.k-app-page .k-reference-sidebar .k-app-sidebar-text { color: #bde1d4; }
+body.k-app-page .k-reference-sidebar .k-app-history-list button,
+body.k-app-page .k-reference-sidebar .k-app-history-list a { color: rgba(255, 255, 255, .72); }
+body.k-app-page .k-reference-sidebar .k-app-history-list button:hover,
+body.k-app-page .k-reference-sidebar .k-app-history-list a:hover { color: #fff; background: rgba(255, 255, 255, .1); }
+body.k-app-page .k-reference-sidebar .k-app-sidebar-radar { border-color: rgba(144, 209, 178, .25); background: rgba(218, 248, 233, .1); }
+body.k-app-page .k-reference-sidebar .radar-toggle strong { color: #fff; }
+body.k-app-page .k-reference-sidebar .radar-toggle small { color: #bde1d4; }
+body.k-app-page .k-reference-sidebar .k-app-sidebar-advertise { border-color: rgba(247, 181, 153, .5); color: #ffd5c6; }
+
+body.k-app-page .k-app-main { background: var(--kr-workspace-paper); }
+body.k-app-page .k-app-container { width: min(100%, 1320px); padding: 34px clamp(28px, 4vw, 64px) 70px; }
+body.k-app-page .k-app-title-row { align-items: flex-end; gap: 24px; margin-bottom: 24px; }
+body.k-app-page .k-app-eyebrow,
+body.k-app-page .k-app-card-label { color: #777d76; font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+body.k-app-page .k-app-title-row h1 { max-width: 18ch; color: #1f302b; font-size: clamp(32px, 3.1vw, 46px); line-height: 1.02; letter-spacing: -.055em; }
+body.k-app-page .k-app-title-row p { max-width: 62ch; color: #6f746e; font-size: 13px; line-height: 1.58; }
+body.k-app-page .k-app-primary { min-height: 42px; border-radius: 9px; background: #e9754d; box-shadow: none; }
+body.k-app-page .k-app-primary:hover { background: #d96641; }
+body.k-app-page .k-app-grid { gap: 16px; }
+body.k-app-page .k-app-card,
+body.k-app-page .k-request-workspace,
+body.k-app-page .k-task-workspace,
+body.k-app-page .k-connect-workspace { border-color: var(--kr-workspace-line); border-radius: 14px; background: #fff; box-shadow: 0 5px 18px rgba(21, 42, 35, .035); }
+body.k-app-page .k-app-card:hover { border-color: #d7e4dd; box-shadow: 0 8px 24px rgba(21, 42, 35, .06); }
+body.k-app-page .k-app-card h2,
+body.k-app-page .k-request-workspace h2,
+body.k-app-page .k-task-workspace h2,
+body.k-app-page .k-connect-workspace h2 { color: #21342e; letter-spacing: -.035em; }
+body.k-app-page .k-app-card p { color: #6f746e; line-height: 1.55; }
+body.k-app-page .k-reference-context-rail { border-left-color: var(--kr-workspace-line); background: #fdfcf9; }
+body.k-app-page .k-reference-rail-card { border-color: var(--kr-workspace-line); border-radius: 12px; box-shadow: none; }
+
+/* Preserve a compact, command-first header where the phone tab bar owns primary navigation. */
+@media (max-width: 1180px) {
+  body.k-app-page .k-reference-app-header { grid-template-columns: minmax(190px, 1fr) minmax(206px, 310px) auto; gap: 12px; padding-inline: 16px; }
+  body.k-app-page .k-reference-header-search { min-width: 0; }
+  body.k-app-page .k-reference-header-search kbd { display: none; }
+}
+@media (max-width: 1024px) {
+  body.k-app-page .k-reference-app-header { display: flex; min-height: 60px; height: 60px; }
+  body.k-app-page .k-reference-header-search { flex: 1 1 230px; width: auto; max-width: 360px; margin-left: auto; }
+  body.k-app-page .k-reference-sidebar { background: var(--kr-workspace-green); }
+}
+@media (max-width: 767px) {
+  /* Phones retain the command and primary contact controls; supporting account routes remain available from More and the account menu. */
+  body.k-app-page .k-reference-app-header {
+    display: flex;
+    min-width: 0;
+    gap: 6px;
+    padding-inline: 10px;
+  }
+  body.k-app-page .k-reference-header-start { flex: 0 0 auto; gap: 7px; }
+  body.k-app-page .k-reference-brand { display: inline-flex; width: 29px; overflow: hidden; }
+  body.k-app-page .k-reference-brand span,
+  body.k-app-page .k-reference-agent-switcher { display: none; }
+  body.k-app-page .k-reference-header-search {
+    flex: 1 1 0;
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    min-height: 40px;
+    margin-left: 0;
+    padding-left: 10px;
+  }
+  body.k-app-page .k-reference-header-search > .k-app-icon,
+  body.k-app-page .k-reference-header-search kbd { display: none; }
+  body.k-app-page .k-reference-header-search input { min-width: 0; font-size: 11px; }
+  body.k-app-page .k-reference-header-actions { flex: 0 0 auto; gap: 0; }
+  body.k-app-page .k-reference-header-control { min-width: 34px; min-height: 38px; padding-inline: 5px; }
+  body.k-app-page #header-notifications,
+  body.k-app-page #header-points,
+  body.k-app-page #header-cart { display: none; }
+  body.k-app-page .k-reference-account-button { width: 32px; min-width: 32px; height: 32px; min-height: 32px; margin-left: 0; }
+  body.k-app-page .k-reference-sidebar .k-app-nav a.active::after { right: -12px; }
+  body.k-app-page .k-app-container { padding: 26px 18px 98px; }
+  body.k-app-page .k-app-title-row h1 { max-width: none; font-size: 31px; }
+  body.k-app-page .k-app-card,
+  body.k-app-page .k-request-workspace,
+  body.k-app-page .k-task-workspace,
+  body.k-app-page .k-connect-workspace { border-radius: 12px; }
+}
+@media (max-width: 360px) {
+  body.k-app-page #header-nearby-radar { display: none; }
+  body.k-app-page .k-reference-header-search input::placeholder { color: transparent; }
+  body.k-app-page .k-reference-header-search input:focus::placeholder { color: var(--kr-muted); }
+}
+
+/* The Desk brief is an introduction, not another task card. */
+body.k-app-page.k-app-section-desk .k-desk-module.is-hero {
+  min-height: 0;
+  padding: 8px 0 24px;
+  border: 0;
+  border-bottom: 1px solid var(--kr-workspace-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+body.k-app-page.k-app-section-desk .k-desk-module.is-hero .k-desk-module-kicker { color: #6f7b72; }
+body.k-app-page.k-app-section-desk .k-desk-module.is-hero h2 {
+  max-width: 14ch;
+  margin-top: 8px;
+  color: #18362f;
+  font-size: clamp(31px, 3vw, 45px);
+  line-height: 1.02;
+  letter-spacing: -.06em;
+}
+body.k-app-page.k-app-section-desk .k-desk-module.is-hero > p { max-width: 54ch; font-size: 14px; line-height: 1.55; }
+body.k-app-page.k-app-section-desk .k-desk-module.is-hero .k-desk-actions { margin-top: 18px; }
+body.k-app-page.k-app-section-desk .k-desk-module.is-hero .k-desk-actions a { border-radius: 8px; background: #e9754d; }
+body.k-app-page.k-app-section-desk .k-desk-module.is-hero .k-desk-presence { margin-top: 18px; border-color: #d8e8df; background: #f4faf7; }
+@media (max-width: 767px) {
+  body.k-app-page.k-app-section-desk .k-desk-module.is-hero { padding: 2px 0 20px; }
+  body.k-app-page.k-app-section-desk .k-desk-module.is-hero h2 { font-size: 31px; }
+}
+
+/* Desktop Agent must be a bounded conversation panel, not an unbounded document with a detached composer. */
+@media (min-width: 1025px) {
+  body.k-app-page .k-reference-shell { height: 100dvh; min-height: 100dvh; grid-template-rows: 66px minmax(0, 1fr) !important; }
+  body.k-app-page.k-app-section-chat .k-app-main { height: calc(100dvh - 66px); min-height: 0; }
+  body.k-app-page.k-app-section-chat .k-chat-workspace.chat-main { min-height: 0; }
+  body.k-app-page.k-app-section-chat .chat-scroll { min-height: 0; overscroll-behavior: contain; }
+  body.k-app-page.k-app-section-chat .chat-content,
+  body.k-app-page.k-app-section-chat .composer-wrap { margin-inline: auto; }
+}
+
+/* Fixed Agent rail: conversation history must never overflow horizontally. */
+body.k-app-page .k-reference-sidebar #history-list {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden !important;
+  overscroll-behavior-inline: none;
+}
+body.k-app-page .k-reference-sidebar #history-list .history-item {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+body.k-app-page .k-reference-sidebar #history-list .history-title {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body.k-app-page .k-reference-sidebar #history-list .history-item.active,
+body.k-app-page .k-reference-sidebar #history-list .history-item.active .history-title {
+  color: #273b33;
+}
