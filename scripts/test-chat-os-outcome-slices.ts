@@ -181,6 +181,14 @@ assert.equal(repairRequest?.requirements.collection_address, '12 Allen Avenue in
 assert.equal(repairRequest?.requirements.delivery_address, '14 Allen Avenue', 'Repair coordination must retain the requested return address.');
 assert.equal(repairRequest?.requirements.diagnostic_authorization, 'diagnosis_before_repair', 'Repair coordination must retain the customer’s diagnostic authorization.');
 
+const eventRental = await routeIntent('Rent a PA system for a wedding in Yaba next Saturday.', makeDomainPhone(44), undefined, createContext, `${conversationId}-event-rental`);
+assert.equal(eventRental.skill, 'public_address_system', 'Ordinary event equipment language must enter the shared booking outcome rather than generic conversation.');
+assert.equal(eventRental.cardData?.type, 'agentic_storefront');
+const eventRentalRequest = await getEconomicRequest(eventRental.cardData?.requestId || '');
+assert.match(String(eventRentalRequest?.requirements.objective || ''), /PA system/i, 'Event equipment outcome must retain the user’s stated objective.');
+assert.equal(eventRentalRequest?.requirements.location, 'Yaba', 'Event equipment outcome must retain the stated venue area.');
+assert.match(String(eventRentalRequest?.requirements.timing || ''), /next Saturday/i, 'Event equipment outcome must retain the stated timing without treating it as a reservation.');
+
 for (const [offset, message, firstSkill] of [
   [61, 'I need somewhere to stay next week.', 'hotel_deals'],
   [67, 'Sort out my internet.', 'wifi_installer'],
