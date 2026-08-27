@@ -74,6 +74,7 @@ assert.equal(untilDoneReminder.cardData?.status, 'needs_user');
 const plumber = await routeIntent('Find me a plumber tomorrow', makeDomainPhone(17), undefined, createContext, `${conversationId}-plumber`);
 assert.equal(plumber.skill, 'find_worker');
 assert.equal(plumber.cardData?.type, 'agentic_storefront');
+assert.match(String((await getEconomicRequest(plumber.cardData?.requestId || ''))?.requirements.task_scope || ''), /plumber tomorrow/i, 'Worker discovery must retain the user’s natural task scope for later provider coordination.');
 
 const food = await routeIntent('Find me a good place to eat nearby', makeDomainPhone(23), undefined, createContext, `${conversationId}-food`);
 assert.equal(food.skill, 'order_food');
