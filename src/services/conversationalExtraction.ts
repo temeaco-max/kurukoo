@@ -1,4 +1,5 @@
 import { getKnownSkills } from './skillFlows.js';
+import { detectUserOutcomeVerb, type UserOutcomeVerb } from './outcomeSupport.js';
 
 export interface ConversationalEntities {
   intent?: string;
@@ -13,6 +14,12 @@ export interface ConversationalEntities {
   delivery?: boolean;
   preferences?: string[];
   provider?: string;
+  outcomeVerb?: UserOutcomeVerb;
+  subject?: string;
+  device?: string;
+  deviceModel?: string;
+  issue?: string;
+  network?: string;
   requestContext?: string;
 }
 
@@ -24,6 +31,8 @@ const SKILL_ALIASES: Array<[RegExp, string]> = [
   [/\bclean(?:er|ing)?\b/i, 'cleaner'],
   [/\b(?:taxi|cab|ride|uber)\b/i, 'ride_request'],
   [/\b(?:jollof|fried rice|rice|yam|plantain|food|meal|groceries)\b/i, 'order_food'],
+  [/\b(?:wifi|wi-fi|internet|router|broadband)\b/i, 'wifi_installer'],
+  [/\b(?:phone|mobile|iphone|android|tablet|ipad|laptop|computer|pc|macbook|watch|smartwatch|printer|tv|television|camera|router)\b/i, 'support_triage'],
 ];
 
 function clean(value: string | undefined): string | undefined {
@@ -63,6 +72,19 @@ function parseProduct(text: string): string | undefined {
   return clean(match?.[1]);
 }
 
+function parseDevice(text: string): { device?: string; deviceModel?: string } {
+  const model = text.match(/\b(?:iphone|ipad|macbook|galaxy|pixel|surface|thinkpad|playstation|xbox)\s*[A-Za-z0-9 .-]{0,30}?\b(?:\d{1,4}|pro|max|ultra|air|mini)\b/i)?.[0];
+  const device = text.match(/\b(?:phone|mobile|iphone|android|tablet|ipad|laptop|computer|pc|macbook|desktop|watch|smartwatch|printer|tv|television|camera|router|modem|speaker|console|device)\b/i)?.[0];
+  return { device: clean(device), deviceModel: clean(model) };
+}
+
+function parseIssue(text: string): string | undefined {
+  const explicit = text.match(/\b(?:because|issue is|problem is|fault is|having trouble with|not working|won't|cant|can't)\s+(.+?)(?:[.!?]|$)/i)?.[1];
+  if (explicit) return clean(explicit);
+  const issue = text.match(/\b(?:slowly|slow|slower|freezing|frozen|crashing|overheating|hot|virus|malware|infected|broken|damaged|stuck|offline|disconnected|no internet|weak signal|not charging|won't charge|battery|storage full)\b[^.!?]*/i)?.[0];
+  return clean(issue);
+}
+
 const FOOD_ITEM_PATTERN = /\b(?:rice|yam|plantain|jollof|egusi|amala|ewedu|suya|bread|chicken|beans|noodles|meal|groceries?)\b/gi;
 
 export function extractFoodOrderSlots(text: string): { items?: string; location?: string; delivery?: boolean } {
@@ -95,9 +117,19 @@ export function extractConversationalEntities(text: string, intent?: string): Co
   const skill = SKILL_ALIASES.find(([pattern]) => pattern.test(query))?.[1] || getKnownSkills().find(candidate => query.toLowerCase().includes(candidate.replace(/_/g, ' ')));
   const dateTime = parseDateTime(query);
   const food = extractFoodOrderSlots(query);
+  const { device, deviceModel } = parseDevice(query);
+  const outcomeVerb = detectUserOutcomeVerb(query);
+  const subject = device || food.items;
+  const network = query.match(/\b(?:wifi|wi-fi|internet|router|modem|broadband|network|connection|signal)\b/i)?.[0];
   const entities: ConversationalEntities = {
     intent,
     skill,
+    outcomeVerb,
+    subject,
+    device,
+    deviceModel,
+    issue: parseIssue(query),
+    network: clean(network),
     location: parseLocation(query),
     date: dateTime.date,
     time: dateTime.time,
@@ -119,6 +151,11 @@ export function validateConversationalEntities(entities: ConversationalEntities,
   if (validated.location) validated.location = validated.location.slice(0, 80);
   if (validated.product) validated.product = validated.product.slice(0, 160);
   if (validated.items) validated.items = validated.items.slice(0, 160);
+  if (validated.subject) validated.subject = validated.subject.slice(0, 120);
+  if (validated.device) validated.device = validated.device.slice(0, 80);
+  if (validated.deviceModel) validated.deviceModel = validated.deviceModel.slice(0, 120);
+  if (validated.issue) validated.issue = validated.issue.slice(0, 240);
+  if (validated.network) validated.network = validated.network.slice(0, 80);
   if (validated.delivery !== undefined && typeof validated.delivery !== 'boolean') delete validated.delivery;
   if (validated.skill && validated.skill.length > 80) delete validated.skill;
   return validated;

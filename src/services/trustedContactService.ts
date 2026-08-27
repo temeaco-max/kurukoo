@@ -113,7 +113,7 @@ export async function createTrustedContactConsentRequest(ownerPhone: string, con
 
   if (channel === 'sms') {
     const result = await sendSmsText(contactData.phone, body);
-    deliveryState = result.ok ? 'accepted' : result.reason === 'sms_provider_not_configured' ? 'not_configured' : 'failed';
+    deliveryState = result.ok ? 'accepted' : result.provider === 'disabled' || result.reason === 'sms_provider_not_configured' || result.reason === 'sms_feature_disabled' ? 'not_configured' : 'failed';
     provider = result.provider;
   } else {
     const result = await sendEmail(String(recipientEmail).trim(), 'Kurukoo trusted-contact consent', body, { idempotencyKey: `trusted-contact-consent:${id}`, sensitive: true });

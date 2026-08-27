@@ -31,10 +31,10 @@ const deviceSupportRequests = [
 ];
 for (const prompt of deviceSupportRequests) {
   const result = await routeIntent(prompt, '+2348030000099');
-  const card = result.cardData as { type?: string; stage?: string; requestId?: string; message?: string } | undefined;
+  const card = result.cardData as { type?: string; stage?: string; status?: string; requestId?: string; message?: string } | undefined;
   assert.equal(result.skill, 'device_support', `Device troubleshooting must use the canonical device-support skill: ${prompt}`);
-  assert.equal(card?.type, 'agentic_storefront', `Device troubleshooting must use the existing canonical outcome card: ${prompt}`);
-  assert.equal(card?.stage, 'information', `Device troubleshooting must be information-first until escalation is required: ${prompt}`);
+  assert.equal(card?.type, 'device_support', `Device troubleshooting must use the canonical device-support card: ${prompt}`);
+  assert.ok(['needs_user', 'completed'].includes(String(card?.status)), `Device troubleshooting must remain information-first until evidence exists: ${prompt}`);
   assert.equal(card?.requestId, undefined, `Device troubleshooting must not create an Economic Request before physical work is established: ${prompt}`);
   assert.doesNotMatch(String(card?.message || ''), /I found .*provider|choose .*provider|provider options|quote|payment|booking/i, `Device troubleshooting must not prematurely claim or solicit provider work: ${prompt}`);
 }
