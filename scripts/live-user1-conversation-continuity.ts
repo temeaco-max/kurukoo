@@ -102,6 +102,13 @@ assert.ok((history.data.messages || []).length >= campaign.length * 2, 'not ever
 
 const joined = turns.map(turn => `${turn.reply}\n${JSON.stringify(turn.cardData)}\n${JSON.stringify(turn.diagnostics)}`).join('\n');
 assert.match(joined, /remember|memory|preference|area|Ikeja/i, 'memory stage produced no evidence');
+const economicRequestTurn = turns.find(turn => turn.stage === 'economic_request');
+assert.ok(economicRequestTurn, 'economic request stage missing from continuity evidence');
+assert.match(String(economicRequestTurn.reply || ''), /saved usual area/i, 'new request did not reuse the owner’s saved area');
+assert.doesNotMatch(String(economicRequestTurn.reply || ''), /still need:\s*Location or area/i, 'new request asked for a location already present in the owner memory profile');
+const truthCheckTurn = turns.find(turn => turn.stage === 'truth_check');
+assert.ok(truthCheckTurn, 'truth-check stage missing from continuity evidence');
+assert.match(String(truthCheckTurn.reply || ''), /Current state:|not confirmed/i, 'truth-check stage did not return a concrete state summary');
 assert.match(joined, /plumber|request|provider|availability/i, 'skill/request stage produced no evidence');
 assert.match(joined, /pause|resume|follow-up|agent/i, 'agent continuity stage produced no evidence');
 assert.match(joined, /remind|reminder/i, 'reminder stage produced no evidence');

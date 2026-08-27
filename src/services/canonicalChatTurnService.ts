@@ -98,6 +98,7 @@ function extractRequirementPatch(message: string, card: any, current: any): Reco
 
 async function continueActiveRequest(phone: string, conversationId: string | undefined, message: string, selectedRequestId?: string): Promise<{ reply: string; cardData: any; skill: string } | null> {
   const normalized = message.trim().toLowerCase();
+  const asksForTruthSummary = /\b(?:which parts are confirmed|what(?:'s| is) confirmed|what(?:'s| is) waiting|what still needs? an? external provider|what is the current state|where does this stand)\b/i.test(normalized);
   if (/^(remind me|cancel (the )?reminder|remember that|what do you remember|forget that|what notifications|show (my )?notifications|show (my )?reminders|what provider and model)\b/.test(normalized) || /\b(immediate danger|ambulance|fire service|life[- ]threatening|emergency)\b/.test(normalized) || /^(pause|resume|cancel that|cancel it|stop following|stop checking)\b/.test(normalized)) return null;
   if (!conversationId && !selectedRequestId) return null;
   const history = await listChatMessages(phone, selectedRequestId ? { limit: 100 } : { conversationId, limit: 60 });
@@ -111,6 +112,16 @@ async function continueActiveRequest(phone: string, conversationId: string | und
     if (!request || request.phone !== phone || ['completed', 'cancelled', 'abandoned', 'failed'].includes(request.status)) continue;
     if (/\b(?:the )?(?:cheaper|less expensive|lower[- ]priced|more affordable)\b|\b(?:lower|reduce|cut)\s+(?:the )?price\b/i.test(effectiveMessage)) { const current = await resumeStorefrontFromRequest(phone, request.id); if (current) return { reply: 'I’ll keep that price comparison attached to this exact request. I do not have two verified offers to compare yet, and I have not treated it as a location, provider, quote, payment, or fulfilment instruction.', cardData: { ...current, type: 'agentic_storefront', exactContext: true, canonicalAction: 'economic_request.price_reference_pending' }, skill: request.skill }; }
     const patch = extractRequirementPatch(effectiveMessage, card, request);
+    if (asksForTruthSummary) {
+      const current = await resumeStorefrontFromRequest(phone, request.id);
+      const missing = Array.isArray(current?.fields) ? current.fields.filter((field: any) => field?.required && !String(field.value || '').trim()).map((field: any) => String(field.label || field.key || 'required detail')) : [];
+      const waiting = missing.length ? `Still needed: ${missing.join(', ')}.` : 'The next external step is still waiting for verified provider availability or confirmation.';
+      return {
+        reply: `Current state: ${request.status}. ${waiting} Confirmed internally: your request and conversation context are recorded. External provider availability, price, dispatch and completion are not confirmed, and no payment has been taken.`,
+        cardData: { ...(current || {}), type: 'agentic_storefront', exactContext: true, canonicalAction: 'economic_request.truth_summary' },
+        skill: request.skill,
+      };
+    }
     if (request.skill === 'find_worker') {
       const workerCorrection = message.match(/\b(plumber|electrician|mechanic|carpenter|tailor|cleaner|clean|cleaning|housekeeping|technician|painter|decorator|tiler|roofer|mason|welder)\b/i)?.[1]?.toLowerCase();
       if (workerCorrection) patch.service = /^(?:clean|housekeep)/i.test(workerCorrection) ? 'house_cleaner' : workerCorrection;
@@ -184,7 +195,17 @@ export async function processCanonicalChatTurn(input: CanonicalChatTurnInput): P
       const contextSwitch = contextDecision && (contextDecision.relation === 'switch' || contextDecision.relation === 'create'); let continued: { reply: string; cardData: any; skill: string } | null = null;
       if (!compound && !controlCommand && !contextSwitch && contextDecision?.relation === 'resume' && contextDecision.selectedContext === 'economic_request') { const requestContextId = contextDecision.selectedContextId?.startsWith('request:') ? contextDecision.selectedContextId.slice('request:'.length) : undefined; const resumed = requestContextId ? await resumeStorefrontFromRequest(phone, requestContextId) : await tryResumeStorefront(phone); if (resumed) continued = { reply: resumed.stage === 'slot_fill' ? `I resumed the exact request. It remains safely paused while we complete the missing details: ${resumed.message}` : resumed.message, cardData: resumed, skill: resumed.skill }; }
       else if (!compound && !controlCommand && !contextSwitch) { const selectedRequestId = contextDecision?.selectedContextId?.startsWith('request:') ? contextDecision.selectedContextId.slice('request:'.length) : undefined; const affirmative = isAffirmativeConfirmation(message); if (selectedRequestId && affirmative) { const current = await resumeStorefrontFromRequest(phone, selectedRequestId); const required = Array.isArray(current?.fields) ? current.fields.filter((field: any) => field?.required && !String(field?.value || '').trim()).map((field: any) => String(field.label || field.key || 'required detail')) : []; const request = await getEconomicRequest(selectedRequestId); if (current && request && required.length) continued = { reply: `I have your confirmation, but I cannot dispatch or commit this exact request yet. It still needs: ${required.join(', ')}. No provider, payment, or fulfilment has been claimed.`, cardData: { ...current, type: 'agentic_storefront', exactContext: true, confirmationReceived: true, canonicalAction: 'economic_request.confirmation_blocked' }, skill: String(request.skill || current.skill || 'find_worker') }; else if (current && request && !['quoted', 'awaiting_confirmation', 'reserved', 'payment_pending', 'paid', 'in_fulfillment'].includes(String(request.status))) continued = { reply: 'I have your confirmation for the exact request, but there is no verified quote or authorized next action available yet. I have not dispatched, charged, or claimed fulfilment.', cardData: { ...current, type: 'agentic_storefront', exactContext: true, confirmationReceived: true, canonicalAction: 'economic_request.confirmation_blocked' }, skill: String(request.skill || current.skill || 'find_worker') }; else continued = await continueActiveRequest(phone, input.conversationId, message, selectedRequestId); } else continued = await continueActiveRequest(phone, input.conversationId, message, selectedRequestId); }
-      const routing: IntentRoutingResult = continued || await routeIntent(message, phone, undefined, compound ? undefined : contextDecision, input.conversationId);
+      let routing: IntentRoutingResult = continued || await routeIntent(message, phone, undefined, compound ? undefined : contextDecision, input.conversationId);
+      if (!isGuest && routing.cardData?.type === 'agentic_storefront' && typeof routing.cardData.requestId === 'string' && profile?.location) {
+        const missingLocation = Array.isArray(routing.cardData.fields)
+          && routing.cardData.fields.some((field: any) => field?.required && ['location', 'city', 'venue', 'venue_or_city'].includes(String(field.key || '').toLowerCase()) && !String(field.value || '').trim());
+        if (missingLocation) {
+          const assisted = await advanceStorefront(phone, String(routing.cardData.requestId), { location: String(profile.location).trim() });
+          if (assisted) {
+            routing = { ...routing, reply: `${assisted.message} I used your saved usual area, ${String(profile.location).trim()}. Tell me if this request is somewhere else.`, cardData: assisted, canonicalAction: 'economic_request.location_assisted_from_memory', progressStage: assisted.stage === 'slot_fill' ? 'understanding' : 'coordinating' };
+          }
+        }
+      }
       classificationSource = routing.classificationSource; intentConfidence = routing.intentConfidence; modelProvider = routing.modelProvider; model = routing.model; extractionSource = routing.extractionSource; extractedEntities = routing.extractedEntities; canonicalAction = routing.canonicalAction; progressStage = routing.progressStage; cardData = routing.cardData;
       const explicitAgentIntent = routing.skill === 'autonomous_agent' || /\b(keep checking|keep looking|monitor|watch for|tell me when|let me know when|check again)\b/i.test(message);
       agentGoal = compound?.parentGoal || (!isGuest && explicitAgentIntent ? await createConversationGoal({ phone, conversationId: userMessage.conversationId, skill: routing.skill, objective: message, economicRequestId: typeof cardData?.requestId === 'string' ? cardData.requestId : undefined, source: input.channel === 'web_qr' ? 'qr' : 'conversation' }) : null);
