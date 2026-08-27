@@ -37,7 +37,7 @@
   let verificationMode = 'phone';
   const testAuthEnabled = <%- JSON.stringify(Boolean(testAuth?.active && testAuth?.configured)) %>;
   if (testAuthEnabled) $('auth-test-banner').hidden = false;
-  const safeReturnTo = () => { try { const url = new URL(returnTo || '/desk', window.location.origin); return url.origin === window.location.origin && url.pathname.startsWith('/') ? `${url.pathname}${url.search}${url.hash}` : '/desk'; } catch (_) { return '/desk'; } };
+  const safeReturnTo = () => { try { const url = new URL(returnTo || '/chat', window.location.origin); return url.origin === window.location.origin && url.pathname.startsWith('/') ? `${url.pathname}${url.search}${url.hash}` : '/chat'; } catch (_) { return '/chat'; } };
   const setStep = step => {
     const steps = ['name','choice','magic','phone','code'];
     steps.forEach(s => $('auth-step-' + s).classList.toggle('active', s === step));

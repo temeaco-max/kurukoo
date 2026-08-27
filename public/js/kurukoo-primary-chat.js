@@ -1990,6 +1990,10 @@
   hydrateChatDeepLink();
   ensureIdentity().then(async ok => {
     applyWorkspaceIdentityState();
+    // The shell renders before the asynchronous session check completes. Re-render
+    // only an empty conversation after hydration so authenticated people never see
+    // the guest-only identity prompt.
+    if (ok && state.messages.length === 0) renderWelcome();
     if (ok) {
       await registerCurrentDeviceTrust();
       await refreshHistory();
