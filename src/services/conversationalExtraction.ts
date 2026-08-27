@@ -49,7 +49,7 @@ function parseBudget(text: string): number | undefined {
 }
 
 function parseLocation(text: string): string | undefined {
-  const explicit = text.match(/\b(?:in|at|near|around|within)\s+([A-Za-z][A-Za-z .'-]{1,50}?)(?=\s+(?:on|next|this|tomorrow|today|for|with|and|budget|around|within)|[,.!?]|$)/i)?.[1];
+  const explicit = text.match(/\b(?:in|at|near|around|within)\s+([A-Za-z][A-Za-z .'-]{1,50}?)(?=\s+(?:on|next|this|tomorrow|today|for|with|and|budget|around|within|to\s+(?:diagnos(?:e|is)|repair|fix|service))|[,.!?]|$)/i)?.[1];
   if (explicit) return clean(explicit);
   const known = ['ikeja', 'lekki', 'yaba', 'ibadan', 'abuja', 'surulere', 'victoria island', 'port harcourt'];
   const matched = known.find(location => new RegExp(`\\b${location.replace(' ', '\\s+')}\\b`, 'i').test(text));

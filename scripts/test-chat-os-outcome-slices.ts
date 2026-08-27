@@ -134,9 +134,16 @@ assert.equal(tutor.cardData?.type, 'agentic_storefront');
 assert.equal((await getEconomicRequest(tutor.cardData?.requestId || ''))?.requirements.service, 'teacher', 'Tutor language must seed the reusable teacher-provider service required for discovery.');
 
 const automotive = await routeIntent('Find a car mechanic in Ikeja to diagnose my engine problem today.', makeDomainPhone(40), undefined, createContext, `${conversationId}-automotive`);
-assert.equal(automotive.skill, 'find_worker', 'Vehicle repair wording must enter the existing local-mechanic outcome rather than a ride request.');
+assert.equal(automotive.skill, 'mechanic', 'Vehicle repair wording must enter the shared mechanic service outcome rather than a ride request.');
 assert.equal(automotive.cardData?.type, 'agentic_storefront');
-assert.equal((await getEconomicRequest(automotive.cardData?.requestId || ''))?.requirements.service, 'mechanic', 'Automotive repair must seed the mechanic service required for provider discovery.');
+const automotiveRequest = await getEconomicRequest(automotive.cardData?.requestId || '');
+assert.match(String(automotiveRequest?.requirements.objective || ''), /engine problem/i, 'Automotive service must retain the reported issue for provider coordination.');
+assert.equal(automotiveRequest?.requirements.location, 'Ikeja', 'Automotive service must retain the stated location.');
+
+const roadside = await routeIntent("My car has broken down in Yaba and won't start. Find a mechanic today.", makeDomainPhone(41), undefined, createContext, `${conversationId}-roadside-automotive`);
+assert.equal(roadside.skill, 'roadside_mechanic', 'Breakdown language must enter the shared roadside mechanic outcome rather than a ride request.');
+assert.equal(roadside.cardData?.type, 'agentic_storefront');
+assert.match(String((await getEconomicRequest(roadside.cardData?.requestId || ''))?.requirements.objective || ''), /broken down/i, 'Roadside coordination must retain the user’s reported situation without claiming dispatch.');
 
 const internet = await routeIntent('Arrange someone to set up Wi-Fi in Yaba tomorrow.', makeDomainPhone(42), undefined, createContext, `${conversationId}-internet-service`);
 assert.equal(internet.skill, 'wifi_installer', 'Ordinary internet setup language must enter the existing Wi-Fi installer outcome rather than generic conversation.');
