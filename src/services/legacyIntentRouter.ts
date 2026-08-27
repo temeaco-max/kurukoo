@@ -8,7 +8,7 @@ import { advanceStorefront, previewStorefrontCard, startStorefrontSession, tryRe
 import { searchKnownEconomicOffers } from './economicParticipants.js';
 import { listReminders } from './reminderService.js';
 import { listSafetyContacts } from './safetyService.js';
-import { getInternalNotifications } from './pushNotifications.js';
+import { getInternalNotifications, markNotificationRead } from './pushNotifications.js';
 import { cancelAgentGoal, listAgentGoals, pauseAgentGoal, resumeAgentGoal } from './agentRuntime.js';
 import { generateReferralCode } from './referralService.js';
 import { getAssistanceOutcome } from './assistanceOutcomeService.js';
@@ -242,8 +242,20 @@ export async function routeIntent(query: string, phone?: string, provider?: AIPr
   }
 
   if (phone) { const memoryResult = await handleExplicitMemory(phone, q); if (memoryResult) return memoryResult; }
-  if (phone && /^(what notifications|show (my )?notifications|what updates are waiting|show (my )?updates)\b/i.test(q)) {
-    const notifications = await getInternalNotifications(phone, 10); if (!notifications.length) return { skill: 'notifications', reply: 'There are no stored notifications waiting for you right now. External push delivery is not assumed unless the delivery state says so.' }; const summary = notifications.slice(0, 5).map(item => `${item.title}: ${item.body} (${item.delivery_state})`).join('; '); return { skill: 'notifications', reply: `I found ${notifications.length} stored notification${notifications.length === 1 ? '' : 's'}: ${summary}`, cardData: { type: 'notifications', status: 'stored', count: notifications.length } };
+    if (phone && /^(what notifications|show (my )?notifications|what updates are waiting|show (my )?updates)\b/i.test(q)) { const notifications = await getInternalNotifications(phone, 10); if (!notifications.length) return { skill: 'notifications', reply: 'There are no stored notifications waiting for you right now. External push delivery is not assumed unless the delivery state says so.' }; const summary = notifications.slice(0, 5).map(item => `${item.title}: ${item.body} (${item.delivery_state})`).join('; '); return { skill: 'notifications', reply: `I found ${notifications.length} stored notification${notifications.length === 1 ? '' : 's'}: ${summary}`, cardData: { type: 'notifications', status: 'stored', count: notifications.length } };
+  }
+  if (phone && /^(?:mark|dismiss)\s+(?:all\s+)?(?:notifications?|updates?)(?:\s+#?\d+)?\s+(?:as\s+)?(?:read|seen|handled)\b/i.test(q)) {
+    const id = q.match(/\b(?:notification|update)\s+#?(\d+)\b/i)?.[1];
+    if (id) {
+      const updated = await markNotificationRead(phone, Number(id));
+      return updated
+        ? { skill: 'notifications', reply: 'Marked that stored Kurukoo update as read. This changes only your internal notification state; it does not claim that any external delivery occurred.', cardData: { type: 'notifications', status: 'read', notificationId: Number(id), canonicalAction: 'notification.mark_read' }, canonicalAction: 'notification.mark_read', progressStage: 'complete' }
+        : { skill: 'notifications', reply: 'I could not find that stored notification for your account, so nothing was changed.', cardData: { type: 'notifications', status: 'not_found', notificationId: Number(id) }, progressStage: 'information' };
+    }
+    const notifications = await getInternalNotifications(phone, 100);
+    let updatedCount = 0;
+    for (const notification of notifications) if (String(notification.status || 'unread') !== 'read' && await markNotificationRead(phone, Number(notification.id))) updatedCount += 1;
+    return { skill: 'notifications', reply: updatedCount ? `Marked ${updatedCount} stored notification${updatedCount === 1 ? '' : 's'} as read. This changes only your internal notification state; it does not claim external delivery.` : 'There were no unread stored notifications to mark as read.', cardData: { type: 'notifications', status: 'read', count: updatedCount, canonicalAction: 'notification.mark_all_read' }, canonicalAction: 'notification.mark_all_read', progressStage: 'complete' };
   }
   if (/^what provider and model handled (that|the) turn\b/i.test(q)) return { skill: 'general_question', reply: 'The Chat diagnostics for each turn are the source of truth for classification source, provider, model, latency, action, and final state. This request is handled by the canonical Chat path; it does not imply that a hosted provider was used.' };
   if (/\b(?:verified capability|do not invent (?:availability|price|reviews)|provider availability)\b/i.test(q)) return { skill: 'general_question', reply: 'Understood. I will use only recorded provider evidence and will keep availability, price, reviews, verification, payment, and fulfilment in explicit states. If evidence is missing, the request remains waiting or deferred.' };
