@@ -32,6 +32,9 @@ assert.ok(getFulfilmentSkillBinding('job_tracker')?.optionalInputs.includes('cv_
 assert.equal(getFulfilmentMechanismForSkill('vet_assistant'), 'service_request', 'Pet care must continue through the shared service-request lifecycle.');
 assert.ok(getFulfilmentSkillBinding('vet_assistant')?.optionalInputs.includes('animal_type'), 'Pet-care matching must retain the animal type.');
 assert.ok(getFulfilmentSkillBinding('vet_assistant')?.optionalInputs.includes('urgency'), 'Pet-care matching must retain urgency without making a diagnosis.');
+assert.equal(getFulfilmentMechanismForSkill('canopy_rental'), 'booking', 'Event rentals must reuse the shared booking lifecycle.');
+assert.ok(getFulfilmentSkillBinding('public_address_system')?.optionalInputs.includes('power_requirements'), 'Event equipment requests must retain their power requirements.');
+assert.ok(getFulfilmentSkillBinding('canopy_rental')?.optionalInputs.includes('setup_time'), 'Event rental setup timing must remain attached to the request.');
 assert.equal(getFulfilmentMechanismForSkill('wifi_installer'), 'service_request', 'Internet setup and repair must continue through the shared service-request lifecycle.');
 assert.equal(getFulfilmentMechanismForSkill('doctor_appointment'), 'booking', 'Healthcare appointments must reuse the shared booking lifecycle.');
 const healthcareBinding = getFulfilmentSkillBinding('doctor_appointment');

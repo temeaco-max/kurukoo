@@ -204,3 +204,8 @@ registerSkillsToFulfilmentMechanism(['vet_assistant', 'pet_weight'], 'service_re
   optionalInputs: ['timing', 'animal_type', 'breed', 'age', 'pet_size', 'symptoms', 'urgency', 'visit_mode', 'previous_vet', 'treatment_budget', 'contact_preference'],
   notes: 'Preserve care-request context for matching and scheduling; this binding does not diagnose, prescribe, or assert provider availability.',
 });
+registerSkillsToFulfilmentMechanism(['canopy_rental', 'public_address_system'], 'booking', {
+  requiredInputs: ['objective', 'location', 'timing'],
+  optionalInputs: ['event_type', 'attendee_count', 'venue', 'setup_time', 'teardown_time', 'equipment_requirements', 'power_requirements', 'delivery_setup', 'budget', 'contact_preference'],
+  notes: 'Retain event requirements for provider inquiry and explicit booking confirmation; availability, reservation, and setup remain evidence-dependent.',
+});
