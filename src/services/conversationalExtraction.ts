@@ -12,6 +12,15 @@ export interface ConversationalEntities {
   product?: string;
   items?: string;
   delivery?: boolean;
+  dietaryRequirements?: string;
+  allergyRequirements?: string;
+  substitutionPolicy?: string;
+  deliveryInstructions?: string;
+  recipient?: string;
+  contactMethod?: 'call' | 'sms' | 'whatsapp';
+  fulfilmentMethod?: 'delivery' | 'pickup';
+  packagingPreference?: string;
+  deliveryTime?: string;
   preferences?: string[];
   provider?: string;
   outcomeVerb?: UserOutcomeVerb;
@@ -87,17 +96,64 @@ function parseIssue(text: string): string | undefined {
 
 const FOOD_ITEM_PATTERN = /\b(?:rice|yam|plantain|jollof|egusi|amala|ewedu|suya|bread|chicken|beans|noodles|meal|groceries?)\b/gi;
 
-export function extractFoodOrderSlots(text: string): { items?: string; location?: string; delivery?: boolean } {
+export interface FoodOrderSlots {
+  items?: string;
+  location?: string;
+  delivery?: boolean;
+  quantity?: number;
+  budget?: number;
+  dietary_requirements?: string;
+  allergy_requirements?: string;
+  substitution_policy?: string;
+  delivery_instructions?: string;
+  recipient?: string;
+  contact_method?: 'call' | 'sms' | 'whatsapp';
+  fulfilment_method?: 'delivery' | 'pickup';
+  packaging_preference?: string;
+  delivery_time?: string;
+}
+
+function matchedTerms(query: string, pattern: RegExp): string | undefined {
+  const values = [...query.matchAll(pattern)].map(match => match[0].trim().toLowerCase());
+  return values.length ? [...new Set(values)].join(', ') : undefined;
+}
+
+export function extractFoodOrderSlots(text: string): FoodOrderSlots {
   const query = String(text || '').trim();
   const location = parseLocation(query);
   const delivery = /\b(?:deliver(?:ed|y)?|bring|send)\b/i.test(query) || undefined;
+  const pickup = /\b(?:pickup|pick up|collect)\b/i.test(query);
   const found = [...query.matchAll(FOOD_ITEM_PATTERN)].map(match => match[0].toLowerCase());
   const unique = [...new Set(found)];
   const explicitFoodIntent = /\b(?:order|buy|get|need|want|deliver(?:ed|y)?|bring|send|food|meal|grocer(?:y|ies))\b/i.test(query);
-  const contextualFoodIntent = unique.length >= 2 && Boolean(location);
-  if (!unique.length && explicitFoodIntent) { const vagueItem = query.match(/\b(?:something|anything|a meal|food)\b/i)?.[0]?.toLowerCase(); if (vagueItem) return { items: vagueItem, ...(location ? { location } : {}), ...(delivery ? { delivery: true } : {}) }; }
-  if (!unique.length || (!explicitFoodIntent && !contextualFoodIntent)) return {};
-  return { items: unique.join(' and '), ...(location ? { location } : {}), ...(delivery ? { delivery: true } : {}) };
+  const vagueItem = !unique.length && explicitFoodIntent ? query.match(/\b(?:something|anything|a meal|food)\b/i)?.[0]?.toLowerCase() : undefined;
+
+  const dietary = matchedTerms(query, /\b(?:vegetarian|vegan|halal|kosher|gluten[- ]?free|low[- ]?salt|no[- ]?sugar|mild|not spicy|spicy)\b/gi);
+  const allergy = query.match(/\b(?:allergic to|allergy(?: to)?|without|no)\s+(?:peanuts?|nuts?|shellfish|dairy|milk|eggs?|gluten)\b/i)?.[0];
+  const substitution = /\b(?:no substitutions?|do not substitute|don't substitute)\b/i.test(query) ? 'no_substitutions' : query.match(/\b(?:substitut(?:e|ion)|replacement)\b[^.!?]{0,80}/i)?.[0];
+  const deliveryInstructions = query.match(/\b(?:leave(?: it)?|deliver(?: it)?|bring(?: it)?)\s+(?:with|at|by)\s+([^.!?]{3,80})/i)?.[0];
+  const recipient = query.match(/\b(?:for|to)\s+((?:my\s+(?:mum|mother|dad|father|friend|wife|husband))|(?:[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2}))(?=\s+(?:at|in|on|with|and|by)|[.!?,]|$)/)?.[1];
+  const contactMethod: FoodOrderSlots['contact_method'] = /\b(?:whats ?app|whatsapp)\b/i.test(query) ? 'whatsapp' : /\b(?:text me|sms me|by sms)\b/i.test(query) ? 'sms' : /\b(?:call me|phone me)\b/i.test(query) ? 'call' : undefined;
+  const packaging = matchedTerms(query, /\b(?:sealed|hot|separate(?:ly)? packed|separate containers?|tamper[- ]?evident)\b/gi);
+  const dateTime = parseDateTime(query);
+  const deliveryTime = [dateTime.date, dateTime.time].filter(Boolean).join(' ') || undefined;
+  const items = unique.length ? unique.join(' and ') : vagueItem;
+  return {
+    ...(items ? { items } : {}),
+    ...(location ? { location } : {}),
+    ...(delivery ? { delivery: true } : {}),
+    ...(parseQuantity(query) ? { quantity: parseQuantity(query) } : {}),
+    ...(parseBudget(query) ? { budget: parseBudget(query) } : {}),
+    ...(dietary ? { dietary_requirements: dietary } : {}),
+    ...(allergy ? { allergy_requirements: allergy.toLowerCase() } : {}),
+    ...(substitution ? { substitution_policy: substitution.toLowerCase() } : {}),
+    ...(deliveryInstructions ? { delivery_instructions: deliveryInstructions } : {}),
+    ...(recipient ? { recipient } : {}),
+    ...(contactMethod ? { contact_method: contactMethod } : {}),
+    ...(pickup || delivery ? { fulfilment_method: pickup ? 'pickup' : 'delivery' } : {}),
+    ...(packaging ? { packaging_preference: packaging } : {}),
+    ...(deliveryTime ? { delivery_time: deliveryTime } : {}),
+  };
 }
 
 export function isFoodOrderExpression(text: string): boolean {
@@ -139,6 +195,15 @@ export function extractConversationalEntities(text: string, intent?: string): Co
     product: parseProduct(query),
     items: food.items,
     delivery: food.delivery,
+    dietaryRequirements: food.dietary_requirements,
+    allergyRequirements: food.allergy_requirements,
+    substitutionPolicy: food.substitution_policy,
+    deliveryInstructions: food.delivery_instructions,
+    recipient: food.recipient,
+    contactMethod: food.contact_method,
+    fulfilmentMethod: food.fulfilment_method,
+    packagingPreference: food.packaging_preference,
+    deliveryTime: food.delivery_time,
     preferences: parsePreferences(query),
     requestContext: query,
   };
@@ -158,6 +223,9 @@ export function validateConversationalEntities(entities: ConversationalEntities,
   if (validated.issue) validated.issue = validated.issue.slice(0, 240);
   if (validated.network) validated.network = validated.network.slice(0, 80);
   if (validated.delivery !== undefined && typeof validated.delivery !== 'boolean') delete validated.delivery;
+  for (const key of ['dietaryRequirements', 'allergyRequirements', 'substitutionPolicy', 'deliveryInstructions', 'recipient', 'packagingPreference', 'deliveryTime'] as const) if (validated[key] && validated[key]!.length > 160) delete validated[key];
+  if (validated.contactMethod && !['call', 'sms', 'whatsapp'].includes(validated.contactMethod)) delete validated.contactMethod;
+  if (validated.fulfilmentMethod && !['delivery', 'pickup'].includes(validated.fulfilmentMethod)) delete validated.fulfilmentMethod;
   if (validated.skill && validated.skill.length > 80) delete validated.skill;
   return validated;
 }

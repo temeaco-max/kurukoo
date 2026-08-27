@@ -55,7 +55,7 @@ try {
   const directExplicitName = await handleConversationalAuth(directGuest, 'My name is Rice');
   assert.equal(directExplicitName.cardData?.name, 'Rice', 'An explicit identity introduction must remain valid at the direct awaiting-name boundary.');
 
-  const first = await turn('I need rice and yam delivered to me in Ikeja.');
+  const first = await turn('I need halal rice and chicken for 2 people in Ikeja tomorrow evening, delivered for Ada, leave it with reception. I am allergic to peanuts, no substitutions, budget ₦5,000, WhatsApp me, and keep it sealed.');
   const conversationId = String(first.done.conversationId || '');
   const firstCard = first.done.cardData;
   const requestId = String(firstCard?.continuationCard?.requestId || '');
@@ -63,8 +63,15 @@ try {
   assert.equal(firstCard?.step, 'name', 'A guest food request must ask for identity only after preserving the request.');
   assert.ok(requestId, 'Food request continuation must retain its canonical request ID.');
   assert.equal(firstCard?.continuationCard?.skill, 'order_food');
-  assert.equal(firstCard?.continuationCard?.fields?.find((field: any) => field.key === 'items')?.value, 'rice and yam');
+  assert.equal(firstCard?.continuationCard?.fields?.find((field: any) => field.key === 'items')?.value, 'rice and chicken');
   assert.equal(firstCard?.continuationCard?.fields?.find((field: any) => field.key === 'location')?.value, 'Ikeja');
+  assert.equal(firstCard?.continuationCard?.fields?.find((field: any) => field.key === 'quantity')?.value, '2');
+  assert.equal(firstCard?.continuationCard?.fields?.find((field: any) => field.key === 'dietary_requirements')?.value, 'halal');
+  assert.equal(firstCard?.continuationCard?.fields?.find((field: any) => field.key === 'allergy_requirements')?.value, 'allergic to peanuts');
+  assert.equal(firstCard?.continuationCard?.fields?.find((field: any) => field.key === 'substitution_policy')?.value, 'no_substitutions');
+  assert.equal(firstCard?.continuationCard?.fields?.find((field: any) => field.key === 'recipient')?.value, 'Ada');
+  assert.equal(firstCard?.continuationCard?.fields?.find((field: any) => field.key === 'contact_method')?.value, 'whatsapp');
+  assert.equal(firstCard?.continuationCard?.fields?.find((field: any) => field.key === 'packaging_preference')?.value, 'sealed');
   assert.equal(firstCard?.continuationCard?.extractedEntities?.delivery, true, 'Delivery intent must remain a semantic task slot.');
 
   const repeatedTask = await turn('rice and yam in Ikeja', first.cookie, conversationId);

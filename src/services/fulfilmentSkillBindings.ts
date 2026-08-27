@@ -148,7 +148,7 @@ registerSkillsToFulfilmentMechanism(['contact_provider','message_provider','requ
 // the mechanism shared while preserving the request owner's collected fields.
 registerSkillsToFulfilmentMechanism(['order_food'], 'marketplace_purchase', {
   requiredInputs: ['items', 'location'],
-  optionalInputs: ['quantity', 'delivery_time', 'dietary_requirements', 'delivery', 'delivery_address', 'delivery_provider', 'tracking_reference'],
+  optionalInputs: ['quantity', 'budget', 'delivery_time', 'dietary_requirements', 'allergy_requirements', 'substitution_policy', 'recipient', 'contact_method', 'delivery_instructions', 'packaging_preference', 'fulfilment_method', 'delivery', 'delivery_address', 'delivery_provider', 'tracking_reference'],
 });
 registerSkillsToFulfilmentMechanism(['product_sourcing'], 'marketplace_purchase', {
   requiredInputs: ['product'],
