@@ -171,7 +171,7 @@ registerSkillsToFulfilmentMechanism(['find_worker'], 'local_discovery', {
 });
 registerSkillsToFulfilmentMechanism(['hotel_deals'], 'booking', {
   requiredInputs: ['objective'],
-  optionalInputs: ['location', 'timing', 'budget', 'guest_count', 'room_preference'],
+  optionalInputs: ['location', 'timing', 'budget', 'guest_count', 'room_preference', 'check_in', 'check_out', 'room_count', 'amenities', 'accessibility_requirements', 'contact_preference'],
 });
 registerSkillsToFulfilmentMechanism(['doctor_appointment'], 'booking', {
   requiredInputs: ['objective', 'location'],
@@ -180,7 +180,7 @@ registerSkillsToFulfilmentMechanism(['doctor_appointment'], 'booking', {
 });
 registerSkillsToFulfilmentMechanism(['rental_tracker'], 'booking', {
   requiredInputs: ['objective'],
-  optionalInputs: ['location', 'timing', 'budget', 'bedrooms', 'property_preference'],
+  optionalInputs: ['location', 'timing', 'budget', 'bedrooms', 'property_preference', 'bathrooms', 'furnishing', 'move_in_date', 'amenities', 'transport_proximity', 'security_requirements', 'viewing_requirements', 'contact_preference'],
 });
 registerSkillsToFulfilmentMechanism(['job_tracker'], 'local_discovery', {
   requiredInputs: ['objective'],
