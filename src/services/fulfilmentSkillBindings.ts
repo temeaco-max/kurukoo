@@ -182,9 +182,13 @@ registerSkillsToFulfilmentMechanism(['rental_tracker'], 'booking', {
   requiredInputs: ['objective'],
   optionalInputs: ['location', 'timing', 'budget', 'bedrooms', 'property_preference', 'bathrooms', 'furnishing', 'move_in_date', 'amenities', 'transport_proximity', 'security_requirements', 'viewing_requirements', 'contact_preference'],
 });
+registerSkillsToFulfilmentMechanism(['home_tutor'], 'service_request', {
+  requiredInputs: ['objective'],
+  optionalInputs: ['subject', 'level', 'curriculum', 'location', 'delivery_mode', 'schedule', 'budget', 'tutor_preference', 'duration', 'contact_preference'],
+});
 registerSkillsToFulfilmentMechanism(['job_tracker'], 'local_discovery', {
   requiredInputs: ['objective'],
-  optionalInputs: ['location', 'timing', 'salary_expectation', 'employment_type'],
+  optionalInputs: ['location', 'timing', 'role', 'skills', 'experience', 'work_mode', 'salary_expectation', 'availability', 'employment_type', 'work_authorization', 'cv_reference', 'contact_preference'],
 });
 registerSkillsToFulfilmentMechanism(['mechanic', 'roadside_mechanic'], 'service_request', {
   requiredInputs: ['objective', 'location'],
