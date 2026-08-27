@@ -1,8 +1,8 @@
 {
   "id": "/chat/",
-  "name": "Kurukoo — Conversation",
+  "name": "Kurukoo — Get Things Done",
   "short_name": "Kurukoo",
-  "description": "A conversation-first fulfilment network and personal assistance platform for everyday life and work.",
+  "description": "Tell Kurukoo what you need, want, notice, or are worried about. Kurukoo helps work out what to do, takes appropriate action, gets help when needed, keeps you informed, and remembers what matters.",
   "start_url": "/chat/",
   "scope": "/",
   "display": "standalone",
@@ -18,8 +18,8 @@
     {"src":"/assets/icons/icon-512.svg","sizes":"512x512","type":"image/svg+xml","purpose":"any maskable"}
   ],
   "shortcuts": [
-    {"name":"Start a conversation","short_name":"Chat","url":"/chat/","icons":[{"src":"/assets/icons/icon-192.svg","sizes":"192x192","type":"image/svg+xml"}]},
-    {"name":"Discover","short_name":"Discover","url":"/discover/","icons":[{"src":"/assets/icons/icon-192.svg","sizes":"192x192","type":"image/svg+xml"}]},
-    {"name":"Requests","short_name":"Requests","url":"/chat/?view=requests","icons":[{"src":"/assets/icons/icon-192.svg","sizes":"192x192","type":"image/svg+xml"}]}
+    {"name":"Ask Kurukoo","short_name":"Ask","url":"/chat/","icons":[{"src":"/assets/icons/icon-192.svg","sizes":"192x192","type":"image/svg+xml"}]},
+    {"name":"Discover useful things","short_name":"Discover","url":"/discover/","icons":[{"src":"/assets/icons/icon-192.svg","sizes":"192x192","type":"image/svg+xml"}]},
+    {"name":"See what Kurukoo is doing","short_name":"Activity","url":"/chat/?view=requests","icons":[{"src":"/assets/icons/icon-192.svg","sizes":"192x192","type":"image/svg+xml"}]}
   ]
 }
