@@ -10,6 +10,8 @@
 
 Build the product to make this promise real. Users do not care how Kurukoo accomplishes an outcome. Skills, capabilities, agents, tools, MCP, AI providers, connected resources, Economic Requests, providers, channels and internal services are implementation means.
 
+The single current-state product truth authority is [`docs/architecture/CURRENT_PRODUCT_TRUTH.md`](docs/architecture/CURRENT_PRODUCT_TRUTH.md). Every completion claim must distinguish the three verification dimensions: **Repository verification**, **Runtime verification**, and **Real-world verification**. If a dimension is not verified, describe it as unverified rather than implying completion.
+
 ## Build priorities
 
 1. **Working outcome:** a person can ask for something naturally and reach a useful result.
