@@ -43,7 +43,8 @@ function parseLocation(text: string): string | undefined {
   const explicit = text.match(/\b(?:in|at|near|around|within)\s+([A-Za-z][A-Za-z .'-]{1,50}?)(?=\s+(?:on|next|this|tomorrow|today|for|with|and|budget|around|within)|[,.!?]|$)/i)?.[1];
   if (explicit) return clean(explicit);
   const known = ['ikeja', 'lekki', 'yaba', 'ibadan', 'abuja', 'surulere', 'victoria island', 'port harcourt'];
-  return known.find(location => new RegExp(`\\b${location.replace(' ', '\\s+')}\\b`, 'i').test(text));
+  const matched = known.find(location => new RegExp(`\\b${location.replace(' ', '\\s+')}\\b`, 'i').test(text));
+  return matched ? matched.replace(/\\b[a-z]/g, letter => letter.toUpperCase()) : undefined;
 }
 
 function parseDateTime(text: string): { date?: string; time?: string } {
