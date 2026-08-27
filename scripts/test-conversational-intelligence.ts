@@ -12,6 +12,7 @@ process.env.KURUKOO_AGENT_ENABLED = 'true';
 
 const { updateProfile } = await import('../src/services/memoryProfile.js');
 const { processCanonicalChatTurn } = await import('../src/services/canonicalChatTurnService.js');
+const { routeIntent } = await import('../src/services/intentRouter.js');
 const { queryUnifiedAI } = await import('../src/services/unifiedAiEngine.js');
 const { decideConversationIntelligence } = await import('../src/services/conversationIntelligenceService.js');
 
@@ -65,6 +66,15 @@ assert.ok(model.reply.trim());
 
 const deadline = await processCanonicalChatTurn({ phone, channel: 'web', conversationId: phoneStart.conversationId, message: 'I need it fixed before Friday.' });
 assert.ok(deadline.reply.trim());
+
+for (const implied of ["Something's not right with my laptop.", 'Can you have a look at this?', 'This thing has been acting weird.', "I think someone has messed with my Wi-Fi.", 'Could you sort this out for me?']) {
+  const decision = decideConversationIntelligence({ userMessage: implied, activeContextIds: [], knownFacts: [], pendingFields: [] });
+  assert.ok(['conversation', 'exploration', 'clarification'].includes(decision.mode), `implied concern should stay in a non-action conversational posture: ${implied}`);
+  assert.equal(decision.shouldRequireCanonicalAction, false, `implied concern must not authorize an action: ${implied}`);
+  const routed = await routeIntent(implied, phone);
+  assert.equal(routed.skill, 'general_question', `implied concern should remain conversational until context supports an action: ${implied}`);
+  assert.notEqual(routed.cardData?.type, 'agentic_storefront', `implied concern must not create a service request: ${implied}`);
+}
 
 const explicit = decideConversationIntelligence({ userMessage: 'Please find someone to fix my phone in Ibadan this weekend.', activeContextIds: [], knownFacts: [], pendingFields: [] });
 assert.equal(explicit.mode, 'action');

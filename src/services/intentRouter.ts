@@ -13,7 +13,7 @@ const DEVICE_SUPPORT_RE = /\b(?:check|diagnose|troubleshoot|investigate|help(?: 
 function shouldDelegateToCanonicalRouter(message: string, semantic: Awaited<ReturnType<typeof interpretConversationSemantics>>): boolean {
   if (CANONICAL_LOOKUP_RE.test(message.trim())) return true;
   if (SAFETY_RE.test(message)) return true;
-  if (DEVICE_SUPPORT_RE.test(message)) return true;
+  if (DEVICE_SUPPORT_RE.test(message) && (semantic.mode === 'action' || semantic.mode === 'control' || semantic.explicitAuthorization)) return true;
   if (semantic.mode === 'action' || semantic.mode === 'control' || semantic.mode === 'reference') return true;
   if (semantic.explicitAuthorization) return true;
   return false;
