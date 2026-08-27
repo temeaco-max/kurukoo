@@ -990,6 +990,39 @@
     messageEl.querySelector('.bubble')?.appendChild(holder);
   }
 
+  function renderDeviceSupport(card, messageEl) {
+    const holder = makeElement('section', 'provider-card device-support-card');
+    holder.setAttribute('aria-label', 'Device support');
+    const status = String(card.status || 'information');
+    const heading = status === 'completed' ? 'Recorded device observation' : status === 'needs_user' ? 'Choose a connected resource' : 'Device observation unavailable';
+    holder.appendChild(makeElement('strong', '', heading));
+    holder.appendChild(makeElement('p', 'storefront-offer-copy', String(card.message || 'Kurukoo has not claimed a live device diagnosis.')));
+    if (card.resource && typeof card.resource === 'object') {
+      const resource = card.resource;
+      holder.appendChild(makeElement('small', 'storefront-execution-status', `${String(resource.label || 'Connected resource')} · ${String(resource.kind || 'device')} · ${String(resource.protocol || 'adapter')}`));
+      if (card.observedState !== null && card.observedState !== undefined) {
+        const value = typeof card.observedState === 'string' ? card.observedState : JSON.stringify(card.observedState);
+        holder.appendChild(makeElement('p', 'device-support-observation', `Recorded state: ${String(value || 'No state detail')}`));
+      }
+      if (card.observedAt) holder.appendChild(makeElement('small', 'storefront-execution-status', `Observed at ${String(card.observedAt)}`));
+    }
+    if (Array.isArray(card.resources) && card.resources.length) {
+      const list = makeElement('ul', 'storefront-providers');
+      card.resources.forEach(resource => {
+        if (!resource?.label) return;
+        const item = makeElement('li');
+        const button = makeElement('button', 'sf-btn sf-primary', `Check ${String(resource.label)}`);
+        button.type = 'button';
+        button.addEventListener('click', () => sendMessage(`Check my ${String(resource.label)}`));
+        item.appendChild(button);
+        list.appendChild(item);
+      });
+      holder.appendChild(list);
+    }
+    holder.appendChild(makeElement('small', 'storefront-execution-status', card.liveObservation === true ? 'Live observation evidence received.' : 'Recorded resource state only. No live connection, diagnosis, remediation, or repair completion is claimed.'));
+    messageEl.querySelector('.bubble')?.appendChild(holder);
+  }
+
   function renderSuggestions(options, messageEl, sponsored = []) {
     if ((!Array.isArray(options) || !options.length) && (!Array.isArray(sponsored) || !sponsored.length)) return;
     const holder = document.createElement('div');
@@ -1027,6 +1060,7 @@
   function renderCard(card, messageEl) {
     if (!card || !messageEl) return;
     if (card.type === 'assistance_outcome') return renderAssistanceOutcome(card, messageEl);
+    if (card.type === 'device_support' || card.type === 'device_resource_selection') return renderDeviceSupport(card, messageEl);
     if (card.type === 'agentic_storefront') {
       if (card.stage === 'slot_fill' || card.stage === 'intent_extraction') {
         const missing = (Array.isArray(card.fields) ? card.fields : []).filter(field => field?.required && !field.value).map(field => String(field.label || field.key || 'the next detail').toLowerCase());
