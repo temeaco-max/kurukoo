@@ -1019,6 +1019,27 @@
       });
       holder.appendChild(list);
     }
+    if (Array.isArray(card.guidedChecks) && card.guidedChecks.length) {
+      const checks = makeElement('ol', 'device-support-guided-checks');
+      card.guidedChecks.slice(0, 6).forEach(check => {
+        if (String(check || '').trim()) checks.appendChild(makeElement('li', '', String(check)));
+      });
+      if (checks.childElementCount) holder.appendChild(checks);
+    }
+    if (Array.isArray(card.nextActions) && card.nextActions.length) {
+      const actionGroup = makeElement('div', 'storefront-actions');
+      card.nextActions.forEach(action => {
+        if (!action?.label || !action?.prompt) return;
+        const button = makeElement('button', `sf-btn sf-${action.style === 'secondary' ? 'secondary' : 'primary'}`, String(action.label));
+        button.type = 'button';
+        button.dataset.actionId = String(action.id || 'device_support.next');
+        button.addEventListener('click', () => sendMessage(String(action.prompt)));
+        actionGroup.appendChild(button);
+      });
+      if (actionGroup.childElementCount) holder.appendChild(actionGroup);
+    }
+    const inspection = card.inspection && typeof card.inspection === 'object' ? card.inspection : null;
+    if (inspection?.status === 'unavailable') holder.appendChild(makeElement('small', 'storefront-execution-status', 'Direct inspection is unavailable from this client. Choose a guided check or an inspector handoff above.'));
     holder.appendChild(makeElement('small', 'storefront-execution-status', card.liveObservation === true ? 'Live observation evidence received.' : 'Recorded resource state only. No live connection, diagnosis, remediation, or repair completion is claimed.'));
     messageEl.querySelector('.bubble')?.appendChild(holder);
   }

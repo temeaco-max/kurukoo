@@ -54,6 +54,32 @@ assert.equal(chatTurn.cardData?.type, 'device_support');
 assert.equal(chatTurn.cardData?.status, 'completed');
 assert.match(chatTurn.reply, /recorded state|not a live connection test/i);
 
+const unsupported = await registerConnectedResource({ phone, kind: 'phone', label: 'Personal phone', protocol: 'custom', capabilities: ['control'] });
+const unsupportedActive = await activateConnectedResource(phone, unsupported.resource.id, unsupported.challenge.code);
+assert.equal(unsupportedActive?.status, 'active');
+const unsupportedInspection = await routeIntent('Check my Personal phone.', phone, undefined, undefined, 'connected-resource-test-unsupported');
+assert.equal(unsupportedInspection.skill, 'device_support');
+assert.equal(unsupportedInspection.cardData?.status, 'needs_user');
+assert.equal(unsupportedInspection.cardData?.inspection?.status, 'unavailable');
+assert.equal(unsupportedInspection.cardData?.noInspectionPerformed, true);
+assert.equal(unsupportedInspection.cardData?.nextActions?.length, 2);
+assert.match(unsupportedInspection.reply, /cannot inspect.*directly|walk you through.*safe checks|find someone/i);
+
+const noAccessPhone = `+234808${String(Date.now()).slice(-7)}`;
+const noAccess = await routeIntent('My phone is running slowly. Can you check it?', noAccessPhone, undefined, undefined, 'connected-resource-test-no-access');
+assert.equal(noAccess.skill, 'device_support');
+assert.equal(noAccess.cardData?.inspection?.status, 'unavailable');
+assert.equal(noAccess.cardData?.inspection?.reason, 'no_authorized_connected_resource');
+assert.equal(noAccess.cardData?.nextActions?.length, 2);
+assert.match(noAccess.reply, /live connection|walk you through.*safe checks|find someone/i);
+
+const guided = await routeIntent('Walk me through safe checks for my phone.', noAccessPhone, undefined, undefined, 'connected-resource-test-guided');
+assert.equal(guided.skill, 'device_support');
+assert.equal(guided.canonicalAction, 'device_support.guided_checks');
+assert.equal(guided.cardData?.guidedChecks?.length, 3);
+assert.equal(guided.cardData?.nextActions?.[0]?.id, 'report_guided_results');
+assert.match(guided.reply, /cannot inspect.*directly|safe checks/i);
+
 const repairTurn = await routeIntent('Please find a phone repairer for my Work MacBook screen is broken in Ikeja.', phone, undefined, undefined, chatTurn.conversationId);
 assert.equal(repairTurn.skill, 'phone_repair');
 assert.ok(repairTurn.cardData?.requestId);

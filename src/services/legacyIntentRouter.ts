@@ -14,7 +14,7 @@ import { generateReferralCode } from './referralService.js';
 import { getAssistanceOutcome } from './assistanceOutcomeService.js';
 import { resolveConversationPriority } from './conversationPriorityService.js';
 import { executeCanonicalCapabilityProposal } from './canonicalCapabilityExecutor.js';
-import { listConnectedResources } from './connectedResourceService.js';
+import { connectedResourceSupports, listConnectedResources } from './connectedResourceService.js';
 import { listChatMessages } from './chatConversationService.js';
 import type { IntentRoutingResult } from '../types.js';
 import { extractConversationalEntities, extractFoodOrderSlots, isFoodOrderExpression, validateConversationalEntities } from './conversationalExtraction.js';
@@ -175,6 +175,17 @@ async function inspectConnectedResourceForDeviceSupport(phone: string | undefine
     return { skill: 'device_support', reply: `I found more than one connected resource that could match this request: ${labels}. Tell me the exact resource name before I inspect anything.`, cardData: { type: 'device_resource_selection', status: 'needs_user', resources: matches.slice(0, 5).map(resource => ({ id: resource.id, kind: resource.kind, label: resource.label, vendor: resource.vendor || null, capabilities: resource.capabilities })), ownerScoped: true, noInspectionPerformed: true }, progressStage: 'understanding', extractionSource: 'deterministic' };
   }
   const resource = matches[0];
+  if (!connectedResourceSupports(resource, 'inspect')) {
+    return {
+      skill: 'device_support',
+      reply: `I found your connected ${resource.kind}, but this client has not exposed an authorised inspection capability. I cannot inspect its condition directly from here yet. I can walk you through a few safe checks, or help you find someone who can inspect it for you.`,
+      cardData: {
+        type: 'device_support', status: 'needs_user', title: 'Inspection capability unavailable', resource: { id: resource.id, kind: resource.kind, label: resource.label, protocol: resource.protocol },
+        inspection: { status: 'unavailable', reason: 'connected_client_has_not_exposed_inspect_capability' }, liveObservation: false, noInspectionPerformed: true, ownerScoped: true,
+        nextActions: [{ id: 'guided_checks', label: 'Walk me through safe checks', prompt: `Walk me through safe checks for my ${resource.label}.` }, { id: 'find_inspector', label: 'Find someone to inspect it', prompt: `Find someone who can inspect my ${resource.label} for me.` }],
+      }, canonicalAction: 'device_support.inspection_unavailable', progressStage: 'understanding', extractionSource: 'deterministic',
+    };
+  }
   const result = await executeCanonicalCapabilityProposal({ capability: 'execution', action: 'dispatch', canonicalObjectId: resource.id, arguments: { resourceId: resource.id, command: 'status' }, phone, conversationId: threadId, channel: 'chat', confirmationRequired: false, idempotencyKey: `device-support-inspect:${threadId || 'turn'}:${resource.id}:${query.toLowerCase().slice(0, 120)}` });
   const facts = result.canonicalFacts || {};
   return { skill: 'device_support', reply: result.message, cardData: { type: 'device_support', status: result.status, title: `Recorded ${resource.kind} observation`, message: result.message, resource: facts.resource || { id: resource.id, kind: resource.kind, label: resource.label }, observedState: facts.observedState ?? null, observedAt: facts.observedAt ?? null, liveObservation: facts.liveObservation === true, evidenceLevel: result.evidenceLevel, nextActions: result.nextActions, ownerScoped: true }, canonicalAction: 'execution.dispatch', progressStage: result.status === 'completed' ? 'information' : 'coordination', extractionSource: 'deterministic' };
@@ -283,6 +294,17 @@ export async function routeIntent(query: string, phone?: string, provider?: AIPr
   if (phone && (/\b(listing|offer)\b/.test(q) || /\b[a-z][a-z-]{1,40}['’]s\b/.test(q))) { try { const offers = await searchKnownEconomicOffers(query, 3); if (offers.length) return { skill: 'product_sourcing', reply: `I found ${offers.length === 1 ? 'a known seller offer' : 'known seller offers'} matching that reference. Choose one to start a single Economic Request.`, cardData: { type: 'agentic_storefront', stage: 'offer_review', skill: 'product_sourcing', title: 'Known seller offers', message: 'Choose a verified seller offer to continue.', knownOffers: offers, escrowProtected: false, progress: 55 } }; } catch (e) { console.warn('[Router] known offer lookup failed:', e); } }
   const assistanceQuestion = /^(how do i|how can i|what should i do|what is the best way|why is|what does)\b/i.test(q) && !/\b(?:find someone|find me|book|hire|order|get me|need someone|who can)\b/i.test(q);
   if (assistanceQuestion) { const assistance = await getAssistanceOutcome(query).catch((error) => { console.warn('[Router] assistance question projection unavailable:', error); return null; }); if (assistance) return { skill: assistance.mode === 'support' ? 'support_triage' : 'general_question', reply: `${assistance.mode === 'support' ? 'I found relevant Kurukoo guidance and community context for this issue.' : 'I found relevant Kurukoo guidance and community context.'} I have not treated any source as a provider, recommendation, availability or completed action. ${assistance.nextActions[0]?.prompt || 'Tell me what you want to do next.'}`, cardData: assistance, canonicalAction: assistance.canonicalAction, progressStage: assistance.mode === 'support' ? 'coordination' : 'information', extractionSource: 'deterministic' }; }
+  if (phone && /\b(?:walk|guide) me through\b.*\b(?:safe checks?|checks?|phone|device|laptop|computer|wi-?fi|internet|network)\b|\b(?:safe checks?|what can i check)\b.*\b(?:phone|device|laptop|computer|wi-?fi|internet|network)\b/i.test(q)) {
+    const subject = /\b(?:wi-?fi|internet|network|router)\b/i.test(q) ? 'connection' : /\b(?:laptop|computer|macbook)\b/i.test(q) ? 'computer' : 'phone or device';
+    const guidedChecks = subject === 'connection'
+      ? ['Try the same connection on a second device, if available.', 'Check whether the router shows power and internet lights, then restart it only if that is safe for your setup.', 'Note whether the problem is slow speed, no connection, or only one app or website.']
+      : ['Check available storage and note whether it is nearly full.', 'Review battery use or background activity and note any app using an unusual amount.', 'Restart the device and check whether its operating-system and important app updates are pending.'];
+    return {
+      skill: 'device_support',
+      reply: `I cannot inspect your ${subject} directly from this client, but I can walk you through a few safe checks. Try the steps below and tell me what you find; I will help interpret the results before suggesting repair.`,
+      cardData: { type: 'device_support', status: 'needs_user', title: 'Guided device checks', inspection: { status: 'unavailable', reason: 'no_authorized_connected_resource' }, guidedChecks, nextActions: [{ id: 'report_guided_results', label: 'Tell me what you found', prompt: `I completed the safe checks for my ${subject}; here is what I found:` }, { id: 'find_inspector', label: 'Find someone to inspect it', prompt: `Find someone who can inspect my ${subject} for me.` }], liveObservation: false, noInspectionPerformed: true, ownerScoped: true }, canonicalAction: 'device_support.guided_checks', progressStage: 'information', extractionSource: 'deterministic',
+    };
+  }
   const directSkill = matchCanonicalSkill(q) || (isFoodOrderExpression(query) ? 'order_food' : null);
   const extractedEntities = validateConversationalEntities(extractConversationalEntities(query, directSkill || undefined), directSkill || undefined);
   if (directSkill === 'device_support') {
@@ -292,7 +314,7 @@ export async function routeIntent(query: string, phone?: string, provider?: AIPr
       return {
         skill: 'device_support',
         reply: `I can help check your ${extractedEntities.device || 'device'}${extractedEntities.issue ? ` — I noted that it is ${extractedEntities.issue}` : ''}. I do not have a live connection or a recorded observation for it yet. Connect the device or tell me what you can see, and I’ll guide the safest next check before suggesting any repair.`,
-        cardData: { type: 'device_support', status: 'needs_user', resource: extractedEntities.device ? { kind: extractedEntities.device, label: extractedEntities.deviceModel || extractedEntities.device } : null, issue: extractedEntities.issue || null, liveObservation: false, noInspectionPerformed: true, ownerScoped: true },
+        cardData: { type: 'device_support', status: 'needs_user', resource: extractedEntities.device ? { kind: extractedEntities.device, label: extractedEntities.deviceModel || extractedEntities.device } : null, issue: extractedEntities.issue || null, inspection: { status: 'unavailable', reason: 'no_authorized_connected_resource' }, liveObservation: false, noInspectionPerformed: true, ownerScoped: true, nextActions: [{ id: 'guided_checks', label: 'Walk me through safe checks', prompt: `Walk me through safe checks for my ${extractedEntities.deviceModel || extractedEntities.device || 'device'}.` }, { id: 'find_inspector', label: 'Find someone to inspect it', prompt: `Find someone who can inspect my ${extractedEntities.deviceModel || extractedEntities.device || 'device'} for me.` }] },
         extractedEntities: extractedEntities as Record<string, unknown>,
         extractionSource: 'deterministic',
         progressStage: 'understanding',
