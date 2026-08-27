@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { authenticateUser, AuthRequest } from '../middleware/auth.js';
 import { getInternalNotifications, markNotificationRead } from '../services/pushNotifications.js';
+import { listAgentGoals } from '../services/agentRuntime.js';
+import { getAgentGoalContinuation } from '../services/agentGoalContinuation.js';
 
 const router = Router();
 
@@ -20,7 +22,10 @@ router.get('/notifications', authenticateUser, async (req: AuthRequest, res) => 
 
 router.get('/notifications/summary', authenticateUser, async (req: AuthRequest, res) => {
   try {
-    const notifications = await getInternalNotifications(phoneFromRequest(req), 100);
+    const ownerPhone = phoneFromRequest(req);
+    const notifications = await getInternalNotifications(ownerPhone, 100);
+    const goals = await listAgentGoals(ownerPhone);
+    const activeWork = (await Promise.all(goals.slice(0, 5).map(async goal => getAgentGoalContinuation(ownerPhone, goal.id)))).filter(Boolean);
     const unread = notifications.filter((notification: any) => !notification.read && !notification.read_at);
     const actionable = unread.filter((notification: any) => {
       const text = `${notification.title || ''} ${notification.body || ''}`.toLowerCase();
@@ -31,6 +36,7 @@ router.get('/notifications/summary', authenticateUser, async (req: AuthRequest, 
       unreadCount: unread.length,
       actionableCount: actionable.length,
       latest: unread.slice(0, 5),
+      activeWork,
       returnToChatPrompt: unread.length > 0
         ? actionable.length > 0
           ? 'Welcome back. You have updates that may need your attention. Would you like an update?'
