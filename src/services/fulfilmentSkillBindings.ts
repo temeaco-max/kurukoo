@@ -161,6 +161,14 @@ registerSkillsToFulfilmentMechanism(['buy_airtime'], 'marketplace_purchase', {
   providerInquiryFallback: false,
   confirmationRequired: true,
 });
+registerSkillsToFulfilmentMechanism(['data_bundle'], 'marketplace_purchase', {
+  requiredInputs: ['recipient_phone', 'network', 'variation_code', 'amount_minor'],
+  optionalInputs: ['bundle_label', 'currency', 'provider_request_id', 'provider_transaction_id', 'provider_status', 'payment_reference'],
+  catalogueFirst: false,
+  providerInquiryFallback: false,
+  confirmationRequired: true,
+  notes: 'Verify payment before VTpass activation; provider acceptance is not delivery, and only a correlated delivered status is completion evidence.',
+});
 registerSkillsToFulfilmentMechanism(['repair', 'phone_repairer'], 'service_request', {
   requiredInputs: ['device_or_asset', 'issue', 'location'],
   optionalInputs: ['urgency', 'parts_preference', 'diagnostic_authorization', 'fulfilment_method', 'collection_address', 'delivery_address', 'delivery_provider', 'tracking_reference'],

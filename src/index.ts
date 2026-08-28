@@ -31,6 +31,7 @@ import adminFcmRoutes from './routes/adminFcmRoutes.js';
 import adminClineRoutes from './routes/adminClineRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import airtimeRoutes from './routes/airtimeRoutes.js';
+import dataBundleRoutes from './routes/dataBundleRoutes.js';
 import stripeAgentPointsWebhookRoutes from './routes/stripeAgentPointsWebhookRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import authRoutes from './routes/authRoutes.js';
@@ -109,7 +110,7 @@ app.use('/api/v1',apiV1Bridge);
 // Africa's Talking callbacks are configured at root paths; retain API-prefixed aliases for existing integrations.
 app.use('/', channelRoutes); app.use('/api', channelRoutes); app.use('/api',circleRoutes); app.use('/api/economic-requests',economicRequestRouter); app.use('/api/admin/platform',adminPlatformRoutes);
 app.use('/api/admin',adminDisputeRoutes); app.use('/api/admin',adminRoutes); app.use('/api/admin',adminFcmRoutes); app.use('/api/admin/cline',adminClineRoutes); app.use('/api/admin',adminProviderVerificationRoutes);
-app.use('/api',stripeAgentPointsWebhookRoutes); app.use('/api',paymentRoutes); app.use('/api',airtimeRoutes); app.use('/api',userRoutes); app.use('/api/auth',authRoutes); app.use('/api',providerVerificationRoutes);
+app.use('/api',stripeAgentPointsWebhookRoutes); app.use('/api',paymentRoutes); app.use('/api',airtimeRoutes); app.use('/api',dataBundleRoutes); app.use('/api',userRoutes); app.use('/api/auth',authRoutes); app.use('/api',providerVerificationRoutes);
 app.use('/api/advertising',authenticatedAdvertisingRoutes);
 app.use('/api/chat',...prayerChatMiddleware); app.use('/api/chat',chatRouter); app.use('/api/prayer',prayerRoutes); app.use('/api/capabilities',capabilityPortfolioRoutes);
 app.use('/api/voice',voiceRouter); app.use('/api/provider-communication',providerCommunicationRoutes); app.use('/api',catalogueRoutes); app.use('/api',outcomeContextRoutes); app.use('/api',artifactRoutes); app.use('/api/qr',qrRouter); app.use('/api/agent',agentRouter); app.use('/api/agent',agentDelegationRoutes); app.use('/api',commercialRoutes); app.use('/api',agentNetworkCommerceRoutes); app.use('/api',quickRideRoutes); app.use('/api/fcm',fcmPublicRoutes); app.use('/api/fcm',fcmRouter); app.use('/api/whatsapp-linked-device',whatsappLinkedDeviceRoutes); app.use('/api/telegram-linked-device',telegramLinkedDeviceRoutes); app.use('/api',topicRoutes); app.use('/api',connectionRoutes); app.use('/api',identityContactRoutes); app.use('/api',orderRoutes); app.use('/api',cartRoutes); app.use('/api',reminderRoutes); app.use('/api',notificationRoutes); app.use('/api',safetyRoutes); app.use('/api',trustedContactConsentRoutes); app.use('/api',taskRoutes); app.use('/api',trustRoutes); app.use('/api',savedRoutes); app.use('/api',relationshipRoutes); app.use('/api/webrtc',webrtcRoutes); app.use('/',healthRoutes); app.use('/',presenceRoutes); app.use('/',discoveryRoutes); app.use('/',contentRoutes); app.use('/',chatPageRoutes); app.use('/',appSurfaceRoutes); app.use('/',publicRoutes); app.use('/api/pricing',pricingRoutes); app.use('/api',subscriptionRoutes);
