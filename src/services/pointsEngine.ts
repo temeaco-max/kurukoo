@@ -132,7 +132,18 @@ export async function awardDailyEngagement(phone: string): Promise<void> { await
 export async function awardReferral(phone: string): Promise<void> { await addPoints(phone, POINTS_AWARDS.REFERRAL, 'Referral reward (new subscriber)'); }
 export async function awardJobCompletion(phone: string, rating = 5, eventMarker?: string): Promise<void> {
     const clamped = Math.max(POINTS_AWARDS.JOB_COMPLETION_MIN, Math.min(POINTS_AWARDS.JOB_COMPLETION_MAX, Math.round(rating)));
-    const marker = eventMarker ? ` [${eventMarker}]` : '';
+    const normalizedMarker = String(eventMarker || '').trim().slice(0, 160);
+    if (normalizedMarker) {
+        const db = await getDb();
+        if (!(await isPointsEnabledForUser(db, phone))) return;
+        const escapedMarker = normalizedMarker.replace(/[\\%_]/g, '\\$&');
+        const stmt = db.prepare(`SELECT 1 FROM credit_transactions WHERE phone = ? AND type = 'credit' AND description LIKE ? ESCAPE '\\' LIMIT 1`);
+        stmt.bind([phone, `%[${escapedMarker}]%`]);
+        const alreadyAwarded = stmt.step();
+        stmt.free();
+        if (alreadyAwarded) return;
+    }
+    const marker = normalizedMarker ? ` [${normalizedMarker}]` : '';
     await addPoints(phone, clamped, `Job completion bonus (${clamped})${marker}`);
 }
 export async function awardStarBonus(phone: string): Promise<void> { await addPoints(phone, POINTS_AWARDS.STAR_BONUS, '5-star rating bonus'); }

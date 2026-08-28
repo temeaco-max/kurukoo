@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict';
 import { getDb } from '../src/database.js';
 import { upsertProfile } from '../src/routes/authRoutes.js';
-import { addPoints, deductPoints, getPointsBalance, getPointsHistory } from '../src/services/pointsEngine.js';
+import { addPoints, awardJobCompletion, deductPoints, getPointsBalance, getPointsHistory } from '../src/services/pointsEngine.js';
 
 const ngPhone = `+234810${String(Date.now()).slice(-8)}`;
 const ukPhone = `+44770${String(Date.now()).slice(-7)}`;
+const providerPhone = `+234811${String(Date.now()).slice(-7)}`;
 await upsertProfile(ngPhone, 'Points NG Actor');
 await upsertProfile(ukPhone, 'Points UK Actor');
+await upsertProfile(providerPhone, 'Points Provider Actor');
 const db = await getDb();
 db.run('UPDATE memory_profiles SET country = ? WHERE phone = ?', ['gb', ukPhone]);
 
@@ -20,4 +22,10 @@ const history = await getPointsHistory(ngPhone, 20);
 assert.ok(history.some((entry: any) => String(entry.description).includes('Points matrix award')));
 assert.ok(history.some((entry: any) => String(entry.description).includes('Points matrix spend')));
 assert.equal(await getPointsBalance(ukPhone), 0, 'UK Points must remain disabled by design');
-console.log('Points regression passed: owner-scoped award/spend history, distinct loyalty units, and UK boundary verified.');
+const completionBefore = await getPointsBalance(providerPhone);
+await awardJobCompletion(providerPhone, 5, 'verified-outcome:test-request-1');
+await awardJobCompletion(providerPhone, 5, 'verified-outcome:test-request-1');
+assert.equal(await getPointsBalance(providerPhone), completionBefore + 5, 'A verified outcome marker must award completion Points only once.');
+await awardJobCompletion(providerPhone, 4, 'verified-outcome:test-request-2');
+assert.equal(await getPointsBalance(providerPhone), completionBefore + 9, 'A distinct verified outcome marker must remain independently rewardable.');
+console.log('Points regression passed: owner-scoped award/spend history, distinct loyalty units, UK boundary, and idempotent verified outcome rewards verified.');
