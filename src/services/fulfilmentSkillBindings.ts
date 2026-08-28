@@ -198,3 +198,8 @@ registerSkillsToFulfilmentMechanism(['wifi_installer'], 'service_request', {
   requiredInputs: ['objective'],
   optionalInputs: ['location', 'timing', 'connection_type', 'provider', 'symptoms'],
 });
+registerSkillsToFulfilmentMechanism(['vet_assistant', 'pet_weight'], 'service_request', {
+  requiredInputs: ['objective', 'location'],
+  optionalInputs: ['timing', 'animal_type', 'breed', 'age', 'pet_size', 'symptoms', 'urgency', 'visit_mode', 'previous_vet', 'treatment_budget', 'contact_preference'],
+  notes: 'Preserve care-request context for matching and scheduling; this binding does not diagnose, prescribe, or assert provider availability.',
+});
