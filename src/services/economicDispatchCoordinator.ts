@@ -396,6 +396,8 @@ export async function confirmDispatchCompletion(input: { leadId: string; ownerPh
       completion_confirmed_by: input.ownerPhone,
       completion_confirmed_at: new Date().toISOString(),
       completion_verification_state: 'owner_confirmed',
+      owner_confirmation: input.ownerPhone,
+      confirmation_reference: `dispatch-completion:${lead.id}`,
     },
   });
   await transitionLinkedFulfilment(finalized, 'completed');
