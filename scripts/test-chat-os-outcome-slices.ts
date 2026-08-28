@@ -128,6 +128,18 @@ assert.equal(internet.skill, 'wifi_installer', 'Ordinary internet setup language
 assert.equal(internet.cardData?.type, 'agentic_storefront');
 assert.match(String((await getEconomicRequest(internet.cardData?.requestId || ''))?.requirements.objective || ''), /set up Wi-Fi/i, 'Internet outcome must retain the user’s stated service objective for provider coordination.');
 
+const healthcare = await routeIntent('Find a dermatologist in Yaba next week for this recurring rash. I need wheelchair access and will use NHIA.', makeDomainPhone(43), undefined, createContext, `${conversationId}-healthcare-appointment`);
+assert.equal(healthcare.skill, 'doctor_appointment', 'A healthcare appointment request must enter the bounded shared booking outcome.');
+assert.equal(healthcare.cardData?.type, 'agentic_storefront');
+const healthcareRequest = await getEconomicRequest(healthcare.cardData?.requestId || '');
+assert.equal(healthcareRequest?.requirements.objective, 'this recurring rash', 'Healthcare routing must preserve the stated concern without diagnosing it.');
+assert.equal(healthcareRequest?.requirements.location, 'Yaba', 'Healthcare routing must preserve the requested area.');
+assert.equal(healthcareRequest?.requirements.timing, 'next week', 'Healthcare routing must preserve appointment timing.');
+assert.equal(healthcareRequest?.requirements.specialist, 'dermatologist', 'Healthcare routing must preserve specialist preference.');
+assert.equal(healthcareRequest?.requirements.accessibility, 'wheelchair access', 'Healthcare routing must preserve accessibility needs.');
+assert.equal(healthcareRequest?.requirements.insurance_context, 'NHIA', 'Healthcare routing must preserve insurance context without claiming eligibility.');
+assert.match(healthcare.reply, /(?:verified provider|appointment|availability|confirm)/i, 'Healthcare response must remain a coordination state rather than a diagnosis or booking claim.');
+
 for (const [offset, message, firstSkill] of [
   [61, 'I need somewhere to stay next week.', 'hotel_deals'],
   [67, 'Sort out my internet.', 'wifi_installer'],

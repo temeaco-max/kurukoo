@@ -161,6 +161,11 @@ registerSkillsToFulfilmentMechanism(['hotel_deals'], 'booking', {
   requiredInputs: ['objective'],
   optionalInputs: ['location', 'timing', 'budget', 'guest_count', 'room_preference'],
 });
+registerSkillsToFulfilmentMechanism(['doctor_appointment'], 'booking', {
+  requiredInputs: ['objective', 'location'],
+  optionalInputs: ['timing', 'specialist', 'preferred_facility', 'accessibility', 'insurance_context', 'appointment_type', 'follow_up'],
+  notes: 'Coordinate only a verified healthcare provider or facility response; no diagnosis, prescription, or appointment confirmation is inferred from a request.',
+});
 registerSkillsToFulfilmentMechanism(['rental_tracker'], 'booking', {
   requiredInputs: ['objective'],
   optionalInputs: ['location', 'timing', 'budget', 'bedrooms', 'property_preference'],

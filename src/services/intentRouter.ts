@@ -13,6 +13,7 @@ const DEVICE_SUPPORT_RE = /\b(?:check|diagnose|troubleshoot|investigate|help(?: 
 const TUTOR_OUTCOME_RE = /\b(?:find|hire|book|get|need|want|looking)\b[\s\S]*\b(?:tutor|tutoring|teacher|teach(?:ing)?|lesson|lessons|guitar)\b|\b(?:tutor|tutoring|teacher|teach(?:ing)?|lesson|lessons|guitar)\b[\s\S]*\b(?:find|hire|book|get|need|want|looking)\b/i;
 const AUTOMOTIVE_SERVICE_OUTCOME_RE = /\b(?:car|vehicle|auto|engine|tyre|tire|brake|battery)\b[\s\S]*\b(?:mechanic|repair|fix|service|diagnos(?:e|is)|breakdown|broken)\b|\b(?:mechanic|repair|fix|service|diagnos(?:e|is)|breakdown|broken)\b[\s\S]*\b(?:car|vehicle|auto|engine|tyre|tire|brake|battery)\b/i;
 const INTERNET_SERVICE_OUTCOME_RE = /\b(?:sort out|fix|install|set[ -]?up|arrange|find|book|need|want|help)\b[\s\S]*\b(?:wi-?fi|internet|broadband|router|network)\b|\b(?:wi-?fi|internet|broadband|router|network)\b[\s\S]*\b(?:installer|technician|provider|repair|fix|set[ -]?up|not working|slow)\b/i;
+const HEALTHCARE_OUTCOME_RE = /\b(?:find|book|arrange|need|want|see|speak(?:\s+to)?|consult)\b[\s\S]*\b(?:doctor|clinic|hospital|healthcare|health care|dermatologist|dentist|paediatrician|pediatrician|nurse|specialist|appointment)\b|\b(?:doctor|clinic|hospital|healthcare|health care|dermatologist|dentist|paediatrician|pediatrician|nurse|specialist)\b[\s\S]*\b(?:appointment|available|availability|consult|see|book)\b/i;
 const TOPIC_OUTCOME_RE = /^(?:ask|share|post)\s+(?:with|to)\s+the\s+community\b/i;
 const COMMUNICATION_CONTINUATION_RE = /^(?:resolve the recipient for this message|choose an available channel for this message|confirm(?: and)? send(?:ing)? this message|copy this message)\b/i;
 
@@ -23,6 +24,7 @@ function shouldDelegateToCanonicalRouter(message: string, semantic: Awaited<Retu
   if (TUTOR_OUTCOME_RE.test(message)) return true;
   if (AUTOMOTIVE_SERVICE_OUTCOME_RE.test(message)) return true;
   if (INTERNET_SERVICE_OUTCOME_RE.test(message)) return true;
+  if (HEALTHCARE_OUTCOME_RE.test(message)) return true;
   if (TOPIC_OUTCOME_RE.test(message)) return true;
   if (COMMUNICATION_CONTINUATION_RE.test(message)) return true;
   if (semantic.mode === 'action' || semantic.mode === 'control' || semantic.mode === 'reference') return true;
