@@ -72,6 +72,10 @@ function isNewGuestRequestAfterAuthPrompt(message: string): boolean {
   if (/[?]/.test(text) || /^(also\b|please\s+(?:find|help|get|book|arrange|coordinate|source)\b|can you\b|could you\b|would you\b|what\b|how\b|where\b|when\b|why\b|i\s+(?:need|want|would like|am looking|can)|help\b|give me\b|find\b|show\b|compare\b|plan\b|remind\b|get\b|book\b|check\b|someone\b|anyone\b)/i.test(text)) return true;
   if (isFoodOrderExpression(text)) return true;
   if (/\b(?:clean|cleaning|housekeeping|house|home|flat|weekend|tomorrow|today|phone|screen|laptop|computer|acting\s+(?:weird|strange)|not\s+working|problem|issue|repair|fix)\b/i.test(text)) return true;
+  // Phone numbers and six-digit verification codes are continuations of the
+  // current identity flow, not new guest requests. Keep this narrow so normal
+  // task text still exits the auth boundary safely.
+  if (/^\+?\d[\d\s()-]{7,}$/.test(text) || /^\d{6}$/.test(text)) return false;
   return !isPlausibleConversationalName(text);
 }
 
