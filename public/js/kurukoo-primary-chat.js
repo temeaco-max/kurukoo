@@ -1614,6 +1614,7 @@
           if (data.type === 'done') {
             setTypingStatus('complete');
             if (window.KurukooTurnState) window.KurukooTurnState.done(assistant);
+            assistant.dataset.turnFinal = 'true';
             if (assistant.hidden) { assistant.hidden = false; assistant.classList.remove('message-streaming'); assistant.classList.add('message-arrived'); }
 
             assistant.dataset.messageId = data.messageId || '';
@@ -1635,12 +1636,12 @@
       if (!full) output.textContent = 'I could not complete that request. Please try again.';
       await refreshHistory();
     } catch (error) {
-      if (error?.name === 'AbortError') { setConnection(true); setTypingStatus('complete'); assistant.hidden = false; assistant.classList.remove('message-streaming'); assistant.classList.add('message-arrived'); if (!full) setMarkdown(output, 'Generation stopped.'); if (window.KurukooTurnState) window.KurukooTurnState.done(assistant); return; }
-      setConnection(false, 'Connection issue'); setTypingStatus('error'); if (window.KurukooTurnState) window.KurukooTurnState.setStatus(assistant, 'offline', 'Connection lost — reconnecting…'); if (!surfaceActive) { assistant.hidden = false; assistant.classList.remove('message-streaming'); assistant.classList.add('message-arrived'); }
+      if (error?.name === 'AbortError') { setConnection(true); setTypingStatus('complete'); assistant.hidden = false; assistant.classList.remove('message-streaming'); assistant.classList.add('message-arrived'); if (!full) setMarkdown(output, 'Generation stopped.'); if (window.KurukooTurnState) window.KurukooTurnState.setStatus(assistant, 'needs-you', 'Stopped'); assistant.dataset.turnFinal = 'true'; return; }
+      setConnection(false, 'Connection issue'); setTypingStatus('error'); if (window.KurukooTurnState) window.KurukooTurnState.setStatus(assistant, 'offline', 'Connection lost — reconnecting…'); assistant.dataset.turnFinal = 'true'; if (!surfaceActive) { assistant.hidden = false; assistant.classList.remove('message-streaming'); assistant.classList.add('message-arrived'); }
       if (surfaceActive) pushAgentSurfaceToast('Kurukoo could not finish that', error.message || 'Please try again from the composer.', true);
       const bubble = surfaceActive ? null : chatContent.querySelector('.message.assistant:last-child .markdown-body');
       if (bubble) setMarkdown(bubble, `I’m having trouble completing that right now. **Please try again.**\n\n_${escapeAttr(error.message)}_`);
-    } finally { state.controller = null; setTypingStatus('complete'); setComposerBusy(false); if (state.authStep !== 'none') setAuthComposerStep(state.authStep); else input.placeholder = state.displayName ? 'Tell Kurukoo what you need…' : 'Tell Kurukoo what you need…'; input.focus(); loadPoints(); loadReminders(); loadSafety(); loadAgentGoal(); }
+    } finally { state.controller = null; setTypingStatus('complete'); setComposerBusy(false); if (state.currentAssistantArticle && !state.currentAssistantArticle.dataset.turnFinal) { if (window.KurukooTurnState) { if (full && full.trim()) window.KurukooTurnState.done(state.currentAssistantArticle); else window.KurukooTurnState.setStatus(state.currentAssistantArticle, 'needs-you', 'Waiting on your next message'); } state.currentAssistantArticle.dataset.turnFinal = 'true'; } state.currentAssistantArticle = null; if (state.authStep !== 'none') setAuthComposerStep(state.authStep); else input.placeholder = state.displayName ? 'Tell Kurukoo what you need…' : 'Tell Kurukoo what you need…'; input.focus(); loadPoints(); loadReminders(); loadSafety(); loadAgentGoal(); }
   }
 
   function updateModelStatus(data) { const label = $('model-badge'); if (label && data.model) label.textContent = data.model; }

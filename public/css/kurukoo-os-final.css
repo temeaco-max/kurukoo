@@ -252,18 +252,21 @@ button,a{min-height:44px}
 }
 .ko-turn-state[data-stage="ready"]{background:#E7F3ED;color:var(--ko-success);border-color:#D4E8DC}        /* I can */
 .ko-turn-state[data-stage="working"]{background:#F8ECD8;color:var(--ko-warning);border-color:#ECDDBF}  /* working on it */
-.ko-turn-state[data-stage="waiting"]{background:#F8ECD8;color:var(--ko-warning);border-color:#ECDDBF}  /* waiting for … */
+.ko-turn-state[data-stage="waiting"]{background:#EAF1F6;color:var(--ko-info);border-color:#D8E4EC}     /* waiting for … */
+.ko-turn-state[data-stage="waiting"] .ko-turn-state__spinner{animation-duration:2.4s;border-top-color:var(--ko-info)}
 .ko-turn-state[data-stage="needs-you"]{background:#FBEDEA;color:var(--ko-danger);border-color:#EBCFC9}  /* I need you */
 .ko-turn-state[data-stage="done"]{background:#E7F3ED;color:var(--ko-success);border-color:#D4E8DC}       /* Done */
 .ko-turn-state[data-stage="offline"]{background:#FBEDEA;color:var(--ko-danger);border-color:#EBCFC9}     /* offline/reconnect */
 
 .ko-turn-state__label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ko-turn-state__spinner{
+  display:inline-block;flex:0 0 auto;
   width:14px;height:14px;border:2px solid rgba(36,34,31,.15);
   border-top-color:var(--ko-warning);border-radius:50%;
   animation:ko-spin 1.1s linear infinite;
 }
-.ko-turn-state[data-stage="done"] .ko-turn-state__spinner{animation:none;border-top-color:var(--ko-success)}
+.ko-turn-state[data-stage="done"] .ko-turn-state__spinner,
+.ko-turn-state[data-stage="completed"] .ko-turn-state__spinner{animation:none;border-color:var(--ko-success);background:transparent}
 .ko-turn-state__icon{width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center}
 @keyframes ko-spin{to{transform:rotate(360deg)}}
 

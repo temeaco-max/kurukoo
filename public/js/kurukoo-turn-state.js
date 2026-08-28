@@ -5,14 +5,17 @@
    Presentation only; services remain the source of truth.
    Depends on window.KurukooAgentPresence (optional). */
 (() => {
+  const KNOWN_STAGES = ['ready','working','waiting','needs-you','done','completed','offline'];
   const STAGE_FOR_STATUS = {
     idle: 'ready', ready: 'ready', listening: 'ready',
-    thinking: 'working', processing: 'working', working: 'working', speaking: 'working',
-    preparing: 'working', coordinating: 'working', checking: 'working', understanding: 'working',
+    thinking: 'working', processing: 'working', working: 'working', speaking: 'working', typing: 'working',
+    preparing: 'working', coordinating: 'working', checking: 'working', understanding: 'working', information: 'working',
     waiting: 'waiting', 'externally-pending': 'waiting', externally_pending: 'waiting', 'pending-external-evidence': 'waiting',
     'needs-user': 'needs-you', needs_user: 'needs-you', needsinput: 'needs-you', 'needs-input': 'needs-you',
+    'needs-you': 'needs-you',
     confirmation_required: 'needs-you', confirmationrequired: 'needs-you',
-    complete: 'done', done: 'done', success: 'done', completed: 'completed'
+    complete: 'done', done: 'done', success: 'done', completed: 'done',
+    offline: 'offline'
   };
   const LABEL_FOR_STAGE = {
     ready: 'Ready',
@@ -34,7 +37,7 @@
     if (!article) return null;
     let bar = article.querySelector('.message-turn-state');
     if (bar) return bar;
-    bar = el('div', 'message-turn-state');
+    bar = el('div', 'ko-turn-state message-turn-state');
     bar.setAttribute('role', 'status');
     bar.setAttribute('aria-live', 'polite');
     bar.innerHTML = '';
@@ -59,11 +62,18 @@
     if (labelEl) labelEl.textContent = label || LABEL_FOR_STAGE[stage] || 'Kurukoo';
   }
 
+  function resolveStage(status) {
+    const key = String(status || '').toLowerCase();
+    if (KNOWN_STAGES.includes(key)) return key;
+    if (STAGE_FOR_STATUS[key]) return STAGE_FOR_STATUS[key];
+    return 'ready';
+  }
+
   function setStatusOnArticle(article, status, label) {
     const bar = ensureBar(article);
-    let stage = STAGE_FOR_STATUS[String(status || '').toLowerCase()] || 'ready';
+    let stage = resolveStage(status);
     if (status === 'error' || status === 'failed') stage = 'needs-you';
-    apply(bar, stage, label || LABEL_FOR_STAGE[stage]);
+    apply(bar, stage, label || LABEL_FOR_STAGE[stage] || 'Kurukoo');
   }
 
   function doneOnArticle(article) {
@@ -77,7 +87,7 @@
     if (bar) bar.remove();
   }
 
-    function showReturningUser(target) {
+  function showReturningUser(target) {
     const container = target || document.getElementById('chat-content') || document.querySelector('.chat-shell');
     if (!container) return;
     if (container.querySelector('.ko-returning-user')) return;
@@ -104,6 +114,7 @@
     clear: clearBar,
     showReturningUser,
     showOffline,
+    resolveStage,
     STAGE_FOR_STATUS,
     LABEL_FOR_STAGE
   };
