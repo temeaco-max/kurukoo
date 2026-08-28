@@ -27,7 +27,7 @@ const report = {
   coreCount: core.length,
   extensionCount: extensions.length,
   canonicalCount: canonical.length,
-  canonicalMinimumSatisfied: canonical.length >= 241,
+  canonicalMinimumSatisfied: canonical.length >= 243,
   duplicateCore,
   duplicateCanonical,
   categoryOverrideCount: categoryOverrides.length,
@@ -38,7 +38,7 @@ const report = {
 };
 fs.mkdirSync(path.join(process.cwd(), 'data', 'audits'), { recursive: true });
 fs.writeFileSync(path.join(process.cwd(), 'data', 'audits', 'canonical-skill-catalogue.json'), `${JSON.stringify(report, null, 2)}\n`);
-if (report.coreCount !== 206) throw new Error(`Canonical core skill count changed unexpectedly: expected 206, found ${report.coreCount}`);
-if (report.canonicalCount < 241) throw new Error(`Canonical catalogue regressed below 241 skills: found ${report.canonicalCount}`);
+if (report.coreCount !== 207) throw new Error(`Canonical core skill count changed unexpectedly: expected 207, found ${report.coreCount}`);
+if (report.canonicalCount < 243) throw new Error(`Canonical catalogue regressed below 243 skills: found ${report.canonicalCount}`);
 if (duplicateCore.length || duplicateCanonical.length || missingBehaviour.length) throw new Error(`Canonical catalogue integrity failed: duplicateCore=${duplicateCore.length} duplicateCanonical=${duplicateCanonical.length} missingBehaviour=${missingBehaviour.length}`);
 console.log(JSON.stringify({ core: core.length, extensions: extensions.length, canonical: canonical.length, categoryOverrides: categoryOverrides.length }, null, 2));
