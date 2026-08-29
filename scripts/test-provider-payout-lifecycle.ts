@@ -30,14 +30,14 @@ const afterRefund = await getProviderPayoutBalance(phone);
 assert.equal(afterRefund.earnedMinor, 5400, 'refunds reduce provider earnings');
 
 // 4. Requesting a payout reserves it; available drops, earned unchanged.
-const payout = await requestProviderPayout({ providerPhone: phone, amountMinor: 3000, currency: 'NGN', rail: 'manual', destinationRef: 'opay:9999999999', idempotencyKey: 'payout-test:req:1' });
+const payout = await requestProviderPayout({ providerPhone: phone, amountMinor: 3000, currency: 'NGN', rail: 'manual', destinationRef: 'opay:9999999999', idempotencyKey: `payout-test:req:1:${phone}` });
 assert.equal(payout.status, 'requested');
 const afterRequest = await getProviderPayoutBalance(phone);
 assert.equal(afterRequest.reservedMinor, 3000);
 assert.equal(afterRequest.availableMinor, 2400, 'available = earned - reserved');
 
 // 5. Idempotent re-request does not double-reserve.
-const dup = await requestProviderPayout({ providerPhone: phone, amountMinor: 3000, currency: 'NGN', rail: 'manual', destinationRef: 'opay:9999999999', idempotencyKey: 'payout-test:req:1' });
+const dup = await requestProviderPayout({ providerPhone: phone, amountMinor: 3000, currency: 'NGN', rail: 'manual', destinationRef: 'opay:9999999999', idempotencyKey: `payout-test:req:1:${phone}` });
 assert.equal(dup.id, payout.id, 'idempotency key returns the same payout record');
 const afterDup = await getProviderPayoutBalance(phone);
 assert.equal(afterDup.reservedMinor, 3000, 'no double reservation from retries');
@@ -53,7 +53,7 @@ assert.equal(afterFail.reservedMinor, 0, 'failed payout releases reservation');
 assert.equal(afterFail.availableMinor, 5400);
 
 // 8. Settling requires external rail evidence — never trust a bare button press.
-const payout2 = await requestProviderPayout({ providerPhone: phone, amountMinor: 2400, currency: 'NGN', rail: 'paystack_transfer', destinationRef: 'acct_123', idempotencyKey: 'payout-test:req:2' });
+const payout2 = await requestProviderPayout({ providerPhone: phone, amountMinor: 2400, currency: 'NGN', rail: 'paystack_transfer', destinationRef: 'acct_123', idempotencyKey: `payout-test:req:2:${phone}` });
 await assert.rejects(() => settleProviderPayout(payout2.id, ''), /evidence|reference/i, 'settlement without a rail reference must be rejected');
 const settled = await settleProviderPayout(payout2.id, 'TRF_ps_abc123');
 assert.equal(settled.status, 'settled');
