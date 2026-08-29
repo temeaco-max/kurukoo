@@ -149,6 +149,64 @@ export async function awardJobCompletion(phone: string, rating = 5, eventMarker?
 }
 export async function awardStarBonus(phone: string): Promise<void> { await addPoints(phone, POINTS_AWARDS.STAR_BONUS, '5-star rating bonus'); }
 
+/**
+ * Reverse a previously awarded Points credit identified by its event marker,
+ * e.g. when a canonical event is invalidated by a dispute refund. Idempotent:
+ * the reversal itself carries a `[reversal:<marker>]` marker, so retries and
+ * webhook replays never double-debit. The balance is floored at zero — a
+ * reversal never drives a balance negative (the member may already have spent
+ * the points); the debited amount reflects what could actually be recovered.
+ */
+export async function reversePointsForMarker(phone: string, eventMarker: string, reason: string): Promise<{ reversed: boolean; amount: number }> {
+    const normalizedMarker = String(eventMarker || '').trim().slice(0, 160);
+    if (!normalizedMarker) return { reversed: false, amount: 0 };
+    const db = await getDb();
+    if (!(await isPointsEnabledForUser(db, phone))) return { reversed: false, amount: 0 };
+    const escapedMarker = normalizedMarker.replace(/[\\%_]/g, '\\$&');
+    db.run('BEGIN TRANSACTION');
+    try {
+        // Locate the original credit for this event.
+        const creditStmt = db.prepare(`SELECT id, amount FROM credit_transactions WHERE phone = ? AND type = 'credit' AND description LIKE ? ESCAPE '\\' ORDER BY id DESC LIMIT 1`);
+        creditStmt.bind([phone, `%[${normalizedMarker}]%`]);
+        if (!creditStmt.step()) {
+            creditStmt.free();
+            db.run('ROLLBACK');
+            return { reversed: false, amount: 0 };
+        }
+        const credit = creditStmt.getAsObject() as any;
+        creditStmt.free();
+        const creditAmount = Math.abs(Number(credit.amount || 0));
+        if (creditAmount <= 0) {
+            db.run('ROLLBACK');
+            return { reversed: false, amount: 0 };
+        }
+        // Idempotency: skip if a reversal for this marker already exists.
+        const reversalStmt = db.prepare(`SELECT 1 FROM credit_transactions WHERE phone = ? AND type = 'debit' AND description LIKE ? ESCAPE '\\' LIMIT 1`);
+        reversalStmt.bind([phone, `%[reversal:${escapedMarker}]%`]);
+        const alreadyReversed = reversalStmt.step();
+        reversalStmt.free();
+        if (alreadyReversed) {
+            db.run('ROLLBACK');
+            return { reversed: false, amount: 0 };
+        }
+        // Floor at zero; record the actually recovered amount.
+        const balStmt = db.prepare(`SELECT COALESCE(points_balance, 0) AS points FROM memory_profiles WHERE phone = ?`);
+        balStmt.bind([phone]);
+        const balance = balStmt.step() ? Number((balStmt.getAsObject() as any).points || 0) : 0;
+        balStmt.free();
+        const recovered = Math.min(creditAmount, Math.max(balance, 0));
+        db.run(`UPDATE memory_profiles SET points_balance = MAX(COALESCE(points_balance, 0) - ?, 0), updated_at = CURRENT_TIMESTAMP WHERE phone = ?`, [creditAmount, phone]);
+        db.run(`INSERT INTO credit_transactions (phone, amount, type, description) VALUES (?, ?, 'debit', ?)`, [phone, -recovered, `${reason} [reversal:${normalizedMarker}]`]);
+        db.run('COMMIT');
+        saveDb();
+        return { reversed: true, amount: recovered };
+    } catch (err) {
+        db.run('ROLLBACK');
+        console.error('Failed to reverse points:', err);
+        return { reversed: false, amount: 0 };
+    }
+}
+
 export async function getPointsLeaderboard(limit = 10): Promise<unknown[]> {
     const db = await getDb();
     const safeLimit = Math.max(1, Math.min(100, Math.floor(limit)));

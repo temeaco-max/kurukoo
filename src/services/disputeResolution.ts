@@ -3,6 +3,7 @@ import { getDb, saveDb } from '../database.js';
 import { freezeEscrowForOrder, refundEscrow, releaseEscrow } from './escrow.js';
 import { getAllowedEconomicTransitions, getEconomicRequest, transitionEconomicRequest } from './skillFlows.js';
 import { recordDisputeFault } from './trustScore.js';
+import { reversePointsForMarker } from './pointsEngine.js';
 
 export interface DisputeOpenResult {
     disputeId: number;
@@ -180,6 +181,26 @@ export async function resolveDisputeWithEconomicLifecycle(disputeId: number, res
       } catch (err) {
         // Trust-score update is a secondary concern; dispute resolution must not fail.
         console.error('[Dispute] trust score recalculation failed:', err);
+      }
+    }
+
+    // Points reversal: when a refund invalidates a completed outcome, any
+    // Points awarded for that outcome's escrow release must be reversed so
+    // invalid events never retain rewards. Secondary concern — never blocks
+    // dispute resolution.
+    if (resolution === 'refund' && orderId && faultPhone) {
+      try {
+        const escrowIdStmt = db.prepare('SELECT id FROM escrow WHERE order_id = ? ORDER BY id DESC LIMIT 1');
+        escrowIdStmt.bind([orderId]);
+        if (escrowIdStmt.step()) {
+          const escrowId = String((escrowIdStmt.getAsObject() as any).id);
+          escrowIdStmt.free();
+          await reversePointsForMarker(faultPhone, `escrow_release:${escrowId}`, 'Points reversal: dispute refund invalidated this outcome');
+        } else {
+          escrowIdStmt.free();
+        }
+      } catch (err) {
+        console.error('[Dispute] points reversal failed:', err);
       }
     }
 
