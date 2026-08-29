@@ -1,4 +1,5 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
+import 'dotenv/config';
 const production = process.env.NODE_ENV === 'production';
 import { createRequire } from 'node:module';
 import fs from 'node:fs';

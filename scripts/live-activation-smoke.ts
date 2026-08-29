@@ -1,4 +1,5 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
+import 'dotenv/config';
 import fs from 'node:fs';
 import path from 'node:path';
 import { queryUnifiedAI } from '../src/services/unifiedAiEngine.js';
