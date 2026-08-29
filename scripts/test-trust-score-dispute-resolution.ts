@@ -93,8 +93,8 @@ const orderId2 = `test-order-2-${Date.now()}`;
 const providerPhone2 = '+2348035550303';
 
 db.run(`INSERT OR REPLACE INTO memory_profiles
-  (phone, name, created_at, verified_provider, trust_score, jobs_completed)
-  VALUES (?, 'Test Provider 2', datetime('now','-30 days'), 0, 5.0, 50)`,
+  (phone, name, created_at, verified_provider, trust_score)
+  VALUES (?, 'Test Provider 2', datetime('now','-30 days'), 0, 5.0)`,
   [providerPhone2]);
 
 // Add skills with lower ratings for the provider (to affect trust score)
@@ -188,7 +188,7 @@ const buyerTrustAfter = await getTrustScoreBreakdown(buyerPhone);
 assert.ok(buyerTrustAfter, 'Should have trust score for buyer after disputes');
 assert.ok(buyerTrustAfter.disputesLost > 0, 'Buyer should have disputesLost > 0');
 
-const providerTrustAfter = await getTrustScoreBreakdown(providerPhone);
+const providerTrustAfter = await getTrustScoreBreakdown(providerPhone2);
 assert.ok(providerTrustAfter, 'Should have trust score for provider after disputes');
 assert.ok(providerTrustAfter.disputesLost > 0, 'Provider should have disputesLost > 0');
 
