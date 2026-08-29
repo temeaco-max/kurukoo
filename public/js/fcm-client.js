@@ -3,8 +3,19 @@
   const CONFIG_ENDPOINT = '/api/fcm/config';
   const REGISTER_ENDPOINT = '/api/fcm/register';
   const DEVICE_KEY = 'kurukoo_fcm_device_id';
+  const VISUAL_CSS = '/css/kurukoo-ui-completion.css?v=1';
   let status = 'idle';
   let messagingPromise = null;
+
+  const installVisualLayer = () => {
+    if (!document.body?.classList.contains('k-app-page')) return;
+    if (document.querySelector('link[data-kurukoo-visual-completion]')) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = VISUAL_CSS;
+    link.setAttribute('data-kurukoo-visual-completion', '');
+    document.head.appendChild(link);
+  };
 
   const readDeviceId = () => {
     try {
@@ -186,12 +197,12 @@
   };
 
   const boot = () => {
+    installVisualLayer();
     loadAppAssets();
 
     if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
     installOptInControl();
 
-    // Never prompt automatically. Re-register silently only after consent already exists.
     if (Notification.permission !== 'granted') return;
 
     registerIfPermitted()
