@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 process.env.KURUKOO_DATABASE_MODE = 'sqljs';
 process.env.NODE_ENV = 'test';
 process.env.CREDIT_ECONOMY_ENABLED = 'true';
-process.env.DB_PATH = process.env.DB_PATH || `tmp/points-reversal-${process.pid}-${Date.now()}.sqlite`;
 process.env.DB_PATH = `/tmp/kurukoo-points-reversal-${process.pid}-${Date.now()}.sqlite`;
 
 const { getDb, saveDb } = await import('../src/database.js');
