@@ -3,14 +3,69 @@ import { Router } from 'express';
 import { authenticateAdmin, authenticateUser, type AuthRequest } from '../middleware/auth.js';
 import { getDb } from '../database.js';
 import { createStripePaymentIntent } from '../services/stripePayment.js';
+import { createPaystackTransaction, verifyPaystackTransaction } from '../services/paystackPayment.js';
 import { ensureCommercialSchema, getCommercialRevenueSummary, recordCommercialEvent } from '../services/commercialLedger.js';
-import { ensureCommercialCatalog, getCommercialProduct } from '../services/commercialCatalogService.js';
+import { ensureCommercialCatalog, getCommercialProduct, getNetworkUnitProducts } from '../services/commercialCatalogService.js';
+import { createPointsTopUpIntent, settlePointsTopUp } from '../services/agentNetworkCommerce.js';
 import { getAgentDonationPolicy } from '../services/agentDonationPolicyService.js';
 
 const router = Router();
 
+const NETWORK_UNIT_POINTS: Record<string, number> = { network_unit_100:100, network_unit_500:500, network_unit_1000:1000 };
+
 router.get('/commercial/catalog', authenticateUser, async (_req: AuthRequest, res) => {
   try { await ensureCommercialCatalog(); const db=await getDb(); const rows=db.exec(`SELECT code,name,product_type,price_minor,currency,billing_period,active,metadata FROM commercial_products WHERE active=1 ORDER BY code`); const products=(rows[0]?.values||[]).map((values:any[])=>Object.fromEntries(rows[0].columns.map((c:string,i:number)=>[c,values[i]]))); res.json({success:true,products}); } catch(error){res.status(500).json({error:error instanceof Error?error.message:'Unable to load commercial catalog.'});}
+});
+
+router.get('/commercial/network-units', authenticateUser, async (_req: AuthRequest, res) => {
+  try { res.json({ success:true, units:await getNetworkUnitProducts() }); } catch(error) { res.status(500).json({ error:error instanceof Error?error.message:'Unable to load network-unit products.' }); }
+});
+
+router.post('/commercial/network-units/purchase', authenticateUser, async (req: AuthRequest, res) => {
+  const phone=String(req.user?.phone||'').trim(); const code=String(req.body?.productCode||'').trim(); const email=String(req.body?.email||'').trim();
+  if(!phone||!code||!email)return res.status(400).json({error:'Authenticated owner, productCode and customer email are required.'});
+  const points=NETWORK_UNIT_POINTS[code];
+  if(!points)return res.status(400).json({error:'Unknown network-unit package.'});
+  try{
+    const product=await getCommercialProduct(code);
+    if(!product||!Number(product.active)||String(product.product_type)!=='network_units')return res.status(404).json({error:'Network-unit package is unavailable.'});
+    const amountMinor=Math.floor(Number(product.price_minor||0)); const currency=String(product.currency||'NGN').toUpperCase();
+    if(amountMinor<=0)return res.status(409).json({error:'Network-unit pricing has not been configured for launch.'});
+    if(currency!=='NGN')return res.status(409).json({error:'Network-unit sales are currently enabled only in NGN.'});
+    const idempotencyKey=`network-unit-purchase:${phone}:${code}:${Date.now()}`;
+    const topUp=await createPointsTopUpIntent({customerPhone:phone,points,fiatAmountMinor:amountMinor,currency,idempotencyKey});
+    if(String(process.env.KURUKOO_PAY_PROVIDER||'').trim().toLowerCase()==='paystack'){
+      const payment=await createPaystackTransaction({amountMinor,currency,email,economicRequestId:`points-topup:${topUp.id}`,idempotencyKey:`kurukoo:${idempotencyKey}`});
+      return res.json({success:true,provider:'paystack',topUpId:topUp.id,productCode:code,points,amountMinor,currency,reference:payment.reference,authorizationUrl:payment.authorizationUrl,status:payment.status});
+    }
+    if(String(process.env.KURUKOO_PAY_PROVIDER||'').trim().toLowerCase()==='stripe'){
+      const payment=await createStripePaymentIntent({amountMinor,currency,economicRequestId:`points-topup:${topUp.id}`,idempotencyKey:`kurukoo:${idempotencyKey}`});
+      return res.json({success:true,provider:'stripe',topUpId:topUp.id,productCode:code,points,amountMinor,currency,paymentIntentId:payment.id,clientSecret:payment.clientSecret,status:payment.status});
+    }
+    return res.status(503).json({error:'A verified Nigeria payment provider is required for direct network-unit purchase.',payment_required:true});
+  }catch(error){return res.status(503).json({error:error instanceof Error?error.message:'Network-unit purchase is unavailable.',payment_required:true});}
+});
+
+router.post('/commercial/network-units/settle', authenticateUser, async (req: AuthRequest, res) => {
+  const phone=String(req.user?.phone||'').trim(); const topUpId=String(req.body?.topUpId||'').trim(); const reference=String(req.body?.reference||'').trim();
+  if(!phone||!topUpId||!reference)return res.status(400).json({error:'Authenticated owner, topUpId and payment reference are required.'});
+  try{
+    const db=await getDb(); const rows=db.exec(`SELECT id,customer_phone,points,fiat_amount_minor,currency,status FROM kurukoo_points_topups WHERE id=? LIMIT 1`,[topUpId]);
+    if(!rows[0]?.values?.length)return res.status(404).json({error:'Network-unit purchase not found.'});
+    const row=Object.fromEntries(rows[0].columns.map((c:string,i:number)=>[c,rows[0].values[0][i]]));
+    if(String(row.customer_phone)!==phone)return res.status(403).json({error:'Network-unit purchase ownership is required.'});
+    if(String(row.status)==='settled')return res.json({success:true,points:Number(row.points),status:'settled'});
+    if(String(row.currency).toUpperCase()!=='NGN')return res.status(409).json({error:'Network-unit settlement is currently NGN-only.'});
+    const provider=String(process.env.KURUKOO_PAY_PROVIDER||'').trim().toLowerCase();
+    if(provider==='paystack'){
+      const verification=await verifyPaystackTransaction(reference);
+      if(verification.status!=='success'||verification.amountMinor!==Number(row.fiat_amount_minor)||verification.currency!==String(row.currency).toUpperCase())return res.status(409).json({error:'Payment could not be verified for this network-unit purchase.'});
+    } else {
+      return res.status(503).json({error:'Automatic unit settlement currently requires Paystack server-side verification.',payment_required:true});
+    }
+    const settled=await settlePointsTopUp(topUpId,reference);
+    return res.json({success:settled.success,points:settled.points,commissionMinor:settled.commissionMinor,status:'settled'});
+  }catch(error){return res.status(503).json({error:error instanceof Error?error.message:'Network-unit settlement failed.'});}
 });
 
 router.post('/commercial/checkout', authenticateUser, async (req: AuthRequest, res) => {
