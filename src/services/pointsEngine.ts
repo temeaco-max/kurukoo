@@ -2,13 +2,19 @@
 import { getDb, saveDb } from '../database.js';
 
 /**
- * Kurukoo closed-loop Points economy — Blueprint §7.
- * Points are platform loyalty units, not cash, and are never mirrored into
- * wallet/fiat balances. UK Points are disabled by design.
+ * Kurukoo network-unit ledger.
+ *
+ * The database/API names remain `points_*` for backwards compatibility, while
+ * the product model treats the balance as a closed-loop network utility unit.
+ * Public naming can be changed later without another economic subsystem.
  */
+export const NETWORK_UNIT_LABEL = String(process.env.KURUKOO_UNIT_LABEL || 'Kurukoo Units').trim() || 'Kurukoo Units';
+export const NETWORK_UNIT_SYMBOL = String(process.env.KURUKOO_UNIT_SYMBOL || 'KU').trim().slice(0, 8) || 'KU';
+export const MAX_GRACE_LEADS = 3;
+
 export const POINTS_AWARDS = {
     DAILY_ENGAGEMENT: 1,
-    REFERRAL: 200,
+    REFERRAL: 20,
     JOB_COMPLETION_MIN: 1,
     JOB_COMPLETION_MAX: 5,
     STAR_BONUS: 1,
@@ -22,11 +28,12 @@ export const POINTS_COSTS = {
     LIVECAST_SIGNAL: 1,
 } as const;
 
+/** Provider network access costs, expressed in internal network units. */
 export const LEAD_CHARGES: Record<string, number> = {
-    okada: 50, keke: 50, car: 50, taxi: 50,
+    okada: 50, keke: 50, car: 50, taxi: 50, ride: 50,
     bicycle_delivery: 30,
-    hawker: 20, street_food: 20,
-    wheelbarrow: 20, truck_pusher: 20,
+    hawker: 20, street_food: 20, food: 20,
+    wheelbarrow: 20, truck_pusher: 20, truck: 20,
     professional: 50,
 };
 
@@ -37,23 +44,25 @@ async function isPointsEnabledForUser(db: any, phone: string): Promise<boolean> 
     let country = 'ng';
     if (stmt.step()) country = String(stmt.getAsObject().country || 'ng').toLowerCase();
     stmt.free();
-    return !['gb', 'uk'].includes(country);
+    // Nigeria is the current launch market. Keep the country field for future
+    // expansion, but do not silently operate the economic unit outside Nigeria.
+    return country === 'ng' || !country;
 }
 
 export async function addPoints(phone: string, amount: number, description: string): Promise<void> {
-    if (!Number.isInteger(amount) || amount <= 0) throw new Error('Points amount must be a positive integer');
+    if (!Number.isInteger(amount) || amount <= 0) throw new Error('Network-unit amount must be a positive integer');
     const db = await getDb();
     if (!(await isPointsEnabledForUser(db, phone))) return;
 
     db.run('BEGIN TRANSACTION');
     try {
         db.run(`UPDATE memory_profiles SET points_balance = COALESCE(points_balance, 0) + ?, updated_at = CURRENT_TIMESTAMP WHERE phone = ?`, [amount, phone]);
-        db.run(`INSERT INTO credit_transactions (phone, amount, type, description) VALUES (?, ?, 'credit', ?)`, [phone, amount, description]);
+        db.run(`INSERT INTO credit_transactions (phone, amount, type, description) VALUES (?, ?, 'credit', ?)`, [amount, phone].reverse ? [phone, amount, description] : [phone, amount, description]);
         db.run('COMMIT');
         saveDb();
     } catch (err) {
         db.run('ROLLBACK');
-        console.error('Failed to add points:', err);
+        console.error('Failed to add network units:', err);
         throw err;
     }
 }
@@ -73,30 +82,36 @@ export async function deductPoints(phone: string, amount: number, description: s
             return { success: false };
         }
         const row = stmt.getAsObject() as any;
-        const currentPoints = Number(row.points || 0);
-        const graceLeads = Number(row.grace_leads || 0);
+        const currentPoints = Math.max(0, Number(row.points || 0));
+        const graceLeads = Math.max(0, Number(row.grace_leads || 0));
         stmt.free();
 
         if (currentPoints < amount) {
-            if (!allowGrace || graceLeads >= 3) {
+            if (!allowGrace || graceLeads >= MAX_GRACE_LEADS) {
                 db.run('ROLLBACK');
                 return { success: false, remainingPoints: currentPoints };
             }
-            db.run(`UPDATE memory_profiles SET points_balance = points_balance - ?, grace_leads = grace_leads + 1, updated_at = CURRENT_TIMESTAMP WHERE phone = ?`, [amount, phone]);
-            db.run(`INSERT INTO credit_transactions (phone, amount, type, description) VALUES (?, ?, 'debit_grace', ?)`, [phone, -amount, description]);
+            // Grace is an onboarding allowance, not an overdraft. Never create
+            // a negative unit balance or record a phantom unit spend.
+            db.run(`UPDATE memory_profiles SET grace_leads = grace_leads + 1, updated_at = CURRENT_TIMESTAMP WHERE phone = ?`, [phone]);
+            db.run(`INSERT INTO credit_transactions (phone, amount, type, description) VALUES (?, ?, 'debit_grace', ?)`, [phone, 0, `${description} [grace:${graceLeads + 1}/${MAX_GRACE_LEADS}]`]);
             db.run('COMMIT');
             saveDb();
-            return { success: true, isGrace: true, remainingPoints: currentPoints - amount };
+            return { success: true, isGrace: true, remainingPoints: currentPoints };
         }
 
-        db.run(`UPDATE memory_profiles SET points_balance = points_balance - ?, updated_at = CURRENT_TIMESTAMP WHERE phone = ?`, [amount, phone]);
+        db.run(`UPDATE memory_profiles SET points_balance = points_balance - ?, updated_at = CURRENT_TIMESTAMP WHERE phone = ? AND COALESCE(points_balance, 0) >= ?`, [amount, phone, amount]);
+        const verify = db.prepare(`SELECT COALESCE(points_balance, 0) AS points FROM memory_profiles WHERE phone = ?`);
+        verify.bind([phone]);
+        const remaining = verify.step() ? Math.max(0, Number(verify.getAsObject().points || 0)) : 0;
+        verify.free();
         db.run(`INSERT INTO credit_transactions (phone, amount, type, description) VALUES (?, ?, 'debit', ?)`, [phone, -amount, description]);
         db.run('COMMIT');
         saveDb();
-        return { success: true, remainingPoints: currentPoints - amount };
+        return { success: true, remainingPoints: remaining };
     } catch (err) {
         db.run('ROLLBACK');
-        console.error('Failed to deduct points:', err);
+        console.error('Failed to deduct network units:', err);
         return { success: false };
     }
 }
@@ -107,7 +122,7 @@ export async function getPointsBalance(phone: string): Promise<number> {
     const stmt = db.prepare(`SELECT COALESCE(points_balance, 0) AS points FROM memory_profiles WHERE phone = ?`);
     stmt.bind([phone]);
     let points = 0;
-    if (stmt.step()) points = Number(stmt.getAsObject().points || 0);
+    if (stmt.step()) points = Math.max(0, Number(stmt.getAsObject().points || 0));
     stmt.free();
     return points;
 }
@@ -129,7 +144,7 @@ export async function spendPoints(phone: string, amount: number, feature: string
     return { success: res.success, remainingPoints: res.remainingPoints };
 }
 
-export async function awardDailyEngagement(phone: string): Promise<void> { await addPoints(phone, POINTS_AWARDS.DAILY_ENGAGEMENT, 'Daily engagement bonus'); }
+export async function awardDailyEngagement(phone: string): Promise<void> { await addPoints(phone, POINTS_AWARDS.DAILY_ENGAGEMENT, 'Daily network participation bonus'); }
 export async function awardReferral(phone: string): Promise<void> { await addPoints(phone, POINTS_AWARDS.REFERRAL, 'Referral reward (new subscriber)'); }
 export async function awardJobCompletion(phone: string, rating = 5, eventMarker?: string): Promise<void> {
     const clamped = Math.max(POINTS_AWARDS.JOB_COMPLETION_MIN, Math.min(POINTS_AWARDS.JOB_COMPLETION_MAX, Math.round(rating)));
@@ -149,14 +164,6 @@ export async function awardJobCompletion(phone: string, rating = 5, eventMarker?
 }
 export async function awardStarBonus(phone: string): Promise<void> { await addPoints(phone, POINTS_AWARDS.STAR_BONUS, '5-star rating bonus'); }
 
-/**
- * Reverse a previously awarded Points credit identified by its event marker,
- * e.g. when a canonical event is invalidated by a dispute refund. Idempotent:
- * the reversal itself carries a `[reversal:<marker>]` marker, so retries and
- * webhook replays never double-debit. The balance is floored at zero — a
- * reversal never drives a balance negative (the member may already have spent
- * the points); the debited amount reflects what could actually be recovered.
- */
 export async function reversePointsForMarker(phone: string, eventMarker: string, reason: string): Promise<{ reversed: boolean; amount: number }> {
     const normalizedMarker = String(eventMarker || '').trim().slice(0, 160);
     if (!normalizedMarker) return { reversed: false, amount: 0 };
@@ -165,7 +172,6 @@ export async function reversePointsForMarker(phone: string, eventMarker: string,
     const escapedMarker = normalizedMarker.replace(/[\\%_]/g, '\\$&');
     db.run('BEGIN TRANSACTION');
     try {
-        // Locate the original credit for this event.
         const creditStmt = db.prepare(`SELECT id, amount FROM credit_transactions WHERE phone = ? AND type = 'credit' AND description LIKE ? ESCAPE '\\' ORDER BY id DESC LIMIT 1`);
         creditStmt.bind([phone, `%[${normalizedMarker}]%`]);
         if (!creditStmt.step()) {
@@ -180,7 +186,6 @@ export async function reversePointsForMarker(phone: string, eventMarker: string,
             db.run('ROLLBACK');
             return { reversed: false, amount: 0 };
         }
-        // Idempotency: skip if a reversal for this marker already exists.
         const reversalStmt = db.prepare(`SELECT 1 FROM credit_transactions WHERE phone = ? AND type = 'debit' AND description LIKE ? ESCAPE '\\' LIMIT 1`);
         reversalStmt.bind([phone, `%[reversal:${escapedMarker}]%`]);
         const alreadyReversed = reversalStmt.step();
@@ -189,20 +194,19 @@ export async function reversePointsForMarker(phone: string, eventMarker: string,
             db.run('ROLLBACK');
             return { reversed: false, amount: 0 };
         }
-        // Floor at zero; record the actually recovered amount.
         const balStmt = db.prepare(`SELECT COALESCE(points_balance, 0) AS points FROM memory_profiles WHERE phone = ?`);
         balStmt.bind([phone]);
-        const balance = balStmt.step() ? Number((balStmt.getAsObject() as any).points || 0) : 0;
+        const balance = balStmt.step() ? Math.max(0, Number((balStmt.getAsObject() as any).points || 0)) : 0;
         balStmt.free();
-        const recovered = Math.min(creditAmount, Math.max(balance, 0));
-        db.run(`UPDATE memory_profiles SET points_balance = MAX(COALESCE(points_balance, 0) - ?, 0), updated_at = CURRENT_TIMESTAMP WHERE phone = ?`, [creditAmount, phone]);
+        const recovered = Math.min(creditAmount, balance);
+        db.run(`UPDATE memory_profiles SET points_balance = MAX(COALESCE(points_balance, 0) - ?, 0), updated_at = CURRENT_TIMESTAMP WHERE phone = ?`, [recovered, phone]);
         db.run(`INSERT INTO credit_transactions (phone, amount, type, description) VALUES (?, ?, 'debit', ?)`, [phone, -recovered, `${reason} [reversal:${normalizedMarker}]`]);
         db.run('COMMIT');
         saveDb();
         return { reversed: true, amount: recovered };
     } catch (err) {
         db.run('ROLLBACK');
-        console.error('Failed to reverse points:', err);
+        console.error('Failed to reverse network units:', err);
         return { reversed: false, amount: 0 };
     }
 }
@@ -210,7 +214,7 @@ export async function reversePointsForMarker(phone: string, eventMarker: string,
 export async function getPointsLeaderboard(limit = 10): Promise<unknown[]> {
     const db = await getDb();
     const safeLimit = Math.max(1, Math.min(100, Math.floor(limit)));
-    const stmt = db.prepare(`SELECT phone, name, COALESCE(points_balance, 0) AS points, subscription_tier FROM memory_profiles ORDER BY points_balance DESC LIMIT ?`);
+    const stmt = db.prepare(`SELECT phone, name, COALESCE(points_balance, 0) AS points, subscription_tier FROM memory_profiles WHERE lower(COALESCE(country, 'ng')) = 'ng' ORDER BY points_balance DESC LIMIT ?`);
     stmt.bind([safeLimit]);
     const rows: unknown[] = [];
     while (stmt.step()) rows.push(stmt.getAsObject());
@@ -220,3 +224,7 @@ export async function getPointsLeaderboard(limit = 10): Promise<unknown[]> {
 
 export const addCredits = addPoints;
 export const deductCredits = async (phone: string, amount: number, description: string): Promise<boolean> => (await deductPoints(phone, amount, description)).success;
+
+/** Backwards-compatible user-facing helper for current screens. */
+export function getPointsLabel(): string { return NETWORK_UNIT_LABEL; }
+export function getPointsSymbol(): string { return NETWORK_UNIT_SYMBOL; }
