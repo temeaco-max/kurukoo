@@ -3,10 +3,7 @@ import { getDb, saveDb } from '../database.js';
 
 /**
  * Kurukoo network-unit ledger.
- *
- * The database/API names remain `points_*` for backwards compatibility, while
- * the product model treats the balance as a closed-loop network utility unit.
- * Public naming can be changed later without another economic subsystem.
+ * Database/API names remain points_* for backwards compatibility.
  */
 export const NETWORK_UNIT_LABEL = String(process.env.KURUKOO_UNIT_LABEL || 'Kurukoo Units').trim() || 'Kurukoo Units';
 export const NETWORK_UNIT_SYMBOL = String(process.env.KURUKOO_UNIT_SYMBOL || 'KU').trim().slice(0, 8) || 'KU';
@@ -28,7 +25,6 @@ export const POINTS_COSTS = {
     LIVECAST_SIGNAL: 1,
 } as const;
 
-/** Provider network access costs, expressed in internal network units. */
 export const LEAD_CHARGES: Record<string, number> = {
     okada: 50, keke: 50, car: 50, taxi: 50, ride: 50,
     bicycle_delivery: 30,
@@ -44,8 +40,6 @@ async function isPointsEnabledForUser(db: any, phone: string): Promise<boolean> 
     let country = 'ng';
     if (stmt.step()) country = String(stmt.getAsObject().country || 'ng').toLowerCase();
     stmt.free();
-    // Nigeria is the current launch market. Keep the country field for future
-    // expansion, but do not silently operate the economic unit outside Nigeria.
     return country === 'ng' || !country;
 }
 
@@ -53,11 +47,10 @@ export async function addPoints(phone: string, amount: number, description: stri
     if (!Number.isInteger(amount) || amount <= 0) throw new Error('Network-unit amount must be a positive integer');
     const db = await getDb();
     if (!(await isPointsEnabledForUser(db, phone))) return;
-
     db.run('BEGIN TRANSACTION');
     try {
         db.run(`UPDATE memory_profiles SET points_balance = COALESCE(points_balance, 0) + ?, updated_at = CURRENT_TIMESTAMP WHERE phone = ?`, [amount, phone]);
-        db.run(`INSERT INTO credit_transactions (phone, amount, type, description) VALUES (?, ?, 'credit', ?)`, [amount, phone].reverse ? [phone, amount, description] : [phone, amount, description]);
+        db.run(`INSERT INTO credit_transactions (phone, amount, type, description) VALUES (?, ?, 'credit', ?)`, [phone, amount, description]);
         db.run('COMMIT');
         saveDb();
     } catch (err) {
@@ -71,7 +64,6 @@ export async function deductPoints(phone: string, amount: number, description: s
     if (!Number.isInteger(amount) || amount <= 0) return { success: false };
     const db = await getDb();
     if (!(await isPointsEnabledForUser(db, phone))) return { success: true, remainingPoints: 0 };
-
     db.run('BEGIN TRANSACTION');
     try {
         const stmt = db.prepare(`SELECT COALESCE(points_balance, 0) AS points, COALESCE(grace_leads, 0) AS grace_leads FROM memory_profiles WHERE phone = ?`);
@@ -91,8 +83,6 @@ export async function deductPoints(phone: string, amount: number, description: s
                 db.run('ROLLBACK');
                 return { success: false, remainingPoints: currentPoints };
             }
-            // Grace is an onboarding allowance, not an overdraft. Never create
-            // a negative unit balance or record a phantom unit spend.
             db.run(`UPDATE memory_profiles SET grace_leads = grace_leads + 1, updated_at = CURRENT_TIMESTAMP WHERE phone = ?`, [phone]);
             db.run(`INSERT INTO credit_transactions (phone, amount, type, description) VALUES (?, ?, 'debit_grace', ?)`, [phone, 0, `${description} [grace:${graceLeads + 1}/${MAX_GRACE_LEADS}]`]);
             db.run('COMMIT');
@@ -101,11 +91,11 @@ export async function deductPoints(phone: string, amount: number, description: s
         }
 
         db.run(`UPDATE memory_profiles SET points_balance = points_balance - ?, updated_at = CURRENT_TIMESTAMP WHERE phone = ? AND COALESCE(points_balance, 0) >= ?`, [amount, phone, amount]);
+        db.run(`INSERT INTO credit_transactions (phone, amount, type, description) VALUES (?, ?, 'debit', ?)`, [phone, -amount, description]);
         const verify = db.prepare(`SELECT COALESCE(points_balance, 0) AS points FROM memory_profiles WHERE phone = ?`);
         verify.bind([phone]);
         const remaining = verify.step() ? Math.max(0, Number(verify.getAsObject().points || 0)) : 0;
         verify.free();
-        db.run(`INSERT INTO credit_transactions (phone, amount, type, description) VALUES (?, ?, 'debit', ?)`, [phone, -amount, description]);
         db.run('COMMIT');
         saveDb();
         return { success: true, remainingPoints: remaining };
@@ -225,6 +215,5 @@ export async function getPointsLeaderboard(limit = 10): Promise<unknown[]> {
 export const addCredits = addPoints;
 export const deductCredits = async (phone: string, amount: number, description: string): Promise<boolean> => (await deductPoints(phone, amount, description)).success;
 
-/** Backwards-compatible user-facing helper for current screens. */
 export function getPointsLabel(): string { return NETWORK_UNIT_LABEL; }
 export function getPointsSymbol(): string { return NETWORK_UNIT_SYMBOL; }
