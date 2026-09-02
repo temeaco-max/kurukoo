@@ -4,32 +4,63 @@
   if (window.KurukooViewState) return;
 
   const ROUTES = Object.freeze({
-    agent: '/chat', desk: '/desk', discover: '/discover', requests: '/requests', tasks: '/tasks', connect: '/connect',
-    agents: '/agents', capabilities: '/capabilities', opportunities: '/opportunities', topics: '/topics',
-    wallet: '/wallet', points: '/points', 'top-up': '/top-up', subscriptions: '/subscriptions', checkout: '/checkout',
-    confirmations: '/confirmations', artifacts: '/artifacts', prayer: '/prayer', call: '/call', safety: '/safety',
-    memory: '/memory', notifications: '/notifications', settings: '/settings', help: '/help', reminders: '/reminders',
-    saved: '/saved', cart: '/cart'
+    chat: '/chat', home: '/home', explore: '/explore', activity: '/activity', work: '/tasks',
+    connect: '/connect', reminders: '/reminders', saved: '/saved', notifications: '/notifications', memory: '/memory',
+    topics: '/topics', opportunities: '/opportunities', capabilities: '/capabilities', agents: '/agents',
+    wallet: '/wallet', points: '/points', subscriptions: '/subscriptions', cart: '/cart',
+    'top-up': '/top-up', checkout: '/checkout', prayer: '/prayer', call: '/call', safety: '/safety', settings: '/settings',
+    files: '/artifacts'
   });
+
+  const SECTION_BY_PATH = Object.freeze({
+    '/chat': 'chat',
+    '/home': 'home', '/desk': 'home',
+    '/explore': 'explore', '/discover': 'explore',
+    '/activity': 'activity', '/requests': 'activity',
+    '/tasks': 'work',
+    '/connect': 'connect', '/reminders': 'reminders', '/saved': 'saved', '/notifications': 'notifications', '/memory': 'memory',
+    '/topics': 'topics', '/opportunities': 'opportunities', '/capabilities': 'capabilities', '/agents': 'agents',
+    '/wallet': 'wallet', '/points': 'points', '/subscriptions': 'subscriptions', '/cart': 'cart',
+    '/top-up': 'top-up', '/checkout': 'checkout', '/confirmations': 'activity', '/prayer': 'prayer',
+    '/call': 'call', '/safety': 'safety', '/settings': 'settings', '/artifacts': 'files'
+  });
+
+  const INTERNAL_SECTION = Object.freeze({
+    chat: 'chat', home: 'desk', explore: 'discover', activity: 'requests', work: 'tasks', files: 'artifacts'
+  });
+
+  const canonicalPath = (section) => ROUTES[section] || ROUTES[Object.keys(INTERNAL_SECTION).find(key => INTERNAL_SECTION[key] === section)] || `/${section}`;
 
   const pathToSection = (pathname) => {
     const normalized = String(pathname || '/').replace(/\/+$/, '') || '/';
-    const match = Object.entries(ROUTES).find(([, path]) => path === normalized);
-    return match?.[0] || (normalized.startsWith('/app/') ? normalized.split('/')[2] || 'desk' : 'desk');
+    return SECTION_BY_PATH[normalized] || (normalized.startsWith('/app/') ? normalized.split('/')[2] || 'home' : 'home');
   };
 
   const parseLocation = (url) => {
     const params = new URLSearchParams(url.search);
+    const section = pathToSection(url.pathname);
     return Object.freeze({
-      section: pathToSection(url.pathname), pathname: url.pathname, query: url.search, hash: url.hash,
-      conversationId: params.get('conversationId') || '', contextId: params.get('contextId') || '',
-      objectId: params.get('objectId') || '', action: params.get('action') || '', params
+      section,
+      internalSection: INTERNAL_SECTION[section] || section,
+      pathname: url.pathname,
+      canonicalPath: canonicalPath(section),
+      query: url.search,
+      hash: url.hash,
+      conversationId: params.get('conversationId') || '',
+      contextId: params.get('contextId') || '',
+      objectId: params.get('objectId') || '',
+      action: params.get('action') || '',
+      params
     });
   };
 
   const buildUrl = (next = {}) => {
     const url = new URL(window.location.href);
     if (next.section && ROUTES[next.section]) url.pathname = ROUTES[next.section];
+    if (next.internalSection) {
+      const key = Object.keys(INTERNAL_SECTION).find(item => INTERNAL_SECTION[item] === next.internalSection);
+      if (key) url.pathname = canonicalPath(key);
+    }
     if (next.pathname) url.pathname = next.pathname;
     if (next.query !== undefined) url.search = next.query;
     if (next.hash !== undefined) url.hash = next.hash;
@@ -45,7 +76,9 @@
   const emit = () => {
     document.documentElement.dataset.kurukooView = state.section;
     document.body.dataset.viewSection = state.section;
+    document.body.dataset.viewInternalSection = state.internalSection;
     document.body.dataset.viewContext = state.contextId || '';
+    document.body.dataset.viewCanonicalPath = state.canonicalPath;
     listeners.forEach((listener) => { try { listener(state); } catch { /* observer isolation */ } });
   };
 
@@ -72,13 +105,12 @@
   };
 
   const setActiveNav = (nextState) => {
-    document.querySelectorAll('.k-app-nav a[href], .k-app-more-menu a[href]').forEach((anchor) => {
+    document.querySelectorAll('.k-app-nav a[href], .k-mobile-tabbar a[href]').forEach((anchor) => {
       let pathname = '';
-      try { pathname = new URL(anchor.href, window.location.href).pathname; } catch { return; }
-      const active = pathname === ROUTES[nextState.section];
+      try { pathname = new URL(anchor.href, window.location.href).pathname.replace(/\/+$/, '') || '/'; } catch { return; }
+      const active = pathname === nextState.canonicalPath || pathname === nextState.pathname;
       anchor.classList.toggle('active', active);
       if (active) anchor.setAttribute('aria-current', 'page'); else anchor.removeAttribute('aria-current');
-      if (active && anchor.closest('.k-app-more')) anchor.closest('.k-app-more').open = true;
     });
   };
 
@@ -93,7 +125,8 @@
       const destination = new URL(anchor.href, window.location.href);
       if (destination.origin !== window.location.origin || destination.pathname.startsWith('/admin') || destination.pathname === '/chat') return;
       state = parseLocation(destination);
-      try { sessionStorage.setItem('kurukoo.last.view', JSON.stringify({ section: state.section, contextId: state.contextId, href: destination.href })); } catch { /* storage unavailable */ }
+      try { sessionStorage.setItem('kurukoo.last.view', JSON.stringify({ section: state.section, internalSection: state.internalSection, href: destination.href })); } catch { /* storage unavailable */ }
+      emit();
     } catch { /* browser handles navigation */ }
   }, true);
 
