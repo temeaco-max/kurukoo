@@ -10,43 +10,44 @@ const app = read('views/app.ejs');
 const shell = read('public/js/kurukoo-app-shell.js');
 const routes = read('src/routes/appSurfaceRoutes.ts');
 
-const canonicalSections = [
-  'agent','discover','topics','requests','reminders','saved','cart','tasks','connect','agents','capabilities','opportunities',
-  'wallet','points','top-up','subscriptions','checkout','confirmations','memory','artifacts','prayer','call','notifications','safety'
-];
-for (const section of canonicalSections) {
-  if (!routes.includes(`['${section}'`)) failures.push(`Canonical route missing /app/${section}`);
-  if (!app.includes(`/app/${section}`) && !shell.includes(`/app/${section}`)) failures.push(`No Web App navigation/reference to /app/${section}`);
-}
-
-const primary = ['/app/agent','/app/discover','/app/requests','/app/tasks','/app/connect'];
-for (const route of primary) if (!app.includes(`href="${route}"`)) failures.push(`Primary desktop navigation missing ${route}`);
-for (const route of primary) if (!shell.includes(`href:'${route}'`)) failures.push(`Primary mobile navigation runtime missing ${route}`);
-
-const secondary = ['/app/reminders','/app/saved','/app/cart'];
-for (const route of secondary) if (!shell.includes(`href:'${route}'`)) failures.push(`Secondary navigation runtime missing ${route}`);
-if (!shell.includes('createSecondaryNav')) failures.push('Desktop secondary Web App navigation is not mounted');
-
-const legacyMap = [
-  ['/discover','/app/discover'], ['/requests','/app/requests'], ['/tasks','/app/tasks'], ['/connect','/app/connect'],
-  ['/cart','/app/cart'], ['/checkout','/app/checkout'], ['/confirmation','/app/confirmations'], ['/memory','/app/memory'],
-  ['/safety','/app/safety'], ['/call','/app/call'], ['/points','/app/points'], ['/top-up','/app/top-up'],
-  ['/subscription','/app/subscriptions'], ['/daily-picks','/app/discover'], ['/topics','/app/topics'],
+const primary = [
+  ['/chat', 'Chat'], ['/home', 'Home'], ['/explore', 'Explore'], ['/activity', 'Activity'], ['/tasks', 'Work'],
 ] as const;
-for (const [legacy, canonical] of legacyMap) {
-  if (!shell.includes(`['${legacy}','${canonical}']`)) failures.push(`Legacy app handoff ${legacy} → ${canonical} missing`);
+for (const [route, label] of primary) {
+  if (!routes.includes(`'${route}'`)) failures.push(`Canonical route missing ${route}`);
+  if (!shell.includes(`href:'${route}'`) && !shell.includes(`href="${route}"`) && !routes.includes(`href="${route}"`)) failures.push(`Canonical navigation does not reference ${route}`);
+  if (!app.includes('k-app-shell')) failures.push('Authenticated app shell is not rendered through the canonical app view.');
+  void label;
 }
 
-if (!shell.includes('normalizeAppLinks')) failures.push('Web App link-normalization flow is not mounted');
-if (!app.includes('href="/chat"')) failures.push('Web App has no direct Chat recovery path');
-if (!app.includes('href="/app/agent"')) failures.push('Web App has no Agent recovery path');
-if (!app.includes('class="k-mobile-tabbar"')) failures.push('Mobile Web App tab bar is missing');
-if (!shell.includes('k-feature-compass')) failures.push('Mobile secondary feature navigation is missing');
-if (!shell.includes('k-app-secondary')) failures.push('Desktop secondary navigation grouping is missing');
+const supporting = ['/reminders','/saved','/notifications','/memory','/topics','/opportunities','/capabilities','/agents','/wallet','/points','/subscriptions','/cart','/connect','/settings','/help'];
+for (const route of supporting) if (!routes.includes(`'${route}'`)) failures.push(`Supporting route missing ${route}`);
+
+for (const partial of ['app-header.ejs','app-sidebar.ejs','app-mobile-nav.ejs','app-context-bridge.ejs','app-footer.ejs']) {
+  if (!fs.existsSync(path.join(root, 'views', '_partials', partial))) failures.push(`Shared authenticated component missing ${partial}`);
+  if (!routes.includes(`renderSharedPartial('${partial}'`)) failures.push(`Shared authenticated component is not composed: ${partial}`);
+}
+
+for (const legacyRoute of ['/desk','/discover','/requests']) {
+  if (!routes.includes(`'${legacyRoute}'`)) failures.push(`Compatibility route missing ${legacyRoute}`);
+}
+if (!routes.includes("'/home': 'desk'")) failures.push('Home must resolve to the existing Desk implementation section until that runtime is renamed internally.');
+if (!routes.includes("'/explore': 'discover'")) failures.push('Explore must resolve to the existing discovery implementation section until that runtime is renamed internally.');
+if (!routes.includes("'/activity': 'requests'")) failures.push('Activity must resolve to the existing request implementation section until that runtime is renamed internally.');
+
+if (!shell.includes("label:'Home'")) failures.push('Shared mobile shell no longer uses the assistant-first Home label.');
+if (!shell.includes("label:'Explore'")) failures.push('Shared mobile shell no longer uses the assistant-first Explore label.');
+if (!shell.includes("label:'Activity'")) failures.push('Shared mobile shell no longer uses the assistant-first Activity label.');
+if (!shell.includes('createCollapseControl')) failures.push('Desktop navigation collapse control is not mounted.');
+if (!shell.includes('wireMobileNav')) failures.push('Mobile navigation controls are not mounted.');
+if (!shell.includes('createFeatureCompass')) failures.push('Secondary capability discovery remains unavailable.');
+if (!app.includes('href="/chat"')) failures.push('Authenticated app view has no direct Chat recovery path.');
+if (!shell.includes("'/css/kurukoo-facelift.css?v=1'")) failures.push('Authenticated shell does not load the facelift foundation.');
+if (shell.includes("'kurukoo-page-architecture'")) failures.push('Authenticated shell still loads the internal page architecture UI.');
 
 if (failures.length) {
   console.error('Web App screen-flow contract failed:');
   failures.forEach((failure) => console.error(`- ${failure}`));
   process.exit(1);
 }
-console.log(`Web App screen-flow contract passed: ${canonicalSections.length} canonical surfaces, five primary destinations, three persistent secondary destinations, legacy handoff normalization, mobile overflow navigation and Chat/Agent recovery paths present.`);
+console.log(`Web App screen-flow contract passed: assistant-first primary navigation, grouped supporting surfaces, shared authenticated components, legacy route compatibility and Chat recovery are aligned.`);
