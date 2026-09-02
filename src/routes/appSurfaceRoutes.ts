@@ -1,6 +1,7 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import express from 'express';
 import path from 'node:path';
+import ejs from 'ejs';
 import { optionalAuthenticateUser, type AuthRequest } from '../middleware/auth.js';
 import { getExternalIntegrationReadiness } from '../services/externalIntegrationReadiness.js';
 import { getPilotReadiness } from '../services/pilotReadiness.js';
@@ -12,40 +13,82 @@ import economicDispatchRoutes from './economicDispatchRoutes.js';
 
 const router = express.Router();
 
-const surfaceMap = new Map([
-  ['desk', { title: 'Desk', eyebrow: 'Your Kurukoo workspace', description: 'See what is happening, what needs your attention and where to continue across conversations, requests, tasks, reminders, memory and connected work.', cta: '/chat', ctaLabel: 'Ask Agent' }],
-  ['discover', { title: 'Discover', eyebrow: 'Your opportunity and activity surface', description: 'See what is useful, interesting, available, discussable or actionable today: nearby activity, Daily Picks, Topics, Opportunities and things Kurukoo can do.', cta: '/discover', ctaLabel: 'Open Discover' }],
-  ['topics', { title: 'Topics', eyebrow: 'Community context', description: 'Browse and share moderated community questions, reports and experiences without turning community content into a provider, offer or payment claim.', cta: '/topics', ctaLabel: 'Open Topics' }],
-  ['requests', { title: 'Requests', eyebrow: 'Work in motion', description: 'Follow requests, orders, sourcing and confirmations, then return to the conversation that started the work.', cta: '/requests', ctaLabel: 'Open Requests' }],
-  ['reminders', { title: 'Reminders', eyebrow: 'Keep life on track', description: 'Create and review scheduled help without leaving the same memory, conversation and notification relationship.', cta: '/chat?prompt=Show%20me%20my%20reminders', ctaLabel: 'Manage in Chat' }],
-  ['saved', { title: 'Saved', eyebrow: 'Keep useful context close', description: 'Saved items, offers, follows and watches remain tied to your owner-scoped memory and canonical conversation.', cta: '/chat?prompt=Show%20me%20my%20saved%20items', ctaLabel: 'Open Saved' }],
-  ['cart', { title: 'Cart', eyebrow: 'Prepare an economic action', description: 'Review sourced items before requesting them; cart contents remain separate from payment success and final confirmation.', cta: '/cart', ctaLabel: 'Open Cart' }],
-  ['tasks', { title: 'Tasks', eyebrow: 'Work to finish', description: 'Keep tasks, reminders and follow-through connected to the conversations and objectives they support.', cta: '/tasks', ctaLabel: 'Open Tasks' }],
-  ['connect', { title: 'Connect', eyebrow: 'Bring your tools together', description: 'Connect user-owned storage, communication channels, devices and external sources without creating parallel identity or memory.', cta: '/connect', ctaLabel: 'Open Connect' }],
-  ['agents', { title: 'Agents', eyebrow: 'Objectives at a glance', description: 'Review objectives, their progress, and what needs you. Use Chat to start or guide the work.', cta: '/chat', ctaLabel: 'Continue in Chat' }],
-  ['capabilities', { title: 'Capabilities', eyebrow: 'Capability portfolio', description: 'Use multiple capabilities—provider, contributor, delivery, buyer, seller and more—under one identity and one canonical execution fabric.', cta: '/capabilities', ctaLabel: 'Open Capabilities' }],
-  ['opportunities', { title: 'Opportunities', eyebrow: 'Ways to participate', description: 'Opportunities, promotions and useful participation paths are tied to the same discovery, capability and conversation fabric.', cta: '/opportunities', ctaLabel: 'Open Opportunities' }],
-  ['wallet', { title: 'Wallet', eyebrow: 'Economic layer', description: 'Wallet, Points, Top Up, subscriptions and payment states are presented independently of whether external payment rails are currently active.', cta: '/wallet', ctaLabel: 'Open Wallet' }],
-  ['points', { title: 'Points', eyebrow: 'Kurukoo economy', description: 'Points remain a closed-loop utility/economy surface distinct from cash payment rails and external settlement.', cta: '/points', ctaLabel: 'Open Points' }],
-  ['top-up', { title: 'Top Up', eyebrow: 'Add funds', description: 'Top-up UI is available as a truthful payment surface; provider evidence determines whether a transaction can actually complete.', cta: '/top-up', ctaLabel: 'Open Top Up' }],
-  ['subscriptions', { title: 'Subscriptions', eyebrow: 'Plans and entitlements', description: 'Plans and entitlement states are presented independently of live billing activation and never claim a successful charge without provider evidence.', cta: '/subscriptions', ctaLabel: 'Open Subscriptions' }],
-  ['checkout', { title: 'Checkout', eyebrow: 'Confirm economic action', description: 'Checkout remains bound to canonical economic requests, payment policy and explicit confirmation.', cta: '/checkout', ctaLabel: 'Open Checkout' }],
-  ['confirmations', { title: 'Confirmations', eyebrow: 'Know what happened', description: 'Confirmation surfaces summarize canonical lifecycle, evidence and recovery rather than inferred success.', cta: '/requests', ctaLabel: 'Open Requests' }],
-  ['memory', { title: 'Memory', eyebrow: 'Your Kurukoo memory', description: 'Memory Profile is the canonical owner-scoped memory authority shared by all clients.', cta: '/memory', ctaLabel: 'Open Memory' }],
-  ['artifacts', { title: 'Artifacts', eyebrow: 'Your files and recordings', description: 'Artifacts are owner-scoped. Connected user-owned storage is preferred; managed storage is bounded fallback/staging.', cta: '/artifacts', ctaLabel: 'Open Artifacts' }],
-  ['prayer', { title: 'Prayer Companion', eyebrow: 'First-class agent capability', description: 'Prayer support can compose personalized prayers, preserve continuity and use the existing voice, reminder and artifact boundaries when enabled.', cta: '/chat?prompt=I%20would%20like%20a%20prayer', ctaLabel: 'Ask Agent' }],
-  ['call', { title: 'Call', eyebrow: 'Realtime communication', description: 'AI voice and peer calling remain part of the same Kurukoo relationship. Provider credentials and realtime infrastructure determine activation.', cta: '/call', ctaLabel: 'Open Call' }],
-  ['notifications', { title: 'Notifications', eyebrow: 'Stay connected', description: 'Notifications return relevant continuation, request and reminder context while preserving the same conversation identity.', cta: '/notifications', ctaLabel: 'Open Notifications' }],
-  ['safety', { title: 'Safety', eyebrow: 'Safety and check-ins', description: 'Safety context, trusted contacts and check-ins are explicit, consent-bound and never represented as emergency-service fulfilment.', cta: '/safety', ctaLabel: 'Open Safety' }],
-  ['settings', { title: 'Settings', eyebrow: 'Your Kurukoo preferences', description: 'Manage account, security, privacy, memory, notifications, connections, accessibility and product preferences in one place.', cta: '/settings', ctaLabel: 'Open Settings' }],
-]);
-
-
-const cleanCanonicalSections: Record<string, string> = {
-  '/desk': 'desk', '/discover': 'discover', '/topics': 'topics', '/requests': 'requests', '/reminders': 'reminders', '/saved': 'saved', '/cart': 'cart', '/tasks': 'tasks', '/connect': 'connect', '/agents': 'agents', '/capabilities': 'capabilities', '/opportunities': 'opportunities', '/wallet': 'wallet', '/points': 'points', '/top-up': 'top-up', '/subscriptions': 'subscriptions', '/checkout': 'checkout', '/confirmations': 'confirmations', '/memory': 'memory', '/artifacts': 'artifacts', '/prayer': 'prayer', '/call': 'call', '/notifications': 'notifications', '/safety': 'safety', '/settings': 'settings',
+type AppPartialLocals = {
+  selected: { title: string; eyebrow: string; description: string; cta: string; ctaLabel: string };
+  section: string;
+  canonicalPath: string;
+  displayName: string;
+  phone: string;
 };
 
-const sharedPublicAuthenticated = new Set(['/discover', '/topics']);
+const surfaceMap = new Map([
+  ['desk', { title: 'Home', eyebrow: 'What matters now', description: 'See what needs your attention, pick up where you left off, and start something new with Kurukoo.', cta: '/chat', ctaLabel: 'Talk to Kurukoo' }],
+  ['discover', { title: 'Explore', eyebrow: 'Find something useful', description: 'Find people, places, services, products, Topics and opportunities, then bring what matters into a conversation.', cta: '/chat', ctaLabel: 'Ask Kurukoo' }],
+  ['topics', { title: 'Topics', eyebrow: 'Community context', description: 'Browse and share moderated community questions, reports and experiences while keeping community discussion separate from fulfilment claims.', cta: '/chat', ctaLabel: 'Discuss in Chat' }],
+  ['requests', { title: 'Activity', eyebrow: 'Work in motion', description: 'See what is happening, what needs you, and what has finished. Open any item to continue the work in context.', cta: '/chat?prompt=Show%20me%20what%20needs%20my%20attention', ctaLabel: 'Ask what is next' }],
+  ['reminders', { title: 'Reminders', eyebrow: 'Keep life on track', description: 'Create and review scheduled help while keeping the original conversation and context close.', cta: '/chat?prompt=Show%20me%20my%20reminders', ctaLabel: 'Manage in Chat' }],
+  ['saved', { title: 'Saved', eyebrow: 'Keep useful context close', description: 'Keep useful discoveries, offers and conversations close so you can return to them when you are ready.', cta: '/chat?prompt=Show%20me%20my%20saved%20items', ctaLabel: 'Ask about Saved' }],
+  ['cart', { title: 'Cart', eyebrow: 'Prepare an economic action', description: 'Review sourced items and options before you ask Kurukoo to continue into a request or verified checkout.', cta: '/cart', ctaLabel: 'Review Cart' }],
+  ['tasks', { title: 'Work', eyebrow: 'Things that need doing', description: 'See work you have accepted, work available to you, and the evidence needed to finish it.', cta: '/chat?prompt=Show%20me%20my%20work', ctaLabel: 'Ask about Work' }],
+  ['connect', { title: 'Connect', eyebrow: 'Bring your tools together', description: 'Manage the tools, channels, devices and sources Kurukoo is allowed to use on your behalf.', cta: '/connect', ctaLabel: 'Manage connections' }],
+  ['agents', { title: 'Agents', eyebrow: 'Work Kurukoo can continue for you', description: 'Review bounded agents and their active objectives. Use Chat to start, guide or stop work.', cta: '/chat', ctaLabel: 'Talk to Kurukoo' }],
+  ['capabilities', { title: 'Capabilities', eyebrow: 'How you participate', description: 'Manage the capabilities available under your identity, including provider, contributor, seller, buyer and delivery roles.', cta: '/chat', ctaLabel: 'Ask about capabilities' }],
+  ['opportunities', { title: 'Opportunities', eyebrow: 'Ways to participate', description: 'Review relevant ways to participate in the Kurukoo network and continue any opportunity in context.', cta: '/chat', ctaLabel: 'Ask about opportunities' }],
+  ['wallet', { title: 'Wallet', eyebrow: 'Money', description: 'See your cash balance and economic activity. Payment providers are only treated as successful when their evidence confirms it.', cta: '/wallet', ctaLabel: 'Open Wallet' }],
+  ['points', { title: 'Points', eyebrow: 'Network value', description: 'See your closed-loop Kurukoo Points balance and activity separately from cash payment rails.', cta: '/points', ctaLabel: 'Open Points' }],
+  ['top-up', { title: 'Top Up', eyebrow: 'Add funds', description: 'Choose an amount and continue through the configured payment path. Kurukoo never turns an attempted charge into claimed success.', cta: '/top-up', ctaLabel: 'Top up' }],
+  ['subscriptions', { title: 'Plans', eyebrow: 'Plans and entitlements', description: 'Compare plans and manage entitlements without implying a successful charge until payment evidence is available.', cta: '/subscriptions', ctaLabel: 'View Plans' }],
+  ['checkout', { title: 'Checkout', eyebrow: 'Review before you confirm', description: 'Check the request, offer, price and payment state before an irreversible economic action.', cta: '/requests', ctaLabel: 'Back to Activity' }],
+  ['confirmations', { title: 'Outcome', eyebrow: 'Know what happened', description: 'Understand the confirmed result, evidence and next step for work you asked Kurukoo to handle.', cta: '/activity', ctaLabel: 'Back to Activity' }],
+  ['memory', { title: 'Memory', eyebrow: 'What Kurukoo keeps for you', description: 'Review owner-scoped memory, its source and privacy boundary, and remove anything you no longer want kept.', cta: '/chat', ctaLabel: 'Ask about Memory' }],
+  ['artifacts', { title: 'Files', eyebrow: 'Your files and recordings', description: 'Browse owner-scoped files, recordings and transcripts and continue from their originating context.', cta: '/chat', ctaLabel: 'Ask about Files' }],
+  ['prayer', { title: 'Prayer', eyebrow: 'A first-class Kurukoo companion', description: 'Start a prayer, keep continuity, set a reminder or use supported voice without creating a separate identity.', cta: '/chat?prompt=I%20would%20like%20a%20prayer', ctaLabel: 'Start in Chat' }],
+  ['call', { title: 'Call', eyebrow: 'Talk with Kurukoo or another person', description: 'See realtime communication readiness and continue within the same identity and conversation relationship.', cta: '/call', ctaLabel: 'Open Call' }],
+  ['notifications', { title: 'Notifications', eyebrow: 'What needs your attention', description: 'See actionable updates and return directly to the request, reminder, conversation or other thing that needs you.', cta: '/notifications', ctaLabel: 'Open Notifications' }],
+  ['safety', { title: 'Safety', eyebrow: 'Check-ins and trusted support', description: 'Manage consent-bound check-ins and trusted contacts without implying emergency-service fulfilment.', cta: '/safety', ctaLabel: 'Open Safety' }],
+  ['settings', { title: 'Settings', eyebrow: 'Your Kurukoo account', description: 'Manage account, privacy, notifications, connections, accessibility and product preferences in one place.', cta: '/settings', ctaLabel: 'Open Settings' }],
+]);
+
+const cleanCanonicalSections: Record<string, string> = {
+  '/chat': 'chat',
+  '/home': 'desk',
+  '/desk': 'desk',
+  '/explore': 'discover',
+  '/discover': 'discover',
+  '/activity': 'requests',
+  '/requests': 'requests',
+  '/reminders': 'reminders',
+  '/saved': 'saved',
+  '/cart': 'cart',
+  '/tasks': 'tasks',
+  '/connect': 'connect',
+  '/agents': 'agents',
+  '/capabilities': 'capabilities',
+  '/opportunities': 'opportunities',
+  '/wallet': 'wallet',
+  '/points': 'points',
+  '/top-up': 'top-up',
+  '/subscriptions': 'subscriptions',
+  '/checkout': 'checkout',
+  '/confirmations': 'confirmations',
+  '/memory': 'memory',
+  '/artifacts': 'artifacts',
+  '/prayer': 'prayer',
+  '/call': 'call',
+  '/notifications': 'notifications',
+  '/safety': 'safety',
+  '/settings': 'settings',
+};
+
+const canonicalPathBySection: Record<string, string> = {
+  chat: '/chat', desk: '/home', discover: '/explore', requests: '/activity', tasks: '/tasks', connect: '/connect',
+  reminders: '/reminders', saved: '/saved', cart: '/cart', agents: '/agents', capabilities: '/capabilities',
+  opportunities: '/opportunities', wallet: '/wallet', points: '/points', 'top-up': '/top-up', subscriptions: '/subscriptions',
+  checkout: '/checkout', confirmations: '/activity', memory: '/memory', artifacts: '/artifacts', prayer: '/prayer',
+  call: '/call', notifications: '/notifications', safety: '/safety', settings: '/settings',
+};
+
+const sharedPublicAuthenticated = new Set(['/explore', '/discover', '/topics']);
 
 function screenAssets(section: string): string {
   if (section === 'discover') return '<link rel="stylesheet" href="/css/kurukoo-discover-convergence.css?v=1"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="/js/kurukoo-discover-convergence.js?v=1" defer></script><script src="/js/kurukoo-discover-map-loader.js?v=1" defer></script>';
@@ -55,19 +98,65 @@ function screenAssets(section: string): string {
   return '';
 }
 
+const renderSharedPartial = (file: string, locals: AppPartialLocals): Promise<string> => new Promise((resolve, reject) => {
+  ejs.renderFile(path.join(process.cwd(), 'views', '_partials', file), locals, (error, html) => error ? reject(error) : resolve(html));
+});
+
+function selectedFor(section: string) {
+  return surfaceMap.get(section) ?? surfaceMap.get('desk')!;
+}
+
+function appLocals(req: express.Request, section: string, resourceId?: string) {
+  const authReq = req as AuthRequest;
+  const selected = selectedFor(section);
+  const canonicalPath = canonicalPathBySection[section] || req.path;
+  return {
+    selected,
+    section,
+    canonicalPath,
+    displayName: authReq.user?.name || authReq.user?.phone || '',
+    phone: authReq.user?.phone || '',
+    surfaces: getClientSurfaces('web'),
+    readiness: getPilotReadiness(),
+    integrations: getExternalIntegrationReadiness(),
+    enabledIntegrations: getExternalIntegrationReadiness().filter((item: any) => item.implementation?.state === 'IMPLEMENTED' || item.implementation?.implemented === true).length,
+    integrationCount: getExternalIntegrationReadiness().length,
+    visualFeatures: getCanonicalDiscoverablePlatformFeatures().filter(feature => !feature.audience.includes('admin')),
+    resourceId,
+    contentContract: getPageContentContract(section),
+  };
+}
+
+async function renderShell(html: string, locals: AppPartialLocals): Promise<string> {
+  const [header, sidebar, bridge, footer, mobile] = await Promise.all([
+    renderSharedPartial('app-header.ejs', locals),
+    renderSharedPartial('app-sidebar.ejs', locals),
+    renderSharedPartial('app-context-bridge.ejs', locals),
+    renderSharedPartial('app-footer.ejs', locals),
+    renderSharedPartial('app-mobile-nav.ejs', locals),
+  ]);
+
+  return html
+    .replace(/<header class="k-app-header">[\s\S]*?<\/header>/, header)
+    .replace(/<aside class="k-app-sidebar"[\s\S]*?<\/aside>/, sidebar)
+    .replace(/<section class="ko-context"[\s\S]*?<\/section>/, bridge)
+    .replace('</main>', `${footer}</main>`)
+    .replace('</body>', `${mobile}</body>`);
+}
+
 function renderApp(req: express.Request, res: express.Response, section = 'desk') {
   const authReq = req as AuthRequest;
   if (!authReq.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent(req.originalUrl || req.path)}`);
-  const selected = surfaceMap.get(section) ?? surfaceMap.get('desk')!;
-  const surfaces = getClientSurfaces('web');
-  const readiness = getPilotReadiness();
-  const integrations = getExternalIntegrationReadiness();
-  const enabledIntegrations = integrations.filter((item: any) => item.implementation?.state === 'IMPLEMENTED' || item.implementation?.implemented === true).length;
-  const content = getPageContentContract(section);
-  return res.render('app', { selected, section, displayName: authReq.user.name || authReq.user.phone, phone: authReq.user.phone, surfaces, readiness, integrations, enabledIntegrations, integrationCount: integrations.length, visualFeatures: getCanonicalDiscoverablePlatformFeatures().filter(feature => !feature.audience.includes('admin')), contentContract: content }, (error, html) => {
+  const locals = appLocals(req, section);
+  return res.render('app', locals, async (error, html) => {
     if (error) return res.status(500).send('Unable to render application surface');
-    const assets = screenAssets(section);
-    res.send(assets ? html.replace('</head>', `${assets}</head>`) : html);
+    try {
+      const output = await renderShell(html, locals);
+      const assets = screenAssets(section);
+      return res.send(assets ? output.replace('</head>', `${assets}</head>`) : output);
+    } catch {
+      return res.status(500).send('Unable to render application shell');
+    }
   });
 }
 
@@ -99,6 +188,7 @@ router.get('/share/:shareId', (req, res) => {
 });
 
 for (const [pathname, section] of Object.entries(cleanCanonicalSections)) {
+  if (pathname === '/chat') continue;
   router.get(pathname, optionalAuthenticateUser, (req, res, next) => {
     const authReq = req as AuthRequest;
     if (!authReq.user?.phone && sharedPublicAuthenticated.has(pathname)) return next();
@@ -111,10 +201,19 @@ for (const resource of ['requests','tasks','reminders','opportunities','agents',
     const authReq = req as AuthRequest;
     if (!authReq.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent(req.originalUrl)}`);
     const section = resource === 'connections' ? 'connect' : resource;
-    const selected = surfaceMap.get(section as string) ?? surfaceMap.get('desk')!;
-    return res.render('app', { selected: { ...selected, description: `${selected.description} This view shows the selected item in context.` }, section, displayName: authReq.user.name || authReq.user.phone, phone: authReq.user.phone, surfaces: getClientSurfaces('web'), readiness: getPilotReadiness(), integrations: getExternalIntegrationReadiness(), enabledIntegrations: 0, integrationCount: 0, visualFeatures: getCanonicalDiscoverablePlatformFeatures().filter(feature => !feature.audience.includes('admin')), resourceId: req.params.id, contentContract: getPageContentContract(section) });
+    const locals = appLocals(req, section, req.params.id);
+    locals.selected = { ...locals.selected, description: `${locals.selected.description} You are viewing this item in context.` };
+    return res.render('app', locals, async (error, html) => {
+      if (error) return res.status(500).send('Unable to render application surface');
+      try {
+        const output = await renderShell(html, locals);
+        const assets = screenAssets(section);
+        return res.send(assets ? output.replace('</head>', `${assets}</head>`) : output);
+      } catch {
+        return res.status(500).send('Unable to render application shell');
+      }
+    });
   });
 }
-
 
 export default router;
