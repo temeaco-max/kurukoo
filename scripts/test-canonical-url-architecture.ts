@@ -31,6 +31,7 @@ for (const route of [...Object.values(CANONICAL_URLS.desk), ...Object.values(CAN
 const root = process.cwd();
 const read = (relative: string) => fs.readFileSync(path.join(root, relative), 'utf8');
 const appSurfaceRoutes = read('src/routes/appSurfaceRoutes.ts');
+const appTemplate = read('views/app.ejs');
 require(!appSurfaceRoutes.includes('res.redirect(308'), 'Authenticated app-surface routes must be wired directly, not via legacy compatibility redirects.');
 require(!appSurfaceRoutes.includes("'/app'"), 'Authenticated app-surface routes must not retain the legacy /app alias.');
 for (const route of ["'/home': 'desk'", "'/explore': 'discover'", "'/activity': 'requests'"]) require(appSurfaceRoutes.includes(route), `App surface routes must include ${route}.`);
@@ -52,13 +53,19 @@ const sharedPartials = [
   'views/_partials/app-mobile-nav.ejs',
   'views/_partials/app-context-bridge.ejs',
   'views/_partials/app-footer.ejs',
+  'views/_partials/app-page-header.ejs',
 ];
 for (const relative of sharedPartials) require(fs.existsSync(path.join(root, relative)), `Reusable app component is missing: ${relative}`);
-require(appSurfaceRoutes.includes("renderSharedPartial('app-header.ejs'"), 'App renderer must compose the shared header partial.');
-require(appSurfaceRoutes.includes("renderSharedPartial('app-sidebar.ejs'"), 'App renderer must compose the shared sidebar partial.');
-require(appSurfaceRoutes.includes("renderSharedPartial('app-mobile-nav.ejs'"), 'App renderer must compose the shared mobile navigation partial.');
-require(appSurfaceRoutes.includes("renderSharedPartial('app-context-bridge.ejs'"), 'App renderer must compose the shared continuity bridge.');
-require(appSurfaceRoutes.includes("renderSharedPartial('app-footer.ejs'"), 'App renderer must compose the shared footer partial.');
+require(appTemplate.includes("include('_partials/app-header'"), 'App template must own the shared header composition.');
+require(appTemplate.includes("include('_partials/app-sidebar'"), 'App template must own the shared sidebar composition.');
+require(appTemplate.includes("include('_partials/app-mobile-nav'"), 'App template must own the shared mobile navigation composition.');
+require(appTemplate.includes("include('_partials/app-context-bridge'"), 'App template must own the shared continuity bridge composition.');
+require(appTemplate.includes("include('_partials/app-footer'"), 'App template must own the shared footer composition.');
+require(appTemplate.includes("include('_partials/app-page-header'"), 'App template must reuse the shared page-header component.');
+require(!appSurfaceRoutes.includes('renderSharedPartial'), 'Route layer must not duplicate template component composition.');
+require(!appSurfaceRoutes.includes('renderShell'), 'Route layer must not regex-replace template shell markup.');
+require(!appTemplate.includes('class="k-app-sidebar" aria-label="Kurukoo application navigation"'), 'App template must not contain a second legacy sidebar owner.');
+require(!appTemplate.includes('<nav class="k-mobile-tabbar"'), 'App template must not contain a second legacy mobile-navigation owner.');
 require(!read('public/js/kurukoo-page-architecture.js').includes('data-kurukoo-page-architecture'), 'Internal page architecture must not be rendered into the user-facing app.');
 
 require(CANONICAL_URLS.admin.home === '/admin', 'Admin must use /admin as its canonical root.');
@@ -70,4 +77,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('Canonical URL architecture test passed: assistant-first Home/Explore/Activity IA, reusable app composition, resource URLs, and cross-client boundaries are aligned.');
+console.log('Canonical URL architecture test passed: assistant-first Home/Explore/Activity IA, direct reusable app composition, resource URLs, and cross-client boundaries are aligned.');
