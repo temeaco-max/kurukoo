@@ -53,12 +53,14 @@ assert.ok(controls.includes('.k-app-mobile-toggle') && controls.includes('.k-app
 for (const token of ['--os-bg','--os-surface','--os-accent','os-dashboard','os-dashboard-rail','os-today-flow','os-card-head']) assert.ok(osCss.includes(token), `OS architecture token/layout missing: ${token}`);
 for (const token of ['Today’s flow','Continue conversation','Opportunity radar','Connected channels','Safety check-in','Activity summary','os-dashboard']) assert.ok(osDashboard.includes(token), `OS dashboard composition missing: ${token}`);
 
-const sharedPartials = ['app-header.ejs','app-sidebar.ejs','app-mobile-nav.ejs','app-context-bridge.ejs','app-footer.ejs'];
+const sharedPartials = ['app-header','app-sidebar','app-mobile-nav','app-context-bridge','app-footer','app-page-header'];
 for (const partial of sharedPartials) {
-  assert.ok(fs.existsSync(path.join(root, 'views/_partials', partial)), `Shared authenticated partial missing: ${partial}`);
-  assert.ok(routes.includes(`renderSharedPartial('${partial}'`), `Authenticated renderer does not compose shared partial: ${partial}`);
+  assert.ok(fs.existsSync(path.join(root, 'views/_partials', `${partial}.ejs`)), `Shared authenticated partial missing: ${partial}.ejs`);
+  assert.ok(app.includes(`include('_partials/${partial}'`), `App template must compose shared partial: ${partial}.ejs`);
 }
+assert.ok(!routes.includes('renderSharedPartial'), 'Route layer must not render shared UI components.');
+assert.ok(!routes.includes('renderShell'), 'Route layer must not regex-replace shared UI components.');
 assert.ok(read('public/css/kurukoo-app-ia.css').includes('.k-app-nav-fold'), 'Assistant-first IA styles must exist.');
 assert.ok(!read('public/js/kurukoo-page-architecture.js').includes('data-kurukoo-page-architecture'), 'Internal architecture must not be rendered to app users.');
 
-console.log(JSON.stringify({ passed: true, checks: requiredSections.length + 39 }, null, 2));
+console.log(JSON.stringify({ passed: true, checks: requiredSections.length + 42 }, null, 2));
