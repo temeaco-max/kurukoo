@@ -13,20 +13,22 @@ const routes = read('src/routes/appSurfaceRoutes.ts');
 const primary = [
   ['/chat', 'Chat'], ['/home', 'Home'], ['/explore', 'Explore'], ['/activity', 'Activity'], ['/tasks', 'Work'],
 ] as const;
-for (const [route, label] of primary) {
+for (const [route] of primary) {
   if (!routes.includes(`'${route}'`)) failures.push(`Canonical route missing ${route}`);
-  if (!shell.includes(`href:'${route}'`) && !shell.includes(`href="${route}"`) && !routes.includes(`href="${route}"`)) failures.push(`Canonical navigation does not reference ${route}`);
+  if (!shell.includes(`href:'${route}'`) && !shell.includes(`href="${route}"`) && !app.includes(`href="${route}"`)) failures.push(`Canonical navigation does not reference ${route}`);
   if (!app.includes('k-app-shell')) failures.push('Authenticated app shell is not rendered through the canonical app view.');
-  void label;
 }
 
 const supporting = ['/reminders','/saved','/notifications','/memory','/topics','/opportunities','/capabilities','/agents','/wallet','/points','/subscriptions','/cart','/connect','/settings','/help'];
 for (const route of supporting) if (!routes.includes(`'${route}'`)) failures.push(`Supporting route missing ${route}`);
 
-for (const partial of ['app-header.ejs','app-sidebar.ejs','app-mobile-nav.ejs','app-context-bridge.ejs','app-footer.ejs']) {
-  if (!fs.existsSync(path.join(root, 'views', '_partials', partial))) failures.push(`Shared authenticated component missing ${partial}`);
-  if (!routes.includes(`renderSharedPartial('${partial}'`)) failures.push(`Shared authenticated component is not composed: ${partial}`);
+const sharedPartials = ['app-header','app-sidebar','app-mobile-nav','app-context-bridge','app-footer','app-page-header'];
+for (const partial of sharedPartials) {
+  if (!fs.existsSync(path.join(root, 'views', '_partials', `${partial}.ejs`))) failures.push(`Shared authenticated component missing ${partial}.ejs`);
+  if (!app.includes(`include('_partials/${partial}'`)) failures.push(`Authenticated app template does not compose ${partial}.ejs`);
 }
+if (routes.includes('renderSharedPartial')) failures.push('Route layer still owns shared component rendering.');
+if (routes.includes('renderShell')) failures.push('Route layer still performs shell regex replacement.');
 
 for (const legacyRoute of ['/desk','/discover','/requests']) {
   if (!routes.includes(`'${legacyRoute}'`)) failures.push(`Compatibility route missing ${legacyRoute}`);
@@ -50,4 +52,4 @@ if (failures.length) {
   failures.forEach((failure) => console.error(`- ${failure}`));
   process.exit(1);
 }
-console.log(`Web App screen-flow contract passed: assistant-first primary navigation, grouped supporting surfaces, shared authenticated components, legacy route compatibility and Chat recovery are aligned.`);
+console.log(`Web App screen-flow contract passed: assistant-first primary navigation, grouped supporting surfaces, template-owned shared components, legacy route compatibility and Chat recovery are aligned.`);
