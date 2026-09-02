@@ -197,12 +197,12 @@ for (const [pathname, section] of Object.entries(cleanCanonicalSections)) {
   });
 }
 
-for (const resource of ['requests','tasks','reminders','opportunities','agents','connections','memory','artifacts']) {
+for (const resource of ['requests','tasks','reminders','saved','opportunities','agents','connections','memory','artifacts']) {
   router.get(`/${resource}/:id`, optionalAuthenticateUser, (req, res) => {
     const authReq = req as AuthRequest;
     if (!authReq.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent(req.originalUrl)}`);
     const section = resource === 'connections' ? 'connect' : resource;
-    const locals = appLocals(req, section, req.params.id);
+    const locals = appLocals(req, section, String(req.params.id));
     locals.selected = { ...locals.selected, description: `${locals.selected.description} You are viewing this item in context.` };
     return res.render('app', locals, async (error, html) => {
       if (error) return res.status(500).send('Unable to render application surface');
