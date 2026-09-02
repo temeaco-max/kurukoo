@@ -50,42 +50,18 @@ const surfaceMap = new Map([
 ]);
 
 const cleanCanonicalSections: Record<string, string> = {
-  '/chat': 'chat',
-  '/home': 'desk',
-  '/desk': 'desk',
-  '/explore': 'discover',
-  '/discover': 'discover',
-  '/activity': 'requests',
-  '/requests': 'requests',
-  '/reminders': 'reminders',
-  '/saved': 'saved',
-  '/cart': 'cart',
-  '/tasks': 'tasks',
-  '/connect': 'connect',
-  '/agents': 'agents',
-  '/capabilities': 'capabilities',
-  '/opportunities': 'opportunities',
-  '/wallet': 'wallet',
-  '/points': 'points',
-  '/top-up': 'top-up',
-  '/subscriptions': 'subscriptions',
-  '/checkout': 'checkout',
-  '/confirmations': 'confirmations',
-  '/memory': 'memory',
-  '/artifacts': 'artifacts',
-  '/prayer': 'prayer',
-  '/call': 'call',
-  '/notifications': 'notifications',
-  '/safety': 'safety',
-  '/settings': 'settings',
+  '/chat': 'chat', '/home': 'desk', '/desk': 'desk', '/explore': 'discover', '/discover': 'discover',
+  '/activity': 'requests', '/requests': 'requests', '/reminders': 'reminders', '/saved': 'saved', '/cart': 'cart', '/tasks': 'tasks',
+  '/connect': 'connect', '/agents': 'agents', '/capabilities': 'capabilities', '/opportunities': 'opportunities', '/wallet': 'wallet',
+  '/points': 'points', '/top-up': 'top-up', '/subscriptions': 'subscriptions', '/checkout': 'checkout', '/confirmations': 'confirmations',
+  '/memory': 'memory', '/artifacts': 'artifacts', '/prayer': 'prayer', '/call': 'call', '/notifications': 'notifications', '/safety': 'safety', '/settings': 'settings',
 };
 
 const canonicalPathBySection: Record<string, string> = {
-  chat: '/chat', desk: '/home', discover: '/explore', requests: '/activity', tasks: '/tasks', connect: '/connect',
-  reminders: '/reminders', saved: '/saved', cart: '/cart', agents: '/agents', capabilities: '/capabilities',
-  opportunities: '/opportunities', wallet: '/wallet', points: '/points', 'top-up': '/top-up', subscriptions: '/subscriptions',
-  checkout: '/checkout', confirmations: '/activity', memory: '/memory', artifacts: '/artifacts', prayer: '/prayer',
-  call: '/call', notifications: '/notifications', safety: '/safety', settings: '/settings',
+  chat: '/chat', desk: '/home', discover: '/explore', requests: '/activity', tasks: '/tasks', connect: '/connect', reminders: '/reminders', saved: '/saved',
+  cart: '/cart', agents: '/agents', capabilities: '/capabilities', opportunities: '/opportunities', wallet: '/wallet', points: '/points', 'top-up': '/top-up',
+  subscriptions: '/subscriptions', checkout: '/checkout', confirmations: '/activity', memory: '/memory', artifacts: '/artifacts', prayer: '/prayer', call: '/call',
+  notifications: '/notifications', safety: '/safety', settings: '/settings',
 };
 
 const sharedPublicAuthenticated = new Set(['/explore', '/discover', '/topics']);
@@ -103,40 +79,26 @@ const renderSharedPartial = (file: string, locals: AppPartialLocals): Promise<st
   ejs.renderFile(path.join(process.cwd(), 'views', '_partials', file), locals, (error, html) => error ? reject(error) : resolve(html));
 });
 
-function selectedFor(section: string) {
-  return surfaceMap.get(section) ?? surfaceMap.get('desk')!;
-}
+function selectedFor(section: string) { return surfaceMap.get(section) ?? surfaceMap.get('desk')!; }
 
 function appLocals(req: express.Request, section: string, resourceId?: string) {
   const authReq = req as AuthRequest;
-  const selected = selectedFor(section);
   const integrations = getExternalIntegrationReadiness();
   return {
-    selected,
-    section,
-    canonicalPath: canonicalPathBySection[section] || req.path,
-    displayName: authReq.user?.name || authReq.user?.phone || '',
-    phone: authReq.user?.phone || '',
-    surfaces: getClientSurfaces('web'),
-    readiness: getPilotReadiness(),
-    integrations,
+    selected: selectedFor(section), section, canonicalPath: canonicalPathBySection[section] || req.path,
+    displayName: authReq.user?.name || authReq.user?.phone || '', phone: authReq.user?.phone || '',
+    surfaces: getClientSurfaces('web'), readiness: getPilotReadiness(), integrations,
     enabledIntegrations: integrations.filter((item: any) => item.implementation?.state === 'IMPLEMENTED' || item.implementation?.implemented === true).length,
-    integrationCount: integrations.length,
-    visualFeatures: getCanonicalDiscoverablePlatformFeatures().filter(feature => !feature.audience.includes('admin')),
-    resourceId,
-    contentContract: getPageContentContract(section),
+    integrationCount: integrations.length, visualFeatures: getCanonicalDiscoverablePlatformFeatures().filter(feature => !feature.audience.includes('admin')),
+    resourceId, contentContract: getPageContentContract(section),
   };
 }
 
 async function renderShell(html: string, locals: AppPartialLocals): Promise<string> {
   const [header, sidebar, bridge, footer, mobile] = await Promise.all([
-    renderSharedPartial('app-header.ejs', locals),
-    renderSharedPartial('app-sidebar.ejs', locals),
-    renderSharedPartial('app-context-bridge.ejs', locals),
-    renderSharedPartial('app-footer.ejs', locals),
-    renderSharedPartial('app-mobile-nav.ejs', locals),
+    renderSharedPartial('app-header.ejs', locals), renderSharedPartial('app-sidebar.ejs', locals), renderSharedPartial('app-context-bridge.ejs', locals),
+    renderSharedPartial('app-footer.ejs', locals), renderSharedPartial('app-mobile-nav.ejs', locals),
   ]);
-
   return html
     .replace(/<header class="k-app-header">[\s\S]*?<\/header>/, header)
     .replace(/<aside class="k-app-sidebar"[\s\S]*?<\/aside>/, sidebar)
@@ -151,13 +113,7 @@ function renderApp(req: express.Request, res: express.Response, section = 'desk'
   const locals = appLocals(req, section);
   return res.render('app', locals, async (error, html) => {
     if (error) return res.status(500).send('Unable to render application surface');
-    try {
-      const output = await renderShell(html, locals);
-      const assets = screenAssets(section);
-      return res.send(output.replace('</head>', `${assets}</head>`));
-    } catch {
-      return res.status(500).send('Unable to render application shell');
-    }
+    try { return res.send(html.replace('</head>', `${screenAssets(section)}</head>`).replace(/<header class="k-app-header">[\s\S]*?<\/header>/, await renderSharedPartial('app-header.ejs', locals)).replace(/<aside class="k-app-sidebar"[\s\S]*?<\/aside>/, await renderSharedPartial('app-sidebar.ejs', locals)).replace(/<section class="ko-context"[\s\S]*?<\/section>/, await renderSharedPartial('app-context-bridge.ejs', locals)).replace('</main>', `${await renderSharedPartial('app-footer.ejs', locals)}</main>`).replace('</body>', `${await renderSharedPartial('app-mobile-nav.ejs', locals)}</body>`)); } catch { return res.status(500).send('Unable to render application shell'); }
   });
 }
 
@@ -174,19 +130,11 @@ router.get('/api/memory/profile', optionalAuthenticateUser, async (req: express.
 
 router.get('/api/platform/feature-visuals', (_req, res) => res.json({ success: true, features: getCanonicalDiscoverablePlatformFeatures().filter(feature => !feature.audience.includes('admin')) }));
 router.use('/api', economicDispatchRoutes);
-
 router.get('/features', (_req, res) => res.render('features'));
 router.get('/developers', (_req, res) => res.render('developers'));
 router.get('/developers/api', (_req, res) => res.render('developers'));
-
-router.get('/chat/:conversationId', (req, res) => {
-  res.setHeader('X-Kurukoo-Conversation-Id', String(req.params.conversationId));
-  return res.sendFile(path.join(process.cwd(), 'public', 'chat', 'index.html'));
-});
-router.get('/share/:shareId', (req, res) => {
-  res.setHeader('X-Kurukoo-Share-Id', String(req.params.shareId));
-  return res.sendFile(path.join(process.cwd(), 'public', 'chat', 'index.html'));
-});
+router.get('/chat/:conversationId', (req, res) => { res.setHeader('X-Kurukoo-Conversation-Id', String(req.params.conversationId)); return res.sendFile(path.join(process.cwd(), 'public', 'chat', 'index.html')); });
+router.get('/share/:shareId', (req, res) => { res.setHeader('X-Kurukoo-Share-Id', String(req.params.shareId)); return res.sendFile(path.join(process.cwd(), 'public', 'chat', 'index.html')); });
 
 for (const [pathname, section] of Object.entries(cleanCanonicalSections)) {
   if (pathname === '/chat') continue;
