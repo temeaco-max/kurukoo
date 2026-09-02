@@ -41,8 +41,8 @@
   <script src="/js/fcm-client.js?v=routes2" defer></script>
 </head>
 <body class="k-app-page workspace-page k-app-section-<%= section %>" data-workspace-section="<%= section %>" data-app-section="<%= section %>" data-canonical-path="<%= canonicalPath %>">
-  <%- include('_partials/app-header', { selected, section, canonicalPath, displayName, phone }) %>
   <div class="k-app-shell">
+    <%- include('_partials/app-header', { selected, section, canonicalPath, displayName, phone }) %>
     <%- include('_partials/app-sidebar', { selected, section, canonicalPath, displayName, phone }) %>
     <main class="k-app-main">
       <div class="k-app-container">
