@@ -29,6 +29,7 @@ for (const partial of sharedPartials) {
 }
 if (routes.includes('renderSharedPartial')) failures.push('Route layer still owns shared component rendering.');
 if (routes.includes('renderShell')) failures.push('Route layer still performs shell regex replacement.');
+if (routes.includes('screenAssets')) failures.push('Route layer still owns a dead page-asset composer.');
 
 for (const legacyRoute of ['/desk','/discover','/requests']) {
   if (!routes.includes(`'${legacyRoute}'`)) failures.push(`Compatibility route missing ${legacyRoute}`);
