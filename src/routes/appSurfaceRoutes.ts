@@ -12,15 +12,7 @@ import { getProfile } from '../services/memoryProfile.js';
 import economicDispatchRoutes from './economicDispatchRoutes.js';
 
 const router = express.Router();
-
-type AppPartialLocals = {
-  selected: { title: string; eyebrow: string; description: string; cta: string; ctaLabel: string };
-  section: string;
-  canonicalPath: string;
-  displayName: string;
-  phone: string;
-};
-
+type AppPartialLocals = { selected: { title: string; eyebrow: string; description: string; cta: string; ctaLabel: string }; section: string; canonicalPath: string; displayName: string; phone: string };
 const surfaceMap = new Map([
   ['desk', { title: 'Home', eyebrow: 'What matters now', description: 'See what needs your attention, pick up where you left off, and start something new with Kurukoo.', cta: '/chat', ctaLabel: 'Talk to Kurukoo' }],
   ['discover', { title: 'Explore', eyebrow: 'Find something useful', description: 'Find people, places, services, products, Topics and opportunities, then bring what matters into a conversation.', cta: '/chat', ctaLabel: 'Ask Kurukoo' }],
@@ -38,7 +30,7 @@ const surfaceMap = new Map([
   ['points', { title: 'Points', eyebrow: 'Network value', description: 'See your closed-loop Kurukoo Points balance and activity separately from cash payment rails.', cta: '/points', ctaLabel: 'Open Points' }],
   ['top-up', { title: 'Top Up', eyebrow: 'Add funds', description: 'Choose an amount and continue through the configured payment path. Kurukoo never turns an attempted charge into claimed success.', cta: '/top-up', ctaLabel: 'Top up' }],
   ['subscriptions', { title: 'Plans', eyebrow: 'Plans and entitlements', description: 'Compare plans and manage entitlements without implying a successful charge until payment evidence is available.', cta: '/subscriptions', ctaLabel: 'View Plans' }],
-  ['checkout', { title: 'Checkout', eyebrow: 'Review before you confirm', description: 'Check the request, offer, price and payment state before an irreversible economic action.', cta: '/requests', ctaLabel: 'Back to Activity' }],
+  ['checkout', { title: 'Checkout', eyebrow: 'Review before you confirm', description: 'Check the request, offer, price and payment state before an irreversible economic action.', cta: '/activity', ctaLabel: 'Back to Activity' }],
   ['confirmations', { title: 'Outcome', eyebrow: 'Know what happened', description: 'Understand the confirmed result, evidence and next step for work you asked Kurukoo to handle.', cta: '/activity', ctaLabel: 'Back to Activity' }],
   ['memory', { title: 'Memory', eyebrow: 'What Kurukoo keeps for you', description: 'Review owner-scoped memory, its source and privacy boundary, and remove anything you no longer want kept.', cta: '/chat', ctaLabel: 'Ask about Memory' }],
   ['artifacts', { title: 'Files', eyebrow: 'Your files and recordings', description: 'Browse owner-scoped files, recordings and transcripts and continue from their originating context.', cta: '/chat', ctaLabel: 'Ask about Files' }],
@@ -48,86 +40,16 @@ const surfaceMap = new Map([
   ['safety', { title: 'Safety', eyebrow: 'Check-ins and trusted support', description: 'Manage consent-bound check-ins and trusted contacts without implying emergency-service fulfilment.', cta: '/safety', ctaLabel: 'Open Safety' }],
   ['settings', { title: 'Settings', eyebrow: 'Your Kurukoo account', description: 'Manage account, privacy, notifications, connections, accessibility and product preferences in one place.', cta: '/settings', ctaLabel: 'Open Settings' }],
 ]);
-
-const cleanCanonicalSections: Record<string, string> = {
-  '/chat': 'chat', '/home': 'desk', '/desk': 'desk', '/explore': 'discover', '/discover': 'discover',
-  '/activity': 'requests', '/requests': 'requests', '/reminders': 'reminders', '/saved': 'saved', '/cart': 'cart', '/tasks': 'tasks',
-  '/connect': 'connect', '/agents': 'agents', '/capabilities': 'capabilities', '/opportunities': 'opportunities', '/wallet': 'wallet',
-  '/points': 'points', '/top-up': 'top-up', '/subscriptions': 'subscriptions', '/checkout': 'checkout', '/confirmations': 'confirmations',
-  '/memory': 'memory', '/artifacts': 'artifacts', '/prayer': 'prayer', '/call': 'call', '/notifications': 'notifications', '/safety': 'safety', '/settings': 'settings',
-};
-
-const canonicalPathBySection: Record<string, string> = {
-  chat: '/chat', desk: '/home', discover: '/explore', requests: '/activity', tasks: '/tasks', connect: '/connect', reminders: '/reminders', saved: '/saved',
-  cart: '/cart', agents: '/agents', capabilities: '/capabilities', opportunities: '/opportunities', wallet: '/wallet', points: '/points', 'top-up': '/top-up',
-  subscriptions: '/subscriptions', checkout: '/checkout', confirmations: '/activity', memory: '/memory', artifacts: '/artifacts', prayer: '/prayer', call: '/call',
-  notifications: '/notifications', safety: '/safety', settings: '/settings',
-};
-
+const cleanCanonicalSections: Record<string, string> = { '/chat': 'chat', '/home': 'desk', '/desk': 'desk', '/explore': 'discover', '/discover': 'discover', '/activity': 'requests', '/requests': 'requests', '/reminders': 'reminders', '/saved': 'saved', '/cart': 'cart', '/tasks': 'tasks', '/connect': 'connect', '/agents': 'agents', '/capabilities': 'capabilities', '/opportunities': 'opportunities', '/wallet': 'wallet', '/points': 'points', '/top-up': 'top-up', '/subscriptions': 'subscriptions', '/checkout': 'checkout', '/confirmations': 'confirmations', '/memory': 'memory', '/artifacts': 'artifacts', '/prayer': 'prayer', '/call': 'call', '/notifications': 'notifications', '/safety': 'safety', '/settings': 'settings' };
+const canonicalPathBySection: Record<string, string> = { chat: '/chat', desk: '/home', discover: '/explore', requests: '/activity', tasks: '/tasks', connect: '/connect', reminders: '/reminders', saved: '/saved', cart: '/cart', agents: '/agents', capabilities: '/capabilities', opportunities: '/opportunities', wallet: '/wallet', points: '/points', 'top-up': '/top-up', subscriptions: '/subscriptions', checkout: '/checkout', confirmations: '/activity', memory: '/memory', artifacts: '/artifacts', prayer: '/prayer', call: '/call', notifications: '/notifications', safety: '/safety', settings: '/settings' };
 const sharedPublicAuthenticated = new Set(['/explore', '/discover', '/topics']);
-
-function screenAssets(section: string): string {
-  const base = '<link rel="stylesheet" href="/css/kurukoo-app-ia.css?v=1">';
-  if (section === 'discover') return `${base}<link rel="stylesheet" href="/css/kurukoo-discover-convergence.css?v=1"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="/js/kurukoo-discover-convergence.js?v=1" defer></script><script src="/js/kurukoo-discover-map-loader.js?v=1" defer></script>`;
-  if (section === 'notifications') return `${base}<link rel="stylesheet" href="/css/kurukoo-notifications-convergence.css?v=1"><script src="/js/kurukoo-notifications-convergence.js?v=1" defer></script>`;
-  if (section === 'connect') return `${base}<link rel="stylesheet" href="/css/kurukoo-contacts-convergence.css?v=1"><script src="/js/kurukoo-contacts-convergence.js?v=1" defer></script>`;
-  if (section === 'memory') return `${base}<link rel="stylesheet" href="/css/kurukoo-memory-convergence.css?v=1"><script src="/js/kurukoo-memory-convergence.js?v=1" defer></script>`;
-  return base;
-}
-
-const renderSharedPartial = (file: string, locals: AppPartialLocals): Promise<string> => new Promise((resolve, reject) => {
-  ejs.renderFile(path.join(process.cwd(), 'views', '_partials', file), locals, (error, html) => error ? reject(error) : resolve(html));
-});
-
+function screenAssets(section: string): string { const base = '<link rel="stylesheet" href="/css/kurukoo-app-ia.css?v=1">'; if (section === 'discover') return `${base}<link rel="stylesheet" href="/css/kurukoo-discover-convergence.css?v=1"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="/js/kurukoo-discover-convergence.js?v=1" defer></script><script src="/js/kurukoo-discover-map-loader.js?v=1" defer></script>`; if (section === 'notifications') return `${base}<link rel="stylesheet" href="/css/kurukoo-notifications-convergence.css?v=1"><script src="/js/kurukoo-notifications-convergence.js?v=1" defer></script>`; if (section === 'connect') return `${base}<link rel="stylesheet" href="/css/kurukoo-contacts-convergence.css?v=1"><script src="/js/kurukoo-contacts-convergence.js?v=1" defer></script>`; if (section === 'memory') return `${base}<link rel="stylesheet" href="/css/kurukoo-memory-convergence.css?v=1"><script src="/js/kurukoo-memory-convergence.js?v=1" defer></script>`; return base; }
+const renderSharedPartial = (file: string, locals: AppPartialLocals): Promise<string> => new Promise((resolve, reject) => { ejs.renderFile(path.join(process.cwd(), 'views', '_partials', file), locals, (error, html) => error ? reject(error) : resolve(html)); });
 function selectedFor(section: string) { return surfaceMap.get(section) ?? surfaceMap.get('desk')!; }
-
-function appLocals(req: express.Request, section: string, resourceId?: string) {
-  const authReq = req as AuthRequest;
-  const integrations = getExternalIntegrationReadiness();
-  return {
-    selected: selectedFor(section), section, canonicalPath: canonicalPathBySection[section] || req.path,
-    displayName: authReq.user?.name || authReq.user?.phone || '', phone: authReq.user?.phone || '',
-    surfaces: getClientSurfaces('web'), readiness: getPilotReadiness(), integrations,
-    enabledIntegrations: integrations.filter((item: any) => item.implementation?.state === 'IMPLEMENTED' || item.implementation?.implemented === true).length,
-    integrationCount: integrations.length, visualFeatures: getCanonicalDiscoverablePlatformFeatures().filter(feature => !feature.audience.includes('admin')),
-    resourceId, contentContract: getPageContentContract(section),
-  };
-}
-
-async function renderShell(html: string, locals: AppPartialLocals): Promise<string> {
-  const [header, sidebar, bridge, footer, mobile] = await Promise.all([
-    renderSharedPartial('app-header.ejs', locals), renderSharedPartial('app-sidebar.ejs', locals), renderSharedPartial('app-context-bridge.ejs', locals),
-    renderSharedPartial('app-footer.ejs', locals), renderSharedPartial('app-mobile-nav.ejs', locals),
-  ]);
-  return html
-    .replace(/<header class="k-app-header">[\s\S]*?<\/header>/, header)
-    .replace(/<aside class="k-app-sidebar"[\s\S]*?<\/aside>/, sidebar)
-    .replace(/<section class="ko-context"[\s\S]*?<\/section>/, bridge)
-    .replace('</main>', `${footer}</main>`)
-    .replace('</body>', `${mobile}</body>`);
-}
-
-function renderApp(req: express.Request, res: express.Response, section = 'desk') {
-  const authReq = req as AuthRequest;
-  if (!authReq.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent(req.originalUrl || req.path)}`);
-  const locals = appLocals(req, section);
-  return res.render('app', locals, async (error, html) => {
-    if (error) return res.status(500).send('Unable to render application surface');
-    try { return res.send(html.replace('</head>', `${screenAssets(section)}</head>`).replace(/<header class="k-app-header">[\s\S]*?<\/header>/, await renderSharedPartial('app-header.ejs', locals)).replace(/<aside class="k-app-sidebar"[\s\S]*?<\/aside>/, await renderSharedPartial('app-sidebar.ejs', locals)).replace(/<section class="ko-context"[\s\S]*?<\/section>/, await renderSharedPartial('app-context-bridge.ejs', locals)).replace('</main>', `${await renderSharedPartial('app-footer.ejs', locals)}</main>`).replace('</body>', `${await renderSharedPartial('app-mobile-nav.ejs', locals)}</body>`)); } catch { return res.status(500).send('Unable to render application shell'); }
-  });
-}
-
-router.get('/api/memory/profile', optionalAuthenticateUser, async (req: express.Request, res: express.Response) => {
-  const phone = (req as AuthRequest).user?.phone ? String((req as AuthRequest).user?.phone) : null;
-  if (!phone) return res.status(401).json({ success: false, error: 'Authentication required' });
-  try {
-    const profile = await getProfile(phone, 'memory_surface');
-    const preferences = profile?.preferences && typeof profile.preferences === 'object' ? profile.preferences as Record<string, unknown> : {};
-    const proactiveBrief = preferences.proactive_brief && typeof preferences.proactive_brief === 'object' ? preferences.proactive_brief : {};
-    return res.json({ success: true, profile: { name: profile?.name || '', location: profile?.location || '', country: profile?.country || '' }, proactiveBrief });
-  } catch { return res.status(500).json({ success: false, error: 'Unable to read canonical Memory Profile' }); }
-});
-
+function appLocals(req: express.Request, section: string, resourceId?: string) { const authReq = req as AuthRequest; const integrations = getExternalIntegrationReadiness(); return { selected: selectedFor(section), section, canonicalPath: canonicalPathBySection[section] || req.path, displayName: authReq.user?.name || authReq.user?.phone || '', phone: authReq.user?.phone || '', surfaces: getClientSurfaces('web'), readiness: getPilotReadiness(), integrations, enabledIntegrations: integrations.filter((item: any) => item.implementation?.state === 'IMPLEMENTED' || item.implementation?.implemented === true).length, integrationCount: integrations.length, visualFeatures: getCanonicalDiscoverablePlatformFeatures().filter(feature => !feature.audience.includes('admin')), resourceId, contentContract: getPageContentContract(section) }; }
+async function renderShell(html: string, locals: AppPartialLocals): Promise<string> { const [header, sidebar, bridge, footer, mobile] = await Promise.all([renderSharedPartial('app-header.ejs', locals), renderSharedPartial('app-sidebar.ejs', locals), renderSharedPartial('app-context-bridge.ejs', locals), renderSharedPartial('app-footer.ejs', locals), renderSharedPartial('app-mobile-nav.ejs', locals)]); return html.replace(/<header class="k-app-header">[\s\S]*?<\/header>/, header).replace(/<aside class="k-app-sidebar"[\s\S]*?<\/aside>/, sidebar).replace(/<section class="ko-context"[\s\S]*?<\/section>/, bridge).replace('</main>', `${footer}</main>`).replace('</body>', `${mobile}</body>`); }
+function renderApp(req: express.Request, res: express.Response, section = 'desk') { const authReq = req as AuthRequest; if (!authReq.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent(req.originalUrl || req.path)}`); const locals = appLocals(req, section); return res.render('app', locals, async (error, html) => { if (error) return res.status(500).send('Unable to render application surface'); try { const output = await renderShell(html, locals); return res.send(output.replace('</head>', `${screenAssets(section)}</head>`)); } catch { return res.status(500).send('Unable to render application shell'); } }); }
+router.get('/api/memory/profile', optionalAuthenticateUser, async (req: express.Request, res: express.Response) => { const phone = (req as AuthRequest).user?.phone ? String((req as AuthRequest).user?.phone) : null; if (!phone) return res.status(401).json({ success: false, error: 'Authentication required' }); try { const profile = await getProfile(phone, 'memory_surface'); const preferences = profile?.preferences && typeof profile.preferences === 'object' ? profile.preferences as Record<string, unknown> : {}; const proactiveBrief = preferences.proactive_brief && typeof preferences.proactive_brief === 'object' ? preferences.proactive_brief : {}; return res.json({ success: true, profile: { name: profile?.name || '', location: profile?.location || '', country: profile?.country || '' }, proactiveBrief }); } catch { return res.status(500).json({ success: false, error: 'Unable to read canonical Memory Profile' }); } });
 router.get('/api/platform/feature-visuals', (_req, res) => res.json({ success: true, features: getCanonicalDiscoverablePlatformFeatures().filter(feature => !feature.audience.includes('admin')) }));
 router.use('/api', economicDispatchRoutes);
 router.get('/features', (_req, res) => res.render('features'));
@@ -135,34 +57,6 @@ router.get('/developers', (_req, res) => res.render('developers'));
 router.get('/developers/api', (_req, res) => res.render('developers'));
 router.get('/chat/:conversationId', (req, res) => { res.setHeader('X-Kurukoo-Conversation-Id', String(req.params.conversationId)); return res.sendFile(path.join(process.cwd(), 'public', 'chat', 'index.html')); });
 router.get('/share/:shareId', (req, res) => { res.setHeader('X-Kurukoo-Share-Id', String(req.params.shareId)); return res.sendFile(path.join(process.cwd(), 'public', 'chat', 'index.html')); });
-
-for (const [pathname, section] of Object.entries(cleanCanonicalSections)) {
-  if (pathname === '/chat') continue;
-  router.get(pathname, optionalAuthenticateUser, (req, res, next) => {
-    const authReq = req as AuthRequest;
-    if (!authReq.user?.phone && sharedPublicAuthenticated.has(pathname)) return next();
-    return renderApp(req, res, section);
-  });
-}
-
-for (const resource of ['requests','tasks','reminders','saved','opportunities','agents','connections','memory','artifacts']) {
-  router.get(`/${resource}/:id`, optionalAuthenticateUser, (req, res) => {
-    const authReq = req as AuthRequest;
-    if (!authReq.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent(req.originalUrl)}`);
-    const section = resource === 'connections' ? 'connect' : resource;
-    const locals = appLocals(req, section, String(req.params.id));
-    locals.selected = { ...locals.selected, description: `${locals.selected.description} You are viewing this item in context.` };
-    return res.render('app', locals, async (error, html) => {
-      if (error) return res.status(500).send('Unable to render application surface');
-      try {
-        const output = await renderShell(html, locals);
-        const assets = screenAssets(section);
-        return res.send(output.replace('</head>', `${assets}</head>`));
-      } catch {
-        return res.status(500).send('Unable to render application shell');
-      }
-    });
-  });
-}
-
+for (const [pathname, section] of Object.entries(cleanCanonicalSections)) { if (pathname === '/chat') continue; router.get(pathname, optionalAuthenticateUser, (req, res, next) => { const authReq = req as AuthRequest; if (!authReq.user?.phone && sharedPublicAuthenticated.has(pathname)) return next(); return renderApp(req, res, section); }); }
+for (const resource of ['requests','tasks','reminders','saved','opportunities','agents','connections','memory','artifacts']) { router.get(`/${resource}/:id`, optionalAuthenticateUser, (req, res) => { const authReq = req as AuthRequest; if (!authReq.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent(req.originalUrl)}`); const section = resource === 'connections' ? 'connect' : resource; const locals = appLocals(req, section, String(req.params.id)); locals.selected = { ...locals.selected, description: `${locals.selected.description} You are viewing this item in context.` }; return res.render('app', locals, async (error, html) => { if (error) return res.status(500).send('Unable to render application surface'); try { const output = await renderShell(html, locals); return res.send(output.replace('</head>', `${screenAssets(section)}</head>`)); } catch { return res.status(500).send('Unable to render application shell'); } }); }); }
 export default router;
