@@ -1,6 +1,6 @@
 (() => {
   const path=window.location.pathname||'/';
-  const routes=[{label:'Desk',href:'/desk',icon:'chat'},{label:'Agent',href:'/chat',icon:'chat'},{label:'Requests',href:'/requests',icon:'request'},{label:'Tasks',href:'/tasks',icon:'work'},{label:'Discover',href:'/discover',icon:'discover'}];
+  const routes=[{label:'Home',href:'/home',icon:'chat'},{label:'Explore',href:'/explore',icon:'discover'},{label:'Chat',href:'/chat',icon:'chat'},{label:'Activity',href:'/activity',icon:'request'},{label:'Work',href:'/tasks',icon:'work'}];
   const current=href=>path===href||(href!=='/chat'&&path.startsWith(`${href}/`));
   const safe=value=>String(value||'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;' }[c]));
   const createSecondaryNav=()=>{
@@ -17,39 +17,25 @@
     summary.innerHTML='<span class="k-app-more-icon k-app-icon" aria-hidden="true">⋯</span><span>More</span><span class="k-more-chevron" aria-hidden="true">⌄</span>';
     const menu=document.createElement('div'); menu.className='k-app-more-menu';
     const addLabel=(text)=>{const label=document.createElement('div');label.className='k-app-nav-group-label';label.textContent=text;menu.appendChild(label)};
-    addLabel('Workspace');
-    hidden.forEach(a=>{menu.appendChild(a.cloneNode(true));a.remove()});
+    addLabel('Workspace'); hidden.forEach(a=>{menu.appendChild(a.cloneNode(true));a.remove()});
     if(accountLinks.length){addLabel('Account');accountLinks.forEach(a=>{menu.appendChild(a.cloneNode(true));a.remove()})}
-    details.append(summary,menu);
-    const divider=nav.nextElementSibling;
-    (divider||nav).after(details);
-    if(account&&account.children.length===0)account.remove();
+    details.append(summary,menu); const divider=nav.nextElementSibling; (divider||nav).after(details); if(account&&account.children.length===0)account.remove();
   };
   const createCollapseControl=()=>{
-    const sidebar=document.querySelector('.k-app-sidebar');
-    if(!sidebar||sidebar.querySelector('.k-app-sidebar-toggle'))return;
+    const sidebar=document.querySelector('.k-app-sidebar'); if(!sidebar||sidebar.querySelector('.k-app-sidebar-toggle'))return;
     const button=document.createElement('button');button.type='button';button.className='k-app-sidebar-toggle';button.setAttribute('aria-label','Collapse navigation');button.setAttribute('title','Collapse navigation');button.setAttribute('aria-expanded','false');button.textContent='‹';
-    button.addEventListener('click',()=>{
-      const collapsed=document.body.classList.toggle('k-shell-collapsed');
-      button.textContent=collapsed?'›':'‹';button.setAttribute('aria-expanded',collapsed?'true':'false');button.setAttribute('aria-label',collapsed?'Expand navigation':'Collapse navigation');button.title=collapsed?'Expand navigation':'Collapse navigation';
-      try{localStorage.setItem('kurukoo.shell.collapsed',collapsed?'1':'0')}catch{}
-    });
+    button.addEventListener('click',()=>{const collapsed=document.body.classList.toggle('k-shell-collapsed');button.textContent=collapsed?'›':'‹';button.setAttribute('aria-expanded',collapsed?'true':'false');button.setAttribute('aria-label',collapsed?'Expand navigation':'Collapse navigation');button.title=collapsed?'Expand navigation':'Collapse navigation';try{localStorage.setItem('kurukoo.shell.collapsed',collapsed?'1':'0')}catch{}});
     sidebar.insertBefore(button,sidebar.firstChild);
     try{if(localStorage.getItem('kurukoo.shell.collapsed')==='1'){document.body.classList.add('k-shell-collapsed');button.textContent='›';button.setAttribute('aria-expanded','true');button.setAttribute('aria-label','Expand navigation');button.title='Expand navigation'}}catch{}
   };
   const wireMobileNav=()=>{
     const sidebar=document.querySelector('.k-app-sidebar'),header=document.querySelector('.k-app-header');if(!sidebar||!header)return;
     if(document.querySelector('.k-app-mobile-toggle'))return;
-    sidebar.id='kurukoo-app-sidebar';
-    const toggle=document.createElement('button');toggle.type='button';toggle.className='k-app-mobile-toggle';toggle.setAttribute('aria-label','Open navigation');toggle.setAttribute('aria-controls','kurukoo-app-sidebar');toggle.setAttribute('aria-expanded','false');toggle.innerHTML='<span aria-hidden="true">☰</span>';
-    header.insertBefore(toggle,header.firstChild||null);
-    const scrim=document.createElement('button');scrim.type='button';scrim.className='k-app-mobile-scrim';scrim.setAttribute('aria-label','Close navigation');scrim.tabIndex=-1;
-    document.body.appendChild(scrim);
+    sidebar.id='kurukoo-app-sidebar'; const toggle=document.createElement('button');toggle.type='button';toggle.className='k-app-mobile-toggle';toggle.setAttribute('aria-label','Open navigation');toggle.setAttribute('aria-controls','kurukoo-app-sidebar');toggle.setAttribute('aria-expanded','false');toggle.innerHTML='<span aria-hidden="true">☰</span>'; header.insertBefore(toggle,header.firstChild||null);
+    const scrim=document.createElement('button');scrim.type='button';scrim.className='k-app-mobile-scrim';scrim.setAttribute('aria-label','Close navigation');scrim.tabIndex=-1;document.body.appendChild(scrim);
     const close=()=>{document.body.classList.remove('k-mobile-nav-open');toggle.setAttribute('aria-expanded','false');};
     toggle.addEventListener('click',()=>{const open=document.body.classList.toggle('k-mobile-nav-open');toggle.setAttribute('aria-expanded',open?'true':'false');if(open){const first=sidebar.querySelector('a,button');first?.focus()}else toggle.focus();});
-    scrim.addEventListener('click',close);
-    sidebar.querySelectorAll('a').forEach(a=>a.addEventListener('click',close));
-    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('k-mobile-nav-open')){close();toggle.focus()}});
+    scrim.addEventListener('click',close); sidebar.querySelectorAll('a').forEach(a=>a.addEventListener('click',close)); document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('k-mobile-nav-open')){close();toggle.focus()}});
   };
   const createTabBar=()=>{if(document.querySelector('.k-mobile-tabbar'))return;const nav=document.createElement('nav');nav.className='k-mobile-tabbar';nav.setAttribute('aria-label','Kurukoo app navigation');for(const route of routes){const link=document.createElement('a');link.href=route.href;link.setAttribute('aria-label',route.label);if(current(route.href))link.setAttribute('aria-current','page');link.innerHTML=`<svg aria-hidden="true" viewBox="0 0 24 24"><use href="/icons/kurukoo-icons.svg#${route.icon}"></use></svg><span>${route.label}</span>`;nav.appendChild(link);}document.body.appendChild(nav);};
   const createFeatureCompass=async()=>{if(!document.body.classList.contains('workspace-page')||document.querySelector('.k-feature-compass'))return;try{const response=await fetch('/api/platform/feature-visuals',{headers:{Accept:'application/json'}});if(!response.ok)return;const payload=await response.json();const features=Array.isArray(payload.features)?payload.features:[];if(!features.length)return;const launcher=document.createElement('button');launcher.type='button';launcher.className='k-feature-compass-launcher';launcher.setAttribute('aria-label','Explore all Kurukoo features');launcher.title='Explore all Kurukoo features';launcher.innerHTML='<span aria-hidden="true">✦</span><span>All Kurukoo</span>';const panel=document.createElement('aside');panel.className='k-feature-compass';panel.hidden=true;panel.setAttribute('aria-label','Kurukoo feature compass');panel.innerHTML='<div class="k-feature-compass-header"><div><strong>Explore Kurukoo</strong><small>Every capability has a visible entry point.</small></div><button type="button" class="k-feature-compass-close" aria-label="Close feature compass">×</button></div><div class="k-feature-compass-grid"></div>';const grid=panel.querySelector('.k-feature-compass-grid');for(const feature of features){const href=String(feature.webSurface||'/chat');const item=document.createElement('a');item.className=`k-feature-compass-item${feature.representations?.includes('primary_nav')?' primary':''}`;item.href=href;item.title=String(feature.tooltip||feature.label||'Kurukoo feature');item.setAttribute('aria-label',`${feature.label}: ${feature.tooltip||'Open feature'}`);item.innerHTML=`<span class="k-feature-compass-icon" aria-hidden="true">${safe(feature.icon).slice(0,2).toUpperCase()}</span><span><strong>${safe(feature.label)}</strong><small>${safe(feature.tooltip)}</small></span>`;grid.appendChild(item);}const close=panel.querySelector('.k-feature-compass-close');const toggle=open=>{panel.hidden=!open;document.body.classList.toggle('k-feature-compass-open',open);if(open)close?.focus();};launcher.addEventListener('click',()=>toggle(panel.hidden));close?.addEventListener('click',()=>toggle(false));document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!panel.hidden)toggle(false);});document.body.appendChild(launcher);document.body.appendChild(panel);}catch{}};
