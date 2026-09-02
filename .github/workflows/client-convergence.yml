@@ -24,7 +24,7 @@ jobs:
       - run: node scripts/test-canonical-authenticated-screen-set.mjs
       - run: npx tsx scripts/test-product-surface-completeness.ts
       - run: npx tsx scripts/test-os-shell-contract.ts
-      - run: npx tsx scripts/test-mistral-bypass.ts
+      - run: npx tsx scripts/test-mistral-policy.ts
       - run: npm run audit:accessibility
       - run: npm run audit:css:all
       - run: npm run audit:css:strict
