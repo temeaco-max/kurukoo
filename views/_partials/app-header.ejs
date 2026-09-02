@@ -1,0 +1,13 @@
+<header class="k-app-header" data-kurukoo-shared="app-header">
+  <a href="/chat" class="k-app-brand" aria-label="Kurukoo — open Chat">
+    <img src="/assets/brand/logo-icon.png" alt="Kurukoo" width="34" height="34">
+    <span>Kurukoo</span>
+  </a>
+  <div class="k-app-header-context">
+    <span class="k-app-header-context-label"><%= selected?.title || 'Kurukoo' %></span>
+  </div>
+  <div class="k-app-header-actions">
+    <span class="k-app-identity"><strong><%= displayName %></strong><small><%= phone %></small></span>
+    <a class="k-app-ask" href="/chat">Ask Kurukoo</a>
+  </div>
+</header>
