@@ -1,0 +1,45 @@
+<% const icon = (name) => `<svg class="k-app-icon" aria-hidden="true"><use href="/icons/kurukoo-icons.svg#${name}"></use></svg>`; %>
+<aside class="k-app-sidebar" aria-label="Kurukoo application navigation" data-kurukoo-shared="app-sidebar">
+  <a class="k-app-new" href="/chat">＋ Start with Kurukoo</a>
+  <nav class="k-app-nav k-app-nav-primary" aria-label="Primary">
+    <a class="<%= canonicalPath === '/chat' ? 'active' : '' %>" href="/chat"><%- icon('chat') %><span>Chat</span></a>
+    <a class="<%= canonicalPath === '/home' || section === 'desk' ? 'active' : '' %>" href="/home"><%- icon('chat') %><span>Home</span></a>
+    <a class="<%= canonicalPath === '/explore' || section === 'discover' ? 'active' : '' %>" href="/explore"><%- icon('discover') %><span>Explore</span></a>
+    <a class="<%= canonicalPath === '/activity' || section === 'requests' ? 'active' : '' %>" href="/activity"><%- icon('request') %><span>Activity</span></a>
+    <a class="<%= canonicalPath === '/tasks' || section === 'tasks' ? 'active' : '' %>" href="/tasks"><%- icon('work') %><span>Work</span></a>
+  </nav>
+  <div class="k-app-divider"></div>
+  <details class="k-app-nav-fold" open>
+    <summary><span>Continue</span><span class="k-more-chevron" aria-hidden="true">⌄</span></summary>
+    <nav class="k-app-nav" aria-label="Continue">
+      <a class="<%= section === 'reminders' ? 'active' : '' %>" href="/reminders"><%- icon('notification') %><span>Reminders</span></a>
+      <a class="<%= section === 'saved' ? 'active' : '' %>" href="/saved"><%- icon('saved') %><span>Saved</span></a>
+      <a class="<%= section === 'notifications' ? 'active' : '' %>" href="/notifications"><%- icon('notification') %><span>Notifications</span></a>
+      <a class="<%= section === 'memory' ? 'active' : '' %>" href="/memory"><%- icon('saved') %><span>Memory</span></a>
+    </nav>
+  </details>
+  <details class="k-app-nav-fold">
+    <summary><span>Your network</span><span class="k-more-chevron" aria-hidden="true">⌄</span></summary>
+    <nav class="k-app-nav" aria-label="Your network">
+      <a class="<%= section === 'topics' ? 'active' : '' %>" href="/topics"><%- icon('discover') %><span>Topics</span></a>
+      <a class="<%= section === 'opportunities' ? 'active' : '' %>" href="/opportunities"><%- icon('discover') %><span>Opportunities</span></a>
+      <a class="<%= section === 'capabilities' ? 'active' : '' %>" href="/capabilities"><%- icon('work') %><span>Capabilities</span></a>
+      <a class="<%= section === 'agents' ? 'active' : '' %>" href="/agents"><%- icon('chat') %><span>Agents</span></a>
+    </nav>
+  </details>
+  <details class="k-app-nav-fold">
+    <summary><span>Money</span><span class="k-more-chevron" aria-hidden="true">⌄</span></summary>
+    <nav class="k-app-nav" aria-label="Money">
+      <a class="<%= section === 'wallet' ? 'active' : '' %>" href="/wallet"><%- icon('points') %><span>Wallet</span></a>
+      <a class="<%= section === 'points' ? 'active' : '' %>" href="/points"><%- icon('points') %><span>Points</span></a>
+      <a class="<%= section === 'subscriptions' ? 'active' : '' %>" href="/subscriptions"><%- icon('saved') %><span>Plans</span></a>
+      <a class="<%= section === 'cart' ? 'active' : '' %>" href="/cart"><%- icon('request') %><span>Cart</span></a>
+    </nav>
+  </details>
+  <div class="k-app-sidebar-spacer"></div>
+  <nav class="k-app-nav k-app-nav-account" aria-label="Account">
+    <a class="<%= section === 'connect' ? 'active' : '' %>" href="/connect"><%- icon('settings') %><span>Connect</span></a>
+    <a class="<%= section === 'settings' ? 'active' : '' %>" href="/settings"><%- icon('settings') %><span>Settings</span></a>
+    <a href="/help"><%- icon('help') %><span>Help</span></a>
+  </nav>
+</aside>
