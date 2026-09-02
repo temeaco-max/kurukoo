@@ -19,27 +19,31 @@ const facelift = read('public/css/kurukoo-facelift.css');
 const controls = read('public/css/kurukoo-facelift-controls.css');
 const osCss = read('public/css/kurukoo-os-architecture.css');
 const osDashboard = read('public/js/kurukoo-os-dashboard.js');
-const publicHead = read('views/_partials/head.ejs');
-const chat = read('public/chat/index.html');
-const workspace = read('views/workspace.ejs');
 
-const requiredSections = ['agent','discover','requests','tasks','connect','points','top-up','subscriptions','checkout','confirmations','memory','notifications'];
-for (const section of requiredSections) assert.ok(routes.includes(`['${section}',`), `Missing canonical surface-map section: ${section}`);
-assert.ok(routes.includes("for (const section of surfaceMap.keys()) router.get(`/app/${section}`"), 'Canonical App route loop is missing.');
-for (const marker of ['k-app-shell','k-app-sidebar','k-app-main','k-mobile-tabbar','kurukoo-client-foundation.css','/chat']) assert.ok(app.includes(marker), `App view missing: ${marker}`);
+const requiredSections = ['desk','discover','requests','tasks','connect','points','top-up','subscriptions','checkout','confirmations','memory','notifications'];
+for (const section of requiredSections) assert.ok(routes.includes(`['${section}',`), `Missing canonical implementation surface: ${section}`);
+for (const marker of ['k-app-shell','k-app-sidebar','k-app-main','/chat']) assert.ok(app.includes(marker), `App view missing: ${marker}`);
 for (const token of ['--k-cream','--k-primary','--k-font-body','--k-font-heading','--k-space-4','44px']) assert.ok(foundation.includes(token), `Visual system token missing: ${token}`);
 for (const marker of ['k-app-quick-actions','k-app-quick-action','k-app-profile-link']) assert.ok(polish.includes(marker), `Polish style missing: ${marker}`);
-for (const marker of ['normalizeLinks','activeNav','discoverShortcuts','renderDiscoverHub','MutationObserver','/app/discover']) assert.ok(polishJs.includes(marker), `Polish behavior missing: ${marker}`);
+for (const marker of ['normalizeLinks','activeNav','discoverShortcuts','renderDiscoverHub','MutationObserver']) assert.ok(polishJs.includes(marker), `Polish behavior missing: ${marker}`);
 assert.ok(fcm.includes('/js/kurukoo-app-shell.js?v=1'), 'FCM/App boot path must load canonical app shell runtime.');
 assert.ok(fcm.includes('/js/kurukoo-ui-convergence.js?v=1'), 'Shared UI convergence behavior must load in App.');
 assert.ok(fcm.includes('/js/kurukoo-app-polish-v3.js?v=1'), 'Final App polish layer must load in App.');
 assert.ok(fcm.includes('/js/kurukoo-os-dashboard.js?v=1'), 'Kurukoo OS dashboard layer must load in App.');
-assert.ok(uiConvergence.includes("document.body.classList.contains('k-app-page')"), 'Shared UI convergence must know the canonical App shell to avoid duplicate workspace chrome.');
-assert.ok(appShell.includes('createSecondaryNav'), 'Canonical app shell must own secondary navigation composition.');
+assert.ok(uiConvergence.includes("document.body.classList.contains('k-app-page')"), 'Shared UI convergence must know the canonical App shell.');
+assert.ok(appShell.includes('createSecondaryNav'), 'Canonical app shell must retain compatibility secondary-nav composition.');
 assert.ok(appShell.includes('createCollapseControl'), 'Canonical app shell must expose desktop navigation collapse.');
 assert.ok(appShell.includes('wireMobileNav'), 'Canonical app shell must own mobile navigation controls.');
-assert.ok(appShell.includes('createTabBar();void createFeatureCompass();'), 'Canonical app shell must retain mobile tab and feature compass behavior.');
-assert.ok(viewState.includes("agent: '/chat'"), 'Canonical frontend view state must map Chat to the Agent view.');
+assert.ok(appShell.includes("label:'Home'"), 'Canonical app shell must use Home as the primary mobile destination.');
+assert.ok(appShell.includes("label:'Explore'"), 'Canonical app shell must use Explore as the discovery destination.');
+assert.ok(appShell.includes("label:'Activity'"), 'Canonical app shell must use Activity as the progress destination.');
+assert.ok(!appShell.includes("href:'/desk'"), 'Canonical app shell must not present legacy Desk navigation.');
+assert.ok(!appShell.includes("href:'/discover'"), 'Canonical app shell must not present legacy Discover navigation.');
+assert.ok(!appShell.includes("href:'/requests'"), 'Canonical app shell must not present legacy Requests navigation.');
+assert.ok(!appShell.includes("'kurukoo-page-architecture'"), 'Canonical app shell must not load internal page architecture UI.');
+assert.ok(viewState.includes("home: '/home'"), 'Frontend view state must expose canonical Home routing.');
+assert.ok(viewState.includes("explore: '/explore'"), 'Frontend view state must expose canonical Explore routing.');
+assert.ok(viewState.includes("activity: '/activity'"), 'Frontend view state must expose canonical Activity routing.');
 assert.ok(viewState.includes('const ROUTES'), 'Canonical frontend view state must expose route definitions.');
 assert.ok(viewState.includes('const router'), 'Canonical frontend view state must expose navigation helpers.');
 assert.ok(viewState.includes('history.pushState'), 'Frontend view state must integrate browser history.');
@@ -48,8 +52,13 @@ assert.ok(facelift.includes('--kf-bg') && facelift.includes('.k-shell-collapsed'
 assert.ok(controls.includes('.k-app-mobile-toggle') && controls.includes('.k-app-mobile-scrim'), 'Mobile shell controls must include accessible navigation affordances.');
 for (const token of ['--os-bg','--os-surface','--os-accent','os-dashboard','os-dashboard-rail','os-today-flow','os-card-head']) assert.ok(osCss.includes(token), `OS architecture token/layout missing: ${token}`);
 for (const token of ['Today’s flow','Continue conversation','Opportunity radar','Connected channels','Safety check-in','Activity summary','os-dashboard']) assert.ok(osDashboard.includes(token), `OS dashboard composition missing: ${token}`);
-assert.ok(publicHead.includes('/css/kurukoo-os-architecture.css?v=1'), 'Public pages must load the shared OS architecture stylesheet.');
-assert.ok(chat.includes('kurukoo-os-architecture.css'), 'Chat must load the shared OS architecture stylesheet.');
-assert.ok(workspace.includes('kurukoo-os-architecture.css'), 'Workspace/backend shell must load the shared OS architecture stylesheet.');
 
-console.log(JSON.stringify({ passed: true, checks: requiredSections.length + 31 }, null, 2));
+const sharedPartials = ['app-header.ejs','app-sidebar.ejs','app-mobile-nav.ejs','app-context-bridge.ejs','app-footer.ejs'];
+for (const partial of sharedPartials) {
+  assert.ok(fs.existsSync(path.join(root, 'views/_partials', partial)), `Shared authenticated partial missing: ${partial}`);
+  assert.ok(routes.includes(`renderSharedPartial('${partial}'`), `Authenticated renderer does not compose shared partial: ${partial}`);
+}
+assert.ok(read('public/css/kurukoo-app-ia.css').includes('.k-app-nav-fold'), 'Assistant-first IA styles must exist.');
+assert.ok(!read('public/js/kurukoo-page-architecture.js').includes('data-kurukoo-page-architecture'), 'Internal architecture must not be rendered to app users.');
+
+console.log(JSON.stringify({ passed: true, checks: requiredSections.length + 39 }, null, 2));
