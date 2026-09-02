@@ -1,40 +1,66 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import type { AIProvider } from './unifiedAiEngine.js';
-import { classifyAiRoutingSignal } from './aiRoutingConvergence.js';
 import { isAiProviderUsable } from './aiProviderHealth.js';
 import { getFeatureFlag } from './featureFlags.js';
+import { hasConfiguredSecret } from './providerCapabilities.js';
 
 export type InferenceTask = 'conversation' | 'support' | 'skill_intake' | 'planning' | 'agent_execution' | 'high_stakes' | 'presentation';
 export interface InferenceDecision { provider: AIProvider; reason: string; maxComplexity: 'low'|'medium'|'high'; escalationReason?: string; }
 
-const FREE_HOSTED_ORDER: Array<Exclude<AIProvider,'auto'|'smollm2'|'local_intent'|'mistral'>> = ['groq','gemini','openrouter','poolside'];
-function configuredMistral():boolean{return Boolean(process.env.MISTRAL_API_KEY&&String(process.env.KURUKOO_AI_PRIMARY_PROVIDER||process.env.KURUKOO_AI_HOSTED_PROVIDER||'mistral').toLowerCase()==='mistral'&&isAiProviderUsable('mistral'));}
-function freeFirstEnabled():boolean{return String(process.env.KURUKOO_AI_FREE_FIRST||'true').toLowerCase()!=='false';}
-function freeHostedCandidates():AIProvider[]{if(!freeFirstEnabled())return[];const country=process.env.KURUKOO_DEFAULT_COUNTRY||'ng';return FREE_HOSTED_ORDER.filter(provider=>{if(!isAiProviderUsable(provider as any))return false;if(provider==='groq')return Boolean(process.env.GROQ_API_KEY)&&getFeatureFlag(country,'hosted_groq');if(provider==='gemini')return Boolean(process.env.GEMINI_API_KEY||process.env.API_KEY)&&getFeatureFlag(country,'hosted_gemini');if(provider==='openrouter')return Boolean(process.env.OPENROUTER_API_KEY&&String(process.env.OPENROUTER_MODEL||'').trim())&&getFeatureFlag(country,'hosted_openrouter');if(provider==='poolside')return Boolean(process.env.POOLSIDE_API_KEY)&&getFeatureFlag(country,'hosted_poolside');return false;});}
-function freeHostedDecision(task:InferenceTask):InferenceDecision|null{const candidates=freeHostedCandidates();if(!candidates.length)return null;const provider=candidates[0];const complexity:InferenceDecision['maxComplexity']=task==='planning'||task==='agent_execution'?'medium':'low';return{provider,reason:`healthy free/low-cost hosted capacity selected before paid reasoning (${provider})`,maxComplexity:complexity,escalationReason:'free_capacity_first'};}
+type HostedProvider = Exclude<AIProvider, 'auto' | 'smollm2' | 'local_intent'>;
+const HOSTED_FALLBACK_ORDER: HostedProvider[] = ['mistral', 'gemini', 'groq', 'openrouter'];
 
-export function chooseInferenceProvider(input:{task:InferenceTask;prompt:string;preferred?:AIProvider}):InferenceDecision{
-  if(input.preferred&&input.preferred!=='auto'){
-    if(input.preferred==='mistral'&&!isAiProviderUsable('mistral'))return{provider:'smollm2',reason:'requested Mistral provider is temporarily circuit-open; bounded local fallback selected',maxComplexity:'medium',escalationReason:'provider_circuit_open'};
-    return{provider:input.preferred,reason:'caller preference',maxComplexity:'high'};
+function country(): string { return process.env.KURUKOO_DEFAULT_COUNTRY || 'ng'; }
+function enabled(provider: HostedProvider): boolean {
+  const flag = provider === 'mistral' ? 'hosted_mistral' : provider === 'gemini' ? 'hosted_gemini' : provider === 'groq' ? 'hosted_groq' : provider === 'openrouter' ? 'hosted_openrouter' : 'hosted_poolside';
+  return getFeatureFlag(country(), flag);
+}
+function configured(provider: HostedProvider): boolean {
+  if (!isAiProviderUsable(provider)) return false;
+  if (provider === 'mistral') return hasConfiguredSecret(process.env.MISTRAL_API_KEY) && enabled(provider);
+  if (provider === 'gemini') return hasConfiguredSecret(process.env.GEMINI_API_KEY || process.env.API_KEY) && enabled(provider);
+  if (provider === 'groq') return hasConfiguredSecret(process.env.GROQ_API_KEY) && enabled(provider);
+  if (provider === 'openrouter') return hasConfiguredSecret(process.env.OPENROUTER_API_KEY) && Boolean(String(process.env.OPENROUTER_MODEL || '').trim()) && enabled(provider);
+  return hasConfiguredSecret(process.env.POOLSIDE_API_KEY) && enabled(provider);
+}
+function firstHosted(): HostedProvider | null { return HOSTED_FALLBACK_ORDER.find(configured) || null; }
+function poolsideConfigured(): boolean { return configured('poolside'); }
+
+/**
+ * Chat policy is intentionally simple:
+ * - SmolLM2 is the first pass for ordinary conversation and skill intake.
+ * - Hosted providers are escalation, not the default chat engine.
+ * - Poolside Laguna XS 2.1 is reserved for planning/agentic/high-complexity work.
+ * - Explicit provider selection remains authoritative when callers deliberately choose one.
+ */
+export function chooseInferenceProvider(input: { task: InferenceTask; prompt: string; preferred?: AIProvider }): InferenceDecision {
+  if (input.preferred && input.preferred !== 'auto') {
+    if (input.preferred === 'poolside' && !poolsideConfigured()) {
+      return { provider: 'smollm2', reason: 'requested Poolside is unavailable; bounded local fallback selected', maxComplexity: 'medium', escalationReason: 'provider_unavailable' };
+    }
+    if (['mistral','gemini','groq','openrouter'].includes(input.preferred) && !configured(input.preferred as HostedProvider)) {
+      return { provider: 'smollm2', reason: `requested ${input.preferred} is unavailable; bounded local fallback selected`, maxComplexity: 'medium', escalationReason: 'provider_unavailable' };
+    }
+    return { provider: input.preferred, reason: 'caller preference', maxComplexity: input.preferred === 'poolside' ? 'high' : 'medium' };
   }
-  const text=input.prompt.trim().toLowerCase();
-  const signal=classifyAiRoutingSignal(input.prompt);
-  const highSignals=['negotiate','compare','plan','coordinate','arrange','multi-step','same day','same-day','refund','dispute','contract','medical','legal','safety','what are my options'];
-  const lowSignals=['hello','hi','hey','thanks','thank you','what is','good morning','good afternoon','good evening'];
-  if(signal.conversationAct&&['greeting','thanks','farewell','confirmation','rejection'].includes(signal.conversationAct))return{provider:'smollm2',reason:`deterministic conversational act: ${signal.conversationAct}`,maxComplexity:'low'};
-  if(input.task==='high_stakes')return configuredMistral()?{provider:'mistral',reason:'high-stakes task requires highest configured reasoning tier',maxComplexity:'high',escalationReason:input.task}:{provider:'smollm2',reason:'no healthy hosted high-reasoning provider configured; bounded local fallback',maxComplexity:'medium',escalationReason:'no_healthy_hosted_provider'};
-  if(input.task==='planning'||input.task==='agent_execution'){
-    const free=freeHostedDecision(input.task); if(free)return free;
-    return configuredMistral()?{provider:'mistral',reason:'planning/agent execution requires hosted reasoning after free capacity is unavailable',maxComplexity:'high',escalationReason:input.task}:{provider:'smollm2',reason:'no healthy hosted planner available; bounded local fallback',maxComplexity:'medium',escalationReason:'no_healthy_hosted_provider'};
+
+  if (input.task === 'planning' || input.task === 'agent_execution') {
+    if (poolsideConfigured()) return { provider: 'poolside', reason: 'planning/agent execution uses the dedicated complex reasoning provider', maxComplexity: 'high', escalationReason: input.task };
+    const hosted = firstHosted();
+    if (hosted) return { provider: hosted, reason: `Poolside unavailable; ${hosted} is the configured hosted reasoning fallback`, maxComplexity: 'high', escalationReason: 'poolside_unavailable' };
+    return { provider: 'smollm2', reason: 'no hosted reasoning provider is available; bounded local fallback selected', maxComplexity: 'medium', escalationReason: 'no_healthy_hosted_provider' };
   }
-  if(signal.confidence<0.72||signal.source==='none'){
-    const free=freeHostedDecision(input.task); if(free)return{...free,reason:`uncertain routing signal; free hosted semantic interpretation selected (${free.provider})`,escalationReason:'uncertain_routing_free_first'};
-    return configuredMistral()?{provider:'mistral',reason:'uncertain routing signal; escalate for semantic interpretation',maxComplexity:'high',escalationReason:'uncertain_routing'}:{provider:'smollm2',reason:'uncertain routing signal; use bounded local semantic interpretation',maxComplexity:'medium',escalationReason:'uncertain_routing'};
+
+  if (input.task === 'high_stakes') {
+    const hosted = configured('mistral') ? 'mistral' : firstHosted();
+    if (hosted) return { provider: hosted, reason: `${hosted} is the strongest configured hosted boundary for high-stakes response generation`, maxComplexity: 'high', escalationReason: 'high_stakes_hosted' };
+    return { provider: 'smollm2', reason: 'no hosted high-stakes provider is configured; local response is bounded and must not execute actions', maxComplexity: 'medium', escalationReason: 'no_healthy_hosted_provider' };
   }
-  if(input.task==='support'&&!highSignals.some(s=>text.includes(s)))return{provider:'smollm2',reason:'routine support with sufficient routing confidence',maxComplexity:'low'};
-  if(lowSignals.some(signalText=>text===signalText||text.startsWith(`${signalText} `)))return{provider:'smollm2',reason:'low-complexity conversational/support turn',maxComplexity:'low'};
-  if(highSignals.some(signalText=>text.includes(signalText))){const free=freeHostedDecision(input.task);if(free)return{...free,reason:`complexity signal; healthy free hosted provider selected before paid reasoning (${free.provider})`,maxComplexity:'medium',escalationReason:'complexity_signal_free_first'};if(configuredMistral())return{provider:'mistral',reason:'complexity signal or multi-step coordination detected',maxComplexity:'high',escalationReason:'complexity_signal'};}
-  if(signal.skill&&['repairs-maintenance','transport-mobility','accommodation-lodging','professional-services','logistics-freight'].includes(signal.category||''))return{provider:'smollm2',reason:`skill-aware intake for ${signal.skill}; canonical services remain authoritative`,maxComplexity:'medium'};
-  return{provider:'smollm2',reason:'default to low-cost local inference; canonical tools remain authoritative',maxComplexity:'medium'};
+
+  // Ordinary conversation/support/skill-intake/presentation always begins locally.
+  return {
+    provider: 'smollm2',
+    reason: input.task === 'conversation' ? 'ordinary conversation starts with local SmolLM2' : 'bounded local inference is the first pass; hosted providers are escalation only',
+    maxComplexity: input.task === 'skill_intake' ? 'medium' : 'low',
+  };
 }
