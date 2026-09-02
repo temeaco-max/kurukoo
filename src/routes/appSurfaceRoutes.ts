@@ -91,11 +91,12 @@ const canonicalPathBySection: Record<string, string> = {
 const sharedPublicAuthenticated = new Set(['/explore', '/discover', '/topics']);
 
 function screenAssets(section: string): string {
-  if (section === 'discover') return '<link rel="stylesheet" href="/css/kurukoo-discover-convergence.css?v=1"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="/js/kurukoo-discover-convergence.js?v=1" defer></script><script src="/js/kurukoo-discover-map-loader.js?v=1" defer></script>';
-  if (section === 'notifications') return '<link rel="stylesheet" href="/css/kurukoo-notifications-convergence.css?v=1"><script src="/js/kurukoo-notifications-convergence.js?v=1" defer></script>';
-  if (section === 'connect') return '<link rel="stylesheet" href="/css/kurukoo-contacts-convergence.css?v=1"><script src="/js/kurukoo-contacts-convergence.js?v=1" defer></script>';
-  if (section === 'memory') return '<link rel="stylesheet" href="/css/kurukoo-memory-convergence.css?v=1"><script src="/js/kurukoo-memory-convergence.js?v=1" defer></script>';
-  return '';
+  const base = '<link rel="stylesheet" href="/css/kurukoo-app-ia.css?v=1">';
+  if (section === 'discover') return `${base}<link rel="stylesheet" href="/css/kurukoo-discover-convergence.css?v=1"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="/js/kurukoo-discover-convergence.js?v=1" defer></script><script src="/js/kurukoo-discover-map-loader.js?v=1" defer></script>`;
+  if (section === 'notifications') return `${base}<link rel="stylesheet" href="/css/kurukoo-notifications-convergence.css?v=1"><script src="/js/kurukoo-notifications-convergence.js?v=1" defer></script>`;
+  if (section === 'connect') return `${base}<link rel="stylesheet" href="/css/kurukoo-contacts-convergence.css?v=1"><script src="/js/kurukoo-contacts-convergence.js?v=1" defer></script>`;
+  if (section === 'memory') return `${base}<link rel="stylesheet" href="/css/kurukoo-memory-convergence.css?v=1"><script src="/js/kurukoo-memory-convergence.js?v=1" defer></script>`;
+  return base;
 }
 
 const renderSharedPartial = (file: string, locals: AppPartialLocals): Promise<string> => new Promise((resolve, reject) => {
@@ -109,18 +110,18 @@ function selectedFor(section: string) {
 function appLocals(req: express.Request, section: string, resourceId?: string) {
   const authReq = req as AuthRequest;
   const selected = selectedFor(section);
-  const canonicalPath = canonicalPathBySection[section] || req.path;
+  const integrations = getExternalIntegrationReadiness();
   return {
     selected,
     section,
-    canonicalPath,
+    canonicalPath: canonicalPathBySection[section] || req.path,
     displayName: authReq.user?.name || authReq.user?.phone || '',
     phone: authReq.user?.phone || '',
     surfaces: getClientSurfaces('web'),
     readiness: getPilotReadiness(),
-    integrations: getExternalIntegrationReadiness(),
-    enabledIntegrations: getExternalIntegrationReadiness().filter((item: any) => item.implementation?.state === 'IMPLEMENTED' || item.implementation?.implemented === true).length,
-    integrationCount: getExternalIntegrationReadiness().length,
+    integrations,
+    enabledIntegrations: integrations.filter((item: any) => item.implementation?.state === 'IMPLEMENTED' || item.implementation?.implemented === true).length,
+    integrationCount: integrations.length,
     visualFeatures: getCanonicalDiscoverablePlatformFeatures().filter(feature => !feature.audience.includes('admin')),
     resourceId,
     contentContract: getPageContentContract(section),
@@ -153,7 +154,7 @@ function renderApp(req: express.Request, res: express.Response, section = 'desk'
     try {
       const output = await renderShell(html, locals);
       const assets = screenAssets(section);
-      return res.send(assets ? output.replace('</head>', `${assets}</head>`) : output);
+      return res.send(output.replace('</head>', `${assets}</head>`));
     } catch {
       return res.status(500).send('Unable to render application shell');
     }
@@ -208,7 +209,7 @@ for (const resource of ['requests','tasks','reminders','opportunities','agents',
       try {
         const output = await renderShell(html, locals);
         const assets = screenAssets(section);
-        return res.send(assets ? output.replace('</head>', `${assets}</head>`) : output);
+        return res.send(output.replace('</head>', `${assets}</head>`));
       } catch {
         return res.status(500).send('Unable to render application shell');
       }
