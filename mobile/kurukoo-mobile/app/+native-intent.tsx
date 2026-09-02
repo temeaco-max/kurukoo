@@ -1,7 +1,10 @@
 const TAB_ROUTES: Record<string, string> = {
+  '/home': '/(tabs)',
   '/desk': '/(tabs)',
   '/chat': '/(tabs)',
+  '/explore': '/(tabs)/discover',
   '/discover': '/(tabs)/discover',
+  '/activity': '/(tabs)/requests',
   '/requests': '/(tabs)/requests',
   '/tasks': '/(tabs)/tasks',
   '/connect': '/(tabs)/connect',
@@ -20,9 +23,8 @@ function stripOrigin(path: string): string {
  * Resolve Kurukoo's canonical web addresses into the native Expo Router tree.
  *
  * Native navigation is a platform presentation of the same product resources;
- * it must not invent a second URL vocabulary. Unsupported detail resources land
- * in More until a dedicated native detail surface exists rather than silently
- * pretending a different resource is being displayed.
+ * it follows the assistant-first web vocabulary while preserving legacy aliases
+ * for previously shared links.
  */
 export function redirectSystemPath({ path }: { path: string; initial?: boolean }): string {
   const pathname = stripOrigin(path).split(/[?#]/, 1)[0] || '/';
@@ -31,7 +33,7 @@ export function redirectSystemPath({ path }: { path: string; initial?: boolean }
   if (direct) return direct;
 
   if (/^\/chat\//.test(pathname) || /^\/share\//.test(pathname)) return '/(tabs)';
-  if (/^\/requests\//.test(pathname)) return '/(tabs)/requests';
+  if (/^\/(?:requests|activity)\//.test(pathname)) return '/(tabs)/requests';
   if (/^\/tasks\//.test(pathname)) return '/(tabs)/tasks';
   if (/^\/connections\//.test(pathname)) return '/(tabs)/connect';
 
