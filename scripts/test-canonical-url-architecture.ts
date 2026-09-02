@@ -34,6 +34,9 @@ const appSurfaceRoutes = read('src/routes/appSurfaceRoutes.ts');
 const appTemplate = read('views/app.ejs');
 require(!appSurfaceRoutes.includes('res.redirect(308'), 'Authenticated app-surface routes must be wired directly, not via legacy compatibility redirects.');
 require(!appSurfaceRoutes.includes("'/app'"), 'Authenticated app-surface routes must not retain the legacy /app alias.');
+require(!appSurfaceRoutes.includes('renderSharedPartial'), 'Route layer must not duplicate template component rendering.');
+require(!appSurfaceRoutes.includes('renderShell'), 'Route layer must not regex-replace template shell markup.');
+require(!appSurfaceRoutes.includes('screenAssets'), 'Route layer must not retain a dead page asset composer.');
 for (const route of ["'/home': 'desk'", "'/explore': 'discover'", "'/activity': 'requests'"]) require(appSurfaceRoutes.includes(route), `App surface routes must include ${route}.`);
 for (const relative of [
   'public/js/kurukoo-app-shell.js',
@@ -62,8 +65,6 @@ require(appTemplate.includes("include('_partials/app-mobile-nav'"), 'App templat
 require(appTemplate.includes("include('_partials/app-context-bridge'"), 'App template must own the shared continuity bridge composition.');
 require(appTemplate.includes("include('_partials/app-footer'"), 'App template must own the shared footer composition.');
 require(appTemplate.includes("include('_partials/app-page-header'"), 'App template must reuse the shared page-header component.');
-require(!appSurfaceRoutes.includes('renderSharedPartial'), 'Route layer must not duplicate template component composition.');
-require(!appSurfaceRoutes.includes('renderShell'), 'Route layer must not regex-replace template shell markup.');
 require(!appTemplate.includes('class="k-app-sidebar" aria-label="Kurukoo application navigation"'), 'App template must not contain a second legacy sidebar owner.');
 require(!appTemplate.includes('<nav class="k-mobile-tabbar"'), 'App template must not contain a second legacy mobile-navigation owner.');
 require(!read('public/js/kurukoo-page-architecture.js').includes('data-kurukoo-page-architecture'), 'Internal page architecture must not be rendered into the user-facing app.');
@@ -77,4 +78,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('Canonical URL architecture test passed: assistant-first Home/Explore/Activity IA, direct reusable app composition, resource URLs, and cross-client boundaries are aligned.');
+console.log('Canonical URL architecture test passed: assistant-first Home/Explore/Activity IA, direct reusable app composition, render-thin route ownership, resource URLs, and cross-client boundaries are aligned.');
