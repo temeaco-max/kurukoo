@@ -18,8 +18,10 @@ const osLiveHydration = read('public/js/kurukoo-os-live-hydration.js');
 const deskStyle = read('public/css/kurukoo-desk-system.css');
 const appExtensions = read('public/js/kurukoo-app-extensions.js');
 
-require(CANONICAL_URLS.desk.home === '/desk', 'Desk canonical URL must remain /desk.');
-require(CANONICAL_URLS.conversation.agent === '/chat', 'Agent canonical URL must remain /chat.');
+require(CANONICAL_URLS.experience.home === '/home', 'Home must remain the canonical authenticated home.');
+require(CANONICAL_URLS.experience.explore === '/explore', 'Explore must remain the canonical discovery route.');
+require(CANONICAL_URLS.experience.activity === '/activity', 'Activity must remain the canonical work-progress route.');
+require(CANONICAL_URLS.conversation.agent === '/chat', 'Chat must use /chat as the conversational surface.');
 require(CANONICAL_URLS.conversation.conversation('conversation-1') === '/chat/conversation-1', 'Conversation URL builder must remain stable.');
 require(CANONICAL_URLS.conversation.share('share-1') === '/share/share-1', 'Share URL builder must remain stable.');
 require(CANONICAL_URLS.desk.request('request-1') === '/requests/request-1', 'Request detail URL must remain resource-oriented.');
@@ -30,8 +32,11 @@ require(index.includes("import { apiV1Bridge } from './middleware/apiV1Bridge.js
 require(index.includes("app.use('/api/v1',apiV1Bridge);"), 'Server must mount the API v1 bridge before legacy /api routers.');
 require(apiBridge.includes('X-Kurukoo-Api-Version') && apiBridge.includes('req.url = `/api${'), 'API v1 bridge must translate /api/v1 into the existing service-router namespace.');
 
-require(nativeIntent.includes("'/desk': '/(tabs)'"), 'Native intent must map Desk to the native home surface.');
-require(nativeIntent.includes("'/chat': '/(tabs)'"), 'Native intent must map Agent/Chat to the native conversation surface.');
+require(nativeIntent.includes("'/home': '/(tabs)'"), 'Native intent must map Home to the native home surface.');
+require(nativeIntent.includes("'/desk': '/(tabs)'"), 'Native intent must preserve the legacy Desk alias.');
+require(nativeIntent.includes("'/chat': '/(tabs)'"), 'Native intent must map Chat to the native conversation surface.');
+require(nativeIntent.includes("'/explore': '/(tabs)/discover'"), 'Native intent must map Explore to native discovery.');
+require(nativeIntent.includes("'/activity': '/(tabs)/requests'"), 'Native intent must map Activity to native request activity.');
 require(nativeIntent.includes("/^\\/requests\\//"), 'Native intent must map request detail URLs.');
 require(nativeIntent.includes("/^\\/tasks\\//"), 'Native intent must map task detail URLs.');
 require(nativeIntent.includes("/^\\/connections\\//"), 'Native intent must map connection detail URLs.');
@@ -57,4 +62,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('Cross-client routing contract passed: direct canonical Web routes, Desk system drawers, live hydration, /api/v1 bridge, native deep links, and HTTPS app-link configuration are aligned.');
+console.log('Cross-client routing contract passed: assistant-first web routes, native deep links, canonical detail resources, Desk system continuity, /api/v1 bridge, and HTTPS app-link configuration are aligned.');
