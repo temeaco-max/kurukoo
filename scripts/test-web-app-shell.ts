@@ -39,6 +39,7 @@ assert.ok(appShell.includes('createSecondaryNav'), 'Canonical app shell must own
 assert.ok(appShell.includes('createCollapseControl'), 'Canonical app shell must expose desktop navigation collapse.');
 assert.ok(appShell.includes('wireMobileNav'), 'Canonical app shell must own mobile navigation controls.');
 assert.ok(appShell.includes('createTabBar();void createFeatureCompass();'), 'Canonical app shell must retain mobile tab and feature compass behavior.');
+assert.ok(viewState.includes("agent: '/chat'"), 'Canonical frontend view state must map Chat to the Agent view.');
 assert.ok(viewState.includes('const ROUTES'), 'Canonical frontend view state must expose route definitions.');
 assert.ok(viewState.includes('const router'), 'Canonical frontend view state must expose navigation helpers.');
 assert.ok(viewState.includes('history.pushState'), 'Frontend view state must integrate browser history.');
@@ -51,4 +52,4 @@ assert.ok(publicHead.includes('/css/kurukoo-os-architecture.css?v=1'), 'Public p
 assert.ok(chat.includes('kurukoo-os-architecture.css'), 'Chat must load the shared OS architecture stylesheet.');
 assert.ok(workspace.includes('kurukoo-os-architecture.css'), 'Workspace/backend shell must load the shared OS architecture stylesheet.');
 
-console.log(JSON.stringify({ passed: true, checks: requiredSections.length + 30 }, null, 2));
+console.log(JSON.stringify({ passed: true, checks: requiredSections.length + 31 }, null, 2));
