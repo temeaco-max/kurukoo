@@ -16,13 +16,11 @@
       document.head.appendChild(link);
     }
   };
-
   const toggle = document.getElementById('mobile-toggle-btn');
   const nav = document.getElementById('main-nav-links');
   const overlay = document.getElementById('mobile-nav-overlay');
   const close = () => { nav?.classList.remove('active'); toggle?.setAttribute('aria-expanded', 'false'); overlay?.classList.remove('active'); if (overlay) overlay.hidden = true; document.body.classList.remove('mobile-nav-open'); };
   const open = () => { nav?.classList.add('active'); toggle?.setAttribute('aria-expanded', 'true'); if (overlay) overlay.hidden = false; overlay?.classList.add('active'); document.body.classList.add('mobile-nav-open'); };
-
   const hydrateAuthenticatedHeader = async () => {
     const account = document.getElementById('nav-user-btn');
     const label = account?.querySelector('.nav-user-label');
@@ -34,15 +32,14 @@
       if (!payload?.success || !payload?.identity) return;
       account.classList.remove('is-logged-out');
       account.classList.add('is-logged-in');
-      account.href = '/desk';
-      account.title = 'Open your Kurukoo desk';
-      account.setAttribute('aria-label', 'Open your Kurukoo desk');
-      label.textContent = 'Open desk';
+      account.href = '/home';
+      account.title = 'Open your Kurukoo Home';
+      account.setAttribute('aria-label', 'Open your Kurukoo Home');
+      label.textContent = 'Open Home';
     } catch {
       // Anonymous public browsing remains the default; no auth claim is made on failure.
     }
   };
-
   loadPublicVisuals();
   if (toggle && nav) {
     toggle.addEventListener('click', () => nav.classList.contains('active') ? close() : open());
