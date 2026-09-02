@@ -39,19 +39,19 @@ export const CLIENT_SURFACES: readonly ClientSurface[] = [
   { id: 'web-developers', label: 'Developers', family: 'web', route: '/developers', primaryNavigation: 'marketing', semanticOwners: ['contentRoutes', 'developer-docs'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-api-docs', label: 'API documentation', family: 'web', route: '/developers/api', primaryNavigation: 'marketing', semanticOwners: ['contentRoutes', 'developer-docs'], states: ['represented', 'implemented'], responsive: true },
 
-  // Authenticated browser OS — clean URLs
-  { id: 'web-desk', label: 'Desk', family: 'web', route: '/desk', primaryNavigation: 'workspace', semanticOwners: ['appSurfaceRoutes', 'pageContentContracts', 'conversationWorkspace'], states: ['represented', 'implemented', 'contract_tested'], responsive: true },
-  { id: 'web-chat', label: 'Agent', family: 'web', route: '/chat', primaryNavigation: 'agent', semanticOwners: ['canonicalChatTurnService', 'contextArbitration', 'conversationWorkspace'], states: ['represented', 'implemented', 'contract_tested'], responsive: true },
+  // Authenticated browser OS — assistant-first IA
+  { id: 'web-home', label: 'Home', family: 'web', route: '/home', primaryNavigation: 'workspace', semanticOwners: ['appSurfaceRoutes', 'pageContentContracts', 'conversationWorkspace'], states: ['represented', 'implemented', 'contract_tested'], responsive: true },
+  { id: 'web-chat', label: 'Chat', family: 'web', route: '/chat', primaryNavigation: 'agent', semanticOwners: ['canonicalChatTurnService', 'contextArbitration', 'conversationWorkspace'], states: ['represented', 'implemented', 'contract_tested'], responsive: true },
   { id: 'web-chat-conversation', label: 'Conversation', family: 'web', route: '/chat/:conversationId', primaryNavigation: 'agent', semanticOwners: ['canonicalChatTurnService', 'conversationWorkspace'], states: ['represented', 'implemented', 'contract_tested'], responsive: true },
-  { id: 'web-discover', label: 'Discover', family: 'web', route: '/discover', primaryNavigation: 'discover', semanticOwners: ['discoveryRoutes', 'nearbyPulse', 'opportunityEngine'], states: ['represented', 'implemented'], responsive: true },
+  { id: 'web-explore-authenticated', label: 'Explore', family: 'web', route: '/explore', primaryNavigation: 'discover', semanticOwners: ['discoveryRoutes', 'nearbyPulse', 'opportunityEngine', 'skills'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-topics', label: 'Topics', family: 'web', route: '/topics', primaryNavigation: 'secondary', semanticOwners: ['topicRoutes', 'topicService', 'community-context'], states: ['represented', 'implemented'], responsive: true },
-  { id: 'web-requests', label: 'Requests', family: 'web', route: '/requests', primaryNavigation: 'requests', semanticOwners: ['economicRequest', 'order', 'checkout'], states: ['represented', 'implemented'], responsive: true },
+  { id: 'web-activity', label: 'Activity', family: 'web', route: '/activity', primaryNavigation: 'requests', semanticOwners: ['economicRequest', 'order', 'checkout', 'notifications'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-request-detail', label: 'Request detail', family: 'web', route: '/requests/:requestId', primaryNavigation: 'requests', semanticOwners: ['economicRequest', 'order', 'checkout', 'providerDiscovery'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-reminders', label: 'Reminders', family: 'web', route: '/reminders', primaryNavigation: 'secondary', semanticOwners: ['reminderService', 'notificationService', 'backgroundServices'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-saved', label: 'Saved', family: 'web', route: '/saved', primaryNavigation: 'secondary', semanticOwners: ['savedItems', 'offerEngine', 'memoryProfile'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-cart', label: 'Cart', family: 'web', route: '/cart', primaryNavigation: 'secondary', semanticOwners: ['cart', 'order', 'economicRequest'], states: ['represented', 'implemented'], responsive: true },
-  { id: 'web-tasks', label: 'Tasks', family: 'web', route: '/tasks', primaryNavigation: 'tasks', semanticOwners: ['task', 'agentRuntime', 'reminderService'], states: ['represented', 'implemented'], responsive: true },
-  { id: 'web-task-detail', label: 'Task detail', family: 'web', route: '/tasks/:taskId', primaryNavigation: 'tasks', semanticOwners: ['task', 'agentRuntime', 'reminderService'], states: ['represented', 'implemented'], responsive: true },
+  { id: 'web-work', label: 'Work', family: 'web', route: '/tasks', primaryNavigation: 'tasks', semanticOwners: ['task', 'agentRuntime', 'reminderService'], states: ['represented', 'implemented'], responsive: true },
+  { id: 'web-task-detail', label: 'Work item', family: 'web', route: '/tasks/:taskId', primaryNavigation: 'tasks', semanticOwners: ['task', 'agentRuntime', 'reminderService'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-connect', label: 'Connect', family: 'web', route: '/connect', primaryNavigation: 'connect', semanticOwners: ['connectionRoutes', 'externalIntegrationReadiness', 'artifactService'], states: ['represented', 'implemented', 'contract_tested'], responsive: true },
   { id: 'web-agents', label: 'Agents', family: 'web', route: '/agents', primaryNavigation: 'secondary', semanticOwners: ['agentRuntime', 'agentRouter'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-agent-detail', label: 'Agent detail', family: 'web', route: '/agents/:agentId', primaryNavigation: 'secondary', semanticOwners: ['agentRuntime', 'agentRouter'], states: ['represented', 'implemented'], responsive: true },
@@ -61,12 +61,12 @@ export const CLIENT_SURFACES: readonly ClientSurface[] = [
   { id: 'web-wallet', label: 'Wallet', family: 'web', route: '/wallet', primaryNavigation: 'secondary', semanticOwners: ['directWallet', 'payment', 'points', 'subscription'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-points', label: 'Points', family: 'web', route: '/points', primaryNavigation: 'secondary', semanticOwners: ['points'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-top-up', label: 'Top Up', family: 'web', route: '/top-up', primaryNavigation: 'secondary', semanticOwners: ['topup', 'payment'], states: ['represented', 'implemented'], responsive: true },
-  { id: 'web-subscriptions', label: 'Subscriptions', family: 'web', route: '/subscriptions', primaryNavigation: 'secondary', semanticOwners: ['subscription'], states: ['represented', 'implemented'], responsive: true },
+  { id: 'web-subscriptions', label: 'Plans', family: 'web', route: '/subscriptions', primaryNavigation: 'secondary', semanticOwners: ['subscription'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-checkout', label: 'Checkout', family: 'web', route: '/checkout', primaryNavigation: 'secondary', semanticOwners: ['checkout', 'economicRequest', 'payment'], states: ['represented', 'implemented'], responsive: true },
-  { id: 'web-confirmations', label: 'Confirmations', family: 'web', route: '/confirmations', primaryNavigation: 'secondary', semanticOwners: ['checkoutConfirmation', 'economicRequest'], states: ['represented', 'implemented'], responsive: true },
+  { id: 'web-confirmations', label: 'Outcome', family: 'web', route: '/activity', primaryNavigation: 'secondary', semanticOwners: ['checkoutConfirmation', 'economicRequest'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-memory', label: 'Memory', family: 'web', route: '/memory', primaryNavigation: 'secondary', semanticOwners: ['memoryProfile'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-notifications', label: 'Notifications', family: 'web', route: '/notifications', primaryNavigation: 'secondary', semanticOwners: ['notificationService', 'notificationQueue'], states: ['represented', 'implemented'], responsive: true },
-  { id: 'web-artifacts', label: 'Artifacts', family: 'web', route: '/artifacts', primaryNavigation: 'secondary', semanticOwners: ['artifactService', 'storageRouter'], states: ['represented', 'implemented'], responsive: true },
+  { id: 'web-artifacts', label: 'Files', family: 'web', route: '/artifacts', primaryNavigation: 'secondary', semanticOwners: ['artifactService', 'storageRouter'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-prayer', label: 'Prayer Companion', family: 'web', route: '/prayer', primaryNavigation: 'secondary', semanticOwners: ['prayerAgent', 'agentRuntime', 'voiceService', 'artifactService'], states: ['represented', 'implemented'], responsive: true },
   { id: 'web-call', label: 'Kurukoo Call', family: 'web', route: '/call', primaryNavigation: 'secondary', semanticOwners: ['voiceService', 'webrtcSignalling', 'deviceLinks'], states: ['represented', 'implemented', 'external_activation'], responsive: true },
   { id: 'web-safety', label: 'Safety', family: 'web', route: '/safety', primaryNavigation: 'secondary', semanticOwners: ['safetyService', 'interactionPolicy', 'notificationService'], states: ['represented', 'implemented'], responsive: true },
@@ -74,7 +74,7 @@ export const CLIENT_SURFACES: readonly ClientSurface[] = [
   { id: 'web-share', label: 'Shared conversation', family: 'web', route: '/share/:shareId', primaryNavigation: 'secondary', semanticOwners: ['conversationWorkspace', 'share'], states: ['represented', 'implemented'], responsive: true },
 
   // PWA / native clients
-  { id: 'pwa-shell', label: 'PWA application shell', family: 'pwa', route: '/desk', primaryNavigation: 'workspace', semanticOwners: ['canonical API', 'service worker', 'clientSurfaceRegistry'], states: ['represented', 'implemented', 'contract_tested'], responsive: true },
+  { id: 'pwa-shell', label: 'PWA application shell', family: 'pwa', route: '/home', primaryNavigation: 'workspace', semanticOwners: ['canonical API', 'service worker', 'clientSurfaceRegistry'], states: ['represented', 'implemented', 'contract_tested'], responsive: true },
   { id: 'native-ios', label: 'iOS application', family: 'native', route: 'native://ios', primaryNavigation: 'agent', semanticOwners: ['canonical API', 'native device adapters', 'clientSurfaceRegistry'], states: ['represented', 'implemented', 'device_verification'], responsive: false, nativeOnly: true },
   { id: 'native-android', label: 'Android application', family: 'native', route: 'native://android', primaryNavigation: 'agent', semanticOwners: ['canonical API', 'native device adapters', 'clientSurfaceRegistry'], states: ['represented', 'implemented', 'device_verification'], responsive: false, nativeOnly: true },
 
@@ -106,8 +106,8 @@ export const CLIENT_SURFACES: readonly ClientSurface[] = [
   { id: 'admin-roadmap', label: 'Admin Roadmap', family: 'admin', route: '/admin/roadmap', primaryNavigation: 'admin', semanticOwners: ['adminRoutes'], states: ['represented', 'implemented'], responsive: true },
 ];
 
-export const MOBILE_PRIMARY_NAVIGATION = ['agent', 'discover', 'requests', 'tasks', 'connect'] as const;
-export const DESKTOP_AUTHENTICATED_HOME = 'web-desk' as const;
+export const MOBILE_PRIMARY_NAVIGATION = ['home', 'explore', 'agent', 'requests', 'account'] as const;
+export const DESKTOP_AUTHENTICATED_HOME = 'web-home' as const;
 
 export function getClientSurface(id: string): ClientSurface | undefined { return CLIENT_SURFACES.find(surface => surface.id === id); }
 export function getClientSurfaces(family: ClientFamily): ClientSurface[] { return CLIENT_SURFACES.filter(surface => surface.family === family); }
