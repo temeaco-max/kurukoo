@@ -28,6 +28,7 @@ export interface UnifiedAIOptions {
   threadId?: string;
   skipMemory?: boolean;
   conversational?: boolean;
+  useFastText?: boolean;
   contextHint?: ConversationalContextHint;
   classificationPrompt?: string;
 }
@@ -104,6 +105,7 @@ function requestedModelFor(provider: AIProvider): string {
   if (provider === 'mistral') return process.env.MISTRAL_MODEL || 'mistral-small-latest';
   if (provider === 'groq') return process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
   if (provider === 'openrouter') return process.env.OPENROUTER_MODEL || 'openrouter-unconfigured';
+  if (provider === 'poolside') return process.env.POOLSIDE_MODEL || 'poolside/laguna-xs-2.1';
   if (provider === 'local_intent') return 'kurukoo_intent';
   return getSmolLM2RuntimeStatus().model;
 }
@@ -217,12 +219,10 @@ function fallback(intent?: FastTextResult | null, quotaNote?: string, prompt = '
 function cacheKey(prompt: string, systemPrompt?: string) {
   return `${systemPrompt || ''}\n${prompt.trim().toLowerCase()}`.slice(0, 6000);
 }
-
 function cacheSet(key: string, value: AIResponse) {
   if (simpleCache.size >= CACHE_MAX) simpleCache.delete(simpleCache.keys().next().value as string);
   simpleCache.set(key, { expires: Date.now() + CACHE_TTL_MS, value });
 }
-
 function needsStrongConversationalModel(prompt: string, classification: FastTextResult | null, options: UnifiedAIOptions): boolean {
   if (options.provider && options.provider !== 'auto') return false;
   if (!options.conversational) return false;
@@ -236,18 +236,9 @@ function needsStrongConversationalModel(prompt: string, classification: FastText
   return multiContext || lowConfidenceFallback || nuanced || longOrMultiPart || (classification?.intent === 'unknown' && words > 12);
 }
 
-async function resolveSystemPrompt(
-  prompt: string,
-  options: UnifiedAIOptions,
-  classification: FastTextResult | null,
-  route: string
-): Promise<{ systemPrompt: string; memoryTokens?: number }> {
+async function resolveSystemPrompt(prompt: string, options: UnifiedAIOptions, classification: FastTextResult | null, route: string): Promise<{ systemPrompt: string; memoryTokens?: number }> {
   const conversational = options.conversational !== false;
-  const basePrompt = [
-    conversational ? DEFAULT_CONVERSATIONAL_SYSTEM_PROMPT : '',
-    options.systemPrompt || '',
-    formatContextHint(options.contextHint),
-  ].filter(Boolean).join('\\n\\n');
+  const basePrompt = [conversational ? DEFAULT_CONVERSATIONAL_SYSTEM_PROMPT : '', options.systemPrompt || '', formatContextHint(options.contextHint)].filter(Boolean).join('\n\n');
   if (options.skipMemory || !options.phone) return { systemPrompt: basePrompt };
   const { systemPrompt, working } = await withMemoryContext(options.phone, prompt, basePrompt, {
     intentClass: classification?.intent,
@@ -257,34 +248,34 @@ async function resolveSystemPrompt(
   });
   return { systemPrompt, memoryTokens: working?.tokenEstimate };
 }
-
-function estimatePromptTokens(prompt: string, systemPrompt?: string): number {
-  return Math.ceil(((systemPrompt || '').length + prompt.length) / 4) + 200;
-}
+function estimatePromptTokens(prompt: string, systemPrompt?: string): number { return Math.ceil(((systemPrompt || '').length + prompt.length) / 4) + 200; }
 
 export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions = {}): Promise<AIResponse> {
   const started = Date.now();
   const preferred = options.provider || 'auto';
   const classificationPrompt = String(options.classificationPrompt || prompt);
-  const classification = classifyWithFastText(classificationPrompt);
+  const shouldClassify = options.useFastText === true || (options.useFastText !== false && options.conversational !== true);
+  const classification = shouldClassify ? classifyWithFastText(classificationPrompt) : null;
 
   if (preferred === 'local_intent') {
+    const localClassification = classification || classifyWithFastText(classificationPrompt);
     const response: AIResponse = {
       provider: 'FastText',
       model: 'kurukoo_intent',
-      text: classification
-        ? `Intent: ${classification.intent} (${Math.round(classification.confidence * 100)}%)`
+      text: localClassification
+        ? `Intent: ${localClassification.intent} (${Math.round(localClassification.confidence * 100)}%)`
         : 'Intent: general_question',
       latencyMs: Date.now() - started,
       cost: '$0.00',
-      intent: classification?.intent || 'general_question',
-      confidence: classification?.confidence,
+      intent: localClassification?.intent || 'general_question',
+      confidence: localClassification?.confidence,
     };
     rememberAiRoutingDiagnostic({ requestedProvider: preferred, requestedModel: response.model, attemptedProviders: [], actualProvider: response.provider, actualModel: response.model, executionMode: 'local_intent', fallbackReason: null, success: true });
     return response;
   }
 
-  const isSimple = !needsStrongConversationalModel(prompt, classification, options) && (!classification || SIMPLE_INTENTS.has(classification.intent));
+  const localFirstConversation = options.conversational === true && preferred === 'auto';
+  const isSimple = localFirstConversation || (!needsStrongConversationalModel(prompt, classification, options) && (!classification || SIMPLE_INTENTS.has(classification.intent)));
   const kind: QuotaKind = preferred === 'groq' || preferred === 'openrouter' || (!isSimple && preferred !== 'smollm2') ? 'complex' : 'simple';
   const tokenEst = estimatePromptTokens(prompt, options.systemPrompt);
   const quota = await checkAiQuota(options.phone, kind, tokenEst);
@@ -296,22 +287,13 @@ export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions =
 
   const configuredHostedProvider = resolveConfiguredHostedProvider() || 'none';
   const attemptedProviders: HostedProvider[] = [];
-  const route =
-    preferred === 'gemini'
-      ? 'gemini'
-      : preferred === 'mistral'
-        ? 'mistral'
-        : preferred === 'groq'
-          ? 'groq'
-          : preferred === 'openrouter'
-            ? 'openrouter'
-            : preferred === 'smollm2'
-            ? 'smollm2'
-              : isSimple
-                ? 'smollm2'
-                : configuredHostedProvider === 'none'
-                  ? 'smollm2'
-                  : configuredHostedProvider;
+  const route = preferred !== 'auto'
+    ? preferred
+    : localFirstConversation || isSimple
+      ? 'smollm2'
+      : configuredHostedProvider === 'none'
+        ? 'smollm2'
+        : configuredHostedProvider;
 
   const { systemPrompt, memoryTokens } = await resolveSystemPrompt(prompt, options, classification, route);
   const fallbackWithDiagnostic = (reason: string): AIResponse => {
@@ -352,22 +334,20 @@ export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions =
                   : '';
         const result = cleanThinking(raw);
         const response: AIResponse = {
-                    provider: provider === 'mistral' ? 'Mistral' : provider === 'gemini' ? 'Gemini' : provider === 'groq' ? 'Groq' : provider === 'openrouter' ? 'OpenRouter' : 'Poolside',
+          provider: provider === 'mistral' ? 'Mistral' : provider === 'gemini' ? 'Gemini' : provider === 'groq' ? 'Groq' : provider === 'openrouter' ? 'OpenRouter' : 'Poolside',
           model: provider === 'mistral' ? (process.env.MISTRAL_MODEL || 'mistral-small-latest') : provider === 'gemini' ? (process.env.GEMINI_MODEL || 'gemini-2.5-flash') : provider === 'groq' ? (process.env.GROQ_MODEL || 'llama-3.1-8b-instant') : provider === 'openrouter' ? (openRouter?.model || process.env.OPENROUTER_MODEL || 'openrouter-unconfigured') : (getActivePoolsideModel() || 'poolside/laguna-xs-2.1'),
           text: result.text,
           thought: result.thought,
           latencyMs: Date.now() - started,
-          cost: provider === 'gemini' ? 'configured' : 'rate-limited',
+          cost: provider === 'openrouter' && openRouter?.usage?.cost !== undefined ? `$${Number(openRouter.usage.cost).toFixed(6)}` : 'unknown',
           intent: classification?.intent,
           confidence: classification?.confidence,
           memoryTokens,
         };
-        if (options.phone) {
-          logAiAudit({ phone: options.phone, requestText: prompt, threadId: options.threadId, intentClass: classification?.intent, intentConfidence: classification?.confidence, workingContext: systemPrompt.slice(-2000), available: [], selected: [], llmResponse: response.text, tokenCount: memoryTokens }).catch(() => {});
-        }
+        if (options.phone) logAiAudit({ phone: options.phone, requestText: prompt, threadId: options.threadId, intentClass: classification?.intent, intentConfidence: classification?.confidence, workingContext: systemPrompt.slice(-2000), available: [], selected: [], llmResponse: response.text, tokenCount: memoryTokens }).catch(() => {});
         return afterSuccess(response, provider === 'openrouter' ? { provider: openRouter?.actualProvider ? `OpenRouter:${openRouter.actualProvider}` : 'OpenRouter', model: openRouter?.model || response.model } : undefined);
       } catch {
-        // A configured provider is not treated as reachable until it actually returns a usable response; try the next configured boundary.
+        // A configured provider is not treated as reachable until it actually returns a usable response.
       }
     }
     return null;
@@ -377,139 +357,84 @@ export async function queryUnifiedAI(prompt: string, options: UnifiedAIOptions =
     return (await tryHostedProviders(resolveHostedProviderCandidates(preferred))) || fallbackWithDiagnostic('all_eligible_hosted_providers_failed');
   }
 
-  if (preferred === 'smollm2') {
+  if (preferred === 'smollm2' || localFirstConversation) {
     try {
       const result = cleanThinking(await querySmolLM2(prompt, systemPrompt));
       const runtime = getSmolLM2RuntimeStatus();
-      return afterSuccess({
+      const localResponse = await afterSuccess({
         provider: runtime.available ? 'SmolLM2' : 'Kurukoo Template',
         model: runtime.available ? (runtime.model.split('/').pop() || runtime.model) : 'template-fallback',
         text: result.text,
         thought: result.thought,
         latencyMs: Date.now() - started,
-        cost: 'low',
+        cost: 'unknown',
         intent: classification?.intent,
         confidence: classification?.confidence,
         memoryTokens,
       });
+      if (localResponse.provider !== 'Kurukoo Template') return localResponse;
+      const hosted = await tryHostedProviders(resolveHostedProviderCandidates('auto'));
+      return hosted || localResponse;
     } catch {
-      return fallbackWithDiagnostic('explicit_smollm2_query_failed');
+      const hosted = await tryHostedProviders(resolveHostedProviderCandidates('auto'));
+      return hosted || fallbackWithDiagnostic('smollm2_unavailable_and_no_hosted_provider');
     }
   }
 
   if (isSimple) {
     const key = cacheKey(prompt, systemPrompt);
     const cached = simpleCache.get(key);
-    if (cached && cached.expires > Date.now()) {
-      return { ...cached.value, latencyMs: Date.now() - started, memoryTokens, quotaRemaining: quota.remaining };
-    }
+    if (cached && cached.expires > Date.now()) return { ...cached.value, latencyMs: Date.now() - started, memoryTokens, quotaRemaining: quota.remaining };
     const hosted = await tryHostedProviders(resolveHostedProviderCandidates('auto'));
-    if (hosted) {
-      cacheSet(key, hosted);
-      return hosted;
-    }
+    if (hosted) { cacheSet(key, hosted); return hosted; }
     try {
       const result = cleanThinking(await querySmolLM2(prompt, systemPrompt));
       const runtime = getSmolLM2RuntimeStatus();
-      const response: AIResponse = {
-        provider: runtime.available ? 'SmolLM2' : 'Kurukoo Template',
-        model: runtime.available ? (runtime.model.split('/').pop() || runtime.model) : 'template-fallback',
-        text: result.text,
-        thought: result.thought,
-        latencyMs: Date.now() - started,
-        cost: 'low',
-        intent: classification?.intent,
-        confidence: classification?.confidence,
-        memoryTokens,
-      };
-      const safeResponse = await afterSuccess(response);
+      const safeResponse = await afterSuccess({ provider: runtime.available ? 'SmolLM2' : 'Kurukoo Template', model: runtime.available ? (runtime.model.split('/').pop() || runtime.model) : 'template-fallback', text: result.text, thought: result.thought, latencyMs: Date.now() - started, cost: 'unknown', intent: classification?.intent, confidence: classification?.confidence, memoryTokens });
       cacheSet(key, safeResponse);
       return safeResponse;
-    } catch {
-      /* continue */
-    }
+    } catch {}
   }
 
   const hosted = await tryHostedProviders(resolveHostedProviderCandidates('auto'));
   if (hosted) return hosted;
-
   return fallbackWithDiagnostic('all_eligible_paths_unavailable');
 }
 
-export async function* streamUnifiedAI(
-  prompt: string,
-  options: UnifiedAIOptions = {}
-): AsyncGenerator<AIStreamChunk> {
-  const classification = classifyWithFastText(prompt);
-
-  const simple = !classification || SIMPLE_INTENTS.has(classification.intent);
+export async function* streamUnifiedAI(prompt: string, options: UnifiedAIOptions = {}): AsyncGenerator<AIStreamChunk> {
+  const shouldClassify = options.useFastText === true || options.conversational !== true;
+  const classification = shouldClassify ? classifyWithFastText(prompt) : null;
+  const simple = options.conversational === true || !classification || SIMPLE_INTENTS.has(classification.intent);
   const kind: QuotaKind = !simple ? 'complex' : 'simple';
   const quota = await checkAiQuota(options.phone, kind, estimatePromptTokens(prompt, options.systemPrompt));
   if (!quota.allowed || quota.downgradeToTemplate) {
     const result = fallback(classification, quota.reason ? `⏳ ${quota.reason}` : undefined, prompt);
-    yield {
-      type: 'metadata',
-      provider: result.provider,
-      model: result.model,
-      cost: result.cost,
-      intent: result.intent,
-      confidence: result.confidence,
-    };
+    yield { type: 'metadata', provider: result.provider, model: result.model, cost: result.cost, intent: result.intent, confidence: result.confidence };
     yield { type: 'text', content: result.text };
     return;
   }
 
-  const useMistral = options.provider === 'mistral'
-    || (options.provider !== 'smollm2' && !simple && process.env.KURUKOO_AI_HOSTED_PROVIDER === 'mistral' && hasConfiguredSecret(process.env.MISTRAL_API_KEY));
-  const route = useMistral
-    ? 'mistral'
-    : options.provider === 'groq' || (!simple && options.provider !== 'smollm2' && process.env.GROQ_API_KEY)
-      ? 'groq'
-      : 'smollm2';
-
+  const explicitProvider = options.provider && options.provider !== 'auto' ? options.provider : null;
+  const route: AIProvider = explicitProvider || 'smollm2';
   const { systemPrompt } = await resolveSystemPrompt(prompt, options, classification, route);
 
   if (route === 'mistral') {
     try {
       const result = cleanThinking(await queryMistral(prompt, { systemInstruction: systemPrompt }));
-      yield {
-        type: 'metadata',
-        provider: 'Mistral',
-        model: process.env.MISTRAL_MODEL || 'mistral-small-latest',
-        cost: 'rate-limited',
-        intent: classification?.intent,
-        confidence: classification?.confidence,
-      };
+      yield { type: 'metadata', provider: 'Mistral', model: process.env.MISTRAL_MODEL || 'mistral-small-latest', cost: 'unknown', intent: classification?.intent, confidence: classification?.confidence };
       yield { type: 'text', content: result.text };
       return;
-    } catch {
-      const result = fallback(classification);
-      yield { type: 'metadata', provider: result.provider, model: result.model, cost: result.cost, intent: result.intent, confidence: result.confidence };
-      yield { type: 'text', content: result.text };
-      return;
-    }
+    } catch {}
   }
 
-  if (options.provider === 'groq' || (!simple && options.provider !== 'smollm2' && process.env.GROQ_API_KEY)) {
+  if (route === 'groq') {
     try {
-      yield {
-        type: 'metadata',
-        provider: 'Groq',
-        model: process.env.GROQ_MODEL || 'llama-3.1-8b-instant',
-        cost: 'rate-limited',
-        intent: classification?.intent,
-        confidence: classification?.confidence,
-      };
+      yield { type: 'metadata', provider: 'Groq', model: process.env.GROQ_MODEL || 'llama-3.1-8b-instant', cost: 'unknown', intent: classification?.intent, confidence: classification?.confidence };
       let full = '';
-      for await (const chunk of streamGroq(prompt, { systemPrompt })) {
-        full += chunk;
-        yield { type: 'text', content: chunk };
-      }
+      for await (const chunk of streamGroq(prompt, { systemPrompt })) { full += chunk; yield { type: 'text', content: chunk }; }
       await recordAiUsage(options.phone, 'complex', estimatePromptTokens(prompt, systemPrompt) + Math.ceil(full.length / 4));
       return;
-    } catch {
-      /* fallback */
-    }
+    } catch {}
   }
 
   try {
@@ -517,28 +442,15 @@ export async function* streamUnifiedAI(
       ...options,
       systemPrompt,
       skipMemory: true,
-      provider: simple ? 'smollm2' : 'auto',
+      provider: route === 'smollm2' ? 'smollm2' : 'auto',
+      useFastText: options.useFastText,
     });
-    yield {
-      type: 'metadata',
-      provider: result.provider,
-      model: result.model,
-      cost: result.cost,
-      intent: result.intent,
-      confidence: result.confidence,
-    };
+    yield { type: 'metadata', provider: result.provider, model: result.model, cost: result.cost, intent: result.intent, confidence: result.confidence };
     if (result.thought) yield { type: 'thought', thought: result.thought };
     yield { type: 'text', content: result.text };
   } catch {
     const result = fallback(classification);
-    yield {
-      type: 'metadata',
-      provider: result.provider,
-      model: result.model,
-      cost: result.cost,
-      intent: result.intent,
-      confidence: result.confidence,
-    };
+    yield { type: 'metadata', provider: result.provider, model: result.model, cost: result.cost, intent: result.intent, confidence: result.confidence };
     yield { type: 'text', content: result.text };
   }
 }
