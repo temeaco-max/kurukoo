@@ -17,11 +17,13 @@ describe("Chat composer control contract", () => {
     expect(mobile).toContain('sending ? stopGenerating() : void ask()');
   });
 
-  it("keeps the canonical Web App represented without referencing the removed duplicate website", () => {
+  it("keeps the canonical Web App represented without referencing the retired legacy navigation vocabulary", () => {
     expect(webApp).toContain('href="/chat"');
-    expect(webApp).toContain('href="/requests"');
+    expect(webApp).toContain('href="/activity"');
     expect(webApp).toContain('href="/tasks"');
     expect(webApp).toContain('href="/connect"');
+    expect(webApp).not.toContain('href="/requests"');
+    expect(webApp).not.toContain('href="/desk"');
     expect(foundation).toContain('.k-mobile-tabbar');
     expect(foundation).toContain('--k-primary');
   });
