@@ -61,6 +61,6 @@ for (const partial of sharedPartials) {
 assert.ok(!routes.includes('renderSharedPartial'), 'Route layer must not render shared UI components.');
 assert.ok(!routes.includes('renderShell'), 'Route layer must not regex-replace shared UI components.');
 assert.ok(read('public/css/kurukoo-app-ia.css').includes('.k-app-nav-fold'), 'Assistant-first IA styles must exist.');
-assert.ok(!read('public/js/kurukoo-page-architecture.js').includes('data-kurukoo-page-architecture'), 'Internal architecture must not be rendered to app users.');
+assert.ok(!read('public/js/kurukoo-page-architecture.js').includes('data-kurukoo-page-architecture'), 'Internal page architecture must not be rendered to app users.');
 
 console.log(JSON.stringify({ passed: true, checks: requiredSections.length + 42 }, null, 2));
