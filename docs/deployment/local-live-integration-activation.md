@@ -2,25 +2,24 @@
 
 This is the operator path for turning local `.env` credentials into real smoke tests without committing secrets.
 
-## Mistral-first conversation
+## Mistral hosted escalation
 
-Set:
+Normal conversation remains SmolLM2-first. To test the hosted Mistral boundary explicitly, configure:
 
 ```env
 MISTRAL_API_KEY=...
 FF_HOSTED_MISTRAL=true
-KURUKOO_AI_PRIMARY_PROVIDER=mistral
-KURUKOO_AI_BYPASS_SMOLLM2=true
+KURUKOO_AI_HOSTED_PROVIDER=mistral
 ```
 
 Then run:
 
 ```bash
-npx tsx scripts/test-mistral-bypass.ts
+npx tsx scripts/test-mistral-policy.ts
 npx tsx scripts/live-activation-harness.ts mistral
 ```
 
-The smoke test must report `provider: Mistral`. A missing or disabled Mistral configuration must fail closed rather than silently claiming Mistral.
+The policy test must confirm that automatic chat still selects SmolLM2 first while an explicit Mistral request uses Mistral. The smoke test must report `provider: Mistral` when Mistral is explicitly selected. A missing or disabled Mistral configuration must fail closed rather than silently claiming Mistral.
 
 ## Google Drive
 
