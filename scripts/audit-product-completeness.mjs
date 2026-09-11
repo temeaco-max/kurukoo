@@ -87,6 +87,7 @@ require(featureIds.length === new Set(featureIds).size, 'Platform feature regist
 const canonicalSurfaceFor = (surface) => {
   if (surface === '/app') return '/desk';
   if (surface === '/app/agent') return '/chat';
+  if (surface === '/work') return '/tasks';
   if (surface.startsWith('/app/')) return surface.slice('/app'.length);
   return surface;
 };
