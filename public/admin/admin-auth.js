@@ -95,7 +95,7 @@
       <div class="kurukoo-admin-convergence-actions">
         <span class="kurukoo-admin-convergence-state" data-admin-operational-label>Loading operational state</span>
         <a href="/" target="_blank" rel="noopener">Open site</a>
-        <a href="/chat">Open Web Chat</a>
+        <a href="/chat">Open Web App</a>
         <button type="button" data-admin-convergence-logout>Sign out</button>
       </div>`;
 

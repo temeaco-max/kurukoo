@@ -48,10 +48,6 @@ function recipientFromPayload(payload: any): Record<string, unknown> | undefined
 }
 
 function isExplicitSmsRejection(value: unknown): boolean {
-  // Africa's Talking can surface final rejections as either "Rejected" or
-  // named statuses such as "DoNotDisturbRejection" and "InvalidPhoneNumber".
-  // These mean the provider did not receive an inquiry, unlike a timeout or a
-  // malformed response where retrying could duplicate a real message.
   return /(?:rejected|rejection|invalid(?:senderid|phonenumber)?|userinblacklist|userdoesnotexist|absentsubscriber|expired|unsupportednumbertype|couldnotroute)/i.test(String(value || ''));
 }
 
@@ -142,10 +138,6 @@ export async function sendSmsText(phone: string, message: string): Promise<SmsDe
   }
 }
 
-/**
- * Performs exactly one provider-contact attempt for an inquiry. A network failure
- * remains uncertain and is never retried automatically, preventing duplicate real-world messages.
- */
 export async function sendProviderInquirySms(ownerPhone: string, inquiryId: string): Promise<ProviderInquirySmsOutcome> {
   const availability = smsAvailability();
   if (!availability.available) {
@@ -159,41 +151,18 @@ export async function sendProviderInquirySms(ownerPhone: string, inquiryId: stri
     }
     return { status: 'delivery_uncertain', inquiryId, reference: dispatch.reference, messageId: dispatch.providerMessageId, reason: dispatch.failureReason || 'previous_delivery_attempt_requires_operator_review' };
   }
-
   const message = `${inquiry.question}\nReply with availability and price. Reference: ${dispatch.reference}`;
   const delivery = await sendSmsText(inquiry.providerPhone!, message);
   if (delivery.ok && delivery.messageId) {
-    await recordProviderInquirySmsDispatch({
-      ownerPhone,
-      inquiryId,
-      providerMessageId: delivery.messageId,
-      status: smsDispatchStatus(delivery.providerStatus || 'accepted'),
-      raw: { provider: delivery.provider, providerStatus: delivery.providerStatus || 'accepted' },
-    });
+    await recordProviderInquirySmsDispatch({ ownerPhone, inquiryId, providerMessageId: delivery.messageId, status: smsDispatchStatus(delivery.providerStatus || 'accepted'), raw: { provider: delivery.provider, providerStatus: delivery.providerStatus || 'accepted' } });
     return { status: 'accepted', inquiryId, reference: dispatch.reference, messageId: delivery.messageId };
   }
   if (delivery.ok) {
-    await recordProviderInquirySmsDispatch({
-      ownerPhone,
-      inquiryId,
-      status: 'unknown',
-      failureReason: 'sms_provider_response_missing_message_id',
-      raw: { provider: delivery.provider, providerStatus: delivery.providerStatus || 'accepted' },
-    });
+    await recordProviderInquirySmsDispatch({ ownerPhone, inquiryId, status: 'unknown', failureReason: 'sms_provider_response_missing_message_id', raw: { provider: delivery.provider, providerStatus: delivery.providerStatus || 'accepted' } });
     return { status: 'delivery_uncertain', inquiryId, reference: dispatch.reference, reason: 'sms_provider_response_missing_message_id' };
   }
-
-  // The transport may have accepted a message before a timeout/error was observed.
-  // Preserve the uncertainty instead of sending a second message automatically.
   const explicitlyRejected = isExplicitSmsRejection(delivery.providerStatus);
-  await recordProviderInquirySmsDispatch({
-    ownerPhone,
-    inquiryId,
-    providerMessageId: delivery.messageId,
-    status: delivery.messageId && explicitlyRejected ? 'rejected' : 'unknown',
-    failureReason: delivery.reason || 'sms_provider_request_failed',
-    raw: { provider: delivery.provider, providerStatus: delivery.providerStatus || null },
-  });
+  await recordProviderInquirySmsDispatch({ ownerPhone, inquiryId, providerMessageId: delivery.messageId, status: delivery.messageId && explicitlyRejected ? 'rejected' : 'unknown', failureReason: delivery.reason || 'sms_provider_request_failed', raw: { provider: delivery.provider, providerStatus: delivery.providerStatus || null } });
   return { status: delivery.messageId && explicitlyRejected ? 'failed' : 'delivery_uncertain', inquiryId, reference: dispatch.reference, messageId: delivery.messageId, reason: delivery.reason };
 }
 
@@ -214,25 +183,10 @@ async function reflectProviderReplyOnEconomicRequest(input: {
   if (!requestId) return undefined;
   const request = await getEconomicRequest(requestId);
   if (!request || request.phone !== input.ownerPhone) return undefined;
-  const providerResponse = {
-    inquiryId: input.inquiryId,
-    providerPhone: input.providerPhone,
-    providerName: input.providerName,
-    evidenceRef: input.evidenceRef,
-    availability: input.availability,
-    rawText: input.rawText,
-    receivedAt: new Date().toISOString(),
-  };
+  const providerResponse = { inquiryId: input.inquiryId, providerPhone: input.providerPhone, providerName: input.providerName, evidenceRef: input.evidenceRef, availability: input.availability, rawText: input.rawText, receivedAt: new Date().toISOString() };
   const fulfilmentPatch = { ...(request.fulfillment || {}), providerInquiry: providerResponse };
   if (input.availability && input.priceMinor && input.priceMinor > 0) {
-    const quote = {
-      amount_minor: input.priceMinor,
-      currency: input.currency,
-      provider_name: input.providerName || 'Selected provider',
-      source: 'provider_sms_response',
-      evidence_ref: input.evidenceRef,
-      confirmed: true,
-    };
+    const quote = { amount_minor: input.priceMinor, currency: input.currency, provider_name: input.providerName || 'Selected provider', source: 'provider_sms_response', evidence_ref: input.evidenceRef, confirmed: true };
     const nextStatus = request.status === 'quoted' ? 'quoted' : request.status === 'quoting' || request.status === 'matched' ? 'quoted' : request.status;
     await transitionEconomicRequest(requestId, nextStatus, { providerPhone: input.providerPhone, quote, fulfillment: fulfilmentPatch });
   } else {
@@ -244,27 +198,27 @@ async function reflectProviderReplyOnEconomicRequest(input: {
 async function notifyOwnerOfProviderReply(input: { ownerPhone: string; requestId?: string; providerName?: string; inquiryId: string; duplicate?: boolean }): Promise<void> {
   if (input.duplicate) return;
   const provider = input.providerName || 'A provider';
-  const link = input.requestId ? `/app/requests?request=${encodeURIComponent(input.requestId)}` : '/app/requests';
+  const link = input.requestId ? `/work/${encodeURIComponent(input.requestId)}` : '/activity';
+  if (!input.requestId) return;
   await sendFcmPush(input.ownerPhone, 'Provider reply received', `${provider} replied to your request. Review the evidence and any quoted price before taking the next step.`, link, {
-    canonicalAction: 'provider_inquiry.response_received',
-    objectType: 'provider_inquiry',
-    objectId: input.inquiryId,
+    contextId: `request:${input.requestId}`,
+    canonicalAction: 'economic_request.open',
+    objectType: 'economic_request',
+    objectId: input.requestId,
     ownerScope: input.ownerPhone,
-    idempotencyKey: `provider-inquiry-response:${input.inquiryId}`,
+    idempotencyKey: `economic-request-provider-reply:${input.requestId}:${input.inquiryId}`,
     surface: 'requests',
   }).catch(() => false);
 }
 
 class SmsHandler extends BaseChannelHandler {
   get channelName(): string { return 'sms'; }
-
   protected parseMessage(body: any, _headers: Record<string, any>): { phone: string; text: string; meta?: any } | null {
     const phone = normalizedPhone(body?.From || body?.from || body?.phoneNumber);
     const text = String(body?.Body || body?.body || body?.text || body?.message || '').trim();
     if (!phone || !text) return null;
     return { phone, text, meta: { externalSubject: phone, messageId: String(body?.MessageId || body?.messageId || body?.id || '').slice(0, 256) || undefined } };
   }
-
   protected async sendReply(phone: string, reply: string): Promise<void> {
     const result = await sendSmsText(phone, reply);
     if (!result.ok) console.warn(`[SMS] Outbound delivery unavailable: ${result.reason || 'unknown provider failure'}`);
@@ -277,70 +231,24 @@ export async function handleSmsWebhook(body: any): Promise<{ status: string; res
   if (isAfricaTalkingDeliveryReport(body)) {
     const providerMessageId = String(body?.id || body?.messageId || body?.MessageId || '').trim();
     const providerStatus = String(body?.status || body?.Status || '').trim();
-    const state = await recordChannelDeliveryReport({
-      channel: 'sms', provider: 'africastalking', providerMessageId,
-      phone: normalizedPhone(body?.phoneNumber || body?.to || body?.To) || undefined,
-      status: providerStatus,
-      failureReason: body?.failureReason || body?.failure_reason,
-      raw: { status: providerStatus, networkCode: body?.networkCode, retryCount: body?.retryCount },
-    });
-    const inquiryDispatch = await recordProviderInquirySmsDeliveryReport({
-      providerMessageId,
-      status: smsDispatchStatus(providerStatus),
-      failureReason: body?.failureReason || body?.failure_reason,
-      raw: { status: providerStatus, networkCode: body?.networkCode, retryCount: body?.retryCount },
-    });
+    const state = await recordChannelDeliveryReport({ channel: 'sms', provider: 'africastalking', providerMessageId, phone: normalizedPhone(body?.phoneNumber || body?.to || body?.To) || undefined, status: providerStatus, failureReason: body?.failureReason || body?.failure_reason, raw: { status: providerStatus, networkCode: body?.networkCode, retryCount: body?.retryCount } });
+    const inquiryDispatch = await recordProviderInquirySmsDeliveryReport({ providerMessageId, status: smsDispatchStatus(providerStatus), failureReason: body?.failureReason || body?.failure_reason, raw: { status: providerStatus, networkCode: body?.networkCode, retryCount: body?.retryCount } });
     return { status: 'success', deliveryStatus: inquiryDispatch?.status || state?.status || 'unknown' };
   }
-
   const inboundText = String(body?.Body || body?.body || body?.text || body?.message || '').trim();
   const providerPhone = normalizedPhone(body?.From || body?.from || body?.phoneNumber);
   if (inboundText && providerPhone) {
     const reference = providerReferenceFromText(inboundText);
-    // Provider evidence must echo the reference supplied in Kurukoo's outbound inquiry.
-    // Phone identity alone is not a sufficient correlation key.
     const inquiry = reference ? await findOpenProviderInquiryForSms({ providerPhone, reference }) : null;
     if (inquiry) {
       const sourceRef = String(body?.MessageId || body?.messageId || body?.id || '').trim() || `provider-sms:${inquiry.id}:${inboundText.slice(0, 96)}`;
       const parsed = parseProviderReply(inboundText);
-      const outcome = await recordProviderInquiryResponse({
-        ownerPhone: inquiry.ownerPhone,
-        inquiryId: inquiry.id,
-        providerIdentity: providerPhone,
-        idempotencyKey: sourceRef,
-        evidenceRef: sourceRef,
-        response: { ...parsed, rawText: inboundText, channel: 'sms', receivedAt: new Date().toISOString() },
-        offer: {
-          providerId: inquiry.providerId,
-          providerPhone,
-          providerName: inquiry.providerName,
-          title: inquiry.providerName ? `${inquiry.providerName} provider response` : 'Provider response',
-          description: inboundText,
-          priceMinor: parsed.priceMinor,
-          currency: parsed.currency,
-          availability: parsed.availability ? 'available' : 'unavailable',
-          delivery: parsed.delivery,
-          evidenceLevel: 'provider_confirmed',
-          source: 'provider_inquiry',
-        },
-      });
-      const requestId = outcome.duplicate ? undefined : await reflectProviderReplyOnEconomicRequest({
-        ownerPhone: inquiry.ownerPhone,
-        fulfilmentId: inquiry.fulfilmentId,
-        providerPhone,
-        providerName: inquiry.providerName,
-        inquiryId: inquiry.id,
-        evidenceRef: sourceRef,
-        availability: parsed.availability,
-        priceMinor: parsed.priceMinor,
-        currency: parsed.currency,
-        rawText: inboundText,
-      });
+      const outcome = await recordProviderInquiryResponse({ ownerPhone: inquiry.ownerPhone, inquiryId: inquiry.id, providerIdentity: providerPhone, idempotencyKey: sourceRef, evidenceRef: sourceRef, response: { ...parsed, rawText: inboundText, channel: 'sms', receivedAt: new Date().toISOString() }, offer: { providerId: inquiry.providerId, providerPhone, providerName: inquiry.providerName, title: inquiry.providerName ? `${inquiry.providerName} provider response` : 'Provider response', description: inboundText, priceMinor: parsed.priceMinor, currency: parsed.currency, availability: parsed.availability ? 'available' : 'unavailable', delivery: parsed.delivery, evidenceLevel: 'provider_confirmed', source: 'provider_inquiry' } });
+      const requestId = outcome.duplicate ? undefined : await reflectProviderReplyOnEconomicRequest({ ownerPhone: inquiry.ownerPhone, fulfilmentId: inquiry.fulfilmentId, providerPhone, providerName: inquiry.providerName, inquiryId: inquiry.id, evidenceRef: sourceRef, availability: parsed.availability, priceMinor: parsed.priceMinor, currency: parsed.currency, rawText: inboundText });
       await notifyOwnerOfProviderReply({ ownerPhone: inquiry.ownerPhone, requestId, providerName: inquiry.providerName, inquiryId: inquiry.id, duplicate: outcome.duplicate });
       return { status: 'success', response: outcome.duplicate ? 'Provider response already processed.' : 'Provider response recorded.', duplicate: outcome.duplicate };
     }
   }
-
   const res = await smsHandlerInstance.handleWebhook(body, {});
   return { status: res.status, response: res.response, conversationId: res.conversationId, duplicate: res.duplicate };
 }
