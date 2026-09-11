@@ -1,3 +1,4 @@
+import { getDb } from '../database.js';
 import { purgeExpiredData } from '../services/dataRetention.js';
 import { seedDemoAdCampaigns } from '../services/adManager.js';
 import { ensureAuthenticatedLeftRailDemoAd } from '../services/authenticatedAdvertisingSeed.js';
@@ -52,7 +53,7 @@ export async function startBackgroundServices(): Promise<void> {
           stmt.free();
           try { await triggerDailyEngagementCheck(String(row.phone)); } catch (err) { console.error('[EngagementScheduler] daily check failed:', err); }
         } else { stmt.free(); }
-      }).catch((error) => console.error('[EngagementScheduler] DB read failed:', error));
+      }).catch((error: unknown) => console.error('[EngagementScheduler] DB read failed:', error));
     }, 24 * 60 * 60 * 1000));
 
     const providerInquiryIntervalMs = Math.max(60_000, Math.min(60 * 60_000, Number(process.env.KURUKOO_PROVIDER_INQUIRY_WORKER_INTERVAL_MS || 5 * 60_000)));
