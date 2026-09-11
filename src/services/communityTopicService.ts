@@ -177,7 +177,7 @@ function seedTaxonomy(db: any) {
   for (const category of COMMUNITY_CATEGORIES) {
     db.run(`INSERT INTO topic_community_categories(slug,name,description,public,ads_enabled,display_order) VALUES(?,?,?,?,?,?) ON CONFLICT(slug) DO UPDATE SET name=excluded.name, description=excluded.description, public=excluded.public, ads_enabled=excluded.ads_enabled, display_order=excluded.display_order, updated_at=CURRENT_TIMESTAMP`, [category.slug, category.name, category.description, category.public ? 1 : 0, category.adsEnabled ? 1 : 0, category.order]);
     for (const sub of category.subcategories) {
-      db.run(`INSERT INTO topic_community_subcategories(slug,category_slug,name,description,ads_enabled,display_order) VALUES(?,?,?,?,?,?) ON CONFLICT(slug) DO UPDATE SET category_slug=excluded.category_slug,name=excluded.name,description=excluded.description,ads_enabled=excluded.ads_enabled,display_order=excluded.display_order,updated_at=CURRENT_TIMESTAMP`, [sub.slug, category.slug, sub.name, sub.description, sub.adsEnabled ? 1 : 0, sub.order]);
+      db.run(`INSERT INTO topic_community_subcategories(slug,category_slug,name,description,ads_enabled,display_order) VALUES(?,?,?,?,?,?) ON CONFLICT(slug) DO UPDATE SET category_slug=excluded.category_slug,name=excluded.name,description=excluded.description,ads_enabled=excluded.ads_enabled,display_order=excluded.order`, [sub.slug, category.slug, sub.name, sub.description, sub.adsEnabled ? 1 : 0, sub.order]);
       for (const [slot, points, width, height] of [["top-1", 100, 320, 180], ["top-2", 100, 320, 180], ["top-3", 100, 320, 180], ["bottom-1", 100, 320, 180], ["bottom-2", 100, 320, 180], ["bottom-3", 100, 320, 180], ["bottom-large", 250, 970, 180]] as const) {
         db.run(`INSERT INTO topic_community_ad_rates(category_slug,subcategory_slug,slot,points,enabled,width,height) VALUES(?,?,?,?,?,?,?) ON CONFLICT(category_slug,subcategory_slug,slot) DO UPDATE SET points=excluded.points,width=excluded.width,height=excluded.height`, [category.slug, sub.slug, slot, points, sub.adsEnabled && category.adsEnabled ? 1 : 0, width, height]);
       }
@@ -264,7 +264,7 @@ export async function createTopicAdCampaign(advertiserPhone: string, input: { ca
   const id = randomUUID();
   db.run('UPDATE memory_profiles SET points_balance=points_balance-?, updated_at=CURRENT_TIMESTAMP WHERE phone=?', [budget, advertiserPhone]);
   db.run('INSERT INTO credit_transactions(phone,amount,type,description) VALUES(?,?,?,?)', [advertiserPhone, -budget, 'topic_ad_purchase', `Topic advert: ${input.categorySlug}/${input.slot}`]);
-  db.run('INSERT INTO topic_community_ad_campaigns(id,advertiser_phone,category_slug,subcategory_slug,slot,title,body,destination,image_url,points_budget,status) VALUES(?,?,?,?,?,?,?,?,?,?,'active')', [id, advertiserPhone, input.categorySlug, input.subcategorySlug || null, input.slot, input.title.trim(), input.body.trim(), input.destination.trim(), input.imageUrl || null, budget]);
+  db.run("INSERT INTO topic_community_ad_campaigns(id,advertiser_phone,category_slug,subcategory_slug,slot,title,body,destination,image_url,points_budget,status) VALUES(?,?,?,?,?,?,?,?,?,?,'active')", [id, advertiserPhone, input.categorySlug, input.subcategorySlug || null, input.slot, input.title.trim(), input.body.trim(), input.destination.trim(), input.imageUrl || null, budget]);
   saveDb();
   return { id, pointsCharged: budget, status: 'active' };
 }
