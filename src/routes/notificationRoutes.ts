@@ -14,12 +14,23 @@ function phoneFromRequest(req: AuthRequest): string {
 function clientNotification(notification: any) {
   const createdAt = notification.createdAt ?? notification.created_at ?? null;
   const read = Boolean(notification.read ?? notification.status === 'read');
+  const readAt = notification.readAt ?? notification.read_at ?? (read ? createdAt : null);
+  const deliveryState = notification.deliveryState ?? notification.delivery_state ?? null;
   return {
     ...notification,
     read,
-    readAt: notification.readAt ?? notification.read_at ?? (read ? createdAt : null),
+    readAt,
     createdAt,
-    deliveryState: notification.deliveryState ?? notification.delivery_state ?? null,
+    deliveryState,
+    source: notification.objectType || notification.object_type || notification.objectId || notification.object_id || notification.canonicalAction || notification.canonical_action
+      ? {
+          objectType: notification.objectType ?? notification.object_type ?? null,
+          objectId: notification.objectId ?? notification.object_id ?? null,
+          canonicalAction: notification.canonicalAction ?? notification.canonical_action ?? null,
+          conversationId: notification.conversationId ?? notification.conversation_id ?? null,
+          link: notification.link ?? null,
+        }
+      : null,
   };
 }
 
@@ -39,16 +50,17 @@ router.get('/notifications/summary', authenticateUser, async (req: AuthRequest, 
     const notifications = await getInternalNotifications(ownerPhone, 100);
     const goals = await listAgentGoals(ownerPhone);
     const activeWork = (await Promise.all(goals.slice(0, 5).map(async goal => getAgentGoalContinuation(ownerPhone, goal.id)))).filter(Boolean);
-    const unread = notifications.filter((notification: any) => !notification.read && !notification.read_at && notification.status !== 'read');
+    const normalized = notifications.map(clientNotification);
+    const unread = normalized.filter((notification: any) => !notification.read);
     const actionable = unread.filter((notification: any) => {
       const text = `${notification.title || ''} ${notification.body || ''}`.toLowerCase();
-      return Boolean(notification.link) || /action|confirm|approve|quote|update|ready|complete|waiting|needs|request|task|booking|order/.test(text);
+      return Boolean(notification.link || notification.source?.link) || /action|confirm|approve|quote|update|ready|complete|waiting|needs|request|task|booking|order/.test(text);
     });
     res.json({
       success: true,
       unreadCount: unread.length,
       actionableCount: actionable.length,
-      latest: unread.slice(0, 5).map(clientNotification),
+      latest: unread.slice(0, 5),
       activeWork,
       returnToChatPrompt: unread.length > 0
         ? actionable.length > 0
