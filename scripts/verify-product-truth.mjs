@@ -8,7 +8,7 @@ for (const file of required) if (!fs.existsSync(path.join(root, file))) failures
 const truth = fs.readFileSync(path.join(root,'docs/architecture/CURRENT_PRODUCT_TRUTH.md'),'utf8');
 for (const marker of ['Repository verification','Runtime verification','Real-world','UNVERIFIED','Browser/device SpeechSynthesis','Memory utilisation contract']) if (!truth.includes(marker)) failures.push(`current truth missing rule: ${marker}`);
 const agents = fs.readFileSync(path.join(root,'AGENTS.md'),'utf8');
-if (!agents.includes('single current-state product truth authority')) failures.push('AGENTS.md does not point to the single truth authority');
+if (!agents.includes('docs/architecture/CURRENT_PRODUCT_TRUTH.md')) failures.push('AGENTS.md does not point to the single truth authority');
 if (!agents.includes('Repository verification') || !agents.includes('Runtime verification') || !agents.includes('Real-world verification')) failures.push('AGENTS.md lacks the three verification dimensions');
 const voice = fs.readFileSync(path.join(root,'public/js/kurukoo-speech-output.js'),'utf8');
 for (const marker of ['SpeechSynthesisUtterance','KurukooSpeechOutput',"provider: 'browser'"]) if (!voice.includes(marker)) failures.push(`zero-cost voice adapter missing: ${marker}`);
