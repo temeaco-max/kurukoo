@@ -5,7 +5,6 @@
  * list metadata, and delete credentials but NEVER decrypt them.
  */
 import crypto from 'crypto';
-import { getCanonicalPersistenceMode } from './canonicalPersistence.js';
 import { getCanonicalStore } from './canonicalStore.js';
 
 const PBKDF2_ITERATIONS = 200_000;
@@ -14,6 +13,7 @@ const IV_LENGTH = 16;
 const SALT_LENGTH = 32;
 const TAG_LENGTH = 16;
 const ALGORITHM = 'aes-256-gcm';
+const DERIVATION_METHOD = 'pbkdf2-sha512';
 
 export interface StoredCredential {
   id: string; ownerPhone: string; label: string; domain?: string | null;
@@ -76,8 +76,8 @@ export async function storeCredential(ownerPhone: string, label: string, encrypt
   const id = `cred:${ownerPhone}:${Date.now()}:${crypto.randomBytes(4).toString('hex')}`;
   const now = new Date().toISOString();
   await store.run(`INSERT INTO secure_credentials (id, owner_phone, label, domain, credential_type, ciphertext, iv, salt, algorithm, key_derivation, iterations, expires_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [id, ownerPhone, label, options.domain ?? null, options.credentialType ?? 'other', encrypted.ciphertext, encrypted.iv, encrypted.salt, ALGORITHM, 'pbkdf2-sha512', PBKDF2_ITERATIONS, options.expiresAt ?? null, now, now]);
-  return { id, ownerPhone, label, domain: options.domain ?? null, credentialType: options.credentialType ?? 'other', ciphertext: encrypted.ciphertext, iv: encrypted.iv, salt: encrypted.salt, algorithm: ALGORITHM, keyDerivation: 'pbkdf2-sha512', iterations: PBKDF2_ITERATIONS, expiresAt: options.expiresAt ?? null, createdAt: now, updatedAt: now };
+    [id, ownerPhone, label, options.domain ?? null, options.credentialType ?? 'other', encrypted.ciphertext, encrypted.iv, encrypted.salt, ALGORITHM, DERIVATION_METHOD, PBKDF2_ITERATIONS, options.expiresAt ?? null, now, now]);
+  return { id, ownerPhone, label, domain: options.domain ?? null, credentialType: options.credentialType ?? 'other', ciphertext: encrypted.ciphertext, iv: encrypted.iv, salt: encrypted.salt, algorithm: ALGORITHM, keyDerivation: DERIVATION_METHOD, iterations: PBKDF2_ITERATIONS, expiresAt: options.expiresAt ?? null, createdAt: now, updatedAt: now };
 }
 
 export async function listCredentialMetadata(ownerPhone: string): Promise<CredentialMetadata[]> {
@@ -120,4 +120,3 @@ export async function countCredentials(ownerPhone: string): Promise<number> {
   const row = await store.one<any>(`SELECT COUNT(*) AS count FROM secure_credentials WHERE owner_phone = ?`, [ownerPhone]);
   return Number(row?.count ?? 0);
 }
-
