@@ -31,7 +31,7 @@ function deriveMarketCountry(phone?: string, contextHint?: ConversationalContext
 /** Check whether the detected market is gated for a feature family.
  * Returns true when the feature is enabled for the market — meaning the
  * market is *open* for that capability. Returns false when gated off. */
-function isMarketOpenFor(phone?: string, contextHint?: ConversationalContextHint, flagName: string): boolean {
+function isMarketOpenFor(flagName: string, phone?: string, contextHint?: ConversationalContextHint): boolean {
   const country = deriveMarketCountry(phone, contextHint);
   return isFeatureEnabled(country, flagName);
 }
