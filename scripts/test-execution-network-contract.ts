@@ -4,10 +4,10 @@ import { EXECUTION_NETWORK_CONTRACT_VERSION, listExecutionNetworkPillars, valida
 const result = validateExecutionNetworkContract();
 assert.equal(EXECUTION_NETWORK_CONTRACT_VERSION, '1.0');
 assert.equal(result.valid, true, JSON.stringify(result));
-assert.equal(result.count, 39);
+assert.equal(result.count, 43);
 
 const pillars = listExecutionNetworkPillars();
-assert.equal(new Set(pillars.map(pillar => pillar.id)).size, 39);
+assert.equal(new Set(pillars.map(pillar => pillar.id)).size, 43);
 for (const pillar of pillars) {
   assert.ok(pillar.name.length > 0, `Missing name for ${pillar.id}`);
   assert.ok(pillar.owners.length > 0, `Missing owner for ${pillar.id}`);
