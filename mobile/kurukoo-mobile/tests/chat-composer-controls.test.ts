@@ -19,8 +19,7 @@ describe("Chat composer control contract", () => {
 
   it("keeps the canonical Web App represented without referencing the removed duplicate website", () => {
     expect(webApp).toContain('href="/chat"');
-    expect(webApp).toContain('href="/requests"');
-    expect(webApp).toContain('href="/tasks"');
+    expect(webApp).toContain('href="/work"');
     expect(webApp).toContain('href="/connect"');
     expect(foundation).toContain('.k-mobile-tabbar');
     expect(foundation).toContain('--k-primary');
