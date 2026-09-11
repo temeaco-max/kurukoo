@@ -188,7 +188,7 @@ function matchCanonicalSkill(query: string): string | null {
   return null;
 }
 
-async function balanceReply(phone?: string, pointsEngineEnabled: boolean): Promise<string> {
+async function balanceReply(phone?: string, pointsEngineEnabled = true): Promise<string> {
   if (!phone) return 'Your Kurukoo Points balance is available in the header.';
   if (!pointsEngineEnabled) return 'Points and currency rewards are not available in your region yet. You can still ask Kurukoo to help with everyday tasks - I just cannot show a Points balance until your market is enabled.';
   const profile = await getProfile(phone, 'conversation_balance');
@@ -422,7 +422,7 @@ async function handleExplicitOSAction(phone: string | undefined, q: string, thre
     const existing = await getInternalNotificationById(phone, id);
     if (!existing) return { skill: 'notifications', reply: 'That exact notification is not available to this account, so I did not substitute another one.', cardData: { type: 'notification_action', status: 'unavailable', notificationId: id, exactContext: true }, canonicalAction: 'notification.read.unavailable', progressStage: 'information' };
     const changed = await markNotificationRead(phone, id);
-    return { skill: 'notifications', reply: changed ? `Marked **${existing.title}** as read. Its source context remains available from the notification record.` : `That exact notification is already read or no longer active. I did not substitute another notification.`, cardData: { type: 'notification_action', status: changed ? 'completed' : 'stale_context', notification: existing, exactContext: true, canonicalAction: changed ? 'notification.dismiss' : 'notification.read.unavailable' }, canonicalAction: changed ? 'notification.dismiss' : 'notification.read.unavailable', progressStage: 'complete' };
+    return { skill: 'notifications', reply: changed ? `Marked **${existing.title}** as read. Its source context remains available from the notification record.` : `That exact notification is already read or no longer active. I did not substitute another one.`, cardData: { type: 'notification_action', status: changed ? 'completed' : 'stale_context', notification: existing, exactContext: true, canonicalAction: changed ? 'notification.dismiss' : 'notification.read.unavailable' }, canonicalAction: changed ? 'notification.dismiss' : 'notification.read.unavailable', progressStage: 'complete' };
   }
   const notificationOpen = q.match(/^open notification (\d+)$/i);
   if (notificationOpen) {
