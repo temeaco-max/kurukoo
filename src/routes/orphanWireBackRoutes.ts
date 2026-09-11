@@ -5,7 +5,7 @@ import { getDailyPick } from '../services/dailyPicks.js';
 import { getQuickReplies } from '../services/quickRepliesService.js';
 import { triggerDailyEngagementCheck } from '../services/engagementScheduler.js';
 import { getSurveyPrompt, submitSurveyResponse } from '../services/surveyEngine.js';
-import { getEngagementPrompt } from '../services/engagementPrompts.js';
+import { getSmartEngagementPrompt } from '../services/engagementPrompts.js';
 import { requestArtistVerification, approveArtistVerification, bookArtist, confirmArtistBooking, releaseArtistEscrow } from '../services/artistBookingService.js';
 
 const router = Router();
@@ -85,7 +85,7 @@ router.post('/artist/book', authenticateUser, async (req: AuthRequest, res) => {
   const request = req.body || {};
   try {
     const result = await bookArtist(phone, request);
-    res.json({ success: true, ...result });
+    res.json({ ...result, success: true });
   } catch (error) {
     console.error('[ArtistBooking] book failed:', error);
     res.status(500).json({ error: 'Unable to book artist' });
@@ -99,7 +99,7 @@ router.post('/artist/confirm-booking', authenticateUser, async (req: AuthRequest
   if (!requestId) return res.status(400).json({ error: 'requestId is required' });
   try {
     const result = await confirmArtistBooking(phone, requestId);
-    res.json({ success: true, ...result });
+    res.json({ ...result, success: true });
   } catch (error) {
     console.error('[ArtistBooking] confirm failed:', error);
     res.status(500).json({ error: 'Unable to confirm artist booking' });
@@ -113,7 +113,7 @@ router.post('/artist/release-escrow', authenticateUser, async (req: AuthRequest,
   if (!escrowId) return res.status(400).json({ error: 'escrowId is required' });
   try {
     const result = await releaseArtistEscrow(Number(escrowId), bypassCoolingOff || false);
-    res.json({ success: true, ...result });
+    res.json({ ...result, success: true });
   } catch (error) {
     console.error('[ArtistBooking] release escrow failed:', error);
     res.status(500).json({ error: 'Unable to release artist escrow' });
