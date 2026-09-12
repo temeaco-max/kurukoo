@@ -542,111 +542,71 @@ export async function fetchResource(slug: string) {
   return readJson<ResourceGuide>(`/api/content/resources/${encodeURIComponent(slug)}`);
 }
 
-/* ---- muse.ai gap-fill capabilities ---- */
-
-// ── Secure Credentials ─────────────────────────────────────────────────
-export type SecureCredential = {
-  id: string; label: string; domain?: string | null;
-  credentialType: 'password' | 'api_key' | 'token' | 'note' | 'other';
-  createdAt: string; updatedAt: string; lastUsedAt?: string | null; expiresAt?: string | null;
-};
-export type EncryptedCredential = SecureCredential & { ciphertext: string; iv: string; salt: string; algorithm: string; iterations: number; };
-
-export async function fetchCredentials() {
-  return readJson<{ success: boolean; credentials: SecureCredential[]; count: number }>('/api/v1/credentials');
-}
-export async function fetchCredential(id: string) {
-  return readJson<{ success: boolean; credential: EncryptedCredential }>(`/api/v1/credentials/${id}`);
-}
-export async function storeCredentialRemote(input: { label: string; ciphertext: string; iv: string; salt: string; domain?: string; credentialType?: string; expiresAt?: string }) {
-  return readJson<{ success: boolean; id: string; label: string }>('/api/v1/credentials', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) });
-}
-export async function markCredentialUsedRemote(id: string) {
-  return readJson<{ success: boolean }>(`/api/v1/credentials/${id}/use`, { method: 'POST' });
-}
-export async function deleteCredentialRemote(id: string) {
-  return readJson<{ success: boolean }>(`/api/v1/credentials/${id}`, { method: 'DELETE' });
-}
-
-// ── One-Time Cards + Purchase Protections ─────────────────────────────
-export type VirtualCard = { id: string; last4: string; brand: string; status: string; spendLimitMinor: number; currency: string; merchantLock?: string | null; expiresAt: string; createdAt: string; };
-export type PurchaseProtection = { id: string; cardId: string; orderRef: string; amountMinor: number; currency: string; reason: string; status: string; evidence?: string | null; createdAt: string; resolvedAt?: string | null; };
-
-export async function fetchCards() {
-  return readJson<{ success: boolean; cards: VirtualCard[] }>('/api/v1/cards');
-}
-export async function createCard(input: { spendLimitMinor: number; currency?: string; merchantLock?: string; expiresInHours?: number }) {
-  return readJson<{ success: boolean; card: VirtualCard }>('/api/v1/cards', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) });
-}
-export async function freezeCardRemote(id: string) {
-  return readJson<{ success: boolean }>(`/api/v1/cards/${id}/freeze`, { method: 'POST' });
-}
-export async function cancelCardRemote(id: string) {
-  return readJson<{ success: boolean }>(`/api/v1/cards/${id}`, { method: 'DELETE' });
-}
-export async function fetchProtections() {
-  return readJson<{ success: boolean; claims: PurchaseProtection[] }>('/api/v1/protections');
-}
-export async function fileProtectionClaimRemote(input: { cardId: string; orderRef: string; amountMinor: number; currency?: string; reason: string; evidence?: string }) {
-  return readJson<{ success: boolean; id: string; status: string }>('/api/v1/protections', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) });
-}
-
-// ── Secure Execution Environment ───────────────────────────────────────
-export type SecureSession = { id: string; status: string; providerRef?: string | null; createdAt: string; expiresAt: string; lastActionAt?: string | null; metadata?: Record<string, unknown>; };
-export type ExecutionAction = { id: string; sessionId: string; type: string; payload: Record<string, unknown>; status: string; result?: Record<string, unknown>; error?: string | null; createdAt: string; completedAt?: string | null; };
-
-export async function fetchExecutionSessions() {
-  return readJson<{ success: boolean; sessions: SecureSession[] }>('/api/v1/execution/sessions');
-}
-export async function createExecutionSession(input: { ttlMinutes?: number; metadata?: Record<string, unknown> }) {
-  return readJson<{ success: boolean; session: SecureSession }>('/api/v1/execution/sessions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) });
-}
-export async function fetchExecutionSession(id: string) {
-  return readJson<{ success: boolean; session: SecureSession }>(`/api/v1/execution/sessions/${id}`);
-}
-export async function queueExecutionAction(sessionId: string, type: string, payload: Record<string, unknown> = {}) {
-  return readJson<{ success: boolean; id: string; status: string }>(`/api/v1/execution/sessions/${sessionId}/actions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, payload }) });
-}
-export async function fetchExecutionActions(sessionId: string) {
-  return readJson<{ success: boolean; actions: ExecutionAction[] }>(`/api/v1/execution/sessions/${sessionId}/actions`);
-}
-export async function stopExecutionSession(id: string) {
-  return readJson<{ success: boolean }>(`/api/v1/execution/sessions/${id}`, { method: 'DELETE' });
-}
-
-// ── Execution Audit Timeline ───────────────────────────────────────────
-export type AuditEntry = { id: string; kind: string; title: string; description?: string | null; status: string; occurredAt: string; actor?: string | null; ref?: string | null; };
-export type AuditTimeline = { phone: string; generatedAt: string; entries: AuditEntry[]; total: number; };
-
-export async function fetchAuditTimeline(limit = 100) {
-  return readJson<{ success: boolean; timeline: AuditTimeline }>(`/api/v1/audit?limit=${limit}`);
-}
-export async function exportAuditTimeline() {
-  return readJson<{ success: boolean; export: { phone: string; exportedAt: string; entries: AuditEntry[] } }>('/api/v1/audit/export');
-}
-export async function fetchAuditEntry(id: string) {
-  return readJson<{ success: boolean; entry: AuditEntry }>(`/api/v1/audit/${id}`);
-}
-
-/* ---- Orphan wire-back endpoints (daily picks, quick replies, survey, artist booking) ---- */
+/* ── Auth-GATED orphan wire back endpoints ───────────────────────────────────
+//
+// The following endpoints (`/api/orphan-wire-back/*`, `/api/quick-replies`) are
+// available only to authenticated Kurukoo users (see `src/routes/orphanWireBackRoutes.ts`
+// in the backend). They are rendered from the AUTHENTICATED OS shell dashboard
+// (`HomePage` in `routes/index.tsx`). The PUBLIC OS shell (`PublicHome` in
+// `public-kurukoo-home.tsx`) renders no auth-gated widgets except DailyPicksStrip
+// when the API is configured.
+//
+// Public widgets:  DailyPicksStrip
+// Auth widgets:    QuickRepliesPanel, SurveyPromptCard, ArtistBookingCard
+// ───────────────────────────────────────────────────────────────────────────── */
 
 export type DailyPick = {
-  id: string; title: string; description: string; image?: string | null;
-  ctaText: string; ctaLink: string; category: string; tags?: string[]; created_at?: string;
+  id: string;
+  title: string;
+  description: string;
+  image?: string | null;
+  ctaText: string;
+  ctaLink: string;
+  category: string;
+  tags?: string[];
+  created_at?: string;
 };
 
-export type QuickReply = { id: string; label: string; action: string; icon?: string | null; order: number; };
+export type QuickReply = {
+  id: string;
+  label: string;
+  action: string;
+  icon?: string | null;
+  order: number;
+};
 
-export type SurveyPrompt = { id: string; question: string; topic: string; answerTypes: string[]; };
+export type SurveyPrompt = {
+  id: string;
+  question: string;
+  topic: string;
+  answerTypes: string[];
+};
 
-export type SurveyResponse = { id: string; question: string; answer: string; topic: string; submitted_at: string; };
+export type SurveyResponse = {
+  id: string;
+  question: string;
+  answer: string;
+  topic: string;
+  submitted_at: string;
+};
 
 export type ArtistBooking = {
-  id: string; skill: string; providerPhone: string; providerName: string;
-  managerName: string; managerContact: string; status: string;
-  escrowAmount?: number | null; currency?: string | null;
-  created_at?: string; updated_at?: string;
-  verification?: { requested_at?: string; managerName: string; managerContact: string; } | null;
+  id: string;
+  skill: string;
+  providerPhone: string;
+  providerName: string;
+  managerName: string;
+  managerContact: string;
+  status: 'pending_verification' | 'verification_pending' | 'verified' | 'booking_pending' | 'booked' | 'confirmed' | 'active' | 'completed' | 'refunded';
+  escrowAmount?: number | null;
+  currency?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  verification?: {
+    requested_at?: string;
+    managerName: string;
+    managerContact: string;
+  } | null;
 };
 
 export async function fetchDailyPick(): Promise<DailyPick | null> {
@@ -666,14 +626,46 @@ export async function fetchSurveyPrompt(): Promise<SurveyPrompt | null> {
 
 export async function submitSurveyResponse(question: string, answer: string): Promise<SurveyResponse | null> {
   const payload = await readJson<{ success: boolean; result?: SurveyResponse }>('/api/orphan-wire-back/survey-response', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, answer }),
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question, answer }),
   });
   return payload.success && payload.result ? payload.result : null;
 }
 
 export async function requestArtistVerification(skill: string, managerName: string, managerContact: string): Promise<{ success: boolean; message?: string }> {
-  return readJson('/api/orphan-wire-back/artist/request-verification', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ skill, managerName, managerContact }),
+  const payload = await readJson<{ success: boolean; message?: string }>('/api/orphan-wire-back/artist/request-verification', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ skill, managerName, managerContact }),
   });
+  return payload;
+}
+
+export async function bookArtist(skill: string, providerPhone: string, requirements?: Record<string, unknown>): Promise<ArtistBooking | null> {
+  const payload = await readJson<{ success: boolean; booking?: ArtistBooking }>('/api/orphan-wire-back/artist/book', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ skill, providerPhone, requirements }),
+  });
+  return payload.success && payload.booking ? payload.booking : null;
+}
+
+export async function confirmArtistBooking(bookingId: string): Promise<ArtistBooking | null> {
+  const payload = await readJson<{ success: boolean; booking?: ArtistBooking }>('/api/orphan-wire-back/artist/confirm-booking', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ bookingId }),
+  });
+  return payload.success && payload.booking ? payload.booking : null;
+}
+
+export async function releaseArtistEscrow(bookingId: string): Promise<{ success: boolean; message?: string }> {
+  const payload = await readJson<{ success: boolean; message?: string }>('/api/orphan-wire-back/artist/release-escrow', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ bookingId }),
+  });
+  return payload;
 }
 
