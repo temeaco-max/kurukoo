@@ -4,6 +4,7 @@ import { getExternalIntegrationReadiness } from '../services/externalIntegration
 import { getPilotReadiness } from '../services/pilotReadiness.js';
 import { getClientSurfaces } from '../services/clientSurfaceRegistry.js';
 import { getCanonicalDiscoverablePlatformFeatures } from '../services/canonicalPlatformFeatureRegistry.js';
+import { getLocalExecutionAdapter, listLocalExecutionAdapters } from '../services/localExecutionAdapters.js';
 
 const router = express.Router();
 
@@ -13,11 +14,12 @@ const router = express.Router();
  * live. The canonical chat, Economic Request, provider, agent and payment
  * boundaries remain authoritative for consequential work.
  */
-router.get('/execution/overview', (_req, res) => {
+router.get('/execution/overview', (req, res) => {
   const integrations = getExternalIntegrationReadiness();
   const features = getCanonicalDiscoverablePlatformFeatures().filter(feature => !feature.audience.includes('admin'));
   const surfaces = getClientSurfaces('web');
   const readiness = getPilotReadiness();
+  const localExecutionAdapter = getLocalExecutionAdapter(req.query.country);
 
   const modes = [
     { id: 'digital', title: 'Digital', description: 'Websites, apps, forms, research, documents, connected tools and supported digital services.', prompt: 'Handle this digitally if you can.' },
@@ -48,6 +50,8 @@ router.get('/execution/overview', (_req, res) => {
     featureCount: features.length,
     surfaces,
     features,
+    localExecutionAdapter,
+    localExecutionAdapters: listLocalExecutionAdapters(),
   });
 });
 
