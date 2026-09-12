@@ -2,6 +2,7 @@
 import express, { Router } from 'express';
 import { authenticateUser, AuthRequest } from '../middleware/auth.js';
 import { activatePulse, endPulseSession, getActivePulseProviders, getPulseReadiness, toPublicPulseProviders } from '../services/nearbyPulse.js';
+import { listContacts } from '../services/identityContactService.js';
 
 /** Presence/Pulse HTTP boundary. Presence identity comes from the authenticated
  * session; public discovery consumes only the sanitized Pulse projection. */
@@ -60,6 +61,44 @@ export function createPresenceRouter(): Router {
         const providers = await getActivePulseProviders();
         // Never return exact provider coordinates or phone identifiers to anonymous consumers.
         res.json({ providers: toPublicPulseProviders(providers) });
+    });
+
+    /** Authenticated Radar/Pulse projection. It reuses relationship-visible
+     * contacts and the existing live Pulse store; no parallel presence store. */
+    router.get('/api/presence/overview', authenticateUser, async (req: AuthRequest, res) => {
+        const phone = sessionPhone(req);
+        if (!phone) return res.status(401).json({ success: false, error: 'Authentication required' });
+        try {
+            const [contacts, pulseProviders] = await Promise.all([listContacts(phone), getActivePulseProviders()]);
+            const human = contacts.filter((contact) => contact.participantKind === 'human');
+            const providers = contacts.filter((contact) => contact.participantKind === 'provider' || contact.provider?.verified);
+            const agents = contacts.filter((contact) => contact.participantKind === 'agent');
+            return res.json({
+                success: true,
+                self: { pulseActive: pulseProviders.some((provider) => provider.phone === phone) },
+                counts: {
+                    contacts: contacts.length,
+                    human: human.length,
+                    providers: providers.length,
+                    agents: agents.length,
+                    available: contacts.filter((contact) => contact.presence === 'available').length,
+                    offline: contacts.filter((contact) => contact.presence === 'offline').length,
+                    unknown: contacts.filter((contact) => contact.presence === 'unknown').length,
+                    livePulseProviders: pulseProviders.length,
+                },
+                contacts: contacts.map((contact) => ({
+                    identityId: contact.identityId,
+                    displayName: contact.displayName,
+                    participantKind: contact.participantKind,
+                    presence: contact.presence,
+                    provider: contact.provider ? { verified: contact.provider.verified, type: contact.provider.type, available: contact.provider.available } : null,
+                    communication: contact.communication,
+                })),
+                privacy: { relationshipScoped: true, exactLocationExposed: false, phoneIdentifiersExposed: false, publicPulseProviderIdentitiesExposed: false },
+            });
+        } catch {
+            return res.status(500).json({ success: false, error: 'Unable to load presence overview' });
+        }
     });
 
     return router;
