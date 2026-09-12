@@ -1,7 +1,11 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowUpRight, Play, Sparkles } from "lucide-react";
+import { PageHeader } from "@/components/app-shell";
+import { VideoCard } from "@/components/kurukoo/cards";
+import { AskKurukoo } from "@/components/kurukoo/ask-kurukoo";
+import { actionClass } from "@/components/kurukoo/primitives";
+import { SectionHeader } from "@/components/kurukoo/ui";
+import { entityById, videos } from "@/lib/kurukoo-demo";
 
-export const Route = createFileRoute("/videos")({
-  beforeLoad: () => {
-    throw redirect({ to: "/resources" });
-  },
-});
+export const Route = createFileRoute("/videos")({ head: () => ({ meta: [{ title: "Watch — Kurukoo" }, { name: "description", content: "Useful creator videos connected to Topics and things people are trying to get done." }] }), component: VideosPage });
+function VideosPage() { return <><PageHeader title="Watch" subtitle="Useful videos for things you are trying to understand or get done."/><section className="rounded-[22px] border border-border bg-surface p-5 md:p-6"><div className="flex items-start gap-3"><span className="grid size-10 place-items-center rounded-xl bg-brand-tint text-brand-ink"><Sparkles className="size-4.5"/></span><div><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">Kurukoo Watch</p><h2 className="mt-1.5 font-serif text-[28px] leading-tight">Learn something useful, then take the next step.</h2><p className="mt-2 max-w-2xl text-[12.5px] leading-relaxed text-muted-foreground">Watch practical creator content, open its Topic or ask Kurukoo to turn what you learned into an action.</p></div></div><div className="mt-4 flex flex-wrap gap-2"><AskKurukoo prompt="Find me a useful video for something I am trying to get done."/><Link to="/creators" className={actionClass()}>Creator channels <ArrowUpRight className="ml-1 size-3.5"/></Link></div></section><section className="mt-7"><SectionHeader title="Recent videos" subtitle="Example creator content keeps the watch surface populated while live content inventory grows."/><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{videos.map((video) => <div key={video.id} className="relative"><VideoCard video={video} creatorName={entityById(video.creatorId)?.name ?? ""}/><span className="absolute right-3 top-3 rounded-full bg-background/90 px-2 py-1 text-[9px] uppercase tracking-[0.08em]">Example</span></div>)}</div></section><section className="mt-7 rounded-[20px] border border-border bg-elevated/35 p-5"><div className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-xl bg-surface"><Play className="size-4"/></span><div><p className="text-[14px] font-semibold">Have something worth teaching?</p><p className="text-[11.5px] text-muted-foreground">Open Creator Studio and start a useful channel.</p></div><Link to="/creators" className="ml-auto text-[11.5px] font-medium underline">Open studio</Link></div></section></> }

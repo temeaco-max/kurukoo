@@ -38,7 +38,7 @@ export function ArtistBookingCard() {
         <div className="flex items-center gap-2">
           <BriefcaseBusiness className="size-4 text-primary" />
           <span className="text-[12.5px] font-medium">Artist booking</span>
-          <Shield className="size-3.5 text-muted-foreground" aria-label="Verified artist bookings with escrow protection" />
+          <Shield className="size-3.5 text-muted-foreground" title="Verified artist bookings with escrow protection" />
         </div>
       </div>
       {step === "select" ? (

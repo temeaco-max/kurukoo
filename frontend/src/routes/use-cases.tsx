@@ -1,96 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight } from "lucide-react";
-import { FAQSection } from "@/components/kurukoo/faq-section";
+import { ArrowRight, Search, Sparkles } from "lucide-react";
+import { useMemo, useState } from "react";
 import { AskKurukoo } from "@/components/kurukoo/ask-kurukoo";
+import { DirectoryEmpty, CapabilityPills } from "@/components/kurukoo/surface-directory";
+import { FAQSection } from "@/components/kurukoo/faq-section";
+import { exploreGoalGroups } from "@/lib/explore-goals";
 
-export const Route = createFileRoute("/use-cases")({
-  head: () => ({
-    meta: [
-      { title: "What Kurukoo can do — everyday AI use cases" },
-      {
-        name: "description",
-        content:
-          "Explore real everyday jobs you can hand to Kurukoo, from home repairs and appointments to quotes, errands, work and local discovery.",
-      },
-      { property: "og:title", content: "What Kurukoo can do" },
-      { property: "og:description", content: "Real everyday jobs you can hand over to Kurukoo." },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "/use-cases" },
-    ],
-    links: [{ rel: "canonical", href: "/use-cases" }],
-  }),
-  component: UseCasesPage,
-});
-
-const groups = [
-  {
-    title: "Home and repairs",
-    body: "A leaking tap, a boiler service, a broken screen, a locksmith at short notice.",
-    examples: ["Find me a plumber who can come this week.", "Get my boiler serviced before winter.", "Someone to fix a cracked phone screen nearby."],
-  },
-  {
-    title: "Appointments and health",
-    body: "Dentists, opticians, physios, garages, vets — found, compared and booked with your say-so.",
-    examples: ["Book me a dentist on a Saturday.", "Find a vet who can see a cat tomorrow.", "MOT booked somewhere close to work."],
-  },
-  {
-    title: "Quotes and comparisons",
-    body: "Kurukoo can organise several provider responses into a useful comparison when the relevant service is available.",
-    examples: ["Three quotes for painting a two-bed flat.", "Cheapest reliable option for a house move.", "Compare broadband at my address."],
-  },
-  {
-    title: "Errands and admin",
-    body: "The small jobs that otherwise take an afternoon of phone calls and follow-ups.",
-    examples: ["Chase my delivery and tell me when it lands.", "Cancel a subscription I no longer use.", "Arrange a courier for a large parcel."],
-  },
-  {
-    title: "For businesses and providers",
-    body: "Requests can arrive already understood, with the context needed to answer and keep the work moving.",
-    examples: ["See incoming requests", "Reply and quote", "Keep the work in one thread"],
-  },
-  {
-    title: "For creators",
-    body: "Recommend the things you rate and make it easier for people to act on useful recommendations.",
-    examples: ["Recommend a product", "Recommend a place", "Turn a guide into an action"],
-  },
-];
-
-function UseCasesPage() {
-  return (
-    <div className="mx-auto w-full max-w-6xl space-y-9 pb-4">
-      <header className="max-w-3xl">
-        <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Use cases</p>
-        <h1 className="mt-3 font-serif text-[40px] leading-[1.02] tracking-[-0.045em] md:text-[50px]">What can Kurukoo get done?</h1>
-        <p className="mt-3 max-w-2xl text-[14px] leading-6 text-muted-foreground">If it is a legitimate job and the relevant people, services or systems can support it, start by telling Kurukoo the outcome you want.</p>
-        <div className="mt-5"><AskKurukoo prompt="What can Kurukoo help me get done?" /></div>
-      </header>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        {groups.map((group) => (
-          <article key={group.title} className="rounded-[20px] border border-border bg-surface p-5">
-            <h2 className="font-serif text-[24px] leading-[1.05] tracking-[-0.03em]">{group.title}</h2>
-            <p className="mt-2 text-[12.5px] leading-relaxed text-muted-foreground">{group.body}</p>
-            <ul className="mt-4 space-y-2">
-              {group.examples.map((example) => <li key={example} className="rounded-xl bg-elevated/60 px-3 py-2 text-[12px] text-muted-foreground">“{example}”</li>)}
-            </ul>
-          </article>
-        ))}
-      </div>
-
-      <section className="rounded-[22px] border border-border bg-elevated/35 p-5 md:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div><p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Ready to try one?</p><h2 className="mt-1.5 font-serif text-[27px] leading-[1.05] tracking-[-0.035em]">Start with whatever is annoying you most today.</h2></div>
-          <div className="flex shrink-0 flex-wrap gap-2"><Link to="/chat" className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-[11.5px] font-medium text-primary-foreground">Get started <ArrowRight className="size-3.5" /></Link><Link to="/explore" className="inline-flex min-h-10 items-center rounded-xl border border-border px-4 text-[11.5px] font-medium">Explore</Link></div>
-        </div>
-      </section>
-
-      <FAQSection
-        items={[
-          { question: "What kinds of jobs can I hand to Kurukoo?", answer: "Everyday requests across areas such as food, groceries, mobility, home and repairs, work, selling, health, events, community and safety can be useful starting points. The exact action depends on the available service and evidence." },
-          { question: "Can Kurukoo book or buy something for me?", answer: "Where a supported flow exists, Kurukoo can coordinate the request and ask for the approvals needed before an external commitment is made. It should never claim a booking or purchase without confirmation." },
-          { question: "Can I just describe the job instead of choosing a category?", answer: "Yes. Chat is the universal entry point. Explore is there when you want a visual starting point rather than beginning with a blank conversation." },
-        ]}
-      />
-    </div>
-  );
+export const Route = createFileRoute("/use-cases")({ head: () => ({ meta: [{ title: "Use cases — Kurukoo" }, { name: "description", content: "Browse the jobs Kurukoo can help you get done, then start one in Chat." }] }), component: UseCasesPage });
+const destinations: Record<string, string> = { food: "/explore/food", groceries: "/explore/groceries", ride: "/explore/mobility", travel: "/explore/mobility", repair: "/explore/repairs", cleaning: "/explore/home", solar: "/explore/home", "money-circle": "/explore/money-circle", work: "/explore/work", business: "/explore/work", sell: "/explore/selling", health: "/explore/health", education: "/explore/learning", events: "/explore/events", spiritual: "/explore/prayer", connect: "/explore/community", emergency: "/explore/safety", security: "/explore/safety" };
+function UseCasesPage() { const [q, setQ] = useState(""); const [category, setCategory] = useState("All"); const term = q.trim().toLowerCase(); const categories = ["All", ...exploreGoalGroups.map((group) => group.label)]; const groups = useMemo(() => exploreGoalGroups.filter((group) => category === "All" || group.label === category).map((group) => ({ ...group, goals: group.goals.filter((goal) => !term || `${goal.label} ${goal.prompt} ${goal.capabilityIds.join(" ")}`.toLowerCase().includes(term)) })).filter((group) => group.goals.length), [category, term]); const count = groups.reduce((sum, group) => sum + group.goals.length, 0);
+  return <div className="mx-auto w-full max-w-6xl space-y-9 pb-10"><header className="max-w-3xl"><p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-primary">Use cases</p><h1 className="mt-2 font-serif text-[40px] leading-[1.02] tracking-[-0.045em] md:text-[52px]">What can Kurukoo get done?</h1><p className="mt-4 text-[14px] leading-6 text-muted-foreground">Browse outcomes when you want ideas. You can always skip the catalogue and describe the job in your own words.</p><div className="mt-5 flex flex-col gap-2 sm:flex-row"><div className="relative min-w-0 flex-1"><Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"/><input aria-label="Search use cases" value={q} onChange={(event) => setQ(event.target.value)} placeholder="Search jobs, services or outcomes…" className="min-h-11 w-full rounded-xl border border-border bg-surface pl-10 pr-3 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring"/></div><AskKurukoo prompt={q.trim() ? `Help me get ${q.trim()} done.` : "I need help deciding what to get done."}/></div></header><div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Use case categories">{categories.map((item) => <button key={item} type="button" role="tab" aria-selected={category === item} onClick={() => setCategory(item)} className={`shrink-0 rounded-full border px-3 py-1.5 text-[10.5px] font-medium ${category === item ? "border-transparent bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:bg-elevated"}`}>{item}</button>)}</div>{groups.length ? <div className="space-y-8">{groups.map((group) => { const GroupIcon = group.icon; return <section key={group.id} aria-labelledby={`use-case-${group.id}`}><div className="mb-3 flex items-center gap-2"><span className="grid size-8 place-items-center rounded-lg bg-elevated"><GroupIcon className="size-4"/></span><div><h2 id={`use-case-${group.id}`} className="text-[16px] font-semibold">{group.label}</h2><p className="text-[10.5px] text-muted-foreground">{group.goals.length} ways to start</p></div></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{group.goals.map((goal) => { const Icon = goal.icon; const to = destinations[goal.id]; return <article key={goal.id} className="flex min-h-[176px] flex-col rounded-[18px] border border-border bg-surface p-4 transition-colors hover:bg-elevated/45"><div className="flex items-start justify-between"><span className="grid size-9 place-items-center rounded-xl bg-brand-tint text-brand-ink"><Icon className="size-4"/></span><Sparkles className="size-3.5 text-muted-foreground"/></div><h3 className="mt-3 text-[13.5px] font-semibold">{goal.label}</h3><p className="mt-1.5 line-clamp-2 text-[10.5px] leading-relaxed text-muted-foreground">{goal.prompt}</p><div className="mt-2"><CapabilityPills items={goal.capabilityIds} limit={2}/></div><div className="mt-auto flex gap-2 pt-3">{to ? <Link to={to as never} className="inline-flex min-h-8 flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 text-[10.5px] font-medium text-primary-foreground">Start <ArrowRight className="size-3.5"/></Link> : <Link to="/chat" search={{ query: goal.prompt } as never} className="inline-flex min-h-8 flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 text-[10.5px] font-medium text-primary-foreground">Start in Chat <ArrowRight className="size-3.5"/></Link>}<Link to="/chat" search={{ query: goal.prompt } as never} className="inline-flex min-h-8 items-center rounded-lg border border-border px-3 text-[10.5px] font-medium">Chat</Link></div></article>; })}</div></section>; })}</div> : <DirectoryEmpty title="No matching use cases" body="Try a broader search, choose another category, or describe the outcome directly to Kurukoo." action={<AskKurukoo prompt={`I couldn't find a use case for ${q}. Help me with it.`}/>} />}<section className="rounded-[22px] border border-border bg-elevated/35 p-5 md:p-6"><p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-primary">{count} starting points</p><h2 className="mt-1.5 font-serif text-[27px] tracking-[-0.035em]">The catalogue is optional.</h2><p className="mt-2 max-w-2xl text-[12px] leading-relaxed text-muted-foreground">A use case is a shortcut into a known capability. Chat remains the universal entry point for anything else.</p><div className="mt-4"><AskKurukoo prompt="I have a job to do but I don't know which category it belongs to."/></div></section><FAQSection items={[{ question: "Do I have to choose a use case?", answer: "No. Describe the outcome in Chat and Kurukoo can work out the next step." }, { question: "Does a use case mean the job is supported everywhere?", answer: "No. The starting point identifies a relevant capability. Actual availability, pricing, permissions and completion depend on live services and evidence." }, { question: "What happens after I start?", answer: "The relevant surface opens with the goal context. If the job becomes a request, progress moves into Work and consequential commitments remain subject to your approval." }]} /></div>;
 }

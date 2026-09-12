@@ -1,4 +1,4 @@
-import { ArrowUpRight, Building2, ExternalLink, Store } from "lucide-react";
+import { ArrowUpRight, Building2, ExternalLink, ShoppingBag, Store } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { AskKurukoo } from "@/components/kurukoo/ask-kurukoo";
 import { commerceSupplyTypes, exampleCommerceJourneys } from "@/lib/kurukoo-commerce";
@@ -40,6 +40,7 @@ export function CommerceOutcomes() {
 
       <div className="mt-4 flex flex-wrap gap-2">
         <Link to="/businesses" className="inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-background px-3 text-[11.5px] font-medium text-foreground">Browse businesses <ArrowUpRight className="size-3.5" /></Link>
+        <Link to="/cart" className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-background/15 px-3 text-[11.5px] font-medium text-background hover:bg-background/10">Review cart <ShoppingBag className="size-3.5" /></Link>
         <Link to="/chat" className="inline-flex min-h-8 items-center rounded-lg border border-background/15 px-3 text-[11.5px] font-medium text-background hover:bg-background/10">Open Chat</Link>
       </div>
     </section>

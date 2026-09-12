@@ -6,7 +6,6 @@
 
 @theme inline {
   --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, monospace;
   --color-brand-tint: var(--brand-tint);
   --color-brand-ink: var(--brand-ink);
@@ -43,8 +42,8 @@
   --shadow-lift: var(--shadow-lift);
 }
 
-:root { --radius: 0.875rem; --background: oklch(0.986 0.003 106); --foreground: oklch(0.21 0.012 260); --surface: oklch(1 0 0); --surface-foreground: oklch(0.21 0.012 260); --elevated: oklch(0.972 0.004 106); --card: oklch(1 0 0); --card-foreground: oklch(0.21 0.012 260); --popover: oklch(1 0 0); --popover-foreground: oklch(0.21 0.012 260); --primary: oklch(0.552 0.181 39); --primary-foreground: oklch(0.99 0.01 60); --brand-tint: oklch(0.925 0.028 55); --brand-ink: oklch(0.46 0.052 47); --secondary: oklch(0.955 0.006 106); --secondary-foreground: oklch(0.3 0.012 260); --muted: oklch(0.958 0.004 106); --muted-foreground: oklch(0.53 0.012 260); --accent: oklch(0.95 0.022 55); --accent-foreground: oklch(0.44 0.12 42); --destructive: oklch(0.58 0.19 25); --destructive-foreground: oklch(0.99 0.004 25); --success: oklch(0.62 0.13 155); --border: oklch(0.905 0.005 106); --input: oklch(0.905 0.005 106); --ring: oklch(0.552 0.181 39); --shadow-soft: 0 1px 2px oklch(0.21 0.012 260 / 0.05), 0 1px 1px oklch(0.21 0.012 260 / 0.03); --shadow-lift: 0 8px 30px oklch(0.21 0.012 260 / 0.08); }
-.dark { --background: oklch(0.17 0.008 260); --foreground: oklch(0.95 0.004 106); --surface: oklch(0.213 0.009 260); --surface-foreground: oklch(0.95 0.004 106); --elevated: oklch(0.243 0.01 260); --card: oklch(0.213 0.009 260); --card-foreground: oklch(0.95 0.004 106); --popover: oklch(0.213 0.009 260); --popover-foreground: oklch(0.95 0.004 106); --primary: oklch(0.66 0.165 40); --primary-foreground: oklch(0.99 0.01 60); --brand-tint: oklch(0.33 0.045 45); --brand-ink: oklch(0.88 0.04 55); --secondary: oklch(0.26 0.01 260); --secondary-foreground: oklch(0.93 0.004 106); --muted: oklch(0.26 0.01 260); --muted-foreground: oklch(0.68 0.01 260); --accent: oklch(0.32 0.05 45); --accent-foreground: oklch(0.88 0.08 55); --destructive: oklch(0.65 0.17 25); --destructive-foreground: oklch(0.15 0.02 25); --success: oklch(0.72 0.12 155); --border: oklch(1 0 0 / 9%); --input: oklch(1 0 0 / 12%); --ring: oklch(0.66 0.165 40); --shadow-soft: 0 1px 2px oklch(0 0 0 / 0.4); --shadow-lift: 0 10px 34px oklch(0 0 0 / 0.45); }
+:root { --radius: 0.75rem; --background: oklch(0.986 0.003 106); --foreground: oklch(0.21 0.012 260); --surface: oklch(1 0 0); --surface-foreground: oklch(0.21 0.012 260); --elevated: oklch(0.972 0.004 106); --card: oklch(1 0 0); --card-foreground: oklch(0.21 0.012 260); --popover: oklch(1 0 0); --popover-foreground: oklch(0.21 0.012 260); --primary: oklch(0.552 0.181 39); --primary-foreground: oklch(0.99 0.01 60); --brand-tint: oklch(0.925 0.028 55); --brand-ink: oklch(0.46 0.052 47); --secondary: oklch(0.955 0.006 106); --secondary-foreground: oklch(0.3 0.012 260); --muted: oklch(0.958 0.004 106); --muted-foreground: oklch(0.53 0.012 260); --accent: oklch(0.95 0.022 55); --accent-foreground: oklch(0.44 0.12 42); --destructive: oklch(0.58 0.19 25); --destructive-foreground: oklch(0.99 0.004 25); --success: oklch(0.62 0.13 155); --border: oklch(0.905 0.005 106); --input: oklch(0.905 0.005 106); --ring: oklch(0.552 0.181 39); --shadow-soft: 0 1px 2px oklch(0.21 0.012 260 / 0.04); --shadow-lift: 0 12px 34px oklch(0.21 0.012 260 / 0.09); }
+.dark { --background: oklch(0.17 0.008 260); --foreground: oklch(0.95 0.004 106); --surface: oklch(0.213 0.009 260); --surface-foreground: oklch(0.95 0.004 106); --elevated: oklch(0.243 0.01 260); --card: oklch(0.213 0.009 260); --card-foreground: oklch(0.95 0.004 106); --popover: oklch(0.213 0.009 260); --popover-foreground: oklch(0.95 0.004 106); --primary: oklch(0.66 0.165 40); --primary-foreground: oklch(0.99 0.01 60); --brand-tint: oklch(0.33 0.045 45); --brand-ink: oklch(0.88 0.04 55); --secondary: oklch(0.26 0.01 260); --secondary-foreground: oklch(0.93 0.004 106); --muted: oklch(0.26 0.01 260); --muted-foreground: oklch(0.68 0.01 260); --accent: oklch(0.32 0.05 45); --accent-foreground: oklch(0.88 0.08 55); --destructive: oklch(0.65 0.17 25); --destructive-foreground: oklch(0.15 0.02 25); --success: oklch(0.72 0.12 155); --border: oklch(1 0 0 / 9%); --input: oklch(1 0 0 / 12%); --ring: oklch(0.66 0.165 40); --shadow-soft: 0 1px 2px oklch(0 0 0 / 0.35); --shadow-lift: 0 12px 38px oklch(0 0 0 / 0.42); }
 
 @layer base {
   * { border-color: var(--color-border); scrollbar-width: none; }
@@ -64,33 +63,35 @@ aside[aria-label="Public Kurukoo navigation"] svg,
 aside[aria-label="Trusted context rail"] svg,
 aside[aria-label="Kurukoo public context rail"] svg { color: var(--primary); }
 
-/* Public marketing typography: every public page uses the same 40px hero title treatment as the homepage. */
-body:has(aside[aria-label="Public Kurukoo navigation"]) h1 {
-  font-family: var(--font-serif) !important;
-  font-size: 40px !important;
-  line-height: 1.02 !important;
-  letter-spacing: -0.045em !important;
-}
+/* Shared Kurukoo visual language: restrained geometry, consistent Geist type, quiet surfaces. */
+.rounded-2xl { border-radius: 1rem !important; }
+.rounded-3xl { border-radius: 1.25rem !important; }
+[class*="rounded-[18px]"] { border-radius: 1rem !important; }
+[class*="rounded-[20px]"] { border-radius: 1.125rem !important; }
+[class*="rounded-[28px]"] { border-radius: 1.5rem !important; }
+[class*="rounded-[14px]"] { border-radius: 0.875rem !important; }
 
-/* Public marketing hero eyebrows use the Kurukoo orange consistently. */
+/* Avoid the boxed-dashboard look: surfaces use hairlines and depth sparingly. */
+.bg-surface.shadow-\[var\(--shadow-soft\)\] { box-shadow: none !important; }
+
+/* Shared interactive language across public and authenticated surfaces. */
+button, a { -webkit-tap-highlight-color: transparent; }
+button:not([aria-label="Close menu"]), a { transition-duration: 160ms; }
+
+/* Public marketing typography uses the same Geist display treatment as the rest of Kurukoo. */
+body:has(aside[aria-label="Public Kurukoo navigation"]) h1 { font-family: var(--font-sans) !important; font-size: 40px !important; line-height: 1.02 !important; letter-spacing: -0.045em !important; font-weight: 600 !important; }
 body:has(aside[aria-label="Public Kurukoo navigation"]) main > div > header > p:first-child,
 body:has(aside[aria-label="Public Kurukoo navigation"]) main > div > header > div > p:first-child,
 body:has(aside[aria-label="Public Kurukoo navigation"]) main > div > section:first-child > p:first-child,
-body:has(aside[aria-label="Public Kurukoo navigation"]) main > div > section:first-child > div:first-child > p:first-child {
-  color: var(--primary) !important;
-}
-
-/* Marketing section headings replace the older 28px serif treatment with a compact 24px bold hierarchy. */
+body:has(aside[aria-label="Public Kurukoo navigation"]) main > div > section:first-child > div:first-child > p:first-child { color: var(--primary) !important; }
 body:has(aside[aria-label="Public Kurukoo navigation"]) h2.font-serif,
-body:has(aside[aria-label="Public Kurukoo navigation"]) h3.font-serif {
-  font-family: var(--font-sans) !important;
-  font-size: 24px !important;
-  font-weight: 700 !important;
-  line-height: 1.08 !important;
-  letter-spacing: -0.03em !important;
-}
+body:has(aside[aria-label="Public Kurukoo navigation"]) h3.font-serif { font-family: var(--font-sans) !important; font-size: 24px !important; font-weight: 700 !important; line-height: 1.08 !important; letter-spacing: -0.03em !important; }
 
-/* Restore transparent scrollbars on the authenticated OS shell only. */
+/* Authenticated OS keeps the same Geist display hierarchy and denser control-surface rhythm. */
+body:has(aside[aria-label="Trusted context rail"]) h1.font-serif { font-family: var(--font-sans) !important; font-weight: 600 !important; }
+body:has(aside[aria-label="Trusted context rail"]) main h2 { letter-spacing: -0.028em; }
+
+/* Keep authenticated shell scrollbars quiet. */
 body:has(aside[aria-label="Trusted context rail"]) aside[aria-label="OS navigation"],
 body:has(aside[aria-label="Trusted context rail"]) aside[aria-label="Trusted context rail"],
 body:has(aside[aria-label="Trusted context rail"]) main { scrollbar-width: thin; scrollbar-color: transparent transparent; }
@@ -107,51 +108,15 @@ body:has(aside[aria-label="Trusted context rail"]) main::-webkit-scrollbar-thumb
 /* Public context is part of the same scroll plane as the public main surface. */
 aside[aria-label="Kurukoo public context rail"] { height: auto !important; min-height: 100%; overflow: visible !important; }
 
-/* Topics: advertising inventory is intentionally quiet and visibly separated from organic content. */
+/* Topics inventory stays visibly separated from organic content. */
 body:has(aside[aria-label="Kurukoo public context rail"]) main > div.mx-auto.w-full.max-w-6xl > div.grid.gap-3.md\:grid-cols-3 > a,
-body:has(aside[aria-label="Kurukoo public context rail"]) main > div.mx-auto.w-full.max-w-6xl > div.grid.gap-3.md\:grid-cols-3 > div {
-  border: 1px dotted var(--color-border) !important;
-  background: transparent !important;
-}
+body:has(aside[aria-label="Kurukoo public context rail"]) main > div.mx-auto.w-full.max-w-6xl > div.grid.gap-3.md\:grid-cols-3 > div { border: 1px dotted var(--color-border) !important; background: transparent !important; }
+body:has(aside[aria-label="Kurukoo public context rail"]) main > div.mx-auto.w-full.max-w-6xl > section.space-y-3 > div:first-child h2 { font-size: 0 !important; line-height: 1 !important; }
+body:has(aside[aria-label="Kurukoo public context rail"]) main > div.mx-auto.w-full.max-w-6xl > section.space-y-3 > div:first-child h2::after { content: "Browse"; display: block; font-size: 28px; line-height: 1.08; letter-spacing: -0.035em; }
+body:has(aside[aria-label="Kurukoo public context rail"]) #general-topics { display: block; width: max-content; font-size: 0 !important; line-height: 1 !important; }
+body:has(aside[aria-label="Kurukoo public context rail"]) #general-topics::before { content: "Kurukoo"; display: block; margin-bottom: 4px; color: var(--primary); font-family: var(--font-sans); font-size: 9px; font-weight: 700; line-height: 1; letter-spacing: 0.14em; text-transform: uppercase; }
+body:has(aside[aria-label="Kurukoo public context rail"]) #general-topics::after { content: "General"; display: block; font-family: var(--font-sans); font-size: 28px; font-weight: 600; line-height: 1.08; letter-spacing: -0.035em; }
 
-/* Topics category heading: keep the eyebrow, with a single-word Browse heading. */
-body:has(aside[aria-label="Kurukoo public context rail"]) main > div.mx-auto.w-full.max-w-6xl > section.space-y-3 > div:first-child h2 {
-  font-size: 0 !important;
-  line-height: 1 !important;
-}
-body:has(aside[aria-label="Kurukoo public context rail"]) main > div.mx-auto.w-full.max-w-6xl > section.space-y-3 > div:first-child h2::after {
-  content: "Browse";
-  display: block;
-  font-size: 28px;
-  line-height: 1.08;
-  letter-spacing: -0.035em;
-}
-
-/* Topics feed identity: Kurukoo is the eyebrow and General is the heading. */
-body:has(aside[aria-label="Kurukoo public context rail"]) #general-topics {
-  display: block;
-  width: max-content;
-  font-size: 0 !important;
-  line-height: 1 !important;
-}
-body:has(aside[aria-label="Kurukoo public context rail"]) #general-topics::before {
-  content: "Kurukoo";
-  display: block;
-  margin-bottom: 4px;
-  color: var(--primary);
-  font-family: var(--font-sans);
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-body:has(aside[aria-label="Kurukoo public context rail"]) #general-topics::after {
-  content: "General";
-  display: block;
-  font-family: var(--font-serif);
-  font-size: 28px;
-  font-weight: 500;
-  line-height: 1.08;
-  letter-spacing: -0.035em;
-}
+/* The authenticated rail's first item remains the public Home destination. */
+body:has(aside[aria-label="Trusted context rail"]) aside[aria-label="OS navigation"] a[href="/workspace"] > svg { display: none !important; }
+body:has(aside[aria-label="Trusted context rail"]) aside[aria-label="OS navigation"] a[href="/workspace"]::before { content: ""; display: block; width: 18px; height: 18px; flex: 0 0 auto; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8'/%3E%3Cpath d='M3 10.5 12 3l9 7.5'/%3E%3Cpath d='M5 9v12h14V9'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8'/%3E%3Cpath d='M3 10.5 12 3l9 7.5'/%3E%3Cpath d='M5 9v12h14V9'/%3E%3C/svg%3E") center / contain no-repeat; }

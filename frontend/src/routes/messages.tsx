@@ -7,7 +7,7 @@ import { IntegrationGap } from "@/components/kurukoo/primitives";
 import { Avatar, Badge, ContextIconTile, Panel, Rows, StatusPill } from "@/components/kurukoo/ui";
 import { entityById, threads } from "@/lib/kurukoo-demo";
 
-export const Route = createFileRoute("/messages/")({
+export const Route = createFileRoute("/messages")({
   head: () => ({ meta: [
     { title: "Messages — Kurukoo" },
     { name: "description", content: "Direct conversations with providers and businesses, tied to your work." },

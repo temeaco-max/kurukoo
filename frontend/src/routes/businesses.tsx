@@ -1,68 +1,25 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowUpRight, Bot, Store } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { PageHeader } from "@/components/app-shell";
-import { EntityCard } from "@/components/kurukoo/cards";
-import { actionClass } from "@/components/kurukoo/primitives";
-import { Rows, SectionHeader, StatTile, Tabs } from "@/components/kurukoo/ui";
-import { PulseControl } from "@/components/kurukoo/pulse-control";
-import { AskKurukoo } from "@/components/kurukoo/ask-kurukoo";
-import { entities } from "@/lib/kurukoo-demo";
-import { fetchDiscoveryEntities, isKurukooApiConfigured, type DiscoveryEntity } from "@/lib/kurukoo-api";
-import { exampleCommerceJourneys, storefrontPrinciples } from "@/lib/kurukoo-commerce";
-import { useKurukoo } from "@/lib/kurukoo-store";
+import { createFileRoute } from "@tanstack/react-router";
+import { RoleLanding } from "@/components/kurukoo/role-landing";
 
 export const Route = createFileRoute("/businesses")({
-  head: () => ({ meta: [
-    { title: "Businesses — Kurukoo" },
-    { name: "description", content: "Discover businesses, or run yours on Kurukoo with an agentic storefront, requests, customers, advertising and analytics." },
-  ]}),
+  head: () => ({ meta: [{ title: "Businesses — Kurukoo" }, { name: "description", content: "Understand what Kurukoo offers businesses and how to bring a business onto the network." }] }),
   component: BusinessesPage,
 });
-const tabs = ["Discover", "Your business"] as const;
+
 function BusinessesPage() {
-  const [tab, setTab] = useState<string>(tabs[0]);
-  const [liveBusinesses, setLiveBusinesses] = useState<DiscoveryEntity[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [connected, setConnected] = useState(false);
-  const { send } = useKurukoo();
-  const demoBusinesses = entities.filter((e) => e.kind === "business");
-  useEffect(() => {
-    if (!isKurukooApiConfigured()) return;
-    setLoading(true);
-    void fetchDiscoveryEntities({ layers: ["stationary", "deals", "events"], radius: 5000 })
-      .then((items) => setLiveBusinesses(items.filter((item) => /business|shop|restaurant|place|venue/i.test(item.kind))))
-      .catch(() => setLiveBusinesses([]))
-      .finally(() => setLoading(false));
-  }, []);
-  const hasLive = liveBusinesses.length > 0;
-  const businessTools = useMemo(() => [
-    ["Profile and location", "How people find you", "/businesses"],
-    ["Products and services", "What you offer", "/capabilities"],
-    ["Team", "Who can respond", "/network"],
-    ["Orders and requests", "Jobs in progress", "/work"],
-    ["Customers and messages", "Relationship context", "/messages"],
-    ["Demand and insights", "What people are asking for", "/activity"],
-    ["Offers and promotion", "Commercial discovery", "/advertising"],
-    ["Subscription and payments", "Plan and billing", "/subscriptions"],
-    ["Verification", "Trust and safety", "/settings"],
-  ], []);
-  return <>
-    <PageHeader title="Businesses" subtitle="Services, products and teams people can reach through Kurukoo." />
-    <Tabs items={tabs} value={tab} onChange={setTab} />
-    {tab === "Discover" ? <div className="mt-4 space-y-4">
-      <section className="rounded-2xl border border-border bg-foreground p-5 text-background">
-        <div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-background/10"><Store className="size-5" /></span><div><p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-background/55">Agentic Storefronts</p><h2 className="mt-1 text-[22px] font-semibold tracking-tight">Businesses Kurukoo can help people use</h2><p className="mt-2 max-w-2xl text-[12.5px] leading-relaxed text-background/70">A Kurukoo storefront is more than a profile. Where supported, it gives Kurukoo an understandable route from what a business offers to a real request, booking, purchase or conversation.</p></div></div>
-        <div className="mt-4 grid gap-2 sm:grid-cols-3">{exampleCommerceJourneys.map((item) => <button key={item.title} type="button" onClick={() => send(item.title)} className="rounded-xl bg-background/10 p-3 text-left hover:bg-background/15"><p className="text-[11.5px] font-medium">{item.title}</p><p className="mt-1 text-[10px] leading-relaxed text-background/55">{item.outcome}</p></button>)}</div>
-      </section>
-      {isKurukooApiConfigured() ? <div className="rounded-2xl border border-border bg-elevated/45 px-4 py-3"><p className="text-[12px] font-semibold">Network discovery</p><p className="mt-1 text-[11.5px] leading-relaxed text-muted-foreground">Business results below use the canonical Nearby discovery boundary when connected. Preview examples remain visible when the network has no returned businesses.</p></div> : null}
-      {loading ? <div className="h-28 animate-pulse rounded-2xl border border-border bg-surface" /> : hasLive ? liveBusinesses.map((b) => <article key={b.id} className="rounded-2xl border border-border bg-surface p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-[15px] font-semibold">{b.name}</p><p className="mt-1 text-[12px] text-muted-foreground">{b.category || b.kind}{b.location ? ` · ${b.location}` : ""}</p></div><span className="rounded-full bg-elevated px-2.5 py-1 text-[10px]">{b.liveNow ? "Live now" : b.available ? "Available" : "Not confirmed"}</span></div><p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">{b.description || "Business context returned by Kurukoo."}</p><div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => send(`I found ${b.name} through Kurukoo Businesses. Help me decide whether to use this business and, if appropriate, move me into a verified request. Do not invent availability, price or capability.`)} className="inline-flex min-h-8 rounded-lg bg-primary px-3 text-[11.5px] font-medium text-primary-foreground">Ask Kurukoo</button><Link to="/discover" className={actionClass()}>Open Nearby</Link></div><p className="mt-2 text-[10px] text-muted-foreground">Evidence: {b.evidence || "source attributed"} · Freshness: {b.freshness || "not stated"}</p></article>) : <>{demoBusinesses.map((b) => <EntityCard key={b.id} entity={b} />)}<p className="text-[10.5px] text-muted-foreground">{isKurukooApiConfigured() ? "Preview data remains visible here while connected network discovery has no matching businesses." : "Preview data — business examples show how the network is intended to look before a live connection is available."}</p></>}
-    </div> : <div className="mt-4 space-y-6">
-      <PulseControl onChanged={() => setConnected(true)} />
-      <section className="rounded-2xl border border-border bg-elevated/50 p-4"><div className="flex items-start gap-3"><span className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary"><Bot className="size-4" /></span><div><p className="text-[15px] font-semibold">Your agentic storefront</p><p className="mt-1.5 text-[12.5px] leading-relaxed text-muted-foreground">Turn what your business offers into a surface Kurukoo can understand and use. Keep your services, availability, requests, customers, agents and commercial controls connected to the same business operating surface.</p></div></div><div className="mt-3 flex flex-wrap gap-2"><AskKurukoo prompt="Help me set up my business storefront on Kurukoo." className="min-h-9 bg-primary text-primary-foreground hover:bg-primary/90">Set up storefront</AskKurukoo><Link to="/pricing" className={actionClass()}>See business plan</Link><Link to="/advertising" className={actionClass()}>Promotion</Link></div></section>
-      <section className="rounded-2xl border border-border bg-surface p-4"><SectionHeader title="How the storefront works" subtitle="The storefront is an execution surface, not a catalogue-first replacement for your business."/><div className="mt-3 grid gap-2 sm:grid-cols-2">{storefrontPrinciples.map((principle, index) => <div key={principle} className="rounded-xl bg-elevated p-3"><span className="text-[10px] font-semibold text-primary">0{index + 1}</span><p className="mt-1 text-[12px] leading-relaxed">{principle}</p></div>)}</div></section>
-      <div className="grid gap-3 sm:grid-cols-3"><StatTile label="Availability" value={connected ? "Live" : "Off"} note={connected ? "Nearby can discover you" : "Go Live when ready"} /><StatTile label="Incoming requests" value="0" note="Live when connected" /><StatTile label="Customers" value="0" note="Relationship history" /></div>
-      <section><SectionHeader title="Business tools" subtitle="The operating surface for requests, customers, offers and growth." /><Rows>{businessTools.map(([title, note, to]) => <li key={title} className="flex items-center justify-between gap-4 px-4 py-3.5"><span className="min-w-0"><span className="block text-[15px]">{title}</span><span className="block text-[13px] text-muted-foreground">{note}</span></span><Link to={to as never} className="shrink-0 text-[12px] font-medium underline">Open</Link></li>)}</Rows><div className="mt-3 flex flex-wrap gap-2"><Link to="/advertising" className={actionClass("primary")}>Offers & promotion</Link><Link to="/subscriptions" className={actionClass()}>Subscription</Link><Link to="/wallet" className={actionClass()}>Wallet</Link></div></section>
-    </div>}
-  </>;
+  return <RoleLanding
+    eyebrow="For businesses"
+    title="Put your business where demand is already happening."
+    intro="Kurukoo gives businesses a way to become discoverable, respond to real requests, build customer relationships and participate in local commerce through one execution-focused platform."
+    whatKurukooIs="A customer and coordination layer for businesses: people can ask Kurukoo for an outcome, discover relevant businesses and—where supported—move into a real request, conversation or commercial flow. Your business remains responsible for the service you actually provide."
+    participation={["Create a useful business presence with accurate products, services, location and operating details.", "Respond to suitable requests and keep your team connected to work in progress.", "Use discovery, offers and eligible advertising to reach relevant demand.", "Build customer relationships from real interactions rather than artificial engagement numbers."]}
+    benefits={["More discoverability when what you offer matches a person's intent or location.", "A coordinated place for requests, customer conversations and work.", "Opportunities to reach new customers through discovery and sponsored promotion.", "Business insights based on the information and activity Kurukoo can actually verify."]}
+    features={["Business profile and discovery", "Products and services", "Requests and orders", "Customer conversations", "Offers and promotion", "Team, billing and subscriptions"]}
+    useCases={["A restaurant becomes discoverable when someone asks Kurukoo for food nearby and can respond to an appropriate request.", "A repair business receives a suitable job, reviews the request and coordinates the work with the customer.", "A retailer promotes a genuine offer in an eligible sponsored placement and reviews actual campaign evidence.", "A mobile business uses location and availability signals to be discoverable where it can genuinely serve customers."]}
+    offer="Ask Kurukoo about current business onboarding, launch credits, plan trials or other promotional offers. Availability depends on the live programme and market; the OS should never imply an offer that has not been confirmed."
+    referral="Eligible business referrals can be attributed through Kurukoo's referral system. If the referred business completes the current qualifying steps, any applicable reward is handled through the referral and commercial/Points rules."
+    joinPrompt="I want to bring my business onto Kurukoo. Help me understand the setup, features, requirements and current offers."
+    primaryLabel="Set up a business"
+    primaryTo="/chat?prompt=I%20want%20to%20bring%20my%20business%20onto%20Kurukoo"
+  />;
 }

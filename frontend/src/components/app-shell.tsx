@@ -40,7 +40,7 @@ export function PageHeader({
       <div className="min-w-0">
         <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-primary">{label}</p>
         {title ? (
-          <h1 className="mt-2 font-serif text-[40px] leading-[1.02] tracking-[-0.045em] md:text-[48px]">
+          <h1 className="mt-2 text-[40px] font-semibold leading-[1.02] tracking-[-0.045em] md:text-[48px]">
             {title}
           </h1>
         ) : null}

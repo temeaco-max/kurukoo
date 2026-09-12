@@ -1,10 +1,25 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowUpRight, Bot, Building2, UsersRound } from "lucide-react";
-import { actionClass } from "@/components/kurukoo/primitives";
-import { Panel } from "@/components/kurukoo/ui";
+import { createFileRoute } from "@tanstack/react-router";
+import { RoleLanding } from "@/components/kurukoo/role-landing";
 
 export const Route = createFileRoute("/providers")({
-  head: () => ({ meta: [{ title: "Providers — Kurukoo" }, { name: "description", content: "Understand the Kurukoo provider network and how people, businesses and AI agents can help get things done." }] }),
+  head: () => ({ meta: [{ title: "Providers — Kurukoo" }, { name: "description", content: "Understand what Kurukoo offers service providers and how to join." }] }),
   component: ProvidersPage,
 });
-function ProvidersPage() { return <div className="mx-auto w-full max-w-6xl space-y-9 pb-8"><header className="max-w-3xl"><p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-primary">Providers</p><h1 className="mt-2 font-serif text-[40px] leading-[1.02] tracking-[-0.045em] md:text-[40px]">A network of people, businesses and AI that can help.</h1><p className="mt-4 max-w-2xl text-[15px] leading-7 text-muted-foreground">Kurukoo connects a request to the right provider for the job. A provider can be a person, a stationary or mobile business, or a Kurukoo AI agent — with the actual availability, capability and outcome kept grounded in evidence.</p><div className="mt-5 flex flex-wrap gap-2"><Link to="/provider" className={actionClass("primary")}>Open provider discovery <ArrowUpRight className="ml-1 size-3.5"/></Link><Link to="/chat" className={actionClass()}>Ask Kurukoo</Link></div></header><section className="grid gap-3 md:grid-cols-3"><Panel className="p-5"><UsersRound className="size-5 text-primary"/><h2 className="mt-3 text-[14px] font-semibold">People</h2><p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">Skilled individuals can offer capabilities, accept requests and build trusted relationships.</p></Panel><Panel className="p-5"><Building2 className="size-5 text-primary"/><h2 className="mt-3 text-[14px] font-semibold">Businesses</h2><p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">Restaurants, repairers, retailers, mobile services and other businesses can participate in discovery.</p></Panel><Panel className="p-5"><Bot className="size-5 text-primary"/><h2 className="mt-3 text-[14px] font-semibold">Kurukoo AI agents</h2><p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">Specialised agents can have their own profiles and capabilities, such as <span className="font-medium text-foreground">/profile/emeka-ai</span> or <span className="font-medium text-foreground">/profile/kurukoo-ai</span>.</p></Panel></section><section className="rounded-[22px] border border-border bg-surface p-5 md:p-6"><p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Trust and discovery</p><h2 className="mt-1.5 font-serif text-[29px] tracking-[-0.035em]">Discovery is not the same as a guarantee.</h2><p className="mt-2 max-w-3xl text-[12.5px] leading-relaxed text-muted-foreground">Kurukoo can discover providers and surface signals such as verification, availability and location. Those signals are kept distinct from confirmed quotes, commitments and completed outcomes.</p></section></div>; }
+
+function ProvidersPage() {
+  return <RoleLanding
+    eyebrow="For providers"
+    title="Turn what you can do into work people can find."
+    intro="Kurukoo helps people describe what they need, discover suitable providers and move a supported request toward a real outcome. You can participate as an individual, mobile provider or business offering a service."
+    whatKurukooIs="A place where your genuine capability can become discoverable in the context of a real request. Kurukoo handles the conversation and coordination while your availability, capability, verification and commitments remain grounded in the evidence the system actually has."
+    participation={["List a genuine skill, service or capability.", "Make your location, service area and availability useful for discovery when supported.", "Respond to suitable requests and coordinate work through Kurukoo.", "Build a trusted history through completed work and appropriate feedback."]}
+    benefits={["More opportunities to be discovered when your capability matches demand.", "A single place to coordinate customer requests and conversations.", "Potential earnings from eligible work, with commercial terms shown before commitment.", "A clearer reputation built from real participation rather than invented rankings."]}
+    features={["Provider profile and capability discovery", "Requests, offers and coordination", "Availability and Go Live when eligible", "Chat and provider communication", "Work and completion tracking", "Reviews and trust signals"]}
+    useCases={["A plumber makes their service area and availability discoverable, then receives a suitable repair request.", "A mobile food provider responds to a nearby order and coordinates fulfilment through the request lifecycle.", "A skilled individual offers a specific service and uses Kurukoo to turn suitable demand into work.", "A provider follows an active request, supplies evidence and closes the loop after the work is done."]}
+    offer="Ask Kurukoo for the current provider sign-up offer and eligibility in your market. Any launch incentive, fee waiver or promotional benefit is shown only when it is actually available to you."
+    referral="When you refer someone who joins through an eligible referral path, Kurukoo can attribute the referral and apply the programme's current qualification and reward rules. Referral rewards are not treated as earned until the relevant conditions are met."
+    joinPrompt="I want to become a Kurukoo provider. Help me understand the requirements and how to get started."
+    primaryLabel="Become a provider"
+    primaryTo="/provider"
+  />;
+}
