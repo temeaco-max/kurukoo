@@ -391,7 +391,7 @@ router.post('/:id/transition', authenticateUser, async (req: AuthRequest, res) =
 
   const customerAllowed = new Set<EconomicRequestStatus>(['awaiting_confirmation', 'reserved', 'cancelled', 'completed']);
   if (!customerAllowed.has(status)) return res.status(403).json({ success: false, error: 'This lifecycle transition is performed by the economic service layer.' });
-  if (status === 'completed' && !['fulfilled', 'in_fulfillment'].includes(request.status)) return res.status(409).json({ success: false, error: 'A request must be fulfilled before the customer can complete it.' });
+  if (status === 'completed' && request.status !== 'fulfilled') return res.status(409).json({ success: false, error: 'A request must be fulfilled before the customer can complete it.' });
   try {
     const updated = await transitionEconomicRequest(request.id, status, { fulfillment: req.body?.fulfillment && typeof req.body.fulfillment === 'object' ? req.body.fulfillment : undefined });
     res.json({ success: true, request: updated });
