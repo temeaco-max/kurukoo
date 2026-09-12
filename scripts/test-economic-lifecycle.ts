@@ -16,7 +16,7 @@ const { advanceStorefront } = await import('../src/services/agenticStorefront.js
 const { createOpenIntention, getIntentionByEconomicRequestId } = await import('../src/services/deferredRequestService.js');
 const { processDueDeferred } = await import('../src/services/backgroundWorkers.js');
 const { createEscrow } = await import('../src/services/escrow.js');
-const { runEscrowPass } = await import('../src/services/tradeEngine.js');
+const { completeEconomicRequest, runEscrowPass } = await import('../src/services/tradeEngine.js');
 const { sendFcmPush } = await import('../src/services/pushNotifications.js');
 const { handleSmsWebhook } = await import('../src/channels/sms.js');
 
@@ -81,6 +81,20 @@ assert.equal(deferredIntention?.status, 'partially_matched', 'the open intention
 assert.equal(Number(deferredIntention?.attempts), 1, 'a partial match should consume one bounded deferred retry attempt');
 assert.ok(deferredIntention?.next_check_at, 'a partial match should schedule the next deferred check');
 
+// Completion must be fail-closed: fulfillment evidence creates the fulfilled state,
+// and the final customer confirmation is the only path from fulfilled to completed.
+const completionGuardRequestId = 'completion-guard-request';
+await createEconomicRequest({ id: completionGuardRequestId, phone: customerPhone, skill: 'plumber', requirements: { location: 'Ikeja' } });
+db.run(`UPDATE economic_requests SET status = 'in_fulfillment' WHERE id = ?`, [completionGuardRequestId]);
+const prematureCompletion = await completeEconomicRequest(completionGuardRequestId, { source: 'test-premature' });
+assert.equal(prematureCompletion.success, false, 'an in-flight request must never be promoted directly to completed');
+db.run(`UPDATE economic_requests SET status = 'fulfilled', fulfillment_json = ? WHERE id = ?`, [JSON.stringify({ fulfilled_at: new Date().toISOString(), evidence_id: 'provider-evidence-test' }), completionGuardRequestId]);
+const confirmedCompletion = await completeEconomicRequest(completionGuardRequestId, { confirmed_by: customerPhone, source: 'test-confirmation' });
+assert.equal(confirmedCompletion.success, true, 'a fulfilled request with customer confirmation should complete');
+const completedGuardRequest = await getEconomicRequest(completionGuardRequestId);
+assert.equal(completedGuardRequest?.status, 'completed', 'completion confirmation must end in completed state');
+assert.equal((completedGuardRequest?.fulfillment as any)?.confirmed_by, customerPhone, 'completion confirmation evidence must be preserved');
+
 const orderId = 'settlement-lifecycle-order';
 db.run(
   `INSERT INTO orders (id, phone, order_type, provider_phone, amount, status, idempotency_key)
@@ -131,4 +145,4 @@ saveDb(true);
 try { fs.rmSync(dbPath, { force: true }); } catch { /* temporary database cleanup is best-effort */ }
 
 console.log('Economic lifecycle integration checks passed');
-console.log('Verified: deferred re-match does not fabricate a quote, known cart offers enter the canonical product request flow without payment, escrow release awards bounded idempotent points, and SMS uses the normalized Economic Request identity.');
+console.log('Verified: deferred re-match does not fabricate a quote, known cart offers enter the canonical product request flow without payment, completion is fulfilled-only and evidence-preserving, escrow release awards bounded idempotent points, and SMS uses the normalized Economic Request identity.');
