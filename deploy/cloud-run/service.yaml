@@ -60,19 +60,11 @@ spec:
             - name: KURUKOO_CLOUD_RUN_REQUIRE_MODEL
               value: "true"
             - name: SMOLLM2_MODEL
-              value: HuggingFaceTB/SmolLM2-1.7B-Instruct
+              value: smollm2:360m
             - name: SMOLLM2_FALLBACK_MODEL
-              value: HuggingFaceTB/SmolLM2-1.7B-Instruct
-            - name: SMOLLM2_DTYPE
-              value: q4
+              value: smollm2:360m
             - name: SMOLLM2_MAX_NEW_TOKENS
               value: "192"
-            - name: HF_HOME
-              value: /tmp/huggingface
-            - name: HF_HUB_CACHE
-              value: /tmp/huggingface
-            - name: KURUKOO_SMOLLM2_CACHE_DIR
-              value: /tmp/huggingface
             - name: KURUKOO_EXTERNAL_EXECUTION_ENABLED
               value: "false"
             - name: KURUKOO_SECRET_SOURCE

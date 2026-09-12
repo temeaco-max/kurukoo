@@ -98,9 +98,8 @@ The current proving profile remains conservative and intentionally non-promotabl
 - minimum instances: 0
 - maximum instances: 1 until distributed worker ownership is certified
 - `KURUKOO_SMOLLM2_LOCAL=true`
-- `SMOLLM2_MODEL=HuggingFaceTB/SmolLM2-1.7B-Instruct`
-- `SMOLLM2_DTYPE=q4`
-- model cache: `/tmp/huggingface`
+- `SMOLLM2_MODEL=smollm2:360m`
+- model cache: `/tmp/ollama`
 - background workers: one application worker only; external execution disabled
 - artifact storage: local storage is explicitly blocked for Cloud Run; protected object storage must be implemented and selected before promotion
 

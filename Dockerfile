@@ -18,15 +18,11 @@ ENV NODE_ENV=production \
     KURUKOO_POSTGRES_APPLICATION_INTEGRATED=false \
     KURUKOO_JOB_MODE=in_process \
     KURUKOO_PERSISTENT_STATE_REQUIRED=true \
-    DB_PATH=/app/data/kurukoo.sqlite \
+        DB_PATH=/app/data/kurukoo.sqlite \
     KURUKOO_METRICS_ENABLED=true \
     KURUKOO_SMOLLM2_LOCAL=false \
-    SMOLLM2_MODEL=HuggingFaceTB/SmolLM2-1.7B-Instruct \
-    SMOLLM2_FALLBACK_MODEL=HuggingFaceTB/SmolLM2-1.7B-Instruct \
-    SMOLLM2_DTYPE=q4 \
-    HF_HOME=/tmp/huggingface \
-    HF_HUB_CACHE=/tmp/huggingface
-COPY package.json package-lock.json ./
+    SMOLLM2_MODEL=smollm2:360m \
+    SMOLLM2_FALLBACK_MODEL=smollm2:360m
 RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund && npm cache clean --force
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/public ./public
@@ -34,7 +30,7 @@ COPY --from=build /app/views ./views
 COPY --from=build /app/locales ./locales
 COPY --from=build /app/models ./models
 COPY --from=build /app/docs ./docs
-RUN mkdir -p /app/data /tmp/huggingface /tmp/uploads && chown -R node:node /app
+RUN mkdir -p /app/data /tmp/uploads && chown -R node:node /app
 USER node
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=5 CMD node -e "fetch('http://127.0.0.1:8080/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"

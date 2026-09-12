@@ -159,7 +159,7 @@ The permanent acceptance boundary remains truthful: a confirmation can be record
 
 ## SmolLM2 local runtime and output-boundary truth
 
-The local SmolLM2 runtime targets `HuggingFaceTB/SmolLM2-1.7B-Instruct` with q4 CPU inference when `KURUKOO_SMOLLM2_LOCAL=true`. The default fallback is now the same 1.7B checkpoint, so a load problem cannot silently downgrade the application to 360M. A smaller checkpoint remains possible only when explicitly configured and reviewed; the fallback regression continues to exercise that explicit boundary.
+The local SmolLM2 runtime targets `smollm2:360m` via the Ollama REST API when `KURUKOO_SMOLLM2_LOCAL=true`. The default fallback is the same checkpoint, so a load problem cannot silently downgrade to a smaller model. A smaller checkpoint remains possible only when explicitly configured and reviewed; the fallback regression continues to exercise that explicit boundary.
 
 The model-facing conversation guidance is deliberately written as natural-language private instructions rather than self-describing key/value labels such as `model_tier=`, `requirement=` or `instruction=`. This prevents the student model from echoing internal contract metadata into a user response. The output boundary still strips role labels, prompt delimiters, memory markers and known internal-generation language, and retains the bounded Kurukoo template only when a model response cannot be made safe and user-facing. A model being loaded successfully does not by itself make its output suitable for presentation.
 

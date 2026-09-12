@@ -36,7 +36,7 @@ assert.match(teacherGenerator, /huggingface/,
 process.env.KURUKOO_SMOLLM2_LOCAL = 'false';
 process.env.KURUKOO_AI_HOSTED_PROVIDER = 'none';
 process.env.HUGGINGFACE_API_KEY = 'test-only-retired-runtime-key';
-process.env.SMOLLM2_MODEL = 'HuggingFaceTB/SmolLM2-1.7B-Instruct';
+  process.env.SMOLLM2_MODEL = 'smollm2:360m';
 const { querySmolLM2, querySmolLM2Diagnostics, getSmolLM2RuntimeStatus } = await import('../src/services/smolLm2Service.js');
 const fallback = await querySmolLM2('Can you help me plan the next safe step?');
 const status = getSmolLM2RuntimeStatus();

@@ -1159,7 +1159,8 @@ Manual alternatives:
 - `tsx` does not pre-resolve `NODE_ENV`; without an explicit override,
   it falls back to `production`, which triggers production-only startup
   guards that crash local dev.
-- `@huggingface/transformers` is loaded lazily inside `smolLm2Service.ts`
-  to prevent missing native bindings (e.g. `onnxruntime-node` on
-  `darwin/x64`) from blocking server startup. The deterministic fallback
-  path handles unavailability.
+- `SmolLM2` local inference goes through the Ollama REST API
+  (`http://localhost:11434`) rather than `@huggingface/transformers`.
+  When `KURUKOO_SMOLLM2_LOCAL=true` and Ollama is available, the service
+  calls `/api/generate`; otherwise it falls back to the bounded deterministic
+  template path. Start Ollama locally with `ollama serve` (or `npm run dev:start`).

@@ -4,7 +4,7 @@
 
 ## Decision
 
-Kurukoo's AI architecture is a Brain-centred system containing deterministic policy/state logic plus a Kurukoo-specialised student model. The initial student is SmolLM2-1.7B-Instruct, specialised offline using Kurukoo-derived scenarios and curated teacher-assisted data.
+Kurukoo's AI architecture is a Brain-centred system containing deterministic policy/state logic plus a Kurukoo-specialised student model. The initial student is SmolLM2-360M-Instruct, served through Ollama and specialised offline using Kurukoo-derived scenarios and curated teacher-assisted data.
 
 ## Non-negotiable boundaries
 

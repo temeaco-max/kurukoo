@@ -7,8 +7,7 @@ import path from 'node:path';
 const dbPath = path.join(os.tmpdir(), `kurukoo-linked-chat-${process.pid}-${Date.now()}.sqlite`);
 process.env.DB_PATH = dbPath;
 process.env.KURUKOO_SMOLLM2_LOCAL = 'true';
-process.env.SMOLLM2_MODEL = 'HuggingFaceTB/SmolLM2-360M-Instruct';
-process.env.SMOLLM2_DTYPE = 'q4';
+process.env.SMOLLM2_MODEL = 'smollm2:360m';
 process.env.SMOLLM2_MAX_NEW_TOKENS = '96';
 process.env.KURUKOO_AI_HOSTED_PROVIDER = 'none';
 process.env.KURUKOO_WHATSAPP_LINKED_DEVICE_ALLOW_GROUPS = 'false';
@@ -37,7 +36,7 @@ assert.ok(outbound[0].text.trim());
 const smollm2 = getSmolLM2RuntimeStatus();
 assert.equal(smollm2.source, 'local');
 assert.equal(smollm2.available, true);
-assert.equal(smollm2.model.split('/').pop(), 'SmolLM2-360M-Instruct');
+assert.equal(smollm2.model.split('/').pop(), 'smollm2:360m');
 
 const db = await getDb();
 const rows = db.exec("SELECT type, producer, owner_phone, payload_json FROM coordinator_events WHERE type='chat.turn.completed' ORDER BY created_at DESC LIMIT 5")[0]?.values || [];

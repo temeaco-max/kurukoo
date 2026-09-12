@@ -25,7 +25,7 @@ interface RegistryIndex {
   models?: RegistryRecord[];
 }
 
-const DEFAULT_MODEL = 'HuggingFaceTB/SmolLM2-1.7B-Instruct';
+const DEFAULT_MODEL = 'smollm2:360m';
 const STAGES = new Set<StudentModelStage>(['base', 'candidate', 'shadow', 'canary', 'production']);
 
 function baseModel(): string {

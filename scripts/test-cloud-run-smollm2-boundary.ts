@@ -12,9 +12,11 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 assert(dockerfile.includes('FROM node:22-bookworm-slim AS build'), 'Cloud Run Dockerfile must use the existing Node build path');
+assert(dockerfile.includes('KURUKOO_SMOLLM2_LOCAL=false'), 'Cloud Run Dockerfile must disable local inference (Ollama not present in container)');
+assert(dockerfile.includes('SMOLLM2_MODEL=smollm2:360m'), 'Cloud Run Dockerfile must use Ollama model tags');
 assert(dockerfile.includes('RUN npm run build'), 'Cloud Run image must compile the existing application');
 assert(dockerfile.includes('CMD ["npm", "start"]'), 'Cloud Run image must use the existing npm start entrypoint');
-assert(dockerfile.includes('HF_HOME=/tmp/huggingface'), 'model cache must remain ephemeral in the container');
+assert(!dockerfile.includes('HF_HOME'), 'Dockerfile must not retain HuggingFace env vars after Ollama migration');
 assert(!dockerfile.includes('COPY .env'), 'secrets must not be copied into the image');
 assert(service.includes('containerConcurrency: 1'), 'Cloud Run proving must bound concurrency to one model request');
 assert(service.includes('timeoutSeconds: 300'), 'Cloud Run proving must use a bounded request timeout');
@@ -23,6 +25,6 @@ assert(service.includes('path: /health'), 'Cloud Run must reuse the existing hea
 assert(service.includes('KURUKOO_SMOLLM2_LOCAL'), 'model selection must remain runtime-configurable');
 assert(service.includes('KURUKOO_WORKERS'), 'background worker policy must be explicit for Cloud Run');
 assert(service.includes('KURUKOO_PERSISTENT_STATE_REQUIRED') || envExample.includes('KURUKOO_PERSISTENT_STATE_REQUIRED'), 'persistent-state requirement must be documented');
-assert(envExample.includes('KURUKOO_SMOLLM2_CACHE_DIR=/tmp/huggingface'), 'Cloud Run cache location must be in the environment contract');
+assert(envExample.includes('KURUKOO_SMOLLM2_CACHE_DIR=/tmp/ollama'), 'Cloud Run cache location must be in the environment contract');
 
-console.log('Cloud Run SmolLM2 proving boundary passed: existing app entrypoint, bounded concurrency, health probe, ephemeral model cache, runtime selection, and persistent-state separation.');
+console.log('Cloud Run SmolLM2 proving boundary passed: existing app entrypoint, bounded concurrency, health probe, local inference disabled, Ollama model tags, runtime selection, and persistent-state separation.');

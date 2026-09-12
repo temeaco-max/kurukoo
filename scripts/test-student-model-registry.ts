@@ -14,14 +14,14 @@ const original = {
 
 try {
   process.env.KURUKOO_MODEL_REGISTRY_PATH = indexPath;
-  process.env.SMOLLM2_MODEL = 'HuggingFaceTB/SmolLM2-1.7B-Instruct';
+process.env.SMOLLM2_MODEL = 'smollm2:360m';
   const { getStudentModelRuntimeSelection } = await import('../src/services/studentModelRegistryService.js');
 
   process.env.KURUKOO_SMOLLM2_MODEL_STAGE = 'base';
   assert.deepEqual(getStudentModelRuntimeSelection(), {
     requestedStage: 'base',
     selectedStage: 'base',
-    model: 'HuggingFaceTB/SmolLM2-1.7B-Instruct',
+    model: 'smollm2:360m',
     source: 'environment_base',
   });
 

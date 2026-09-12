@@ -11,6 +11,8 @@ verification
 artifacts
 ml/datasets
 ml/artifacts
+models/gguf
+models/*.bin
 __pycache__
 *.sqlite
 *.sqlite-wal
