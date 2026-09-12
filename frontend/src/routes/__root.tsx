@@ -1,23 +1,3 @@
-// ── Shell ownership ─────────────────────────────────────────────────────
-//
-// PUBLIC OS SHELL (`PublicKurukooShell`, `PublicHome`):
-//   - Used on the unauthenticated "/" route and all publicPrefixes entries.
-//   - Renders marketing UI from `frontend/src/components/public-kurukoo-home.tsx`.
-//   - No Kurukoo store / no authenticated API calls.
-//   - Entry points: composer, explore, nearby, channels, opportunities.
-//
-// AUTHENTICATED OS SHELL (`AppShell`, HomePage in `routes/index.tsx`):
-//   - Used on the authenticated "/" route for logged-in Kurukoo users.
-//   - Renders the personal dashboard (`HomeForYou` + authenticated widgets).
-//   - Uses `useKurukoo()` from `@/lib/kurukoo-store` and calls authenticated APIs.
-//   - Widgets wired here: DailyPicksStrip (both shells), QuickRepliesPanel,
-//     SurveyPromptCard, ArtistBookingCard (auth-only — they call the
-//     `/api/orphan-wire-back/*` endpoints that require auth).
-//
-// Component ownership:
-//   - `frontend/src/components/public-kurukoo*.tsx` + `public-kurukoo-home.tsx` → PUBLIC shell.
-//   - `frontend/src/components/app-shell*.tsx` + `frontend/src/components/kurukoo/` (minus the public list above) → AUTHENTICATED shell.
-// ─────────────────────────────────────────────────────────────────────────────
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Outlet, Link, createRootRouteWithContext, useRouter, useRouterState, HeadContent, Scripts } from "@tanstack/react-router";
 import { Compass, Home, MapPin, MoreHorizontal, Sparkles } from "lucide-react";
@@ -29,7 +9,7 @@ import { PublicHome, PublicKurukooShell } from "../components/public-kurukoo";
 import { KurukooProvider } from "@/lib/kurukoo-store";
 import { getKurukooAuthState, hasTemporaryBuildEmailSession, isAllowedKurukooBuildAccount, logoutKurukoo } from "@/lib/kurukoo-auth";
 const publicPrefixes = ["/about","/blog","/capabilities","/contributors","/contact","/creators","/advertise","/developer","/explore","/discover","/help","/how-it-works","/legal","/cookies","/login","/partners","/people","/pricing","/providers","/businesses","/kurukoo-ai","/integrations","/resources","/signup","/topics","/use-cases","/opportunities","/safety"] as const;
-const authenticatedSurfacePrefixes = ["/chat","/you","/activity","/work","/notifications","/contacts","/messages","/memory","/artifacts","/calls","/subscriptions","/wallet","/settings","/agents","/connect","/provider","/advertising","/profile","/network"] as const;
+const authenticatedSurfacePrefixes = ["/chat","/you","/activity","/work","/notifications","/contacts","/messages","/memory","/artifacts","/calls","/subscriptions","/wallet","/settings","/agents","/connect","/provider","/advertising","/profile","/network","/audit","/credentials","/cards","/secure-execution"] as const;
 const moreItems = [["/work","Work"],["/topics","Topics"],["/capabilities","Capabilities"],["/provider","Providers"],["/businesses","Businesses"],["/creators","Creators"],["/advertising","Advertising"],["/pricing","Plans"],["/subscriptions","Subscriptions"],["/wallet","Wallet"],["/memory","Memory"],["/messages","Messages"],["/contacts","Contacts"],["/connect","Connect"],["/safety","Safety"],["/settings","Settings"],["/legal","Legal & policies"]] as const;
 function NotFound(){return <div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="max-w-md text-center"><p className="text-7xl font-bold">404</p><h1 className="mt-4 text-xl font-semibold">Page not found</h1><p className="mt-2 text-sm text-muted-foreground">The page does not exist or has moved.</p><Link to="/" className="mt-6 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Go to Kurukoo</Link></div></div>}
 function ErrorView({error,reset}:{error:Error;reset:()=>void}){const router=useRouter();useEffect(()=>{reportLovableError(error,{boundary:"root"});},[error]);return <div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="max-w-md text-center"><h1 className="text-xl font-semibold">This page didn't load</h1><p className="mt-2 text-sm text-muted-foreground">Try again or return to Kurukoo.</p><button type="button" onClick={()=>{router.invalidate();reset();}} className="mt-6 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Try again</button></div></div>}

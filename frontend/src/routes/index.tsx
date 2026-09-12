@@ -1,14 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowUpRight, Bell, BookOpen, Building2, ExternalLink, Focus, ShoppingBag } from "lucide-react";
+import { ArrowUpRight, Bell, BookOpen, Building2, CreditCard, ExternalLink, Focus, KeyRound, Lock, Monitor, ShoppingBag } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { Composer } from "@/components/kurukoo/composer";
 import { AIProviderDirectory } from "@/components/kurukoo/ai-provider-directory";
 import { HomeForYou } from "@/components/kurukoo/home-for-you";
 import { HomePromotionCarousel } from "@/components/kurukoo/home-promotion-carousel";
-import { DailyPicksStrip } from "@/components/kurukoo/daily-picks";
-import { QuickRepliesPanel } from "@/components/kurukoo/quick-replies";
-import { SurveyPromptCard } from "@/components/kurukoo/survey-prompt";
-import { ArtistBookingCard } from "@/components/kurukoo/artist-booking";
 import { Panel, ContextIconTile } from "@/components/kurukoo/ui";
 import { PulseControl } from "@/components/kurukoo/pulse-control";
 import { fetchAuthenticatedAd, fetchProactiveFeed, type AuthenticatedAd, type ProactiveOpportunity } from "@/lib/kurukoo-api";
@@ -47,14 +43,6 @@ export function HomePage() {
 
     <HomeForYou />
 
-    {/* Authenticated dashboard widgets for the new backend endpoints.
-        DailyPicksStrip is shown on both shells (public + auth). The other three
-        are auth-only (they call /api/orphan-wire-back endpoints that require auth). */}
-    <div className="grid min-w-0 gap-4 lg:grid-cols-2">
-      <div className="space-y-4"><DailyPicksStrip /><QuickRepliesPanel /></div>
-      <div className="space-y-4"><SurveyPromptCard /><ArtistBookingCard /></div>
-    </div>
-
     <div className="grid min-w-0 gap-4 lg:grid-cols-2 xl:grid-cols-[minmax(0,.65fr)_minmax(0,.9fr)_minmax(0,1.08fr)]">
       <Panel className="overflow-hidden p-0"><CardHeader title="What needs your attention" count={attention.length} />{attention.length ? <div className="divide-y divide-border/70">{attention.map((item) => <ActiveHomeRequest key={item.id} title={item.title} detail={item.detail} timing={item.updated} needsYou />)}</div> : <div className="px-4 py-5 text-[12px] text-muted-foreground">Nothing needs your attention.</div>}<div className="border-t border-border/60 px-4 py-3"><SectionAction to="/activity">Open Activity</SectionAction></div></Panel>
       <Panel className="overflow-hidden p-0"><CardHeader title="What’s moving" count={moving.length} /><div className="pb-1">{moving.length ? moving.map((item) => <div key={item.id} className="flex items-start gap-2.5 px-4 py-2.5"><span className="grid size-7 place-items-center rounded-full bg-elevated"><Focus className="size-3.5" /></span><div className="min-w-0 flex-1"><p className="text-[13px] font-medium">{item.title}</p><p className="text-[11.5px] text-muted-foreground">{item.detail}</p></div><span className="ml-auto text-[10.5px] text-muted-foreground">{item.updated}</span></div>) : <div className="px-4 py-5 text-[12px] text-muted-foreground">Nothing is moving.</div>}</div><div className="px-4 py-3"><SectionAction to="/work">Open Work</SectionAction></div></Panel>
@@ -74,6 +62,18 @@ export function HomePage() {
         <Panel className="p-4"><div className="mb-3 flex items-center justify-between"><h2 className="text-[14px] font-semibold">Explore</h2><SectionAction to="/explore">Open</SectionAction></div><p className="text-[12px] text-muted-foreground">People, places, services and opportunities.</p></Panel>
         <Link to="/resources" className="group block rounded-[18px] border border-border bg-surface p-4 hover:bg-elevated"><div className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-xl bg-elevated"><BookOpen className="size-4" /></span><div><h2 className="text-[14px] font-semibold">Resources</h2><p className="text-[11.5px] text-muted-foreground">Guides for getting more from Kurukoo.</p></div><ArrowUpRight className="ml-auto size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" /></div></Link>
       </div>
+    </div>
+
+    <div className="grid gap-4 md:grid-cols-2">
+      <Panel className="overflow-hidden p-0">
+        <div className="border-b border-border/70 px-4 py-3"><h2 className="text-[14px] font-semibold">Secure</h2></div>
+        <div className="divide-y divide-border/70">
+          <Link to="/audit" className="flex items-center gap-3 px-4 py-3 hover:bg-elevated"><Lock className="size-4 text-muted-foreground" /><div className="min-w-0 flex-1"><p className="text-[13px] font-medium">Activity & audit</p><p className="text-[11.5px] text-muted-foreground">What you asked, planned and done</p></div><ArrowUpRight className="size-4 text-muted-foreground" /></Link>
+          <Link to="/credentials" className="flex items-center gap-3 px-4 py-3 hover:bg-elevated"><KeyRound className="size-4 text-muted-foreground" /><div className="min-w-0 flex-1"><p className="text-[13px] font-medium">Secure credentials</p><p className="text-[11.5px] text-muted-foreground">Secrets Kurukoo can use but never see</p></div><ArrowUpRight className="size-4 text-muted-foreground" /></Link>
+          <Link to="/cards" className="flex items-center gap-3 px-4 py-3 hover:bg-elevated"><CreditCard className="size-4 text-muted-foreground" /><div className="min-w-0 flex-1"><p className="text-[13px] font-medium">One-time cards</p><p className="text-[11.5px] text-muted-foreground">Virtual cards with purchase protection</p></div><ArrowUpRight className="size-4 text-muted-foreground" /></Link>
+          <Link to="/secure-execution" className="flex items-center gap-3 px-4 py-3 hover:bg-elevated"><Monitor className="size-4 text-muted-foreground" /><div className="min-w-0 flex-1"><p className="text-[13px] font-medium">Secure execution</p><p className="text-[11.5px] text-muted-foreground">Isolated browser sessions</p></div><ArrowUpRight className="size-4 text-muted-foreground" /></Link>
+        </div>
+      </Panel>
     </div>
   </div>;
 }
