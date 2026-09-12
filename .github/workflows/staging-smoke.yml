@@ -12,7 +12,7 @@ permissions:
 jobs:
   canonical-provider-loop:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,6 +29,12 @@ jobs:
         run: npm run test:fulfilment-storefront-integration
       - name: Africa's Talking callback contract
         run: npm run test:africastalking-sms-callback
+      - name: Unified presence contract
+        run: npm run test:presence-routes
+      - name: Execution network contract
+        run: npm run test:execution-network-contract
+      - name: External provider activation contract or live probe
+        run: npm run test:external-provider-activation
 
   deployed-callback-routing:
     needs: canonical-provider-loop
