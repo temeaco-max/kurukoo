@@ -1,39 +1,75 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
-import fs from 'node:fs';
-import path from 'node:path';
 import { buildConversationTurnContract, buildConversationalSystemDirective } from './conversationTurnContractService.js';
 import { getStudentModelRuntimeSelection } from './studentModelRegistryService.js';
 
-// Per AGENTS.md Rule #25 (External Dependencies): do not let a missing native
-// binding (e.g. onnxruntime-node on darwin/x64) block useful local behaviour.
-// The transformers package eagerly requires onnxruntime-node at import time,
-// so we defer the import until a local pipeline is actually requested. When
-// the local pipeline is disabled or unavailable, the service remains usable
-// via the deterministic fallback path.
-type TransformersModule = typeof import('@huggingface/transformers');
-let transformersModule: TransformersModule | null = null;
-let transformersLoadError: Error | null = null;
-async function loadTransformers(): Promise<TransformersModule | null> {
-  if (transformersModule) return transformersModule;
-  if (transformersLoadError) return null;
-  try {
-    transformersModule = await import('@huggingface/transformers');
-    return transformersModule;
-  } catch (err: any) {
-    transformersLoadError = err instanceof Error ? err : new Error(String(err));
-    lastInferenceFailure = 'local_inference_failed';
-    console.warn('[SmolLM2] transformers package unavailable, local pipeline disabled:', transformersLoadError.message);
-    return null;
+// Local student-model inference goes through the Ollama REST API
+// (http://localhost:11434/api/generate) rather than @huggingface/transformers.
+//
+// This eliminates the native onnxruntime-node binding dependency that could
+// block server startup on certain platforms (e.g. darwin/x64), and lets any
+// Ollama-served model act as the Kurukoo student boundary — smollm2:360m,
+// qwen2.5:0.5b-instruct, etc.  Models must be pre-pulled with `ollama pull`.
+//
+// When KURUKOO_SMOLLM2_LOCAL is not 'true' or Ollama cannot respond, the
+// service falls back to the bounded deterministic template path.
+
+const OLLAMA_HOST = String(process.env.KURUKOO_OLLAMA_HOST || 'http://localhost:11434').trim().replace(/\/$/, '');
+
+// Default to the Ollama model tag for SmolLM2-360M.
+// Any Ollama model tag (or any HuggingFace-style repo id — see toOllamaModelName)
+// may be configured via SMOLLM2_MODEL.
+const DEFAULT_MODEL_NAME = 'smollm2:360m';
+const DEFAULT_FALLBACK_MODEL_NAME = DEFAULT_MODEL_NAME;
+
+/**
+ * Convert a model identifier to an Ollama-compatible tag.
+ *
+ * Accepts either an Ollama-style tag (e.g. "smollm2:360m", "qwen2.5:0.5b-instruct")
+ * or a HuggingFace-style repo id (e.g. "HuggingFaceTB/SmolLM2-360M-Instruct",
+ * "Qwen/Qwen2.5-0.5B-Instruct") and returns the corresponding Ollama tag.
+ */
+function toOllamaModelName(modelName: string): string {
+  const name = String(modelName || '').trim();
+  if (!name) return name;
+  const lower = name.toLowerCase();
+
+  // Already an Ollama-style name (has a tag colon, no namespace slash).
+  if (lower.includes(':') && !lower.includes('/')) {
+    return name;
   }
+
+  // HuggingFaceTB/SmolLM2-360M-Instruct → smollm2:360m
+  const smolMatch = lower.match(/^huggingfacetb\/smollm2-(\d+(?:\.\d+)?)([bm])-instruct$/);
+  if (smolMatch) {
+    return `smollm2:${smolMatch[1]}${smolMatch[2]}`;
+  }
+
+  // Qwen/Qwen2.5-0.5B-Instruct → qwen2.5:0.5b-instruct
+  const qwen25Match = lower.match(/^qwen\/qwen2\.5-(\d+(?:\.\d+)?)b(?:-instruct)?$/);
+  if (qwen25Match) {
+    return `qwen2.5:${qwen25Match[1]}b-instruct`;
+  }
+
+  // Qwen/Qwen2-7B-Instruct → qwen2:7b-instruct
+  const qwen2Match = lower.match(/^qwen\/qwen2-(\d+(?:\.\d+)?)b(?:-instruct)?$/);
+  if (qwen2Match) {
+    return `qwen2:${qwen2Match[1]}b-instruct`;
+  }
+
+  // Generic fallback: strip the namespace prefix.
+  if (lower.includes('/')) {
+    return name.split('/').pop() || name;
+  }
+
+  return name;
 }
 
-const DEFAULT_MODEL_NAME = 'HuggingFaceTB/SmolLM2-360M-Instruct';
-const DEFAULT_FALLBACK_MODEL_NAME = DEFAULT_MODEL_NAME;
 function getModelName(): string { return getStudentModelRuntimeSelection().model || DEFAULT_MODEL_NAME; }
 function getFallbackModelName(): string { return String(process.env.SMOLLM2_FALLBACK_MODEL || DEFAULT_FALLBACK_MODEL_NAME).trim() || DEFAULT_FALLBACK_MODEL_NAME; }
+function getOllamaModelName(): string { return toOllamaModelName(getModelName()); }
+function getOllamaFallbackModelName(): string { return toOllamaModelName(getFallbackModelName()); }
+
 let activeModelName: string | null = null;
-let localPipeline: any = null;
-let localPipelinePromise: Promise<any> | null = null;
 let localBusy = false;
 let lastInferenceSource: 'local' | 'fallback' = 'fallback';
 let lastInferenceFailure: 'local_inference_failed' | 'local_model_fallback' | 'hf_serverless_runtime_deprecated' | 'no_model_boundary_configured' | null = null;
@@ -54,35 +90,77 @@ export function getSmolLM2RuntimeStatus(): { model: string; source: 'local' | 'f
   return { model: activeModelName || selection.model, source: lastInferenceSource, available: lastInferenceSource !== 'fallback', dtype: String(process.env.SMOLLM2_DTYPE || 'q4'), localEnabled, serverlessRuntime: 'deprecated', readiness: lastInferenceSource !== 'fallback' ? 'available' : 'fallback', lastFailure: lastInferenceFailure, executionMode: lastInferenceExecutionMode, latencyMs: lastInferenceLatencyMs, actualModel: lastInferenceActualModel, requestedStage: selection.requestedStage, selectedStage: selection.selectedStage, registrySource: selection.source, ...(selection.fallbackReason ? { registryFallbackReason: selection.fallbackReason } : {}) };
 }
 
-async function getLocalPipeline(modelName = getModelName()): Promise<any> {
-  if (localPipeline && activeModelName === modelName) return localPipeline;
-  if (!localPipelinePromise || activeModelName !== modelName) {
-    // Lazy-load transformers to avoid eager onnxruntime-node binding errors
-    // (e.g. missing darwin/x64 binary) blocking the entire server start.
-    const tf = await loadTransformers();
-    if (!tf) { localPipelinePromise = Promise.resolve(null); return null; }
-    const { pipeline, env } = tf;
-    // Offline-first loading: when a cached copy exists (transformers .cache),
-    // never reach out to the HF CDN for a version check — that network probe
-    // can hang the first chat turn indefinitely. Remote fetch stays available
-    // only when no local cache has been provisioned yet.
-    const cached = (() => { try { return fs.existsSync(path.join(String(env.cacheDir || ''), ...modelName.split('/'))) && fs.readdirSync(path.join(String(env.cacheDir || ''), ...modelName.split('/'))).length > 0; } catch { return false; } })();
-    if (cached) { env.allowRemoteModels = false; env.allowLocalModels = true; }
-    localPipelinePromise = pipeline('text-generation', modelName, { dtype: String(process.env.SMOLLM2_DTYPE || 'q4') as any, device: 'cpu' } as any) as Promise<any>;
-  }
-  localPipeline = await localPipelinePromise;
-  activeModelName = modelName;
-  return localPipeline;
+interface OllamaGenerateOptions {
+  temperature?: number;
+  top_p?: number;
+  top_k?: number;
+  min_p?: number;
+  tfs?: number;
+  typical?: number;
+  repeat_penalty?: number;
+  repeat_last_prompt?: number;
+  num_predict?: number;
+  num_ctx?: number;
+  num_batch?: number;
+  num_gpu?: number;
+  num_thread?: number;
+  stop?: string[];
 }
+
+interface OllamaGenerateResponse {
+  model: string;
+  created_at: string;
+  response: string;
+  done: boolean;
+  context?: number[];
+  prompt_eval_count?: number;
+  prompt_eval_duration?: number;
+  eval_count?: number;
+  eval_duration?: number;
+  total_duration?: number;
+  load_duration?: number;
+}
+
+/**
+ * Call Ollama's /api/generate endpoint (non-streaming, raw prompt).
+ * The model is expected to be already pulled via `ollama pull <name>`.
+ * With raw:true the prompt is sent verbatim — no Ollama template wrapping.
+ */
+async function ollamaGenerate(prompt: string, model: string, options: OllamaGenerateOptions): Promise<OllamaGenerateResponse> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), Number(process.env.OLLAMA_TIMEOUT_MS || 30_000));
+  try {
+    const response = await fetch(`${OLLAMA_HOST}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model,
+        prompt,
+        stream: false,
+        raw: true,
+        keep_alive: String(process.env.OLLAMA_KEEP_ALIVE || '5m'),
+        options,
+      }),
+    });
+    if (!response.ok) {
+      let detail = '';
+      try { detail = await response.text(); } catch { /* best-effort detail */ }
+      throw new Error(`Ollama API error: ${response.status} ${response.statusText}${detail ? ` — ${detail}` : ''}`);
+    }
+    return (await response.json()) as OllamaGenerateResponse;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function verifyLocalSmolLM2Tokenization(text = 'Kurukoo needs one concise local tokenization check.'): Promise<{ model: string; tokenCount: number }> {
-  const generator = await getLocalPipeline();
-  const tokenizer = generator?.tokenizer;
-  if (typeof tokenizer !== 'function') throw new Error('Local SmolLM2 pipeline did not expose a tokenizer.');
-  const encoded = await tokenizer(String(text), { truncation: true, max_length: 64 });
-  const ids = encoded?.input_ids?.data || encoded?.input_ids || [];
-  const tokenCount = Number(ids?.length || 0);
-  if (!Number.isFinite(tokenCount) || tokenCount < 1) throw new Error('Local SmolLM2 tokenizer returned no token IDs.');
-  return { model: activeModelName || getModelName(), tokenCount };
+  const ollamaModel = activeModelName || getOllamaModelName();
+  const response = await ollamaGenerate(String(text), ollamaModel, { num_predict: 1 });
+  const tokenCount = response.prompt_eval_count || 0;
+  if (tokenCount < 1) throw new Error('Ollama did not return a token count; the model may not be loaded.');
+  activeModelName = ollamaModel;
+  return { model: ollamaModel, tokenCount };
 }
 
 function buildPrompt(prompt: string, systemPrompt?: string): string {
@@ -127,24 +205,36 @@ export function querySmolLM2Diagnostics(): { requestedModel: string; actualModel
   return { requestedModel: getModelName(), actualModel: status.actualModel, executionMode: status.executionMode, latencyMs: status.latencyMs, fallbackReason: status.lastFailure, source: status.source, available: status.available, serverlessRuntime: status.serverlessRuntime };
 }
 
-// Generation config: verified against @huggingface/transformers 3.8.1
-// (do_sample and repetition_penalty are supported GenerationConfig fields).
-// Defaults are deterministic/greedy for short utility answers; all overridable via env.
-function getGenerationConfig(): { max_new_tokens: number; do_sample: boolean; temperature?: number; repetition_penalty?: number; return_full_text: boolean } {
+// Generation config: deterministic/greedy by default for short utility
+// answers; all overridable via env. Maps to Ollama /api/generate options.
+function getGenerationConfig(): { max_new_tokens: number; do_sample: boolean; temperature?: number; repetition_penalty?: number } {
   const doSample = String(process.env.SMOLLM2_DO_SAMPLE || 'false').trim().toLowerCase() === 'true';
   const maxNewTokens = Math.max(16, Math.min(Number(process.env.SMOLLM2_MAX_NEW_TOKENS || 96) || 96, 512));
   const repetitionPenaltyRaw = Number(process.env.SMOLLM2_REPETITION_PENALTY || 1.15);
-  const config: { max_new_tokens: number; do_sample: boolean; temperature?: number; repetition_penalty?: number; return_full_text: boolean } = {
+  const config: { max_new_tokens: number; do_sample: boolean; temperature?: number; repetition_penalty?: number } = {
     max_new_tokens: maxNewTokens,
     do_sample: doSample,
     repetition_penalty: Number.isFinite(repetitionPenaltyRaw) && repetitionPenaltyRaw >= 1 ? repetitionPenaltyRaw : undefined,
-    return_full_text: false,
   };
   if (doSample) config.temperature = 0.2;
   return config;
 }
 function getRetryMaxNewTokens(): number {
   return Math.min(getGenerationConfig().max_new_tokens, Math.max(16, Math.min(Number(process.env.SMOLLM2_RETRY_MAX_NEW_TOKENS || 64) || 64, getGenerationConfig().max_new_tokens)));
+}
+
+/** Map the internal generation config to Ollama /api/generate options. */
+function toOllamaOptions(config: ReturnType<typeof getGenerationConfig>): OllamaGenerateOptions {
+  const options: OllamaGenerateOptions = {
+    num_predict: config.max_new_tokens,
+    repeat_penalty: config.repetition_penalty,
+  };
+  if (config.do_sample) {
+    options.temperature = config.temperature ?? 0.2;
+  } else {
+    options.temperature = 0;
+  }
+  return options;
 }
 
 export async function querySmolLM2(prompt: string, systemPrompt?: string): Promise<string> {
@@ -154,32 +244,42 @@ export async function querySmolLM2(prompt: string, systemPrompt?: string): Promi
     try {
       await acquireLocal();
       try {
-        let generator;
-      try {
-        generator = await getLocalPipeline(getModelName());
-      } catch (primaryError) {
-        if (getFallbackModelName() === getModelName()) throw primaryError;
-        console.warn('[SmolLM2] Primary local checkpoint unavailable; trying bounded fallback checkpoint.');
-        localPipeline = null;
-        localPipelinePromise = null;
-        lastInferenceFailure = 'local_model_fallback';
-        generator = await getLocalPipeline(getFallbackModelName());
-      }
-        const output = await generator(input, getGenerationConfig());
-        const first = Array.isArray(output) ? output[0] : output;
-        const text = typeof first === 'object' && first && 'generated_text' in first ? String(first.generated_text || '').trim() : '';
+        const config = getGenerationConfig();
+        const ollamaOpts = toOllamaOptions(config);
+        const primaryModel = getOllamaModelName();
+        const fallbackModel = getOllamaFallbackModelName();
+        let response: OllamaGenerateResponse | null = null;
+        let modelUsed = primaryModel;
+
+        try {
+          response = await ollamaGenerate(input, primaryModel, ollamaOpts);
+        } catch (primaryError: unknown) {
+          if (fallbackModel === primaryModel) throw primaryError;
+          console.warn('[SmolLM2] Primary local model unavailable; trying bounded fallback checkpoint.');
+          lastInferenceFailure = 'local_model_fallback';
+          modelUsed = fallbackModel;
+          response = await ollamaGenerate(input, fallbackModel, ollamaOpts);
+        }
+
+        const text = (response?.response || '').trim();
         if (text) {
           const cleaned = sanitizeGeneratedText(text.replace(/<\|im_end\|>[\s\S]*$/g, ''));
-          if (cleaned && !containsInternalGeneration(cleaned)) { lastInferenceSource = 'local'; if (lastInferenceFailure !== 'local_model_fallback') lastInferenceFailure = null; recordInference('local_pipeline', activeModelName || getModelName(), startedAt); return cleaned; }
+          if (cleaned && !containsInternalGeneration(cleaned)) { lastInferenceSource = 'local'; if (lastInferenceFailure !== 'local_model_fallback') lastInferenceFailure = null; activeModelName = modelUsed; recordInference('local_pipeline', activeModelName, startedAt); return cleaned; }
         }
+
+        // Retry: simpler system prompt per the conversational contract
         const retryInput = buildPrompt(prompt, 'You are Kurukoo. Answer the user directly in one or two natural sentences. For ambiguity, ask one concise clarifying question. For failure, explain that completion is unconfirmed and offer retry, resume, or cancellation. Do not use headings, delimiters, role labels, context narration, or internal architecture language.');
-        const retryOutput = await generator(retryInput, { ...getGenerationConfig(), max_new_tokens: getRetryMaxNewTokens() });
-        const retryFirst = Array.isArray(retryOutput) ? retryOutput[0] : retryOutput;
-        const retryText = typeof retryFirst === 'object' && retryFirst && 'generated_text' in retryFirst ? String(retryFirst.generated_text || '').trim() : '';
-        const retryCleaned = sanitizeGeneratedText(retryText.replace(/<\|im_end\|>[\s\S]*$/g, ''));
-        if (retryCleaned && !containsInternalGeneration(retryCleaned)) { lastInferenceSource = 'local'; if (lastInferenceFailure !== 'local_model_fallback') lastInferenceFailure = null; recordInference('local_pipeline', activeModelName || getModelName(), startedAt); return retryCleaned; }
+        const retryConfig = { ...getGenerationConfig(), max_new_tokens: getRetryMaxNewTokens() };
+        const retryResponse = await ollamaGenerate(retryInput, modelUsed, toOllamaOptions(retryConfig));
+        const retryText = sanitizeGeneratedText((retryResponse?.response || '').replace(/<\|im_end\|>[\s\S]*$/g, ''));
+        if (retryText && !containsInternalGeneration(retryText)) { lastInferenceSource = 'local'; if (lastInferenceFailure !== 'local_model_fallback') lastInferenceFailure = null; activeModelName = modelUsed; recordInference('local_pipeline', activeModelName, startedAt); return retryText; }
       } finally { releaseLocal(); }
-    } catch (err: any) { lastInferenceFailure = 'local_inference_failed'; console.warn('[SmolLM2] Local inference failed:', err?.message || err); releaseLocal(); }
+    } catch (err: unknown) {
+      lastInferenceFailure = 'local_inference_failed';
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn('[SmolLM2] Local Ollama inference failed:', message);
+      releaseLocal();
+    }
   }
   if (process.env.KURUKOO_SMOLLM2_LOCAL === 'true' && lastInferenceSource === 'fallback' && !lastInferenceFailure) lastInferenceFailure = 'local_inference_failed';
   if (process.env.KURUKOO_SMOLLM2_LOCAL !== 'true') {
