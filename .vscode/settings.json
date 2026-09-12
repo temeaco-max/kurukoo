@@ -1,0 +1,71 @@
+{
+    // Ollama / LiteLLM proxy settings
+    // The LiteLLM proxy runs on port 4000 and routes to local Ollama (port 11434)
+    // Start it with: npm run litellm:start
+    "litellm-vscode-chat.servers": [
+        {
+            "label": "LiteServer (Local Ollama)",
+            "baseUrl": "http://localhost:4000"
+        }
+    ],
+    // Opilot extension connects directly to Ollama
+    "selfagency.opilot.opilot.host": "http://localhost:11434",
+    "selfagency.opilot.ignoreSslErrors": false,
+    "selfagency.opilot.localModelRefreshInterval": 30,
+    "selfagency.opilot.showConnectionFailurePopup": true,
+    "selfagency.opilot.streamLogs": true,
+    "selfagency.opilot.enableInlineCompletions": true,
+    "selfagency.opilot.maxContextTokens": 0,
+    "selfagency.opilot.repetitionDetection": "conservative",
+
+    // Llama for VS Code IDE - configured to use Ollama OpenAI-compatible API
+    "llama-vscode.enabled": true,
+    "llama-vscode.endpoint": "http://localhost:11434/v1",
+    "llama-vscode.endpoint_chat": "http://localhost:11434/v1",
+    "llama-vscode.endpoint_tools": "http://localhost:11434/v1",
+    "llama-vscode.endpoint_embeddings": "http://localhost:11434/v1",
+    "llama-vscode.api_key": "",
+    "llama-vscode.api_key_chat": "",
+    "llama-vscode.n_predict": 2048,
+    "llama-vscode.completion_models_list": [
+        {
+            "name": "SmolLM2-360M (via Ollama)",
+            "localStartCommand": "",
+            "endpoint": "http://localhost:11434/v1",
+            "aiModel": "smollm2:360m",
+            "isKeyRequired": false
+        }
+    ],
+    "llama-vscode.chat_models_list": [
+        {
+            "name": "SmolLM2-360M (via Ollama)",
+            "localStartCommand": "",
+            "endpoint": "http://localhost:11434/v1",
+            "aiModel": "smollm2:360m",
+            "isKeyRequired": false
+        }
+    ],
+    "llama-vscode.envs_list": [
+        {
+            "label": "Local Ollama (SmolLM2)",
+            "endpoint": "http://localhost:11434/v1",
+            "api_key": "",
+            "llama_model": "smollm2:360m",
+            "model": "smollm2:360m",
+            "n_predict": 2048,
+            "temperature": 0.7
+        }
+    ],
+
+    // Editor settings for Cline coding experience
+    "editor.inlineSuggest.enabled": true,
+    "editor.inlineSuggest.showToolbar": "visible",
+    "editor.quickSuggestions": {
+        "other": true,
+        "inlineSuggestion": true,
+        "comments": "none",
+        "strings": "none"
+    },
+    "terminal.integrated.enablePersistentSessionScrollback": true,
+    "terminal.integrated.commandsToSkipShell": []
+}

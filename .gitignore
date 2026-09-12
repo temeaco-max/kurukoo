@@ -27,6 +27,8 @@ ai-studio/
 github-workspace/
 github-sync/
 .agents/
+# Continue.dev / other local AI agent workspace state — machine-specific model paths
+.continue/
 
 
 # Local GitHub/agent credentials and token material

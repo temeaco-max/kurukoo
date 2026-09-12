@@ -1,0 +1,69 @@
+# LiteLLM Proxy configuration for Kurukoo
+# Routes requests to local and remote Ollama instances
+
+model_list:
+  # Local Ollama instance
+  - model_name: smollm2-local
+    litellm_params:
+      model: ollama/smollm2:360m
+      api_base: http://localhost:11434
+      mock: false
+    metadata:
+      context_length: 2048
+      provider: ollama_local
+
+  - model_name: gemma3-local
+    litellm_params:
+      model: ollama/gemma3:4b
+      api_base: http://localhost:11434
+      mock: false
+    metadata:
+      context_length: 8192
+      provider: ollama_local
+
+  - model_name: qwen3vl-local
+    litellm_params:
+      model: ollama/qwen3-vl:2b-instruct-q8_0
+      api_base: http://localhost:11434
+      mock: false
+    metadata:
+      context_length: 8192
+      provider: ollama_local
+
+  - model_name: gemma4-local
+    litellm_params:
+      model: ollama/gemma4:e2b
+      api_base: http://localhost:11434
+      mock: false
+    metadata:
+      context_length: 8192
+      provider: ollama_local
+
+  # Remote Ollama instance - configure OLLAMA_REMOTE_HOST env var
+  # Example: OLLAMA_REMOTE_HOST=http://192.168.1.100:11434
+  - model_name: smollm2-remote
+    litellm_params:
+      model: ollama/smollm2:360m
+      api_base: ${OLLAMA_REMOTE_HOST:http://localhost:11434}
+      mock: false
+    metadata:
+      context_length: 2048
+      provider: ollama_remote
+
+litellm_settings:
+  host: "0.0.0.0"
+  port: 4000
+  tls: false
+  enable_cli_client: false
+  drop_missing_transform: true
+
+router_settings:
+  routing_strategy: lowest-latency
+
+general_settings:
+  cors_allowed_domains:
+    - "http://localhost:3000"
+    - "http://localhost:5173"
+    - "http://localhost:4000"
+    - "https://*.kurukoo.ai"
+  allow_model_control: true

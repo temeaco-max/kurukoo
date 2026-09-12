@@ -1,0 +1,93 @@
+# Cline Rules for Kurukoo Project
+
+## Mission
+Kurukoo helps people get things done. Make Kurukoo more useful, capable, reliable, coherent, and easier for real people to use.
+
+## Primary Behavior Guidelines
+
+- Prefer reusing existing components and architecture over creating new ones
+- Prefer local resources over unnecessary downloads (model caching, local-first)
+- Use the cheapest sufficient model/provider for each task
+- Save useful work locally immediately
+- Do not repeatedly inspect the same file
+- Prefer targeted verification over test theater
+
+## Model & Provider Routing
+
+- Simple classification → SmolLM2 (local)
+- Basic routing → Llama 3.2 (local/remote)
+- Conversation understanding → Claude (remote)
+- Use local SmolLM2 for high-volume semantic work
+- Use stronger models only for escalation/teacher paths
+- Never send the same request through multiple providers
+- Cache and reuse results whenever possible
+
+## Code Quality Standards
+
+- TypeScript strict mode. No `any` - use `unknown` and narrow
+- All async functions must use try/catch and never silently swallow errors
+- Use absolute imports (`@/...`) for cross-directory references
+- No `console.log` in production code
+- Never expose private env vars client-side (use API routes)
+- Validate all inputs server-side
+
+## Caching & Performance
+
+- High-frequency Firestore reads MUST use `cacheGet()` with appropriate TTL
+- Cache invalidation: any write to cached data must call `cacheInvalidate()`
+- If page JS exceeds 500KB gzipped, use dynamic import
+- Target: LCP < 2.5s, FID < 100ms, CLS < 0.1
+
+## Authentication & Security
+
+- Use Supabase Auth exclusively (no Firebase Auth)
+- Every protected API route must start with `supabase.auth.getUser(token)`
+- All AI/search/email calls MUST go through `lib/router.ts`
+- For file uploads: verify magic bytes server-side; jpeg, png, webp only; max 5MB
+- Never log PII (email, phone, postcode, payment data)
+- Add `aria-label` to all icon-only buttons
+- Use `next/image` for all images (with WebP)
+
+## Realtime & Data
+
+- Only allowed `onSnapshot`: messages filtered by threadId, single bookings document
+- Everything else uses one-time queries with `cacheGet()`
+- Paginate all Firestore list queries (max 20 items per page)
+- Store monetary values in pence (integers), never floats
+- Commission: £2.00 minimum waived for first 90 days after launch
+
+## Prohibited Actions
+
+- Do not modify `firestore.rules` or `firestore.indexes.json`
+- Do not change the Stripe webhook handler
+- Do not change commission calculation logic in `utils/commission.ts`
+- Do not change URL slug patterns
+- Do not add new npm packages without approval
+- Do not store PII in localStorage
+
+## Mobile Navigation
+
+Must contain exactly five items in order: Home, Discover, Post, Bookings, Account.
+
+## Product Direction
+
+- Chat is the conversational control surface
+- Native pages are supporting control surfaces for visual status, history, work
+- Keep the experience feeling like ONE assistant, not disconnected apps
+- Pages must work together, not behave like competing products
+
+## Missing Design Defaults
+
+- Font: Inter (system-fallback)
+- Primary colour: #2E7D32 (green-700)
+- Border radius: rounded-lg (8px)
+- Shadow: shadow-sm
+- Spacing: Tailwind default (4px base)
+
+## Verification Standards
+
+Always validate the actual thing changed:
+- Relevant unit test
+- Typecheck (tsc --noEmit)
+- Targeted runtime test
+Remote CI is for final verification, not interactive development.
