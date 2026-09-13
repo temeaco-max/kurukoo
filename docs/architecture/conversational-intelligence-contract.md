@@ -293,16 +293,24 @@ KURUKOO INTELLIGENCE RUNTIME
   │     → intelligence decision (mode, tier, difficulty, action policy)
   │     → routing signal (FastText explicitly secondary)
   │
-    ├─ selectCapabilities(understanding, context)
+      ├─ reason(understanding, input)
+  │     → evaluates escalation need (shouldEscalateToAi + routing signal)
+  │     → if escalation required: modelRouter.complete(task='planning')
+  │       ↳ model selection via aiInferencePolicy (Poolside → hosted → local)
+  │       ↳ model execution via unifiedAiEngine.queryUnifiedAI
+  │     → if deterministic: short-circuits, no model call
+  │     → produces IntelligenceReasoning (plan, intent, escalation, confidence)
+  │
+  ├─ selectCapabilities(understanding, reasoning, context)
   │     → intent routing (routeIntent)
   │     → returns capability escalation signal (shouldEscalateToAi)
   │     (capability orchestration via buildAICapabilityOrchestration is
   │      performed by canonicalChatTurnService where the full turn contract
   │      — profile facts, routing card data, active context IDs — is available)
   │
-  └─ processIntelligenceTurn(input)
-        → understand → selectCapabilities
-        → returns IntelligenceTurnResult
+    └─ processIntelligenceTurn(input)
+        → understand → reason → selectCapabilities
+        → returns IntelligenceTurnResult (understanding + reasoning + routing)
 ```
 
 **FastText boundary:** `classifyAiRoutingSignal` remains explicitly secondary. The canonical routing order is rules (conversation acts) → skill catalogue. FastText is reached only when both fail, with capped confidence (`FASTTEXT_HINT_MAX_CONFIDENCE = 0.7`) below the escalation threshold, so a FastText-only hint always escalates to the model path.
@@ -324,6 +332,7 @@ The canonical Chat path is now:
   → canonicalChatTurnService.processCanonicalChatTurn
     → Kurukoo Intelligence Runtime (processIntelligenceTurn)
       → understand (context + semantic + intelligence decision)
+      → reason (modelRouter planning; short-circuits for deterministic turns)
       → selectCapabilities (intent routing + capability orchestration)
         → canonical domain service / capability (execution)
       → canonical response generation

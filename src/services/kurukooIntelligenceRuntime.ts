@@ -38,6 +38,7 @@ import type { SemanticConversationInterpretation } from './semanticConversationI
 import decideConversationIntelligence, { type ConversationIntelligenceDecision, type ConversationIntelligenceInput } from './conversationIntelligenceService.js';
 import type { AICapabilityOrchestrationDecision } from './aiCapabilityOrchestrator.js';
 import type { ConversationTurnContract } from './conversationTurnContractService.js';
+import { complete, type ModelCompletionResult } from './modelRouter.js';
 import type { ConversationalContextHint, AIProvider } from './modelRouter.js';
 import type { IntentRoutingResult } from '../types.js';
 import { classifyAiRoutingSignal, shouldEscalateToAi, type AiRoutingSignal } from './aiRoutingConvergence.js';
@@ -72,6 +73,30 @@ export interface IntelligenceRoutingDecision {
   routing: IntentRoutingResult;
   capabilityOrchestration: AICapabilityOrchestrationDecision | null;
   capabilityEscalatedToAi: boolean;
+}
+
+/**
+ * Phase 1.5: Reason.
+ *
+ * The Intelligence Runtime's reasoning/planning step. This is the canonical
+ * boundary where the Runtime decides whether a capable model is needed for
+ * planning and produces a brief plan that guides capability selection.
+ *
+ * A real model call (via modelRouter.complete with task 'planning') passes
+ * through this step when escalation is required. When the deterministic
+ * routing signal already resolved the turn (rules/catalogue with high
+ * confidence and no escalation), the Runtime short-circuits — no model call
+ * is made and the plan remains empty.
+ */
+export interface IntelligenceReasoning {
+  plan: string[];
+  intent: string;
+  requiresEscalation: boolean;
+  modelUsed?: string;
+  providerUsed?: string;
+  confidence: number;
+  rationale?: string;
+  escalationReason?: string;
 }
 
 
@@ -168,6 +193,193 @@ export async function understand(
 export { buildContextHintFromDecision as _buildContextHintFromDecision };
 
 // ---------------------------------------------------------------------------
+// Phase 1.5: Reason — model-based reasoning & planning through modelRouter
+// ---------------------------------------------------------------------------
+
+const REASONING_SYSTEM_PROMPT = `You are Kurukoo's reasoning layer. You analyze the user's message and the routing signal already produced by the deterministic layer (rules + skill catalogue + FastText hint), and you produce a brief plan for how Kurukoo should respond.
+
+You are NOT the execution authority. The canonical turn owner (canonicalChatTurnService) remains authoritative for all state mutation, authorization, payment, evidence, and real-world outcomes. You do NOT execute, mutate, or persist state. You do NOT invent providers, prices, availability, bookings, payments, delivery, ETAs, or completed outcomes.
+
+Return ONLY valid JSON with these keys:
+- plan: array of 1-5 concise next-step descriptions (string[])
+- intent: concise semantic intent label (string)
+- escalation: boolean — does this require a hosted/capable model rather than local first
+- confidence: number 0..1
+- rationale: brief internal explanation (string)
+
+Do not include prose, notes, or code fences outside the JSON.`;
+
+/** Parse a JSON object from model output, tolerating markdown fences and trailing text. */
+function safeParseJsonObject(text: string): Record<string, unknown> | null {
+  const source = String(text || '').trim();
+  const candidates = [source, source.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim()];
+  for (const candidate of candidates) {
+    try {
+      const value = JSON.parse(candidate);
+      if (value && typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
+    } catch {}
+  }
+  const first = source.indexOf('{');
+  const last = source.lastIndexOf('}');
+  if (first >= 0 && last > first) {
+    try {
+      const value = JSON.parse(source.slice(first, last + 1));
+      if (value && typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
+    } catch {}
+  }
+  return null;
+}
+
+function clampConfidence(value: unknown): number {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.max(0, Math.min(1, number)) : 0;
+}
+
+/**
+ * Build the reasoning prompt from the understanding output. The prompt carries
+ * the deterministic routing signal, context summary, and intelligence decision
+ * so the model can reason on top of — not instead of — the deterministic layer.
+ */
+function buildReasoningPrompt(input: IntelligenceInput, understanding: IntelligenceUnderstanding): string {
+  const signal = understanding.routingSignal;
+  const intel = understanding.intelligence;
+  const hint = understanding.contextHint;
+  const contextIds = hint?.activeContexts?.map(c => `${c.type}:${c.contextId}`).join(', ') || 'none';
+  const pendingFields = hint?.activeContexts?.flatMap(c => c.pendingFields || []) || [];
+  return [
+    `User message: "${input.message}"`,
+    `Phone: ${input.isGuest ? 'guest' : input.phone}`,
+    `Conversation act: ${signal.conversationAct || 'none'}`,
+    `Skill: ${signal.skill || 'none'}`,
+    `Category: ${signal.category || 'none'}`,
+    `Routing confidence: ${signal.confidence.toFixed(2)} (source: ${signal.source})`,
+    `Intent: ${signal.intent || 'none'}`,
+    `Conversation mode: ${intel.mode}`,
+    `Requires canonical action: ${intel.shouldRequireCanonicalAction ? 'yes' : 'no'}`,
+    `Ask clarification: ${intel.shouldAskClarification ? 'yes' : 'no'}`,
+    `Active contexts: ${contextIds}`,
+    `Pending fields: ${pendingFields.length ? pendingFields.join(', ') : 'none'}`,
+    `Guest: ${input.isGuest ? 'yes' : 'no'}`,
+    `Conversation ID: ${input.conversationId || 'new'}`,
+    ``,
+    `Analyze the user's intent and produce a plan. If the routing signal already resolved the intent deterministically (source is 'rules' or 'catalogue' with high confidence), keep the plan minimal and note that deterministic routing was sufficient. Do not invent providers, prices, availability, bookings, payments, or completed outcomes.`,
+    ].join('\n');
+}
+
+/**
+ * Phase 1.5: Reason — the Intelligence Runtime's ownership of reasoning and
+ * planning.
+ *
+ * This is the canonical seam where the Runtime decides whether a capable model
+ * is needed for planning. When the deterministic routing signal already
+ * resolved the turn (rules/catalogue with high confidence, no escalation),
+ * the Runtime short-circuits: no model call is made and the plan is empty.
+ *
+ * When escalation IS required, the Runtime invokes a model through the
+ * modelRouter abstraction (task: 'planning'), which delegates to
+ * aiInferencePolicy.chooseInferenceProvider → unifiedAiEngine.queryUnifiedAI.
+ * This is the first point at which a real model call passes through the
+ * Intelligence Runtime itself (rather than inside routeIntent during
+ * selectCapabilities).
+ *
+ * The Runtime does NOT execute actions, mutate canonical state, bypass
+ * authentication, or invent real-world outcomes.
+ */
+export async function reason(
+  input: IntelligenceInput,
+  understanding: IntelligenceUnderstanding,
+): Promise<IntelligenceReasoning> {
+  // Deterministic fast path: when the routing signal already resolved the turn
+  // (rules/catalogue with high confidence), no model reasoning is needed.
+  // shouldEscalateToAi is the canonical escalation boundary — it returns false
+  // for conversational acts (greeting, thanks, farewell, etc.) and for
+  // catalogue-resolved skills with confidence >= 0.72.
+  const needsEscalation = shouldEscalateToAi(understanding.routingSignal, input.message);
+
+  if (!needsEscalation) {
+    return {
+      plan: [],
+      intent: understanding.routingSignal.skill
+        || understanding.routingSignal.intent
+        || understanding.routingSignal.conversationAct
+        || 'general',
+      requiresEscalation: false,
+      confidence: understanding.routingSignal.confidence,
+      rationale: 'Deterministic routing resolved the turn; no model reasoning required.',
+    };
+  }
+
+  // Model-based reasoning through modelRouter (NOT a direct provider call).
+  // The 'planning' task routes through aiInferencePolicy to the appropriate
+  // model tier: Poolside → hosted reasoning providers → local fallback.
+  try {
+    const result: ModelCompletionResult = await complete({
+      task: 'planning',
+      prompt: buildReasoningPrompt(input, understanding),
+      preferred: input.provider,
+      systemPrompt: REASONING_SYSTEM_PROMPT,
+      contextHint: understanding.contextHint,
+      temperature: 0,
+    });
+
+    const parsed = safeParseJsonObject(result.text);
+    if (parsed) {
+      const plan = Array.isArray(parsed.plan)
+        ? (parsed.plan as unknown[]).filter((s): s is string => typeof s === 'string').slice(0, 5)
+        : [];
+      const intent = typeof parsed.intent === 'string' && parsed.intent.trim()
+        ? parsed.intent.trim()
+        : (understanding.routingSignal.skill || 'general');
+      const escalation = typeof parsed.escalation === 'boolean' ? parsed.escalation : false;
+      const confidence = clampConfidence(parsed.confidence);
+      const rationale = typeof parsed.rationale === 'string' && parsed.rationale.trim()
+        ? parsed.rationale.trim()
+        : undefined;
+      const resolvedRequiresEscalation = escalation
+        || (result.provider !== 'Kurukoo Template' && result.provider !== 'SmolLM2');
+
+      return {
+        plan,
+        intent,
+        requiresEscalation: resolvedRequiresEscalation,
+        modelUsed: result.model,
+        providerUsed: result.provider,
+        confidence,
+        rationale,
+        escalationReason: resolvedRequiresEscalation && !escalation
+          ? 'model_provider_escapes_local_first'
+          : undefined,
+      };
+    }
+
+    // Fallback: model responded but JSON was not parseable.
+    return {
+      plan: [],
+      intent: understanding.routingSignal.skill || 'general',
+      requiresEscalation: true,
+      modelUsed: result.model,
+      providerUsed: result.provider,
+      confidence: result.confidence ?? 0.3,
+      rationale: 'Model reasoning invoked but response was not structured JSON.',
+      escalationReason: 'unstructured_reasoning_response',
+    };
+  } catch (error: unknown) {
+    // Graceful degradation: if reasoning fails, proceed with deterministic signal.
+    const reason = error instanceof Error ? error.message : String(error);
+    return {
+      plan: [],
+      intent: understanding.routingSignal.skill
+        || understanding.routingSignal.intent
+        || 'general',
+      requiresEscalation: true,
+      confidence: 0,
+      rationale: `Reasoning model call failed: ${reason}. Proceeding with deterministic routing signal.`,
+      escalationReason: 'reasoning_model_call_failed',
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Phase 2: Select Capabilities — intent routing (capability orchestration
 // is deferred to canonicalChatTurnService; see selectCapabilities docs)
 // ---------------------------------------------------------------------------
@@ -188,6 +400,7 @@ export { buildContextHintFromDecision as _buildContextHintFromDecision };
 export async function selectCapabilities(
   input: IntelligenceInput,
   understanding: IntelligenceUnderstanding,
+  reasoning?: IntelligenceReasoning,
   options?: { compound?: boolean; continued?: IntentRoutingResult | null },
 ): Promise<IntelligenceRoutingDecision> {
   // When compound goals are active, contextDecision is NOT passed to
@@ -205,7 +418,10 @@ export async function selectCapabilities(
       );
 
   // Whether this turn escaped the local reasoning path to a hosted AI model.
-  const capabilityEscalatedToAi = shouldEscalateToAi(understanding.routingSignal, input.message);
+  // The reasoning result from Phase 1.5 is authoritative when present;
+  // otherwise fall back to the deterministic routing signal.
+  const capabilityEscalatedToAi = Boolean(reasoning?.requiresEscalation)
+    || shouldEscalateToAi(understanding.routingSignal, input.message);
 
   // Capability orchestration is deferred to canonicalChatTurnService which has
   // the full turn contract (profile facts, routing card fields, etc.).
@@ -214,27 +430,33 @@ export async function selectCapabilities(
 
 export interface IntelligenceTurnResult {
   understanding: IntelligenceUnderstanding;
+  reasoning: IntelligenceReasoning;
   routing: IntelligenceRoutingDecision;
 }
 
 // ---------------------------------------------------------------------------
-// Full turn: understand → select capabilities
+// Full turn: understand → reason → select capabilities
 // ---------------------------------------------------------------------------
 
 /**
- * Full Intelligence Runtime turn: understand → select capabilities.
+ * Full Intelligence Runtime turn: understand → reason → select capabilities.
  *
  * This is the canonical entry point that the Chat path delegates to for
  * intelligence processing. It does NOT execute actions — execution remains
  * the responsibility of the canonical domain services.
+ *
+ * The reason step is where the Runtime owns model-based planning through the
+ * modelRouter abstraction. When the deterministic routing signal already
+ * resolved the turn, reason() short-circuits without a model call.
  */
 export async function processIntelligenceTurn(
   input: IntelligenceInput,
   options?: { compound?: boolean; continued?: IntentRoutingResult | null },
 ): Promise<IntelligenceTurnResult> {
   const understanding = await understand(input);
-  const routing = await selectCapabilities(input, understanding, options);
-  return { understanding, routing };
+  const reasoning = await reason(input, understanding);
+  const routing = await selectCapabilities(input, understanding, reasoning, options);
+  return { understanding, reasoning, routing };
 }
 
 export default processIntelligenceTurn;

@@ -19,6 +19,8 @@ assert.match(runtimeSource, /arbitrateChatContext/, 'Intelligence Runtime must d
 assert.match(runtimeSource, /routeIntent/, 'Intelligence Runtime must delegate intent routing');
 assert.match(runtimeSource, /classifyAiRoutingSignal/, 'Intelligence Runtime must delegate routing signal');
 assert.doesNotMatch(runtimeSource, /queryGemini|queryMistral|queryGroq|queryOpenRouter|queryPoolside/, 'Intelligence Runtime must not directly call model providers');
+assert.match(runtimeSource, /export async function reason/, 'Intelligence Runtime must export reason()');
+assert.match(runtimeSource, /from '.\/modelRouter/, 'Intelligence Runtime must import modelRouter for reason() model calls');
 
 // Verify canonicalChatTurnService delegates to the Intelligence Runtime
 const canonicalSource = fs.readFileSync(
@@ -29,6 +31,7 @@ assert.match(canonicalSource, /from '.*kurukooIntelligenceRuntime/, 'canonicalCh
 assert.match(canonicalSource, /await understand\(/, 'canonicalChatTurnService must call Intelligence Runtime understand()');
 assert.match(canonicalSource, /selectCapabilities/, 'canonicalChatTurnService must call selectCapabilities()');
 assert.doesNotMatch(canonicalSource, /await arbitrateChatContext/, 'canonicalChatTurnService must not call arbitrateChatContext directly');
+assert.match(canonicalSource, /await reason\(/, 'canonicalChatTurnService must call Intelligence Runtime reason()');
 
 // Verify modelRouter abstraction exists
 const modelRouterSource = fs.readFileSync(
@@ -52,7 +55,7 @@ assert.match(convergenceSource, /FASTTEXT_HINT_MAX_CONFIDENCE/, 'FastText must h
 // Phase 2: Runtime assertions — verify delegation and FastText boundary.
 // ---------------------------------------------------------------------------
 
-const { understand, selectCapabilities, processIntelligenceTurn } = await import('../src/services/kurukooIntelligenceRuntime.js');
+const { understand, reason, selectCapabilities, processIntelligenceTurn } = await import('../src/services/kurukooIntelligenceRuntime.js');
 const { classifyAiRoutingSignal, shouldEscalateToAi, FASTTEXT_HINT_MAX_CONFIDENCE } = await import('../src/services/aiRoutingConvergence.js');
 
 // --- understand: deterministic rules must classify conversation acts ---
@@ -95,9 +98,34 @@ if (nonsense.source === 'fasttext') {
   assert.equal(shouldEscalateToAi(nonsense, 'zzz unknown domain probe qqq'), true, 'FastText-only hint must escalate');
 }
 
+// --- reason: deterministic fast path (greeting) — no model call ---
+const greetingReasoning = await reason(
+  { phone: 'anon_test_123', message: 'hello', isGuest: true, conversationId: undefined },
+  greeting,
+);
+assert.equal(greetingReasoning.requiresEscalation, false, 'greeting must not require model reasoning');
+assert.equal(greetingReasoning.plan.length, 0, 'greeting reasoning must have empty plan');
+assert.equal(greetingReasoning.intent, 'greeting', 'greeting reasoning intent must be conversation act');
+assert.ok(greetingReasoning.rationale, 'greeting reasoning must include a rationale');
+
+// --- reason: escalation path (unclear message) — model call attempted via modelRouter ---
+const unclearUnderstanding = await understand({ phone: 'test_phone_456', message: 'zzz unknown domain probe qqq', isGuest: false });
+const unclearReasoning = await reason(
+  { phone: 'test_phone_456', message: 'zzz unknown domain probe qqq', isGuest: false, conversationId: undefined },
+  unclearUnderstanding,
+);
+assert.equal(unclearReasoning.requiresEscalation, true, 'unclear message must require model reasoning');
+assert.ok(typeof unclearReasoning.confidence === 'number', 'unclear reasoning must produce a numeric confidence');
+assert.ok(typeof unclearReasoning.intent === 'string', 'unclear reasoning must produce an intent');
+
+// --- processIntelligenceTurn includes reasoning ---
+assert.ok(turn.reasoning, 'processIntelligenceTurn must produce reasoning');
+assert.equal(turn.reasoning.requiresEscalation, false, 'hello turn reasoning must not require escalation');
+
 // --- Module exports ---
 const mod = await import('../src/services/kurukooIntelligenceRuntime.js');
 assert.equal(typeof mod.understand, 'function');
+assert.equal(typeof mod.reason, 'function', 'reason() must be exported');
 assert.equal(typeof mod.selectCapabilities, 'function');
 assert.equal(typeof mod.processIntelligenceTurn, 'function');
 

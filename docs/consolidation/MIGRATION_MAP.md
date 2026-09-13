@@ -134,12 +134,17 @@ intelligence layer above all Kurukoo capabilities:
 - `understand(input)` → delegates `contextArbitration.arbitrateChatContext` +
   `aiRoutingConvergence.classifyAiRoutingSignal` (FastText explicitly secondary) +
   `conversationIntelligenceService.decideConversationIntelligence` (deterministic).
-- `selectCapabilities(input, understanding, options)` → delegates
+- `reason(input, understanding)` → owns model-based planning. Short-circuits for
+  deterministic turns (greetings, catalogue skills with confidence ≥ 0.72). When
+  escalation is required, invokes `modelRouter.complete(task='planning')` — the
+  first model call owned by the Intelligence Runtime itself — and returns
+  `IntelligenceReasoning` (plan, intent, requiresEscalation, confidence, rationale).
+- `selectCapabilities(input, understanding, reasoning?, options)` → delegates
   `intentRouter.routeIntent` (which internally calls
   `semanticConversationInterpreter.interpretConversationSemantics`) + returns
-  escalation signal via `shouldEscalateToAi`.
+  escalation signal via `shouldEscalateToAi` (informed by reasoning result).
 - `processIntelligenceTurn(input)` → full orchestrated turn: understand →
-  select capabilities. Does NOT execute actions or mutate canonical state.
+  reason → select capabilities. Does NOT execute actions or mutate canonical state.
 
 `src/services/modelRouter.ts` — canonical model/provider abstraction:
 
