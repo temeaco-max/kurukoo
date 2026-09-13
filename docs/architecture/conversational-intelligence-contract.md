@@ -256,3 +256,85 @@ When an existing component overlaps this contract:
 - **do not create** another Brain, Chat, router, agent runtime, memory system or provider system.
 
 Future contributors and agents must treat this document as an architectural invariant, not an optional style preference.
+
+---
+
+## Kurukoo Intelligence Runtime
+
+The **Kurukoo Intelligence Runtime** (`KIR`) is the canonical orchestration boundary for the intelligence layer. It sits between Chat/Voice and all existing capabilities, providing a single, coherent entry point for intelligence processing on every canonical Chat turn.
+
+`KIR` is **not** a new authority. It delegates to the existing canonical services and owns no state of its own. Its purpose is to make the intelligence layer explicit, reachable, model/provider-agnostic, and evolvable without touching Chat or canonical domain services.
+
+### Ownership
+
+The Intelligence Runtime composes the following existing canonical services (no new owners are created):
+
+| Conceptual phase | Canonical service invoked |
+|---|---|
+| Context arbitration | `contextArbitration.arbitrateChatContext` |
+| Semantic interpretation | `semanticConversationInterpreter.interpretConversationSemantics` |
+| Turn intelligence decision | `conversationIntelligenceService.decideConversationIntelligence` |
+| Routing signal (FastText secondary) | `aiRoutingConvergence.classifyAiRoutingSignal` |
+| Intent / skill routing | `intentRouter.routeIntent` |
+| Capability orchestration | `aiCapabilityOrchestrator.buildAICapabilityOrchestration` |
+| Model / provider selection | `modelRouter.selectModel` / `aiInferencePolicy.chooseInferenceProvider` |
+| Model execution | `unifiedAiEngine.queryUnifiedAI` / `streamUnifiedAI` |
+
+### Conceptual interface
+
+These are conceptual boundaries, not a mandate to create nine separate services. The repository implements them inside one coherent runtime module (`src/services/kurukooIntelligenceRuntime.ts`):
+
+```text
+KURUKOO INTELLIGENCE RUNTIME
+  │
+  ├─ understand(input, context)
+  │     → context arbitration
+  │     → semantic interpretation
+  │     → intelligence decision (mode, tier, difficulty, action policy)
+  │     → routing signal (FastText explicitly secondary)
+  │
+    ├─ selectCapabilities(understanding, context)
+  │     → intent routing (routeIntent)
+  │     → returns capability escalation signal (shouldEscalateToAi)
+  │     (capability orchestration via buildAICapabilityOrchestration is
+  │      performed by canonicalChatTurnService where the full turn contract
+  │      — profile facts, routing card data, active context IDs — is available)
+  │
+  └─ processIntelligenceTurn(input)
+        → understand → selectCapabilities
+        → returns IntelligenceTurnResult
+```
+
+**FastText boundary:** `classifyAiRoutingSignal` remains explicitly secondary. The canonical routing order is rules (conversation acts) → skill catalogue. FastText is reached only when both fail, with capped confidence (`FASTTEXT_HINT_MAX_CONFIDENCE = 0.7`) below the escalation threshold, so a FastText-only hint always escalates to the model path.
+
+### Model / Provider abstraction
+
+`src/services/modelRouter.ts` provides the model selection boundary:
+
+- `selectModel(task, prompt, preferred?)` — delegates to `aiInferencePolicy.chooseInferenceProvider` and returns a provider-agnostic `ModelSelection`.
+- `complete(options)` / `streamCompletion(options)` — delegate to `unifiedAiEngine.queryUnifiedAI` / `streamUnifiedAI`.
+- Application code depends on `modelRouter`, not on a particular model name (SmolLM2, Gemini, Qwen3, etc.).
+
+### Chat path wiring
+
+The canonical Chat path is now:
+
+```text
+/chat
+  → canonicalChatTurnService.processCanonicalChatTurn
+    → Kurukoo Intelligence Runtime (processIntelligenceTurn)
+      → understand (context + semantic + intelligence decision)
+      → selectCapabilities (intent routing + capability orchestration)
+        → canonical domain service / capability (execution)
+      → canonical response generation
+```
+
+`canonicalChatTurnService` remains the canonical Chat turn owner. It delegates intelligence processing to `KIR.processIntelligenceTurn`, then uses the result to drive continuation, capability execution, response generation, and persistence. The Intelligence Runtime does NOT execute actions, mutate canonical state, or bypass authentication/authorization.
+
+### Non-goals
+
+- No second conversation engine.
+- No second routing authority.
+- No second model/provider system.
+- No state ownership — KIR is stateless and delegates.
+- No bypass of canonical truth, safety, or evidence boundaries.

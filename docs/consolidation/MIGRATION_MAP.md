@@ -124,7 +124,79 @@ Boundary guard: `scripts/test-ai-routing-convergence.ts` extended with regressio
 | EJS admin surfaces | none found — no EJS admin templates exist in `views/` | — | nothing to retire |
 | any second/legacy admin copy | none found (single `admin/` copy exists) | — | no duplication exists |
 
-### Remaining pre-existing contract failures (explicitly identified, do not silently resolve)
+## 8. Kurukoo Intelligence Runtime (Phase 3, 2026-09-13)
+
+### Intelligence Runtime boundary established
+
+`src/services/kurukooIntelligenceRuntime.ts` — new canonical boundary for the
+intelligence layer above all Kurukoo capabilities:
+
+- `understand(input)` → delegates `contextArbitration.arbitrateChatContext` +
+  `aiRoutingConvergence.classifyAiRoutingSignal` (FastText explicitly secondary) +
+  `conversationIntelligenceService.decideConversationIntelligence` (deterministic).
+- `selectCapabilities(input, understanding, options)` → delegates
+  `intentRouter.routeIntent` (which internally calls
+  `semanticConversationInterpreter.interpretConversationSemantics`) + returns
+  escalation signal via `shouldEscalateToAi`.
+- `processIntelligenceTurn(input)` → full orchestrated turn: understand →
+  select capabilities. Does NOT execute actions or mutate canonical state.
+
+`src/services/modelRouter.ts` — canonical model/provider abstraction:
+
+- `selectModel(task, prompt, preferred?)` wraps `aiInferencePolicy.chooseInferenceProvider`.
+- `complete(options)` / `streamCompletion(options)` wrap `unifiedAiEngine.queryUnifiedAI` /
+  `streamUnifiedAI`.
+- Application code depends on `modelRouter`, not on a named model (SmolLM2, Gemini,
+  Qwen3, etc.). Models are loaded on demand and remain cache-aware.
+
+### Wiring into the canonical Chat path
+
+`src/services/canonicalChatTurnService.ts`:
+
+- Imports `understand` and `selectCapabilities` from `kurukooIntelligenceRuntime.js`.
+- Line 201: `arbitrateChatContext(...)` replaced with `understand(...)` → `contextDecision`
+  is extracted from the `IntelligenceUnderstanding`. All downstream branches
+  (emergency, security, brief, continuation, context clarification) are unchanged.
+- Line 237: `routeIntent(message, phone, undefined, compound ? undefined : contextDecision, ...)`
+  replaced with `selectCapabilities({ phone, message, isGuest, conversationId }, understanding, { compound: Boolean(compound), continued })` → `routing` extracted from `IntelligenceRoutingDecision`.
+- `routeIntent` import retained (still used at the cancel control-action path, line 229).
+- `arbitrateChatContext` import dropped from `canonicalChatTurnService.ts` (now called
+  only through the Intelligence Runtime).
+- `buildAICapabilityOrchestration` and `buildConversationTurnContract` remain in
+  `canonicalChatTurnService` where the full turn contract (profile facts, routing card
+  data, active context IDs) is available.
+
+### Non-goals (preserved)
+
+- No second conversation engine — Chat path unchanged; Intelligence Runtime delegates.
+- No second routing authority — `routeIntent` / `legacyIntentRouter` retained as canonical owners.
+- No second model/provider system — `modelRouter` wraps the existing `chooseInferenceProvider`
+  + `unifiedAiEngine`; no new provider integrations introduced.
+- No state ownership — Intelligence Runtime is stateless.
+- FastText NOT deleted — remains as secondary signal only (see §7).
+- All existing canonical services preserved: Chat/Voice, memory, identity, Work, Economic
+  Requests, provider discovery, Pulse, commerce, Canada adapter, Quick Ride, agents,
+  Skills/SkillsFlow, notifications, Admin, PWA/mobile.
+
+### Verification
+
+- `npx tsc --noEmit` — clean (0 errors).
+- `npx tsx scripts/test-intelligence-runtime.ts` — all static + runtime assertions pass.
+- `npx tsx scripts/test-ai-routing-convergence.ts` — passes (12 cases + FastText boundary guard).
+- `npx tsx scripts/test-semantic-router-entrypoint.ts` — passes.
+- `npx tsx scripts/test-conversation-turn-contract.ts` — passes.
+- `npx tsx scripts/test-conversation-intelligence-boundary.ts` — passes.
+- `npx tsx scripts/test-ai-capability-orchestration.ts` — passes.
+- `npx tsx scripts/test-ai-inference-policy.ts` — passes.
+- Pre-existing failures (unrelated to this change): `test-ai-router-free-first.ts`
+  (poolside provider configuration), `test-conversation-context-pack.ts`
+  (database state), `provider-test-secret-readiness.test.ts` (provider secrets).
+
+### Contract documentation
+
+`docs/architecture/conversational-intelligence-contract.md` — extended with
+"Kurukoo Intelligence Runtime" section defining the ownership table, conceptual
+interface, model/provider abstraction boundary, Chat path wiring, and non-goals.
 
 1. `scripts/test-canonical-authenticated-screen-set.mjs`: `k-app-surface` — needs product decision (see §6.1).
 2. `scripts/test-desk-visual-foundation.ts`: `k-desk-module-welcome` — needs product decision (see §6.2).
