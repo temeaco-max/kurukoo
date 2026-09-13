@@ -3,9 +3,8 @@ import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, MessageCircle, Plus
 import { useEffect, useMemo, useState } from "react";
 import { AskKurukoo } from "@/components/kurukoo/ask-kurukoo";
 import { FAQSection } from "@/components/kurukoo/faq-section";
-import { fetchCanonicalTopics, fetchTopicTaxonomy, type CanonicalTopic, type TopicTaxonomy } from "@/lib/kurukoo-api";
+import { fetchCanonicalTopics, fetchSponsoredAds, fetchTopicTaxonomy, type CanonicalTopic, type SponsoredAd, type TopicTaxonomy } from "@/lib/kurukoo-api";
 import { fetchCommunityAdInventory, fetchCommunityTaxonomy, touchCommunityPresence, type CommunityAdInventory, type CommunityCategory } from "@/lib/community-topics-api";
-import { SidebarSponsoredCard } from "@/components/kurukoo/sidebar-sponsored-card";
 
 export const Route = createFileRoute("/topics")({
   head: () => ({ meta: [
@@ -38,6 +37,7 @@ function TopicsPage() {
   const [taxonomy, setTaxonomy] = useState<TopicTaxonomy>({ types: [], categories: [], skillsByCategory: {} });
   const [categories, setCategories] = useState<CommunityCategory[]>([]);
   const [inventory, setInventory] = useState<CommunityAdInventory[]>([]);
+  const [sponsoredAds, setSponsoredAds] = useState<SponsoredAd[]>([]);
   const [type, setType] = useState("");
   const [category, setCategory] = useState("");
   const [subcategory, setSubcategory] = useState("");
@@ -56,6 +56,8 @@ function TopicsPage() {
       setPage(1);
       const ads = await fetchCommunityAdInventory(activeCategory?.slug, subcategory || undefined);
       setInventory(ads);
+      const sponsored = await fetchSponsoredAds().catch(() => []);
+      if (sponsored.length) setSponsoredAds(sponsored);
     } catch { setTopics([]); setInventory([]); }
     finally { setLoading(false); setRefreshing(false); }
   }
@@ -91,7 +93,7 @@ function TopicsPage() {
     </header>
 
     <div className="grid gap-3"><CategoryDirectory categories={categories} activeCategory={activeCategory?.slug ?? ""} activeSubcategory={subcategory} onCategory={selectCategory} onSubcategory={selectSubcategory}/></div>
-    <div className="grid gap-3 md:grid-cols-3"><AdCard item={inventory.find((item) => item.slot === "top-1")}/><AdCard item={inventory.find((item) => item.slot === "top-2")}/><AdCard item={inventory.find((item) => item.slot === "top-3")}/></div>
+    <div className="grid gap-3 md:grid-cols-3">{sponsoredAds[0] ? <a href={sponsoredAds[0].clickUrl} target="_blank" rel="noreferrer" className="flex min-h-[104px] items-center rounded-[18px] border border-dotted border-border bg-elevated/35 px-4 transition-colors hover:bg-elevated/55">{sponsoredAds[0].image ? <img src={sponsoredAds[0].image} alt={sponsoredAds[0].alt || sponsoredAds[0].title} loading="lazy" className="h-14 w-24 rounded-lg object-cover mr-3 shrink-0"/> : null}<div className="min-w-0"><p className="text-[8.5px] font-bold uppercase tracking-[0.13em] text-muted-foreground">{sponsoredAds[0].disclosure || "Sponsored"}</p><p className="mt-1 text-[12px] font-semibold">{sponsoredAds[0].title}</p><p className="mt-1 text-[10.5px] leading-relaxed text-muted-foreground">{sponsoredAds[0].alt}</p></div></a> : <AdCard item={inventory.find((item) => item.slot === "top-1")}/>}<AdCard item={inventory.find((item) => item.slot === "top-2")}/><AdCard item={inventory.find((item) => item.slot === "top-3")}/></div>
 
     <section aria-labelledby="general-topics"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3"><div><p className="text-[9px] font-bold uppercase tracking-[0.14em] text-primary">Kurukoo</p><h2 id="general-topics" className="font-serif text-[28px] leading-none tracking-[-0.035em]">General</h2></div><div className="flex items-center gap-1.5"><div className="flex flex-wrap gap-1">{(["recent", "updated", "trending", "new-posts"] as TopicSort[]).map((value) => <button key={value} type="button" onClick={() => { setSort(value); setPage(1); }} className={`rounded-full px-2.5 py-1.5 text-[9.5px] font-medium ${sort === value ? "bg-primary text-primary-foreground" : "bg-elevated text-muted-foreground hover:text-foreground"}`}>{value === "new-posts" ? "New posts" : pretty(value)}</button>)}</div><button type="button" onClick={() => void loadTopics(true)} disabled={refreshing} className="ml-1 inline-flex size-8 items-center justify-center rounded-lg border border-border hover:bg-elevated disabled:opacity-50" aria-label="Refresh Topics"><RefreshCw className={refreshing ? "size-3.5 animate-spin" : "size-3.5"}/></button></div></div>
       <div className="overflow-hidden rounded-b-[18px] border-x border-b border-border bg-surface"><div className="grid grid-cols-[minmax(0,1fr)_70px_80px] gap-3 border-b border-border bg-elevated/25 px-3 py-2 text-[8.5px] font-bold uppercase tracking-[0.1em] text-muted-foreground sm:grid-cols-[minmax(0,1fr)_90px_90px] sm:px-4"><span>Topic</span><span className="text-center">Replies</span><span className="text-center">Followers</span></div>{loading ? <div className="h-[420px] animate-pulse bg-elevated/15"/> : pageTopics.length ? pageTopics.map((topic) => <TopicRow key={topic.id} topic={topic}/>) : <div className="flex h-[260px] items-center justify-center px-6 text-center text-[11px] text-muted-foreground">No Topics match this selection yet.</div>}</div>
@@ -101,6 +103,5 @@ function TopicsPage() {
     <div className="grid gap-3 md:grid-cols-3"><AdCard item={inventory.find((item) => item.slot === "bottom-1")}/><AdCard item={inventory.find((item) => item.slot === "bottom-2")}/><AdCard item={inventory.find((item) => item.slot === "bottom-3")}/></div>
     <section className="rounded-[22px] border border-border bg-elevated/35 p-5"><div className="flex items-start gap-3"><MessageCircle className="mt-0.5 size-4 shrink-0 text-primary"/><div><p className="text-[13px] font-semibold">Use a Topic when context will help.</p><p className="mt-1.5 max-w-2xl text-[11.5px] leading-relaxed text-muted-foreground">A discussion can help you understand a situation, compare experiences or decide what to do next. When you are ready to act, bring the context into Kurukoo.</p><Link to="/explore" className="mt-4 inline-flex items-center gap-1.5 text-[11.5px] font-medium">Explore what you can do <ArrowRight className="size-3.5"/></Link></div></div></section>
     <FAQSection title="Topics questions" items={[{ question: "What is a Topic?", answer: "A Topic is a shared community conversation for questions, experiences, useful local context and discussion." }, { question: "Who controls categories?", answer: "Kurukoo controls the category and subcategory structure so Topics remain organised and useful." }, { question: "Can advertising appear in Topics?", answer: "Kurukoo can enable or disable advertising by category and subcategory. Advertisers use Points for enabled placements and advertising is clearly labelled." }, { question: "Can AI contribute to Topics?", answer: "Yes. Kurukoo AI and named AI agents can become contributors where appropriate, with their AI identity clearly shown to users." }]} />
-        <SidebarSponsoredCard></SidebarSponsoredCard>
   </div>;
 }
