@@ -36,6 +36,26 @@ export interface AICapabilityOrchestrationDecision {
   interactionPolicy?: CapabilityInteractionPolicy;
   proposal?: AICapabilityProposal;
   reason: string;
+  /** Model tier recommended by the Reasoning step — informs conversational
+   * generation model selection in canonicalChatTurnService. */
+  modelTier?: string;
+  /** Structured plan from the Reasoning step — available to the canonical
+   * Chat turn owner for context-aware orchestration. */
+  structuredPlan?: unknown;
+}
+
+/**
+ * Lightweight reasoning context from the Intelligence Runtime's reason() step.
+ * This avoids a circular type import from kurukooIntelligenceRuntime.ts.
+ * The Runtime owns the plan; this interface carries only the fields needed
+ * to influence capability orchestration decisions.
+ */
+export interface ReasoningContext {
+  capabilityEscalatedToAi?: boolean;
+  requiresEscalation?: boolean;
+  confidence?: number;
+  modelTier?: string;
+  structuredPlan?: unknown;
 }
 
 const NON_CAPABILITY_SKILLS = new Set(['general_question']);
@@ -83,6 +103,7 @@ export function buildAICapabilityOrchestration(
   routing: IntentRoutingResult,
   contract: ConversationTurnContract,
   semanticProposal: AISemanticCapabilityProposal | null = null,
+  reasoning?: ReasoningContext,
 ): AICapabilityOrchestrationDecision {
   const capability = normaliseCapability(routing.skill, routing.target_skill);
   const posture = inferPosture(contract);
@@ -90,9 +111,22 @@ export function buildAICapabilityOrchestration(
   const reconciled = reconcileAICapabilityProposal(routing, semanticProposal, contract);
   const finalCapability = reconciled.capability || capability;
   const finalAction = reconciled.action || routing.canonicalAction;
-  const finalPosture = reconciled.posture === 'none' ? posture : reconciled.posture;
+    const finalPosture = reconciled.posture === 'none' ? posture : reconciled.posture;
 
-  if (!finalCapability || NON_CAPABILITY_SKILLS.has(routing.skill)) return { mode: contract.mode, shouldTalk: true, shouldPresentCanonicalResult, shouldProposeCapability: false, reason: 'ordinary-conversation-or-non-capability-turn' };
+  // Reasoning-influenced clarification posture: when the Intelligence Runtime's
+  // reason() step escalated to a model and confidence is low (< 0.5), prefer a
+  // clarification posture over proposing or control actions (non-control only).
+  // This makes the reasoning result meaningfully influence the
+  // clarification/escalation posture rather than being passed through unused.
+  const lowConfidenceEscalation = Boolean(
+    reasoning?.requiresEscalation &&
+    reasoning?.confidence !== undefined &&
+    reasoning?.confidence < 0.5
+  );
+  const effectivePosture: CapabilityProposalPosture =
+    lowConfidenceEscalation && finalPosture !== 'control' ? 'clarify' : finalPosture;
+
+    if (!finalCapability || NON_CAPABILITY_SKILLS.has(routing.skill)) return { mode: contract.mode, shouldTalk: true, shouldPresentCanonicalResult, shouldProposeCapability: false, reason: 'ordinary-conversation-or-non-capability-turn', modelTier: reasoning?.modelTier, structuredPlan: reasoning?.structuredPlan };
 
   const composition = ensureSkillComposition(finalCapability);
   const descriptor = descriptorFromDecision(finalCapability, routing) || composition.skillDescriptor;
@@ -100,7 +134,15 @@ export function buildAICapabilityOrchestration(
     ? deriveActionInteractionPolicy(descriptor, finalAction)
     : deriveActionInteractionPolicyForName(finalCapability, finalAction, descriptor);
   const forcedInterrupt = interactionPolicy.interruption === 'immediate';
-  const shouldProposeCapability = Boolean(finalCapability && (finalAction || semanticProposal) && (finalPosture !== 'none' || forcedInterrupt) && (contract.requiresStructuredProposal || forcedInterrupt));
+    const shouldProposeCapability = Boolean(finalCapability && (finalAction || semanticProposal) && (effectivePosture !== 'none' || forcedInterrupt) && (contract.requiresStructuredProposal || forcedInterrupt));
+
+  // Influence proposal confidence with reasoning: when the Runtime escalated
+  // and expressed low confidence, dampen the proposal confidence so downstream
+  // consumers understand the proposal is uncertain.
+  const routingConfidence = reconciled.confidence || routing.intentConfidence;
+  const blendedConfidence = (reasoning?.confidence !== undefined && reasoning.confidence < (routingConfidence || 1))
+    ? reasoning.confidence
+    : routingConfidence;
 
   const proposal: AICapabilityProposal = {
     capability: finalCapability,
@@ -108,9 +150,9 @@ export function buildAICapabilityOrchestration(
     contextId: contract.protectedContextIds[0],
     canonicalObjectId: extractCanonicalObjectId(routing.extractedEntities),
     arguments: { ...(reconciled.arguments || {}), ...(routing.extractedEntities || {}) },
-    confidence: reconciled.confidence || routing.intentConfidence,
-    posture: forcedInterrupt ? 'propose' : finalPosture,
-    confirmationRequired: interactionPolicy.confirmation === 'explicit' || finalPosture === 'control' || contract.actionPosture === 'control',
+    confidence: blendedConfidence,
+    posture: forcedInterrupt ? 'propose' : effectivePosture,
+    confirmationRequired: interactionPolicy.confirmation === 'explicit' || effectivePosture === 'control' || contract.actionPosture === 'control',
     preserveContext: interactionPolicy.preservesPriorGoals,
     requiresCanonicalValidation: true,
     source: reconciled.source === 'semantic' || reconciled.source === 'reconciled' ? 'semantic-model' : 'canonical-routing',
@@ -118,7 +160,7 @@ export function buildAICapabilityOrchestration(
     executionPlan: composition.executionPlan.executableCandidates,
   };
 
-  return { mode: contract.mode, shouldTalk: contract.shouldGenerateNaturalResponse, shouldPresentCanonicalResult, shouldProposeCapability, interactionPolicy, proposal: shouldProposeCapability ? proposal : undefined, reason: shouldProposeCapability ? `${reconciled.reason}; canonical composition and executable owner plan resolved` : 'canonical-routing-result-remains-authoritative' };
+    return { mode: contract.mode, shouldTalk: contract.shouldGenerateNaturalResponse, shouldPresentCanonicalResult, shouldProposeCapability, interactionPolicy, proposal: shouldProposeCapability ? proposal : undefined, reason: shouldProposeCapability ? `${reconciled.reason}; canonical composition and executable owner plan resolved` : 'canonical-routing-result-remains-authoritative', modelTier: reasoning?.modelTier, structuredPlan: reasoning?.structuredPlan };
 }
 
 export default buildAICapabilityOrchestration;

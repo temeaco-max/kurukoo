@@ -38,12 +38,31 @@ import type { SemanticConversationInterpretation } from './semanticConversationI
 import decideConversationIntelligence, { type ConversationIntelligenceDecision, type ConversationIntelligenceInput } from './conversationIntelligenceService.js';
 import type { AICapabilityOrchestrationDecision } from './aiCapabilityOrchestrator.js';
 import type { ConversationTurnContract } from './conversationTurnContractService.js';
-import { complete, type ModelCompletionResult } from './modelRouter.js';
+import { complete, selectModel, type ModelCompletionResult, type ModelTier, type ModelSelection } from './modelRouter.js';
 import type { ConversationalContextHint, AIProvider } from './modelRouter.js';
 import type { IntentRoutingResult } from '../types.js';
 import { classifyAiRoutingSignal, shouldEscalateToAi, type AiRoutingSignal } from './aiRoutingConvergence.js';
+import {
+  buildIntelligenceStructuredPlan,
+  replanIfUnavailable,
+  type IntelligenceStructuredPlan,
+  type DiscoveredResourceRef,
+  type PlanStep,
+  type ResourceType,
+  type ExecutionMode,
+  type IntelligenceFallbackPlan,
+} from './capabilityDiscoveryService.js';
 
-export type { ContextArbitrationDecision, SemanticConversationInterpretation, ConversationIntelligenceDecision, AICapabilityOrchestrationDecision, ConversationTurnContract, ConversationalContextHint, AIProvider };
+export type { ContextArbitrationDecision, SemanticConversationInterpretation, ConversationIntelligenceDecision, AICapabilityOrchestrationDecision, ConversationTurnContract, ConversationalContextHint, AIProvider, ModelTier };
+export type { 
+  IntelligenceStructuredPlan, 
+  DiscoveredResourceRef, 
+  PlanStep, 
+  ResourceType, 
+  ExecutionMode, 
+  IntelligenceFallbackPlan,
+};
+export { buildIntelligenceStructuredPlan, replanIfUnavailable };
 
 export interface IntelligenceInput {
   phone: string;
@@ -71,8 +90,15 @@ export interface IntelligenceUnderstanding {
 
 export interface IntelligenceRoutingDecision {
   routing: IntentRoutingResult;
-  capabilityOrchestration: AICapabilityOrchestrationDecision | null;
+    capabilityOrchestration: AICapabilityOrchestrationDecision | null;
   capabilityEscalatedToAi: boolean;
+  /** Structured plan from the reasoning step — influences capability selection
+   * and model/tier selection downstream in canonicalChatTurnService. */
+  structuredPlan?: IntelligenceStructuredPlan;
+  /** Model tier recommended for conversational generation. */
+    modelTier?: ModelTier;
+  /** Recommended provider for conversational generation. */
+  recommendedProvider?: AIProvider;
 }
 
 /**
@@ -97,6 +123,14 @@ export interface IntelligenceReasoning {
   confidence: number;
   rationale?: string;
   escalationReason?: string;
+  /** Structured plan derived from canonical capability/resource discovery.
+   * Influences capability selection, model/tier selection, clarification,
+   * and escalation posture downstream. */
+  structuredPlan?: IntelligenceStructuredPlan;
+  /** Model tier to inform downstream conversational generation. */
+  modelTier: ModelTier;
+  /** Recommended provider for conversational generation. */
+  recommendedProvider?: AIProvider;
 }
 
 
@@ -235,6 +269,17 @@ function clampConfidence(value: unknown): number {
   return Number.isFinite(number) ? Math.max(0, Math.min(1, number)) : 0;
 }
 
+/** Map a provider name to its model tier for downstream consumption. */
+function tierFromProvider(provider: string): ModelTier {
+  if (provider === 'Kurukoo Template' || provider === 'SmolLM2' || provider === 'local_intent' || provider === 'kurukoo_intent') return 'local';
+  return 'strong';
+}
+
+/** Whether a provider is a hosted (paid) reasoning provider. */
+function isHostedProvider(provider: string): boolean {
+  return !['Kurukoo Template', 'SmolLM2', 'local_intent', 'kurukoo_intent'].includes(provider);
+}
+
 /**
  * Build the reasoning prompt from the understanding output. The prompt carries
  * the deterministic routing signal, context summary, and intelligence decision
@@ -296,22 +341,42 @@ export async function reason(
   // catalogue-resolved skills with confidence >= 0.72.
   const needsEscalation = shouldEscalateToAi(understanding.routingSignal, input.message);
 
-  if (!needsEscalation) {
+    if (!needsEscalation) {
+    const intent = understanding.routingSignal.skill
+      || understanding.routingSignal.intent
+      || understanding.routingSignal.conversationAct
+      || 'general';
+    const structuredPlan = buildIntelligenceStructuredPlan(
+      {
+        message: input.message,
+        routingSignal: understanding.routingSignal,
+        isGuest: input.isGuest,
+        contextHint: understanding.contextHint,
+      },
+      { confidence: understanding.routingSignal.confidence, intent, requiresEscalation: false },
+    );
     return {
       plan: [],
-      intent: understanding.routingSignal.skill
-        || understanding.routingSignal.intent
-        || understanding.routingSignal.conversationAct
-        || 'general',
+      intent,
       requiresEscalation: false,
       confidence: understanding.routingSignal.confidence,
       rationale: 'Deterministic routing resolved the turn; no model reasoning required.',
+      structuredPlan,
+      modelTier: understanding.intelligence.modelTier,
     };
   }
 
-  // Model-based reasoning through modelRouter (NOT a direct provider call).
+    // Model-based reasoning through modelRouter (NOT a direct provider call).
   // The 'planning' task routes through aiInferencePolicy to the appropriate
   // model tier: Poolside → hosted reasoning providers → local fallback.
+  // Select the model tier BEFORE the call so downstream consumers know the
+  // intended tier even if the call fails.
+  const modelSelection: ModelSelection = selectModel(
+    'planning',
+    buildReasoningPrompt(input, understanding),
+    input.provider,
+  );
+  let structuredPlan: IntelligenceStructuredPlan | undefined;
   try {
     const result: ModelCompletionResult = await complete({
       task: 'planning',
@@ -335,8 +400,21 @@ export async function reason(
       const rationale = typeof parsed.rationale === 'string' && parsed.rationale.trim()
         ? parsed.rationale.trim()
         : undefined;
-      const resolvedRequiresEscalation = escalation
+            const resolvedRequiresEscalation = escalation
         || (result.provider !== 'Kurukoo Template' && result.provider !== 'SmolLM2');
+
+      // Build structured plan using the canonical capability/resource discovery seam.
+      // The discovery seam derives capabilities/resources from the routing signal
+      // and the existing skill/capability registry — it does NOT fabricate inventory.
+      structuredPlan = buildIntelligenceStructuredPlan(
+        {
+          message: input.message,
+          routingSignal: understanding.routingSignal,
+          isGuest: input.isGuest,
+          contextHint: understanding.contextHint,
+        },
+        { confidence, intent, requiresEscalation: resolvedRequiresEscalation },
+      );
 
       return {
         plan,
@@ -349,10 +427,22 @@ export async function reason(
         escalationReason: resolvedRequiresEscalation && !escalation
           ? 'model_provider_escapes_local_first'
           : undefined,
+        structuredPlan,
+        modelTier: modelSelection.tier,
+        recommendedProvider: isHostedProvider(result.provider) ? result.provider as AIProvider : undefined,
       };
     }
 
-    // Fallback: model responded but JSON was not parseable.
+        // Fallback: model responded but JSON was not parseable.
+    structuredPlan = buildIntelligenceStructuredPlan(
+      {
+        message: input.message,
+        routingSignal: understanding.routingSignal,
+        isGuest: input.isGuest,
+        contextHint: understanding.contextHint,
+      },
+      { confidence: 0.3, intent: understanding.routingSignal.skill || 'general', requiresEscalation: true },
+    );
     return {
       plan: [],
       intent: understanding.routingSignal.skill || 'general',
@@ -362,19 +452,34 @@ export async function reason(
       confidence: result.confidence ?? 0.3,
       rationale: 'Model reasoning invoked but response was not structured JSON.',
       escalationReason: 'unstructured_reasoning_response',
+      structuredPlan,
+      modelTier: tierFromProvider(result.provider),
+      recommendedProvider: isHostedProvider(result.provider) ? result.provider as AIProvider : undefined,
     };
-  } catch (error: unknown) {
+    } catch (error: unknown) {
     // Graceful degradation: if reasoning fails, proceed with deterministic signal.
     const reason = error instanceof Error ? error.message : String(error);
+    const fallbackIntent = understanding.routingSignal.skill
+      || understanding.routingSignal.intent
+      || 'general';
+    structuredPlan = buildIntelligenceStructuredPlan(
+      {
+        message: input.message,
+        routingSignal: understanding.routingSignal,
+        isGuest: input.isGuest,
+        contextHint: understanding.contextHint,
+      },
+      { confidence: 0, intent: fallbackIntent, requiresEscalation: true },
+    );
     return {
       plan: [],
-      intent: understanding.routingSignal.skill
-        || understanding.routingSignal.intent
-        || 'general',
+      intent: fallbackIntent,
       requiresEscalation: true,
       confidence: 0,
       rationale: `Reasoning model call failed: ${reason}. Proceeding with deterministic routing signal.`,
       escalationReason: 'reasoning_model_call_failed',
+      structuredPlan,
+      modelTier: modelSelection.tier,
     };
   }
 }
@@ -417,15 +522,27 @@ export async function selectCapabilities(
         input.conversationId,
       );
 
-  // Whether this turn escaped the local reasoning path to a hosted AI model.
+    // Whether this turn escaped the local reasoning path to a hosted AI model.
   // The reasoning result from Phase 1.5 is authoritative when present;
   // otherwise fall back to the deterministic routing signal.
+  // Low reasoning confidence (< 0.5) also escalates — the model's own
+  // uncertainty is a stronger signal than the deterministic routing signal.
   const capabilityEscalatedToAi = Boolean(reasoning?.requiresEscalation)
+    || (reasoning?.confidence !== undefined && reasoning.confidence < 0.5)
     || shouldEscalateToAi(understanding.routingSignal, input.message);
 
-  // Capability orchestration is deferred to canonicalChatTurnService which has
-  // the full turn contract (profile facts, routing card fields, etc.).
-  return { routing, capabilityOrchestration: null, capabilityEscalatedToAi };
+  // Propagate the structured plan and model tier so canonicalChatTurnService
+  // can use them for capability orchestration and model selection.
+  // The reasoning result owns the structured plan; canonicalChatTurnService
+  // remains authoritative for execution, authorization, and persistence.
+  return {
+    routing,
+    capabilityOrchestration: null,
+    capabilityEscalatedToAi,
+    structuredPlan: reasoning?.structuredPlan,
+    modelTier: reasoning?.modelTier,
+    recommendedProvider: reasoning?.recommendedProvider,
+  };
 }
 
 export interface IntelligenceTurnResult {

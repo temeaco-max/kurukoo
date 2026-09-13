@@ -300,13 +300,19 @@ KURUKOO INTELLIGENCE RUNTIME
   │       ↳ model execution via unifiedAiEngine.queryUnifiedAI
   │     → if deterministic: short-circuits, no model call
   │     → produces IntelligenceReasoning (plan, intent, escalation, confidence)
+│     → derives structured plan via capabilityDiscoveryService.buildIntelligenceStructuredPlan
+│       (capabilities, candidate resource types, execution mode, fallback)
+│     → propagates modelTier + recommendedProvider for downstream generation
   │
   ├─ selectCapabilities(understanding, reasoning, context)
   │     → intent routing (routeIntent)
   │     → returns capability escalation signal (shouldEscalateToAi)
+│     → propagates reasoning.structuredPlan, reasoning.modelTier, reasoning.recommendedProvider
   │     (capability orchestration via buildAICapabilityOrchestration is
   │      performed by canonicalChatTurnService where the full turn contract
-  │      — profile facts, routing card data, active context IDs — is available)
+  │      — profile facts, routing card data, active context IDs — is available;
+│      buildAICapabilityOrchestration consumes ReasoningContext to adjust
+│      clarification/escalation posture and proposal confidence
   │
     └─ processIntelligenceTurn(input)
         → understand → reason → selectCapabilities
@@ -332,8 +338,10 @@ The canonical Chat path is now:
   → canonicalChatTurnService.processCanonicalChatTurn
     → Kurukoo Intelligence Runtime (processIntelligenceTurn)
       → understand (context + semantic + intelligence decision)
-      → reason (modelRouter planning; short-circuits for deterministic turns)
-      → selectCapabilities (intent routing + capability orchestration)
+      → reason (modelRouter planning; short-circuits for deterministic turns;
+        produces structured plan, modelTier, recommendedProvider)
+      → selectCapabilities (intent routing + capability orchestration via
+        buildAICapabilityOrchestration with ReasoningContext)
         → canonical domain service / capability (execution)
       → canonical response generation
 ```

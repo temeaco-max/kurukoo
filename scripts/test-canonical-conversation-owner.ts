@@ -15,7 +15,7 @@ assert.ok(source.includes('const generated = await generateConversationalRespons
 assert.ok(source.includes("owner: 'conversationalGenerationService'"));
 
 const routeIndex = source.indexOf('const routing: IntentRoutingResult');
-const universalIndex = source.indexOf('if (shouldUseUniversalConversationOwner(routing))');
+const universalIndex = source.indexOf('shouldUseUniversalConversationOwner(routing))');
 const authIndex = source.indexOf("if (routing.skill && routing.skill !== 'general_question' && routing.skill !== 'autonomous_agent' && isGuest)");
 assert.ok(routeIndex >= 0 && authIndex > routeIndex && universalIndex > authIndex, 'canonical guest authorization must precede universal generation');
 

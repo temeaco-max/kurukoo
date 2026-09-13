@@ -139,6 +139,16 @@ intelligence layer above all Kurukoo capabilities:
   escalation is required, invokes `modelRouter.complete(task='planning')` — the
   first model call owned by the Intelligence Runtime itself — and returns
   `IntelligenceReasoning` (plan, intent, requiresEscalation, confidence, rationale).
+  Additionally derives a structured plan via
+  `capabilityDiscoveryService.buildIntelligenceStructuredPlan` (capabilities,
+  candidate resource types, execution mode, fallback) and propagates `modelTier`
+  + `recommendedProvider` for downstream conversational generation.
+- `capabilityDiscoveryService.ts` — canonical Capability + Resource discovery seam:
+  `discoverCapabilitiesForSkill`, `buildIntelligenceStructuredPlan`,
+  `enumerateCandidateResourceTypes`, `replanIfUnavailable`. Reuses
+  capabilityFoundation, capabilityRegistry, skillFlows, universalCapabilityProtocol.
+  Does NOT fabricate inventory — actual resource resolution remains the canonical
+  execution boundary's job.
 - `selectCapabilities(input, understanding, reasoning?, options)` → delegates
   `intentRouter.routeIntent` (which internally calls
   `semanticConversationInterpreter.interpretConversationSemantics`) + returns
@@ -158,15 +168,21 @@ intelligence layer above all Kurukoo capabilities:
 
 `src/services/canonicalChatTurnService.ts`:
 
-- Imports `understand` and `selectCapabilities` from `kurukooIntelligenceRuntime.js`.
-- Line 201: `arbitrateChatContext(...)` replaced with `understand(...)` → `contextDecision`
-  is extracted from the `IntelligenceUnderstanding`. All downstream branches
-  (emergency, security, brief, continuation, context clarification) are unchanged.
-- Line 237: `routeIntent(message, phone, undefined, compound ? undefined : contextDecision, ...)`
-  replaced with `selectCapabilities({ phone, message, isGuest, conversationId }, understanding, { compound: Boolean(compound), continued })` → `routing` extracted from `IntelligenceRoutingDecision`.
+- Imports `understand`, `reason`, and `selectCapabilities` from `kurukooIntelligenceRuntime.js`.
+- Calls `understand(...)` → `contextDecision` is extracted from the `IntelligenceUnderstanding`.
+- Calls `reason(...)` → produces `IntelligenceReasoning` (structured plan, modelTier,
+  recommendedProvider). This is the seam where model-based planning influences the turn.
+- `routeIntent(message, phone, undefined, compound ? undefined : contextDecision, ...)`
+  replaced with `selectCapabilities(...)` → `routing` + `structuredPlan` + `modelTier` +
+  `recommendedProvider` extracted from `IntelligenceRoutingDecision`.
 - `routeIntent` import retained (still used at the cancel control-action path, line 229).
 - `arbitrateChatContext` import dropped from `canonicalChatTurnService.ts` (now called
   only through the Intelligence Runtime).
+- `buildAICapabilityOrchestration` receives a `ReasoningContext` (capabilityEscalatedToAi,
+  requiresEscalation, confidence, modelTier, structuredPlan) and uses the reasoning result
+  to adjust clarification/escalation posture and proposal confidence.
+- `generateConversationalResponse` receives `reasoningProvider` (from `reason().recommendedProvider`)
+  as its provider argument when the universal conversation owner path is taken.
 - `buildAICapabilityOrchestration` and `buildConversationTurnContract` remain in
   `canonicalChatTurnService` where the full turn contract (profile facts, routing card
   data, active context IDs) is available.
