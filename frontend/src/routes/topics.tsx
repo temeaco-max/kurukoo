@@ -3,7 +3,7 @@ import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, MessageCircle, Plus
 import { useEffect, useMemo, useState } from "react";
 import { AskKurukoo } from "@/components/kurukoo/ask-kurukoo";
 import { FAQSection } from "@/components/kurukoo/faq-section";
-import { fetchCanonicalTopics, fetchSponsoredAds, fetchTopicTaxonomy, type CanonicalTopic, type SponsoredAd, type TopicTaxonomy } from "@/lib/kurukoo-api";
+import { fetchCanonicalTopics, fetchTopicTaxonomy, fetchTopicsAdSlots, type CanonicalTopic, type SponsoredAd, type TopicTaxonomy } from "@/lib/kurukoo-api";
 import { fetchCommunityAdInventory, fetchCommunityTaxonomy, touchCommunityPresence, type CommunityAdInventory, type CommunityCategory } from "@/lib/community-topics-api";
 
 export const Route = createFileRoute("/topics")({
@@ -23,6 +23,15 @@ function AdCard({ item }: { item?: CommunityAdInventory }) {
   return <div className="flex min-h-[104px] items-center justify-center rounded-[18px] border border-dotted border-border bg-elevated/20 px-4 text-center"><div><p className="text-[8.5px] font-bold uppercase tracking-[0.13em] text-muted-foreground">Advertising</p><p className="mt-1 text-[10px] text-muted-foreground">Place an Ad here</p>{item?.points ? <p className="mt-1 text-[9px] text-muted-foreground">{item.points} Points per placement</p> : null}</div></div>;
 }
 
+function SponsoredAdCard({ ad, large = false }: { ad: SponsoredAd; large?: boolean }) {
+  return <a href={ad.clickUrl} target="_blank" rel="noreferrer" className={large ? "flex min-h-[160px] items-center rounded-[18px] border border-dotted border-border bg-elevated/35 px-4 transition-colors hover:bg-elevated/55" : "flex min-h-[104px] items-center rounded-[18px] border border-dotted border-border bg-elevated/35 px-4 transition-colors hover:bg-elevated/55"}>{ad.image ? <img src={ad.image} alt={ad.alt || ad.title} loading="lazy" className="h-14 w-24 rounded-lg object-cover mr-3 shrink-0"/> : null}<div className="min-w-0"><p className="text-[8.5px] font-bold uppercase tracking-[0.13em] text-muted-foreground">{ad.disclosure || "Sponsored"}</p><p className="mt-1 text-[12px] font-semibold">{ad.title}</p><p className="mt-1 text-[10.5px] leading-relaxed text-muted-foreground">{ad.desc || ad.alt}</p></div></a>;
+}
+
+function TopicsAdSlot({ ad, item, large = false }: { ad?: SponsoredAd; item?: CommunityAdInventory; large?: boolean }) {
+  if (ad) return <SponsoredAdCard ad={ad} large={large}/>;
+  return <AdCard item={item}/>;
+}
+
 function CategoryDirectory({ categories, activeCategory, activeSubcategory, onCategory, onSubcategory }: { categories: CommunityCategory[]; activeCategory: string; activeSubcategory: string; onCategory: (slug: string) => void; onSubcategory: (slug: string) => void }) {
   const active = categories.find((item) => item.slug === activeCategory) ?? categories[0];
   return <section className="space-y-3"><div className="flex items-end justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">CATEGORIES</p><h2 className="mt-1.5 font-serif text-[28px] tracking-[-0.035em]">Browse</h2></div><span className="text-[10px] text-muted-foreground">Managed by Kurukoo</span></div><div className="rounded-[20px] border border-border bg-surface p-4"><div className="flex flex-wrap gap-2">{categories.map((category) => <button key={category.slug} type="button" onClick={() => onCategory(category.slug)} className={`rounded-full px-3 py-1.5 text-[10.5px] font-medium ${category.slug === active?.slug ? "bg-primary text-primary-foreground" : "bg-elevated text-muted-foreground hover:text-foreground"}`}>{category.name}</button>)}</div>{active ? <div className="mt-4 border-t border-border pt-3"><div className="flex items-start justify-between gap-3"><div><p className="text-[12.5px] font-semibold">{active.name}</p><p className="mt-1 max-w-2xl text-[10.5px] leading-relaxed text-muted-foreground">{active.description}</p></div><ChevronDown className="mt-1 size-4 text-muted-foreground"/></div><div className="mt-3 flex flex-wrap gap-1.5">{active.subcategories.map((sub) => <button key={sub.slug} type="button" onClick={() => onSubcategory(sub.slug)} className={`rounded-full border px-2.5 py-1.5 text-[10px] ${activeSubcategory === sub.slug ? "border-primary bg-brand-tint text-brand-ink" : "border-border bg-background text-muted-foreground hover:text-foreground"}`}>{sub.name}</button>)}</div></div> : null}</div></section>;
@@ -37,7 +46,7 @@ function TopicsPage() {
   const [taxonomy, setTaxonomy] = useState<TopicTaxonomy>({ types: [], categories: [], skillsByCategory: {} });
   const [categories, setCategories] = useState<CommunityCategory[]>([]);
   const [inventory, setInventory] = useState<CommunityAdInventory[]>([]);
-  const [sponsoredAds, setSponsoredAds] = useState<SponsoredAd[]>([]);
+  const [topicsSlots, setTopicsSlots] = useState<Record<string, SponsoredAd[]>>({});
   const [type, setType] = useState("");
   const [category, setCategory] = useState("");
   const [subcategory, setSubcategory] = useState("");
@@ -56,8 +65,8 @@ function TopicsPage() {
       setPage(1);
       const ads = await fetchCommunityAdInventory(activeCategory?.slug, subcategory || undefined);
       setInventory(ads);
-      const sponsored = await fetchSponsoredAds().catch(() => []);
-      if (sponsored.length) setSponsoredAds(sponsored);
+      const slots = await fetchTopicsAdSlots().catch(() => ({}));
+      if (Object.keys(slots).length) setTopicsSlots(slots);
     } catch { setTopics([]); setInventory([]); }
     finally { setLoading(false); setRefreshing(false); }
   }
@@ -93,14 +102,15 @@ function TopicsPage() {
     </header>
 
     <div className="grid gap-3"><CategoryDirectory categories={categories} activeCategory={activeCategory?.slug ?? ""} activeSubcategory={subcategory} onCategory={selectCategory} onSubcategory={selectSubcategory}/></div>
-    <div className="grid gap-3 md:grid-cols-3">{sponsoredAds[0] ? <a href={sponsoredAds[0].clickUrl} target="_blank" rel="noreferrer" className="flex min-h-[104px] items-center rounded-[18px] border border-dotted border-border bg-elevated/35 px-4 transition-colors hover:bg-elevated/55">{sponsoredAds[0].image ? <img src={sponsoredAds[0].image} alt={sponsoredAds[0].alt || sponsoredAds[0].title} loading="lazy" className="h-14 w-24 rounded-lg object-cover mr-3 shrink-0"/> : null}<div className="min-w-0"><p className="text-[8.5px] font-bold uppercase tracking-[0.13em] text-muted-foreground">{sponsoredAds[0].disclosure || "Sponsored"}</p><p className="mt-1 text-[12px] font-semibold">{sponsoredAds[0].title}</p><p className="mt-1 text-[10.5px] leading-relaxed text-muted-foreground">{sponsoredAds[0].alt}</p></div></a> : <AdCard item={inventory.find((item) => item.slot === "top-1")}/>}<AdCard item={inventory.find((item) => item.slot === "top-2")}/><AdCard item={inventory.find((item) => item.slot === "top-3")}/></div>
+    <div className="grid gap-3 md:grid-cols-3"><TopicsAdSlot ad={topicsSlots["topics_top_1"]?.[0]} item={inventory.find((item) => item.slot === "top-1")}/><TopicsAdSlot ad={topicsSlots["topics_top_2"]?.[0]} item={inventory.find((item) => item.slot === "top-2")}/><TopicsAdSlot ad={topicsSlots["topics_top_3"]?.[0]} item={inventory.find((item) => item.slot === "top-3")}/></div>
 
     <section aria-labelledby="general-topics"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3"><div><p className="text-[9px] font-bold uppercase tracking-[0.14em] text-primary">Kurukoo</p><h2 id="general-topics" className="font-serif text-[28px] leading-none tracking-[-0.035em]">General</h2></div><div className="flex items-center gap-1.5"><div className="flex flex-wrap gap-1">{(["recent", "updated", "trending", "new-posts"] as TopicSort[]).map((value) => <button key={value} type="button" onClick={() => { setSort(value); setPage(1); }} className={`rounded-full px-2.5 py-1.5 text-[9.5px] font-medium ${sort === value ? "bg-primary text-primary-foreground" : "bg-elevated text-muted-foreground hover:text-foreground"}`}>{value === "new-posts" ? "New posts" : pretty(value)}</button>)}</div><button type="button" onClick={() => void loadTopics(true)} disabled={refreshing} className="ml-1 inline-flex size-8 items-center justify-center rounded-lg border border-border hover:bg-elevated disabled:opacity-50" aria-label="Refresh Topics"><RefreshCw className={refreshing ? "size-3.5 animate-spin" : "size-3.5"}/></button></div></div>
       <div className="overflow-hidden rounded-b-[18px] border-x border-b border-border bg-surface"><div className="grid grid-cols-[minmax(0,1fr)_70px_80px] gap-3 border-b border-border bg-elevated/25 px-3 py-2 text-[8.5px] font-bold uppercase tracking-[0.1em] text-muted-foreground sm:grid-cols-[minmax(0,1fr)_90px_90px] sm:px-4"><span>Topic</span><span className="text-center">Replies</span><span className="text-center">Followers</span></div>{loading ? <div className="h-[420px] animate-pulse bg-elevated/15"/> : pageTopics.length ? pageTopics.map((topic) => <TopicRow key={topic.id} topic={topic}/>) : <div className="flex h-[260px] items-center justify-center px-6 text-center text-[11px] text-muted-foreground">No Topics match this selection yet.</div>}</div>
       <div className="mt-3 flex items-center justify-between gap-3"><p className="text-[9.5px] text-muted-foreground">Page {page} of {pageCount}</p><div className="flex gap-1.5"><button type="button" disabled={page <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))} className="grid size-8 place-items-center rounded-lg border border-border disabled:opacity-35" aria-label="Previous page"><ChevronLeft className="size-3.5"/></button><button type="button" disabled={page >= pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))} className="grid size-8 place-items-center rounded-lg border border-border disabled:opacity-35" aria-label="Next page"><ChevronRight className="size-3.5"/></button></div></div>
     </section>
 
-    <div className="grid gap-3 md:grid-cols-3"><AdCard item={inventory.find((item) => item.slot === "bottom-1")}/><AdCard item={inventory.find((item) => item.slot === "bottom-2")}/><AdCard item={inventory.find((item) => item.slot === "bottom-3")}/></div>
+    <div className="grid gap-3 md:grid-cols-3"><TopicsAdSlot ad={topicsSlots["topics_bottom_1"]?.[0]} item={inventory.find((item) => item.slot === "bottom-1")}/><TopicsAdSlot ad={topicsSlots["topics_bottom_2"]?.[0]} item={inventory.find((item) => item.slot === "bottom-2")}/><TopicsAdSlot ad={topicsSlots["topics_bottom_3"]?.[0]} item={inventory.find((item) => item.slot === "bottom-3")}/></div>
+    <TopicsAdSlot ad={topicsSlots["topics_bottom_large"]?.[0]} item={inventory.find((item) => item.slot === "bottom-large")} large/>
     <section className="rounded-[22px] border border-border bg-elevated/35 p-5"><div className="flex items-start gap-3"><MessageCircle className="mt-0.5 size-4 shrink-0 text-primary"/><div><p className="text-[13px] font-semibold">Use a Topic when context will help.</p><p className="mt-1.5 max-w-2xl text-[11.5px] leading-relaxed text-muted-foreground">A discussion can help you understand a situation, compare experiences or decide what to do next. When you are ready to act, bring the context into Kurukoo.</p><Link to="/explore" className="mt-4 inline-flex items-center gap-1.5 text-[11.5px] font-medium">Explore what you can do <ArrowRight className="size-3.5"/></Link></div></div></section>
     <FAQSection title="Topics questions" items={[{ question: "What is a Topic?", answer: "A Topic is a shared community conversation for questions, experiences, useful local context and discussion." }, { question: "Who controls categories?", answer: "Kurukoo controls the category and subcategory structure so Topics remain organised and useful." }, { question: "Can advertising appear in Topics?", answer: "Kurukoo can enable or disable advertising by category and subcategory. Advertisers use Points for enabled placements and advertising is clearly labelled." }, { question: "Can AI contribute to Topics?", answer: "Yes. Kurukoo AI and named AI agents can become contributors where appropriate, with their AI identity clearly shown to users." }]} />
   </div>;

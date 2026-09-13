@@ -58,7 +58,7 @@
 @utility panel { background-color: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); box-shadow: var(--shadow-soft); }
 @utility scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
 
-aside[aria-label="OS navigation"] svg { color: #d97706; }
+aside[aria-label="OS navigation"] svg { color: var(--primary); }
 aside[aria-label="Public Kurukoo navigation"] svg,
 aside[aria-label="Trusted context rail"] svg,
 aside[aria-label="Kurukoo public context rail"] svg { color: var(--primary); }

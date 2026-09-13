@@ -15,7 +15,24 @@ const allowedPlacements = new Set([
   'authenticated_context_rail',
   'authenticated_desk_content',
   'authenticated_home_promotions',
+  'topics_top_1',
+  'topics_top_2',
+  'topics_top_3',
+  'topics_bottom_1',
+  'topics_bottom_2',
+  'topics_bottom_3',
+  'topics_bottom_large',
 ]);
+
+const TOPICS_PLACEMENTS = [
+  'topics_top_1',
+  'topics_top_2',
+  'topics_top_3',
+  'topics_bottom_1',
+  'topics_bottom_2',
+  'topics_bottom_3',
+  'topics_bottom_large',
+] as const;
 
 const HOME_PROMOTIONS = [
   ['Get a Ride', 'Book a taxi, okada or keke locally.', 'ride', 'Get a ride', '/chat?prompt=Get%20me%20a%20ride', '/assets/chat/campaign-rider-delivery.webp'],
@@ -120,6 +137,77 @@ router.get('/home-promotions', optionalAuthenticateUser, async (req: AuthRequest
   try {
     await ensureHomePromotions();
     await renderPlacement(req, res, 'authenticated_home_promotions', { firstPartyOnly: true, limit: 12 });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Individual topics placement routes (one campaign per slot).
+router.get('/topics-top-1', optionalAuthenticateUser, async (req: AuthRequest, res, next) => {
+  try { await renderPlacement(req, res, 'topics_top_1'); } catch (error) { next(error); }
+});
+
+router.get('/topics-top-2', optionalAuthenticateUser, async (req: AuthRequest, res, next) => {
+  try { await renderPlacement(req, res, 'topics_top_2'); } catch (error) { next(error); }
+});
+
+router.get('/topics-top-3', optionalAuthenticateUser, async (req: AuthRequest, res, next) => {
+  try { await renderPlacement(req, res, 'topics_top_3'); } catch (error) { next(error); }
+});
+
+router.get('/topics-bottom-1', optionalAuthenticateUser, async (req: AuthRequest, res, next) => {
+  try { await renderPlacement(req, res, 'topics_bottom_1'); } catch (error) { next(error); }
+});
+
+router.get('/topics-bottom-2', optionalAuthenticateUser, async (req: AuthRequest, res, next) => {
+  try { await renderPlacement(req, res, 'topics_bottom_2'); } catch (error) { next(error); }
+});
+
+router.get('/topics-bottom-3', optionalAuthenticateUser, async (req: AuthRequest, res, next) => {
+  try { await renderPlacement(req, res, 'topics_bottom_3'); } catch (error) { next(error); }
+});
+
+router.get('/topics-bottom-large', optionalAuthenticateUser, async (req: AuthRequest, res, next) => {
+  try { await renderPlacement(req, res, 'topics_bottom_large'); } catch (error) { next(error); }
+});
+
+// Batch endpoint: all Topics page ad slots in one request so the Topics page
+// can populate top-1/2/3, bottom-1/2/3 and bottom-large from the admin
+// campaign system with a single call. Unauthenticated callers receive an
+// empty slots map (no error) so public surfaces degrade gracefully.
+router.get('/topics-slots', optionalAuthenticateUser, async (req: AuthRequest, res, next) => {
+  try {
+    if (!req.user?.phone) return res.json({ slots: {} });
+    const slots: Record<string, unknown[]> = {};
+    await Promise.all(TOPICS_PLACEMENTS.map(async (placement) => {
+      const campaigns = await getRenderableCampaigns({
+        placements: [placement],
+        limit: 1,
+        now: Date.now(),
+      });
+      if (!campaigns.length) {
+        slots[placement] = [];
+        return;
+      }
+      await Promise.all(campaigns.map((campaign) => recordAdImpression(Number(campaign.id)).catch(() => false)));
+      slots[placement] = campaigns.map((campaign) => {
+        const optimized = optimizeCampaignImage(campaign);
+        return {
+          id: campaign.id,
+          title: campaign.title,
+          desc: campaign.desc,
+          image: optimized.imageUrl,
+          disclosure: campaign.disclosure || 'Sponsored',
+          advertiserName: campaign.advertiserName || '',
+          destination: campaign.destination || '/chat',
+          clickUrl: `/ads/${encodeURIComponent(String(campaign.id))}/click`,
+          ctaText: campaign.ctaText || 'Learn more',
+          placement: campaign.placement || placement,
+        };
+      });
+    }));
+    res.setHeader('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
+    return res.json({ slots });
   } catch (error) {
     next(error);
   }
