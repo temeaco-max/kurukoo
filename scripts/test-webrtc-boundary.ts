@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const routeSource = fs.readFileSync(path.join(process.cwd(), 'src', 'routes', 'webrtcRoutes.ts'), 'utf8');
-const callClientSource = fs.readFileSync(path.join(process.cwd(), 'public', 'js', 'kurukoo-call.js'), 'utf8');
+const callClientSource = fs.readFileSync(path.join(process.cwd(), 'frontend/public', 'js', 'kurukoo-call.js'), 'utf8');
 assert.match(routeSource, /function requireWebRTCReadiness/);
 assert.match(routeSource, /router\.get\('\/status'/);
 assert.match(routeSource, /router\.get\('\/config'/);

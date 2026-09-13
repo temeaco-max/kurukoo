@@ -57,8 +57,8 @@ if (fs.existsSync(messageTablePath)) {
 
 // Legacy channel-specific chat clients are prohibited from becoming alternate sources of truth.
 const prohibitedLegacyClients = [
-    'public/js/kurukoo-home-chat.js',
-    'public/js/kurukoo-chat.js'
+    'frontend/public/js/kurukoo-home-chat.js',
+    'frontend/public/js/kurukoo-chat.js'
 ];
 for (const file of prohibitedLegacyClients) {
     if (fs.existsSync(path.join(root, file))) failures.push(`Legacy chat client remains: ${file}`);

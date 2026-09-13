@@ -4,10 +4,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
-const manifest = JSON.parse(fs.readFileSync(path.join(root, 'public', 'manifest.json'), 'utf8')) as Record<string, any>;
-const serviceWorker = fs.readFileSync(path.join(root, 'public', 'sw.js'), 'utf8');
-const pwaClient = fs.readFileSync(path.join(root, 'public', 'js', 'kurukoo-pwa.js'), 'utf8');
-const offline = fs.readFileSync(path.join(root, 'public', 'offline.html'), 'utf8');
+const manifest = JSON.parse(fs.readFileSync(path.join(root, 'frontend/public', 'manifest.json'), 'utf8')) as Record<string, any>;
+const serviceWorker = fs.readFileSync(path.join(root, 'frontend/public', 'sw.js'), 'utf8');
+const pwaClient = fs.readFileSync(path.join(root, 'frontend/public', 'js', 'kurukoo-pwa.js'), 'utf8');
+const offline = fs.readFileSync(path.join(root, 'frontend/public', 'offline.html'), 'utf8');
 
 assert.equal(manifest.id, '/chat/');
 assert.equal(manifest.start_url, '/chat/');

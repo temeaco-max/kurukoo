@@ -5,8 +5,8 @@ import path from 'node:path';
 
 const read = (relative: string) => fs.readFile(path.join(process.cwd(), relative), 'utf8');
 
-const webClient = await read('public/js/fcm-client.js');
-const worker = await read('public/firebase-messaging-sw.js');
+const webClient = await read('frontend/public/js/fcm-client.js');
+const worker = await read('frontend/public/firebase-messaging-sw.js');
 const nativeNotifications = await read('mobile/kurukoo-mobile/lib/notifications.ts');
 const nativeLayout = await read('mobile/kurukoo-mobile/app/_layout.tsx');
 const expoConfig = await read('mobile/kurukoo-mobile/app.config.ts');

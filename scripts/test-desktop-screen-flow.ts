@@ -23,12 +23,12 @@ require(!app.includes('/daily-picks'), 'Authenticated Web App must not retain a 
 require(read('views/_partials/app-sidebar.ejs').includes('class="k-app-sidebar"'), 'Authenticated desktop sidebar missing');
 require(read('views/_partials/app-mobile-nav.ejs').includes('class="k-mobile-tabbar"'), 'Authenticated responsive navigation contract missing');
 
-const appShell = read('public/js/kurukoo-app-shell.js');
+const appShell = read('frontend/public/js/kurukoo-app-shell.js');
 require(!appShell.includes('/app/'), 'Authenticated runtime must use direct canonical routes without legacy normalizers');
 require(appShell.includes("path==='/chat'"), 'Agent refinement must target the direct canonical Chat route');
 
-const adminIndex = read('public/admin/index.html');
-const adminAuth = read('public/admin/admin-auth.js');
+const adminIndex = read('admin/index.html');
+const adminAuth = read('admin/admin-auth.js');
 require(!adminIndex.includes('<nav class="k-nav"'), 'Control Room must not own a second Admin navigation');
 require(adminIndex.includes('/admin/admin-auth.js'), 'Control Room must load the canonical Admin navigation owner');
 for (const [href, label] of [

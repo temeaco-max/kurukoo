@@ -4,9 +4,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
-const chatHtml = fs.readFileSync(path.join(root, 'public/chat/index.html'), 'utf8');
+const chatHtml = fs.readFileSync(path.join(root, 'frontend/public/chat/index.html'), 'utf8');
 const foundation = fs.readFileSync(path.join(root, 'src/services/chatSidebarFoundation.ts'), 'utf8');
-const deskRuntime = fs.readFileSync(path.join(root, 'public/js/kurukoo-desk-system.js'), 'utf8');
+const deskRuntime = fs.readFileSync(path.join(root, 'frontend/public/js/kurukoo-desk-system.js'), 'utf8');
 
 const required = [
   ['New conversation', 'new-chat'],

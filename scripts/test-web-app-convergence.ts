@@ -2,8 +2,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const convergence = fs.readFileSync('public/js/kurukoo-app-convergence.js', 'utf8');
-const fcm = fs.readFileSync('public/js/fcm-client.js', 'utf8');
+const convergence = fs.readFileSync('frontend/public/js/kurukoo-app-convergence.js', 'utf8');
+const fcm = fs.readFileSync('frontend/public/js/fcm-client.js', 'utf8');
 
 assert.match(convergence, /\/api\/pulse\/providers/, 'Discover must use the canonical Pulse provider projection.');
 assert.match(convergence, /\/api\/pulse\/status/, 'Discover must expose the owner-scoped Pulse status boundary.');

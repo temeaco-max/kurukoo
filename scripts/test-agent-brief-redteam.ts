@@ -24,7 +24,7 @@ const { createConversationGoal, getAgentGoal } = await import('../src/services/a
 const { sendFcmPush } = await import('../src/services/pushNotifications.js');
 const { buildAgentBrief, classifyAgentBriefAttention, enqueueAgentBriefNotification, resolveAgentBriefPreferences } = await import('../src/services/agentBriefService.js');
 const { processCanonicalChatTurn } = await import('../src/services/canonicalChatTurnService.js');
-const chatSurface = fs.readFileSync(path.resolve('public/js/kurukoo-primary-chat.js'), 'utf8');
+const chatSurface = fs.readFileSync(path.resolve('frontend/public/js/kurukoo-primary-chat.js'), 'utf8');
 
 const ownerA = '+2348091000001';
 const ownerB = '+2348091000002';

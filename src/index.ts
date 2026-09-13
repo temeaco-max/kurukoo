@@ -108,6 +108,9 @@ app.set('view engine', 'ejs'); app.set('views', path.join(process.cwd(),'views')
 app.use((_req,res,next)=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','SAMEORIGIN');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');res.setHeader('Permissions-Policy','camera=(self), microphone=(self), geolocation=(self), payment=()');if(production)res.setHeader('Strict-Transport-Security','max-age=31536000; includeSubDomains');next();});
 app.use(compression({threshold:1024}));
 app.use(express.static(path.join(process.cwd(),'frontend/public'),{index:false,fallthrough:true,setHeaders:(res,filePath)=>{const lower=filePath.toLowerCase();if(lower.endsWith('.html')||lower.endsWith('/sw.js')||lower.endsWith('/manifest.json')||/\.(?:css|js)$/.test(lower)){res.setHeader('Cache-Control','no-cache, must-revalidate');return;}if(/\.(?:svg|png|jpe?g|webp|woff2?)$/.test(lower))res.setHeader('Cache-Control','public, max-age=604800, stale-while-revalidate=86400');}}));
+// Admin is a privileged client surface, deliberately outside the customer web frontend (frontend/).
+// UI pages live in /admin (repo root); the canonical Admin API lives at /api/admin.
+app.use('/admin',express.static(path.join(process.cwd(),'admin'),{index:false,fallthrough:true,setHeaders:(res,filePath)=>{const lower=filePath.toLowerCase();if(lower.endsWith('.html')||/\.(?:css|js)$/.test(lower))res.setHeader('Cache-Control','no-cache, must-revalidate');}}));
 app.use(express.urlencoded({ extended:false, limit:process.env.CHAT_ATTACHMENT_BODY_LIMIT || '35mb' }));
 app.use(express.json({limit:process.env.CHAT_ATTACHMENT_BODY_LIMIT || '35mb',verify:(req,_res,buf)=>{(req as any).rawBody=Buffer.from(buf);}}));
 app.use('/',systemRoutes); app.use('/',authChallengePublicRoutes); app.use('/',mcpAppRoutes); app.use('/api/v1',apiV1Bridge); app.use('/api/v1',executionOverviewRoutes); app.use('/api/v1',secureServicesRoutes);

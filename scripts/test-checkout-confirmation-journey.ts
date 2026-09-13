@@ -6,8 +6,8 @@ import path from 'node:path';
 const root = process.cwd();
 const read = (relativePath: string) => fs.readFileSync(path.join(root, relativePath), 'utf8');
 const workspace = read('views/workspace.ejs');
-const client = read('public/js/kurukoo-workspace.js');
-const style = read('public/css/kurukoo-workspace.css');
+const client = read('frontend/public/js/kurukoo-workspace.js');
+const style = read('frontend/public/css/kurukoo-workspace.css');
 const cartRoutes = read('src/routes/cartRoutes.ts');
 const economicRoutes = read('src/routes/economicRequestRouter.ts');
 

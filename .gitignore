@@ -66,3 +66,11 @@ secrets/
 # Local model binaries / runtime checkpoints — never commit (machine-specific, huge)
 /llamafile-bin/
 /models/gguf/
+
+# Local runtime state — machine-specific, never commit
+app.db
+*.db
+!frontend/**/*.db.js
+tmp/
+nohup.out
+.cache/

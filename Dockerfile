@@ -26,6 +26,7 @@ ENV NODE_ENV=production \
 RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund && npm cache clean --force
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/frontend/public ./frontend/public
+COPY --from=build /app/admin ./admin
 COPY --from=build /app/views ./views
 COPY --from=build /app/locales ./locales
 COPY --from=build /app/models ./models

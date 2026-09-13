@@ -6,7 +6,7 @@ const root = process.cwd();
 const read = (file: string) => fs.readFileSync(path.join(root, file), 'utf8');
 const login = read('views/login.ejs');
 const authRoutes = read('src/routes/authRoutes.ts');
-const authCss = read('public/css/kurukoo-auth.css');
+const authCss = read('frontend/public/css/kurukoo-auth.css');
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(`Auth entry contract failed: ${message}`);

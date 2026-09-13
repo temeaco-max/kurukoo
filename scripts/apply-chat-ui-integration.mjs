@@ -1,7 +1,7 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import fs from 'node:fs';
 
-const path = 'public/dashboard.html';
+const path = 'frontend/public/dashboard.html';
 const source = fs.readFileSync(path, 'utf8');
 let out = source;
 

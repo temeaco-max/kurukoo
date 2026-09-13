@@ -36,7 +36,7 @@ const pages: Record<string, string> = {
 
 for (const [route, file] of Object.entries(pages)) {
   router.get(route, (_req, res, next) => {
-    res.sendFile(path.join(process.cwd(), 'frontend/public', 'admin', file), error => {
+    res.sendFile(path.join(process.cwd(), 'admin', file), error => {
       if (error) next(error);
     });
   });

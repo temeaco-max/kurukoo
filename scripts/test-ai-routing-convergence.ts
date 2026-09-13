@@ -27,3 +27,29 @@ const unknown = classifyAiRoutingSignal('the purple moon is talking to me');
 assert.ok(unknown.source === 'none' || unknown.confidence < 0.72, 'unexpectedly confident classification for nonsense input');
 
 console.log(`AI routing convergence passed ${cases.length + 1} cases.`);
+
+// FastText boundary regression guard (canonical decision — see aiRoutingConvergence.ts):
+// 1. The canonical conversational path (rules + skill catalogue) must classify
+//    catalogue-solvable requests WITHOUT consulting FastText first-line.
+// 2. FastText may only appear as a downstream hint, never above the escalation threshold.
+import { FASTTEXT_HINT_MAX_CONFIDENCE } from '../src/services/aiRoutingConvergence.js';
+import { getFastTextRuntimeStatus } from '../src/services/fastTextService.js';
+
+assert.ok(FASTTEXT_HINT_MAX_CONFIDENCE < 0.72, 'FastText hint confidence cap must stay below the escalation threshold');
+
+for (const item of cases.filter(c => c.skill)) {
+  const signal = classifyAiRoutingSignal(item.text);
+  assert.notEqual(signal.source, 'fasttext', `${item.text}: FastText must not be the first-line classifier for a catalogue-solvable request`);
+  if (signal.source === 'catalogue') assert.equal(signal.skill, item.skill);
+}
+
+// Even when FastText answers, its hint confidence can never satisfy the canonical path alone.
+const fastStatus = getFastTextRuntimeStatus();
+const hintProbe = classifyAiRoutingSignal('zzz unknown domain probe qqq');
+if (hintProbe.source === 'fasttext') {
+  assert.ok(hintProbe.confidence <= FASTTEXT_HINT_MAX_CONFIDENCE, 'FastText hint exceeded its confidence cap');
+  assert.equal(shouldEscalateToAi(hintProbe, 'zzz unknown domain probe qqq'), true, 'FastText-only hint must escalate to the model path');
+}
+assert.ok(fastStatus.trainingExamples >= 0);
+
+console.log(`FastText boundary guard passed (modelState=${fastStatus.modelState}, hintCap=${FASTTEXT_HINT_MAX_CONFIDENCE}).`);

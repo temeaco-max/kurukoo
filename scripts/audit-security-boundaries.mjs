@@ -12,8 +12,8 @@ const expect = (condition, message) => {
 const authSource = read('src/middleware/auth.ts');
 const indexSource = read('src/index.ts');
 const economicSource = read('src/routes/economicRequestRouter.ts');
-const chatSource = read('public/js/kurukoo-primary-chat.js');
-const hubSource = read('public/dashboard.html');
+const chatSource = read('frontend/public/js/kurukoo-primary-chat.js');
+const hubSource = read('frontend/public/dashboard.html');
 
 for (const rule of [
   { value: 'req.query.token', reason: 'JWTs must not be accepted from URLs' },
@@ -21,7 +21,7 @@ for (const rule of [
   { value: '+2348030000000', reason: 'Demo/default phone identities must not ship in production paths' },
   { value: "localStorage.setItem('kurukoo_auth", reason: 'Browser auth must remain in HttpOnly cookies' },
 ]) {
-  for (const relative of ['src/middleware/auth.ts', 'src/index.ts', 'src/routes/chatRouter.ts', 'public/js/kurukoo-primary-chat.js']) {
+  for (const relative of ['src/middleware/auth.ts', 'src/index.ts', 'src/routes/chatRouter.ts', 'frontend/public/js/kurukoo-primary-chat.js']) {
     const file = path.join(root, relative);
     if (fs.existsSync(file) && fs.readFileSync(file, 'utf8').includes(rule.value)) {
       failures.push(`${relative}: ${rule.reason} (${rule.value})`);

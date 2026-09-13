@@ -7,7 +7,7 @@ const read = (file: string) => fs.readFileSync(path.join(root, file), 'utf8');
 const failures: string[] = [];
 
 const app = read('views/app.ejs');
-const shell = read('public/js/kurukoo-app-shell.js');
+const shell = read('frontend/public/js/kurukoo-app-shell.js');
 const routes = read('src/routes/appSurfaceRoutes.ts');
 
 const canonicalSections = [

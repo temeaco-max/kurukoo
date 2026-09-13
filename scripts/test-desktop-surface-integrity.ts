@@ -7,10 +7,10 @@ const failures: string[] = [];
 const read = (file: string) => fs.readFileSync(path.join(root, file), 'utf8');
 const exists = (file: string) => fs.existsSync(path.join(root, file));
 
-const adminDir = path.join(root, 'public/admin');
+const adminDir = path.join(root, 'admin');
 const adminFiles = fs.readdirSync(adminDir).filter((file) => file.endsWith('.html') && file !== 'login.html');
 for (const file of adminFiles) {
-  const relative = `public/admin/${file}`;
+  const relative = `admin/${file}`;
   const source = read(relative);
   if (!source.includes('/admin/admin-auth.js')) failures.push(`${relative} does not load canonical admin-auth.js`);
   if (!source.includes('admin-os') && !source.includes('/css/admin-pages/admin-base.css')) failures.push(`${relative} is missing Admin visual shell markers`);
@@ -31,7 +31,7 @@ if (!appSidebar.includes('k-app-sidebar')) failures.push('Authenticated desktop 
 if (!appHeader.includes('k-app-ask')) failures.push('Authenticated desktop Ask recovery is missing');
 if (!appMobileNav.includes('k-mobile-tabbar')) failures.push('Authenticated responsive navigation is missing');
 
-const appRuntime = read('public/js/kurukoo-app-shell.js');
+const appRuntime = read('frontend/public/js/kurukoo-app-shell.js');
 for (const marker of ['normalizeAppLinks','kurukoo-webapp-pixel-refinement','kurukoo-webapp-screen-refinement']) {
   if (!appRuntime.includes(marker)) failures.push(`Authenticated runtime missing ${marker}`);
 }
@@ -41,13 +41,13 @@ if (!flow.includes('Control Room')) failures.push('Desktop flow contract does no
 if (!flow.includes('Open Web App')) failures.push('Desktop flow contract does not cover Admin → Web App bridge');
 
 for (const requiredFile of [
-  'public/css/kurukoo-visual-completion.css',
-  'public/css/kurukoo-webapp-pixel-refinement.css',
-  'public/css/kurukoo-webapp-screen-refinement.css',
-  'public/css/admin-pages/admin-convergence-shell.css',
-  'public/js/site-navigation.js',
-  'public/js/kurukoo-app-shell.js',
-  'public/admin/admin-auth.js',
+  'frontend/public/css/kurukoo-visual-completion.css',
+  'frontend/public/css/kurukoo-webapp-pixel-refinement.css',
+  'frontend/public/css/kurukoo-webapp-screen-refinement.css',
+  'frontend/public/css/admin-pages/admin-convergence-shell.css',
+  'frontend/public/js/site-navigation.js',
+  'frontend/public/js/kurukoo-app-shell.js',
+  'admin/admin-auth.js',
 ]) if (!exists(requiredFile)) failures.push(`Missing shared desktop visual/flow authority ${requiredFile}`);
 
 if (failures.length) {

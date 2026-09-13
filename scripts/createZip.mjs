@@ -7,7 +7,7 @@ const zip = new AdmZip();
 
 const filesAndDirs = [
     'src',
-    'public',
+    'frontend/public',
     'views',
     'locales',
     'models',

@@ -22,7 +22,8 @@ const COMPOUND_CONJUNCTIONS = [
 
 function inferSkill(text: string): string {
   const lower = text.toLowerCase();
-  if (/laptop|macbook|computer|pc\b/.test(lower)) return 'phone_repairer';
+  if (/laptop|macbook|computer|pc\b/.test(lower)) return 'laptop_repairer';
+  if (/tablet|ipad|galaxy tab/.test(lower)) return 'tablet_repairer';
   if (/phone|iphone|android|screen/.test(lower)) return 'phone_repairer';
   if (/sell|market|advertise|list.*for sale/.test(lower)) return 'find_worker';
   if (/clean|tidy/.test(lower)) return 'house_cleaner';

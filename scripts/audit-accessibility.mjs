@@ -14,7 +14,7 @@ function walk(directory) {
   }
 }
 walk(path.join(root, 'views'));
-walk(path.join(root, 'public'));
+walk(path.join(root, 'frontend/public'));
 const findings = [];
 function add(file, rule, message, line) { findings.push({ file: path.relative(root, file), rule, message, line }); }
 function hasAccessibleLabelHook(attrs) { return /\baria-label\s*=|\baria-labelledby\s*=|\bid\s*=/i.test(attrs); }
@@ -51,7 +51,7 @@ for (const file of files) {
 }
 const cssFiles = [];
 function walkCss(directory) { if (!fs.existsSync(directory)) return; for (const entry of fs.readdirSync(directory, { withFileTypes: true })) { const file=path.join(directory,entry.name); if(entry.isDirectory()) walkCss(file); else if(file.endsWith('.css')) cssFiles.push(file); } }
-walkCss(path.join(root, 'public'));
+walkCss(path.join(root, 'frontend/public'));
 const css = cssFiles.map((file) => fs.readFileSync(file, 'utf8')).join('\n');
 const checks = {
   focusVisible: /:focus-visible/.test(css),

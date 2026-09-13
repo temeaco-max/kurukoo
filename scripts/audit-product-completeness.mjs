@@ -17,7 +17,7 @@ const skillFlowsPath = 'src/services/skillFlows.ts';
 const appTemplatePath = 'views/app.ejs';
 const publicHeadPath = 'views/_partials/head.ejs';
 const publicNavPath = 'views/_partials/nav.ejs';
-const adminAuthPath = 'public/admin/admin-auth.js';
+const adminAuthPath = 'admin/admin-auth.js';
 const auditPageArchitecture = path.join(root, 'scripts/audit-page-architecture.mjs');
 
 const matrix = read(matrixPath);

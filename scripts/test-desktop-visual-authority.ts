@@ -7,7 +7,7 @@ const read = (file: string) => fs.readFileSync(path.join(root, file), 'utf8');
 const failures: string[] = [];
 const require = (condition: boolean, message: string) => { if (!condition) failures.push(message); };
 
-const desktopCss = read('public/css/kurukoo-desktop-final.css');
+const desktopCss = read('frontend/public/css/kurukoo-desktop-final.css');
 require(desktopCss.includes('@media (min-width: 993px)'), 'Desktop visual authority must be desktop-only scoped');
 require(desktopCss.includes('.k-app-sidebar'), 'Desktop visual authority must refine authenticated sidebar');
 require(desktopCss.includes('.k-app-title-row'), 'Desktop visual authority must refine authenticated title hierarchy');
@@ -17,9 +17,9 @@ require(desktopCss.includes('[data-state="pending"]'), 'Desktop visual authority
 
 const publicHead = read('views/_partials/head.ejs');
 const appHead = read('views/app.ejs');
-const publicRuntime = read('public/js/site-navigation.js');
-const appRuntime = read('public/js/kurukoo-app-shell.js');
-const adminRuntime = read('public/admin/admin-auth.js');
+const publicRuntime = read('frontend/public/js/site-navigation.js');
+const appRuntime = read('frontend/public/js/kurukoo-app-shell.js');
+const adminRuntime = read('admin/admin-auth.js');
 
 require(publicHead.includes('/css/kurukoo-desktop-final.css?v=1'), 'Public canonical head must load desktop final visual authority');
 require(appHead.includes('/css/kurukoo-desktop-final.css?v=1'), 'Authenticated Web App canonical head must load desktop final visual authority');

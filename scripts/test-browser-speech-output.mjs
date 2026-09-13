@@ -1,8 +1,8 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import fs from 'node:fs';
 
-const adapter = fs.readFileSync('public/js/kurukoo-speech-output.js', 'utf8');
-const chat = fs.readFileSync('public/js/kurukoo-primary-chat.js', 'utf8');
+const adapter = fs.readFileSync('frontend/public/js/kurukoo-speech-output.js', 'utf8');
+const chat = fs.readFileSync('frontend/public/js/kurukoo-primary-chat.js', 'utf8');
 const adapterMarkers = ['SpeechSynthesisUtterance', 'window.KurukooSpeechOutput', "provider: 'browser'", 'window.speechSynthesis.cancel()', 'window.speechSynthesis.speak(utterance)'];
 const chatMarkers = ['function speakAssistantResponse', "['speak', 'Speak response', 'mic']", 'KurukooSpeechOutput', 'output.speak(text'];
 const missing = [

@@ -31,8 +31,8 @@ for (const [phone, name, visibility] of [
   [author, 'Topic Author', 'private'],
   [follower, 'Follower', 'private'],
   [participant, 'Reply Member', 'private'],
-  [provider, 'Public Provider', 'public'],
-  [publicPerson, 'Public Person', 'public'],
+  [provider, 'Public Provider', 'frontend/public'],
+  [publicPerson, 'Public Person', 'frontend/public'],
   [privatePerson, 'Private Person', 'private'],
   [moderator, 'Moderator', 'private'],
 ] as const) {
@@ -71,7 +71,7 @@ try {
   assert.equal(created.status, 201, JSON.stringify(createdPayload));
   const topicId = createdPayload.topic!.id;
 
-  const published = await request(`/api/admin/topics/${topicId}/moderate`, { method: 'POST', headers: headers(moderator, 'admin'), body: JSON.stringify({ decision: 'public', note: 'Public community context, not a provider claim.' }) });
+  const published = await request(`/api/admin/topics/${topicId}/moderate`, { method: 'POST', headers: headers(moderator, 'admin'), body: JSON.stringify({ decision: 'frontend/public', note: 'Public community context, not a provider claim.' }) });
   assert.equal(published.status, 200, await published.text());
 
   const createFollow = await request('/api/relationships', { method: 'POST', headers: headers(follower), body: JSON.stringify({ targetType: 'topic', targetId: topicId, relationshipType: 'follow', context: { source: 'topic-detail' } }) });

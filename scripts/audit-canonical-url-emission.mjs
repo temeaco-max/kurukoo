@@ -5,8 +5,8 @@ import path from 'node:path';
 const root = process.cwd();
 const runtimeRoots = [
   'views',
-  'public/js',
-  'public/css',
+  'frontend/public/js',
+  'frontend/public/css',
   'src/routes',
   'src/services',
   'src/services/canonicalPlatformFeatureRegistry.ts',

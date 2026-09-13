@@ -1,7 +1,7 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import fs from 'fs';
 
-const css = fs.readFileSync('public/css/site.css', 'utf8');
+const css = fs.readFileSync('frontend/public/css/site.css', 'utf8');
 
 // Parse CSS with AST-like tokenizer
 function tokenize(input) {

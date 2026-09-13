@@ -6,9 +6,9 @@ import path from 'node:path';
 const root = process.cwd();
 const read = (file: string) => fs.readFileSync(path.join(root, file), 'utf8');
 
-const desk = read('public/js/kurukoo-desk-system.js');
-const style = read('public/css/kurukoo-desk-system.css');
-const extensions = read('public/js/kurukoo-app-extensions.js');
+const desk = read('frontend/public/js/kurukoo-desk-system.js');
+const style = read('frontend/public/css/kurukoo-desk-system.css');
+const extensions = read('frontend/public/js/kurukoo-app-extensions.js');
 const bridge = read('src/middleware/apiV1Bridge.ts');
 const nativeIntent = read('mobile/kurukoo-mobile/app/+native-intent.tsx');
 

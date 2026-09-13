@@ -80,7 +80,7 @@ try {
   const moderationQueue = await fetch(`${baseUrl}/api/admin/topics/submitted`, { headers: headers(moderator, 'admin') });
   assert.equal(moderationQueue.status, 200);
   assert.ok((await moderationQueue.json() as { topics?: Array<{ id: string }> }).topics?.some((topic) => topic.id === topicId));
-  const published = await fetch(`${baseUrl}/api/admin/topics/${topicId}/moderate`, { method: 'POST', headers: headers(moderator, 'admin'), body: JSON.stringify({ decision: 'public', note: 'Community question permitted as context, not a provider claim.' }) });
+  const published = await fetch(`${baseUrl}/api/admin/topics/${topicId}/moderate`, { method: 'POST', headers: headers(moderator, 'admin'), body: JSON.stringify({ decision: 'frontend/public', note: 'Community question permitted as context, not a provider claim.' }) });
   assert.equal(published.status, 200, await published.text());
   const authorModerationNotification = (await getInternalNotifications(author, 20)).find((notification) => notification.object_type === 'topic' && notification.object_id === topicId);
   assert.ok(authorModerationNotification, 'Topic moderation must queue an owner-scoped attention update.');

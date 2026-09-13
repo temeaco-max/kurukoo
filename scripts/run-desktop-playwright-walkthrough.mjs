@@ -87,7 +87,7 @@ for (const viewport of viewports) {
   const context = await browser.newContext({ viewport, deviceScaleFactor: 1, colorScheme: 'light', reducedMotion: 'reduce' });
   if (credentials.authCookie) await context.addCookies(credentials.authCookie.split(';').map((part) => part.trim()).filter(Boolean).map((part) => { const i = part.indexOf('='); return i > 0 ? { name: part.slice(0, i), value: part.slice(i + 1), url: `${baseUrl}/` } : null; }).filter(Boolean));
   if (credentials.adminToken) await context.addInitScript((token) => localStorage.setItem('kurukoo_admin', token), credentials.adminToken);
-  for (const route of publicRoutes) await walkViewport(viewport, 'public', route, index++, context);
+  for (const route of publicRoutes) await walkViewport(viewport, 'frontend/public', route, index++, context);
   for (const route of appRoutes) await walkViewport(viewport, 'app', route, index++, context);
   for (const route of adminRoutes) await walkViewport(viewport, 'admin', route, index++, context);
   await browser.close();

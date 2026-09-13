@@ -13,7 +13,7 @@ function walk(directory) {
   }
 }
 walk(path.join(root, 'views'));
-walk(path.join(root, 'public'));
+walk(path.join(root, 'frontend/public'));
 let changed = 0;
 for (const file of files) {
   const original = fs.readFileSync(file, 'utf8');
@@ -37,7 +37,7 @@ for (const file of files) {
     changed += 1;
   }
 }
-const cssPath = path.join(root, 'public/css/site.css');
+const cssPath = path.join(root, 'frontend/public/css/site.css');
 let css = fs.readFileSync(cssPath, 'utf8');
 if (!css.includes('@media (forced-colors: active)')) {
   css += `\n\n/* WCAG high-contrast support shared by public, PWA, Chat, and admin surfaces. */\n@media (forced-colors: active) {\n  *, *::before, *::after { forced-color-adjust: auto; }\n  :where(a, button, input, select, textarea, summary, [role="button"]):focus { outline: 2px solid CanvasText; outline-offset: 3px; }\n  :where(button, [role="button"]) { border: 1px solid ButtonText; }\n  :where(a) { color: LinkText; }\n}\n`;

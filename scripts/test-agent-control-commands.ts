@@ -36,7 +36,7 @@ if (!cancelled.agentGoal || cancelled.agentGoal.status !== 'cancelled' || !/stop
 const persisted = await getAgentGoal(phone, created.id);
 if (persisted?.status !== 'cancelled') throw new Error(`Final goal state was not persisted: ${persisted?.status}`);
 
-const agentSurface = fs.readFileSync('public/js/kurukoo-agents-convergence.js', 'utf8');
+const agentSurface = fs.readFileSync('frontend/public/js/kurukoo-agents-convergence.js', 'utf8');
 for (const required of ['data-agent-goal-action', '/api/agent/goals/${encodeURIComponent(goalId)}/${action}', 'conversationId=${encodeURIComponent(conversationId)}', "window.confirm('Cancel this work item? This stops further automatic progress.')", "paused: 'Paused by you'", "failed: 'Needs recovery'", "status === 'paused'", "data-agents-live", "Work is paused. Resume when you want Kurukoo to continue.", "Review the decision Kurukoo needs before work can continue.", "!['cancelled', 'completed', 'failed', 'expired'].includes(status)"]) {
   if (!agentSurface.includes(required)) throw new Error(`Native Agent control surface is missing ${required}`);
 }

@@ -12,11 +12,11 @@ const index = read('src/index.ts');
 const apiBridge = read('src/middleware/apiV1Bridge.ts');
 const nativeIntent = read('mobile/kurukoo-mobile/app/+native-intent.tsx');
 const appConfig = read('mobile/kurukoo-mobile/app.config.ts');
-const deskSystem = read('public/js/kurukoo-desk-system.js');
-const deskLiveHydration = read('public/js/kurukoo-desk-live-hydration.js');
-const osLiveHydration = read('public/js/kurukoo-os-live-hydration.js');
-const deskStyle = read('public/css/kurukoo-desk-system.css');
-const appExtensions = read('public/js/kurukoo-app-extensions.js');
+const deskSystem = read('frontend/public/js/kurukoo-desk-system.js');
+const deskLiveHydration = read('frontend/public/js/kurukoo-desk-live-hydration.js');
+const osLiveHydration = read('frontend/public/js/kurukoo-os-live-hydration.js');
+const deskStyle = read('frontend/public/css/kurukoo-desk-system.css');
+const appExtensions = read('frontend/public/js/kurukoo-app-extensions.js');
 
 require(CANONICAL_URLS.desk.home === '/home', 'Home canonical URL must remain /home.');
 require(CANONICAL_URLS.conversation.agent === '/chat', 'Agent canonical URL must remain /chat.');

@@ -129,9 +129,9 @@ const continuation = await processCanonicalChatTurn({ phone: owner, message: 'Op
 assert.match(continuation.reply, /same work item|reopened the exact Kurukoo context/i, 'The existing Conversation owner must continue from a brief-referenced Agent Runtime context.');
 assert.equal((await getAgentGoal(owner, goal.id))?.status, 'needs_user', 'Conversation continuation from a brief must not change approval-bound work automatically.');
 
-const speechAdapter = fs.readFileSync('public/js/kurukoo-speech-output.js', 'utf8');
-const presenceAdapter = fs.readFileSync('public/js/kurukoo-agent-presence.js', 'utf8');
-const chatSurface = fs.readFileSync('public/chat/index.html', 'utf8');
+const speechAdapter = fs.readFileSync('frontend/public/js/kurukoo-speech-output.js', 'utf8');
+const presenceAdapter = fs.readFileSync('frontend/public/js/kurukoo-agent-presence.js', 'utf8');
+const chatSurface = fs.readFileSync('frontend/public/chat/index.html', 'utf8');
 assert.match(speechAdapter, /isSupported/, 'Browser speech adapter must expose capability detection for graceful unavailable behavior.');
 assert.match(speechAdapter, /SpeechSynthesisUtterance/, 'Browser speech adapter must use zero-cost browser SpeechSynthesis rather than realtime voice.');
 assert.match(presenceAdapter, /kurukoo:voice-presence/, 'Agent Presence must reuse existing browser speech presence events.');

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import assert from 'node:assert/strict';
 
 const files = [
-  'public/js/kurukoo-primary-chat.js',
+  'frontend/public/js/kurukoo-primary-chat.js',
 ];
 
 for (const file of files) {

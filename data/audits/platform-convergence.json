@@ -1,0 +1,188 @@
+{
+  "generatedAt": "2026-09-13T13:04:09.195Z",
+  "catalogue": {
+    "canonicalMinimum": 241,
+    "convergedSkills": 244,
+    "localExtensions": 37,
+    "deviceRepairSkills": 15
+  },
+  "contracts": {
+    "skillsChecked": 244,
+    "failures": 0
+  },
+  "routing": {
+    "regressionCases": 7,
+    "fastTextModelState": "real"
+  },
+  "inference": {
+    "model": "smollm2:360m",
+    "source": "fallback",
+    "available": false,
+    "dtype": "q4",
+    "localEnabled": false,
+    "serverlessRuntime": "deprecated",
+    "readiness": "fallback",
+    "lastFailure": null,
+    "executionMode": "deterministic_fallback",
+    "latencyMs": null,
+    "actualModel": "template-fallback",
+    "requestedStage": "base",
+    "selectedStage": "base",
+    "registrySource": "environment_base"
+  },
+  "integrations": [
+    {
+      "id": "mistral_ai",
+      "configured": false,
+      "connected": false,
+      "runtimeReady": false,
+      "physicalOrProviderEvidenceRequired": true,
+      "detail": "Optional hosted text generation is not configured."
+    },
+    {
+      "id": "fcm",
+      "configured": false,
+      "connected": false,
+      "runtimeReady": false,
+      "physicalOrProviderEvidenceRequired": true,
+      "detail": "FCM service-account configuration is absent or invalid."
+    },
+    {
+      "id": "mqtt_iot",
+      "configured": false,
+      "connected": false,
+      "runtimeReady": false,
+      "physicalOrProviderEvidenceRequired": true,
+      "detail": "Set MQTT_BROKER_URL and explicitly enable FF_IOT_REMOTE only after broker/device authorization is verified."
+    },
+    {
+      "id": "webrtc",
+      "configured": false,
+      "connected": false,
+      "runtimeReady": false,
+      "physicalOrProviderEvidenceRequired": true,
+      "detail": "Configure approved STUN servers and, where relay fallback is required, a TURN endpoint with TURN_SHARED_SECRET before explicitly enabling FF_WEBRTC."
+    },
+    {
+      "id": "trusted_contacts",
+      "configured": false,
+      "connected": false,
+      "runtimeReady": false,
+      "physicalOrProviderEvidenceRequired": true,
+      "detail": "no_sms_or_email_provider_configured; consent remains pending and no delivery is claimed"
+    }
+  ],
+  "durableJobs": {
+    "queued": 0,
+    "running": 0,
+    "completed": 8,
+    "failed": 0,
+    "dead_letter": 0,
+    "cancelled": 0
+  },
+  "providerVerification": {
+    "recordsObserved": 0
+  },
+  "attachmentSecurity": {
+    "readiness": {
+      "configured": true,
+      "scanner": "builtin",
+      "note": "Built-in size, MIME/magic, hash and basic payload checks are active. Production malware scanning should add a provider before untrusted public uploads."
+    },
+    "syntheticProbe": {
+      "state": "accepted",
+      "sha256": "4ff75611a6df99365210222303350362cb2763d309b7971fd40522bdc51668a3",
+      "bytes": 25,
+      "mimeType": "text/plain",
+      "scanner": "builtin"
+    }
+  },
+  "inventory": {
+    "emptyQuerySafe": true
+  },
+  "discover": {
+    "experience": "for_you+nearby+today+topics+opportunities+explore",
+    "persistentActions": [
+      "watch",
+      "follow",
+      "save"
+    ],
+    "sponsoredPlacementBoundary": "adManager.public_discovery",
+    "mapIsPresentationLayer": true,
+    "sparseAreaRecovery": [
+      "ask_kurukoo",
+      "explore_capabilities",
+      "topics",
+      "watch"
+    ]
+  },
+  "mobile": {
+    "nativeFramework": "expo-router",
+    "iosAndroidShared": true,
+    "platformContract": "mobile/kurukoo-mobile/lib/platform-contract.ts",
+    "canonicalClient": "mobile/kurukoo-mobile/lib/platform-client.ts",
+    "buildProfiles": "mobile/kurukoo-mobile/eas.json"
+  },
+  "scale": {
+    "generatedAt": "2026-09-13T13:04:09.185Z",
+    "persistence": {
+      "state": "READY",
+      "note": "Single-worker SQL.js file persistence remains the intentional low-cost launch path."
+    },
+    "rateLimiting": {
+      "state": "READY",
+      "note": "Process-local rate limits are appropriate for the single-instance launch model."
+    },
+    "presence": {
+      "state": "READY",
+      "note": "In-process presence is suitable for single-instance Nearby/Pulse."
+    },
+    "agentWorkers": {
+      "state": "NOT_CONFIGURED",
+      "note": "Agent runtime is disabled."
+    },
+    "objectStorage": {
+      "state": "NOT_CONFIGURED",
+      "note": "Local attachment directory remains the launch path; move to protected object storage before high-volume media."
+    },
+    "recommendation": "Remain on single-instance SQL.js until concurrent multi-instance writes, sustained marketplace traffic, or HA requirements appear."
+  },
+  "canonicalOwners": [
+    "src/services/canonicalChatTurnService.ts",
+    "src/services/intentRouter.ts",
+    "src/services/skillFlows.ts",
+    "src/services/skillCatalogueConvergence.ts",
+    "src/services/skillBehaviourConvergence.ts",
+    "src/services/skillBehaviourRuntime.ts",
+    "src/services/skillExecutionContract.ts",
+    "src/services/capabilityRegistry.ts",
+    "src/services/universalCapabilityProtocol.ts",
+    "src/services/memoryProfile.ts",
+    "src/services/agentRuntime.ts",
+    "src/services/commercialLedger.ts",
+    "src/services/outcomeCompleteness.ts",
+    "src/services/durableJobQueue.ts",
+    "src/services/providerVerificationLifecycle.ts",
+    "src/services/attachmentSecurityBoundary.ts",
+    "src/services/artifactService.ts",
+    "src/services/catalogueInventoryMatcher.ts",
+    "src/services/discoveryNetwork.ts",
+    "src/services/discoverExperience.ts",
+    "src/services/adManager.ts",
+    "src/services/topicService.ts",
+    "src/routes/discoveryRoutes.ts",
+    "src/routes/providerVerificationRoutes.ts",
+    "src/routes/healthRoutes.ts",
+    "src/routes/publicRoutes.ts",
+    "scripts/runtime-smoke.ts",
+    "scripts/test-discover-experience.ts",
+    "mobile/kurukoo-mobile/app/(tabs)/discover.tsx",
+    "mobile/kurukoo-mobile/lib/discover-contract.ts",
+    "mobile/kurukoo-mobile/lib/platform-contract.ts",
+    "mobile/kurukoo-mobile/lib/platform-client.ts",
+    "mobile/kurukoo-mobile/scripts/test-platform-contract.ts",
+    "mobile/kurukoo-mobile/eas.json",
+    "mobile/kurukoo-mobile/docs/platform-convergence.md"
+  ],
+  "externalRuntimeBoundary": "provider/device/infrastructure credentials and live deployment evidence are runtime configuration; repository audits never convert simulation into a production claim"
+}

@@ -2,7 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const css = fs.readFileSync('public/css/site.css', 'utf8');
+const css = fs.readFileSync('frontend/public/css/site.css', 'utf8');
 
 // Let's analyze the exact duplicates in site.css
 // 1. Exact Duplicate Selectors (Same Selector defined multiple times)

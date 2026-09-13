@@ -61,7 +61,7 @@ try {
   assert.equal(verifyQrContext(`${token}tampered`), null, 'Tampered opaque context must reject');
   assert.equal(verifyQrContext(signQrContext(referral, Date.now() - 1)), null, 'Expired opaque context must reject');
   for (const forbidden of ['otp', 'password', 'cookie', 'session_id', 'api_key', 'payment_credential', 'phone', 'voice_token']) {
-    assert.equal(parseQrContext({ context: 'public', [forbidden]: 'secret' }), null, `${forbidden} must never be accepted as QR metadata`);
+    assert.equal(parseQrContext({ context: 'frontend/public', [forbidden]: 'secret' }), null, `${forbidden} must never be accepted as QR metadata`);
   }
   assert.equal(parseQrContext({ context: 'payment', ref: 'ABCD' }), null, 'Unsupported QR type must reject');
   assert.equal(parseQrContext({ context: 'referral', ref: 'x'.repeat(33) }), null, 'Overlong QR metadata must reject');
@@ -135,11 +135,11 @@ try {
   const qrRequests = economicRequestCount(await getDb(), userPhone);
   assert.ok(qrRequests >= 1, 'Only the user’s subsequent intent may enter the existing Economic Request lifecycle');
 
-  const voice = fs.readFileSync('public/js/kurukoo-voice.js', 'utf8');
+  const voice = fs.readFileSync('frontend/public/js/kurukoo-voice.js', 'utf8');
   assert.match(voice, /localStorage\.getItem\('kurukoo_conversation_id'\)/, 'Voice must reuse the QR-originated canonical conversation ID');
   assert.match(voice, /body: JSON\.stringify\(\{ conversationId: requestedConversationId \}\)/, 'Voice session must converge on the existing chat conversation');
-  const scanner = fs.readFileSync('public/js/kurukoo-qr-page.js', 'utf8');
-  const primaryChat = fs.readFileSync('public/js/kurukoo-primary-chat.js', 'utf8');
+  const scanner = fs.readFileSync('frontend/public/js/kurukoo-qr-page.js', 'utf8');
+  const primaryChat = fs.readFileSync('frontend/public/js/kurukoo-primary-chat.js', 'utf8');
   assert.match(primaryChat, /document\.addEventListener\('kurukoo:qr'/, 'primary Chat must consume activated QR contexts');
   assert.match(primaryChat, /canonicalAction: 'qr\.context\.open'/, 'QR activation must use the canonical Chat action contract');
   assert.match(primaryChat, /state\.resumeCanonicalContextOnLoad = true/, 'QR activation must resume once after authenticated hydration');

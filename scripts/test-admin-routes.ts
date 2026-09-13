@@ -29,7 +29,7 @@ async function main() {
   const disputeServiceSrc = await fs.promises.readFile(new URL('../src/services/disputeResolution.ts', import.meta.url), 'utf8');
   const serviceSrc = await fs.promises.readFile(new URL('../src/services/adminPlatformService.ts', import.meta.url), 'utf8');
   const scaleSrc = await fs.promises.readFile(new URL('../src/services/scaleTransition.ts', import.meta.url), 'utf8');
-  const authSrc = await fs.promises.readFile(path.join(process.cwd(), 'public', 'admin', 'admin-auth.js'), 'utf8');
+  const authSrc = await fs.promises.readFile(path.join(process.cwd(), 'admin', 'admin-auth.js'), 'utf8');
   const indexSrc = await fs.promises.readFile(new URL('../src/index.ts', import.meta.url), 'utf8');
   const publicRoutes = await fs.promises.readFile(path.join(process.cwd(), 'src', 'routes', 'publicRoutes.ts'), 'utf8');
 
@@ -40,22 +40,22 @@ async function main() {
   assert.match(indexSrc, /app\.use\('\/api\/admin',\s*adminDisputeRoutes\)\s*;\s*app\.use\('\/api\/admin',\s*adminRoutes\)/, 'canonical dispute/ticket routes must be mounted before legacy admin handlers');
 
   for (const file of ['login.html', 'dashboard.html', 'ads.html', 'analytics.html', 'ai-agents.html', 'content.html', 'seo.html', 'users.html', 'pricing.html', 'revenue.html']) {
-    assert.ok(fs.existsSync(path.join(process.cwd(), 'public', 'admin', file)), `admin page ${file} must exist`);
+    assert.ok(fs.existsSync(path.join(process.cwd(), 'admin', file)), `admin page ${file} must exist`);
   }
-  assert.ok(fs.existsSync(path.join(process.cwd(), 'public', 'admin', 'admin-auth.js')), 'shared admin auth boundary must exist');
-  assert.ok(fs.existsSync(path.join(process.cwd(), 'public', 'css', 'admin-pages', 'admin-convergence-shell.css')), 'shared Admin convergence shell stylesheet must exist');
+  assert.ok(fs.existsSync(path.join(process.cwd(), 'admin', 'admin-auth.js')), 'shared admin auth boundary must exist');
+  assert.ok(fs.existsSync(path.join(process.cwd(), 'frontend/public', 'css', 'admin-pages', 'admin-convergence-shell.css')), 'shared Admin convergence shell stylesheet must exist');
   assert.match(authSrc, /x-admin-token/, 'shared admin auth must forward the operator token');
   assert.match(authSrc, /localStorage\.removeItem\('kurukoo_admin'\)/, 'shared admin auth must clear expired credentials');
   assert.match(authSrc, /\/api\/admin\/platform\/health/, 'shared admin auth must surface platform health');
-  for (const file of await fs.promises.readdir(path.join(process.cwd(), 'public', 'admin'))) {
+  for (const file of await fs.promises.readdir(path.join(process.cwd(), 'admin'))) {
     if (!file.endsWith('.html')) continue;
-    const page = await fs.promises.readFile(path.join(process.cwd(), 'public', 'admin', file), 'utf8');
+    const page = await fs.promises.readFile(path.join(process.cwd(), 'admin', file), 'utf8');
     if (file === 'dashboard.html') continue;
     if (file !== 'login.html') assert.match(page, /admin-auth\.js/, `${file} must include the shared admin auth boundary`);
   }
 
-  const index = await fs.promises.readFile(path.join(process.cwd(), 'public', 'admin', 'index.html'), 'utf8');
-  const adminJs = await fs.promises.readFile(path.join(process.cwd(), 'public', 'js', 'kurukoo-admin.js'), 'utf8');
+  const index = await fs.promises.readFile(path.join(process.cwd(), 'admin', 'index.html'), 'utf8');
+  const adminJs = await fs.promises.readFile(path.join(process.cwd(), 'frontend/public', 'js', 'kurukoo-admin.js'), 'utf8');
   assert.match(index, /One canonical backend for Web, PWA, iOS, Android/, 'control room must state cross-platform ownership');
   assert.match(index, /admin-platform-convergence\.css/, 'control room must load the canonical convergence stylesheet');
   assert.match(index, /Operational queue/, 'control room must present an operational queue workspace');
@@ -100,16 +100,16 @@ async function main() {
   assert.match(disputeServiceSrc, /refundEscrow/, 'dispute lifecycle must use canonical escrow refund');
   assert.match(disputeServiceSrc, /transitionEconomicRequest/, 'dispute lifecycle must update the canonical economic request state');
 
-  const dashboard = await fs.promises.readFile(path.join(process.cwd(), 'public', 'admin', 'dashboard.html'), 'utf8');
+  const dashboard = await fs.promises.readFile(path.join(process.cwd(), 'admin', 'dashboard.html'), 'utf8');
   assert.match(dashboard, /location\.replace\('\/admin\/'\)/, 'legacy dashboard must converge to the canonical Control Room');
   assert.match(dashboard, /<link rel="canonical" href="\/admin\/">/, 'legacy dashboard must advertise Control Room as canonical');
   assert.doesNotMatch(dashboard, /fetch\('\/api\/ads'/, 'legacy dashboard must not use public ads path');
   assert.doesNotMatch(dashboard, /fetch\('\/api\/content'/, 'legacy dashboard must not use public content path');
 
   assert.match(src, /router\.get\('\/celebrity',\s*authenticateAdmin/, 'celebrity demand must have a protected endpoint');
-  const celebrity = await fs.promises.readFile(path.join(process.cwd(), 'public', 'admin', 'celebrity.html'), 'utf8');
+  const celebrity = await fs.promises.readFile(path.join(process.cwd(), 'admin', 'celebrity.html'), 'utf8');
   assert.match(celebrity, /fetch\('\/api\/admin\/celebrity'/, 'celebrity demand page must use protected endpoint');
-  const future = await fs.promises.readFile(path.join(process.cwd(), 'public', 'admin', 'future.html'), 'utf8');
+  const future = await fs.promises.readFile(path.join(process.cwd(), 'admin', 'future.html'), 'utf8');
   assert.match(future, /fetch\('\/api\/admin\/future_plans'/, 'future roadmap page must use protected endpoint');
 
   assert.match(src, /getExternalIntegrationReadiness/, 'admin integration readiness must reuse canonical projection');

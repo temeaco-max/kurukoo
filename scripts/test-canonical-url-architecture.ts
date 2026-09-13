@@ -30,14 +30,14 @@ const appSurfaceRoutes = read('src/routes/appSurfaceRoutes.ts');
 require(!appSurfaceRoutes.includes('res.redirect(308'), 'Authenticated app-surface routes must be wired directly, not via legacy compatibility redirects.');
 require(!appSurfaceRoutes.includes("'/app'"), 'Authenticated app-surface routes must not retain the legacy /app alias.');
 for (const relative of [
-  'public/js/kurukoo-app-shell.js',
-  'public/js/kurukoo-desk-live-hydration.js',
-  'public/js/kurukoo-desk-system.js',
-  'public/js/kurukoo-os-live-hydration.js',
-  'public/js/kurukoo-os-polish-final.js',
-  'public/js/site-navigation.js',
-  'public/js/fcm-client.js',
-  'public/firebase-messaging-sw.js',
+  'frontend/public/js/kurukoo-app-shell.js',
+  'frontend/public/js/kurukoo-desk-live-hydration.js',
+  'frontend/public/js/kurukoo-desk-system.js',
+  'frontend/public/js/kurukoo-os-live-hydration.js',
+  'frontend/public/js/kurukoo-os-polish-final.js',
+  'frontend/public/js/site-navigation.js',
+  'frontend/public/js/fcm-client.js',
+  'frontend/public/firebase-messaging-sw.js',
 ]) require(!read(relative).includes('/app/'), `Live navigation owner retains a legacy /app route: ${relative}`);
 
 require(CANONICAL_URLS.admin.home === '/admin', 'Admin must use /admin as its canonical root.');

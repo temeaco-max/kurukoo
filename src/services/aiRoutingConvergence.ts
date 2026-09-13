@@ -3,6 +3,15 @@ import { classifyWithFastText, type FastTextResult } from './fastTextService.js'
 import { resolveConvergedSkillBehaviour, getAllConvergedSkillNames } from './skillBehaviourConvergence.js';
 import { getSkillCategoryConverged } from './skillCatalogueConvergence.js';
 
+// FASTTEXT BOUNDARY (canonical decision):
+// FastText is NOT a first-line classifier for conversational routing. The canonical
+// path is rules (conversation acts) → skill catalogue. classifyWithFastText() is a
+// downstream, explicitly-secondary hint used only when rules and catalogue both fail,
+// with capped confidence so it can never satisfy the canonical path on its own
+// (shouldEscalateToAi escalates below 0.72). FastText remains valuable for cheap
+// hints/enrichment, offline evaluation/training and narrow specialist support.
+export const FASTTEXT_HINT_MAX_CONFIDENCE = 0.7;
+
 export interface AiRoutingSignal {
   conversationAct: string | null;
   intent: string | null;
@@ -31,15 +40,18 @@ function detectAct(text: string): string | null {
   return null;
 }
 
-function normalizeFastTextSkill(intent: string | undefined): string | null {
-  if (!intent) return null;
-  const prefix = 'skill_route_';
-  const candidate = intent.startsWith(prefix) ? intent.slice(prefix.length) : intent;
-  return getAllConvergedSkillNames().includes(candidate) ? candidate : null;
-}
-
 function catalogueSkill(text: string): string | null {
   const lower = text.toLowerCase();
+  // Specialist disambiguation: an explicit device subtype overrides the base repair
+  // skill. Without this, the base phone_repairer aliases (e.g. 'screen repair')
+  // out-match the specialist skill purely by catalogue iteration order.
+  const specialists: Array<[RegExp, string]> = [
+    [/\bmacbook\b|\blaptop\b|\bcomputer\b|\bpc\b/, 'laptop_repairer'],
+    [/\bipad\b|\btablet\b/, 'tablet_repairer'],
+  ];
+  for (const [pattern, specialist] of specialists) {
+    if (pattern.test(lower) && getAllConvergedSkillNames().includes(specialist)) return specialist;
+  }
   const pack = resolveConvergedSkillBehaviour(text);
   if (pack) return pack.skill;
   for (const name of getAllConvergedSkillNames()) {
@@ -52,16 +64,12 @@ function catalogueSkill(text: string): string | null {
 export function classifyAiRoutingSignal(text: string): AiRoutingSignal {
   const act = detectAct(text);
   if (act) return { conversationAct: act, intent: act, skill: null, category: null, confidence: 0.999, source: 'rules' };
+  const skill = catalogueSkill(text);
+  if (skill) return { conversationAct: null, intent: skill, skill, category: getSkillCategoryConverged(skill), confidence: 0.95, source: 'catalogue' };
+  // Secondary FastText hint — only reached when rules and the skill catalogue both fail.
+  // Never a first-line classification: confidence is capped below the escalation threshold.
   const fast: FastTextResult | null = classifyWithFastText(text);
-  const fastSkill = fast?.skill && getAllConvergedSkillNames().includes(fast.skill)
-    ? fast.skill
-    : normalizeFastTextSkill(fast?.intent);
-  const skill = fastSkill || catalogueSkill(text);
-  const intent = fast?.intent || skill;
-  const category = skill ? getSkillCategoryConverged(skill) : null;
-  if (fast && skill) return { conversationAct: null, intent: fastSkill ? skill : intent, skill, category, confidence: Math.max(fast.confidence, fastSkill ? 0.93 : 0), source: fast.source === 'rules' ? 'rules' : fastSkill ? 'fasttext' : 'catalogue' };
-  if (fast) return { conversationAct: null, intent: fast.intent, skill: null, category: null, confidence: fast.confidence, source: fast.source === 'rules' ? 'rules' : 'fasttext' };
-  if (skill) return { conversationAct: null, intent: skill, skill, category, confidence: 0.95, source: 'catalogue' };
+  if (fast) return { conversationAct: null, intent: fast.intent, skill: null, category: null, confidence: Math.min(fast.confidence, FASTTEXT_HINT_MAX_CONFIDENCE), source: 'fasttext' };
   return { conversationAct: null, intent: null, skill: null, category: null, confidence: 0, source: 'none' };
 }
 
