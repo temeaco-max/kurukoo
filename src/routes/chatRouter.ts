@@ -225,7 +225,7 @@ function privateAttachmentDir(): string {
   const fallback = path.join(process.cwd(), 'storage', 'chat');
   if (!configured) return fallback;
   const resolved = path.resolve(configured);
-  const publicRoot = path.resolve(process.cwd(), 'public');
+  const publicRoot = path.resolve(process.cwd(), 'frontend/public');
   return resolved === publicRoot || resolved.startsWith(`${publicRoot}${path.sep}`) ? fallback : resolved;
 }
 async function cleanupExpiredAttachments(db: any) {

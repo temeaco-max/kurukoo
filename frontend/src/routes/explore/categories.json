@@ -1,0 +1,677 @@
+[
+  {
+    "id": 1,
+    "name": "Food",
+    "slug": "food",
+    "icon": "🍲",
+    "description": "Discuss a food request for local delicacies, soups, swallow, fresh meals, or related delivery needs.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Ku Kurukoo! Welcome to Food. Are you craving local soups, rice dishes, or snacks today?" },
+      { "sender": "user", "content": "I want hot amala and egusi soup with beef." },
+      { "sender": "assistant", "content": "Got it! Mama Chidi Kitchen has fresh Amala & Egusi ready for ₦2,500. Delivery takes ~20 mins." },
+      { "sender": "user", "content": "That sounds great. Can you dispatch it now?" },
+      { "sender": "assistant", "content": "I can make this happen right now. Enter your phone number and I'll connect you instantly." }
+    ],
+    "relatedSlugs": ["drinks", "food-drink", "errands-delivery"]
+  },
+  {
+    "id": 2,
+    "name": "Drinks",
+    "slug": "drinks",
+    "icon": "🥤",
+    "description": "Discuss a drinks request for beverages, palm wine, zobo, juices, or party supplies.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Welcome to Drinks. Looking for chilled zobo, malt, soft drinks, or palm wine?" },
+      { "sender": "user", "content": "I need 2 bottles of chilled palm wine and 4 malt drinks." },
+      { "sender": "assistant", "content": "Checked nearby depot: Total stock ready for ₦3,200 total. Express cooling delivery." },
+      { "sender": "user", "content": "Deliver to GRA Ibadan." },
+      { "sender": "assistant", "content": "I can dispatch this right away. Enter your phone number to lock in your order." }
+    ],
+    "relatedSlugs": ["food", "food-drink", "nightlife"]
+  },
+  {
+    "id": 3,
+    "name": "Transport",
+    "slug": "transport",
+    "icon": "🛺",
+    "description": "Discuss a transport request for Okada, Keke, or city taxi travel. Availability and pricing are confirmed in the request flow.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Need a ride? I can match you with verified Okada or Keke drivers nearby." },
+      { "sender": "user", "content": "I need a Keke from Bodija to UI gate." },
+      { "sender": "assistant", "content": "Found Keke rider Ade (4.9 ★) 2 mins away. Fare is ₦500." },
+      { "sender": "user", "content": "Book him for me." },
+      { "sender": "assistant", "content": "I'll dispatch Ade right now. Enter your phone number to confirm your ride." }
+    ],
+    "relatedSlugs": ["driving", "logistics", "errands-delivery"]
+  },
+  {
+    "id": 4,
+    "name": "Errands & Delivery",
+    "slug": "errands-delivery",
+    "icon": "📦",
+    "description": "Send packages, run grocery errands, queue at banks, or pick up dry cleaning securely.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "What errand or package delivery do you need sorted today?" },
+      { "sender": "user", "content": "I need someone to pick up my documents from Mokola and drop at Dugbe." },
+      { "sender": "assistant", "content": "Runner verified and ready. Estimated delivery fee: ₦1,200." },
+      { "sender": "user", "content": "Let's do it." },
+      { "sender": "assistant", "content": "Enter your phone number and I'll dispatch the runner immediately." }
+    ],
+    "relatedSlugs": ["logistics", "transport", "food"]
+  },
+  {
+    "id": 5,
+    "name": "Workers",
+    "slug": "workers",
+    "icon": "👷",
+    "description": "Discuss a request for artisans, bricklayers, painters, cleaners, or labourers. Provider details are shown only after validation.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Looking for skilled workers or general labor for your site or home?" },
+      { "sender": "user", "content": "I need 2 reliable painters for a 3-bedroom apartment." },
+      { "sender": "assistant", "content": "Found professional painters with verified tools and 5+ years experience." },
+      { "sender": "user", "content": "What is their daily rate?" },
+      { "sender": "assistant", "content": "₦6,000 per worker/day. Enter your phone number to connect directly with them." }
+    ],
+    "relatedSlugs": ["repairs", "gigs", "professional-services"]
+  },
+  {
+    "id": 6,
+    "name": "Repairs",
+    "slug": "repairs",
+    "icon": "🔧",
+    "description": "Discuss a repair need involving plumbing, electrical work, generators, appliances, or related technicians.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Got a leaking pipe, electrical fault, or faulty generator?" },
+      { "sender": "user", "content": "My 2.5kva generator won't start. Need a mechanic." },
+      { "sender": "assistant", "content": "Mechanic Tunde is 1.5km away. Call-out fee is ₦1,000." },
+      { "sender": "user", "content": "Send him over." },
+      { "sender": "assistant", "content": "Enter your phone number so Tunde can call you and head over." }
+    ],
+    "relatedSlugs": ["workers", "tyre-vulcanizer", "automotive-care"]
+  },
+  {
+    "id": 7,
+    "name": "Emergency",
+    "slug": "emergency",
+    "icon": "🚨",
+    "description": "Discuss a non-emergency roadside or coordination request. Kurukoo is not an emergency-response service.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Emergency dispatch active. What is your urgent situation?" },
+      { "sender": "user", "content": "Car broke down on the expressway at night." },
+      { "sender": "assistant", "content": "Logging location. Nearest rescue tow & security escort alerted." },
+      { "sender": "user", "content": "Please hurry." },
+      { "sender": "assistant", "content": "Enter your phone number instantly to coordinate direct rescue dispatch." }
+    ],
+    "relatedSlugs": ["safety-security", "health", "tyre-vulcanizer"]
+  },
+  {
+    "id": 8,
+    "name": "Safety & Security",
+    "slug": "safety-security",
+    "icon": "🛡️",
+    "description": "Discuss a request involving security-related providers where the applicable requirements can be confirmed.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Welcome to Safety & Security. Need estate guards or security escorts?" },
+      { "sender": "user", "content": "I need night guards for an event venue in Ring Road." },
+      { "sender": "assistant", "content": "We have 4 certified tactical guards available for night shifts." },
+      { "sender": "user", "content": "What is the fee per guard?" },
+      { "sender": "assistant", "content": "₦5,000 per night. Enter your phone number to secure the booking." }
+    ],
+    "relatedSlugs": ["emergency", "community", "professional-services"]
+  },
+  {
+    "id": 9,
+    "name": "Health",
+    "slug": "health",
+    "icon": "🏥",
+    "description": "Discuss non-emergency needs involving pharmacies, nursing services, prescription delivery, or consultations. For urgent medical help, contact local emergency services.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Need medical supplies, chemist delivery, or home nursing?" },
+      { "sender": "user", "content": "I need malaria medication and pain relievers delivered." },
+      { "sender": "assistant", "content": "Licensed pharmacy verified stock. Total: ₦2,800 with express delivery." },
+      { "sender": "user", "content": "Please dispatch quickly." },
+      { "sender": "assistant", "content": "Enter your phone number to complete your pharmacy order." }
+    ],
+    "relatedSlugs": ["wellness", "personal-care", "emergency"]
+  },
+  {
+    "id": 10,
+    "name": "Wellness",
+    "slug": "wellness",
+    "icon": "🧘",
+    "description": "Spa treatments, massage therapy, yoga instructors, and mental wellness coaching.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Looking to relax with a massage or wellness session?" },
+      { "sender": "user", "content": "I need a home service therapeutic massage." },
+      { "sender": "assistant", "content": "Certified therapist available for home visit in Ibadan." },
+      { "sender": "user", "content": "How much is it?" },
+      { "sender": "assistant", "content": "₦8,000 for a 60-minute session. Enter your phone number to book." }
+    ],
+    "relatedSlugs": ["health", "personal-care", "fitness"]
+  },
+  {
+    "id": 11,
+    "name": "Personal Care",
+    "slug": "personal-care",
+    "icon": "💇",
+    "description": "Mobile barbers, hair stylists, makeup artists, and manicure/pedicure at your home.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Need a haircut, braiding, or makeup artist at your doorstep?" },
+      { "sender": "user", "content": "I need a professional barber to visit my house for a haircut." },
+      { "sender": "assistant", "content": "Barber Junior is available with full mobile kit. Fee: ₦3,000." },
+      { "sender": "user", "content": "Book him for 4 PM." },
+      { "sender": "assistant", "content": "Enter your phone number to confirm the appointment." }
+    ],
+    "relatedSlugs": ["wellness", "health", "events"]
+  },
+  {
+    "id": 12,
+    "name": "Education",
+    "slug": "education",
+    "icon": "📚",
+    "description": "School placement advice, educational materials, and professional training courses.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Looking for educational resources, exam registration, or school info?" },
+      { "sender": "user", "content": "I need assistance with JAMB registration guidelines." },
+      { "sender": "assistant", "content": "Our education consultant can guide you step-by-step." },
+      { "sender": "user", "content": "That would be very helpful." },
+      { "sender": "assistant", "content": "Enter your phone number to connect with our support desk." }
+    ],
+    "relatedSlugs": ["tutoring", "language-services", "professional-services"]
+  },
+  {
+    "id": 13,
+    "name": "Tutoring",
+    "slug": "tutoring",
+    "icon": "✏️",
+    "description": "Private home tutors for mathematics, science, languages, and exam prep.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Need a home tutor for mathematics or science exams?" },
+      { "sender": "user", "content": "I need a physics tutor for my son in SS2." },
+      { "sender": "assistant", "content": "Matched with Engineer David (B.Sc Physics, 5 star rating)." },
+      { "sender": "user", "content": "What is the monthly rate for 3 days a week?" },
+      { "sender": "assistant", "content": "₦25,000/month. Enter your phone number to schedule the first lesson." }
+    ],
+    "relatedSlugs": ["education", "language-services", "childcare"]
+  },
+  {
+    "id": 14,
+    "name": "Events",
+    "slug": "events",
+    "icon": "🎉",
+    "description": "Event planners, MCs, DJ services, rentals, and party coordination.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Planning a wedding, birthday, or corporate party?" },
+      { "sender": "user", "content": "I need a talented DJ and sound system for a birthday party." },
+      { "sender": "assistant", "content": "DJ Vibe is available with complete speaker & microphone setup." },
+      { "sender": "user", "content": "What is the package price?" },
+      { "sender": "assistant", "content": "₦45,000 for 5 hours. Enter your phone number to reserve your date." }
+    ],
+    "relatedSlugs": ["entertainment", "creative-arts", "nightlife"]
+  },
+  {
+    "id": 15,
+    "name": "Entertainment",
+    "slug": "entertainment",
+    "icon": "🎟️",
+    "description": "Concert tickets, comedy shows, cinema bookings, and leisure activities.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Looking for fun shows, concerts, or movie tickets?" },
+      { "sender": "user", "content": "I need 2 VIP tickets for the comedy show this weekend." },
+      { "sender": "assistant", "content": "VIP tickets available at ₦5,000 each." },
+      { "sender": "user", "content": "How do I pay?" },
+      { "sender": "assistant", "content": "Enter your phone number to complete purchase securely with your wallet." }
+    ],
+    "relatedSlugs": ["events", "nightlife", "tourism"]
+  },
+  {
+    "id": 16,
+    "name": "Accommodation",
+    "slug": "accommodation",
+    "icon": "🏨",
+    "description": "Short-lets, hotel bookings, guest houses, and lodge reservations.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Looking for a clean hotel room or short-let apartment?" },
+      { "sender": "user", "content": "I need a 2-bedroom short-let in Bodija for the weekend." },
+      { "sender": "assistant", "content": "Found fully furnished apartment with 24/7 power for ₦35,000/night." },
+      { "sender": "user", "content": "Can I view pictures?" },
+      { "sender": "assistant", "content": "Enter your phone number and I'll send photos and booking confirmation." }
+    ],
+    "relatedSlugs": ["property-real-estate", "tourism", "real-estate"]
+  },
+  {
+    "id": 17,
+    "name": "Property & Real Estate",
+    "slug": "property-real-estate",
+    "icon": "🏠",
+    "description": "Discuss property-search, rental, purchase, or lease requirements. Listings and parties are not represented as available until confirmed.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Looking to rent or buy a property in prime locations?" },
+      { "sender": "user", "content": "I need a 3-bedroom flat in Ring Road." },
+      { "sender": "assistant", "content": "We have 3 verified listings matching your budget." },
+      { "sender": "user", "content": "Can I schedule an inspection?" },
+      { "sender": "assistant", "content": "Enter your phone number to connect with the agent and schedule inspection." }
+    ],
+    "relatedSlugs": ["accommodation", "real-estate", "professional-services"]
+  },
+  {
+    "id": 18,
+    "name": "Agriculture",
+    "slug": "agriculture",
+    "icon": "🌾",
+    "description": "Discuss agriculture supply, equipment, or logistics needs. Availability depends on a confirmed provider.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Welcome to Agriculture marketplace. Buying produce or hiring farm equipment?" },
+      { "sender": "user", "content": "I need 50 bags of dry maize delivered in bulk." },
+      { "sender": "assistant", "content": "Direct farm gate supply available at ₦28,000 per bag." },
+      { "sender": "user", "content": "Include haulage to Ibadan." },
+      { "sender": "assistant", "content": "Enter your phone number to finalize farm order and transport." }
+    ],
+    "relatedSlugs": ["logistics", "food", "finance-tax"]
+  },
+  {
+    "id": 19,
+    "name": "Professional Services",
+    "slug": "professional-services",
+    "icon": "💼",
+    "description": "Lawyers, accountants, business registration, tax consultants, and surveyors.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Need legal advice, CAC business registration, or accounting services?" },
+      { "sender": "user", "content": "I want to register a new Limited Liability Company with CAC." },
+      { "sender": "assistant", "content": "Our accredited partners handle full incorporation in 7 days for ₦35,000." },
+      { "sender": "user", "content": "What documents do I provide?" },
+      { "sender": "assistant", "content": "Enter your phone number and our consultant will guide you." }
+    ],
+    "relatedSlugs": ["finance-tax", "freelance", "digital-services"]
+  },
+  {
+    "id": 20,
+    "name": "Spiritual",
+    "slug": "spiritual",
+    "icon": "🕊️",
+    "description": "Spiritual counselling, prayer requests, home blessings, and religious guidance.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Welcome. Looking for spiritual counselling or prayer support?" },
+      { "sender": "user", "content": "I need a pastor for a house dedication ceremony." },
+      { "sender": "assistant", "content": "We can connect you with ordained ministers in your area." },
+      { "sender": "user", "content": "Please arrange that." },
+      { "sender": "assistant", "content": "Enter your phone number to coordinate the schedule." }
+    ],
+    "relatedSlugs": ["religious-services", "community", "events"]
+  },
+  {
+    "id": 21,
+    "name": "Freelance",
+    "slug": "freelance",
+    "icon": "💻",
+    "description": "Writers, graphic designers, video editors, translators, and digital marketers.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Need freelance creative talent for your project?" },
+      { "sender": "user", "content": "I need a brand logo and flyer designed for my startup." },
+      { "sender": "assistant", "content": "Top-rated graphic designer available with 24-hr turnaround." },
+      { "sender": "user", "content": "How much for the package?" },
+      { "sender": "assistant", "content": "₦10,000 complete. Enter your phone number to start the brief." }
+    ],
+    "relatedSlugs": ["digital-services", "creative-arts", "professional-services"]
+  },
+  {
+    "id": 22,
+    "name": "Digital Services",
+    "slug": "digital-services",
+    "icon": "⚡",
+    "description": "Web development, app design, SEO, social media management, and tech support.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Looking for web developers or digital marketing experts?" },
+      { "sender": "user", "content": "I need a modern e-commerce website built." },
+      { "sender": "assistant", "content": "Our engineering team builds responsive web stores starting at ₦50,000." },
+      { "sender": "user", "content": "Can we discuss project scope?" },
+      { "sender": "assistant", "content": "Enter your phone number to connect with our lead developer." }
+    ],
+    "relatedSlugs": ["freelance", "professional-services", "communication"]
+  },
+  {
+    "id": 23,
+    "name": "Gigs",
+    "slug": "gigs",
+    "icon": "🎯",
+    "description": "Discuss a micro-task, short-term assignment, or work request. No earnings or placement outcome is guaranteed.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Looking for quick micro-gigs or task assignments to earn credits?" },
+      { "sender": "user", "content": "What gigs are available for me today?" },
+      { "sender": "assistant", "content": "We have 3 delivery and survey verification gigs paying ₦1,500 each." },
+      { "sender": "user", "content": "I want to accept one." },
+      { "sender": "assistant", "content": "Enter your phone number to activate your Work toggle and start earning." }
+    ],
+    "relatedSlugs": ["workers", "freelance", "classifieds"]
+  },
+  {
+    "id": 24,
+    "name": "Money Circle",
+    "slug": "money-circle",
+    "icon": "⭕",
+    "description": "Join peer-to-peer savings circles, ajo, contribution clubs, and buying pools.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Welcome to Money Circle. Want to join a trusted savings or buying pool?" },
+      { "sender": "user", "content": "I want to join a ₦10,000 weekly savings circle." },
+      { "sender": "assistant", "content": "Circle #402 has 2 open slots starting this Friday." },
+      { "sender": "user", "content": "Sign me up." },
+      { "sender": "assistant", "content": "Enter your phone number to secure your spot in the circle." }
+    ],
+    "relatedSlugs": ["finance-tax", "community", "classifieds"]
+  },
+  {
+    "id": 25,
+    "name": "Classifieds",
+    "slug": "classifieds",
+    "icon": "🏷️",
+    "description": "Discuss a classified listing or local sale request. Items and sellers are not represented as available until confirmed.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Looking to buy or sell pre-owned items locally?" },
+      { "sender": "user", "content": "I want to sell my fairly used generator." },
+      { "sender": "assistant", "content": "We can list your generator to buyers in your neighborhood." },
+      { "sender": "user", "content": "How much does listing cost?" },
+      { "sender": "assistant", "content": "Listing is free! Enter your phone number to create your item post." }
+    ],
+    "relatedSlugs": ["gigs", "property-real-estate", "community"]
+  },
+  {
+    "id": 26,
+    "name": "Price Checker",
+    "slug": "price-checker",
+    "icon": "📊",
+    "description": "Discuss a price-check request. Current prices require a supported data source or provider confirmation.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Want to check current market prices before you buy?" },
+      { "sender": "user", "content": "What is the current price of a 12.5kg cooking gas cylinder?" },
+      { "sender": "assistant", "content": "Average market price today is ₦15,200 across 4 verified depots." },
+      { "sender": "user", "content": "Can I order delivery at that price?" },
+      { "sender": "assistant", "content": "Yes! Enter your phone number to order at the best verified price." }
+    ],
+    "relatedSlugs": ["food", "agriculture", "finance-tax"]
+  },
+  {
+    "id": 27,
+    "name": "Government",
+    "slug": "government",
+    "icon": "🏛️",
+    "description": "Utility bill payments, tax clearance, NIN verification guidance, and agency services.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Need help with utility bills, tax payments, or government document info?" },
+      { "sender": "user", "content": "I want to pay my Ibadan Electricity distribution bill." },
+      { "sender": "assistant", "content": "Token generation instant. Enter your meter number and amount." },
+      { "sender": "user", "content": "Can I pay with my wallet?" },
+      { "sender": "assistant", "content": "Enter your phone number to securely access your wallet and pay." }
+    ],
+    "relatedSlugs": ["finance-tax", "communication", "professional-services"]
+  },
+  {
+    "id": 28,
+    "name": "Communication",
+    "slug": "communication",
+    "icon": "📡",
+    "description": "Discuss mobile connectivity or subscription needs. Top-ups and payments require a verified integration.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Need airtime, data bundle, or Wi-Fi subscription?" },
+      { "sender": "user", "content": "I need 5GB MTN data bundle." },
+      { "sender": "assistant", "content": "Instant delivery. Price: ₦1,500." },
+      { "sender": "user", "content": "Process it." },
+      { "sender": "assistant", "content": "Enter your phone number to complete instant data recharge." }
+    ],
+    "relatedSlugs": ["digital-services", "finance-tax", "classifieds"]
+  },
+  {
+    "id": 29,
+    "name": "Logistics",
+    "slug": "logistics",
+    "icon": "🚚",
+    "description": "Interstate haulage, truck rentals, dispatch fleets, and freight forwarding.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Need heavy haulage trucks or dispatch logistics fleet?" },
+      { "sender": "user", "content": "I need a 5-ton truck to move goods from Lagos to Ibadan." },
+      { "sender": "assistant", "content": "Verified truck driver available with insurance cover for ₦65,000." },
+      { "sender": "user", "content": "Book the truck." },
+      { "sender": "assistant", "content": "Enter your phone number to lock in the haulage contract." }
+    ],
+    "relatedSlugs": ["errands-delivery", "transport", "agriculture"]
+  },
+  {
+    "id": 30,
+    "name": "Tourism",
+    "slug": "tourism",
+    "icon": "🌴",
+    "description": "Tour guides, resort bookings, holiday packages, and local excursion coordination.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Planning a tour, holiday getaway, or resort visit?" },
+      { "sender": "user", "content": "I need a guided tour package to Idanre Hills." },
+      { "sender": "assistant", "content": "Weekend tour package includes transport, guide, and entry for ₦20,000." },
+      { "sender": "user", "content": "Sign me up for two people." },
+      { "sender": "assistant", "content": "Enter your phone number to finalize your booking." }
+    ],
+    "relatedSlugs": ["accommodation", "entertainment", "transport"]
+  },
+  {
+    "id": 31,
+    "name": "Creative Arts",
+    "slug": "creative-arts",
+    "icon": "🎨",
+    "description": "Photographers, videographers, painters, artisan crafts, and art exhibition tickets.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Looking for professional photographers or creative artists?" },
+      { "sender": "user", "content": "I need an event videographer for a documentary shoot." },
+      { "sender": "assistant", "content": "Award-winning videographer available with 4K drone gear." },
+      { "sender": "user", "content": "What is the day rate?" },
+      { "sender": "assistant", "content": "₦40,000/day. Enter your phone number to discuss details." }
+    ],
+    "relatedSlugs": ["events", "freelance", "entertainment"]
+  },
+  {
+    "id": 32,
+    "name": "Fitness",
+    "slug": "fitness",
+    "icon": "🏋️",
+    "description": "Personal gym trainers, fitness bootcamps, aerobic classes, and sports coaching.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Want to get fit with a personal trainer or gym instructor?" },
+      { "sender": "user", "content": "I need a personal fitness coach for morning sessions." },
+      { "sender": "assistant", "content": "Certified trainer Coach Mike is available in your neighborhood." },
+      { "sender": "user", "content": "How much per month?" },
+      { "sender": "assistant", "content": "₦20,000/month. Enter your phone number to start your fitness journey." }
+    ],
+    "relatedSlugs": ["wellness", "health", "personal-care"]
+  },
+  {
+    "id": 33,
+    "name": "Nightlife",
+    "slug": "nightlife",
+    "icon": "🍸",
+    "description": "VIP lounge reservations, club tables, VIP security, and nightlife guides.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Looking for VIP club tables or nightlife spots?" },
+      { "sender": "user", "content": "I want to reserve a VIP table at Copacabana lounge tonight." },
+      { "sender": "assistant", "content": "VIP table reserved with complimentary drinks for ₦30,000 minimum spend." },
+      { "sender": "user", "content": "Confirm table." },
+      { "sender": "assistant", "content": "Enter your phone number to secure your nightlife reservation." }
+    ],
+    "relatedSlugs": ["drinks", "entertainment", "events"]
+  },
+  {
+    "id": 34,
+    "name": "Childcare",
+    "slug": "childcare",
+    "icon": "👶",
+    "description": "Discuss a childcare need. Provider verification, safeguarding, and availability require separate confirmation.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Need a trustworthy babysitter or nanny for your kids?" },
+      { "sender": "user", "content": "I need a live-in nanny with verified references." },
+      { "sender": "assistant", "content": "We have 2 experienced nannies vetted with background checks." },
+      { "sender": "user", "content": "Can I interview them?" },
+      { "sender": "assistant", "content": "Enter your phone number to arrange an interview." }
+    ],
+    "relatedSlugs": ["tutoring", "education", "health"]
+  },
+  {
+    "id": 35,
+    "name": "Pet Services",
+    "slug": "pet-services",
+    "icon": "🐾",
+    "description": "Veterinary services, pet grooming, dog walkers, and pet food supply.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Need vet care, pet grooming, or dog walking services?" },
+      { "sender": "user", "content": "I need a mobile vet to vaccinate my German Shepherd puppy." },
+      { "sender": "assistant", "content": "Dr. Ade (Licensed Vet) is available for home vaccination visit." },
+      { "sender": "user", "content": "How much is the visit and vaccine?" },
+      { "sender": "assistant", "content": "₦7,500 total. Enter your phone number to book the vet." }
+    ],
+    "relatedSlugs": ["health", "community", "errands-delivery"]
+  },
+  {
+    "id": 36,
+    "name": "Automotive Care",
+    "slug": "automotive-care",
+    "icon": "🚗",
+    "description": "Discuss vehicle-care needs such as washing, detailing, diagnostics, or parts. Availability is confirmed in the request flow.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Need car wash, interior detailing, or mechanic diagnostics?" },
+      { "sender": "user", "content": "I need full mobile car wash and interior vacuuming." },
+      { "sender": "assistant", "content": "Mobile auto-spa team will visit your driveway for ₦4,000." },
+      { "sender": "user", "content": "Come over Saturday morning." },
+      { "sender": "assistant", "content": "Enter your phone number to lock in your appointment." }
+    ],
+    "relatedSlugs": ["tyre-vulcanizer", "transport", "repairs"]
+  },
+  {
+    "id": 37,
+    "name": "Driving",
+    "slug": "driving",
+    "icon": "🚙",
+    "description": "Discuss a personal-driver request for commutes, long-distance trips, or special events. Availability requires confirmation.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Need a professional driver for your personal car?" },
+      { "sender": "user", "content": "I need a driver for an interstate trip to Lagos and back." },
+      { "sender": "assistant", "content": "Experienced licensed driver available with clean driving record. Fee: ₦15,000." },
+      { "sender": "user", "content": "Book him for Thursday." },
+      { "sender": "assistant", "content": "Enter your phone number to confirm the driver." }
+    ],
+    "relatedSlugs": ["transport", "automotive-care", "logistics"]
+  },
+  {
+    "id": 38,
+    "name": "Real Estate",
+    "slug": "real-estate",
+    "icon": "🏢",
+    "description": "Property management, real estate advisory, land acquisition, and leasing.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Looking for land titles verification or real estate investment advisory?" },
+      { "sender": "user", "content": "I want to verify a plot of land in Alakia Ibadan." },
+      { "sender": "assistant", "content": "Our land surveyor can conduct physical and ministry verification for ₦15,000." },
+      { "sender": "user", "content": "Please proceed." },
+      { "sender": "assistant", "content": "Enter your phone number to commission the survey report." }
+    ],
+    "relatedSlugs": ["property-real-estate", "accommodation", "professional-services"]
+  },
+  {
+    "id": 39,
+    "name": "Food & Drink",
+    "slug": "food-drink",
+    "icon": "🥳",
+    "description": "Catering services, bulk food packs, party small chops, and beverage supplies.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Planning catering or small chops for an event?" },
+      { "sender": "user", "content": "I need 5 trays of small chops (spring rolls, samosa, puff puff)." },
+      { "sender": "assistant", "content": "Freshly made party small chops tray ready for ₦12,500 total." },
+      { "sender": "user", "content": "Deliver to Bodija." },
+      { "sender": "assistant", "content": "Enter your phone number to finalize your catering order." }
+    ],
+    "relatedSlugs": ["food", "drinks", "events"]
+  },
+  {
+    "id": 40,
+    "name": "Finance & Tax",
+    "slug": "finance-tax",
+    "icon": "💳",
+    "description": "POS agency banking, micro-loans, tax filing, and financial advisory services.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Need POS cash delivery, micro-loans, or tax filing assistance?" },
+      { "sender": "user", "content": "I need cash delivery of ₦20,000 via agent." },
+      { "sender": "assistant", "content": "Nearest verified agent is 400m away. Cash delivery fee: ₦400." },
+      { "sender": "user", "content": "Send agent." },
+      { "sender": "assistant", "content": "Enter your phone number to verify and dispatch the agent." }
+    ],
+    "relatedSlugs": ["money-circle", "professional-services", "government"]
+  },
+  {
+    "id": 41,
+    "name": "Tyre & Vulcanizer",
+    "slug": "tyre-vulcanizer",
+    "icon": "🛑",
+    "description": "Discuss a tyre or vehicle-care request, including patching, balancing, alignment, or valve work. Kurukoo does not provide emergency dispatch.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Got a flat tyre or need roadside vulcanizing assistance?" },
+      { "sender": "user", "content": "My front tyre punctured on Ring Road. Need a mobile vulcanizer." },
+      { "sender": "assistant", "content": "Mobile vulcanizer dispatched to your exact coordinates. Call-out: ₦1,500." },
+      { "sender": "user", "content": "Please hurry." },
+      { "sender": "assistant", "content": "Enter your phone number so the vulcanizer can call you immediately." }
+    ],
+    "relatedSlugs": ["automotive-care", "emergency", "transport"]
+  },
+  {
+    "id": 42,
+    "name": "Language Services",
+    "slug": "language-services",
+    "icon": "🗣️",
+    "description": "Translation, interpretation, Yoruba/Igbo/Hausa language tutoring, and proofreading.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Need document translation or live interpretation services?" },
+      { "sender": "user", "content": "I need official documents translated from English to Yoruba." },
+      { "sender": "assistant", "content": "Certified translator available. 24-hour delivery for ₦5,000." },
+      { "sender": "user", "content": "Let's proceed." },
+      { "sender": "assistant", "content": "Enter your phone number to upload your documents securely." }
+    ],
+    "relatedSlugs": ["education", "tutoring", "professional-services"]
+  },
+  {
+    "id": 43,
+    "name": "Betting",
+    "slug": "betting",
+    "icon": "🎲",
+    "description": "Discuss gaming-related information needs. Kurukoo does not process betting funding or wallet top-ups in this deployment.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Need instant funding for your gaming or betting wallet?" },
+      { "sender": "user", "content": "I want to fund my Bet9ja account with ₦2,000." },
+      { "sender": "assistant", "content": "Instant funding ready with zero transaction fees." },
+      { "sender": "user", "content": "Process it." },
+      { "sender": "assistant", "content": "Enter your phone number to authorize instant wallet funding." }
+    ],
+    "relatedSlugs": ["communication", "entertainment", "nightlife"]
+  },
+  {
+    "id": 44,
+    "name": "Religious Services",
+    "slug": "religious-services",
+    "icon": "⛪",
+    "description": "Chaplaincy, Islamic scholars, pilgrimage coordination, and religious event support.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Looking for religious counselling, clerics, or pilgrimage booking?" },
+      { "sender": "user", "content": "I need information on upcoming Umrah pilgrimage packages." },
+      { "sender": "assistant", "content": "Our travel desk provides complete Umrah packages starting at ₦1.8M." },
+      { "sender": "user", "content": "Send me the itinerary." },
+      { "sender": "assistant", "content": "Enter your phone number to receive the full brochure." }
+    ],
+    "relatedSlugs": ["spiritual", "tourism", "community"]
+  },
+  {
+    "id": 45,
+    "name": "Community",
+    "slug": "community",
+    "icon": "🤝",
+    "description": "Neighborhood associations, charity drives, volunteer groups, and town hall forums.",
+    "mockConversation": [
+      { "sender": "assistant", "content": "Welcome to Community hub. Want to join local associations or volunteer?" },
+      { "sender": "user", "content": "I want to join the Bodija Residents environmental cleanup group." },
+      { "sender": "assistant", "content": "Group #12 has 45 active members. Next cleanup is this Saturday." },
+      { "sender": "user", "content": "Sign me up." },
+      { "sender": "assistant", "content": "Enter your phone number to register with your community group." }
+    ],
+    "relatedSlugs": ["safety-security", "money-circle", "spiritual"]
+  }
+]

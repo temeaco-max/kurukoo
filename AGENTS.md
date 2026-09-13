@@ -1,415 +1,223 @@
-# KURUKOO ENGINEERING AGENT RULES
+# KURUKOO — ENGINEERING AGENT CONTRACT
 
-## 1. Mission
 
-**Kurukoo is a service that helps people get things done.**
+## 0a. Repository Boundaries (canonical decision)
 
-A person should be able to tell Kurukoo what they need, want, notice, or are worried about. Kurukoo should understand the situation, determine what it can safely do, take appropriate action, involve people or services when necessary, keep the person informed, preserve continuity, and remember what matters.
+**Repository ownership is not the same as product ownership.** Kurukoo is one product composed of bounded repositories developed side-by-side in the local workspace:
 
-The agent’s job is therefore not to produce code for its own sake.
+- **kurukoo (this repo)** — canonical backend. `src/` stays at root. Owns conversation, auth, memory, Economic Requests, providers, presence, execution, commerce, notifications, Admin APIs, database, external integrations and SEO endpoints.
+- **remix-of-start-the-journey (frontend repo; workspace copy at `frontend/`)** — canonical **web UI**: marketing, authenticated OS (Chat, Work, Explore, Perch, Artifacts, Connect), admin client, and **PWA** (a capability of web, not a separate app).
+- **mobile/kurukoo-mobile** — canonical mobile app (Expo/RN); iOS and Android are native targets of it. `mobile/kurukoo-mobile/server/` is a demo/tRPC scaffold, never a backend authority.
+- **Admin** — one privileged client (currently `frontend/public/admin/`) consuming the canonical Admin API.
 
-The job is to make Kurukoo **more useful, more capable, more reliable, more coherent, and easier for real people to use**.
+Rules:
 
-Skills, agents, capabilities, tools, MCP, AI providers, model adapters, integrations, Economic Requests, providers, channels, databases, pages, APIs and internal services are implementation means. They are not the product.
+1. Clients never copy backend logic — they consume stable backend API contracts.
+2. EJS retires only through evidence: replacement exists → connected → consumers migrated → runtime verified → remove.
+3. No monorepo restructuring (`apps/`+`packages/`); no mass folder moves.
+4. Do not merge repositories to eliminate folder duplication.
 
-Do not optimise Kurukoo around exposing its architecture to users.
+Full table: `docs/architecture/REPOSITORY_BOUNDARIES.md`. Migration inventory: `docs/consolidation/MIGRATION_MAP.md`.
 
----
+## 0. Purpose
+## 0. Purpose
 
-# 2. GOVERNING TRUTH AND PRIORITY
+You are working on **Kurukoo**.
 
-Before making changes, identify and obey the repository’s governing instructions.
+Your job is not to produce code for its own sake.
 
-At minimum, inspect and respect:
+Your job is to make Kurukoo **more capable of helping a real person get something done**, while preserving truth, safety, continuity, architectural coherence and existing useful functionality.
 
-1. The repository’s active agent/instruction file.
-2. The workspace `skills.md` / applicable `SKILL.md` files.
-3. `docs/architecture/CURRENT_PRODUCT_TRUTH.md`.
-4. Relevant existing architecture, service ownership and implementation contracts.
-5. The current branch and current working tree state.
+Kurukoo should increasingly feel like **one capable assistant**, not a collection of applications, workflows, dashboards or exposed internal architecture.
 
-Do not ignore an existing agent instruction file because a task description appears to contain newer or more convenient instructions.
+The product is a **conversational fulfilment network and personal assistance platform for everyday life and work**.
 
-When instructions conflict, prefer the **most specific, most current, repository-local instruction**, while preserving explicit user requirements.
-
-Do not repeatedly rediscover the same instructions or files during one task.
-
-Once an instruction or important source has been inspected, retain its relevant conclusions in working context and reuse them.
+Internal terms such as Economic OS, orchestration, capabilities, agents, providers, skills, connectors and execution modes describe implementation. They are not the primary product experience.
 
 ---
 
-# 3. LOCAL-FIRST OPERATING RULE
+# 1. GOVERNING TRUTH
 
-**The local workspace is the primary source of truth.**
+Before changing anything, establish the current truth.
 
-Before downloading, cloning, fetching, regenerating, reinstalling, or rebuilding anything, determine whether the required artifact already exists locally.
+Use this hierarchy:
 
-Always prefer, in order:
+1. Explicit user requirements for the current task.
+2. `BLUEPRINT.md` — canonical product and architecture intent.
+3. `docs/architecture/CURRENT_PRODUCT_TRUTH.md` — canonical current-state classification and ownership.
+4. Canonical code on `main`.
+5. Behavioural and contract tests.
+6. Runtime evidence.
+7. Real-world external-provider/device/person evidence.
 
-**already-loaded context → current workspace → local cache → repository checkout → configured artifact cache → remote download**
+If sources disagree, do not silently choose whichever is convenient.
 
-Do not redownload an artifact merely because it is easier than checking whether it already exists.
+Determine whether the disagreement represents:
 
-This applies to:
+- outdated documentation;
+- incomplete implementation;
+- a compatibility boundary;
+- a real architectural conflict;
+- missing runtime evidence.
 
-* repository files
-* dependencies
-* package caches
-* model weights
-* Hugging Face artifacts
-* Docker layers
-* build outputs
-* browser binaries
-* test fixtures
-* generated assets
-* uploaded files
-* datasets
-* embeddings
-* tokenizer/model files
-* downloaded archives
-* temporary but reusable build assets.
+Fix the appropriate authority rather than creating another authority.
 
-Before downloading anything, check for existing copies by:
+### Important
 
-* expected local path
-* configured cache path
-* package manager cache
-* model cache
-* workspace cache
-* environment variables
-* existing build artifacts
-* repository references.
+Documentation does not make functionality real.
 
-If an existing artifact is valid, reuse it.
+A registry entry does not make an integration live.
 
-Do not create behaviour that causes a locally available model, package, dataset or other asset to be downloaded from the internet on every server start.
+A route does not prove a user journey works.
+
+A passing unit test does not prove runtime operation.
+
+A simulated provider does not prove a real provider is active.
+
+A UI state does not prove an external action succeeded.
 
 ---
 
-# 4. MODEL AND AI ARTIFACT CACHING
+# 2. VERIFICATION VOCABULARY
 
-AI/model resources must be **persistent and reusable**.
+Keep these dimensions separate.
 
-Never configure SmolLM2 or another local model to redownload weights every time the local server starts.
+### Repository verification
 
-A model-loading path should:
+The implementation, ownership, contracts and tests exist on canonical `main`.
 
-1. Look for the configured local model directory.
-2. Reuse valid local weights/tokenizer/configuration.
-3. Load from cache without network access when the artifact exists.
-4. Download only when the required artifact is genuinely absent.
-5. Persist the downloaded artifact into the intended cache/model location.
-6. Avoid repeating the download on subsequent starts.
-7. Fail clearly when a model cannot be obtained rather than repeatedly retrying a known unavailable resource.
+### Runtime verification
 
-Do not turn model startup into an implicit network operation.
+The actual application executes the relevant journey successfully in a controlled runtime.
 
-Do not replace a working cached/local model path with a remote-only path without a concrete product reason.
+### Real-world verification
 
-Use the cheapest sufficient model/provider for the task.
+A real external provider, device, person, payment system, communication channel or other external dependency actually performed and confirmed the outcome.
 
-Do not invoke a larger or more expensive model when a smaller model is sufficient.
+Use:
 
-Do not send the same reasoning or request through multiple AI providers without a justified need.
+- `FOUNDATION`
+- `IMPLEMENTED`
+- `VERIFIED`
+- `PARTIAL`
+- `UNVERIFIED`
+- `BLOCKED_EXTERNAL`
+- `SUPERSEDED`
+- `NOT_IMPLEMENTED`
 
-Do not repeatedly regenerate or re-query information that has already been established.
+Never use `COMPLETE`, `DONE`, `LIVE`, `READY` or `PRODUCTION` as a generic substitute for evidence.
 
----
-
-# 5. WORKSPACE PERSISTENCE
-
-**Save useful work locally immediately.**
-
-Do not hold substantial work only in transient reasoning or tool output.
-
-When a useful change, discovery, artifact, patch, generated file, diagnostic or intermediate result exists, save it to the appropriate local workspace location promptly.
-
-The agent must minimise the chance that work is lost because:
-
-* a process exits
-* a session resets
-* a tool call fails
-* a context window changes
-* the agent switches tasks
-* a build restarts.
-
-Use the workspace as working memory.
-
-When practical, preserve:
-
-* investigation notes
-* file mappings
-* important findings
-* generated artifacts
-* patches
-* test results
-* model/cache paths
-* decisions about architecture ownership
-* unresolved issues.
-
-Do not create piles of reports merely for record-keeping. Persist information when it will materially prevent duplicated work.
+Always say **what dimension is verified**.
 
 ---
 
-# 6. CONTEXT RETENTION
+# 3. THE PRODUCT SPINE
 
-**Do not repeatedly inspect the same file merely to rediscover what you already learned.**
+The most important architectural rule is:
 
-When a file has been inspected, retain:
+> **Kurukoo is one assistant with multiple supporting surfaces, not multiple products connected together.**
 
-* what it does
-* which system owns it
-* important contracts
-* relevant functions
-* relevant routes
-* important dependencies
-* important invariants
-* known risks
-* which changes have already been made.
+The primary conversational spine is:
 
-Before rereading a file, ask:
+```text
+User
+  ↓
+Chat / Voice
+  ↓
+canonical conversation
+  ↓
+context + identity + memory + safety arbitration
+  ↓
+intent / semantic interpretation
+  ↓
+canonical capability owner
+  ↓
+stateful action/request when required
+  ↓
+Work when execution/coordination is required
+  ↓
+existing provider / participant / connector
+  ↓
+progress + evidence
+  ↓
+verified outcome
+  ↓
+Memory / Activity / notifications / continuity
+  ↓
+back to the same conversation and request context
+```
 
-> What new information do I expect to obtain from reopening this file?
+Not every request follows every stage.
 
-If the answer is “none”, do not reopen it.
+Simple questions may stop in conversation.
 
-Reopen files when:
+A reminder may use the reminder owner.
 
-* the file changed
-* another change may have invalidated the previous conclusion
-* an exact line/range is needed for a modification
-* validation requires checking current contents
-* the user specifically asks for fresh verification
-* a dependency relationship is uncertain.
+A device question may use a device capability.
 
-Do not perform repetitive audits whose result is already known.
+A commerce request may enter Cart or an economic flow.
 
-Do not search the entire repository repeatedly when the relevant files are already known.
+A service request may become an Economic Request and then Work.
 
----
+The important rule is:
 
-# 7. TASK EXECUTION: IMPLEMENT FIRST
-
-The agent should **implement useful work quickly**.
-
-Do not spend most of the task:
-
-* debating possibilities
-* producing long plans
-* writing audit documents
-* describing what could be done
-* restating the task
-* repeatedly confirming the direction
-* performing low-value repository archaeology.
-
-Use enough investigation to avoid damaging the product, then act.
-
-The preferred loop is:
-
-**inspect → identify owner → implement → validate → integrate → continue**
-
-not:
-
-**inspect → inspect → audit → document → reconsider → audit again → finally implement**
-
-When the intended direction is sufficiently clear, make the change.
-
-Do not wait for perfect certainty when a safe, reversible implementation is available.
-
-Prefer small, coherent changes that can be verified quickly.
+**use the canonical owner appropriate to the request instead of creating another workflow.**
 
 ---
 
-# 8. TOOL SELECTION
+# 4. CURRENT USER-FACING PRODUCT STRUCTURE
 
-Use the tool that actually matches the task.
+Do not revert to historical navigation models.
 
-Do not use a generic or expensive mechanism when a dedicated tool exists.
+### Authenticated primary OS surfaces
 
-Examples:
+The current shell uses:
 
-* Repository work → repository/Git tooling.
-* Workspace files → local filesystem/workspace tools.
-* Installed skills → the relevant `SKILL.md`.
-* GitHub repository content/actions → GitHub tooling.
-* Images → image tooling.
-* Documents → document tooling.
-* Spreadsheets → spreadsheet tooling.
-* Current external facts → web search.
-* Cached/local artifacts → local filesystem before remote access.
+- **Your Perch** — `/perch`
+- **Chat / Voice** — `/chat`
+- **Work** — `/work`
+- **Explore** — `/explore`
+- **Artifacts** — `/artifacts`
+- **Connect** — `/connect`
 
-Before using a tool, determine whether a cheaper local or already-loaded source can answer the same question.
+Activity remains a continuity/history surface but is not the primary navigation rail.
 
-Do not make unnecessary remote calls.
+Compatibility routes may exist. Do not remove them blindly.
 
-Do not repeatedly perform equivalent tool calls with slightly different wording when one result is already sufficient.
+### Public OS surfaces
 
----
+The public experience is separate from the authenticated OS but should still feel like the same Kurukoo product.
 
-# 9. SKILLS ARE MANDATORY OPERATING KNOWLEDGE
+Current public concepts include:
 
-When a task involves an installed skill, **read the relevant `SKILL.md` in the workspace before performing that task**.
+- Home
+- Chat / Voice
+- Integrations
+- Use Cases
+- Pricing
+- Capabilities
 
-Do not ignore `SKILL.md` because the task seems simple.
-
-However, do not reread the same skill on every individual tool call.
-
-Read it once for the task, retain its rules, and apply them throughout the task unless:
-
-* the task changes scope
-* a different skill becomes relevant
-* the skill was updated
-* a rule needs clarification.
-
-Do not invent tool usage when an applicable skill explicitly defines the correct workflow.
+Do not expose internal architecture as the public product definition.
 
 ---
 
-# 10. REUSE BEFORE CREATION
+# 5. KURUKOO MUST FEEL LIKE AN ASSISTANT
 
-Before creating a new subsystem, service, abstraction, component, route, database mechanism, model adapter, notification mechanism, provider abstraction, device abstraction or orchestration layer, determine whether Kurukoo already has one.
+The user should not have to understand:
 
-Prefer:
+- agents;
+- skills;
+- capabilities;
+- providers;
+- execution modes;
+- orchestration;
+- model routing;
+- connectors;
+- Economic Request internals;
+- database structures;
+- service boundaries
 
-**reuse → extend → adapt → consolidate → create only when necessary**
-
-Do not create parallel versions of existing functionality.
-
-Do not create:
-
-* a second provider system
-* a second agent framework
-* a second notification system
-* a second device layer
-* a second memory authority
-* a second request lifecycle
-* a second payment authority
-* a second routing authority
-* a second conversation system
-* duplicate model-loading logic
-* duplicate UI shells
-* duplicate state management
-* duplicate integrations.
-
-A new abstraction is justified only when the existing architecture genuinely cannot support the requirement.
-
----
-
-# 11. PROTECT WORKING CODE
-
-**Do not break useful functionality merely to make one feature cleaner.**
-
-Before editing a shared file, determine where else it is used.
-
-A change is unsafe when it fixes one surface by silently breaking:
-
-* another client
-* another route
-* another workflow
-* another provider
-* another model
-* another integration
-* authentication
-* persistence
-* notifications
-* tests
-* native clients
-* production startup
-* background jobs
-* security boundaries.
-
-Do not replace a useful general-purpose mechanism with a narrow implementation for one use case.
-
-Do not rename or move shared functionality casually.
-
-When changing shared code:
-
-1. identify its consumers,
-2. preserve compatible behaviour,
-3. change the owner only when ownership is genuinely wrong,
-4. update all dependent contracts,
-5. validate affected paths.
-
-Compatibility should be preserved unless the user explicitly requires a breaking change.
-
----
-
-# 12. NEVER DELETE FUNCTIONALITY BLINDLY
-
-Do not delete code because it looks old, verbose, redundant or unfamiliar.
-
-First determine whether it is:
-
-* live production code
-* a required compatibility layer
-* used by another surface
-* referenced by tests
-* part of deployment
-* part of security
-* part of migrations
-* part of recovery
-* required by native clients
-* required by external integrations
-* required for local development.
-
-Remove superseded code only when its replacement is real and verified.
-
-Cleaning the repository is useful only when it reduces confusion without reducing capability.
-
----
-
-# 13. PRODUCT DIRECTION
-
-The authenticated Kurukoo experience should feel like **one assistant**, not a collection of disconnected applications.
-
-The current user-facing information architecture is centred on:
-
-**Chat · Home · Explore · Activity · Work**
-
-These are product concepts.
-
-Internal concepts such as:
-
-* agents
-* capabilities
-* skills
-* providers
-* execution modes
-* orchestration layers
-* implementation services
-* model names
-
-must not become the primary user experience unless the user genuinely benefits from seeing them.
-
-Chat is the conversational control surface.
-
-Native pages are supporting control surfaces for:
-
-* visual status
-* history
-* ongoing work
-* exploration
-* review
-* direct actions
-* account management.
-
-They must work together rather than behaving like competing products.
-
----
-
-# 14. USER EXPERIENCE RULE
-
-Every user-facing screen should answer some combination of:
-
-* What can Kurukoo do for me?
-* What is happening now?
-* What does Kurukoo need from me?
-* What happened?
-* What can I do next?
-
-Use plain language.
-
-Lead with the user’s goal.
+to accomplish an ordinary task.
 
 Prefer:
 
@@ -417,750 +225,1419 @@ Prefer:
 
 over:
 
-**configuration + forms + internal terminology**
+**forms + configuration + technical terminology**.
 
-Do not force users to understand Kurukoo’s architecture in order to use Kurukoo.
-
----
-
-# 15. PAGE STRUCTURE
-
-Pages must be structured around user outcomes, not implementation boundaries.
-
-Before creating or modifying a page, determine:
-
-* its purpose
-* the user’s likely intent
-* what action should be easiest
-* what information belongs above the fold
-* what belongs in secondary context
-* how the user returns to Chat
-* how the page connects to related work
-* what happens when there is no data
-* what happens when the backend is unavailable.
-
-Reuse shared components for:
-
-* header
-* navigation
-* mobile navigation
-* page headers
-* action areas
-* state messages
-* loading states
-* empty states
-* error states
-* continuity/context bridges
-* footer
-* common cards and controls.
-
-A reusable component is not truly reusable if each page reimplements nearly the same markup.
-
-One component should have one clear owner.
-
-Do not maintain hidden duplicate markup that is later replaced by JavaScript or server-side string manipulation.
+Internal architecture should become visible only when it helps the user understand or control something.
 
 ---
 
-# 16. VISUAL QUALITY
+# 6. CHAT IS THE CONVERSATIONAL CONTROL SURFACE
 
-Visual quality is functionality.
+Chat is not merely a messaging page.
 
-Every meaningful surface should have intentional states for:
+It is the primary conversational control surface for Kurukoo.
 
-* loading
-* empty
-* active
-* progress
-* needs input
-* waiting
-* success
-* failure
-* offline/reconnect
-* notification
-* returning user
-* desktop
-* tablet
-* mobile.
+The canonical conversation system owns conversational continuity.
 
-Use the existing Kurukoo visual system.
+Use the existing:
 
-Consolidate styling rather than creating near-duplicate CSS authorities.
+- `canonicalChatTurnService`
+- `chatConversationService`
+- context arbitration
+- conversation context pack
+- conversational auth
+- safety handling
+- memory context
+- canonical intent routing
 
-Do not redesign the product from scratch when an existing visual system can be extended.
+before introducing another conversation path.
 
-Do not introduce a component merely because it looks slightly different.
+Do not create:
 
-Visual changes should improve the overall system, not create another isolated design language.
+- a second chat engine;
+- a second conversation state machine;
+- a second conversational identity system;
+- a separate agent conversation authority.
 
----
-
-# 17. BREADTH OF ASSISTANCE
-
-Repair is a use case, not the definition of Kurukoo.
-
-Kurukoo should remain capable of helping with broad real-world needs, including:
-
-* personal assistance
-* information
-* communication
-* devices
-* computing
-* networks
-* services
-* people
-* products
-* places
-* tasks
-* reminders
-* discovery
-* commerce
-* providers
-* economic coordination
-* agents
-* connected devices
-* IoT
-* voice
-* channels
-* physical execution.
-
-Do not hard-code a narrow workflow into the general assistant architecture.
-
-When a shared capability can support a broader need safely, keep the architecture broad.
+Voice is an extension of the same relationship.
 
 ---
 
-# 18. DIRECT HELP BEFORE ESCALATION
+# 7. CONTEXT ARBITRATION
 
-Kurukoo should prefer direct assistance when available and authorised.
+Kurukoo conversations can contain multiple active contexts.
 
-If Kurukoo can safely:
+A user may:
 
-* inspect
-* diagnose
-* explain
-* monitor
-* configure
-* remind
-* compare
-* retrieve
-* organise
-* communicate
-* resolve
+- answer an earlier question;
+- switch topics;
+- continue a Work item;
+- ask about a provider;
+- discuss a reminder;
+- open a product;
+- return to an Agent goal;
+- ask an unrelated question.
 
-using existing capabilities, it should do so before escalating.
+Do not route every message as if it were a completely new request.
 
-When human intervention is necessary, carry forward the useful context already gathered.
+Context interpretation must determine whether the message:
 
-The user should not have to repeat the whole problem merely because Kurukoo changed from one capability or channel to another.
+- continues the active context;
+- answers a pending question;
+- changes topic;
+- creates a new context;
+- resumes an existing canonical object;
+- is ambiguous and requires natural clarification.
 
----
+Preserve unrelated active contexts.
 
-# 19. DEVICES AND CONNECTED RESOURCES
+Do not destroy useful context merely because a new topic appeared.
 
-When authorised device or connected-resource information is available, use it.
+The Brain/context layer decides **meaning and next step**.
 
-Do not ask questions that the system can safely answer through available telemetry or integrations.
+Canonical services remain responsible for:
 
-This applies to:
+- state mutation;
+- authorization;
+- payment;
+- evidence;
+- confirmation;
+- connector execution;
+- fulfilment;
+- persistence.
 
-* phones
-* tablets
-* computers
-* networks
-* Wi-Fi
-* printers
-* TVs
-* cameras
-* wearables
-* appliances
-* IoT
-* connected services.
-
-When physical intervention is required, preserve the diagnostic context and escalate appropriately.
-
-Do not imply that a remote action occurred when it did not.
+Do not move those responsibilities into a conversational classifier.
 
 ---
 
-# 20. AI AND AGENT BEHAVIOUR
+# 8. INTENT ROUTING
 
-AI may interpret, reason, communicate and coordinate.
+The current architecture has a canonical intent-routing boundary.
 
-Agents should reuse the same canonical Kurukoo capabilities and tools rather than becoming separate products.
+`intentRouter.ts` is the current routing entry and may use semantic interpretation plus compatibility routing.
 
-Use an agent when ongoing:
+`legacyIntentRouter.ts` is not automatically disposable simply because it contains "legacy" in its name.
 
-* reasoning
-* monitoring
-* diagnosis
-* coordination
-* instruction-following
-* background continuity
+Before modifying or removing compatibility routing:
 
-provides real value.
+1. identify all consumers;
+2. determine why it remains;
+3. understand what the canonical router delegates to it;
+4. preserve behaviour where required;
+5. remove it only when its replacement is real and all consumers are migrated.
 
-Do not invoke an agent merely because one exists.
+Do not create another routing authority.
 
-Use the **cheapest sufficient model/provider**.
+Do not make a classifier the product brain.
 
-Escalate to a more capable or expensive model only when required.
-
-Do not repeat expensive inference when the result can be reused.
-
-Do not generate speculative content and present it as fact.
-
-Never invent:
-
-* providers
-* availability
-* pricing
-* stock
-* bookings
-* payments
-* delivery
-* notifications
-* external actions
-* device results
-* completed work.
+Do not route based on superficial keyword matching when the canonical semantic/context machinery can make the decision correctly.
 
 ---
 
-# 21. FASTTEXT, CLASSIFIERS AND MODEL BOUNDARIES
+# 9. AUTHENTICATION AND CONVERSATIONAL ENTRY
 
-Do not use a classifier simply because it is available.
+Authentication is part of the canonical conversation contract.
 
-Classification and routing should solve an actual product problem.
+Do not bypass authentication merely because a conversational flow is more convenient without authentication.
 
-Normal conversational interaction should not be forced through a classification mechanism that is inappropriate for the task.
+Conversational onboarding and authentication must remain compatible with the existing authenticated user identity.
 
-Keep model responsibilities clear.
+When changing auth entry:
 
-Do not introduce conceptual residue from an old routing architecture into a newer one merely because a name or type still exists.
+- preserve existing entry contracts;
+- preserve existing session/auth state;
+- preserve conversational onboarding;
+- do not create a second identity store;
+- do not create a parallel login path unless explicitly required;
+- verify authenticated and unauthenticated behaviour separately.
 
-Remove obsolete model terminology when it is genuinely unused, but do not remove a working compatibility boundary without verifying its consumers.
-
----
-
-# 22. MEMORY
-
-Memory is a cross-service continuity capability.
-
-Use memory for approved:
-
-* identity
-* preferences
-* context
-* request continuity
-* goals
-* agent continuity
-* proactive assistance
-* user-approved history.
-
-Memory is not evidence of current:
-
-* price
-* availability
-* verification
-* payment
-* stock
-* fulfilment
-* provider status.
-
-Do not turn stale memory into a false current-state claim.
+A public conversational entry must never accidentally gain authenticated capabilities.
 
 ---
 
-# 23. CHANNELS
+# 10. IDENTITY, MEMORY AND CONTINUITY
 
-Web, PWA, native mobile, voice, WhatsApp, Telegram, SMS, email, push and future channels are delivery surfaces for the same Kurukoo relationship.
+Identity and memory are cross-service capabilities.
 
-Do not create separate product truths for each channel.
+Use the existing canonical owners.
 
-A channel should reuse canonical conversation, identity, memory and action state.
+Do not create:
 
-When the user is present:
+- Agent memory;
+- Chat memory;
+- Voice memory;
+- Social memory;
+- Provider memory;
+- household memory
 
-**show useful results where they are.**
+as separate authorities.
 
-When the user is away:
+Memory may contain:
 
-**use an enabled channel appropriately.**
+- approved identity information;
+- preferences;
+- recurring routines;
+- request continuity;
+- goals;
+- prior relevant context;
+- agent continuity;
+- approved history.
 
-When they return:
+Memory is **not** current-state evidence for:
 
-**restore continuity naturally.**
+- price;
+- availability;
+- provider verification;
+- stock;
+- payment;
+- fulfilment;
+- delivery;
+- current provider status.
 
-Never claim delivery unless delivery is confirmed.
+Current state must come from the authoritative current-state service.
 
----
-
-# 24. ECONOMIC ACTIONS
-
-Money-related actions must remain evidence-based.
-
-Separate:
-
-* intention
-* request preparation
-* authorization
-* provider acceptance
-* payment
-* settlement
-* fulfilment
-* confirmation.
-
-A UI state is not proof that an economic action succeeded.
-
-Do not claim a payment was made because a button was pressed.
-
-Do not claim fulfilment occurred because a request was created.
-
-Do not claim a provider accepted work because they were displayed.
-
-Truthful states are more important than optimistic states.
+Never convert remembered information into a false current claim.
 
 ---
 
-# 25. EXTERNAL DEPENDENCIES
+# 11. WORK IS THE EXECUTION/COORDINATION SURFACE
 
-Do not allow missing external credentials to become an excuse for making the local product useless.
+The product term is **Work**.
 
-When an external dependency is unavailable:
+Do not reintroduce old user-facing names such as Actions or Croon.
 
-* preserve the architecture
-* expose the useful local behaviour
-* clearly show what is unavailable
-* provide the next meaningful action
-* avoid false success.
+Work exists to make ongoing execution understandable and controllable.
 
-For example, an unavailable payment provider should not prevent useful request preparation or status visibility unless the dependency is genuinely required.
+A Work item may include:
 
-Do not simulate production integrations as real.
+- request details;
+- coordination;
+- options;
+- provider selection;
+- quote;
+- approval;
+- payment boundary;
+- fulfilment;
+- evidence;
+- outcome;
+- recovery.
 
----
+Work must remain connected to the originating conversation.
 
-# 26. SECURITY, PRIVACY, SAFETY AND CONSENT
+The user should be able to move:
 
-Do not remove genuine safeguards for the sake of speed.
+```text
+Chat → Work → Chat
+```
 
-Retain:
+without losing context.
 
-* authentication
-* authorization
-* identity boundaries
-* privacy
-* consent
-* security
-* safety policies
-* auditability
-* legal constraints
-* evidence requirements.
-
-Treat these as product requirements.
-
-Speed is important.
-
-Unsafe shortcuts are not.
+Do not create an independent workflow system beside Work.
 
 ---
 
-# 27. VALIDATION
+# 12. ECONOMIC REQUESTS ARE THE CANONICAL COMMERCIAL LIFECYCLE
 
-Validation must be proportional to the change.
+For economic actions, distinguish:
 
-Always validate the actual thing changed.
+```text
+intent
+→ request preparation
+→ authorization
+→ provider acceptance
+→ payment
+→ settlement
+→ fulfilment
+→ confirmation
+```
 
-Use the smallest useful validation first:
+These are different states.
 
-* relevant unit test
-* targeted contract
-* typecheck
-* lint
-* build
-* targeted runtime test.
-
-Then use broader checks when appropriate.
-
-Do not run every available test merely because it exists.
-
-Do not create elaborate verification work when a targeted check provides sufficient confidence.
-
-However, do not skip validation of shared or high-risk changes.
-
-Completion claims must distinguish:
-
-### Repository verification
-
-The code, contracts, tests or configuration were inspected or passed checks.
-
-### Runtime verification
-
-The feature actually ran in the relevant application/runtime environment.
-
-### Real-world verification
-
-External services, devices, people, providers or production infrastructure were actually involved and confirmed the result.
-
-Never use one dimension as proof of another.
-
----
-
-# 28. BUILD FOR USERS, NOT JUST FOR CODE
-
-A change is not complete merely because:
-
-* TypeScript compiles
-* lint passes
-* a route exists
-* a component renders
-* a test passes
-* a database field exists
-* an API responds.
-
-Ask:
-
-> Can a real person now use Kurukoo to accomplish something better than before?
-
-A useful feature must be reachable through the actual product.
-
-Do not leave functionality stranded behind an unlinked route, hidden developer UI, unsupported page or disconnected implementation.
-
-When adding capability:
-
-**connect it to the real user journey.**
-
----
-
-# 29. GIT AND INTEGRATION
-
-`main` is the canonical integration branch.
-
-Use short-lived implementation branches.
-
-Preferred flow:
-
-**latest main → small implementation branch → validate → PR → merge → continue**
-
-Do not maintain parallel product architectures.
-
-Do not create permanent branches for temporary experimentation unless explicitly required.
-
-Do not leave useful completed work sitting indefinitely on an isolated branch.
-
-When a change is verified and integration policy allows it, integrate it promptly.
-
----
-
-# 30. WORKING-TREE DISCIPLINE
-
-Before editing:
-
-* inspect current branch
-* inspect relevant uncommitted changes
-* do not overwrite unrelated work.
-
-Never discard another agent’s or developer’s useful local changes merely to make the working tree clean.
-
-Separate:
-
-* your changes
-* pre-existing changes
-* generated changes
-* unrelated changes.
-
-Preserve unrelated work.
-
-When committing, include only the intended changes.
-
----
-
-# 31. CHANGE OWNERSHIP
-
-Each concern should have a clear source of truth.
+Never infer one from another.
 
 Examples:
 
-* canonical routes → canonical URL/route authority
-* page rendering → canonical renderer/template
-* shared UI → shared component
-* authentication → authentication authority
-* memory → memory authority
-* economic lifecycle → economic authority
-* model selection → model routing authority
-* provider state → provider authority.
+- displaying a provider ≠ provider acceptance;
+- creating a request ≠ fulfilment;
+- selecting an option ≠ booking;
+- approving a quote ≠ payment;
+- payment initiation ≠ settlement;
+- provider completion claim ≠ verified outcome.
 
-Do not create “temporary” duplicate authorities that become permanent.
+The canonical Economic Request lifecycle remains the authority.
 
-Do not fix an ownership problem by moving the same behaviour into yet another layer.
+Do not create another commercial lifecycle.
 
 ---
 
-# 32. NO ARCHITECTURE THEATRE
+# 13. PHYSICAL EXECUTION
 
-Do not spend engineering time creating work whose primary output is a description of the work.
+Physical execution is an extension of the existing Economic Request/provider architecture.
 
-Avoid unnecessary:
+It is not a new delivery platform.
 
-* audit reports
-* readiness reports
-* convergence reports
-* architecture panels
-* giant implementation summaries
-* duplicate roadmaps
-* redundant checklists
-* documentation that only repeats what the repository already says.
+The intended path is:
 
-Documentation is valuable when it:
+```text
+User
+→ Kurukoo Agent
+→ canonical capability
+→ Economic Request
+→ selected existing participant/provider
+→ execution connector
+→ progress/evidence
+→ reviewed outcome
+→ existing continuity/memory/notification
+```
 
-* governs future implementation
-* prevents repeated mistakes
-* explains an important contract
-* records a critical operational decision
-* helps another agent continue work.
+Physical participants may include:
 
-Otherwise, implement the product.
+- human drivers;
+- couriers;
+- delivery providers;
+- robot taxis;
+- autonomous vehicles;
+- drones;
+- robotic delivery systems.
 
----
+Do not create a fleet manager, robot platform, delivery-order system or autonomous hardware authority merely because a new physical participant is needed.
 
-# 33. CONTINUATION AFTER A TASK
+Reuse:
 
-Do not stop merely because the requested file was modified.
+- provider identity;
+- capability declarations;
+- availability;
+- authorization;
+- connector contracts;
+- evidence;
+- communication;
+- Economic Request state.
 
-After implementing a slice:
+Physical execution must fail closed when authorization, expiry, destination binding, safety reference, participant membership, availability or connector authorization is invalid.
 
-1. verify the change,
-2. check the immediate user flow,
-3. identify the next obvious break or missing connection,
-4. fix it when it is within scope and safe,
-5. integrate the work,
-6. continue to the next highest-value slice.
-
-Do not expand into unrelated refactoring.
-
-Do not stop at cosmetic completion when the user flow is still broken.
-
----
-
-# 34. DECISION RULE
-
-When choosing between two implementation options, prefer the one that:
-
-1. helps the user sooner,
-2. reuses existing Kurukoo machinery,
-3. costs fewer tokens, network calls and model calls,
-4. preserves working behaviour,
-5. keeps the architecture coherent,
-6. is easier to verify,
-7. avoids new permanent complexity.
-
-Do not choose a more complicated solution merely because it is architecturally fashionable.
+Never claim physical completion without suitable evidence and canonical review.
 
 ---
 
-# 35. TOKEN, CREDIT AND RESOURCE DISCIPLINE
+# 14. QUICK RIDE
+
+Quick Ride is an adapter into the canonical execution/economic path.
+
+It is not a second transportation system.
+
+Ride/taxi/bike/keke requests should use:
+
+```text
+Quick Ride input
+→ Economic Request
+→ economic dispatch coordination
+→ existing provider/participant boundary
+→ evidence
+→ outcome
+```
+
+Do not invent:
+
+- drivers;
+- ETAs;
+- vehicle positions;
+- payment success;
+- dispatch acceptance;
+- ride completion.
+
+unless the backend and external provider actually provide those facts.
+
+---
+
+# 15. LOCAL EXECUTION AND CANADA
+
+Kurukoo now has a generic local execution adapter architecture.
+
+Canada is represented by a local execution adapter with:
+
+- Canada country context;
+- CAD;
+- 911 emergency number;
+- local discovery;
+- service-provider coordination;
+- local business participation;
+- AI-assisted routing;
+- providers/businesses/agents/channels as execution resources.
+
+This supports the intended positioning:
+
+> **Kijiji's breadth + Taskrabbit's service coordination + an AI assistant sitting in front of the whole system.**
+
+However:
+
+**configured adapter metadata is not proof that Canadian external providers are live.**
+
+The presence of a Canada adapter means the architecture knows how Canada can be represented.
+
+It does not mean:
+
+- Canadian providers are connected;
+- provider availability is live;
+- payments are active;
+- dispatch is active;
+- businesses have accepted requests;
+- communications are delivered;
+- real-world fulfilment has occurred.
+
+External activation must be separately verified.
+
+Never upgrade `configured` to `live` through UI wording, documentation or registry existence.
+
+---
+
+# 16. PROVIDERS, BUSINESSES AND DISCOVERY
+
+Discovery must remain evidence-bound.
+
+Do not fabricate:
+
+- providers;
+- businesses;
+- inventory;
+- availability;
+- prices;
+- demand;
+- discounts;
+- market activity.
+
+If a provider/business is discovered, preserve:
+
+- source;
+- identity;
+- relevant evidence;
+- capability;
+- current-state information.
+
+When appropriate, allow the user to bring the discovery into Work.
+
+The transition should preserve context rather than force the user to repeat the request.
+
+---
+
+# 17. NEARBY / PULSE
+
+Nearby/Pulse must use truthful current signals.
+
+Do not hard-code demo providers or anonymous fake people to make the interface look populated.
+
+Pulse may surface:
+
+- live provider signals;
+- people/presence projections where privacy permits;
+- verified providers;
+- Kurukoo/AI agents;
+- availability;
+- live provider totals.
+
+Do not expose:
+
+- private phone identifiers;
+- exact private locations;
+- anonymous provider identities;
+- inferred presence presented as confirmed presence.
+
+Unified presence is a projection over existing authorities, not a second presence database.
+
+Do not create another presence store.
+
+---
+
+# 18. UNIFIED PRESENCE
+
+Presence should remain a shared projection across:
+
+- people;
+- contacts;
+- verified providers;
+- Kurukoo/software agents;
+- Pulse participants.
+
+Use the existing presence authority.
+
+Presence describes availability/visibility.
+
+It does not authorize:
+
+- contact;
+- payment;
+- dispatch;
+- execution;
+- access to private information.
+
+Do not turn a green dot into proof that a person/provider will respond.
+
+---
+
+# 19. COMMERCE AND CART
+
+Commerce should remain one canonical flow.
+
+Use the existing Cart and commerce mechanisms.
+
+The relationship is:
+
+```text
+Discovery
+→ offer/product context
+→ Cart
+→ checkout/payment boundary
+→ external destination or verified payment state
+→ confirmation
+```
+
+A displayed offer is not a completed purchase.
+
+A cart item is not payment.
+
+A checkout click is not settlement.
+
+An affiliate destination is not Kurukoo fulfilment.
+
+Preserve:
+
+- seller/source;
+- provenance;
+- external destination;
+- commercial state.
+
+Do not create a second commerce or payment authority.
+
+---
+
+# 20. COMMUNICATIONS AND CHANNELS
+
+Web, PWA, native, voice, WhatsApp, Telegram, SMS, email, push and future channels are different delivery surfaces for the same Kurukoo relationship.
+
+They must not become separate product truths.
+
+Reuse canonical:
+
+- identity;
+- conversation;
+- memory;
+- action state;
+- request state;
+- notification state.
+
+Never claim that a message was delivered unless delivery evidence exists.
+
+Never claim that an external party received or accepted something merely because Kurukoo attempted to send it.
+
+---
+
+# 21. VOICE
+
+Voice is part of Chat, not a separate assistant.
+
+Use the cheapest sufficient voice path:
+
+```text
+response text
+→ browser/device SpeechSynthesis
+→ optional hosted TTS
+→ explicit realtime voice when selected
+```
+
+Do not establish permanent realtime connections simply because the user is logged in.
+
+Realtime voice is explicit.
+
+Proactive voice requires:
+
+- user permission;
+- attention policy;
+- privacy policy;
+- quiet-hour controls.
+
+Voice presence is lightweight semantic state, not a requirement for an avatar or permanent audio connection.
+
+Never claim that speech was heard by the user unless the relevant runtime evidence exists.
+
+---
+
+# 22. AGENTS
+
+Agents are capabilities inside Kurukoo, not competing products.
+
+The user should experience:
+
+**Kurukoo helping them**
+
+rather than:
+
+**Agent A → Agent B → Agent C → tool → workflow**
+
+unless the technical detail is genuinely useful.
+
+Reuse the canonical Agent Runtime and capability system.
+
+Use agents for genuine value such as:
+
+- ongoing reasoning;
+- monitoring;
+- diagnosis;
+- coordination;
+- instruction-following;
+- bounded background continuity.
+
+Do not invoke agents merely because an agent abstraction exists.
+
+Never give an agent unrestricted authority.
+
+Autonomous external actions remain bounded by:
+
+- capability;
+- authorization;
+- policy;
+- connector;
+- scope;
+- expiry;
+- evidence;
+- user approval where required.
+
+---
+
+# 23. SAFETY AND SECURITY
+
+Never weaken safeguards to make a feature appear complete.
+
+Preserve:
+
+- authentication;
+- authorization;
+- owner scoping;
+- privacy;
+- consent;
+- safety policy;
+- evidence;
+- auditability;
+- legal constraints;
+- secure attachment handling;
+- provider verification;
+- connector authorization.
+
+Fail closed when a consequential action cannot be safely verified.
+
+Do not expose internal reasoning, secrets, credentials or private identifiers.
+
+Do not place credentials in source code, tests, fixtures, logs or documentation.
+
+---
+
+# 24. EXTERNAL INTEGRATIONS
+
+Treat external systems as activation boundaries.
+
+Examples include:
+
+- payment providers;
+- SMS;
+- WhatsApp;
+- Telegram;
+- email;
+- FCM;
+- WebRTC;
+- PSTN;
+- MQTT;
+- KYC;
+- inventory;
+- dispatch;
+- provider networks;
+- vehicles;
+- devices.
+
+The repository may contain a complete adapter/contract while the external service remains unactivated.
+
+Represent this honestly.
+
+A correct implementation should degrade gracefully when external activation is unavailable.
+
+Do not replace an unavailable integration with a fake success state.
+
+---
+
+# 25. NEVER INVENT REAL-WORLD OUTCOMES
+
+This is a hard rule.
+
+Never invent:
+
+- a provider;
+- a person;
+- availability;
+- stock;
+- price;
+- quote;
+- booking;
+- payment;
+- delivery;
+- notification delivery;
+- driver;
+- vehicle;
+- ETA;
+- device result;
+- provider acceptance;
+- task completion;
+- fulfilment;
+- external communication;
+- external agent action.
+
+If evidence is missing, show the truthful state.
+
+Examples:
+
+**Good**
+
+> Ready to connect to a provider.
+
+**Good**
+
+> Provider options found; no acceptance yet.
+
+**Good**
+
+> Payment is required to continue.
+
+**Good**
+
+> Canadian local execution is configured, but external provider activation is still required.
+
+**Bad**
+
+> Your provider has accepted the job.
+
+when no provider acceptance exists.
+
+---
+
+# 26. HOUSEHOLD AND EVERYDAY SERVICES
+
+Household/service requests must enter the existing canonical routing and execution architecture.
+
+Do not build a separate household-services workflow.
+
+Examples may include:
+
+- cleaning;
+- repairs;
+- plumbing;
+- electrical work;
+- moving;
+- delivery;
+- local errands;
+- home maintenance;
+- other everyday services.
+
+The assistant should interpret the user's need and route it through the canonical capability/Economic Request/Work path when execution is required.
+
+Preserve:
+
+- conversation context;
+- user identity;
+- location/context;
+- service intent;
+- provider evidence;
+- approval;
+- commercial state;
+- execution evidence.
+
+Do not hard-code household services as a special product.
+
+---
+
+# 27. PAGE AND UI DEVELOPMENT
+
+Before creating or changing a page:
+
+1. identify its user purpose;
+2. identify its canonical route;
+3. identify its owner;
+4. identify its existing shared components;
+5. identify how it connects to Chat;
+6. identify how it connects to Work when relevant;
+7. identify loading/empty/error/offline states;
+8. identify backend availability requirements.
+
+Do not create a new page because an existing page can be extended.
+
+Do not create duplicate shells.
+
+Do not create duplicate navigation.
+
+Do not create duplicate state stores.
+
+Do not maintain hidden duplicate markup.
+
+---
+
+# 28. FRONTEND CANONICALITY
+
+For the current Kurukoo frontend:
+
+- `src/` is the active application source.
+- The nested/old `frontend/` architecture must not be revived as a parallel frontend.
+- The current authenticated shell is the canonical OS shell.
+- Shared components should be reused rather than reimplemented per route.
+
+When a frontend change is requested, first determine whether the capability already exists in:
+
+- the canonical route;
+- shared Kurukoo components;
+- API clients;
+- shell/context rails;
+- existing Work/Chat/Explore/Perch surfaces.
+
+Do not build a new implementation simply because an old page appears easier to modify.
+
+---
+
+# 29. BACKEND CANONICALITY
+
+The backend already contains mature foundations for:
+
+- canonical conversation;
+- authentication;
+- memory;
+- Economic Requests;
+- providers;
+- notifications;
+- agents;
+- execution;
+- physical participants;
+- Quick Ride;
+- external channels;
+- commerce;
+- presence;
+- local execution adapters;
+- security;
+- evidence;
+- audit;
+- job queues.
+
+Before introducing any new service, search for the existing owner.
+
+The default sequence is:
+
+**reuse → extend → adapt → consolidate → create only if necessary**
+
+A new abstraction must solve a real ownership problem.
+
+---
+
+# 30. DO NOT CREATE PARALLEL AUTHORITIES
+
+Never create a second:
+
+- conversation engine;
+- routing engine;
+- auth authority;
+- identity store;
+- memory store;
+- provider directory;
+- presence store;
+- Economic Request lifecycle;
+- payment authority;
+- notification system;
+- agent runtime;
+- execution lifecycle;
+- device layer;
+- commerce flow;
+- UI shell;
+- state-management authority.
+
+If two systems appear to perform the same job, investigate which is canonical before changing either.
+
+---
+
+# 31. COMPATIBILITY AND LEGACY CODE
+
+A name containing:
+
+- legacy;
+- old;
+- compatibility;
+- adapter;
+- bridge
+
+does not mean the code can be deleted.
+
+Before removal:
+
+1. find consumers;
+2. understand the contract;
+3. identify migration status;
+4. check tests;
+5. check native/client/external consumers;
+6. confirm the replacement exists;
+7. migrate consumers;
+8. only then remove safely.
+
+Prefer convergence over deletion theatre.
+
+---
+
+# 32. LOCAL-FIRST DEVELOPMENT
+
+The local workspace is the first source to inspect.
+
+Prefer:
+
+```text
+current context
+→ local workspace
+→ local cache
+→ repository checkout
+→ configured cache
+→ remote source
+```
+
+Before downloading, check whether the required artifact already exists.
+
+Reuse:
+
+- dependencies;
+- model weights;
+- browser binaries;
+- test fixtures;
+- build outputs;
+- datasets;
+- downloaded archives;
+- generated assets.
+
+Do not make server startup repeatedly download an existing model or package.
+
+---
+
+# 33. MODEL AND AI RESOURCE DISCIPLINE
+
+Use the cheapest sufficient model/provider.
+
+Do not:
+
+- invoke a larger model unnecessarily;
+- duplicate inference;
+- send the same request through multiple providers without reason;
+- repeatedly regenerate known information;
+- turn local model startup into a network dependency.
+
+Local models must use persistent cache/model directories.
+
+The model path should:
+
+1. check for local resources;
+2. reuse valid resources;
+3. avoid network access when cached resources exist;
+4. download only when genuinely absent;
+5. persist newly downloaded resources;
+6. fail clearly if acquisition is impossible.
+
+---
+
+# 34. TASK EXECUTION
+
+The preferred engineering loop is:
+
+```text
+inspect
+→ identify canonical owner
+→ implement
+→ validate
+→ integrate
+→ continue
+```
+
+Do not spend most of the task producing plans, audits or reports.
+
+Investigate enough to avoid damage.
+
+Then act.
+
+If a safe, reversible implementation is obvious, implement it.
+
+If the change is high-risk or ownership is unclear, investigate more deeply before changing it.
+
+---
+
+# 35. DO NOT STOP AT THE FILE
+
+After modifying a component/service/route:
+
+1. validate it;
+2. inspect the immediate user journey;
+3. determine whether the new functionality is actually reachable;
+4. fix obvious in-scope broken connections;
+5. verify the resulting path;
+6. integrate the work.
+
+A feature is not complete merely because the requested file changed.
+
+---
+
+# 36. VALIDATION
+
+Use proportional validation.
+
+For a local change, start with the smallest relevant check:
+
+- targeted unit test;
+- targeted contract;
+- typecheck;
+- lint;
+- build;
+- targeted runtime test.
+
+For shared or consequential changes, expand validation appropriately.
+
+Do not run every test merely because it exists.
+
+Do not skip validation because the change is small.
+
+Do not use CI as the interactive development loop.
+
+---
+
+# 37. CI POLICY
+
+Remote CI is final repository verification, not the primary development environment.
+
+During development:
+
+- reproduce locally;
+- diagnose locally;
+- fix locally;
+- run targeted tests locally.
+
+Do not repeatedly poll CI while debugging.
+
+Do not create commits merely to make CI green.
+
+When CI fails but local reproduction fails, inspect:
+
+- environment differences;
+- commands;
+- dependencies;
+- secrets/configuration;
+- deployment assumptions.
+
+Do not guess.
+
+The current backend repository has staging smoke coverage for execution, presence and external-provider activation contracts. Those tests provide repository/contract evidence, not proof that external providers are actually active in production.
+
+---
+
+# 38. GIT
+
+`main` is the canonical integration branch.
+
+Preferred flow:
+
+```text
+latest main
+→ short-lived implementation branch
+→ targeted validation
+→ PR/review
+→ merge
+→ continue
+```
+
+Do not maintain parallel product branches.
+
+Do not leave verified useful work indefinitely isolated from `main`.
+
+Before editing:
+
+```bash
+git status --short --branch
+```
+
+Inspect existing uncommitted work.
+
+Never overwrite another agent's useful work merely to obtain a clean tree.
+
+Commit only the intended changes.
+
+---
+
+# 39. AGENT HANDOFF DISCIPLINE
+
+When another agent has already worked on the repository:
+
+Do not assume its claims are correct.
+
+Do not assume its claims are false either.
+
+Inspect the actual:
+
+- commit;
+- diff;
+- changed files;
+- tests;
+- current branch;
+- relationship to `main`.
+
+Classify the change:
+
+- correct;
+- incomplete;
+- harmless;
+- redundant;
+- architectural regression;
+- fake/mock behaviour;
+- unsafe;
+- needs migration.
+
+A commit message is not evidence of correctness.
+
+---
+
+# 40. PRESERVE WORKING FUNCTIONALITY
+
+Before changing shared code, identify its consumers.
+
+Protect:
+
+- web;
+- PWA;
+- native;
+- Admin;
+- APIs;
+- background jobs;
+- channels;
+- integrations;
+- tests;
+- deployment;
+- security boundaries.
+
+Do not fix one surface by breaking another.
+
+Do not perform broad refactors when a targeted change solves the problem.
+
+---
+
+# 41. USER EXPERIENCE QUALITY
+
+Every meaningful surface needs intentional handling for:
+
+- loading;
+- empty;
+- active;
+- progress;
+- needs input;
+- waiting;
+- success;
+- failure;
+- offline/reconnect;
+- notification;
+- returning user;
+- desktop;
+- tablet;
+- mobile.
+
+The interface should answer:
+
+- What can Kurukoo do?
+- What is happening?
+- What does Kurukoo need from me?
+- What happened?
+- What can I do next?
+
+Use plain language.
+
+---
+
+# 42. CONTINUITY IS A PRODUCT FEATURE
+
+When a user moves between:
+
+- Chat;
+- Work;
+- Explore;
+- Perch;
+- Providers;
+- Businesses;
+- Cart;
+- Activity;
+- Voice;
+- Agents;
+- Contacts;
+- Messages;
+
+useful context should remain attached to the relevant canonical object.
+
+The user should not need to repeat their entire request simply because the UI changed.
+
+Evidence, provider state, commerce state and execution state should remain tied to the request where appropriate.
+
+---
+
+# 43. TRUSTED CONTEXT
+
+Contextual rails and supporting UI should provide useful context without becoming a second application.
+
+They may expose:
+
+- recent conversations;
+- voice state;
+- community/presence;
+- related Work;
+- relevant providers/businesses;
+- contextual information.
+
+Do not turn trusted context into another state authority.
+
+The rail should reflect canonical state, not invent it.
+
+---
+
+# 44. ACCESSIBILITY
+
+Accessibility is part of functionality.
+
+Preserve:
+
+- keyboard operation;
+- semantic controls;
+- readable contrast;
+- sufficient target sizes;
+- meaningful labels;
+- focus behaviour;
+- screen-reader semantics;
+- mobile usability.
+
+Do not sacrifice accessibility for visual polish.
+
+---
+
+# 45. PERFORMANCE AND RESOURCE DISCIPLINE
 
 Every agent action has a cost.
 
 Avoid unnecessary:
 
-* remote searches
-* repeated file reads
-* repeated code searches
-* repeated model inference
-* repeated builds
-* repeated package installation
-* redundant testing
-* unnecessary browser sessions
-* unnecessary downloads
-* duplicate generated artifacts.
+- remote searches;
+- repeated repository reads;
+- repeated model calls;
+- repeated builds;
+- repeated package installation;
+- repeated browser sessions;
+- downloads;
+- generated reports;
+- duplicate artifacts.
 
-Cache and reuse results whenever possible.
+Batch related work when possible.
 
-Batch related operations when the tool supports it.
+Reuse already established information.
 
-Inspect only the files needed to make the decision.
-
-Prefer local evidence over remote evidence.
-
-Prefer targeted verification over exhaustive verification.
-
-Do not use expensive reasoning to solve a problem that can be answered by reading an existing local file.
+Do not perform exhaustive audits when a targeted check answers the question.
 
 ---
 
-# 36. FAST IMPLEMENTATION RULE
+# 46. DOCUMENTATION
 
-When the path is clear:
+Documentation is valuable when it:
 
-**do the work.**
+- governs future implementation;
+- prevents recurring mistakes;
+- defines a critical contract;
+- records an important architectural decision;
+- allows another agent to continue safely.
 
-Do not spend excessive time trying to prove that the obvious implementation is safe when:
+Do not create documentation merely to make work appear substantial.
 
-* the change is isolated
-* ownership is understood
-* the existing contract is clear
-* the change is reversible
-* targeted validation exists.
+Do not create another product-truth document.
 
-Investigate deeply when the risk is real.
+`CURRENT_PRODUCT_TRUTH.md` remains the current-state authority.
 
-Move quickly when the risk is low.
-
-The goal is not maximum deliberation.
-
-The goal is **maximum useful progress per unit of time and compute**.
+Reports, audits, matrices and snapshots are evidence only.
 
 ---
 
-# 37. FINAL QUALITY BAR
+# 47. NO ARCHITECTURE THEATRE
 
-Before calling a slice complete, ask:
+Do not confuse architectural description with implementation.
 
-### Product
+Avoid creating:
 
-Does a user have a better way to get something done?
+- decorative architecture dashboards;
+- duplicate readiness systems;
+- giant reports;
+- redundant matrices;
+- duplicate roadmaps;
+- fake completion indicators;
+- unnecessary abstraction layers.
 
-### Experience
+The product is the priority.
 
-Does the path feel coherent, clear and intentional?
-
-### Continuity
-
-Can the user leave and return without losing useful context?
-
-### Reuse
-
-Did we reuse existing components and authorities?
-
-### Safety
-
-Did we preserve real safeguards?
-
-### Truth
-
-Are all success claims supported by actual evidence?
-
-### Performance
-
-Did we avoid unnecessary tokens, model calls, downloads and rebuilds?
-
-### Locality
-
-Did we reuse local files, caches and artifacts instead of downloading them again?
-
-### Preservation
-
-Did we avoid breaking useful functionality elsewhere?
-
-### Accessibility
-
-Can the user actually reach and use the capability through Kurukoo?
-
-### Integration
-
-Is the work saved, verified and ready to integrate?
+If the user needs a feature, implement the feature.
 
 ---
 
-# 38. THE CORE RULE
+# 48. DECISION RULE
 
-The final measure of every engineering change is:
+When choosing between approaches, prefer the one that:
 
-> **Does this make Kurukoo better at helping a real person get something done?**
+1. helps the user sooner;
+2. uses an existing canonical owner;
+3. preserves working behaviour;
+4. maintains truthful state;
+5. keeps the user journey coherent;
+6. is easy to verify;
+7. introduces the least permanent complexity;
+8. uses the least unnecessary compute/network/model cost.
 
 Prefer:
 
-**useful progress over deliberation**
+**convergence over accumulation**
 
-**local resources over unnecessary downloads**
-
-**cache reuse over re-fetching**
-
-**remembered context over repeated inspection**
-
-**existing architecture over parallel architecture**
-
-**reusable components over duplicated markup**
+**reuse over recreation**
 
 **truth over optimistic UI**
 
-**targeted validation over test theatre**
+**evidence over claims**
 
-**fast implementation over endless discussion**
+**implementation over architecture theatre**
 
-**integration over unfinished branches**
+---
 
-**user outcomes over internal concepts**
+# 49. COMPLETION GATE
 
-Kurukoo should increasingly feel like one capable assistant that simply helps.
+Before declaring a slice complete, verify:
 
-That is the product.
+### Product
+Can a real person accomplish something better?
 
-# 39. CI policy
+### Reachability
+Can the user actually reach the functionality?
 
-Do not use remote CI as the primary development or verification loop.
+### Architecture
+Does it use the canonical owner?
 
-For implementation and debugging:
-- inspect the repository locally;
-- make the smallest coherent change;
-- run the relevant local tests, typechecks, lint, build, contracts, and runtime checks;
-- diagnose and fix failures locally;
-- do not poll, wait for, or repeatedly inspect CI while developing.
+### Continuity
+Does the relevant context survive navigation/conversation changes?
 
-Remote CI is a final repository verification mechanism, not an interactive development dependency.
+### Truth
+Are claims supported by evidence?
 
-Do not create commits or additional changes merely to make CI appear green.
-Do not repeatedly rerun CI to discover problems that can be reproduced locally.
+### Safety
+Are authorization, privacy and evidence boundaries preserved?
 
-When CI reports a failure that cannot be reproduced locally, inspect the CI-specific environment, command, or dependency boundary and document the discrepancy rather than guessing.
+### External dependencies
+Are unavailable external systems represented honestly?
 
-Do not treat repository size as a reason to create another abstraction.
+### Preservation
+Did existing functionality remain intact?
 
-Before introducing a new service, component, route, state store, model, script, skill, or documentation layer:
-1. find the existing canonical owner;
-2. determine whether it can be extended;
-3. reuse it when possible;
-4. remove superseded duplicate machinery when safe.
+### Validation
+Did the changed path receive appropriate tests/checks?
 
-Prefer convergence over accumulation.
-## 40. Local development quick start
+### Integration
+Is the work saved and ready for integration?
 
-Use the helper script for a one-command, repeatable server start:
+---
 
-```
+# 50. HARD PROHIBITIONS
+
+Do not:
+
+- invent providers;
+- invent availability;
+- invent pricing;
+- invent stock;
+- invent bookings;
+- invent payments;
+- invent delivery;
+- invent notifications;
+- invent device results;
+- invent provider acceptance;
+- invent fulfilment;
+- invent external execution;
+- bypass authentication;
+- bypass authorization;
+- bypass evidence requirements;
+- create parallel canonical authorities;
+- delete compatibility code blindly;
+- turn configuration into fake live functionality;
+- use UI state as proof of external success;
+- create a second conversation system;
+- create a second Work/request lifecycle;
+- create a second memory authority;
+- create a second provider system;
+- create a second presence store;
+- create a second payment authority;
+- create a second execution system.
+
+---
+
+# 51. LOCAL DEVELOPMENT
+
+For the backend repository, prefer:
+
+```bash
 npm run dev:start
 ```
 
-`dev:start` (in `scripts/dev-start.mjs`) is the canonical way to launch the
-local dev server. On every invocation it:
-1. Wipes `dist/` (the build output) so no stale pre-unified-IA build artifacts
-   can be served. `public/` is the source static directory tracked in git and is never wiped.
-2. Forwards `NODE_ENV=development` so the server runs in dev mode
-   (`tsx` hardcodes `NODE_ENV=production` if you do not override it).
-3. Releases port `3000` if a previous listener is still bound.
+This is the canonical local development startup helper.
 
-Override the port with `PORT=4000 npm run dev:start` if needed.
+It:
 
-Manual alternatives:
+1. removes stale `dist/`;
+2. preserves tracked `public/`;
+3. starts the application in development mode;
+4. releases port `3000` if necessary.
 
-| Goal | Command |
-| --- | --- |
-| Dev server | `npm run dev` |
-| Dev server, fresh | `npm run dev:fresh` |
-| Production build | `npm run build` |
-| Production build, fresh | `npm run build:fresh` |
-| Production start | `npm start` |
-| Production start, rebuild first | `npm start:fresh` |
-| Wipe artifacts | `npm run clean` |
+Port override:
 
-### Why this exists
+```bash
+PORT=4000 npm run dev:start
+```
 
-- `tsx` does not pre-resolve `NODE_ENV`; without an explicit override,
-  it falls back to `production`, which triggers production-only startup
-  guards that crash local dev.
-- `SmolLM2` local inference goes through the Ollama REST API
-  (`http://localhost:11434`) rather than `@huggingface/transformers`.
-  When `KURUKOO_SMOLLM2_LOCAL=true` and Ollama is available, the service
-  calls `/api/generate`; otherwise it falls back to the bounded deterministic
-  template path. Start Ollama locally with `ollama serve` (or `npm run dev:start`).
+Useful alternatives:
+
+```bash
+npm run dev
+npm run dev:fresh
+npm run build
+npm run build:fresh
+npm start
+npm start:fresh
+npm run clean
+```
+
+The local model path must remain cache-aware.
+
+Do not make local development depend on repeated network model downloads.
+
+---
+
+# 52. FINAL OPERATING PRINCIPLE
+
+When in doubt, ask:
+
+> **What is the existing canonical Kurukoo mechanism for this?**
+
+Then:
+
+> **Can I extend it instead of creating another one?**
+
+Then:
+
+> **What evidence proves this actually works?**
+
+Then:
+
+> **Can a real person use the result through the actual Kurukoo journey?**
+
+The ultimate measure is:
+
+> **Does this make Kurukoo better at helping a real person get something done?**
+
+Kurukoo should increasingly feel like:
+
+**one capable assistant that understands, acts, coordinates, remembers, communicates and follows through.**
+
+That is the product.

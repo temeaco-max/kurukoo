@@ -2,7 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const TARGET_DIRS = ['views', 'public'];
+const TARGET_DIRS = ['views', 'frontend/public'];
 const FILE_EXTENSIONS = ['.ejs', '.html', '.js'];
 
 // Regex patterns to detect inline styles

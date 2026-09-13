@@ -5,7 +5,7 @@ replacement = '/assets/brand/logo-icon.png'
 external = 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663712619985/mFhtTSVkfJaqmuhJ.png'
 changed = []
 
-for root in [repo / 'views', repo / 'public']:
+for root in [repo / 'views', repo / 'frontend/public']:
     for path in root.rglob('*'):
         if not path.is_file() or path.suffix.lower() not in {'.ejs', '.html', '.css', '.js', '.svg'}:
             continue

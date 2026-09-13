@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 const router = Router();
-const chatPage = path.join(process.cwd(), 'public', 'chat', 'index.html');
+const chatPage = path.join(process.cwd(), 'frontend/public', 'chat', 'index.html');
 const speechScript = '/js/kurukoo-speech-output.js?v=1';
 
 async function sendChatPage(res: any) {

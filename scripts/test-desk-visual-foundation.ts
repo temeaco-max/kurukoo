@@ -4,8 +4,8 @@ import fs from 'node:fs';
 import { DESK_CONTENT_MODULES, DESK_VISUAL_REFERENCE } from '../src/services/deskVisualFoundation.js';
 import { AUTHENTICATED_SHELL_BRAND_RULES, AUTHENTICATED_SHELL_CONTRACT } from '../src/services/authenticatedShellFoundation.js';
 
-const deskRuntime = fs.readFileSync('public/js/kurukoo-desk-system.js', 'utf8');
-const deskCss = fs.readFileSync('public/css/kurukoo-desk-system.css', 'utf8');
+const deskRuntime = fs.readFileSync('frontend/public/js/kurukoo-desk-system.js', 'utf8');
+const deskCss = fs.readFileSync('frontend/public/css/kurukoo-desk-system.css', 'utf8');
 const manifest = JSON.parse(fs.readFileSync('src/services/canonicalAuthenticatedScreenSetManifest.json', 'utf8'));
 
 assert.equal(DESK_VISUAL_REFERENCE.asset, 'kurukoo-os-personal-workspace.png');

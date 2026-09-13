@@ -9,7 +9,7 @@ import { EXECUTION_NETWORK_CONTRACT_VERSION, listExecutionNetworkPillars, valida
 const router = Router();
 
 router.get('/api/docs', (_req, res) => {
-  res.sendFile(path.join(process.cwd(), 'public', 'api-docs.html'));
+  res.sendFile(path.join(process.cwd(), 'frontend/public', 'api-docs.html'));
 });
 
 /**

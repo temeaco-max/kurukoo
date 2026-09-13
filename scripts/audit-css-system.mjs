@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const root = fs.existsSync(path.resolve('dist/public')) ? path.resolve('dist/public') : path.resolve('public');
+const root = fs.existsSync(path.resolve('dist/public')) ? path.resolve('dist/public') : path.resolve('frontend/public');
 const repoRoot = process.cwd();
 const cssFiles = [];
 const templateFiles = [];

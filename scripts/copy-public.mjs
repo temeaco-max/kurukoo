@@ -19,7 +19,7 @@ function copyRecursive(src, dest) {
 }
 
 console.log('Copying static assets, views, and locales to dist...');
-copyRecursive('public', 'dist/public');
+copyRecursive('frontend/public', 'dist/public');
 copyRecursive('views', 'dist/views');
 copyRecursive('locales', 'dist/locales');
 console.log('Assets copied successfully.');

@@ -15,7 +15,7 @@ export function WorkspaceHome() {
           <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground"><span className="grid size-5 place-items-center rounded-full bg-primary/10 text-primary"><Sparkles className="size-3" /></span>Your Perch</div>
           <h1 className="mt-4 max-w-3xl text-[44px] font-semibold leading-[.96] tracking-[-0.055em] md:text-[62px]">Your Kurukoo,<br /><span className="text-muted-foreground/75">around the work.</span></h1>
           <p className="mt-5 max-w-2xl text-[14px] leading-7 text-muted-foreground">A quiet personal place for seeing what Kurukoo is handling, checking what needs you, and returning to the conversation.</p>
-          <Link to="/chat" className="mt-6 inline-flex items-center gap-2 text-[12px] font-semibold hover:text-primary">Continue with Croon <ArrowRight className="size-3.5" /></Link>
+          <Link to="/chat" className="mt-6 inline-flex items-center gap-2 text-[12px] font-semibold hover:text-primary">Continue with Agent <ArrowRight className="size-3.5" /></Link>
         </div>
         <div className="border-l border-border/80 pl-5 lg:mb-1"><p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">Your control</p><p className="mt-2 text-[13px] leading-6">Kurukoo can move things forward, but consequential actions remain yours to approve.</p><Link to="/memory" className="mt-4 inline-flex items-center gap-1 text-[11px] font-medium hover:text-primary">Review trusted context <ArrowRight className="size-3.5" /></Link></div>
       </div>

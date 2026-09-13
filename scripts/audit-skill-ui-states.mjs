@@ -37,7 +37,7 @@ function filesUnder(relative, extensions) {
 const sourceFiles = [
   ...filesUnder('src', ['.ts', '.tsx']),
   ...filesUnder('views', ['.ejs']),
-  ...filesUnder('public', ['.html', '.js', '.css']),
+  ...filesUnder('frontend/public', ['.html', '.js', '.css']),
   ...filesUnder('content', ['.json', '.md']),
 ];
 const corpus = sourceFiles.map((file) => ({ file: path.relative(root, file), text: fs.readFileSync(file, 'utf8').toLowerCase() }));

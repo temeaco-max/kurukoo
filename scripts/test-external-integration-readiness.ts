@@ -132,7 +132,7 @@ try {
 
   const channelsView = fs.readFileSync(path.join(process.cwd(), 'views', 'channels.ejs'), 'utf8');
   const publicRoutes = fs.readFileSync(path.join(process.cwd(), 'src', 'routes', 'publicRoutes.ts'), 'utf8');
-  const workspaceClient = fs.readFileSync(path.join(process.cwd(), 'public', 'js', 'kurukoo-workspace.js'), 'utf8');
+  const workspaceClient = fs.readFileSync(path.join(process.cwd(), 'frontend/public', 'js', 'kurukoo-workspace.js'), 'utf8');
   const workspaceView = fs.readFileSync(path.join(process.cwd(), 'views', 'workspace.ejs'), 'utf8');
   assert.match(channelsView, /integrationReadiness/, 'Channels must render the canonical integration readiness projection.');
   assert.match(channelsView, /Object\.entries\(item\.readiness\)/, 'Channels must render every locked readiness dimension rather than a reduced placeholder state.');

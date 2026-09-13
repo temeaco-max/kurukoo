@@ -8,7 +8,7 @@ export function optimizePublicAssetUrl(value: unknown): string {
   if (!/\.jpe?g(?:\?.*)?$/i.test(source)) return source;
   const [pathname, query = ''] = source.split('?');
   const candidate = pathname.replace(/\.jpe?g$/i, '.webp');
-  if (!fs.existsSync(path.join(process.cwd(), 'public', candidate.replace(/^\//, '')))) return source;
+  if (!fs.existsSync(path.join(process.cwd(), 'frontend/public', candidate.replace(/^\//, '')))) return source;
   return `${candidate}${query ? `?${query}` : ''}`;
 }
 

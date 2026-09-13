@@ -86,3 +86,33 @@ export async function requestArtistVerification(skill: string, managerName: stri
 export async function bookArtist(skill: string, providerPhone: string, requirements?: Record<string, unknown>) { const payload = await readJson<{ success: boolean; booking?: ArtistBooking }>("/api/orphan-wire-back/artist/book", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ skill, providerPhone, requirements }) }); return payload.success && payload.booking ? payload.booking : null; }
 export async function confirmArtistBooking(bookingId: string) { const payload = await readJson<{ success: boolean; booking?: ArtistBooking }>("/api/orphan-wire-back/artist/confirm-booking", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bookingId }) }); return payload.success && payload.booking ? payload.booking : null; }
 export async function releaseArtistEscrow(bookingId: string) { return readJson<{ success: boolean; message?: string }>("/api/orphan-wire-back/artist/release-escrow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bookingId }) }); }
+
+// ── Secure services: one-time cards + purchase protection (/api/v1) ──
+export type VirtualCard = { id: string; last4: string; brand?: string; status: string; spendLimitMinor: number; currency: string; merchantLock?: string | null; expiresAt: string };
+export type PurchaseProtection = { id: string; cardId?: string; orderRef: string; amountMinor: number; currency?: string; reason: string; status: string; createdAt: string };
+export async function fetchCards() { const payload = await readJson<{ cards?: VirtualCard[] }>("/api/v1/cards"); return { cards: Array.isArray(payload.cards) ? payload.cards : [] }; }
+export async function createCard(input: { spendLimitMinor: number; currency?: string; merchantLock?: string; expiresInHours?: number }) { return readJson<{ success: boolean; card?: VirtualCard }>("/api/v1/cards", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }); }
+export async function freezeCardRemote(id: string) { return readJson<{ success: boolean }>(`/api/v1/cards/${encodeURIComponent(id)}/freeze`, { method: "POST" }); }
+export async function cancelCardRemote(id: string) { return readJson<{ success: boolean }>(`/api/v1/cards/${encodeURIComponent(id)}`, { method: "DELETE" }); }
+export async function fetchProtections() { const payload = await readJson<{ claims?: PurchaseProtection[] }>("/api/v1/protections"); return { claims: Array.isArray(payload.claims) ? payload.claims : [] }; }
+
+// ── Secure services: execution audit timeline (/api/v1) ──
+export type AuditEntry = { id: string; kind: string; title?: string; summary?: string; status?: string; createdAt?: string; [key: string]: unknown };
+export type AuditTimeline = { entries: AuditEntry[] };
+export async function fetchAuditTimeline(limit = 100) { return readJson<{ success: boolean; timeline: AuditTimeline }>(`/api/v1/audit?limit=${limit}`); }
+export async function exportAuditTimeline() { return readJson<{ success: boolean; export: unknown }>("/api/v1/audit/export"); }
+
+// ── Secure services: secure execution sessions (/api/v1) ──
+export type SecureSession = { id: string; status: string; expiresAt?: string; [key: string]: unknown };
+export type ExecutionAction = { id: string; type?: string; status?: string; sessionId?: string; [key: string]: unknown };
+export async function fetchExecutionSessions() { const payload = await readJson<{ sessions?: SecureSession[] }>("/api/v1/execution/sessions"); return { sessions: Array.isArray(payload.sessions) ? payload.sessions : [] }; }
+export async function createExecutionSession(input: { ttlMinutes?: number; metadata?: Record<string, unknown> }) { return readJson<{ success: boolean; session: SecureSession }>("/api/v1/execution/sessions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }); }
+export async function fetchExecutionActions(sessionId: string) { const payload = await readJson<{ actions?: ExecutionAction[] }>(`/api/v1/execution/sessions/${encodeURIComponent(sessionId)}/actions`); return { actions: Array.isArray(payload.actions) ? payload.actions : [] }; }
+export async function queueExecutionAction(sessionId: string, type: string, payload: Record<string, unknown>) { return readJson<{ success: boolean; id: string; status: string }>(`/api/v1/execution/sessions/${encodeURIComponent(sessionId)}/actions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type, payload }) }); }
+export async function stopExecutionSession(sessionId: string) { return readJson<{ success: boolean }>(`/api/v1/execution/sessions/${encodeURIComponent(sessionId)}`, { method: "DELETE" }); }
+
+// ── Secure services: encrypted credentials (/api/v1) ──
+export type SecureCredential = { id: string; label: string; domain?: string | null; credentialType: "password" | "card" | "key" | "note" | string; expiresAt?: string | null; usedAt?: string | null; createdAt?: string; [key: string]: unknown };
+export async function fetchCredentials() { const payload = await readJson<{ credentials?: SecureCredential[] }>("/api/v1/credentials"); return { credentials: Array.isArray(payload.credentials) ? payload.credentials : [] }; }
+export async function storeCredentialRemote(input: { label: string; ciphertext: string; iv: string; salt: string; domain?: string; credentialType?: string; expiresAt?: string }) { return readJson<{ success: boolean; id: string; label: string }>("/api/v1/credentials", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }); }
+export async function deleteCredentialRemote(id: string) { return readJson<{ success: boolean }>(`/api/v1/credentials/${encodeURIComponent(id)}`, { method: "DELETE" }); }
