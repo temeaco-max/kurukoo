@@ -5,6 +5,7 @@ import { AskKurukoo } from "@/components/kurukoo/ask-kurukoo";
 import { FAQSection } from "@/components/kurukoo/faq-section";
 import { fetchCanonicalTopics, fetchTopicTaxonomy, type CanonicalTopic, type TopicTaxonomy } from "@/lib/kurukoo-api";
 import { fetchCommunityAdInventory, fetchCommunityTaxonomy, touchCommunityPresence, type CommunityAdInventory, type CommunityCategory } from "@/lib/community-topics-api";
+import { SidebarSponsoredCard } from "@/components/kurukoo/sidebar-sponsored-card";
 
 export const Route = createFileRoute("/topics")({
   head: () => ({ meta: [
@@ -100,6 +101,6 @@ function TopicsPage() {
     <div className="grid gap-3 md:grid-cols-3"><AdCard item={inventory.find((item) => item.slot === "bottom-1")}/><AdCard item={inventory.find((item) => item.slot === "bottom-2")}/><AdCard item={inventory.find((item) => item.slot === "bottom-3")}/></div>
     <section className="rounded-[22px] border border-border bg-elevated/35 p-5"><div className="flex items-start gap-3"><MessageCircle className="mt-0.5 size-4 shrink-0 text-primary"/><div><p className="text-[13px] font-semibold">Use a Topic when context will help.</p><p className="mt-1.5 max-w-2xl text-[11.5px] leading-relaxed text-muted-foreground">A discussion can help you understand a situation, compare experiences or decide what to do next. When you are ready to act, bring the context into Kurukoo.</p><Link to="/explore" className="mt-4 inline-flex items-center gap-1.5 text-[11.5px] font-medium">Explore what you can do <ArrowRight className="size-3.5"/></Link></div></div></section>
     <FAQSection title="Topics questions" items={[{ question: "What is a Topic?", answer: "A Topic is a shared community conversation for questions, experiences, useful local context and discussion." }, { question: "Who controls categories?", answer: "Kurukoo controls the category and subcategory structure so Topics remain organised and useful." }, { question: "Can advertising appear in Topics?", answer: "Kurukoo can enable or disable advertising by category and subcategory. Advertisers use Points for enabled placements and advertising is clearly labelled." }, { question: "Can AI contribute to Topics?", answer: "Yes. Kurukoo AI and named AI agents can become contributors where appropriate, with their AI identity clearly shown to users." }]} />
-    <AdCard item={inventory.find((item) => item.slot === "bottom-large")}/>
+        <SidebarSponsoredCard></SidebarSponsoredCard>
   </div>;
 }
