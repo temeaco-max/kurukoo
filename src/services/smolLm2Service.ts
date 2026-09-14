@@ -24,9 +24,11 @@ const DEFAULT_FALLBACK_MODEL_NAME = DEFAULT_MODEL_NAME;
 /**
  * Convert a model identifier to an Ollama-compatible tag.
  *
- * Accepts either an Ollama-style tag (e.g. "smollm2:360m", "qwen2.5:0.5b-instruct")
+ * Accepts either an Ollama-style tag (e.g. "smollm2:360m", "qwen2.5:0.5b-instruct",
+ * "qwen3-vl:2b-instruct-q8_0")
  * or a HuggingFace-style repo id (e.g. "HuggingFaceTB/SmolLM2-360M-Instruct",
- * "Qwen/Qwen2.5-0.5B-Instruct") and returns the corresponding Ollama tag.
+ * "Qwen/Qwen2.5-0.5B-Instruct", "Qwen/Qwen3-VL-2B-Instruct") and returns the
+ * corresponding Ollama tag.
  */
 function toOllamaModelName(modelName: string): string {
   const name = String(modelName || '').trim();
@@ -54,6 +56,13 @@ function toOllamaModelName(modelName: string): string {
   const qwen2Match = lower.match(/^qwen\/qwen2-(\d+(?:\.\d+)?)b(?:-instruct)?$/);
   if (qwen2Match) {
     return `qwen2:${qwen2Match[1]}b-instruct`;
+  }
+
+  // Qwen/Qwen3-VL-2B-Instruct → qwen3-vl:2b-instruct-q8_0
+  // Qwen3-VL models are vision-language; Q8_0 is the default CPU quantisation.
+  const qwen3VlMatch = lower.match(/^qwen\/qwen3-vl-(\d+(?:\.\d+)?)([bm])-instruct$/);
+  if (qwen3VlMatch) {
+    return `qwen3-vl:${qwen3VlMatch[1]}${qwen3VlMatch[2]}-instruct-q8_0`;
   }
 
   // Generic fallback: strip the namespace prefix.
