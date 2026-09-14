@@ -17,12 +17,20 @@ export interface LocalModelSelection {
  * multilingual, diagnostic.  SmolLM2 360M is retained as the bounded local
  * fallback/comparison checkpoint — not deleted.
  *
- * Known limits (measured on 2026-09-14, compact prompts, raw ChatML):
- *  - strict-JSON tool/argument extraction is unreliable on BOTH local
- *    candidates (Qwen 0.5B Q4_K_M and SmolLM2 360M F16 equally failed all
- *    strict variants tested);
- *  - both candidates failed the no-evidence/no-outcome boundary probe in the
- *    same direction (affirming completion without evidence);
+ * Known limits (measured on 2026-09-14, compact prompts, raw ChatML,
+ * report: docs/verification/local-model-qualification.json):
+ *  - strict-JSON tool/argument extraction is unreliable on the small local
+ *    tier for multi-tool and compound payloads: Qwen2.5-0.5B passed single and
+ *    malformed-JSON recovery but failed multi/compound (truncated invalid
+ *    JSON); the follow-up next-tier probe (Qwen2.5-0.5B vs
+ *    Qwen2.5-1.5B-uncensored, compact prompts) scored 7/12 with the same
+ *    pattern — single/args pass, multi/compound fail, and the hallucination
+ *    guard produced a polluted {"tool":"none","args":{"name":"Zorblax",...}}
+ *    refusal instead of the exact {"tool":"none","args":{}};
+ *  - the canonical 15-case harness measured Qwen2.5-0.5B 6/15 PASS at
+ *    ~234ms/tok vs SmolLM2 360M 9/15 PASS at ~340ms/tok, and both candidates
+ *    failed the no-evidence/no-outcome boundary probe in the same direction
+ *    (affirming completion without evidence);
  *  - Qwen 0.5B failed the concept-boundary wording probe that SmolLM2 360M
  *    passed (Qwen omitted the literal word "capability" while describing the
  *    other five concepts correctly).
