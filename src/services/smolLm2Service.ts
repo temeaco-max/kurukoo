@@ -1,5 +1,6 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import { buildConversationTurnContract, buildConversationalSystemDirective } from './conversationTurnContractService.js';
+import { resolveLocalModelSelection } from './localModelPolicy.js';
 import { getStudentModelRuntimeSelection } from './studentModelRegistryService.js';
 
 // Local student-model inference goes through the Ollama REST API
@@ -7,19 +8,21 @@ import { getStudentModelRuntimeSelection } from './studentModelRegistryService.j
 //
 // This eliminates the native onnxruntime-node binding dependency that could
 // block server startup on certain platforms (e.g. darwin/x64), and lets any
-// Ollama-served model act as the Kurukoo student boundary — smollm2:360m,
-// qwen2.5:0.5b-instruct, etc.  Models must be pre-pulled with `ollama pull`.
+// Ollama-served checkpoint act as the Kurukoo local-model boundary.  The
+// qualified default candidate is selected by localModelPolicy.ts (Qwen2.5-0.5B)
+// with SmolLM2 360M retained as the bounded local fallback/comparison
+// checkpoint.
 //
 // When KURUKOO_SMOLLM2_LOCAL is not 'true' or Ollama cannot respond, the
 // service falls back to the bounded deterministic template path.
 
 const OLLAMA_HOST = String(process.env.KURUKOO_OLLAMA_HOST || 'http://localhost:11434').trim().replace(/\/$/, '');
 
-// Default to the Ollama model tag for SmolLM2-360M.
-// Any Ollama model tag (or any HuggingFace-style repo id — see toOllamaModelName)
-// may be configured via SMOLLM2_MODEL.
-const DEFAULT_MODEL_NAME = 'smollm2:360m';
-const DEFAULT_FALLBACK_MODEL_NAME = DEFAULT_MODEL_NAME;
+// Default to the qualified local fast candidate.  Any Ollama model tag (or any
+// HuggingFace-style repo id — see toOllamaModelName) may be configured via
+// SMOLLM2_MODEL (kept for backward compatibility) or KURUKOO_LOCAL_MODEL.
+const DEFAULT_MODEL_NAME = resolveLocalModelSelection().model;
+const DEFAULT_FALLBACK_MODEL_NAME = resolveLocalModelSelection().fallbackModel;
 
 /**
  * Convert a model identifier to an Ollama-compatible tag.

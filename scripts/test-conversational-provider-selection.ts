@@ -17,7 +17,7 @@ assert.match(unified, /provider: provider === 'gemini' \? 'Gemini'/);
 assert.match(unified, /provider: provider === 'groq' \? 'Groq'/);
 assert.match(unified, /provider: provider === 'openrouter' \? 'OpenRouter'/);
 assert.match(unified, /'Poolside'/);
-assert.match(policy, /return localFirst\('default conversational policy: SmolLM2 first; hosted providers are escalation only'/);
+assert.match(policy, /return localFirst\('default conversational policy: local model first; hosted providers are escalation only'/);
 assert.match(policy, /input\.task === 'planning' \|\| input\.task === 'agent_execution'/);
 
-console.log('Conversational provider-selection contract passed: SmolLM2 is the ordinary-chat first pass, FastText is explicit/semantic routing only, hosted providers are escalation, and Poolside is reserved for complex planning.');
+console.log('Conversational provider-selection contract passed: local model policy is the ordinary-chat first pass, FastText is explicit/semantic routing only, hosted providers are escalation, and Poolside is reserved for complex planning.');

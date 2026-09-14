@@ -24,6 +24,8 @@ function hostedEnabled(provider: HostedProvider): boolean {
 function configuredMistral(): boolean { return hostedEnabled('mistral'); }
 function configuredHostedCandidates(): HostedProvider[] { return HOSTED_ESCALATION_ORDER.filter(hostedEnabled); }
 
+// Local fast/default candidates are selected by the local-model policy
+// (localModelPolicy.ts: Qwen2.5-0.5B default, SmolLM2 360M fallback).
 function localFirst(reason: string, maxComplexity: InferenceDecision['maxComplexity'] = 'medium'): InferenceDecision {
   return { provider: 'smollm2', reason, maxComplexity, escalationReason: 'local_first' };
 }
@@ -68,5 +70,5 @@ export function chooseInferenceProvider(input: { task: InferenceTask; prompt: st
 
   if (input.task === 'support') return localFirst('routine support uses the local-first conversational boundary', 'low');
   if (input.task === 'presentation') return localFirst('presentation remains on the local conversational first pass', 'low');
-  return localFirst('default conversational policy: SmolLM2 first; hosted providers are escalation only', 'medium');
+  return localFirst('default conversational policy: local model first; hosted providers are escalation only', 'medium');
 }

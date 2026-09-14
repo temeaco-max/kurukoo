@@ -1,0 +1,449 @@
+{
+  "generatedAt": "2026-09-14T08:41:01.447Z",
+  "models": [
+    "qwen2.5-0.5b",
+    "smollm2:360m"
+  ],
+  "promptFormat": "raw:true ChatML markers",
+  "policy": "Qwen2.5-0.5B local fast candidate; SmolLM2 360M local fallback/comparison; hosted routes complex reasoning; canonical services own execution",
+  "elapsedMs": 568361,
+  "cases": [
+    {
+      "id": "conversation.greeting",
+      "area": "conversation",
+      "maxTokens": 48
+    },
+    {
+      "id": "conversation.context-continuation",
+      "area": "context-continuation",
+      "maxTokens": 64
+    },
+    {
+      "id": "conversation.clarification",
+      "area": "clarification",
+      "maxTokens": 64
+    },
+    {
+      "id": "tool.single-strict-json",
+      "area": "tool-calling",
+      "maxTokens": 64
+    },
+    {
+      "id": "tool.argument-extraction-strict-json",
+      "area": "argument-extraction",
+      "maxTokens": 64
+    },
+    {
+      "id": "tool.multiple-strict-json",
+      "area": "multiple-tool-calls",
+      "maxTokens": 96
+    },
+    {
+      "id": "tool.malformed-json-recovery",
+      "area": "malformed-probe",
+      "maxTokens": 64
+    },
+    {
+      "id": "tool.hallucination-guard",
+      "area": "hallucination",
+      "maxTokens": 64
+    },
+    {
+      "id": "concept.boundary",
+      "area": "concept-boundary",
+      "maxTokens": 80
+    },
+    {
+      "id": "boundary.no-evidence-no-outcome",
+      "area": "evidence-boundary",
+      "maxTokens": 64
+    },
+    {
+      "id": "plan.compound-goal",
+      "area": "compound-goal",
+      "maxTokens": 96
+    },
+    {
+      "id": "plan.replan-after-unavailable",
+      "area": "replanning",
+      "maxTokens": 64
+    },
+    {
+      "id": "plan.long-context",
+      "area": "long-context",
+      "maxTokens": 64
+    },
+    {
+      "id": "plan.multilingual",
+      "area": "multilingual",
+      "maxTokens": 64
+    },
+    {
+      "id": "plan.diagnostic",
+      "area": "diagnostic",
+      "maxTokens": 80
+    }
+  ],
+  "results": [
+    {
+      "caseId": "conversation.greeting",
+      "area": "conversation",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 12231,
+      "generationMs": 2329.356055,
+      "tokens": 10,
+      "msPerToken": 232.9356055,
+      "passed": true,
+      "responsePreview": "Hello! How can I help you today?",
+      "notes": ""
+    },
+    {
+      "caseId": "conversation.context-continuation",
+      "area": "context-continuation",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 20204,
+      "generationMs": 11131.797018,
+      "tokens": 45,
+      "msPerToken": 247.37326706666664,
+      "passed": true,
+      "responsePreview": "You mentioned that you are Ada from Lagos, and I am not sure what specific information or details you wanted to share with me about yourself. Could you provide ",
+      "notes": ""
+    },
+    {
+      "caseId": "conversation.clarification",
+      "area": "clarification",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 8371,
+      "generationMs": 3329.784926,
+      "tokens": 14,
+      "msPerToken": 237.8417804285714,
+      "passed": true,
+      "responsePreview": "What specific issue or problem are you facing that needs immediate attention?",
+      "notes": ""
+    },
+    {
+      "caseId": "tool.single-strict-json",
+      "area": "tool-calling",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 17078,
+      "generationMs": 8458.880005,
+      "tokens": 34,
+      "msPerToken": 248.79058838235298,
+      "passed": false,
+      "responsePreview": "I will find a plumber in London for you. Please provide me with the location and any other details you need, such as the type of repair or service required.",
+      "notes": "invalid strict JSON"
+    },
+    {
+      "caseId": "tool.argument-extraction-strict-json",
+      "area": "argument-extraction",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 12289,
+      "generationMs": 3143.401026,
+      "tokens": 13,
+      "msPerToken": 241.8000789230769,
+      "passed": false,
+      "responsePreview": "I'm sorry, but I can't assist with that.",
+      "notes": "invalid strict JSON"
+    },
+    {
+      "caseId": "tool.multiple-strict-json",
+      "area": "multiple-tool-calls",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 13962,
+      "generationMs": 3049.860733,
+      "tokens": 13,
+      "msPerToken": 234.60467176923078,
+      "passed": false,
+      "responsePreview": "I'm sorry, but I can't assist with that.",
+      "notes": "invalid strict JSON array"
+    },
+    {
+      "caseId": "tool.malformed-json-recovery",
+      "area": "malformed-probe",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 16895,
+      "generationMs": 8124.462695,
+      "tokens": 33,
+      "msPerToken": 246.19583924242426,
+      "passed": true,
+      "responsePreview": "{   \"tool\": \"check_price\",   \"args\": {     \"item\": \"rice\",     \"area\": \"Lagos\"   } }",
+      "notes": ""
+    },
+    {
+      "caseId": "tool.hallucination-guard",
+      "area": "hallucination",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 14042,
+      "generationMs": 3595.184085,
+      "tokens": 15,
+      "msPerToken": 239.67893899999999,
+      "passed": false,
+      "responsePreview": "{\"tool\": \"teleportation tool\", \"args\": {}}",
+      "notes": "lacks expected tool/args shape"
+    },
+    {
+      "caseId": "concept.boundary",
+      "area": "concept-boundary",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 21947,
+      "generationMs": 14973.448175,
+      "tokens": 60,
+      "msPerToken": 249.55746958333333,
+      "passed": false,
+      "responsePreview": "Agent is the entity that performs actions and has capabilities. Tool is a component of an agent that provides functionality. Connector connects different compon",
+      "notes": "missing /capability/i"
+    },
+    {
+      "caseId": "boundary.no-evidence-no-outcome",
+      "area": "evidence-boundary",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 8705,
+      "generationMs": 2290.656104,
+      "tokens": 10,
+      "msPerToken": 229.06561040000003,
+      "passed": false,
+      "responsePreview": "Payment and booking have not been completed yet.",
+      "notes": "missing /not confirm|not yet|cannot confirm|no evidence|unknown|not complete/i"
+    },
+    {
+      "caseId": "plan.compound-goal",
+      "area": "compound-goal",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 14153,
+      "generationMs": 3073.305544,
+      "tokens": 13,
+      "msPerToken": 236.40811876923075,
+      "passed": false,
+      "responsePreview": "I'm sorry, but I can't assist with that.",
+      "notes": "invalid strict JSON array"
+    },
+    {
+      "caseId": "plan.replan-after-unavailable",
+      "area": "replanning",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 10454,
+      "generationMs": 3045.628207,
+      "tokens": 13,
+      "msPerToken": 234.27909284615387,
+      "passed": false,
+      "responsePreview": "I'm sorry, but I can't assist with that.",
+      "notes": "invalid strict JSON"
+    },
+    {
+      "caseId": "plan.long-context",
+      "area": "long-context",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 7288,
+      "generationMs": 263.679976,
+      "tokens": 2,
+      "msPerToken": 131.839988,
+      "passed": true,
+      "responsePreview": "Saturday",
+      "notes": ""
+    },
+    {
+      "caseId": "plan.multilingual",
+      "area": "multilingual",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 14625,
+      "generationMs": 10105.77777,
+      "tokens": 40,
+      "msPerToken": 252.64444425000002,
+      "passed": false,
+      "responsePreview": "Bonjour! Merci pour votre message. Je suis là pour vous aider avec vos problèmes de plomberie ou d'entretien. Comment puis-je vous aider aujourd'hui?",
+      "notes": "missing /plumb|lagos|weekend/i"
+    },
+    {
+      "caseId": "plan.diagnostic",
+      "area": "diagnostic",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 9701,
+      "generationMs": 2163.144118,
+      "tokens": 9,
+      "msPerToken": 240.34934644444445,
+      "passed": true,
+      "responsePreview": "Check the battery level of your phone.",
+      "notes": ""
+    },
+    {
+      "caseId": "conversation.greeting",
+      "area": "conversation",
+      "model": "smollm2:360m",
+      "wallMs": 14593,
+      "generationMs": 734.182809,
+      "tokens": 3,
+      "msPerToken": 244.72760300000002,
+      "passed": true,
+      "responsePreview": "Hello?",
+      "notes": ""
+    },
+    {
+      "caseId": "conversation.context-continuation",
+      "area": "context-continuation",
+      "model": "smollm2:360m",
+      "wallMs": 22794,
+      "generationMs": 10722.348265,
+      "tokens": 32,
+      "msPerToken": 335.07338328125,
+      "passed": false,
+      "responsePreview": "I'm here to assist you with your queries and provide helpful information. Please go ahead and ask your question, and I'll do my best to help.",
+      "notes": "missing /ada/i"
+    },
+    {
+      "caseId": "conversation.clarification",
+      "area": "clarification",
+      "model": "smollm2:360m",
+      "wallMs": 26309,
+      "generationMs": 19706.508069,
+      "tokens": 55,
+      "msPerToken": 358.3001467090909,
+      "passed": true,
+      "responsePreview": "I'm sorry, but as a text-based AI, I don't have the ability to fix or alter content in real-time. However, I can help you with any questions related to grammar,",
+      "notes": ""
+    },
+    {
+      "caseId": "tool.single-strict-json",
+      "area": "tool-calling",
+      "model": "smollm2:360m",
+      "wallMs": 38379,
+      "generationMs": 14431.669329,
+      "tokens": 28,
+      "msPerToken": 515.41676175,
+      "passed": true,
+      "responsePreview": "{\"tool\": \"find_plumber\", \"args\": {\"location\": \"London\", \"urgency\": \"weekend\"}}",
+      "notes": ""
+    },
+    {
+      "caseId": "tool.argument-extraction-strict-json",
+      "area": "argument-extraction",
+      "model": "smollm2:360m",
+      "wallMs": 28373,
+      "generationMs": 7987.787463,
+      "tokens": 21,
+      "msPerToken": 380.37083157142854,
+      "passed": false,
+      "responsePreview": "Yes, that's correct. The book cleaner on Saturday in Lekki is cleaning the house.",
+      "notes": "invalid strict JSON"
+    },
+    {
+      "caseId": "tool.multiple-strict-json",
+      "area": "multiple-tool-calls",
+      "model": "smollm2:360m",
+      "wallMs": 30934,
+      "generationMs": 16160.917859,
+      "tokens": 41,
+      "msPerToken": 394.1687282682927,
+      "passed": true,
+      "responsePreview": "[{\"tool\": \"find_plumber\", \"args\": {\"location\": \"London\"}}, {\"tool\": \"find_electrician\", \"args\": {\"location\": \"London\"}}]",
+      "notes": ""
+    },
+    {
+      "caseId": "tool.malformed-json-recovery",
+      "area": "malformed-probe",
+      "model": "smollm2:360m",
+      "wallMs": 27580,
+      "generationMs": 5504.001829,
+      "tokens": 17,
+      "msPerToken": 323.76481347058825,
+      "passed": false,
+      "responsePreview": "{tool [[args]]}]]} = 100.00",
+      "notes": "invalid strict JSON"
+    },
+    {
+      "caseId": "tool.hallucination-guard",
+      "area": "hallucination",
+      "model": "smollm2:360m",
+      "wallMs": 31506,
+      "generationMs": 20230.937886,
+      "tokens": 59,
+      "msPerToken": 342.89725230508475,
+      "passed": false,
+      "responsePreview": "I'm sorry for the misunderstanding, but as a text-based AI, I don't have the ability to perform actions or provide assistance with teleportation. My primary fun",
+      "notes": "invalid strict JSON"
+    },
+    {
+      "caseId": "concept.boundary",
+      "area": "concept-boundary",
+      "model": "smollm2:360m",
+      "wallMs": 36800,
+      "generationMs": 28114.691298,
+      "tokens": 80,
+      "msPerToken": 351.43364122500003,
+      "passed": true,
+      "responsePreview": "The terms \"capability,\" \"resource,\" \"provider,\" \"agent,\" and \"connector\" are often used interchangeably in various contexts, but they have distinct meanings:  1",
+      "notes": ""
+    },
+    {
+      "caseId": "boundary.no-evidence-no-outcome",
+      "area": "evidence-boundary",
+      "model": "smollm2:360m",
+      "wallMs": 11577,
+      "generationMs": 3064.037941,
+      "tokens": 10,
+      "msPerToken": 306.4037941,
+      "passed": false,
+      "responsePreview": "Yes, payment and booking have completed successfully.",
+      "notes": "missing /not confirm|not yet|cannot confirm|no evidence|unknown|not complete/i"
+    },
+    {
+      "caseId": "plan.compound-goal",
+      "area": "compound-goal",
+      "model": "smollm2:360m",
+      "wallMs": 31687,
+      "generationMs": 15258.349932,
+      "tokens": 41,
+      "msPerToken": 372.1548763902439,
+      "passed": true,
+      "responsePreview": "[{\"tool\": \"book_cleaner\", \"args\": {\"day\": \"Saturday\"}}, {\"tool\": \"book_plumber\", \"args\": {\"day\": \"Sunday\"}}]",
+      "notes": ""
+    },
+    {
+      "caseId": "plan.replan-after-unavailable",
+      "area": "replanning",
+      "model": "smollm2:360m",
+      "wallMs": 26475,
+      "generationMs": 16059.912308,
+      "tokens": 47,
+      "msPerToken": 341.70026187234043,
+      "passed": false,
+      "responsePreview": "I'm sorry for the inconvenience. As of now, I don't have any information about a plumber available to fix your issue. Would you like me to check my database or ",
+      "notes": "invalid strict JSON"
+    },
+    {
+      "caseId": "plan.long-context",
+      "area": "long-context",
+      "model": "smollm2:360m",
+      "wallMs": 10282,
+      "generationMs": 358.726089,
+      "tokens": 2,
+      "msPerToken": 179.3630445,
+      "passed": true,
+      "responsePreview": "Saturday",
+      "notes": ""
+    },
+    {
+      "caseId": "plan.multilingual",
+      "area": "multilingual",
+      "model": "smollm2:360m",
+      "wallMs": 9447,
+      "generationMs": 2814.143682,
+      "tokens": 9,
+      "msPerToken": 312.68263133333335,
+      "passed": true,
+      "responsePreview": "Bonjour, plumber Lagos weekend",
+      "notes": ""
+    },
+    {
+      "caseId": "plan.diagnostic",
+      "area": "diagnostic",
+      "model": "smollm2:360m",
+      "wallMs": 19667,
+      "generationMs": 8007.994803,
+      "tokens": 23,
+      "msPerToken": 348.1736870869565,
+      "passed": true,
+      "responsePreview": "The phone is draining 20% of its battery overnight, but the Wi-Fi is currently enabled.",
+      "notes": ""
+    }
+  ]
+}
