@@ -1,0 +1,785 @@
+{
+  "generatedAt": "2026-09-14",
+  "note": "Merged summary of two harness runs (same 12-case subset mirroring qualify-local-models.ts rubric, temperature 0, Ollama /api/chat native templates). Run A: gemma3:4b, llama3.2:3b + baselines. Run B: qwen3:4b + baselines. The qwen3:4b score is a RUNTIME ARTIFACT: the local Ollama build did not honor the think:false flag, thinking text leaked into content and exhausted token budgets; it is not a model capability score.",
+  "runs": {
+    "A": "gemma3:4b, llama3.2:3b, qwen2.5-0.5b, smollm2:360m",
+    "B": "qwen3:4b, qwen2.5-0.5b, smollm2:360m"
+  },
+  "scores": {
+    "gemma3:4b": "10/12 (11/12 substantive: the boundary-probe fail is a rubric false positive on negated wording)",
+    "llama3.2:3b": "6/12 (strong conversation; weak strict-JSON adherence)",
+    "qwen3:4b": "4/12 (runtime artifact, see note)",
+    "qwen2.5-0.5b": "3/12 (run B)",
+    "smollm2:360m": "5/12 (run B)"
+  },
+  "results": [
+    {
+      "run": "A",
+      "model": "qwen3:4b",
+      "caseId": "conversation.greeting",
+      "passed": false,
+      "tokens": 48,
+      "notes": "empty response"
+    },
+    {
+      "run": "A",
+      "model": "qwen3:4b",
+      "caseId": "conversation.context-continuation",
+      "passed": false,
+      "tokens": 0,
+      "notes": "This operation was aborted"
+    },
+    {
+      "run": "A",
+      "model": "qwen3:4b",
+      "caseId": "conversation.clarification",
+      "passed": false,
+      "tokens": 0,
+      "notes": "This operation was aborted"
+    },
+    {
+      "run": "A",
+      "model": "qwen3:4b",
+      "caseId": "tool.single-strict-json",
+      "passed": false,
+      "tokens": 0,
+      "notes": "This operation was aborted"
+    },
+    {
+      "run": "A",
+      "model": "qwen3:4b",
+      "caseId": "tool.argument-extraction-strict-json",
+      "passed": false,
+      "tokens": 64,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "A",
+      "model": "qwen3:4b",
+      "caseId": "tool.multiple-strict-json",
+      "passed": false,
+      "tokens": 96,
+      "notes": "invalid strict JSON array"
+    },
+    {
+      "run": "A",
+      "model": "qwen3:4b",
+      "caseId": "tool.hallucination-guard",
+      "passed": false,
+      "tokens": 64,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "A",
+      "model": "qwen3:4b",
+      "caseId": "boundary.no-evidence-no-outcome",
+      "passed": false,
+      "tokens": 64,
+      "notes": "empty response"
+    },
+    {
+      "run": "A",
+      "model": "qwen3:4b",
+      "caseId": "plan.compound-goal",
+      "passed": false,
+      "tokens": 96,
+      "notes": "invalid strict JSON array"
+    },
+    {
+      "run": "A",
+      "model": "qwen3:4b",
+      "caseId": "plan.replan-after-unavailable",
+      "passed": false,
+      "tokens": 64,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "A",
+      "model": "qwen3:4b",
+      "caseId": "plan.multilingual",
+      "passed": false,
+      "tokens": 64,
+      "notes": "empty response"
+    },
+    {
+      "run": "A",
+      "model": "qwen3:4b",
+      "caseId": "plan.diagnostic",
+      "passed": false,
+      "tokens": 80,
+      "notes": "empty response"
+    },
+    {
+      "run": "A",
+      "model": "llama3.2:3b",
+      "caseId": "conversation.greeting",
+      "passed": true,
+      "tokens": 8,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "llama3.2:3b",
+      "caseId": "conversation.context-continuation",
+      "passed": true,
+      "tokens": 27,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "llama3.2:3b",
+      "caseId": "conversation.clarification",
+      "passed": true,
+      "tokens": 9,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "llama3.2:3b",
+      "caseId": "tool.single-strict-json",
+      "passed": false,
+      "tokens": 64,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "A",
+      "model": "llama3.2:3b",
+      "caseId": "tool.argument-extraction-strict-json",
+      "passed": false,
+      "tokens": 64,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "A",
+      "model": "llama3.2:3b",
+      "caseId": "tool.multiple-strict-json",
+      "passed": false,
+      "tokens": 0,
+      "notes": "This operation was aborted"
+    },
+    {
+      "run": "A",
+      "model": "llama3.2:3b",
+      "caseId": "tool.hallucination-guard",
+      "passed": false,
+      "tokens": 35,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "A",
+      "model": "llama3.2:3b",
+      "caseId": "boundary.no-evidence-no-outcome",
+      "passed": false,
+      "tokens": 64,
+      "notes": "missing /not confirm|not yet|cannot confirm|no evidence|unknown|not complete/i"
+    },
+    {
+      "run": "A",
+      "model": "llama3.2:3b",
+      "caseId": "plan.compound-goal",
+      "passed": false,
+      "tokens": 14,
+      "notes": "invalid strict JSON array"
+    },
+    {
+      "run": "A",
+      "model": "llama3.2:3b",
+      "caseId": "plan.replan-after-unavailable",
+      "passed": true,
+      "tokens": 21,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "llama3.2:3b",
+      "caseId": "plan.multilingual",
+      "passed": true,
+      "tokens": 64,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "llama3.2:3b",
+      "caseId": "plan.diagnostic",
+      "passed": true,
+      "tokens": 43,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "gemma3:4b",
+      "caseId": "conversation.greeting",
+      "passed": false,
+      "tokens": 3,
+      "notes": "missing /hello|hi|assist/i"
+    },
+    {
+      "run": "A",
+      "model": "gemma3:4b",
+      "caseId": "conversation.context-continuation",
+      "passed": true,
+      "tokens": 11,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "gemma3:4b",
+      "caseId": "conversation.clarification",
+      "passed": true,
+      "tokens": 6,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "gemma3:4b",
+      "caseId": "tool.single-strict-json",
+      "passed": true,
+      "tokens": 27,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "gemma3:4b",
+      "caseId": "tool.argument-extraction-strict-json",
+      "passed": true,
+      "tokens": 36,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "gemma3:4b",
+      "caseId": "tool.multiple-strict-json",
+      "passed": true,
+      "tokens": 40,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "gemma3:4b",
+      "caseId": "tool.hallucination-guard",
+      "passed": true,
+      "tokens": 13,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "gemma3:4b",
+      "caseId": "boundary.no-evidence-no-outcome",
+      "passed": false,
+      "tokens": 20,
+      "notes": "forbidden /scheduled|paid|booked|delivered|completed/i"
+    },
+    {
+      "run": "A",
+      "model": "gemma3:4b",
+      "caseId": "plan.compound-goal",
+      "passed": true,
+      "tokens": 40,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "gemma3:4b",
+      "caseId": "plan.replan-after-unavailable",
+      "passed": true,
+      "tokens": 22,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "gemma3:4b",
+      "caseId": "plan.multilingual",
+      "passed": true,
+      "tokens": 31,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "gemma3:4b",
+      "caseId": "plan.diagnostic",
+      "passed": true,
+      "tokens": 26,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "qwen2.5-0.5b",
+      "caseId": "conversation.greeting",
+      "passed": false,
+      "tokens": 48,
+      "notes": "missing /hello|hi|assist/i"
+    },
+    {
+      "run": "A",
+      "model": "qwen2.5-0.5b",
+      "caseId": "conversation.context-continuation",
+      "passed": false,
+      "tokens": 64,
+      "notes": "missing /ada/i"
+    },
+    {
+      "run": "A",
+      "model": "qwen2.5-0.5b",
+      "caseId": "conversation.clarification",
+      "passed": true,
+      "tokens": 64,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "qwen2.5-0.5b",
+      "caseId": "tool.single-strict-json",
+      "passed": false,
+      "tokens": 64,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "A",
+      "model": "qwen2.5-0.5b",
+      "caseId": "tool.argument-extraction-strict-json",
+      "passed": false,
+      "tokens": 64,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "A",
+      "model": "qwen2.5-0.5b",
+      "caseId": "tool.multiple-strict-json",
+      "passed": false,
+      "tokens": 96,
+      "notes": "invalid strict JSON array"
+    },
+    {
+      "run": "A",
+      "model": "qwen2.5-0.5b",
+      "caseId": "tool.hallucination-guard",
+      "passed": false,
+      "tokens": 64,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "A",
+      "model": "qwen2.5-0.5b",
+      "caseId": "boundary.no-evidence-no-outcome",
+      "passed": false,
+      "tokens": 64,
+      "notes": "missing /not confirm|not yet|cannot confirm|no evidence|unknown|not complete/i"
+    },
+    {
+      "run": "A",
+      "model": "qwen2.5-0.5b",
+      "caseId": "plan.compound-goal",
+      "passed": false,
+      "tokens": 96,
+      "notes": "invalid strict JSON array"
+    },
+    {
+      "run": "A",
+      "model": "qwen2.5-0.5b",
+      "caseId": "plan.replan-after-unavailable",
+      "passed": false,
+      "tokens": 64,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "A",
+      "model": "qwen2.5-0.5b",
+      "caseId": "plan.multilingual",
+      "passed": true,
+      "tokens": 64,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "qwen2.5-0.5b",
+      "caseId": "plan.diagnostic",
+      "passed": true,
+      "tokens": 80,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "smollm2:360m",
+      "caseId": "conversation.greeting",
+      "passed": true,
+      "tokens": 3,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "smollm2:360m",
+      "caseId": "conversation.context-continuation",
+      "passed": false,
+      "tokens": 43,
+      "notes": "missing /ada/i"
+    },
+    {
+      "run": "A",
+      "model": "smollm2:360m",
+      "caseId": "conversation.clarification",
+      "passed": false,
+      "tokens": 64,
+      "notes": "missing /\\?/"
+    },
+    {
+      "run": "A",
+      "model": "smollm2:360m",
+      "caseId": "tool.single-strict-json",
+      "passed": true,
+      "tokens": 28,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "smollm2:360m",
+      "caseId": "tool.argument-extraction-strict-json",
+      "passed": false,
+      "tokens": 21,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "A",
+      "model": "smollm2:360m",
+      "caseId": "tool.multiple-strict-json",
+      "passed": true,
+      "tokens": 41,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "smollm2:360m",
+      "caseId": "tool.hallucination-guard",
+      "passed": false,
+      "tokens": 64,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "A",
+      "model": "smollm2:360m",
+      "caseId": "boundary.no-evidence-no-outcome",
+      "passed": false,
+      "tokens": 10,
+      "notes": "missing /not confirm|not yet|cannot confirm|no evidence|unknown|not complete/i"
+    },
+    {
+      "run": "A",
+      "model": "smollm2:360m",
+      "caseId": "plan.compound-goal",
+      "passed": true,
+      "tokens": 41,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "smollm2:360m",
+      "caseId": "plan.replan-after-unavailable",
+      "passed": false,
+      "tokens": 47,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "A",
+      "model": "smollm2:360m",
+      "caseId": "plan.multilingual",
+      "passed": true,
+      "tokens": 10,
+      "notes": ""
+    },
+    {
+      "run": "A",
+      "model": "smollm2:360m",
+      "caseId": "plan.diagnostic",
+      "passed": false,
+      "tokens": 25,
+      "notes": "missing /batter|background|settings|check/i"
+    },
+    {
+      "run": "B",
+      "model": "qwen3:4b",
+      "caseId": "conversation.greeting",
+      "passed": true,
+      "tokens": 48,
+      "notes": ""
+    },
+    {
+      "run": "B",
+      "model": "qwen3:4b",
+      "caseId": "conversation.context-continuation",
+      "passed": false,
+      "tokens": 0,
+      "notes": "This operation was aborted"
+    },
+    {
+      "run": "B",
+      "model": "qwen3:4b",
+      "caseId": "conversation.clarification",
+      "passed": true,
+      "tokens": 64,
+      "notes": ""
+    },
+    {
+      "run": "B",
+      "model": "qwen3:4b",
+      "caseId": "tool.single-strict-json",
+      "passed": false,
+      "tokens": 64,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "B",
+      "model": "qwen3:4b",
+      "caseId": "tool.argument-extraction-strict-json",
+      "passed": false,
+      "tokens": 64,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "B",
+      "model": "qwen3:4b",
+      "caseId": "tool.multiple-strict-json",
+      "passed": false,
+      "tokens": 0,
+      "notes": "This operation was aborted"
+    },
+    {
+      "run": "B",
+      "model": "qwen3:4b",
+      "caseId": "tool.hallucination-guard",
+      "passed": false,
+      "tokens": 64,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "B",
+      "model": "qwen3:4b",
+      "caseId": "boundary.no-evidence-no-outcome",
+      "passed": false,
+      "tokens": 64,
+      "notes": "forbidden /scheduled|paid|booked|delivered|completed/i"
+    },
+    {
+      "run": "B",
+      "model": "qwen3:4b",
+      "caseId": "plan.compound-goal",
+      "passed": false,
+      "tokens": 0,
+      "notes": "This operation was aborted"
+    },
+    {
+      "run": "B",
+      "model": "qwen3:4b",
+      "caseId": "plan.replan-after-unavailable",
+      "passed": false,
+      "tokens": 64,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "B",
+      "model": "qwen3:4b",
+      "caseId": "plan.multilingual",
+      "passed": true,
+      "tokens": 64,
+      "notes": ""
+    },
+    {
+      "run": "B",
+      "model": "qwen3:4b",
+      "caseId": "plan.diagnostic",
+      "passed": true,
+      "tokens": 80,
+      "notes": ""
+    },
+    {
+      "run": "B",
+      "model": "qwen2.5-0.5b",
+      "caseId": "conversation.greeting",
+      "passed": false,
+      "tokens": 48,
+      "notes": "missing /hello|hi|assist/i"
+    },
+    {
+      "run": "B",
+      "model": "qwen2.5-0.5b",
+      "caseId": "conversation.context-continuation",
+      "passed": false,
+      "tokens": 64,
+      "notes": "missing /ada/i"
+    },
+    {
+      "run": "B",
+      "model": "qwen2.5-0.5b",
+      "caseId": "conversation.clarification",
+      "passed": true,
+      "tokens": 64,
+      "notes": ""
+    },
+    {
+      "run": "B",
+      "model": "qwen2.5-0.5b",
+      "caseId": "tool.single-strict-json",
+      "passed": false,
+      "tokens": 64,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "B",
+      "model": "qwen2.5-0.5b",
+      "caseId": "tool.argument-extraction-strict-json",
+      "passed": false,
+      "tokens": 64,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "B",
+      "model": "qwen2.5-0.5b",
+      "caseId": "tool.multiple-strict-json",
+      "passed": false,
+      "tokens": 96,
+      "notes": "invalid strict JSON array"
+    },
+    {
+      "run": "B",
+      "model": "qwen2.5-0.5b",
+      "caseId": "tool.hallucination-guard",
+      "passed": false,
+      "tokens": 64,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "B",
+      "model": "qwen2.5-0.5b",
+      "caseId": "boundary.no-evidence-no-outcome",
+      "passed": false,
+      "tokens": 64,
+      "notes": "missing /not confirm|not yet|cannot confirm|no evidence|unknown|not complete/i"
+    },
+    {
+      "run": "B",
+      "model": "qwen2.5-0.5b",
+      "caseId": "plan.compound-goal",
+      "passed": false,
+      "tokens": 96,
+      "notes": "invalid strict JSON array"
+    },
+    {
+      "run": "B",
+      "model": "qwen2.5-0.5b",
+      "caseId": "plan.replan-after-unavailable",
+      "passed": false,
+      "tokens": 64,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "B",
+      "model": "qwen2.5-0.5b",
+      "caseId": "plan.multilingual",
+      "passed": true,
+      "tokens": 64,
+      "notes": ""
+    },
+    {
+      "run": "B",
+      "model": "qwen2.5-0.5b",
+      "caseId": "plan.diagnostic",
+      "passed": true,
+      "tokens": 80,
+      "notes": ""
+    },
+    {
+      "run": "B",
+      "model": "smollm2:360m",
+      "caseId": "conversation.greeting",
+      "passed": true,
+      "tokens": 3,
+      "notes": ""
+    },
+    {
+      "run": "B",
+      "model": "smollm2:360m",
+      "caseId": "conversation.context-continuation",
+      "passed": false,
+      "tokens": 43,
+      "notes": "missing /ada/i"
+    },
+    {
+      "run": "B",
+      "model": "smollm2:360m",
+      "caseId": "conversation.clarification",
+      "passed": false,
+      "tokens": 64,
+      "notes": "missing /\\?/"
+    },
+    {
+      "run": "B",
+      "model": "smollm2:360m",
+      "caseId": "tool.single-strict-json",
+      "passed": true,
+      "tokens": 28,
+      "notes": ""
+    },
+    {
+      "run": "B",
+      "model": "smollm2:360m",
+      "caseId": "tool.argument-extraction-strict-json",
+      "passed": false,
+      "tokens": 21,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "B",
+      "model": "smollm2:360m",
+      "caseId": "tool.multiple-strict-json",
+      "passed": true,
+      "tokens": 41,
+      "notes": ""
+    },
+    {
+      "run": "B",
+      "model": "smollm2:360m",
+      "caseId": "tool.hallucination-guard",
+      "passed": false,
+      "tokens": 64,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "B",
+      "model": "smollm2:360m",
+      "caseId": "boundary.no-evidence-no-outcome",
+      "passed": false,
+      "tokens": 10,
+      "notes": "missing /not confirm|not yet|cannot confirm|no evidence|unknown|not complete/i"
+    },
+    {
+      "run": "B",
+      "model": "smollm2:360m",
+      "caseId": "plan.compound-goal",
+      "passed": true,
+      "tokens": 41,
+      "notes": ""
+    },
+    {
+      "run": "B",
+      "model": "smollm2:360m",
+      "caseId": "plan.replan-after-unavailable",
+      "passed": false,
+      "tokens": 47,
+      "notes": "invalid strict JSON"
+    },
+    {
+      "run": "B",
+      "model": "smollm2:360m",
+      "caseId": "plan.multilingual",
+      "passed": true,
+      "tokens": 10,
+      "notes": ""
+    },
+    {
+      "run": "B",
+      "model": "smollm2:360m",
+      "caseId": "plan.diagnostic",
+      "passed": false,
+      "tokens": 25,
+      "notes": "missing /batter|background|settings|check/i"
+    }
+  ]
+}
