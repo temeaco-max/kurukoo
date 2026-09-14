@@ -175,7 +175,14 @@ export async function verifyLocalSmolLM2Tokenization(text = 'Kurukoo needs one c
   return { model: ollamaModel, tokenCount };
 }
 
+function buildCompactPrompt(prompt: string): string {
+  return `<|im_start|>system\nYou are Kurukoo, a concise assistant. Answer directly in one or two natural sentences. If information is missing, ask one precise question. Never invent providers, prices, availability, payments, bookings, verification, delivery or completed outcomes.\n<|im_end|>\n<|im_start|>user\n${prompt}<|im_end|>\n<|im_start|>assistant\n`;
+}
+
 function buildPrompt(prompt: string, systemPrompt?: string): string {
+  if (String(process.env.KURUKOO_LOCAL_COMPACT_PROMPT || '').trim().toLowerCase() === 'true') {
+    return buildCompactPrompt(prompt);
+  }
   const system = systemPrompt || 'You are Kurukoo, a concise economic coordination assistant. Answer the user directly and naturally. If the request is ambiguous, ask one precise clarifying question instead of describing the ambiguity. If a provider or execution step fails, say that completion is not confirmed and offer a safe retry, resume, or cancellation path. Never invent transactions, availability, verification, delivery, or provider outcomes.';
   const contract = buildConversationTurnContract({ userMessage: prompt, latestUserMessage: prompt, assistantReply: '' });
   const directive = buildConversationalSystemDirective(contract);
