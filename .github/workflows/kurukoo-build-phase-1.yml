@@ -1,0 +1,46 @@
+name: Kurukoo build phase 1
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  build:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build assistant experience
+        working-directory: frontend
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/routes/chat.tsx'); s=p.read_text()
+          old='import { ShoppingCart, History, MessageCircle, Settings, Sparkles, X, ShieldCheck, ChevronRight, Clock3 } from "lucide-react";'
+          new='import { ShoppingCart, History, MessageCircle, Settings, Sparkles, X, ShieldCheck, ChevronRight, Clock3, Bot, CircleCheck, CircleAlert, LoaderCircle } from "lucide-react";'
+          if old in s and 'function AssistantState' not in s:
+            s=s.replace(old,new,1)
+            marker='function ChatSettings({ onClose }: { onClose: () => void }) {'
+            component='''function AssistantState({ isSending, isLoadingHistory, lastError, messages, work }: { isSending: boolean; isLoadingHistory: boolean; lastError: string | null; messages: ReturnType<typeof useKurukoo>["messages"]; work: ReturnType<typeof useKurukoo>["work"] }) {\n  const active = work.filter((item) => item.stage !== "done");\n  const needsYou = active.find((item) => item.stage === "needs_you");\n  const latest = messages[messages.length - 1];\n  const label = lastError ? "Needs attention" : needsYou ? "Waiting for you" : isSending ? "Kurukoo is working" : isLoadingHistory ? "Restoring your conversation" : active.length ? "Kurukoo is taking care of it" : "Ready";\n  const detail = lastError ?? (needsYou ? needsYou.detail : isSending ? (latest?.progressStage ? String(latest.progressStage).replace(/[_-]/g, " ") : "Working through the request and checking the next safe step.") : isLoadingHistory ? "Restoring your conversation and current work." : active.length ? active[0].detail : "Tell Kurukoo the outcome you want. You do not need to choose the service or provider first.");\n  return <section aria-live="polite" className={`mx-auto mt-3 w-full max-w-[820px] rounded-2xl border px-3.5 py-3 ${lastError ? "border-destructive/25 bg-destructive/5" : needsYou ? "border-primary/25 bg-brand-tint/10" : "border-border bg-surface"}`}>\n    <div className="flex items-start gap-3">\n      <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-elevated">{lastError ? <CircleAlert className="size-4 text-destructive" /> : needsYou ? <CircleCheck className="size-4 text-primary" /> : isSending || isLoadingHistory ? <LoaderCircle className="size-4 animate-spin text-primary" /> : <Bot className="size-4 text-primary" />}</span>\n      <div className="min-w-0 flex-1"><p className="text-[11.5px] font-semibold">{label}</p><p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{detail}</p></div>\n      {active.length ? <Link to="/work" className="shrink-0 text-[10.5px] font-medium text-primary hover:underline">Open Work</Link> : null}\n    </div>\n  </section>;\n}\n\n'''
+            s=s.replace(marker,component+marker,1)
+            anchor='{lastError ? <p role="alert" className="pb-1 text-center text-[12px] text-destructive">{lastError}</p> : null}'
+            replacement='{lastError ? <p role="alert" className="sr-only">{lastError}</p> : null}<AssistantState isSending={isSending} isLoadingHistory={isLoadingHistory} lastError={lastError} messages={messages} work={work}/>'
+            s=s.replace(anchor,replacement,1)
+            p.write_text(s)
+          PY
+          npm ci
+          npm run build
+      - name: Commit and remove one-shot workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add frontend/src/routes/chat.tsx
+          git rm .github/workflows/kurukoo-build-phase-1.yml
+          git diff --cached --quiet || git commit -m 'feat(chat): surface canonical assistant state'
+          git push origin main
