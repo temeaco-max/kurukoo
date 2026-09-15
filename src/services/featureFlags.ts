@@ -89,7 +89,7 @@ function localeCandidates(country: string): string[] {
 }
 
 function hasRequirement(requirement: string): boolean {
-    if (requirement === 'FIREBASE_ADMIN_CREDENTIALS') return Boolean(process.env.FIREBASE_ADMIN_PRIVATE_KEY && process.env.FIREBASE_ADMIN_CLIENT_EMAIL);
+        if (requirement === 'FIREBASE_ADMIN_CREDENTIALS') return Boolean((process.env.FIREBASE_ADMIN_PRIVATE_KEY && process.env.FIREBASE_ADMIN_CLIENT_EMAIL) || (process.env.KURUKOO_FCM_PRIVATE_KEY && process.env.KURUKOO_FCM_CLIENT_EMAIL) || process.env.FCM_SERVICE_ACCOUNT_JSON || process.env.FCM_SERVICE_ACCOUNT_PATH);
     if (requirement === 'STUN_TURN_OR_RELAY') return Boolean(process.env.STUN_SERVERS || process.env.TURN_URL || process.env.TURN_SERVER_URL);
     if (requirement === 'SMS_PROVIDER') return Boolean(process.env.SMS_PROVIDER || process.env.SMS_API_KEY);
     if (requirement === 'GOOGLE_DRIVE_OAUTH') return Boolean(process.env.KURUKOO_GOOGLE_DRIVE_CLIENT_ID && process.env.KURUKOO_GOOGLE_DRIVE_CLIENT_SECRET && process.env.KURUKOO_GOOGLE_DRIVE_REDIRECT_URI && (process.env.KURUKOO_STORAGE_ENCRYPTION_KEY || process.env.MEMORY_ENCRYPTION_KEY || process.env.JWT_SECRET));

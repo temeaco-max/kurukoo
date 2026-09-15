@@ -53,7 +53,7 @@ assert.ok(routed.progressStage);
 
 const turn = await processCanonicalChatTurn({
   phone: actors[0].phone,
-  channel: 'test',
+  channel: 'web',
   message: 'I need a painter in Ikeja next Saturday morning with a budget of ₦25,000',
 });
 assert.match(turn.reply, /need|match|provider|painter/i);

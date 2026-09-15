@@ -18,6 +18,7 @@
     "test:auth-email-e2e": "tsx scripts/test-auth-email-e2e.ts",
     "test:auth-email-mailpit": "tsx scripts/test-auth-email-mailpit.ts",
     "test:fcm-path-e2e": "tsx scripts/test-fcm-path-e2e.ts",
+    "test:chat-e2e": "tsx scripts/test-chat-e2e.ts",
     "test:conversation-trajectories": "tsx scripts/test-conversation-trajectories.ts",
     "test:conversation-turn-contract": "tsx scripts/test-conversation-turn-contract.ts",
     "test:conversation-first-routing": "tsx scripts/test-conversation-first-routing.ts",

@@ -123,8 +123,39 @@ assert.equal(typeof drained.sent, 'number');
 shutdown();
 for (const suffix of ['', '-wal', '-shm']) if (fs.existsSync(dbPath + suffix)) fs.rmSync(dbPath + suffix);
 
+// ── 6. Browser FCM path contract: identify exactly which values are missing ──
+const requiredWebConfig = [
+  'FIREBASE_API_KEY',
+  'FIREBASE_AUTH_DOMAIN',
+  'FIREBASE_PROJECT_ID',
+  'FIREBASE_STORAGE_BUCKET',
+  'FIREBASE_MESSAGING_SENDER_ID',
+  'FIREBASE_APP_ID',
+  'KURUKOO_FCM_VAPID_KEY',
+] as const;
+const missingWebConfig = requiredWebConfig.filter((name) => !String(process.env[name] || '').trim());
+const webConfigPresent = missingWebConfig.length === 0;
+
 console.log('\n=== FCM PATH SMOKE TEST PASSED ===');
 console.log('Server FCM credentials: loaded from .env; /api/fcm/config truthful.');
 console.log('Device registration: canonical /api/fcm/register → memory_profiles.fcm_token.');
 console.log('Real Firebase reachability + truthful failure/retry handling: VERIFIED.');
-console.log('NOTE: browser token issuance requires the public Firebase web configuration (missing locally).');
+console.log('');
+console.log('BROWSER FCM PATH CONTRACT:');
+console.log(`  Web config present: ${webConfigPresent}`);
+if (missingWebConfig.length > 0) {
+  console.log('  Missing values (obtain from Firebase console → Project Settings → Web app):');
+  for (const name of missingWebConfig) console.log(`    - ${name}`);
+  console.log('  Without these, the browser FCM client (fcm-client.js) cannot:');
+  console.log('    1. Request Notification permission from the browser.');
+  console.log('    2. Mint an FCM registration token via getToken().');
+  console.log('    3. Register the token at POST /api/fcm/register.');
+  console.log('  The server-side send path (sendFcmPush → Firebase HTTP v1) is verified');
+  console.log('  regardless — it only needs the service-account credentials above.');
+} else {
+  console.log('  All required web configuration values are present; browser token issuance is enabled.');
+}
+console.log('');
+console.log('Code-path verified: /api/fcm/config → /api/fcm/register → sendFcmPush → Firebase HTTP v1.');
+console.log('Locally delivered/received: server-side FCM send attempted with a real Firebase HTTP v1 API call.');
+console.log('Blocked by external credentials: ' + (webConfigPresent ? 'NONE' : 'Firebase web config values (missing — obtain from Firebase console)'));
