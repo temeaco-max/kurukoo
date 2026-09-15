@@ -1,0 +1,56 @@
+name: Kurukoo phase 2 chat to work
+on:
+  push:
+    paths:
+      - 'frontend/src/components/kurukoo/primitives.tsx'
+permissions:
+  contents: write
+jobs:
+  integrate:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Integrate service requests into Work
+        working-directory: frontend
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/components/kurukoo/primitives.tsx')
+          s = p.read_text()
+          old = '''<div className="mt-3 flex flex-wrap gap-2"><CardAction label="Add to request" onClick={() => onAction?.("Add this product to my request")} primary /><CardAction label="Compare" onClick={() => onAction?.("Compare this option")}/><CardAction label="Save" onClick={() => onAction?.("Save this product")}/></div>'''
+          new = '''<div className="mt-3 flex flex-wrap gap-2">{text(data.requestId) ? <CardAction label="Open Work" href={hrefFor(data)} primary /> : <CardAction label="Add to request" onClick={() => onAction?.("Add this product to my request")} primary />}<CardAction label="Compare" onClick={() => onAction?.("Compare this option")}/><CardAction label="Save" onClick={() => onAction?.("Save this product")}/></div>'''
+          if old not in s:
+              raise SystemExit('expected product/storefront action block not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/components/kurukoo/primitives.tsx')
+          s = p.read_text()
+          old = '''if (["request", "request_status", "status_chip", "status", "execution", "execution_status"].includes(type) || typeof data.status === "string" || typeof data.stage === "string") return <Shell icon={<Clock3 className="size-4 text-primary" />} title={title || "Request status"} body={body || "This status is linked to the current request."}><div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-elevated px-2.5 py-1 text-[10.5px] font-medium">{readableLabel(data.status ?? data.stage) || "In progress"}</span>{text(data.eta) ? <span className="text-[11px] text-muted-foreground">ETA {text(data.eta)}</span> : null}</div><DataList data={data} keys={["requestId", "skill", "provider", "location", "eta", "updatedAt", "evidence"]}/><div className="mt-3"><CardAction label="Open request" href={hrefFor(data)} primary /></div></Shell>;'''
+          new = '''if (["request", "request_status", "status_chip", "status", "execution", "execution_status"].includes(type) || typeof data.status === "string" || typeof data.stage === "string") return <Shell icon={<Clock3 className="size-4 text-primary" />} title={title || "Request status"} body={body || "This status is linked to the current request."}><div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-elevated px-2.5 py-1 text-[10.5px] font-medium">{readableLabel(data.status ?? data.stage) || "In progress"}</span>{text(data.eta) ? <span className="text-[11px] text-muted-foreground">ETA {text(data.eta)}</span> : null}</div><DataList data={data} keys={["requestId", "skill", "provider", "location", "eta", "updatedAt", "evidence"]}/><div className="mt-3"><CardAction label="Open Work" href={hrefFor(data)} primary /></div></Shell>;'''
+          if old not in s:
+              raise SystemExit('expected request status block not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - name: Validate frontend
+        working-directory: frontend
+        run: |
+          npm install
+          npm run build
+      - name: Commit implementation and remove temporary workflow
+        run: |
+          git config user.name 'Kurukoo Agent'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add frontend/src/components/kurukoo/primitives.tsx
+          git commit -m 'feat(chat): connect request cards directly to Work [skip ci]'
+          git push origin HEAD:main
+          git rm .github/workflows/kurukoo-phase-2-chat-work.yml
+          git commit -m 'chore: remove temporary phase workflow [skip ci]'
+          git push origin HEAD:main
