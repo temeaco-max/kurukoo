@@ -109,6 +109,7 @@ function initTables(database: any) {
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE INDEX IF NOT EXISTS idx_memory_profiles_email ON memory_profiles(email);
     CREATE TABLE IF NOT EXISTS profile_access_log (id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT, service_name TEXT, action TEXT, timestamp TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS keep_alive_analytics (id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT, event_type TEXT, cost_impact REAL DEFAULT 0.0, metadata TEXT, timestamp TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS temp_sessions (sessionId TEXT PRIMARY KEY, location TEXT, interactions TEXT, preferences TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP);

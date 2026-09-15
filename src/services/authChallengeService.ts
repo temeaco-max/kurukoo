@@ -232,8 +232,32 @@ export async function requestMagicLink(input: {
   if (!isValidChallengeEmail(email)) {
     return { success: false, message: 'Enter a valid email address', delivery: 'none' };
   }
-  const purpose = input.purpose || 'email_account_provisional';
-  const phone = provisionalPhoneFromEmail(email);
+
+  // Look up existing memory_profiles by email (case-insensitive)
+  const db = await getDb();
+  const stmt = db.prepare("SELECT phone, name, email FROM memory_profiles WHERE LOWER(email) = LOWER(?) LIMIT 1");
+  stmt.bind([email]);
+  let existingProfile = null;
+  if (stmt.step()) {
+    existingProfile = stmt.getAsObject();
+  }
+  stmt.free();
+
+  let phone: string;
+  let purpose = input.purpose || 'email_account_provisional';
+
+  if (existingProfile && typeof existingProfile.phone === 'string') {
+    // Email exists — bind challenge to existing user's phone identity
+    phone = String(existingProfile.phone).trim();
+    purpose = 'attach_email';
+    // Preserve existing name if no new name provided
+    input.name = input.name || (typeof existingProfile.name === 'string' ? existingProfile.name : undefined);
+  } else {
+    // Email is genuinely new — create provisional em_* identity
+    phone = provisionalPhoneFromEmail(email);
+    purpose = input.purpose || 'email_account_provisional';
+  }
+
   const { challenge, token, completePath } = await createAuthChallenge({
     phone,
     email,
