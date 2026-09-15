@@ -1,7 +1,7 @@
 import { Mail, Phone, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Panel } from "@/components/kurukoo/ui";
-import { KURUKOO_BUILD_EMAIL, requestMagicLink, requestPhoneOtp, verifyPhoneOtp } from "@/lib/kurukoo-auth";
+import { requestMagicLink, requestPhoneOtp, verifyPhoneOtp } from "@/lib/kurukoo-auth";
 
 export type AuthMode = "login" | "signup";
 type AuthFlowProps = { mode: AuthMode; compact?: boolean; onClose?: () => void };
@@ -17,6 +17,7 @@ function AuthFlow({ mode, compact = false, onClose }: AuthFlowProps) {
   const [step, setStep] = useState<AuthStep>("identifier");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [debugUrl, setDebugUrl] = useState<string | null>(null);
 
   useEffect(() => {
     setStep("identifier");
@@ -25,19 +26,23 @@ function AuthFlow({ mode, compact = false, onClose }: AuthFlowProps) {
     setCode("");
     setMethod("email");
     setMessage(null);
+    setDebugUrl(null);
   }, [mode]);
 
   async function signInWithEmail() {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) return setMessage("Enter your email address.");
-    if (normalizedEmail !== KURUKOO_BUILD_EMAIL) return setMessage(`This build is currently available only to ${KURUKOO_BUILD_EMAIL}.`);
     setBusy(true);
     setMessage(null);
+    setDebugUrl(null);
     try {
-      // requestMagicLink is deliberately a frontend access-gate action here:
-      // it validates the permitted account and opens the authenticated shell
-      // without requiring an actual email delivery service.
-      await requestMagicLink({ email: normalizedEmail, name: name || undefined });
+      const result = await requestMagicLink({ email: normalizedEmail, name: name || undefined });
+      if (result.debugUrl) {
+        setDebugUrl(result.debugUrl);
+        setMessage("Magic link ready — click below to continue locally.");
+      } else {
+        setMessage("Check your email for the sign-in link.");
+      }
       onClose?.();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "We could not sign you in.");
@@ -69,8 +74,7 @@ function AuthFlow({ mode, compact = false, onClose }: AuthFlowProps) {
     setBusy(true);
     setMessage(null);
     try {
-      await verifyPhoneOtp({ phone: normalizedPhone, code: normalizedCode, name: name || undefined, email: KURUKOO_BUILD_EMAIL });
-      window.localStorage.setItem("kurukoo-authenticated", "true");
+      await verifyPhoneOtp({ phone: normalizedPhone, code: normalizedCode, name: name || undefined, email: email || undefined });
       window.dispatchEvent(new Event("kurukoo-auth-updated"));
       onClose?.();
     } catch (error) {
@@ -101,8 +105,9 @@ function AuthFlow({ mode, compact = false, onClose }: AuthFlowProps) {
 
         {method === "email" ? <>
           <label className="block text-[11px] font-medium">Email address<div className="relative mt-1.5"><Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><input value={email} onChange={(event) => setEmail(event.target.value)} type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" className="min-h-11 w-full rounded-xl border border-border bg-background pl-10 pr-3 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring" /></div></label>
-          <button type="button" disabled={busy} onClick={() => void signInWithEmail()} className="min-h-11 w-full rounded-xl bg-primary px-4 text-[13px] font-medium text-primary-foreground disabled:opacity-50">{busy ? "Signing in…" : mode === "login" ? "Log in" : "Create account"}</button>
-          <p className="text-[10.5px] leading-relaxed text-muted-foreground">For this build, the permitted email opens access directly without email delivery.</p>
+          <button type="button" disabled={busy} onClick={() => void signInWithEmail()} className="min-h-11 w-full rounded-xl bg-primary px-4 text-[13px] font-medium text-primary-foreground disabled:opacity-50">{busy ? "Signing in…" : mode === "login" ? "Send magic link" : "Create account"}</button>
+          {debugUrl ? <a href={debugUrl} className="inline-block mt-2 text-[11px] font-medium text-primary underline underline-offset-2">Click here to continue locally →</a> : null}
+          <p className="text-[10.5px] leading-relaxed text-muted-foreground">For local development, magic links can be used without an email provider when debug mode is enabled.</p>
         </> : <>
           <label className="block text-[11px] font-medium">Phone number<div className="relative mt-1.5"><Phone className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><input value={phone} onChange={(event) => setPhone(event.target.value)} type="tel" inputMode="tel" autoComplete="tel" placeholder="Your phone number" className="min-h-11 w-full rounded-xl border border-border bg-background pl-10 pr-3 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring" /></div></label>
           <button type="button" disabled={busy} onClick={() => void sendCode()} className="min-h-11 w-full rounded-xl bg-primary px-4 text-[13px] font-medium text-primary-foreground disabled:opacity-50">{busy ? "Working…" : "Send verification code"}</button>

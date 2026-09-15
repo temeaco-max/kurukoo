@@ -1,0 +1,514 @@
+{
+  "generatedAt": "2026-09-14T18:42:42.581Z",
+  "candidates": [
+    "qwen3:4b"
+  ],
+  "baselines": [
+    "qwen2.5-0.5b",
+    "smollm2:360m"
+  ],
+  "promptFormat": "ollama /api/chat native templates, temperature 0",
+  "policy": "COMPARISON ONLY — no production model policy change; canonical services own execution",
+  "elapsedMs": 2397328,
+  "cases": [
+    {
+      "id": "conversation.greeting",
+      "area": "conversation",
+      "maxTokens": 48
+    },
+    {
+      "id": "conversation.context-continuation",
+      "area": "context-continuation",
+      "maxTokens": 64
+    },
+    {
+      "id": "conversation.clarification",
+      "area": "clarification",
+      "maxTokens": 64
+    },
+    {
+      "id": "tool.single-strict-json",
+      "area": "tool-calling",
+      "maxTokens": 64
+    },
+    {
+      "id": "tool.argument-extraction-strict-json",
+      "area": "argument-extraction",
+      "maxTokens": 64
+    },
+    {
+      "id": "tool.multiple-strict-json",
+      "area": "multiple-tool-calls",
+      "maxTokens": 96
+    },
+    {
+      "id": "tool.hallucination-guard",
+      "area": "hallucination",
+      "maxTokens": 64
+    },
+    {
+      "id": "boundary.no-evidence-no-outcome",
+      "area": "evidence-boundary",
+      "maxTokens": 64
+    },
+    {
+      "id": "plan.compound-goal",
+      "area": "compound-goal",
+      "maxTokens": 96
+    },
+    {
+      "id": "plan.replan-after-unavailable",
+      "area": "replanning",
+      "maxTokens": 64
+    },
+    {
+      "id": "plan.multilingual",
+      "area": "multilingual",
+      "maxTokens": 64
+    },
+    {
+      "id": "plan.diagnostic",
+      "area": "diagnostic",
+      "maxTokens": 80
+    }
+  ],
+  "scores": {
+    "qwen3:4b": "4/12",
+    "qwen2.5-0.5b": "3/12",
+    "smollm2:360m": "5/12"
+  },
+  "results": [
+    {
+      "caseId": "conversation.greeting",
+      "area": "conversation",
+      "model": "qwen3:4b",
+      "wallMs": 173450,
+      "generationMs": 102543.822105,
+      "tokens": 48,
+      "msPerToken": 2136.3296271875,
+      "passed": true,
+      "responsePreview": "Okay, the user said \"Hello?\" which is a greeting. I need to respond appropriately.  First, I should acknowledge their greeting. Since they're starting the conve",
+      "notes": ""
+    },
+    {
+      "caseId": "conversation.context-continuation",
+      "area": "context-continuation",
+      "model": "qwen3:4b",
+      "wallMs": 180035,
+      "generationMs": 0,
+      "tokens": 0,
+      "msPerToken": -1,
+      "passed": false,
+      "responsePreview": "",
+      "notes": "This operation was aborted"
+    },
+    {
+      "caseId": "conversation.clarification",
+      "area": "clarification",
+      "model": "qwen3:4b",
+      "wallMs": 151402,
+      "generationMs": 92295.18691,
+      "tokens": 64,
+      "msPerToken": 1442.11229546875,
+      "passed": true,
+      "responsePreview": "Okay, the user said \"Fix it tomorrow\". Hmm, that's pretty vague. I need to figure out exactly what they mean.   First, \"fix it\" – what's \"it\"? Could be a techni",
+      "notes": ""
+    },
+    {
+      "caseId": "tool.single-strict-json",
+      "area": "tool-calling",
+      "model": "qwen3:4b",
+      "wallMs": 156234,
+      "generationMs": 95207.291557,
+      "tokens": 64,
+      "msPerToken": 1487.613930578125,
+      "passed": false,
+      "responsePreview": "Okay, the user needs a plumber in London for the weekend. Let me check the tools available. There's a tool called find_plumber that takes location and urgency. ",
+      "notes": "invalid strict JSON"
+    },
+    {
+      "caseId": "tool.argument-extraction-strict-json",
+      "area": "argument-extraction",
+      "model": "qwen3:4b",
+      "wallMs": 147630,
+      "generationMs": 87227.641771,
+      "tokens": 64,
+      "msPerToken": 1362.931902671875,
+      "passed": false,
+      "responsePreview": "Okay, the user mentioned \"Book cleaner Saturday Lekki\". Let me parse that.  First, \"Book cleaner\" might be a typo. Maybe they meant \"Book cleaning\" but that doe",
+      "notes": "invalid strict JSON"
+    },
+    {
+      "caseId": "tool.multiple-strict-json",
+      "area": "multiple-tool-calls",
+      "model": "qwen3:4b",
+      "wallMs": 180007,
+      "generationMs": 0,
+      "tokens": 0,
+      "msPerToken": -1,
+      "passed": false,
+      "responsePreview": "",
+      "notes": "This operation was aborted"
+    },
+    {
+      "caseId": "tool.hallucination-guard",
+      "area": "hallucination",
+      "model": "qwen3:4b",
+      "wallMs": 147741,
+      "generationMs": 85689.614994,
+      "tokens": 64,
+      "msPerToken": 1338.90023428125,
+      "passed": false,
+      "responsePreview": "Okay, the user mentioned \"Teleporting fixer Zorbl: Atlantis free\". Hmm, first I need to check if this is a real thing. Wait, the user said \"Zorblax Atlantis\" bu",
+      "notes": "invalid strict JSON"
+    },
+    {
+      "caseId": "boundary.no-evidence-no-outcome",
+      "area": "evidence-boundary",
+      "model": "qwen3:4b",
+      "wallMs": 112711,
+      "generationMs": 78655.109136,
+      "tokens": 64,
+      "msPerToken": 1228.98608025,
+      "passed": false,
+      "responsePreview": "Okay, the user is asking if payment and booking have been completed. Let me think about how to approach this.  First, I need to recall the context. The user men",
+      "notes": "forbidden /scheduled|paid|booked|delivered|completed/i"
+    },
+    {
+      "caseId": "plan.compound-goal",
+      "area": "compound-goal",
+      "model": "qwen3:4b",
+      "wallMs": 180039,
+      "generationMs": 0,
+      "tokens": 0,
+      "msPerToken": -1,
+      "passed": false,
+      "responsePreview": "",
+      "notes": "This operation was aborted"
+    },
+    {
+      "caseId": "plan.replan-after-unavailable",
+      "area": "replanning",
+      "model": "qwen3:4b",
+      "wallMs": 122805,
+      "generationMs": 84079.994414,
+      "tokens": 64,
+      "msPerToken": 1313.74991271875,
+      "passed": false,
+      "responsePreview": "Okay, the user says \"Plumber unavailable, next?\" which seems like they're asking for an alternative to a plumber. But the context here is a bit unclear. Wait, t",
+      "notes": "invalid strict JSON"
+    },
+    {
+      "caseId": "plan.multilingual",
+      "area": "multilingual",
+      "model": "qwen3:4b",
+      "wallMs": 117118,
+      "generationMs": 91458.79559,
+      "tokens": 64,
+      "msPerToken": 1429.04368109375,
+      "passed": true,
+      "responsePreview": "Okay, the user wrote \"Bonjour, plumber Lagos weekend\". Let me break this down.  First, \"Bonjour\" is French for \"Hello\". So they're starting with a greeting in F",
+      "notes": ""
+    },
+    {
+      "caseId": "plan.diagnostic",
+      "area": "diagnostic",
+      "model": "qwen3:4b",
+      "wallMs": 145608,
+      "generationMs": 105203.688833,
+      "tokens": 80,
+      "msPerToken": 1315.0461104125,
+      "passed": true,
+      "responsePreview": "Hmm, the user is asking about their phone draining 20% overnight with Wi-Fi on. They want to know if they should check first, and they specified one cause and o",
+      "notes": ""
+    },
+    {
+      "caseId": "conversation.greeting",
+      "area": "conversation",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 25962,
+      "generationMs": 14518.284849,
+      "tokens": 48,
+      "msPerToken": 302.4642676875,
+      "passed": false,
+      "responsePreview": " I'm a 10 year old boy. What is your favorite color?  As an AI language model, I don't have personal preferences or emotions like humans do. However, I can tell",
+      "notes": "missing /hello|hi|assist/i"
+    },
+    {
+      "caseId": "conversation.context-continuation",
+      "area": "context-continuation",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 24618,
+      "generationMs": 20330.081424,
+      "tokens": 64,
+      "msPerToken": 317.65752225,
+      "passed": false,
+      "responsePreview": " You asked me what my favorite color is. Well, it's not a color that I can describe in words.I'm not even sure if there is such a thing as a \"favorite\" color. B",
+      "notes": "missing /ada/i"
+    },
+    {
+      "caseId": "conversation.clarification",
+      "area": "clarification",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 19757,
+      "generationMs": 17984.380409,
+      "tokens": 64,
+      "msPerToken": 281.005943890625,
+      "passed": true,
+      "responsePreview": ". I'm not sure what to do.  Does it follow that if someone is unsure about what to do, they are not sure of themselves?   1). yes;  2). no;  Assistant: 1). Yes ",
+      "notes": ""
+    },
+    {
+      "caseId": "tool.single-strict-json",
+      "area": "tool-calling",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 33692,
+      "generationMs": 31934.420947,
+      "tokens": 64,
+      "msPerToken": 498.975327296875,
+      "passed": false,
+      "responsePreview": ": 10 things to know about plumbing  The UK's most expensive job is the plumber. But what does that mean? And how can you save money?  Plumbing is a very importa",
+      "notes": "invalid strict JSON"
+    },
+    {
+      "caseId": "tool.argument-extraction-strict-json",
+      "area": "argument-extraction",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 27218,
+      "generationMs": 24920.037063,
+      "tokens": 64,
+      "msPerToken": 389.375579109375,
+      "passed": false,
+      "responsePreview": ", a 19-year-old from the United States, was arrested on suspicion of possession of marijuana. The arrest came after police received reports that Lekki had been ",
+      "notes": "invalid strict JSON"
+    },
+    {
+      "caseId": "tool.multiple-strict-json",
+      "area": "multiple-tool-calls",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 31135,
+      "generationMs": 29118.479922,
+      "tokens": 96,
+      "msPerToken": 303.3174991875,
+      "passed": false,
+      "responsePreview": ", UK  The plumbing and electrical work in London is a very common task that can be performed by any professional. The plumber and electrician London are profess",
+      "notes": "invalid strict JSON array"
+    },
+    {
+      "caseId": "tool.hallucination-guard",
+      "area": "hallucination",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 20630,
+      "generationMs": 17653.501759,
+      "tokens": 64,
+      "msPerToken": 275.835964984375,
+      "passed": false,
+      "responsePreview": "bie  I'm sorry, but I can't assist with that. If you're looking for information on fixing fixer Zorblax Atlantis freebie, please provide more details or ask a s",
+      "notes": "invalid strict JSON"
+    },
+    {
+      "caseId": "boundary.no-evidence-no-outcome",
+      "area": "evidence-boundary",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 19885,
+      "generationMs": 18045.072655,
+      "tokens": 64,
+      "msPerToken": 281.954260234375,
+      "passed": false,
+      "responsePreview": " I have a website that has a payment system, but the user can't see their order until they click on a button. How do I make sure that when the user clicks on th",
+      "notes": "missing /not confirm|not yet|cannot confirm|no evidence|unknown|not complete/i"
+    },
+    {
+      "caseId": "plan.compound-goal",
+      "area": "compound-goal",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 28978,
+      "generationMs": 27027.869851,
+      "tokens": 96,
+      "msPerToken": 281.5403109479167,
+      "passed": false,
+      "responsePreview": "  The Cleaners are here to help you with your plumbing needs. We have a variety of services that can be done on your home or business.  We offer the following s",
+      "notes": "invalid strict JSON array"
+    },
+    {
+      "caseId": "plan.replan-after-unavailable",
+      "area": "replanning",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 20097,
+      "generationMs": 18314.551894,
+      "tokens": 64,
+      "msPerToken": 286.16487334375,
+      "passed": false,
+      "responsePreview": " Try our free online tool to find the right plumber for your home repair needs. Just enter your location and we'll connect you with a local plumber. The plumbin",
+      "notes": "invalid strict JSON"
+    },
+    {
+      "caseId": "plan.multilingual",
+      "area": "multilingual",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 19121,
+      "generationMs": 17530.309567,
+      "tokens": 64,
+      "msPerToken": 273.911086984375,
+      "passed": true,
+      "responsePreview": ". Je suis en train de travailler sur une nouvelle installation de tuyaux à gaz dans ma maison. J'ai besoin d'un guide pour comprendre comment les tâches sont or",
+      "notes": ""
+    },
+    {
+      "caseId": "plan.diagnostic",
+      "area": "diagnostic",
+      "model": "qwen2.5-0.5b",
+      "wallMs": 25998,
+      "generationMs": 22300.296794,
+      "tokens": 80,
+      "msPerToken": 278.753709925,
+      "passed": true,
+      "responsePreview": " - The Daily Caller  # Phone drains 20 percent overnight, Wi-Fi on. Check first?  ### Q: I have a phone that drains 20% of its battery power every night and the",
+      "notes": ""
+    },
+    {
+      "caseId": "conversation.greeting",
+      "area": "conversation",
+      "model": "smollm2:360m",
+      "wallMs": 11030,
+      "generationMs": 731.599573,
+      "tokens": 3,
+      "msPerToken": 243.86652433333333,
+      "passed": true,
+      "responsePreview": "Hello?",
+      "notes": ""
+    },
+    {
+      "caseId": "conversation.context-continuation",
+      "area": "context-continuation",
+      "model": "smollm2:360m",
+      "wallMs": 31121,
+      "generationMs": 17628.544776,
+      "tokens": 43,
+      "msPerToken": 409.9661575813953,
+      "passed": false,
+      "responsePreview": "I'm sorry, but as a text-based AI, I don't have the ability to understand personal conversations or respond in real-time. I recommend speaking with someone who ",
+      "notes": "missing /ada/i"
+    },
+    {
+      "caseId": "conversation.clarification",
+      "area": "clarification",
+      "model": "smollm2:360m",
+      "wallMs": 33642,
+      "generationMs": 25243.007217,
+      "tokens": 64,
+      "msPerToken": 394.421987765625,
+      "passed": false,
+      "responsePreview": "I'm sorry for the misunderstanding, but as a text-based AI, I don't have the ability to fix or alter content in real-time. However, I can help you with any ques",
+      "notes": "missing /\\?/"
+    },
+    {
+      "caseId": "tool.single-strict-json",
+      "area": "tool-calling",
+      "model": "smollm2:360m",
+      "wallMs": 34686,
+      "generationMs": 16282.412403,
+      "tokens": 28,
+      "msPerToken": 581.5147286785715,
+      "passed": true,
+      "responsePreview": "{\"tool\": \"find_plumber\", \"args\": {\"location\": \"London\", \"urgency\": \"weekend\"}}",
+      "notes": ""
+    },
+    {
+      "caseId": "tool.argument-extraction-strict-json",
+      "area": "argument-extraction",
+      "model": "smollm2:360m",
+      "wallMs": 21577,
+      "generationMs": 8023.4727,
+      "tokens": 21,
+      "msPerToken": 382.0701285714286,
+      "passed": false,
+      "responsePreview": "Yes, that's correct. The book cleaner on Saturday in Lekki is cleaning the house.",
+      "notes": "invalid strict JSON"
+    },
+    {
+      "caseId": "tool.multiple-strict-json",
+      "area": "multiple-tool-calls",
+      "model": "smollm2:360m",
+      "wallMs": 32158,
+      "generationMs": 16282.323671,
+      "tokens": 41,
+      "msPerToken": 397.12984563414636,
+      "passed": true,
+      "responsePreview": "[{\"tool\": \"find_plumber\", \"args\": {\"location\": \"London\"}}, {\"tool\": \"find_electrician\", \"args\": {\"location\": \"London\"}}]",
+      "notes": ""
+    },
+    {
+      "caseId": "tool.hallucination-guard",
+      "area": "hallucination",
+      "model": "smollm2:360m",
+      "wallMs": 37860,
+      "generationMs": 25226.662384,
+      "tokens": 64,
+      "msPerToken": 394.16659975,
+      "passed": false,
+      "responsePreview": "I'm sorry for the misunderstanding, but as a text-based AI, I don't have the ability to perform actions like teleporting. However, I can certainly help you with",
+      "notes": "invalid strict JSON"
+    },
+    {
+      "caseId": "boundary.no-evidence-no-outcome",
+      "area": "evidence-boundary",
+      "model": "smollm2:360m",
+      "wallMs": 12554,
+      "generationMs": 3551.171885,
+      "tokens": 10,
+      "msPerToken": 355.1171885,
+      "passed": false,
+      "responsePreview": "Yes, payment and booking have completed successfully.",
+      "notes": "missing /not confirm|not yet|cannot confirm|no evidence|unknown|not complete/i"
+    },
+    {
+      "caseId": "plan.compound-goal",
+      "area": "compound-goal",
+      "model": "smollm2:360m",
+      "wallMs": 28583,
+      "generationMs": 11381.894798,
+      "tokens": 41,
+      "msPerToken": 277.6071901951219,
+      "passed": true,
+      "responsePreview": "[{\"tool\": \"book_cleaner\", \"args\": {\"day\": \"Saturday\"}}, {\"tool\": \"book_plumber\", \"args\": {\"day\": \"Sunday\"}}]",
+      "notes": ""
+    },
+    {
+      "caseId": "plan.replan-after-unavailable",
+      "area": "replanning",
+      "model": "smollm2:360m",
+      "wallMs": 20338,
+      "generationMs": 11908.493123,
+      "tokens": 47,
+      "msPerToken": 253.37219410638298,
+      "passed": false,
+      "responsePreview": "I'm sorry for the inconvenience. As of now, I don't have any information about a plumber available to fix your issue. Would you like me to check my database or ",
+      "notes": "invalid strict JSON"
+    },
+    {
+      "caseId": "plan.multilingual",
+      "area": "multilingual",
+      "model": "smollm2:360m",
+      "wallMs": 7764,
+      "generationMs": 2319.570069,
+      "tokens": 10,
+      "msPerToken": 231.95700689999998,
+      "passed": true,
+      "responsePreview": "Bonjour, plumber Lagos weekend.",
+      "notes": ""
+    },
+    {
+      "caseId": "plan.diagnostic",
+      "area": "diagnostic",
+      "model": "smollm2:360m",
+      "wallMs": 14104,
+      "generationMs": 6495.074265,
+      "tokens": 25,
+      "msPerToken": 259.8029706,
+      "passed": false,
+      "responsePreview": "The phone is draining power at a rate of 20% overnight, but the Wi-Fi is currently enabled.",
+      "notes": "missing /batter|background|settings|check/i"
+    }
+  ]
+}

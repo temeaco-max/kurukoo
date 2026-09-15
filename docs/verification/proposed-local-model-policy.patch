@@ -1,0 +1,51 @@
+# Prepared (NOT activated): minimal local reasoning/tool tier policy extension
+#
+# Adds an opt-in `localReasoningTool` role behind KURUKOO_LOCAL_REASONING_MODEL.
+# Default behaviour is byte-identical to today: Qwen2.5-0.5B stays the local
+# fast default, SmolLM2 360M the fallback, hosted stays the complex-reasoning
+# boundary, canonical services stay the execution authority.
+#
+# PREREQUISITE before activation (separate change, NOT included here):
+# smolLm2Service.buildPrompt must gain a per-model template adapter. Gemma 3
+# requires its native <start_of_turn> template; the current hard-coded raw
+# ChatML path is pathologically slow on Gemma 3 (see final-qualification-verdict.md).
+#
+# Apply with: git apply docs/verification/proposed-local-model-policy.patch
+
+--- a/src/services/localModelPolicy.ts
++++ b/src/services/localModelPolicy.ts
+@@
+ export const LOCAL_MODEL_POLICY = {
+   /** Qualified local fast default (Ollama tag). */
+   defaultModel: 'qwen2.5-0.5b',
+   /** Bounded local fallback/comparison checkpoint (Ollama tag). */
+   fallbackModel: 'smollm2:360m',
+   roles: {
+     localFast: 'qwen2.5-0.5b' as const,
+     localFallback: 'smollm2:360m' as const,
++    /**
++     * Candidate local reasoning/tool tier (strict-JSON planning). Opt-in only
++     * via KURUKOO_LOCAL_REASONING_MODEL; unset by default so production
++     * behaviour is unchanged. Requires the per-model prompt-template adapter
++     * in smolLm2Service and passing runtime qualification first.
++     */
++    localReasoningTool: (process.env.KURUKOO_LOCAL_REASONING_MODEL || '').trim() || null,
+     complexReasoning: 'hosted' as const,
+     specialist: 'conditional' as const,
+   },
+   /** Task classes the local fast candidate may attempt first. */
+   localFirstTasks: ['conversation', 'support', 'skill_intake', 'presentation'] as const,
+   hostedRequiredTasks: ['planning', 'agent_execution', 'high_stakes'] as const,
++  /**
++   * Task classes the opt-in local reasoning/tool tier may attempt before
++   * hosted escalation when KURUKOO_LOCAL_REASONING_MODEL is set AND the
++   * template adapter prerequisite is implemented AND runtime qualification
++   * (docs/verification/gemma-runtime-qualification.json) passes.
++   */
++  localReasoningToolTasks: ['planning'] as const,
+ };
++
++/** True when an opt-in local reasoning/tool tier is explicitly activated. */
++export function isLocalReasoningToolActive(): boolean {
++  return Boolean((LOCAL_MODEL_POLICY.roles as { localReasoningTool?: unknown }).localReasoningTool);
++}

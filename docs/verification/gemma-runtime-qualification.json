@@ -1,0 +1,125 @@
+{
+  "generatedAt": "2026-09-14T20:45:25.929Z",
+  "model": "gemma3:4b",
+  "boundary": "processIntelligenceTurn → reason() → modelRouter.complete(task=planning) → unifiedAiEngine → smolLm2Service → Ollama",
+  "policy": "QUALIFICATION ONLY — no production model policy change; canonical services own execution; Qwen2.5-0.5B remains fast tier",
+  "environment": {
+    "ollamaTimeoutMs": 600000,
+    "maxNewTokens": 128,
+    "hostedProvidersDisabled": true
+  },
+  "summary": {
+    "passed": 6,
+    "failed": 2,
+    "notRun": 0,
+    "totalWallMs": 3235179
+  },
+  "results": [
+    {
+      "id": "selection.boundary",
+      "area": "attribution",
+      "passed": true,
+      "wallMs": 294,
+      "notes": "",
+      "evidence": {
+        "selection": {
+          "provider": "smollm2",
+          "tier": "compact",
+          "reason": "no hosted planner available; bounded local fallback",
+          "escalationReason": "local_first"
+        }
+      }
+    },
+    {
+      "id": "fastpath.greeting",
+      "area": "latency",
+      "passed": true,
+      "wallMs": 1218405,
+      "notes": "",
+      "evidence": {
+        "modelUsed": null,
+        "requiresEscalation": false,
+        "intent": "greeting"
+      }
+    },
+    {
+      "id": "reason.compound-plan-strict-json",
+      "area": "multi-step-planning",
+      "passed": false,
+      "wallMs": 1218692,
+      "notes": "model used but plan JSON did not parse into steps",
+      "evidence": {
+        "modelUsed": "template-fallback",
+        "providerUsed": "Kurukoo Template",
+        "actualModel": "template-fallback",
+        "executionMode": "deterministic_fallback",
+        "plan": [],
+        "intent": "general",
+        "confidence": 0.995,
+        "escalationReason": "unstructured_reasoning_response"
+      }
+    },
+    {
+      "id": "reason.replan-after-unavailable",
+      "area": "replanning",
+      "passed": true,
+      "wallMs": 621450,
+      "notes": "",
+      "evidence": {
+        "modelUsed": null,
+        "plan": [],
+        "escalationReason": null
+      }
+    },
+    {
+      "id": "boundary.no-evidence-no-outcome",
+      "area": "evidence-discipline",
+      "passed": true,
+      "wallMs": 99483,
+      "notes": "",
+      "evidence": {
+        "plan": [],
+        "rationale": "Model reasoning invoked but response was not structured JSON.",
+        "replyPreview": "I’m with you. Tell me a little more about what you mean, and I’ll help you work it out."
+      }
+    },
+    {
+      "id": "escalation.uncertain-signal",
+      "area": "fallback-escalation",
+      "passed": true,
+      "wallMs": 345,
+      "notes": "",
+      "evidence": {
+        "source": "fasttext",
+        "confidence": 0.7
+      }
+    },
+    {
+      "id": "boundary.authorization-confirmation",
+      "area": "authorization",
+      "passed": true,
+      "wallMs": 43574,
+      "notes": "no outcome claim; confirmation posture not explicitly observed",
+      "evidence": {
+        "plan": [],
+        "rationale": "Model reasoning invoked but response was not structured JSON.",
+        "replyPreview": "To match the right provider, I still need: Location or area."
+      }
+    },
+    {
+      "id": "router.complete-attribution",
+      "area": "latency-attribution",
+      "passed": false,
+      "wallMs": 21280,
+      "notes": "runtime attribution mismatch",
+      "evidence": {
+        "provider": "Kurukoo Template",
+        "model": "template-fallback",
+        "latencyMs": 21086,
+        "actualModel": "template-fallback",
+        "executionMode": "deterministic_fallback",
+        "textPreview": "I’m with you. Tell me a little more about what you mean, and I’ll help you work it out."
+      }
+    }
+  ]
+}

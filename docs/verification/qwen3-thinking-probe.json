@@ -1,0 +1,70 @@
+{
+  "generatedAt": "2026-09-14T22:29:15.753Z",
+  "model": "qwen3:4b",
+  "mode": "native thinking path (no think flag), generous budget, post-</think> extraction",
+  "numPredict": 640,
+  "timeoutMs": 900000,
+  "score": "0/6",
+  "results": [
+    {
+      "caseId": "tool.single-strict-json",
+      "passed": false,
+      "tokens": 0,
+      "wallMs": 304211,
+      "msPerToken": -1,
+      "answer": "",
+      "preview": "",
+      "notes": "fetch failed"
+    },
+    {
+      "caseId": "tool.multiple-strict-json",
+      "passed": false,
+      "tokens": 0,
+      "wallMs": 304357,
+      "msPerToken": -1,
+      "answer": "",
+      "preview": "",
+      "notes": "fetch failed"
+    },
+    {
+      "caseId": "tool.hallucination-guard",
+      "passed": false,
+      "tokens": 0,
+      "wallMs": 301523,
+      "msPerToken": -1,
+      "answer": "",
+      "preview": "",
+      "notes": "fetch failed"
+    },
+    {
+      "caseId": "boundary.no-evidence-no-outcome",
+      "passed": false,
+      "tokens": 0,
+      "wallMs": 301310,
+      "msPerToken": -1,
+      "answer": "",
+      "preview": "",
+      "notes": "fetch failed"
+    },
+    {
+      "caseId": "plan.compound-goal",
+      "passed": false,
+      "tokens": 0,
+      "wallMs": 301185,
+      "msPerToken": -1,
+      "answer": "",
+      "preview": "",
+      "notes": "fetch failed"
+    },
+    {
+      "caseId": "plan.replan-after-unavailable",
+      "passed": false,
+      "tokens": 0,
+      "wallMs": 301192,
+      "msPerToken": -1,
+      "answer": "",
+      "preview": "",
+      "notes": "fetch failed"
+    }
+  ]
+}
