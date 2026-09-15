@@ -13,7 +13,7 @@ jobs:
         with: {fetch-depth: 0}
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - name: Build assistant experience
@@ -34,13 +34,14 @@ jobs:
             s=s.replace(anchor,replacement,1)
             p.write_text(s)
           PY
-          npm ci
+          npm install --package-lock-only
+          npm install
           npm run build
-      - name: Commit and remove one-shot workflow
+      - name: Commit implementation
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add frontend/src/routes/chat.tsx
+          git add frontend/src/routes/chat.tsx frontend/package-lock.json
           git rm .github/workflows/kurukoo-build-phase-1.yml
           git diff --cached --quiet || git commit -m 'feat(chat): surface canonical assistant state'
           git push origin main
