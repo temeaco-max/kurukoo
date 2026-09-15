@@ -5,10 +5,49 @@ import { getFeatureFlag } from './featureFlags.js';
 
 interface EmailResult {
     ok: boolean;
-    provider: 'resend' | 'smtp-webhook' | 'disabled';
+    provider: 'resend' | 'smtp-webhook' | 'disabled' | 'mailpit';
     id?: string;
     messageId?: string;
     error?: string;
+}
+
+/**
+ * Explicit email transport selection.
+ * - `resend` (default/production): the existing Resend API path, unchanged.
+ * - `mailpit` (development only): deliver over SMTP to a local Mailpit server
+ *   (default 127.0.0.1:1025, web UI 8025) so magic links can be exercised
+ *   locally without an external email provider. Never permitted in production.
+ */
+function selectedEmailTransport(): 'mailpit' | 'default' {
+    const value = String(process.env.KURUKOO_EMAIL_TRANSPORT || '').trim().toLowerCase();
+    return value === 'mailpit' ? 'mailpit' : 'default';
+}
+
+async function sendViaMailpit(recipient: string, subject: string, body: string, options: SendEmailOptions, inReplyTo?: string, references: string[] = []): Promise<EmailResult> {
+    if (process.env.NODE_ENV === 'production') {
+        return { ok: false, provider: 'mailpit', error: 'Mailpit transport is not permitted in production; use the Resend transport.' };
+    }
+    const from = required('EMAIL_FROM');
+    if (!from) return { ok: false, provider: 'mailpit', error: 'EMAIL_FROM is required for the Mailpit transport' };
+    const host = String(process.env.KURUKOO_MAILPIT_HOST || '127.0.0.1').trim() || '127.0.0.1';
+    const port = Number(process.env.KURUKOO_MAILPIT_SMTP_PORT || 1025) || 1025;
+    const nodemailer = await import('nodemailer');
+    const mailer = nodemailer.createTransport({ host, port, secure: false, tls: { rejectUnauthorized: false } });
+    const headers: Record<string, string> = {
+        ...(inReplyTo ? { 'In-Reply-To': inReplyTo } : {}),
+        ...(references.length ? { References: references.join(' ') } : {}),
+    };
+    const info = await mailer.sendMail({
+        from,
+        to: recipient,
+        subject,
+        text: body,
+        html: plainTextToHtml(body),
+        ...(options.replyTo ? { replyTo: options.replyTo } : {}),
+        ...(Object.keys(headers).length ? { headers } : {}),
+    });
+    const messageId = normalizeMessageId(typeof info.messageId === 'string' ? info.messageId : undefined);
+    return { ok: true, provider: 'mailpit', id: messageId, messageId };
 }
 
 interface SendEmailOptions {
@@ -67,6 +106,8 @@ export async function sendEmail(
     try {
         if (!emailEnabled) {
             result = { ok: false, provider: 'disabled', error: 'Email delivery is disabled by feature flag' };
+        } else if (selectedEmailTransport() === 'mailpit') {
+            result = await sendViaMailpit(recipient, subject, body, options, inReplyTo, references);
         } else if (resendKey && from) {
             const payload: Record<string, unknown> = {
                 from,
@@ -121,9 +162,16 @@ export async function sendEmail(
             result = { ok: false, provider: 'disabled', error: 'No email transport configured' };
         }
     } catch (error) {
+        const failedProvider: EmailResult['provider'] = selectedEmailTransport() === 'mailpit'
+            ? 'mailpit'
+            : resendKey
+                ? 'resend'
+                : webhook
+                    ? 'smtp-webhook'
+                    : 'disabled';
         result = {
             ok: false,
-            provider: resendKey ? 'resend' : webhook ? 'smtp-webhook' : 'disabled',
+            provider: failedProvider,
             error: error instanceof Error ? error.message : 'Email delivery failed'
         };
     }

@@ -16,6 +16,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 dotenv.config();
+// This test verifies the REAL Resend delivery path — pin the transport so a
+// local development Mailpit selection cannot silently hijack this run.
+process.env.KURUKOO_EMAIL_TRANSPORT = 'resend';
 
 const root = process.cwd();
 const PORT = 3471;

@@ -96,7 +96,7 @@ function hasRequirement(requirement: string): boolean {
     if (requirement === 'GOOGLE_SHEETS_OAUTH') return Boolean(process.env.KURUKOO_GOOGLE_SHEETS_CLIENT_ID && process.env.KURUKOO_GOOGLE_SHEETS_CLIENT_SECRET && process.env.KURUKOO_GOOGLE_SHEETS_REDIRECT_URI && (process.env.KURUKOO_STORAGE_ENCRYPTION_KEY || process.env.MEMORY_ENCRYPTION_KEY || process.env.JWT_SECRET));
     if (requirement === 'MICROSOFT_GRAPH_OAUTH') return Boolean(process.env.KURUKOO_MICROSOFT_CLIENT_ID && process.env.KURUKOO_MICROSOFT_CLIENT_SECRET && process.env.KURUKOO_MICROSOFT_REDIRECT_URI && (process.env.KURUKOO_STORAGE_ENCRYPTION_KEY || process.env.MEMORY_ENCRYPTION_KEY || process.env.JWT_SECRET));
     if (requirement === 'NOTION_OAUTH') return Boolean(process.env.KURUKOO_NOTION_CLIENT_ID && process.env.KURUKOO_NOTION_CLIENT_SECRET && process.env.KURUKOO_NOTION_REDIRECT_URI && (process.env.KURUKOO_STORAGE_ENCRYPTION_KEY || process.env.MEMORY_ENCRYPTION_KEY || process.env.JWT_SECRET));
-    if (requirement === 'EMAIL_TRANSPORT') return Boolean((process.env.RESEND_API_KEY && process.env.EMAIL_FROM) || process.env.EMAIL_WEBHOOK_URL);
+    if (requirement === 'EMAIL_TRANSPORT') return Boolean((process.env.RESEND_API_KEY && process.env.EMAIL_FROM) || process.env.EMAIL_WEBHOOK_URL || (String(process.env.KURUKOO_EMAIL_TRANSPORT || '').trim().toLowerCase() === 'mailpit' && process.env.EMAIL_FROM));
     if (requirement === 'GEMINI_API_KEY') return Boolean(process.env.GEMINI_API_KEY || process.env.API_KEY);
     if (requirement === 'MISTRAL_API_KEY') return Boolean(process.env.MISTRAL_API_KEY);
     if (requirement === 'MISTRAL_TTS_CONFIGURATION') return Boolean(process.env.MISTRAL_API_KEY && process.env.MISTRAL_TTS_MODEL && process.env.MISTRAL_TTS_VOICE_ID);
