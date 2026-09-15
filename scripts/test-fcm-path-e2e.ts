@@ -25,6 +25,20 @@ for (const name of REQUIRED) {
 }
 console.log('[fcm-e2e] FCM server credentials loaded from local .env (values withheld).');
 
+// Public Firebase web configuration values required by the browser FCM client.
+// These come from the Firebase console (Project Settings → Your apps → Web app).
+// They are public (safe to expose via /api/fcm/config) but must be present for
+// the browser to request Notification permission and mint an FCM registration token.
+const requiredWebConfig = [
+  'FIREBASE_API_KEY',
+  'FIREBASE_AUTH_DOMAIN',
+  'FIREBASE_PROJECT_ID',
+  'FIREBASE_STORAGE_BUCKET',
+  'FIREBASE_MESSAGING_SENDER_ID',
+  'FIREBASE_APP_ID',
+  'KURUKOO_FCM_VAPID_KEY',
+] as const;
+
 const { getDb, saveDb } = await import('../src/database.js');
 const existingPhone = '+2348011111112';
 {
@@ -59,8 +73,9 @@ console.log('[fcm-e2e] Server ready on ' + BASE);
 const configRes = await fetch(`${BASE}/api/fcm/config`);
 const configPayload = await configRes.json() as { configured?: boolean; reason?: string; config?: Record<string, unknown> };
 assert.equal(configRes.status, 200);
-assert.equal(configPayload.configured, false, 'web config is not set locally; the boundary must say so truthfully');
-assert.equal('privateKey' in (configPayload.config || {}), false);
+const webConfigPresentNow = requiredWebConfig.every((name) => String(process.env[name] || '').trim());
+assert.equal(configPayload.configured, webConfigPresentNow, '/api/fcm/config must truthfully report web configuration state');
+assert.equal('privateKey' in (configPayload.config || {}), false, 'web config must never expose private keys');
 console.log(`[fcm-e2e] /api/fcm/config: configured=${configPayload.configured} (${String(configPayload.reason).slice(0, 80)}…)`);
 
 // ── 2. Authenticated session through the canonical JWT boundary ──
@@ -123,18 +138,9 @@ assert.equal(typeof drained.sent, 'number');
 shutdown();
 for (const suffix of ['', '-wal', '-shm']) if (fs.existsSync(dbPath + suffix)) fs.rmSync(dbPath + suffix);
 
-// ── 6. Browser FCM path contract: identify exactly which values are missing ──
-const requiredWebConfig = [
-  'FIREBASE_API_KEY',
-  'FIREBASE_AUTH_DOMAIN',
-  'FIREBASE_PROJECT_ID',
-  'FIREBASE_STORAGE_BUCKET',
-  'FIREBASE_MESSAGING_SENDER_ID',
-  'FIREBASE_APP_ID',
-  'KURUKOO_FCM_VAPID_KEY',
-] as const;
+// ── 6. Browser FCM path contract: verify web config presence/absence ──
 const missingWebConfig = requiredWebConfig.filter((name) => !String(process.env[name] || '').trim());
-const webConfigPresent = missingWebConfig.length === 0;
+const webConfigPresent = webConfigPresentNow;
 
 console.log('\n=== FCM PATH SMOKE TEST PASSED ===');
 console.log('Server FCM credentials: loaded from .env; /api/fcm/config truthful.');
