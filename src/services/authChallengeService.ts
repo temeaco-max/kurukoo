@@ -83,7 +83,7 @@ function publicAppBaseUrl(): string {
   return String(process.env.KURUKOO_PUBLIC_BASE_URL || process.env.PUBLIC_BASE_URL || '').replace(/\/$/, '');
 }
 
-const ALLOWED_RETURN_PREFIXES = ['/chat', '/connect', '/login', '/settings', '/profile', '/wallet', '/orders', '/provider', '/'];
+const ALLOWED_RETURN_PREFIXES = ['/chat', '/connect', '/login', '/settings', '/profile', '/wallet', '/orders', '/provider', '/workspace', '/perch', '/notifications', '/'];
 
 export function sanitizeReturnPath(raw?: string | null): string | undefined {
   const p = String(raw || '').trim();
@@ -224,7 +224,7 @@ export async function requestMagicLink(input: {
   guestPhone?: string;
   returnPath?: string;
   purpose?: AuthChallengePurpose;
-}): Promise<{ success: boolean; message: string; challengeId?: string; debugUrl?: string; delivery: 'email' | 'none' }> {
+}): Promise<{ success: boolean; message: string; challengeId?: string; debugUrl?: string; delivery: 'email' | 'none'; provider?: string; providerReference?: string }> {
   if (!isMagicLinkAuthEnabled()) {
     return { success: false, message: 'Magic link auth is disabled', delivery: 'none' };
   }
@@ -283,10 +283,12 @@ export async function requestMagicLink(input: {
   }
   return {
     success: true,
-    message: sent ? 'Magic link sent to your email' : 'Magic link ready (debug mode — email not sent)',
+    message: typeof sent === 'object' && sent.ok ? 'Magic link sent to your email' : 'Magic link ready (debug mode — email not sent)',
     challengeId: challenge.id,
     debugUrl,
-    delivery: sent ? 'email' : 'none',
+    delivery: typeof sent === 'object' && sent.ok ? 'email' : 'none',
+    provider: typeof sent === 'object' && sent.ok ? sent.provider : undefined,
+    providerReference: typeof sent === 'object' && sent.ok ? (sent.id || sent.messageId) : undefined,
   };
 }
 

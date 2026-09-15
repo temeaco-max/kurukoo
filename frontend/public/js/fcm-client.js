@@ -109,6 +109,9 @@
       return { status, reason: config?.reason };
     }
 
+    // Never prompt automatically. Notification permission is requested only from
+    // an explicit user action (the Enable notifications control below); Kurukoo
+    // must never raise the browser permission prompt on its own.
     const permission = await Notification.requestPermission();
     status = permission === 'granted' ? 'granted' : permission;
     if (permission !== 'granted') return { status };

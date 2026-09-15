@@ -17,7 +17,7 @@ function readServiceAccount(): FirebaseServiceAccount | null {
   }
   const raw = String(process.env.FCM_SERVICE_ACCOUNT_JSON || '').trim();
   if (raw) {
-    try { const parsed = JSON.parse(raw) as FirebaseServiceAccount; if (parsed.project_id && parsed.client_email && parsed.private_key) return parsed; } catch { return null; }
+    try { const parsed = JSON.parse(raw) as FirebaseServiceAccount; if (parsed.project_id && parsed.client_email && parsed.private_key) return parsed; } catch { /* fall through to the credential triplet */ }
   }
   const projectId = String(process.env.KURUKOO_FCM_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || '').trim();
   const clientEmail = String(process.env.KURUKOO_FCM_CLIENT_EMAIL || process.env.FIREBASE_ADMIN_CLIENT_EMAIL || '').trim();
