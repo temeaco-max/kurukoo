@@ -9,6 +9,7 @@ import { authenticateUser, AuthRequest } from '../middleware/auth.js';
 import { paymentRateLimit } from '../middleware/rateLimit.js';
 import { upgradeSubscriptionAfterPayment, subscribeProviderTier } from '../services/subscriptionService.js';
 import { getUserSubscriptionState } from '../services/subscriptionReadService.js';
+import { getUserUsage } from '../services/usageReadService.js';
 
 const router = Router();
 
@@ -20,6 +21,17 @@ router.get('/subscription/state', authenticateUser, async (req: AuthRequest, res
   } catch (e: any) {
     console.error('Subscription state error:', e);
     res.status(500).json({ error: e.message || 'Failed to read subscription state' });
+  }
+});
+
+router.get('/usage', authenticateUser, async (req: AuthRequest, res) => {
+  try {
+    const phone = req.user?.phone;
+    if (!phone) return res.status(401).json({ error: 'Authentication required' });
+    res.json(await getUserUsage(String(phone)));
+  } catch (e: any) {
+    console.error('Usage state error:', e);
+    res.status(500).json({ error: e.message || 'Failed to read usage state' });
   }
 });
 
