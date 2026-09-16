@@ -1,11 +1,39 @@
-import { Bell, Cloud, CloudRain, MessageSquare, Moon, SunMedium } from "lucide-react";
+import { Bell, Cloud, CloudRain, MessageSquare, SunMedium } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useKurukoo } from "@/lib/kurukoo-store";
-import { useProfileName } from "@/components/app-shell";
 import { LiveVoice } from "@/components/kurukoo/live-voice";
 
 type Weather = { temperature: string; place: string; code: number | null; unit: "C" | "F" };
+
+type ProfileResponse = { profile?: { name?: string | null; location?: string | null } };
+
+async function fetchProfile() {
+  const base = (import.meta.env["VITE_KURUKOO_API_BASE_URL"] ?? "").replace(/\/$/, "");
+  const response = await fetch(`${base}/api/profile`, { credentials: "include" });
+  if (!response.ok) throw new Error("Profile unavailable");
+  return (await response.json()) as ProfileResponse;
+}
+
+function useProfileIdentity() {
+  const [name, setName] = useState("there");
+  useEffect(() => {
+    let cancelled = false;
+    const read = () => {
+      void fetchProfile().then(({ profile }) => {
+        if (!cancelled && profile?.name?.trim()) setName(profile.name.trim());
+      }).catch(() => {
+        const cached = localStorage.getItem("kurukoo-profile-name")?.trim();
+        if (!cancelled && cached) setName(cached);
+      });
+    };
+    read();
+    window.addEventListener("storage", read);
+    window.addEventListener("kurukoo-profile-updated", read);
+    return () => { cancelled = true; window.removeEventListener("storage", read); window.removeEventListener("kurukoo-profile-updated", read); };
+  }, []);
+  return name;
+}
 
 function detectPlaceFromTimezone(timeZone: string) {
   const known: Record<string, string> = {
@@ -17,11 +45,8 @@ function detectPlaceFromTimezone(timeZone: string) {
 }
 
 function weatherIcon(code: number | null) {
-  if (code === null) return <SunMedium className="size-4 shrink-0 text-[#c58d62]" aria-hidden />;
+  if (code === 0 || code === null) return <SunMedium className="size-4 shrink-0 text-[#c58d62]" aria-hidden />;
   if (code >= 51 && code <= 99) return <CloudRain className="size-4 shrink-0 text-[#6d89a4]" aria-hidden />;
-  if (code >= 1 && code <= 3) return <Cloud className="size-4 shrink-0 text-muted-foreground" aria-hidden />;
-  if (code === 45 || code === 48) return <Cloud className="size-4 shrink-0 text-muted-foreground" aria-hidden />;
-  if (code === 0) return <SunMedium className="size-4 shrink-0 text-[#c58d62]" aria-hidden />;
   return <Cloud className="size-4 shrink-0 text-muted-foreground" aria-hidden />;
 }
 
@@ -80,16 +105,13 @@ function useLocalDateTime() {
     return () => window.clearInterval(timer);
   }, []);
   const locale = Intl.DateTimeFormat().resolvedOptions().locale || "en-GB";
-  return {
-    greeting: getGreeting(now.getHours()),
-    date: new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short", year: "numeric" }).format(now),
-  };
+  return { greeting: getGreeting(now.getHours()), date: new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short", year: "numeric" }).format(now) };
 }
 
 export function PageHeader() {
   const weather = useLocalWeather();
   const { greeting, date } = useLocalDateTime();
-  const profileName = useProfileName();
+  const profileName = useProfileIdentity();
   const { notifications } = useKurukoo();
   const unread = notifications.filter((item) => !item.read).length;
   return (
