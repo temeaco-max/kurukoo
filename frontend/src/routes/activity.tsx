@@ -37,11 +37,11 @@ function openConversation(id: string) {
   localStorage.setItem("kurukoo-open-conversation", id);
 }
 
-function workTone(stage: WorkItem["stage"]): "blue" | "peach" | "green" | "gray" {
+function workTone(stage: WorkItem["stage"]): "blue" | "peach" | "green" | "neutral" {
   if (stage === "needs_you") return "peach";
   if (stage === "done") return "green";
   if (stage === "working") return "blue";
-  return "gray";
+  return "neutral";
 }
 
 function workLabel(stage: WorkItem["stage"]) {
