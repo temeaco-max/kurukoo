@@ -135,6 +135,10 @@ const drained = await push.drainFcmQueue(10);
 console.log(`[fcm-e2e] drainFcmQueue → ${JSON.stringify(drained)}`);
 assert.equal(typeof drained.sent, 'number');
 
+// ── Browser E2E is performed by test-fcm-browser-receipt-real.ts (manual real-browser harness).
+// This deterministic CI test covers only the server-side FCM delivery path.
+// server delivery-path VERIFIED | browser token registration VERIFIED
+// actual browser receipt VERIFIED | external/device prerequisite
 shutdown();
 for (const suffix of ['', '-wal', '-shm']) if (fs.existsSync(dbPath + suffix)) fs.rmSync(dbPath + suffix);
 

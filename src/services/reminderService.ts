@@ -138,7 +138,20 @@ export async function processDueReminders(limit = 100): Promise<{ checked: numbe
   let delivered = 0, queued = 0, failed = 0;
   for (const values of rows) {
     const reminder = rowToReminder(values); const body = reminder.note ? `${reminder.title} — ${reminder.note}` : reminder.title; let pushSent = false;
-    try { pushSent = await sendFcmPush(reminder.phone, 'Kurukoo reminder', body, '/chat/'); } catch (error) { console.warn('[Reminder] push failed:', error); }
+    try {
+      // The due reminder is a Work item. The notification must return the user to
+      // that exact reminder with its conversation context preserved, not to a
+      // generic Chat page, so the click destination is canonical and specific.
+      pushSent = await sendFcmPush(reminder.phone, 'Kurukoo reminder', body, '/reminders', {
+        canonicalAction: 'reminder.due.open',
+        objectType: 'reminder',
+        objectId: reminder.id,
+        conversationId: reminder.source_conversation_id || undefined,
+        contextId: reminder.resume_context_id || undefined,
+        ownerScope: reminder.phone,
+        surface: 'reminders',
+      });
+    } catch (error) { console.warn('[Reminder] push failed:', error); }
     const reminderCard = { type: 'reminder', reminder_id: reminder.id, interruptive: true, priority: 'high', triggerState: 'due', sourceConversationId: reminder.source_conversation_id, resumeContextId: reminder.resume_context_id, preservePriorConversation: true, actions: [{ id: 'open', label: 'Open reminder' }, { id: 'dismiss', label: 'Dismiss' }, { id: 'snooze', label: 'Snooze' }] };
     try { const db = await import('../database.js').then(module => module.getDb()); db.run(`INSERT INTO messages (phone, sender, content, channel, card_data, status) VALUES (?, 'kurukoo', ?, 'pwa', ?, ?)`, [reminder.phone, `Reminder: ${body}`, JSON.stringify(reminderCard), pushSent ? 'sent' : 'queued']); } catch {}
     if (pushSent) delivered += 1; else queued += 1;

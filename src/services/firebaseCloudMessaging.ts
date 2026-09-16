@@ -79,11 +79,50 @@ export async function probeFirebaseFcmConnection(): Promise<FcmActivationProbe> 
   }
 }
 
+/**
+ * Resolve a canonical Kurukoo path into the values a Web Push notification needs.
+ *
+ * `relative` is the canonical in-app destination. It is carried in the message
+ * `data` so the service worker's `notificationclick` handler and the foreground
+ * `onMessage` handler can route the user back to the exact Kurukoo destination
+ * (Work, request, conversation or notification) instead of a generic page.
+ *
+ * `absolute` is required by Web Push `fcm_options.link`, which must be an
+ * absolute URL. When no public base origin is configured we omit the absolute
+ * link rather than sending a value the browser cannot use. Omission never
+ * fabricates a destination — the canonical relative link is still present.
+ */
+function resolveWebPushDeepLink(link: string | undefined): { relative: string; absolute: string | null } | null {
+  const raw = String(link || '').trim();
+  if (!raw) return null;
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      const parsed = new URL(raw);
+      return { relative: `${parsed.pathname}${parsed.search}${parsed.hash}`, absolute: parsed.toString() };
+    } catch {
+      return null;
+    }
+  }
+  const relative = raw.startsWith('/') ? raw : `/${raw}`;
+  const base = String(process.env.KURUKOO_PUBLIC_BASE_URL || '').trim();
+  let absolute: string | null = null;
+  if (base) {
+    try { absolute = new URL(relative, new URL(base).origin).toString(); } catch { absolute = null; }
+  }
+  return { relative, absolute };
+}
+
 async function sendOneFcmToken(accessToken: string, account: FirebaseServiceAccount, token: string, input: { title: string; body: string; link?: string }): Promise<{ accepted: boolean; providerReference?: string; failureReason?: string }> {
+  const deepLink = resolveWebPushDeepLink(input.link);
+  const sendPayload: Record<string, unknown> = { token, notification: { title: input.title, body: input.body } };
+  if (deepLink) {
+    sendPayload.data = { link: deepLink.relative };
+    if (deepLink.absolute) sendPayload.webpush = { fcm_options: { link: deepLink.absolute } };
+  }
   const response = await fetch(`https://fcm.googleapis.com/v1/projects/${encodeURIComponent(account.project_id!)}/messages:send`, {
     method: 'POST',
     headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ message: { token, notification: { title: input.title, body: input.body }, ...(input.link ? { webpush: { fcm_options: { link: input.link } } } : {}) } }),
+    body: JSON.stringify({ message: sendPayload }),
   });
   const data = await response.json().catch(() => ({})) as { name?: string; error?: { status?: string; message?: string } };
   if (response.ok) return { accepted: true, providerReference: typeof data.name === 'string' ? data.name.slice(0, 256) : undefined };

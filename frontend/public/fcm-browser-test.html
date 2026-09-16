@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kurukoo FCM Browser Diagnostic (DIAGNOSTIC ONLY)</title>
+  <script src="https://www.gstatic.com/firebasejs/12.17.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.17.0/firebase-messaging-compat.js"></script>
+</head>
+<body>
+  <!--
+    DIAGNOSTIC ONLY.
+    This page exists to diagnose Firebase web configuration, notification
+    permission and service-worker registration in a browser. It does not prove
+    that Kurukoo delivered a notification and it is not an acceptance test.
+    The real browser receipt acceptance path is:
+      KURUKOO_FCM_BROWSER_E2E=true npm run test:fcm:browser
+    See docs/deployment/FCM_REAL_BROWSER_RECEIPT.md.
+  -->
+  <div style="margin:20px;padding:12px 16px;border-left:4px solid #b45309;background:#fffbeb;font-family:system-ui,sans-serif;max-width:800px;">
+    <strong>DIAGNOSTIC ONLY — this page does not prove notification delivery.</strong><br>
+    It reports browser-side configuration, permission and registration state only.
+    Real push delivery and notification click-through are verified by
+    <code>npm run test:fcm:browser</code>, which requires a real Chrome instance
+    and an external Firebase project.
+  </div>
+  <pre id="log" style="font-family:monospace;font-size:12px;white-space:pre-wrap;max-width:800px;margin:20px;"></pre>
+  <script>
+    /* eslint-disable */
+    window.__fcmTest = { log: [], state: 'init' };
+
+    function log(msg) {
+      window.__fcmTest.log.push(msg);
+      var el = document.getElementById('log');
+      if (el) el.textContent += msg + '\n';
+      if (typeof console !== 'undefined' && console.log) console.log('[browser] ' + msg);
+    }
+
+    window.__fcmTestLog = function() { return window.__fcmTest.log.join('\n'); };
+    window.__fcmPushReceived = null;
+    window.__fcmToken = null;
+    window.__fcmRegistrationOk = false;
+
+    function runFcmFlow() {
+      return new Promise(function(resolve, reject) {
+        log('[browser] Waiting for firebase global...');
+        var attempts = 0;
+        var check = function() {
+          attempts++;
+          if (typeof firebase !== 'undefined') {
+            log('[browser] firebase global available.');
+            doFcmFlow().then(resolve, reject);
+          } else if (attempts < 50) {
+            setTimeout(check, 200);
+          } else {
+            log('[browser] ERROR: firebase global not available');
+            reject(new Error('firebase global not available'));
+          }
+        };
+        check();
+      });
+    }
+
+    async function doFcmFlow() {
+      try {
+        log('[browser] Fetching /api/fcm/config...');
+        var configRes = await fetch('/api/fcm/config', { credentials: 'same-origin', cache: 'no-store' });
+        var configPayload = await configRes.json();
+        if (!configPayload.configured || !configPayload.config) {
+          throw new Error('FCM web config not configured');
+        }
+        log('[browser] Config fetched. projectId=' + configPayload.config.projectId);
+
+        firebase.initializeApp(configPayload.config);
+        var messaging = firebase.messaging();
+        log('[browser] Firebase initialized.');
+
+        var permission = await Notification.requestPermission();
+        log('[browser] Notification permission: ' + permission);
+        if (permission !== 'granted') throw new Error('Notification permission not granted: ' + permission);
+
+        log('[browser] Registering service worker...');
+        var registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+        log('[browser] SW registered. Waiting for ready...');
+        await navigator.serviceWorker.ready;
+        log('[browser] SW is ready.');
+
+        log('[browser] Requesting FCM token...');
+        var token = await messaging.getToken({
+          vapidKey: configPayload.config.vapidKey,
+          serviceWorkerRegistration: registration,
+        });
+        if (!token) throw new Error('getToken() returned null');
+        window.__fcmToken = token;
+        log('[browser] FCM token obtained (length=' + token.length + ').');
+
+        log('[browser] Registering token at /api/fcm/register...');
+        var registerRes = await fetch('/api/fcm/register', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: token,
+            deviceId: 'browser-e2e-' + Date.now(),
+            credentialType: 'pwa',
+            label: 'FCM browser E2E test',
+            platform: 'web',
+            projectId: configPayload.config.projectId,
+          }),
+        });
+        var registerPayload = await registerRes.json();
+        if (!registerRes.ok || !registerPayload.success) {
+          throw new Error('FCM register failed: ' + JSON.stringify(registerPayload));
+        }
+        window.__fcmRegistrationOk = true;
+        log('[browser] Token registered at /api/fcm/register.');
+
+        navigator.serviceWorker.addEventListener('message', function(event) {
+          if (event.data && event.data.type === 'FCM_PUSH_RECEIVED') {
+            window.__fcmPushReceived = event.data;
+            log('[browser] PUSH RECEIVED via SW message.');
+          }
+        });
+
+        messaging.onMessage(function(payload) {
+          var notif = payload && payload.notification;
+          var data = payload && payload.data;
+          var title = (notif && notif.title) || (data && data.title) || '';
+          var body = (notif && notif.body) || (data && data.body) || '';
+          window.__fcmPushReceived = { type: 'FCM_PUSH_RECEIVED', title: title, body: body };
+          log('[browser] PUSH via onMessage: title=' + title);
+        });
+
+        log('[browser] FCM flow complete. Waiting for push...');
+        window.__fcmTest.state = 'ready_for_push';
+      } catch (error) {
+        window.__fcmTest.state = 'error';
+        window.__fcmTest.error = String(error);
+        log('[browser] ERROR: ' + (error && error.message ? error.message : String(error)));
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() { runFcmFlow(); });
+    } else {
+      runFcmFlow();
+    }
+  </script>
+</body>
+</html>
