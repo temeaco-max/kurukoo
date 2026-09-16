@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { AskKurukoo } from "@/components/kurukoo/ask-kurukoo";
 import { useKurukoo } from "@/lib/kurukoo-store";
 import { entityById, topics, videos } from "@/lib/kurukoo-demo";
+import { useProfileIdentity } from "@/lib/profile-identity";
 
 function greeting() {
   const hour = new Date().getHours();
@@ -19,6 +20,7 @@ function Card({ children, className = "" }: { children: ReactNode; className?: s
 
 export function WorkspaceHome() {
   const { work } = useKurukoo();
+  const profileName = useProfileIdentity();
   const [topicMode, setTopicMode] = useState<"trending" | "new">("trending");
   const active = work.filter((item) => item.stage !== "done").slice(0, 5);
   const needsYou = active.filter((item) => item.stage === "needs_you");
@@ -30,7 +32,7 @@ export function WorkspaceHome() {
       <div className="pointer-events-none absolute -right-28 -top-32 size-[390px] rounded-full bg-brand-tint/30 blur-3xl" />
       <div className="relative">
         <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground"><span className="grid size-5 place-items-center rounded-full bg-primary/10 text-primary"><Sparkles className="size-3" /></span>Your field</div>
-        <h1 className="mt-4 max-w-3xl text-[40px] font-semibold leading-[.96] tracking-[-0.055em] sm:text-[48px] md:text-[62px]">{greeting()}.<br /><span className="text-muted-foreground/75">Wake up. Get going.</span></h1>
+        <h1 className="mt-4 max-w-3xl text-[40px] font-semibold leading-[.96] tracking-[-0.055em] sm:text-[48px] md:text-[62px]">{greeting()}, {profileName}.<br /><span className="text-muted-foreground/75">Wake up. Get going.</span></h1>
         <p className="mt-5 max-w-2xl text-[14px] leading-7 text-muted-foreground">Kurukoo keeps the things you hand over in view, brings you back when a decision matters, and keeps useful context close without making you manage the machinery.</p>
         <div className="mt-7 max-w-3xl"><AskKurukoo prompt="What needs your attention?" className="min-h-11 rounded-xl bg-primary px-4 text-primary-foreground hover:bg-primary/90" /><p className="mt-2 text-[10.5px] text-muted-foreground">Start with the outcome. Kurukoo works out the route.</p></div>
       </div>
