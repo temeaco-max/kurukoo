@@ -14,7 +14,7 @@ export const Route = createFileRoute("/activity")({
   component: ActivityPage,
 });
 
-const tabs = ["Needs you", "Actions", "Replies", "Following", "System"] as const;
+const tabs = ["Needs you", "Work", "Replies", "Following", "System"] as const;
 type ActivityConversation = { id: string; title?: string | null; channel?: string; updated_at?: string };
 type ActivityMessage = { id: number; sender: string; content: string; conversation_id?: string | null; conversationId?: string | null; created_at?: string; createdAt?: string };
 
@@ -98,7 +98,7 @@ function ActivityPage() {
   const recentNotifications = notifications.slice(0, 4);
 
   return <div className="space-y-8 pb-10">
-    <PageHeader title="What changed" subtitle="A quiet history of replies, decisions and important updates. Kurukoo will surface something here when it matters." />
+    <PageHeader title="What changed" subtitle="A quiet history of replies, decisions, Work progress and important updates. Kurukoo keeps the source context attached so you can continue without starting over." />
     <Panel className="overflow-hidden">
       <div className="flex flex-col gap-5 p-5 sm:p-7">
         <div className="flex items-start justify-between gap-5">
@@ -111,7 +111,7 @@ function ActivityPage() {
     </Panel>
     <section>
       {tab === "Needs you" ? pending.length === 0 ? <EmptyState title="Nothing waiting on you" body="When Kurukoo reaches a consequential step that needs your decision, it will appear here." /> : <Rows>{pending.map((n) => <li key={n.id} className="px-4 py-5 sm:px-5"><div className="flex items-start gap-3"><ContextIconTile><CheckCircle2 className="size-[17px]" /></ContextIconTile><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="text-[15px] font-medium">{n.title}</p><StatusPill tone="peach">Needs approval</StatusPill></div><p className="mt-1 text-[13.5px] leading-5 text-muted-foreground">{n.body}</p><NotificationSource notification={n} /><div className="mt-3"><Action onClick={() => markRead(n.id)}>Mark as seen</Action></div></div></div></li>)}</Rows> : null}
-      {tab === "Actions" ? <EconomicActivity /> : null}
+      {tab === "Work" ? <EconomicActivity /> : null}
       {tab === "Replies" ? historyLoading ? <Panel className="p-5"><div className="h-4 w-36 animate-pulse rounded bg-elevated" /><div className="mt-3 h-3 w-64 animate-pulse rounded bg-elevated" /></Panel> : historyError ? <EmptyState title="Conversation activity unavailable" body={historyError} /> : replyItems.length ? <Rows>{replyItems.map(({ conversation, latest }) => <li key={conversation.id}><Link to="/chat" onClick={() => openConversation(conversation.id)} className="group flex items-center gap-3 px-4 py-4 transition-colors hover:bg-elevated sm:px-5"><ContextIconTile><MessageCircle className="size-[17px]" /></ContextIconTile><span className="min-w-0 flex-1"><span className="block truncate text-[15px] font-medium group-hover:text-primary">{conversation.title || "Kurukoo conversation"}</span><span className="mt-0.5 block truncate text-[13px] text-muted-foreground">{latest?.content}</span></span><span className="shrink-0 text-[11px] text-muted-foreground">{formatWhen(conversation.updated_at)}</span></Link></li>)}</Rows> : <EmptyState title="No conversation updates yet" body="Your conversations stay in Chat. This view only helps you pick up where something changed." /> : null}
       {tab === "Following" ? topicFollowingError ? <EmptyState title="Topic updates unavailable" body={topicFollowingError} /> : followedTopics.length ? <Rows>{followedTopics.map((item) => <li key={item.topic.id}><Link to="/topics/$slug" params={{ slug: item.topic.slug }} className="flex items-center gap-3 px-4 py-4 transition-colors hover:bg-elevated sm:px-5"><ContextIconTile><Sparkles className="size-[17px]" /></ContextIconTile><span className="min-w-0 flex-1"><span className="block truncate text-[15px] font-medium">{item.topic.title}</span><span className="mt-0.5 block truncate text-[13px] text-muted-foreground">{item.topic.replyCount} moderated {item.topic.replyCount === 1 ? "reply" : "replies"} · Updates {item.relationship.notificationPreference === "muted" ? "off" : "on"}</span></span></Link></li>)}</Rows> : <EmptyState title="No Topic follows yet" body="Follow a Topic to keep its updates attached to your Activity surface." /> : null}
       {tab === "System" ? systemUpdates.length ? <Rows>{systemUpdates.map((n) => <li key={n.id} className="px-4 py-5 sm:px-5"><div className="flex items-start gap-3"><ContextIconTile><Bell className="size-[17px]" /></ContextIconTile><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="text-[15px] font-medium">{n.title}</p>{!n.read ? <StatusPill tone="blue">Unread</StatusPill> : null}</div><p className="mt-1 text-[13.5px] leading-5 text-muted-foreground">{n.body}</p><NotificationSource notification={n} />{!n.read ? <div className="mt-3"><Action onClick={() => markRead(n.id)}>Mark as read</Action></div> : null}<p className="mt-1.5 text-[10.5px] text-muted-foreground">{n.when}</p></div></div></li>)}</Rows> : <EmptyState title="No system updates" body="Account, security and billing events will appear here when their connected event source provides them." /> : null}
