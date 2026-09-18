@@ -1,5 +1,5 @@
 import { useRouterState, Link } from "@tanstack/react-router";
-import { Bell, Briefcase, Brain, ChevronLeft, ChevronRight, Compass, ExternalLink, MapPin, MessageSquare, ShieldCheck, Sparkles, Target, Users, Wallet, Zap } from "lucide-react";
+import { ArrowRight, Bell, Briefcase, Brain, ChevronLeft, ChevronRight, Compass, ExternalLink, MapPin, MessageSquare, ShieldCheck, Sparkles, Target, Users, Wallet, Zap } from "lucide-react";
 import { useEffect, useState, type ReactNode, type ComponentType } from "react";
 import { cn } from "@/lib/utils";
 import { useKurukoo } from "@/lib/kurukoo-store";
@@ -8,7 +8,7 @@ import { fetchAuthenticatedAd, fetchPulseReadiness, type AuthenticatedAd, type P
 type Icon = ComponentType<{ className?: string }>;
 
 function Section({ title, icon: Icon, to, children }: { title: string; icon: Icon; to: string; children: ReactNode }) {
-  return <section className="rounded-2xl border border-border bg-surface p-3"><div className="flex items-center justify-between gap-2"><div className="flex min-w-0 items-center gap-2"><Icon className="size-3.5 shrink-0 text-muted-foreground"/><h2 className="truncate text-[12.5px] font-semibold">{title}</h2></div><Link to={to as never} className="text-[10px] text-muted-foreground hover:text-foreground">Open</Link></div><div className="mt-2">{children}</div></section>;
+  return <section className="trusted-context-card rounded-[18px] bg-elevated/70 p-3.5"><div className="flex items-center justify-between gap-2"><div className="flex min-w-0 items-center gap-2"><Icon className="size-3.5 shrink-0 text-muted-foreground"/><h2 className="truncate text-[12.5px] font-semibold">{title}</h2></div><Link to={to as never} className="trusted-context-view text-[10px] font-medium text-muted-foreground hover:text-foreground">View <ArrowRight className="ml-0.5 inline size-3" /></Link></div><div className="mt-2.5">{children}</div></section>;
 }
 
 function Row({ icon: Icon, title, detail, to, live = false }: { icon: Icon; title: string; detail: string; to?: string; live?: boolean }) {
@@ -71,9 +71,9 @@ export function ContextualTrustedRail({ open, onOpenChange }: { open: boolean; o
   const defaultContent = <>
     <Section title="Trusted context" icon={Brain} to="/memory"><Row icon={Sparkles} title="Home" detail="Your Field" to="/perch"/><Row icon={Briefcase} title="Work" detail={focus?.title ?? "No active Work"} to="/work"/><Row icon={Brain} title="Memory" detail={memory.length ? "Private continuity" : "No saved context shown"} to="/memory"/></Section>
     <Section title="Nearby pulse" icon={MapPin} to="/discover"><Row icon={MapPin} title="Nearby" detail="People, places and local activity" to="/discover"/><PulseControl readiness={readiness} onChange={setReadiness}/></Section>
-    <Section title="Safety state" icon={ShieldCheck} to="/trust"><Row icon={ShieldCheck} title="Trust controls" detail="Review permissions and account state" to="/trust"/></Section>
+    <Section title="Safety state" icon={ShieldCheck} to="/trust"><div className="safety-state-card"><span className="safety-state-icon"><ShieldCheck className="size-4"/></span><div><p className="text-[11.5px] font-semibold">All good</p><p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">Your safety controls are available when you need them.</p></div></div></Section>
     <Section title="Current focus" icon={Target} to="/work">{focus ? <Row icon={Target} title={focus.title} detail={focus.stage === "needs_you" ? "Needs you" : "In progress"} to={`/work/${focus.id}`} /> : <Row icon={MessageSquare} title="Nothing in motion" detail="Start with Ask Kurukoo" to="/chat"/>}</Section>
-    <Section title="People & continuity" icon={Users} to="/connect"><Row icon={Users} title="Trusted people" detail="Relationships and consent" to="/contacts"/><Row icon={Bell} title={unread ? `${unread} unread updates` : "No unread updates"} detail="Activity and notifications" to="/activity"/></Section>
+    <Section title="Activity summary" icon={Bell} to="/activity"><div className="activity-summary-grid"><div><strong>{work.filter((item) => item.stage === "done").length}</strong><span>Tasks completed</span></div><div><strong>{work.filter((item) => item.stage !== "done").length}</strong><span>In motion</span></div></div><Link to="/activity" className="mt-3 inline-flex items-center text-[10px] font-medium text-muted-foreground hover:text-foreground">View activity <ArrowRight className="ml-1 size-3"/></Link></Section>
     {ad ? <RailAd campaign={ad}/> : null}
   </>;
 
