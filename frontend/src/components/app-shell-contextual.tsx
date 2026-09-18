@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Bell, Briefcase, ChevronDown, ChevronLeft, ChevronRight, Compass, Ellipsis, ExternalLink, Home, LayoutDashboard, ListChecks, MapPin, MessageCircle, Moon, Search, ShoppingCart, Sparkles, Sun, Tags, Users, Wallet, Zap } from "lucide-react";
+import { Bell, Brain, Briefcase, CheckSquare2, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, Compass, Ellipsis, ExternalLink, Home, LayoutDashboard, MapPin, MessageCircle, Moon, Search, ShoppingCart, Sparkles, Sun, Tags, Users, Wallet, Zap } from "lucide-react";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useKurukoo } from "@/lib/kurukoo-store";
@@ -19,9 +19,9 @@ function ChatVoiceIcon({ className = "size-[18px]" }: { className?: string }) { 
 const nav = [
   { to: "/perch", label: "Field", icon: LayoutDashboard, color: "text-muted-foreground" },
   { to: "/chat", label: "Conversation", icon: MessageCircle, color: "text-muted-foreground" },
-  { to: "/work", label: "Requests", icon: ListChecks, color: "text-muted-foreground" },
-  { to: "/tasks", label: "Tasks", icon: Bell, color: "text-muted-foreground" },
-  { to: "/memory", label: "Memory", icon: Sparkles, color: "text-muted-foreground" },
+  { to: "/work", label: "Requests", icon: ClipboardList, color: "text-muted-foreground" },
+  { to: "/tasks", label: "Tasks", icon: CheckSquare2, color: "text-muted-foreground" },
+  { to: "/memory", label: "Memory", icon: Brain, color: "text-muted-foreground" },
   { to: "/discover", label: "Nearby", icon: MapPin, color: "text-muted-foreground" },
 ] as const;
 const more = [
