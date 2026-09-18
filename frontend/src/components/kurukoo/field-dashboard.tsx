@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import "@/components/kurukoo/field-surface.css";
 import { ArrowRight, Bell, CalendarDays, CheckCircle2, CircleAlert, Clock3, MapPin, MessageCircle, Play, ShieldCheck, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Composer } from "@/components/kurukoo/composer";
