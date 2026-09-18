@@ -221,13 +221,13 @@ body:has(aside[aria-label="Trusted context rail"]) aside[aria-label="OS navigati
 .kurukoo-field > section:first-child h1 { font-size: clamp(36px, 6vw, 40px); line-height: .92; }
 .kurukoo-field > section:first-child h1 span { color: color-mix(in oklab, var(--foreground) 54%, transparent); }
 .kurukoo-field > section:first-child p { font-size: 15px; color: var(--muted-foreground); }
-.kurukoo-field section { border-color: color-mix(in oklab, var(--border) 92%, transparent); border-radius: revert-rule; }
+.kurukoo-field section { border-color: color-mix(in oklab, var(--border) 92%, transparent); border-radius: var(--radius-xl); }
 .kurukoo-field .bg-surface { background: var(--surface); }
 .kurukoo-field .bg-background { background: color-mix(in oklab, var(--surface) 68%, var(--background)); }
 .kurukoo-field h2 { font-size: 22px; }
 .kurukoo-field [class*="uppercase"] { color: var(--primary); letter-spacing: .15em; }
 
-.kurukoo-public-home h1 { font-size: clamp(46px, 7vw, 40px); }
+.kurukoo-public-home h1 { font-size: clamp(36px, 6vw, 40px); }
 .kurukoo-public-home > section:first-child { min-height: 340px; display: grid; place-items: center; }
 
 @media (min-width: 768px) {
@@ -253,7 +253,7 @@ body:has(aside[aria-label="Trusted context rail"]) aside[aria-label="OS navigati
 .field-welcome { position: relative; min-height: 196px; display: flex; align-items: flex-start; justify-content: space-between; overflow: hidden; padding: 10px 6px 0; }
 .field-welcome-copy { position: relative; z-index: 2; }
 .field-kicker { margin: 0 0 16px; color: var(--muted-foreground); font-size: 15px; font-weight: 500; }
-.field-welcome h1 { margin: 0; color: var(--foreground); font-size: clamp(58px, 7vw, 40px); line-height: .42; }
+.field-welcome h1 { margin: 0; color: var(--foreground); font-size: clamp(40px, 7vw, 58px); line-height: .42; }
 .field-subtitle { margin: 18px 0 0; color: var(--muted-foreground); font-size: 19px; }
 .field-welcome-meta { position: relative; z-index: 3; display: flex; align-items: center; gap: 28px; color: var(--muted-foreground); font-size: 12px; }
 .field-weather, .field-date { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
