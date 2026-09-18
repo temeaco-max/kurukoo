@@ -1,0 +1,1 @@
+Implementation branch placeholder. Frontend surface work follows the approved sequence in docs/implementation/kurukoo-frontend-surface-roadmap.md.

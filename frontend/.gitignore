@@ -30,6 +30,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Preserved local copies (git-ignored but kept for reference)
-* copy.*

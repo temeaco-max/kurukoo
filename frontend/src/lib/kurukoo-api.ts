@@ -12,7 +12,7 @@ export type PulseProvider = { id: string; skill: string; name: string; location?
 export type PulseReadiness = { radarDefaultOn: boolean; active: boolean; eligibleToBroadcast: boolean; role: "provider" | "user"; nudge?: string };
 export type CanonicalMemoryFact = { id: number; field: string; value: string; provenance?: string; confidence?: number; sourceConversationId?: string | null; observedAt?: string | null; expiresAt?: string | null };
 export type AuthenticatedAd = { id: number | string; title: string; desc: string; image?: string; disclosure: string; advertiserName: string; destination: string; clickUrl: string; ctaText: string; placement: string };
-export type SponsoredAd = { id: number | string; title: string; image: string; alt: string; destination: string; clickUrl: string; disclosure: string };
+export type SponsoredAd = { id: number | string; title: string; desc?: string; image?: string; alt?: string; disclosure?: string; advertiserName?: string; destination?: string; clickUrl: string; ctaText?: string; placement?: string };
 export type Notification = { id: string | number; title?: string; body?: string; read?: boolean; readAt?: string | null; createdAt?: string; type?: string };
 export type EconomicRequest = { id: string; phone?: string; skill: string; requirements: Record<string, unknown>; status: string; created_at?: string; updated_at?: string; quote?: Record<string, unknown> | null; amount?: number | null; currency?: string | null };
 export type EconomicParticipant = { id?: number | string; role?: string; providerPhone?: string | null; capability?: string | null; status?: string; evidence?: Record<string, unknown> | null; addedAt?: string | null; updatedAt?: string | null };
@@ -25,8 +25,10 @@ function apiUrl(path: string) { return `${API_BASE}${path}`; }
 export function isKurukooApiConfigured() { return Boolean(API_BASE); }
 async function readJson<T>(path: string, init?: RequestInit): Promise<T> { const response = await fetch(apiUrl(path), { credentials: "include", ...init }); const payload = await response.json().catch(() => ({})); if (!response.ok) throw new Error(typeof payload?.error === "string" ? payload.error : `Kurukoo request failed (${response.status})`); return payload as T; }
 export async function fetchAuthenticatedAd(placement: "left-rail" | "context-rail" | "desk-content") { const payload = await readJson<{ campaigns?: AuthenticatedAd[] }>(`/api/advertising/${placement}`); return payload.campaigns?.[0] ?? null; }
+/** Sponsored campaigns rendered by the public chat sidebar and public context rail. */
 export async function fetchSponsoredAds() { const payload = await readJson<{ campaigns?: SponsoredAd[] }>("/api/chat/sponsored"); return Array.isArray(payload.campaigns) ? payload.campaigns : []; }
-export async function fetchTopicsAdSlots() { const payload = await readJson<{ slots?: Record<string, SponsoredAd[]> }>("/api/advertising/topics-slots"); return payload.slots ?? {}; }
+/** All Topics ad placements from the admin campaign system in one request. Unauthenticated callers receive an empty map. */
+export async function fetchTopicsAdSlots() { const payload = await readJson<{ slots?: Record<string, SponsoredAd[]> }>("/api/advertising/topics-slots"); return payload.slots && typeof payload.slots === "object" ? payload.slots : {}; }
 export async function fetchDiscoveryEntities(input?: { lat?: number; lng?: number; radius?: number; layers?: string[]; q?: string }) { const p = new URLSearchParams(); if (input?.lat !== undefined) p.set("lat", String(input.lat)); if (input?.lng !== undefined) p.set("lng", String(input.lng)); p.set("radius", String(input?.radius ?? 5000)); p.set("layers", (input?.layers ?? ["mobile", "stationary", "agents", "emergency", "deals", "events"]).join(",")); if (input?.q) p.set("q", input.q); const payload = await readJson<{ entities?: DiscoveryEntity[] }>(`/api/discover/entities?${p.toString()}`); return Array.isArray(payload.entities) ? payload.entities : []; }
 export async function fetchDiscoveryMap(input?: { lat?: number; lng?: number; radius?: number; layers?: string[] }) { const p = new URLSearchParams(); if (input?.lat !== undefined) p.set("lat", String(input.lat)); if (input?.lng !== undefined) p.set("lng", String(input.lng)); p.set("radius", String(input?.radius ?? 5000)); p.set("layers", (input?.layers ?? ["mobile", "stationary", "agents", "emergency", "deals", "events"]).join(",")); return readJson<{ type: "FeatureCollection"; features?: Array<{ id?: string; type?: string; geometry?: { coordinates?: [number, number] }; properties?: Record<string, unknown> }>; meta?: Record<string, unknown> }>(`/api/discover/map?${p.toString()}`); }
 export async function fetchPublicPulseProviders() { const payload = await readJson<{ providers?: PulseProvider[] }>("/api/pulse/providers"); return Array.isArray(payload.providers) ? payload.providers : []; }
@@ -86,33 +88,3 @@ export async function requestArtistVerification(skill: string, managerName: stri
 export async function bookArtist(skill: string, providerPhone: string, requirements?: Record<string, unknown>) { const payload = await readJson<{ success: boolean; booking?: ArtistBooking }>("/api/orphan-wire-back/artist/book", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ skill, providerPhone, requirements }) }); return payload.success && payload.booking ? payload.booking : null; }
 export async function confirmArtistBooking(bookingId: string) { const payload = await readJson<{ success: boolean; booking?: ArtistBooking }>("/api/orphan-wire-back/artist/confirm-booking", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bookingId }) }); return payload.success && payload.booking ? payload.booking : null; }
 export async function releaseArtistEscrow(bookingId: string) { return readJson<{ success: boolean; message?: string }>("/api/orphan-wire-back/artist/release-escrow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bookingId }) }); }
-
-// ── Secure services: one-time cards + purchase protection (/api/v1) ──
-export type VirtualCard = { id: string; last4: string; brand?: string; status: string; spendLimitMinor: number; currency: string; merchantLock?: string | null; expiresAt: string };
-export type PurchaseProtection = { id: string; cardId?: string; orderRef: string; amountMinor: number; currency?: string; reason: string; status: string; createdAt: string };
-export async function fetchCards() { const payload = await readJson<{ cards?: VirtualCard[] }>("/api/v1/cards"); return { cards: Array.isArray(payload.cards) ? payload.cards : [] }; }
-export async function createCard(input: { spendLimitMinor: number; currency?: string; merchantLock?: string; expiresInHours?: number }) { return readJson<{ success: boolean; card?: VirtualCard }>("/api/v1/cards", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }); }
-export async function freezeCardRemote(id: string) { return readJson<{ success: boolean }>(`/api/v1/cards/${encodeURIComponent(id)}/freeze`, { method: "POST" }); }
-export async function cancelCardRemote(id: string) { return readJson<{ success: boolean }>(`/api/v1/cards/${encodeURIComponent(id)}`, { method: "DELETE" }); }
-export async function fetchProtections() { const payload = await readJson<{ claims?: PurchaseProtection[] }>("/api/v1/protections"); return { claims: Array.isArray(payload.claims) ? payload.claims : [] }; }
-
-// ── Secure services: execution audit timeline (/api/v1) ──
-export type AuditEntry = { id: string; kind: string; title?: string; summary?: string; status?: string; createdAt?: string; [key: string]: unknown };
-export type AuditTimeline = { entries: AuditEntry[] };
-export async function fetchAuditTimeline(limit = 100) { return readJson<{ success: boolean; timeline: AuditTimeline }>(`/api/v1/audit?limit=${limit}`); }
-export async function exportAuditTimeline() { return readJson<{ success: boolean; export: unknown }>("/api/v1/audit/export"); }
-
-// ── Secure services: secure execution sessions (/api/v1) ──
-export type SecureSession = { id: string; status: string; expiresAt?: string; [key: string]: unknown };
-export type ExecutionAction = { id: string; type?: string; status?: string; sessionId?: string; [key: string]: unknown };
-export async function fetchExecutionSessions() { const payload = await readJson<{ sessions?: SecureSession[] }>("/api/v1/execution/sessions"); return { sessions: Array.isArray(payload.sessions) ? payload.sessions : [] }; }
-export async function createExecutionSession(input: { ttlMinutes?: number; metadata?: Record<string, unknown> }) { return readJson<{ success: boolean; session: SecureSession }>("/api/v1/execution/sessions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }); }
-export async function fetchExecutionActions(sessionId: string) { const payload = await readJson<{ actions?: ExecutionAction[] }>(`/api/v1/execution/sessions/${encodeURIComponent(sessionId)}/actions`); return { actions: Array.isArray(payload.actions) ? payload.actions : [] }; }
-export async function queueExecutionAction(sessionId: string, type: string, payload: Record<string, unknown>) { return readJson<{ success: boolean; id: string; status: string }>(`/api/v1/execution/sessions/${encodeURIComponent(sessionId)}/actions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type, payload }) }); }
-export async function stopExecutionSession(sessionId: string) { return readJson<{ success: boolean }>(`/api/v1/execution/sessions/${encodeURIComponent(sessionId)}`, { method: "DELETE" }); }
-
-// ── Secure services: encrypted credentials (/api/v1) ──
-export type SecureCredential = { id: string; label: string; domain?: string | null; credentialType: "password" | "card" | "key" | "note" | string; expiresAt?: string | null; usedAt?: string | null; createdAt?: string; [key: string]: unknown };
-export async function fetchCredentials() { const payload = await readJson<{ credentials?: SecureCredential[] }>("/api/v1/credentials"); return { credentials: Array.isArray(payload.credentials) ? payload.credentials : [] }; }
-export async function storeCredentialRemote(input: { label: string; ciphertext: string; iv: string; salt: string; domain?: string; credentialType?: string; expiresAt?: string }) { return readJson<{ success: boolean; id: string; label: string }>("/api/v1/credentials", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }); }
-export async function deleteCredentialRemote(id: string) { return readJson<{ success: boolean }>(`/api/v1/credentials/${encodeURIComponent(id)}`, { method: "DELETE" }); }

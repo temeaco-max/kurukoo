@@ -69,8 +69,10 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SubscriptionsRouteImport } from './routes/subscriptions'
 import { Route as SurveysRouteImport } from './routes/surveys'
+import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as TopicsRouteImport } from './routes/topics'
 import { Route as TrustRouteImport } from './routes/trust'
+import { Route as UsageRouteImport } from './routes/usage'
 import { Route as UseCasesRouteImport } from './routes/use-cases'
 import { Route as VideosRouteImport } from './routes/videos'
 import { Route as WalletRouteImport } from './routes/wallet'
@@ -80,7 +82,7 @@ import { Route as YouRouteImport } from './routes/you'
 import { Route as AgentsAgentIdRouteImport } from './routes/agents.$agentId'
 import { Route as ArtifactsArtifactIdRouteImport } from './routes/artifacts.$artifactId'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
-import { Route as BlogTheCallThatGetsThingsMovingRouteImport } from './routes/blog/the-call-that-gets-things-moving'
+import { Route as BlogTheCallThatGetsThingsMovingRouteImport } from './routes/blog.the-call-that-gets-things-moving'
 import { Route as EarnTopicRouteImport } from './routes/earn.$topic'
 import { Route as ExploreCommunityRouteImport } from './routes/explore/community'
 import { Route as ExploreEventsRouteImport } from './routes/explore/events'
@@ -414,6 +416,11 @@ const SurveysRoute = SurveysRouteImport.update({
   path: '/surveys',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TasksRoute = TasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TopicsRoute = TopicsRouteImport.update({
   id: '/topics',
   path: '/topics',
@@ -422,6 +429,11 @@ const TopicsRoute = TopicsRouteImport.update({
 const TrustRoute = TrustRouteImport.update({
   id: '/trust',
   path: '/trust',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsageRoute = UsageRouteImport.update({
+  id: '/usage',
+  path: '/usage',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UseCasesRoute = UseCasesRouteImport.update({
@@ -699,8 +711,10 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/subscriptions': typeof SubscriptionsRoute
   '/surveys': typeof SurveysRoute
+  '/tasks': typeof TasksRoute
   '/topics': typeof TopicsRouteWithChildren
   '/trust': typeof TrustRoute
+  '/usage': typeof UsageRoute
   '/use-cases': typeof UseCasesRoute
   '/videos': typeof VideosRouteWithChildren
   '/wallet': typeof WalletRoute
@@ -805,8 +819,10 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/subscriptions': typeof SubscriptionsRoute
   '/surveys': typeof SurveysRoute
+  '/tasks': typeof TasksRoute
   '/topics': typeof TopicsRouteWithChildren
   '/trust': typeof TrustRoute
+  '/usage': typeof UsageRoute
   '/use-cases': typeof UseCasesRoute
   '/videos': typeof VideosRouteWithChildren
   '/wallet': typeof WalletRoute
@@ -911,8 +927,10 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/subscriptions': typeof SubscriptionsRoute
   '/surveys': typeof SurveysRoute
+  '/tasks': typeof TasksRoute
   '/topics': typeof TopicsRouteWithChildren
   '/trust': typeof TrustRoute
+  '/usage': typeof UsageRoute
   '/use-cases': typeof UseCasesRoute
   '/videos': typeof VideosRouteWithChildren
   '/wallet': typeof WalletRoute
@@ -1019,8 +1037,10 @@ export interface FileRouteTypes {
     | '/signup'
     | '/subscriptions'
     | '/surveys'
+    | '/tasks'
     | '/topics'
     | '/trust'
+    | '/usage'
     | '/use-cases'
     | '/videos'
     | '/wallet'
@@ -1125,8 +1145,10 @@ export interface FileRouteTypes {
     | '/signup'
     | '/subscriptions'
     | '/surveys'
+    | '/tasks'
     | '/topics'
     | '/trust'
+    | '/usage'
     | '/use-cases'
     | '/videos'
     | '/wallet'
@@ -1230,8 +1252,10 @@ export interface FileRouteTypes {
     | '/signup'
     | '/subscriptions'
     | '/surveys'
+    | '/tasks'
     | '/topics'
     | '/trust'
+    | '/usage'
     | '/use-cases'
     | '/videos'
     | '/wallet'
@@ -1337,8 +1361,10 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   SubscriptionsRoute: typeof SubscriptionsRoute
   SurveysRoute: typeof SurveysRoute
+  TasksRoute: typeof TasksRoute
   TopicsRoute: typeof TopicsRouteWithChildren
   TrustRoute: typeof TrustRoute
+  UsageRoute: typeof UsageRoute
   UseCasesRoute: typeof UseCasesRoute
   VideosRoute: typeof VideosRouteWithChildren
   WalletRoute: typeof WalletRoute
@@ -1770,6 +1796,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SurveysRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tasks': {
+      id: '/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof TasksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/topics': {
       id: '/topics'
       path: '/topics'
@@ -1782,6 +1815,13 @@ declare module '@tanstack/react-router' {
       path: '/trust'
       fullPath: '/trust'
       preLoaderRoute: typeof TrustRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/usage': {
+      id: '/usage'
+      path: '/usage'
+      fullPath: '/usage'
+      preLoaderRoute: typeof UsageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/use-cases': {
@@ -2321,8 +2361,10 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   SubscriptionsRoute: SubscriptionsRoute,
   SurveysRoute: SurveysRoute,
+  TasksRoute: TasksRoute,
   TopicsRoute: TopicsRouteWithChildren,
   TrustRoute: TrustRoute,
+  UsageRoute: UsageRoute,
   UseCasesRoute: UseCasesRoute,
   VideosRoute: VideosRouteWithChildren,
   WalletRoute: WalletRoute,

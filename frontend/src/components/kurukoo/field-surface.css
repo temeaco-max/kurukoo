@@ -1,0 +1,46 @@
+.field-topics-card,.field-creators-card{margin-top:14px;overflow:hidden;border:1px solid var(--border);border-radius:18px;background:var(--surface);box-shadow:var(--shadow-soft)}
+.field-tabs{display:flex;gap:6px;padding:0 18px 12px;border-bottom:1px solid var(--border)}
+.field-tabs button{border:1px solid var(--border);border-radius:999px;padding:6px 10px;background:transparent;color:var(--muted-foreground);font-size:10.5px;font-weight:600}
+.field-tabs button[aria-selected="true"]{background:var(--accent);color:var(--foreground);border-color:color-mix(in oklab,var(--primary) 18%,var(--border))}
+.field-topic-list{display:grid}
+.field-topic-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;border-bottom:1px solid color-mix(in oklab,var(--border) 72%,transparent)}
+.field-topic-row:last-child{border-bottom:0}
+.field-topic-row:hover{background:var(--elevated)}
+.field-topic-row>span:first-child{display:grid;gap:3px;min-width:0}
+.field-topic-row strong{font-size:12px;font-weight:600;color:var(--foreground)}
+.field-topic-row small{font-size:10.5px;color:var(--muted-foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.field-topic-meta{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;color:var(--muted-foreground);font-size:9.5px}
+.field-video-scroller{display:flex;gap:12px;overflow-x:auto;padding:0 18px 18px;scroll-snap-type:x proximity}
+.field-video-card{display:grid;grid-template-rows:110px auto;flex:0 0 230px;overflow:hidden;border:1px solid var(--border);border-radius:15px;background:var(--background);scroll-snap-align:start}
+.field-video-card:hover{background:var(--elevated)}
+.field-video-thumb{position:relative;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand-tint),var(--elevated));color:var(--primary)}
+.field-video-thumb small{position:absolute;right:8px;bottom:7px;padding:3px 5px;border-radius:5px;background:color-mix(in oklab,var(--foreground) 72%,transparent);color:var(--surface);font-size:8.5px}
+.field-video-copy{display:grid;gap:5px;padding:10px 11px 12px}
+.field-video-copy strong{font-size:11.5px;line-height:1.35;color:var(--foreground)}
+.field-video-copy small{font-size:9.5px;color:var(--muted-foreground)}
+.field-people-list{display:grid}
+.field-person-row{display:flex;align-items:center;gap:10px;padding:10px 18px;border-top:1px solid color-mix(in oklab,var(--border) 72%,transparent)}
+.field-person-row:hover{background:var(--elevated)}
+.field-person-row>span:last-child{display:grid;min-width:0;gap:3px}
+.field-person-row strong{font-size:11px;font-weight:600;color:var(--foreground)}
+.field-person-row small{font-size:9.5px;color:var(--muted-foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:720px){.field-topic-row{align-items:flex-start}.field-topic-meta{display:none}.field-video-card{flex-basis:210px}.field-video-scroller{padding-inline:15px}.field-topics-card,.field-creators-card{border-radius:16px}}
+.field-metric-list{display:grid}
+.field-metric-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-bottom:1px solid color-mix(in oklab,var(--border) 72%,transparent)}
+.field-metric-row:last-child{border-bottom:0}
+.field-metric-row>span:first-child{display:grid;min-width:0;gap:3px}
+.field-metric-row strong{font-size:12px;font-weight:600;color:var(--foreground)}
+.field-metric-row small{font-size:10px;line-height:1.45;color:var(--muted-foreground)}
+.field-metric-value{flex-shrink:0;font-size:16px;font-weight:700;color:var(--foreground)}
+.field-metric-muted{flex-shrink:0;font-size:10.5px;font-weight:600;color:var(--muted-foreground)}
+.field-subhead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px 10px;border-top:1px solid var(--border)}
+.field-subhead .field-eyebrow{margin:0}
+.field-opportunity-list{display:grid}
+.field-opportunity-row{display:flex;align-items:center;gap:10px;padding:11px 18px;border-top:1px solid color-mix(in oklab,var(--border) 72%,transparent)}
+.field-opportunity-row:hover{background:var(--elevated)}
+.field-opportunity-row strong{font-size:11.5px;font-weight:600;color:var(--foreground)}
+.field-opportunity-row small{font-size:9.5px;color:var(--muted-foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.field-opportunity-icon{display:grid;width:30px;height:30px;flex-shrink:0;place-items:center;border-radius:9px;color:var(--primary);background:var(--brand-tint)}
+.field-empty-compact{padding:18px}
+.field-note{padding:10px 18px 14px;border-top:1px solid color-mix(in oklab,var(--border) 72%,transparent);color:var(--muted-foreground);font-size:9.5px;line-height:1.5}
+

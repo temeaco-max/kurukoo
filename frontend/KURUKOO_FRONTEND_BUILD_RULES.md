@@ -4,7 +4,7 @@ These rules are product invariants for the frontend. New surfaces should reuse t
 
 ## Product mental model
 
-- **For You / Home** is the multi-purpose personal operating view. It is not a generic dashboard and not only a request inbox.
+- **Field / For You** is the multi-purpose personal operating view. It is not a generic dashboard and not only a request inbox.
 - **Conversation** is the universal control surface: users can tell or ask Kurukoo what they want done.
 - **Explore** helps people start from a goal; it should lead naturally into Conversation or a canonical action.
 - **Nearby / Discover** exposes useful local people, places, offers and activity with clear evidence/freshness/availability states.
@@ -28,7 +28,7 @@ The network serves eight participation roles. These are roles in one network, no
 7. **Advertisers** — present relevant commercial offers to useful audiences with clear sponsorship disclosure.
 8. **Local agents** — represent and coordinate local needs, places and opportunities.
 
-The canonical role definitions live in `src/lib/kurukoo-personas.ts`. Home/For You uses them for role-aware presentation until a canonical backend profile/role signal is available. Public-shell participation cards derive from the same role registry so the eight-role network story cannot drift from the authenticated experience.
+The canonical role definitions live in `src/lib/kurukoo-personas.ts`. Field uses them for role-aware presentation until a canonical backend profile/role signal is available. Public-shell participation cards derive from the same role registry so the eight-role network story cannot drift from the authenticated experience.
 
 ## UX language
 
@@ -40,9 +40,9 @@ The canonical role definitions live in `src/lib/kurukoo-personas.ts`. Home/For Y
 - Preserve existing demo/preview content where useful, but label it honestly.
 - Avoid multiplying the product into dozens of mini-apps. Use shared task surfaces and canonical flows.
 
-## Home / For You rule
+## Field / For You rule
 
-Home should combine:
+Field should combine:
 
 1. a direct **Tell Kurukoo what needs doing** entry point;
 2. role-aware **For You** cards based on the user's current participation role(s);
@@ -55,7 +55,7 @@ The eight-role network explainer should remain compact. The role cards should be
 
 ## Public-shell Home role layout
 
-On the public Home page (not the authenticated Home/For You workspace), keep the network introduction as the left-hand block at desktop widths, using exactly:
+On the public Home page (not the authenticated Field workspace), keep the network introduction as the left-hand block at desktop widths, using exactly:
 
 **Who Kurukoo serves**
 

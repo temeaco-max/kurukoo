@@ -18,6 +18,8 @@ export type ExploreGoal = {
   id: string;
   label: string;
   prompt: string;
+  /** Plain-language context for the goal, drawn from Kurukoo's canonical category definitions. */
+  description?: string;
   icon: LucideIcon;
   capabilityIds: string[];
 };
@@ -29,7 +31,7 @@ export type ExploreGoalGroup = {
   goals: ExploreGoal[];
 };
 
-export const exploreGoalGroups: ExploreGoalGroup[] = [
+const exploreGoalSeeds: ExploreGoalGroup[] = [
   {
     id: "everyday",
     label: "Everyday",
@@ -101,6 +103,39 @@ export const exploreGoalGroups: ExploreGoalGroup[] = [
     ],
   },
 ];
+
+/**
+ * Category context carried over from Kurukoo's canonical category definitions. These lines
+ * describe what the goal usually involves; they never state availability, price or a provider.
+ */
+const goalDescriptions: Record<string, string> = {
+  food: "Local dishes, fresh meals, catering and food delivery. Availability and pricing are confirmed in the request flow.",
+  errands: "Send packages, run grocery errands, queue at banks or pick up dry cleaning.",
+  delivery: "Dispatch riders, haulage, truck rental and freight coordination.",
+  ride: "Okada, keke or city taxi travel. Availability and fare are confirmed in the request flow.",
+  travel: "Trip planning, accommodation and local excursions. Nothing is shown as booked until it is confirmed.",
+  repair: "Plumbing, electrical work, generators, appliances and related technicians.",
+  cleaning: "Artisans, cleaners and labourers. Provider details are shown only after validation.",
+  "money-circle": "Peer-to-peer savings circles, ajo, contribution clubs and buying pools.",
+  work: "Micro-tasks, short-term assignments and work requests. No earnings or placement outcome is guaranteed.",
+  sell: "A classified listing or local sale request. Items and sellers are not shown as available until confirmed.",
+  business: "Writers, designers, video editors, translators, marketers, web development, social media management and tech support.",
+  health: "Non-emergency needs involving pharmacies, nursing services, prescription delivery or consultations.",
+  education: "Private home tutors for mathematics, science, languages and exam prep, plus school placement advice and professional training.",
+  spiritual: "Spiritual counselling, prayer requests, home blessings and religious guidance.",
+  events: "Event planners, MCs, DJ services, rentals and party coordination.",
+  sports: "Personal trainers, fitness bootcamps, aerobic classes and sports coaching.",
+  connect: "Neighbourhood associations, charity drives, volunteer groups and town hall forums.",
+  emergency: "Urgent local help routed to the appropriate service. Kurukoo is not an emergency-response service.",
+  security: "Security-related providers where the applicable requirements can be confirmed.",
+};
+
+function withGoalDescription(goal: ExploreGoal): ExploreGoal {
+  const description = goalDescriptions[goal.id];
+  return description ? { ...goal, description } : goal;
+}
+
+export const exploreGoalGroups: ExploreGoalGroup[] = exploreGoalSeeds.map((group) => ({ ...group, goals: group.goals.map(withGoalDescription) }));
 
 export const exploreGoalById = Object.fromEntries(
   exploreGoalGroups.flatMap((group) => group.goals.map((goal) => [goal.id, goal])),

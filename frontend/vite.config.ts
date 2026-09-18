@@ -7,23 +7,22 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
+  vite: {
+    server: {
+      allowedHosts: true,
+      proxy: {
+        // Bridge the frontend's /backend/* calls to the canonical backend API.
+        "/backend": {
+          target: process.env.KURUKOO_BACKEND_URL || "http://127.0.0.1:3100",
+          changeOrigin: true,
+          rewrite: (p: string) => p.replace(/^\/backend/, ""),
+        },
+      },
+    },
+  },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
-  },
-  vite: {
-    server: {
-      proxy: {
-        // Local wiring to the canonical Kurukoo backend (npm run dev in the repo root).
-        // The frontend sets VITE_KURUKOO_API_BASE_URL=/backend so all API calls are
-        // same-origin and proxied to the Express backend on port 3000.
-        "/backend": {
-          target: "http://localhost:3000",
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/backend/, ""),
-        },
-      },
-    },
   },
 });

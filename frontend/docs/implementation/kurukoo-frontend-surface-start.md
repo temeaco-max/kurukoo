@@ -1,0 +1,1 @@
+Started frontend implementation from current main. The first production slice is the Work execution story; subsequent slices will deepen Perch, Explore, Agents, Artifacts, Activity, Connect, and Pulse using existing canonical projections and APIs.

@@ -2,6 +2,7 @@ import { getApiBaseUrl } from "@/constants/oauth";
 import * as Auth from "@/lib/_core/auth";
 import type { DiscoverAction, DiscoverItemType } from "@/lib/discover-contract";
 import { MOBILE_PLATFORM_CONTRACTS } from "@/lib/platform-contract";
+import { QUICK_RIDE_API, type ProviderDispatchJob } from "@/lib/quick-ride-contract";
 
 function endpoint(path: string): string {
   return `${getApiBaseUrl()}${path}`;
@@ -69,6 +70,51 @@ export async function removeDiscoverAction(itemType: DiscoverItemType, itemId: s
     method: "DELETE",
     credentials: "include",
     headers: await headers(),
+  });
+  await json(response);
+}
+
+export async function getMyDispatchJobs(input: { includeCompleted?: boolean } = {}): Promise<ProviderDispatchJob[]> {
+  const query = new URLSearchParams();
+  if (input.includeCompleted) query.set("includeCompleted", "true");
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  const response = await fetch(endpoint(`${QUICK_RIDE_API.mine}${suffix}`), { credentials: "include", headers: await headers() });
+  const payload = await json<{ success?: boolean; jobs?: ProviderDispatchJob[] }>(response);
+  return Array.isArray(payload.jobs) ? payload.jobs : [];
+}
+
+export async function acceptDispatchJob(leadId: string): Promise<void> {
+  const response = await fetch(endpoint(QUICK_RIDE_API.accept(leadId)), {
+    method: "POST",
+    credentials: "include",
+    headers: await headers({ "Content-Type": "application/json" }),
+    body: JSON.stringify({}),
+  });
+  await json(response);
+}
+
+export async function markDispatchJobArrived(leadId: string): Promise<void> {
+  const response = await fetch(endpoint(QUICK_RIDE_API.arrived(leadId)), {
+    method: "POST",
+    credentials: "include",
+    headers: await headers({ "Content-Type": "application/json" }),
+    body: JSON.stringify({}),
+  });
+  await json(response);
+}
+
+/** A completion report is a provider claim: a reference and timestamp are required as evidence. */
+export async function reportDispatchJobCompleted(leadId: string, evidence: { reference: string; completedAt: string }): Promise<void> {
+  const response = await fetch(endpoint(QUICK_RIDE_API.complete(leadId)), {
+    method: "POST",
+    credentials: "include",
+    headers: await headers({ "Content-Type": "application/json" }),
+    body: JSON.stringify({
+      evidence: {
+        completion_reference: evidence.reference,
+        completed_at: evidence.completedAt,
+      },
+    }),
   });
   await json(response);
 }

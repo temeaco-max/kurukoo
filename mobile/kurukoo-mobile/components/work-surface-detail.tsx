@@ -5,6 +5,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { router } from "expo-router";
 
 import { ActionButton, ContinuityBand, EvidenceRow, PlatformStateBanner, SectionCard, StatusPill, SurfaceHeader } from "@/components/kurukoo-ui";
+import { DispatchJobsCard } from "@/components/dispatch-jobs-card";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import {
@@ -87,6 +88,7 @@ export function WorkSurfaceDetail({ kind }: { kind: WorkSurfaceKind }) {
   return (
     <ScreenContainer className="px-5 pt-3" edges={["top", "left", "right"]}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {kind === "requests" ? <DispatchJobsCard /> : null}
         <SurfaceHeader eyebrow={item.eyebrow} title={item.title} right={<StatusPill label={`${item.items.length} items`} tone="neutral" />} />
         <Text style={[styles.intro, { color: colors.muted }]}>{item.intro}</Text>
         <PlatformStateBanner

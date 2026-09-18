@@ -23,13 +23,18 @@ function AdCard({ item }: { item?: CommunityAdInventory }) {
   return <div className="flex min-h-[104px] items-center justify-center rounded-[18px] border border-dotted border-border bg-elevated/20 px-4 text-center"><div><p className="text-[8.5px] font-bold uppercase tracking-[0.13em] text-muted-foreground">Advertising</p><p className="mt-1 text-[10px] text-muted-foreground">Place an Ad here</p>{item?.points ? <p className="mt-1 text-[9px] text-muted-foreground">{item.points} Points per placement</p> : null}</div></div>;
 }
 
+/** An admin campaign for this Topics placement. The link and disclosure come from the campaign itself. */
 function SponsoredAdCard({ ad, large = false }: { ad: SponsoredAd; large?: boolean }) {
-  return <a href={ad.clickUrl} target="_blank" rel="noreferrer" className={large ? "flex min-h-[160px] items-center rounded-[18px] border border-dotted border-border bg-elevated/35 px-4 transition-colors hover:bg-elevated/55" : "flex min-h-[104px] items-center rounded-[18px] border border-dotted border-border bg-elevated/35 px-4 transition-colors hover:bg-elevated/55"}>{ad.image ? <img src={ad.image} alt={ad.alt || ad.title} loading="lazy" className="h-14 w-24 rounded-lg object-cover mr-3 shrink-0"/> : null}<div className="min-w-0"><p className="text-[8.5px] font-bold uppercase tracking-[0.13em] text-muted-foreground">{ad.disclosure || "Sponsored"}</p><p className="mt-1 text-[12px] font-semibold">{ad.title}</p><p className="mt-1 text-[10.5px] leading-relaxed text-muted-foreground">{ad.desc || ad.alt}</p></div></a>;
+  return <a href={ad.clickUrl} target="_blank" rel="noreferrer" aria-label={`Sponsored: ${ad.title}`} className={`flex items-center rounded-[18px] border border-dotted border-border bg-elevated/35 px-4 transition-colors hover:bg-elevated/55 ${large ? "min-h-[160px]" : "min-h-[104px]"}`}>
+    {ad.image ? <img src={ad.image} alt={ad.alt || ad.title} loading="lazy" className="mr-3 h-14 w-24 shrink-0 rounded-lg object-cover" /> : null}
+    <div className="min-w-0"><p className="text-[8.5px] font-bold uppercase tracking-[0.13em] text-muted-foreground">{ad.disclosure || "Sponsored"}</p><p className="mt-1 truncate text-[12px] font-semibold">{ad.title}</p>{ad.desc ? <p className="mt-1 line-clamp-2 text-[10.5px] leading-relaxed text-muted-foreground">{ad.desc}</p> : null}</div>
+  </a>;
 }
 
-function TopicsAdSlot({ ad, item, large = false }: { ad?: SponsoredAd; item?: CommunityAdInventory; large?: boolean }) {
-  if (ad) return <SponsoredAdCard ad={ad} large={large}/>;
-  return <AdCard item={item}/>;
+/** Admin campaign when one is booked for the placement, otherwise the community inventory card. */
+function TopicsAdSlot({ ad, item, large = false }: { ad?: SponsoredAd | undefined; item?: CommunityAdInventory | undefined; large?: boolean }) {
+  if (ad) return <SponsoredAdCard ad={ad} large={large} />;
+  return <AdCard item={item} />;
 }
 
 function CategoryDirectory({ categories, activeCategory, activeSubcategory, onCategory, onSubcategory }: { categories: CommunityCategory[]; activeCategory: string; activeSubcategory: string; onCategory: (slug: string) => void; onSubcategory: (slug: string) => void }) {
@@ -110,8 +115,8 @@ function TopicsPage() {
     </section>
 
     <div className="grid gap-3 md:grid-cols-3"><TopicsAdSlot ad={topicsSlots["topics_bottom_1"]?.[0]} item={inventory.find((item) => item.slot === "bottom-1")}/><TopicsAdSlot ad={topicsSlots["topics_bottom_2"]?.[0]} item={inventory.find((item) => item.slot === "bottom-2")}/><TopicsAdSlot ad={topicsSlots["topics_bottom_3"]?.[0]} item={inventory.find((item) => item.slot === "bottom-3")}/></div>
-    <TopicsAdSlot ad={topicsSlots["topics_bottom_large"]?.[0]} item={inventory.find((item) => item.slot === "bottom-large")} large/>
     <section className="rounded-[22px] border border-border bg-elevated/35 p-5"><div className="flex items-start gap-3"><MessageCircle className="mt-0.5 size-4 shrink-0 text-primary"/><div><p className="text-[13px] font-semibold">Use a Topic when context will help.</p><p className="mt-1.5 max-w-2xl text-[11.5px] leading-relaxed text-muted-foreground">A discussion can help you understand a situation, compare experiences or decide what to do next. When you are ready to act, bring the context into Kurukoo.</p><Link to="/explore" className="mt-4 inline-flex items-center gap-1.5 text-[11.5px] font-medium">Explore what you can do <ArrowRight className="size-3.5"/></Link></div></div></section>
     <FAQSection title="Topics questions" items={[{ question: "What is a Topic?", answer: "A Topic is a shared community conversation for questions, experiences, useful local context and discussion." }, { question: "Who controls categories?", answer: "Kurukoo controls the category and subcategory structure so Topics remain organised and useful." }, { question: "Can advertising appear in Topics?", answer: "Kurukoo can enable or disable advertising by category and subcategory. Advertisers use Points for enabled placements and advertising is clearly labelled." }, { question: "Can AI contribute to Topics?", answer: "Yes. Kurukoo AI and named AI agents can become contributors where appropriate, with their AI identity clearly shown to users." }]} />
+    <TopicsAdSlot ad={topicsSlots["topics_bottom_large"]?.[0]} item={inventory.find((item) => item.slot === "bottom-large")} large/>
   </div>;
 }

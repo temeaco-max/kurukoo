@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { PageHeader, EmptyState } from "@/components/app-shell";
 import { Panel, SectionHeader } from "@/components/kurukoo/ui";
 import { Action } from "@/components/kurukoo/primitives";
-import { fetchCards, createCard, freezeCardRemote, cancelCardRemote, fetchProtections, type VirtualCard, type PurchaseProtection } from "@/lib/kurukoo-api";
+import { fetchCards, createCard, freezeCard, cancelCard, fetchProtectionClaims, type VirtualCard, type PurchaseProtection } from "@/lib/trust-api";
 
 export const Route = createFileRoute("/cards")({
   head: () => ({ meta: [{ title: "One-time cards — Kurukoo" }, { name: "description", content: "Virtual cards with single-use tokens and purchase protection." }] }),
@@ -22,7 +22,7 @@ function CardsPage() {
 
   async function load() {
     setLoading(true);
-    try { const [c, p] = await Promise.all([fetchCards(), fetchProtections()]); setCards(c.cards); setClaims(p.claims); setError(null); }
+    try { const [c, p] = await Promise.all([fetchCards(), fetchProtectionClaims()]); setCards(c.cards); setClaims(p.claims); setError(null); }
     catch (e) { setError(e instanceof Error ? e.message : "Could not load cards"); }
     finally { setLoading(false); }
   }
@@ -68,8 +68,8 @@ function CardsPage() {
               <p className="mt-3 text-[20px] font-semibold tracking-tight">£{(card.spendLimitMinor / 100).toFixed(2)}</p>
               <p className="text-[11px] text-muted-foreground">{card.currency}{card.merchantLock ? ` · locked to ${card.merchantLock}` : " · any merchant"} · expires {new Date(card.expiresAt).toLocaleDateString()}</p>
               <div className="mt-3 flex gap-2">
-                {card.status === "active" && <Action onClick={() => freezeCardRemote(card.id).then(() => load())}><Snowflake className="size-3" /> Freeze</Action>}
-                <Action onClick={() => { if (confirm("Cancel this card?")) cancelCardRemote(card.id).then(() => load()); }}>Cancel</Action>
+                {card.status === "active" && <Action onClick={() => freezeCard(card.id).then(() => load())}><Snowflake className="size-3" /> Freeze</Action>}
+                <Action onClick={() => { if (confirm("Cancel this card?")) cancelCard(card.id).then(() => load()); }}>Cancel</Action>
               </div>
             </Panel>
           ))}

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { PageHeader, EmptyState } from "@/components/app-shell";
 import { Panel, SectionHeader } from "@/components/kurukoo/ui";
 import { Action } from "@/components/kurukoo/primitives";
-import { fetchExecutionSessions, createExecutionSession, fetchExecutionActions, queueExecutionAction, stopExecutionSession, type SecureSession, type ExecutionAction } from "@/lib/kurukoo-api";
+import { fetchExecutionSessions, createExecutionSession, fetchExecutionActions, queueExecutionAction, stopExecutionSession, type SecureSession, type ExecutionAction } from "@/lib/trust-api";
 
 export const Route = createFileRoute("/secure-execution")({
   head: () => ({ meta: [{ title: "Secure execution — Kurukoo" }, { name: "description", content: "Isolated browser sessions for tasks that need a real browser." }] }),

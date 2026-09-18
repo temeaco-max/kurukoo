@@ -40,7 +40,7 @@ export function HomePage() {
   const attention = active.filter((item) => item.stage === "needs_you").slice(0, 3);
   const moving = active.filter((item) => item.stage !== "needs_you").slice(0, 3);
 
-  return <div className="min-w-0 space-y-8 pb-8">
+  return <div className="kurukoo-public-home min-w-0 space-y-8 pb-8">
     <section aria-labelledby="home-hero-title" className="relative overflow-hidden pt-5 md:pt-9">
       <HomeHorizonIllustration />
       <div className="relative z-10 mx-auto max-w-4xl text-center">

@@ -3,7 +3,7 @@ import { Download, FileText, Shield, Zap, Target, CheckCircle2 } from "lucide-re
 import { useEffect, useState } from "react";
 import { PageHeader, EmptyState } from "@/components/app-shell";
 import { Panel, SectionHeader } from "@/components/kurukoo/ui";
-import { fetchAuditTimeline, exportAuditTimeline, type AuditEntry, type AuditTimeline } from "@/lib/kurukoo-api";
+import { fetchAuditTimeline, exportTrustAudit, type AuditEntry, type AuditTimeline } from "@/lib/trust-api";
 import { useKurukoo } from "@/lib/kurukoo-store";
 
 export const Route = createFileRoute("/audit")({
@@ -42,8 +42,7 @@ function AuditPage() {
 
   async function handleExport() {
     try {
-      const data = await exportAuditTimeline();
-      const blob = new Blob([JSON.stringify(data.export, null, 2)], { type: "application/json" });
+      const blob = await exportTrustAudit();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url; a.download = "kurukoo-audit-export.json"; a.click();

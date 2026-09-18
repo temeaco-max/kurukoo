@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Compass,
-  LayoutDashboard,
   MapPin,
   MessageSquare,
   Sparkles,
@@ -23,9 +22,9 @@ import { fetchPulseReadiness, type PulseReadiness } from "@/lib/kurukoo-api";
 type Props = { open: boolean; onOpenChange: (open: boolean) => void };
 type Icon = typeof Sparkles;
 const shortcuts: Array<{ label: string; to: string; icon: Icon }> = [
-  { label: "Your Perch", to: "/", icon: LayoutDashboard },
-  { label: "Discover", to: "/discover", icon: MapPin },
-  { label: "Nearby Radar", to: "/discover", icon: Zap },
+  { label: "For You", to: "/", icon: Sparkles },
+  { label: "Nearby Radar", to: "/discover", icon: MapPin },
+  { label: "Availability", to: "/discover", icon: Zap },
   { label: "Current work", to: "/work", icon: Briefcase },
   { label: "Memory", to: "/memory", icon: Brain },
   { label: "Attention", to: "/activity", icon: Bell },
@@ -135,7 +134,7 @@ export function TrustedContextRail({ open, onOpenChange }: Props) {
   const openContent = (
     <>
       <Section title="Trusted context" icon={Brain} to="/memory">
-        <Row icon={Sparkles} title="For You" detail="Personal view" to="/" />
+        <Row icon={Sparkles} title="For You" detail="Personal operating view" to="/" />
         <Row
           icon={Briefcase}
           title="Current work"
@@ -149,7 +148,7 @@ export function TrustedContextRail({ open, onOpenChange }: Props) {
           to="/memory"
         />
       </Section>
-      <Section title="Discover" icon={MapPin} to="/discover">
+      <Section title="Nearby Radar" icon={MapPin} to="/discover">
         <Row
           icon={MapPin}
           title="Nearby"

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { PageHeader, EmptyState } from "@/components/app-shell";
 import { Panel } from "@/components/kurukoo/ui";
 import { Action } from "@/components/kurukoo/primitives";
-import { fetchCredentials, storeCredentialRemote, deleteCredentialRemote, type SecureCredential } from "@/lib/kurukoo-api";
+import { fetchCredentials, storeCredential, deleteCredential, type StoredCredential } from "@/lib/trust-api";
 import { encryptSecret } from "@/lib/crypto-client";
 
 export const Route = createFileRoute("/credentials")({
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/credentials")({
 });
 
 function CredentialsPage() {
-  const [creds, setCreds] = useState<SecureCredential[]>([]);
+  const [creds, setCreds] = useState<StoredCredential[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -21,7 +21,7 @@ function CredentialsPage() {
   const [domain, setDomain] = useState("");
   const [passphrase, setPassphrase] = useState("");
   const [secret, setSecret] = useState("");
-  const [credentialType, setCredentialType] = useState<SecureCredential['credentialType']>('password');
+  const [credentialType, setCredentialType] = useState<StoredCredential["credentialType"]>('password');
 
   async function load() {
     setLoading(true);
@@ -63,7 +63,7 @@ function CredentialsPage() {
           <p className="text-[12px] text-muted-foreground">Your secret is encrypted in your browser with AES-256-GCM + PBKDF2 before it reaches Kurukoo's servers. Kurukoo never sees your passphrase or the plain text.</p>
           <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label (e.g. Gmail)" className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13px] outline-none" />
           <input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="Domain (optional)" className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13px] outline-none" />
-          <select value={credentialType} onChange={(e) => setCredentialType(e.target.value as SecureCredential['credentialType'])} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13px] outline-none">
+          <select value={credentialType} onChange={(e) => setCredentialType(e.target.value as StoredCredential["credentialType"])} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13px] outline-none">
             <option value="password">Password</option><option value="api_key">API Key</option><option value="token">Token</option><option value="note">Secure Note</option><option value="other">Other</option>
           </select>
           <input type="password" value={passphrase} onChange={(e) => setPassphrase(e.target.value)} placeholder="Encryption passphrase (never stored)" className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13px] outline-none" />

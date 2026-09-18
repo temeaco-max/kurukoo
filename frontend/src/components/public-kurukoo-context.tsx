@@ -36,7 +36,11 @@ function PublicRailAd() {
     return () => { cancelled = true; };
   }, []);
   if (!ad) return null;
-  return <a href={ad.clickUrl} data-ad-id={ad.id} rel="nofollow" aria-label="Sponsored promotion" className="sidebar-sponsored-card"><img src={ad.image} alt={ad.alt || ad.title} loading="lazy"/><span className="sidebar-sponsored-tag">{ad.disclosure || "Sponsored"}</span></a>;
+  return <a href={ad.clickUrl} rel="nofollow" aria-label="Sponsored promotion" className="relative block overflow-hidden rounded-2xl border border-border bg-surface">
+    {ad.image ? <img src={ad.image} alt={ad.alt || ad.title} loading="lazy" className="block h-[92px] w-full object-cover" /> : null}
+    <span className="absolute left-2 top-2 rounded-full border border-white/30 bg-black/70 px-2 py-1 text-[9px] font-medium text-white backdrop-blur">{ad.disclosure || "Sponsored"}</span>
+    {ad.image ? null : <p className="px-3 py-3 text-[11.5px] font-semibold">{ad.title}</p>}
+  </a>;
 }
 
 function PublicAgentAdvert() {

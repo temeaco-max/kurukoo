@@ -46,6 +46,19 @@
 - [x] Marketplace, service/product transaction and processing-fee path surfaced without hardcoding unverified rates.
 - [x] Partner, referral and affiliate value path surfaced.
 
+## Execution Network convergence
+
+Kurukoo is now treated in the frontend as **the execution network for people and AI**, not merely a collection of assistant pages.
+
+- [x] Canonical `ASK → DECIDE → DONE` interaction model.
+- [x] Frontend adapter for the canonical `/api/execution-network` contract.
+- [x] 39-pillar execution-network contract available for testing and readiness inspection.
+- [ ] Replace illustrative execution cards with live request/provider/offer/evidence data as the corresponding backend activation becomes available.
+- [ ] Make Work the visible continuity surface for request → execution → evidence → outcome.
+- [ ] Surface external activation truth explicitly instead of implying that repository readiness means live fulfilment.
+- [ ] Add provider-side execution controls using the same canonical request/execution objects.
+- [ ] Add cross-agent entry points using the same canonical capability contract.
+
 ## Frontend work still worth implementing
 
 ### Real data and actions
@@ -96,5 +109,7 @@
 The frontend should remain honest about connection state. Illustrative content should be visibly labelled, unavailable actions should say “Coming soon” or “Not connected yet”, and the UI should not claim that a provider, payment, message, call or integration is live when it is not.
 
 The existing Kurukoo bridge uses the `/api/v1/*` contract for the frontend-facing integration layer. The frontend should continue reusing that bridge rather than introducing a second API contract.
+
+The Execution Network contract is intentionally exposed through a small read-only adapter; it does not create a second API authority or execution engine.
 
 The demo store remains useful for shaping the interface, but production behavior should replace it with real API reads/writes when each service is connected.
