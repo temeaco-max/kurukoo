@@ -1,4 +1,5 @@
-.field-topics-card,.field-creators-card{margin-top:14px;overflow:hidden;border:1px solid var(--border);border-radius:18px;background:var(--surface);box-shadow:var(--shadow-soft)}
+.field-topics-card,.field-earnings-card,.field-creators-card{display:block;position:relative;min-width:0;width:100%;overflow:hidden;border:1px solid var(--border);border-radius:18px;background:var(--surface);box-shadow:var(--shadow-soft)}
+.field-topics-card,.field-creators-card{margin-top:14px}
 .field-tabs{display:flex;gap:6px;padding:0 18px 12px;border-bottom:1px solid var(--border)}
 .field-tabs button{border:1px solid var(--border);border-radius:999px;padding:6px 10px;background:transparent;color:var(--muted-foreground);font-size:10.5px;font-weight:600}
 .field-tabs button[aria-selected="true"]{background:var(--accent);color:var(--foreground);border-color:color-mix(in oklab,var(--primary) 18%,var(--border))}
@@ -25,6 +26,9 @@
 .field-person-row strong{font-size:11px;font-weight:600;color:var(--foreground)}
 .field-person-row small{font-size:9.5px;color:var(--muted-foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:720px){.field-topic-row{align-items:flex-start}.field-topic-meta{display:none}.field-video-card{flex-basis:210px}.field-video-scroller{padding-inline:15px}.field-topics-card,.field-creators-card{border-radius:16px}}
+.field-earnings-card{margin-top:0}
+.field-earnings-card .field-card-heading{min-height:76px}
+.field-earnings-card .field-metric-list{display:grid}
 .field-metric-list{display:grid}
 .field-metric-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-bottom:1px solid color-mix(in oklab,var(--border) 72%,transparent)}
 .field-metric-row:last-child{border-bottom:0}
@@ -44,3 +48,5 @@
 .field-empty-compact{padding:18px}
 .field-note{padding:10px 18px 14px;border-top:1px solid color-mix(in oklab,var(--border) 72%,transparent);color:var(--muted-foreground);font-size:9.5px;line-height:1.5}
 
+
+.field-topics-card .field-card-heading,.field-earnings-card .field-card-heading,.field-creators-card .field-card-heading{min-width:0}
