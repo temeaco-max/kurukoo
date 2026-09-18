@@ -11,7 +11,7 @@ import { assertIdentityAllows } from '../services/progressiveIdentityService.js'
 const router=Router();
 const participantRole=(session:{customerPhone:string;providerPhone:string},phone:string)=>session.customerPhone===phone?'customer':session.providerPhone===phone?'provider':null;
 const messageClosed=(state:string)=>new Set(['completed','ended','failed']).has(state);
-const providerRoles=new Set<string>(['service_provider','seller','delivery_provider','provider']);
+const providerRoles=new Set<string>(['service_provider','seller','delivery_provider','provider','agent']);
 const providerStatuses=new Set<EconomicParticipantStatus>(['invited','offered','selected','confirmed','handover_pending','handed_over','collected','in_progress','completion_reported','delivered','declined','withdrawn']);
 function parseJson(value:unknown,fallback:any={}){if(value&&typeof value==='object')return value;if(typeof value!=='string'||!value.trim())return fallback;try{return JSON.parse(value)}catch{return fallback}}
 async function requireProvider(phone:string){const gate=await assertIdentityAllows(phone,'provider_action');return gate.allowed?gate:null}

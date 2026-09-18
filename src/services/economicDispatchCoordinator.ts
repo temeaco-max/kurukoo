@@ -9,6 +9,8 @@ import { chargeProviderLead } from './agentNetworkCommerce.js';
 import { sendFcmPush } from './pushNotifications.js';
 import { createProviderCommunicationSession, updateProviderCommunicationState } from './providerCommunicationService.js';
 import { getFulfilmentForEconomicRequest, syncCanonicalFulfilmentForEconomicRequest, transitionFulfilment } from './canonicalFulfilmentService.js';
+import { getFirebaseFcmReadiness } from './firebaseCloudMessaging.js';
+import { getAgentRepresentation } from './agentRepresentationService.js';
 
 export type DispatchLeadStatus = 'offered' | 'accepting' | 'accepted' | 'arrived' | 'completion_reported' | 'completed' | 'declined' | 'expired' | 'cancelled';
 
@@ -81,6 +83,20 @@ async function ensureSchema(): Promise<void> {
   }
   db.run(`CREATE INDEX IF NOT EXISTS idx_dispatch_lead_request_status ON economic_dispatch_leads(request_id,status)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_dispatch_lead_provider_active ON economic_dispatch_leads(provider_phone,status)`);
+  db.run(`CREATE TABLE IF NOT EXISTS agent_dispatch_executions (
+    id TEXT PRIMARY KEY,
+    agent_id TEXT NOT NULL,
+    lead_id TEXT NOT NULL,
+    request_id TEXT NOT NULL,
+    owner_phone TEXT,
+    delegation_id TEXT,
+    status TEXT NOT NULL DEFAULT 'accepted',
+    last_output TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_agent_dispatch_agent_status ON agent_dispatch_executions(agent_id,status)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_agent_dispatch_lead ON agent_dispatch_executions(lead_id)`);
   saveDb();
 }
 
@@ -106,7 +122,7 @@ function mapSkillCandidates(skill: string, vehicleType?: string): string[] {
 async function activeProviderPhones(requestId: string): Promise<Set<string>> {
   const participants = await getEconomicParticipants(requestId);
   return new Set(participants
-    .filter((participant: EconomicParticipant) => ['delivery_provider', 'service_provider'].includes(participant.role)
+    .filter((participant: EconomicParticipant) => ['delivery_provider', 'service_provider', 'agent'].includes(participant.role)
       && ['invited', 'offered', 'selected', 'handover_pending', 'handed_over', 'collected', 'in_progress', 'completion_reported', 'confirmed'].includes(participant.status))
     .map((participant) => participant.providerPhone));
 }
@@ -118,9 +134,115 @@ async function candidateProviders(input: { skill: string; vehicleType?: string; 
     const result = await find_worker({ skill: candidateSkill, location: input.location, latitude: input.latitude, longitude: input.longitude, ownerPhone: input.ownerPhone, max: input.max });
     for (const provider of result.providers) if (!active.has(provider.phone)) merged.set(provider.phone, provider);
   }
+  for (const agent of await candidateAIAgents({ skill: input.skill })) {
+    if (!active.has(agent.phone)) merged.set(agent.phone, agent);
+  }
   return Array.from(merged.values()).slice(0, input.max);
 }
 
+/**
+ * AI agents are providers, not a parallel workforce. A registered, active AI
+ * agent appears in the same candidate pool as human providers, restricted to
+ * request skills that are genuinely AI-fulfillable. The allowlist is explicit:
+ * anything not listed here (rides, repairs, physical work) can never surface
+ * an AI agent, by construction rather than by convention.
+ */
+export const AI_AGENT_ELIGIBLE_REQUEST_SKILLS: Record<string, string[]> = {
+  customer_service: ['customer_service', 'support_triage', 'quote_preparation'],
+};
+
+async function candidateAIAgents(input: { skill: string }): Promise<ProviderMatch[]> {
+  const requested = String(input.skill || '').trim().toLowerCase();
+  const eligibleTags = AI_AGENT_ELIGIBLE_REQUEST_SKILLS[requested];
+  if (!eligibleTags || !eligibleTags.length) return [];
+  const db = await getDb();
+  let agentTable = false;
+  try {
+    agentTable = (db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='ai_agents'")[0]?.values?.length || 0) > 0;
+  } catch {
+    agentTable = false;
+  }
+  if (!agentTable) return [];
+  const rows = db.exec(`SELECT a.id, a.skills, COALESCE(m.name, a.name) AS name FROM ai_agents a LEFT JOIN memory_profiles m ON m.phone = a.id WHERE a.status='active'`);
+  const matches: ProviderMatch[] = [];
+  for (const row of rows[0]?.values || []) {
+    const values = row as unknown[];
+    const agentId = String(values[0] || '');
+    let tags: string[] = [];
+    try {
+      const parsed: unknown = JSON.parse(String(values[1] || '[]'));
+      tags = Array.isArray(parsed) ? parsed.map((tag) => String(tag || '').trim().toLowerCase()).filter(Boolean) : [];
+    } catch {
+      tags = [];
+    }
+    const matchedTag = eligibleTags.find((tag) => tags.includes(tag));
+    if (!matchedTag) continue;
+    matches.push({
+      phone: agentId,
+      name: String(values[2] || 'Kurukoo agent'),
+      business_name: undefined,
+      skill: matchedTag,
+      rating: 5,
+      jobs_completed: 0,
+      hourly_rate: 0,
+      operation_mode: 'stationary',
+      service_radius_km: 0,
+      verified: true,
+      provider_type: 'software_service',
+      live_now: true,
+    });
+  }
+  return matches;
+}
+
+async function recordAgentDispatchExecution(input: { agentId: string; leadId: string; requestId: string; ownerPhone: string | null; delegationId: string | null; status: 'accepted' | 'arrived' | 'completion_reported' }): Promise<void> {
+  await ensureSchema();
+  const db = await getDb();
+  db.run(
+    `INSERT INTO agent_dispatch_executions (id,agent_id,lead_id,request_id,owner_phone,delegation_id,status,updated_at)
+     VALUES (?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+     ON CONFLICT(id) DO UPDATE SET status=excluded.status, updated_at=CURRENT_TIMESTAMP`,
+    [`adx_${input.leadId}`, input.agentId, input.leadId, input.requestId, input.ownerPhone, input.delegationId, input.status],
+  );
+  saveDb();
+}
+
+async function activeAgentExecutionCount(agentId: string): Promise<number> {
+  await ensureSchema();
+  const db = await getDb();
+  const rows = db.exec(
+    `SELECT COUNT(*) FROM agent_dispatch_executions WHERE agent_id=? AND status IN ('accepted','arrived','completion_reported')`,
+    [String(agentId)],
+  );
+  return Number(rows[0]?.values?.[0]?.[0] || 0);
+}
+
+async function agentQuotaAvailable(agentId: string): Promise<{ ok: boolean; reason?: string }> {
+  const db = await getDb();
+  let hasQuotaColumns = false;
+  try {
+    const columns = db.exec('PRAGMA table_info(ai_agents)')[0]?.values?.map((row: unknown[]) => String((row as unknown[])[1] || '')) || [];
+    hasQuotaColumns = columns.includes('concurrency_limit') && columns.includes('token_quota_daily');
+  } catch {
+    hasQuotaColumns = false;
+  }
+  if (!hasQuotaColumns) return { ok: true };
+  const rows = db.exec(`SELECT status, concurrency_limit, token_quota_daily, tokens_used_today FROM ai_agents WHERE id=? LIMIT 1`, [String(agentId)]);
+  const values = rows[0]?.values?.[0] as unknown[] | undefined;
+  if (!values || String(values[0] || '') !== 'active') return { ok: false, reason: 'This AI agent is not currently active.' };
+  const limit = Number(values[1] || 0);
+  const active = await activeAgentExecutionCount(agentId);
+  if (limit > 0 && active >= limit) return { ok: false, reason: 'This AI agent is at its concurrency limit right now.' };
+  const quota = Number(values[2] || 0);
+  const used = Number(values[3] || 0);
+  if (quota > 0 && used >= quota) return { ok: false, reason: 'This AI agent has reached its daily token quota.' };
+  return { ok: true };
+}
+
+async function agentBusinessOwner(agentId: string): Promise<{ ownerPhone: string | null; delegationId: string | null }> {
+  const delegation = await getAgentRepresentation(String(agentId));
+  return delegation.isDelegated && delegation.ownerPhone ? { ownerPhone: delegation.ownerPhone, delegationId: null } : { ownerPhone: null, delegationId: null };
+}
 async function transitionLinkedFulfilment(request: { id: string; phone: string }, status: 'searching' | 'offers_ready' | 'in_fulfillment' | 'fulfilled' | 'completed'): Promise<void> {
   const fulfilment = await getFulfilmentForEconomicRequest(request.phone, request.id);
   if (!fulfilment || ['completed', 'cancelled', 'failed'].includes(fulfilment.status)) return;
@@ -163,7 +285,7 @@ function normalizeCompletionEvidence(value: unknown): Record<string, unknown> {
   };
 }
 
-export async function broadcastDispatch(input: { requestId: string; ownerPhone: string; skill: string; vehicleType?: string; location?: string; latitude?: number; longitude?: number; maxProviders?: number }): Promise<{ requestId: string; offers: DispatchLead[]; providers: ProviderMatch[] }> {
+export async function broadcastDispatch(input: { requestId: string; ownerPhone: string; skill: string; vehicleType?: string; location?: string; latitude?: number; longitude?: number; maxProviders?: number }): Promise<{ requestId: string; offers: DispatchLead[]; providers: ProviderMatch[]; notifications: BroadcastNotificationSummary }> {
   await ensureSchema();
   const request = await getEconomicRequest(input.requestId);
   if (!request) throw new Error('Economic request not found');
@@ -210,7 +332,36 @@ export async function broadcastDispatch(input: { requestId: string; ownerPhone: 
   await updateEconomicRequestStatus(input.requestId, 'awaiting_match');
   await transitionLinkedFulfilment(request, 'searching');
   saveDb();
-  return { requestId: input.requestId, offers, providers: candidates };
+  return { requestId: input.requestId, offers, providers: candidates, notifications: describeBroadcastNotifications(offers.map((offer) => offer.providerPhone)) };
+}
+
+export interface BroadcastNotificationSummary {
+  pushConfigured: boolean;
+  providersOffered: number;
+  note: string;
+}
+
+/**
+ * Honest delivery outlook for a broadcast. Offers (and queued internal
+ * notifications) are always created; a push is only attempted later by the
+ * FCM queue drain, per registered device token, when FCM is configured.
+ * Absence of push delivery never implies absence of the offer: providers
+ * always see the job in their app. Per-token attempt/retry/dead-letter
+ * detail belongs to the queue drain, not the broadcast call.
+ */
+export function describeBroadcastNotifications(providerPhones: string[]): BroadcastNotificationSummary {
+  const readiness = getFirebaseFcmReadiness();
+  const providersOffered = new Set(providerPhones.map((phone) => String(phone || '').trim()).filter(Boolean)).size;
+  if (!providersOffered) {
+    return { pushConfigured: readiness.configured, providersOffered: 0, note: 'No providers were offered this request.' };
+  }
+  return {
+    pushConfigured: readiness.configured,
+    providersOffered,
+    note: readiness.configured
+      ? `${providersOffered} provider(s) offered. Push is attempted by the notification queue where a device token is registered; others see the job in their app.`
+      : `Push delivery is not configured. ${providersOffered} provider(s) offered and can see the job in their app.`,
+  };
 }
 
 export async function acceptDispatchLead(input: { leadId: string; providerPhone: string }): Promise<DispatchLead> {
@@ -225,6 +376,16 @@ export async function acceptDispatchLead(input: { leadId: string; providerPhone:
   const request = await getEconomicRequest(lead.requestId);
   if (!request) throw new Error('Economic request not found.');
 
+  const agentProvider = await isAgentProvider(input.providerPhone);
+  if (agentProvider) {
+    const quota = await agentQuotaAvailable(input.providerPhone);
+    if (!quota.ok) {
+      db.run("UPDATE economic_dispatch_leads SET status='offered' WHERE id=?", [input.leadId]);
+      saveDb();
+      throw new Error(quota.reason || 'This AI agent cannot take on more work right now.');
+    }
+  }
+
   const leadCharge = await chargeProviderLead({ providerPhone: input.providerPhone, category: String(request.category || ''), skill: String(request.skill || ''), requestId: String(request.id) });
   if (!leadCharge.success) {
     db.run("UPDATE economic_dispatch_leads SET status='declined' WHERE id=?", [input.leadId]);
@@ -232,27 +393,42 @@ export async function acceptDispatchLead(input: { leadId: string; providerPhone:
     throw new Error('Provider lead requires the configured Points balance before acceptance.');
   }
 
+  const ownership = agentProvider ? await agentBusinessOwner(input.providerPhone) : { ownerPhone: null, delegationId: null };
   const communication = await createProviderCommunicationSession({ customerPhone: String(request.phone), providerPhone: input.providerPhone, economicRequestId: String(request.id), mode: 'webrtc_tracking' });
   db.run('UPDATE skills SET is_available=0 WHERE phone=? AND skill=?', [input.providerPhone, lead.skill]);
   await addEconomicParticipant({
     requestId: String(request.id),
     ownerPhone: String(request.phone),
-    role: 'service_provider',
+    role: agentProvider ? 'agent' : 'service_provider',
     providerPhone: input.providerPhone,
     capability: String(request.skill),
     status: 'selected',
-    evidence: {
-      dispatch_lead_id: input.leadId,
-      matched_skill: lead.skill,
-      lead_points: leadCharge.chargedPoints,
-      selection: 'provider_accepted_dispatch_lead',
-      verification_state: 'verified_provider_selected',
-    },
+    evidence: agentProvider
+      ? {
+        dispatch_lead_id: input.leadId,
+        matched_skill: lead.skill,
+        lead_points: leadCharge.chargedPoints,
+        selection: 'agent_accepted_dispatch_lead',
+        verification_state: 'registered_agent_selected',
+        provider_kind: 'ai_agent',
+        business_owner_phone: ownership.ownerPhone,
+        delegation_id: ownership.delegationId,
+      }
+      : {
+        dispatch_lead_id: input.leadId,
+        matched_skill: lead.skill,
+        lead_points: leadCharge.chargedPoints,
+        selection: 'provider_accepted_dispatch_lead',
+        verification_state: 'verified_provider_selected',
+      },
   });
   db.run("UPDATE economic_dispatch_leads SET status='accepted',lead_points=?,communication_session_id=?,accepted_at=CURRENT_TIMESTAMP WHERE id=?", [leadCharge.chargedPoints, communication.id, input.leadId]);
   await updateEconomicRequestStatus(String(request.id), 'matched', { providerId: input.providerPhone });
   await transitionLinkedFulfilment(request, 'offers_ready');
-  await sendFcmPush(input.providerPhone, 'Dispatch accepted', 'You accepted the Kurukoo request. Open the provider session to communicate and record truthful progress.', `/app/call?session=${encodeURIComponent(communication.id)}&lead=${encodeURIComponent(input.leadId)}`, {
+  if (agentProvider) {
+    await recordAgentDispatchExecution({ agentId: input.providerPhone, leadId: input.leadId, requestId: String(request.id), ownerPhone: ownership.ownerPhone, delegationId: ownership.delegationId, status: 'accepted' });
+  }
+  await sendFcmPush(input.providerPhone, 'Dispatch accepted', agentProvider ? 'Your AI agent accepted the Kurukoo request. Open the provider session to communicate and record truthful progress.' : 'You accepted the Kurukoo request. Open the provider session to communicate and record truthful progress.', `/app/call?session=${encodeURIComponent(communication.id)}&lead=${encodeURIComponent(input.leadId)}`, {
     conversationId: String(request.id),
     availableAction: 'open_provider_session',
     canonicalAction: 'provider.communication.open',
@@ -262,7 +438,7 @@ export async function acceptDispatchLead(input: { leadId: string; providerPhone:
     idempotencyKey: `dispatch-provider-session:${input.leadId}`,
     surface: 'call',
   }).catch(() => false);
-  await sendFcmPush(String(request.phone), 'Provider accepted', 'A verified provider accepted your request. This records provider interest; route, timing, price, and completion still require the relevant confirmation and evidence.', `/app/requests?request=${encodeURIComponent(String(request.id))}&lead=${encodeURIComponent(input.leadId)}`, {
+  await sendFcmPush(String(request.phone), agentProvider ? 'Agent accepted' : 'Provider accepted', agentProvider ? 'A Kurukoo AI agent accepted your request. This records provider interest; timing, price, and completion still require the relevant confirmation and evidence.' : 'A verified provider accepted your request. This records provider interest; route, timing, price, and completion still require the relevant confirmation and evidence.', `/app/requests?request=${encodeURIComponent(String(request.id))}&lead=${encodeURIComponent(input.leadId)}`, {
     conversationId: String(request.id),
     availableAction: 'open_provider_session',
     canonicalAction: 'provider.communication.open',
@@ -274,6 +450,25 @@ export async function acceptDispatchLead(input: { leadId: string; providerPhone:
   }).catch(() => false);
   saveDb();
   return getLead(input.leadId);
+}
+
+/** An AI agent provider is an active row in the canonical ai_agents registry. */
+async function isAgentProvider(phone: string): Promise<boolean> {
+  const db = await getDb();
+  let agentTable = false;
+  try {
+    agentTable = (db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='ai_agents'")[0]?.values?.length || 0) > 0;
+  } catch {
+    agentTable = false;
+  }
+  if (!agentTable) return false;
+  const rows = db.exec(`SELECT status FROM ai_agents WHERE id=? LIMIT 1`, [String(phone)]);
+  return String(rows[0]?.values?.[0]?.[0] || '') === 'active';
+}
+
+/** The participant role a dispatch provider occupies: AI agents are 'agent', humans are 'service_provider'. */
+async function dispatchParticipantRole(phone: string): Promise<'agent' | 'service_provider'> {
+  return (await isAgentProvider(phone)) ? 'agent' : 'service_provider';
 }
 
 export async function markDispatchArrived(input: { leadId: string; providerPhone: string }): Promise<DispatchLead> {
@@ -288,10 +483,11 @@ export async function markDispatchArrived(input: { leadId: string; providerPhone
   let request = await getEconomicRequest(lead.requestId);
   if (!request) throw new Error('Economic request not found.');
   if (request.status === 'matched') request = await updateEconomicRequestStatus(String(request.id), 'in_fulfillment', { providerId: input.providerPhone });
+  const agentOwnership = await agentBusinessOwner(input.providerPhone);
   await updateEconomicParticipant({
     requestId: String(request.id),
-    actorPhone: input.providerPhone,
-    role: 'service_provider',
+    actorPhone: agentOwnership.ownerPhone || input.providerPhone,
+    role: await dispatchParticipantRole(input.providerPhone),
     providerPhone: input.providerPhone,
     status: 'in_progress',
     evidence: {
@@ -301,6 +497,10 @@ export async function markDispatchArrived(input: { leadId: string; providerPhone
     },
   });
   await transitionLinkedFulfilment(request, 'in_fulfillment');
+  if (await isAgentProvider(input.providerPhone)) {
+    const ownership = await agentBusinessOwner(input.providerPhone);
+    await recordAgentDispatchExecution({ agentId: input.providerPhone, leadId: input.leadId, requestId: String(request.id), ownerPhone: ownership.ownerPhone, delegationId: ownership.delegationId, status: 'arrived' });
+  }
   saveDb();
   return getLead(input.leadId);
 }
@@ -336,10 +536,11 @@ export async function completeDispatch(input: { leadId: string; providerPhone: s
   const db = await getDb();
   db.run("UPDATE economic_dispatch_leads SET status='completion_reported',completion_evidence_json=?,completion_reported_at=CURRENT_TIMESTAMP WHERE id=? AND status='arrived'", [JSON.stringify(completionEvidence), input.leadId]);
   if (db.getRowsModified() !== 1) return getLead(input.leadId);
+  const completionAgentOwnership = await agentBusinessOwner(input.providerPhone);
   await updateEconomicParticipant({
     requestId: String(request.id),
-    actorPhone: input.providerPhone,
-    role: 'service_provider',
+    actorPhone: completionAgentOwnership.ownerPhone || input.providerPhone,
+    role: await dispatchParticipantRole(input.providerPhone),
     providerPhone: input.providerPhone,
     status: 'completion_reported',
     evidence: {
@@ -349,6 +550,10 @@ export async function completeDispatch(input: { leadId: string; providerPhone: s
     },
   });
   await transitionLinkedFulfilment(request, 'fulfilled');
+  if (await isAgentProvider(input.providerPhone)) {
+    const ownership = await agentBusinessOwner(input.providerPhone);
+    await recordAgentDispatchExecution({ agentId: input.providerPhone, leadId: input.leadId, requestId: String(request.id), ownerPhone: ownership.ownerPhone, delegationId: ownership.delegationId, status: 'completion_reported' });
+  }
   if (lead.communicationSessionId) await updateProviderCommunicationState(lead.communicationSessionId, 'completion_reported');
   await sendFcmPush(String(request.phone), 'Provider reported the trip complete', 'Your provider reported completion with a reference. Review and confirm only if the outcome actually occurred; Kurukoo has not marked the request done yet.', `/app/requests?request=${encodeURIComponent(String(request.id))}&lead=${encodeURIComponent(input.leadId)}`, {
     conversationId: String(request.id),
@@ -390,7 +595,7 @@ export async function confirmDispatchCompletion(input: { leadId: string; ownerPh
   await updateEconomicParticipant({
     requestId: String(finalized.id),
     actorPhone: input.ownerPhone,
-    role: 'service_provider',
+    role: await dispatchParticipantRole(lead.providerPhone),
     providerPhone: lead.providerPhone,
     status: 'confirmed',
     evidence: {
@@ -415,4 +620,67 @@ export async function confirmDispatchCompletion(input: { leadId: string; ownerPh
   }).catch(() => false);
   saveDb();
   return getLead(input.leadId);
+}
+
+export interface ProviderDispatchJob {
+  lead: DispatchLead;
+  request: {
+    id: string;
+    skill: string;
+    status: string;
+    description?: string;
+    origin?: string;
+    destination?: string;
+    pickupAt?: string;
+    vehicleType?: string;
+    passengers?: number;
+  };
+}
+
+/**
+ * Provider-facing view of dispatch leads. The coordinator owns dispatch lead
+ * state; this is a paginated read for the provider's own jobs and does not
+ * mutate anything. Requests are summarised without exposing the customer's
+ * phone number or other private identifiers.
+ */
+export async function listDispatchLeadsForProvider(input: { providerPhone: string; limit?: number; includeCompleted?: boolean }): Promise<{ jobs: ProviderDispatchJob[] }> {
+  await ensureSchema();
+  const providerPhone = String(input.providerPhone || '').trim();
+  if (!providerPhone || providerPhone.startsWith('anon_')) throw new Error('Authenticated provider is required.');
+  const limit = Math.max(1, Math.min(20, Math.floor(Number(input.limit) || 20)));
+  const includeCompleted = input.includeCompleted === true;
+  const db = await getDb();
+  const statusFilter = includeCompleted ? '' : " AND status != 'declined' AND status != 'cancelled'";
+  const rows = db.exec(
+    `SELECT * FROM economic_dispatch_leads WHERE provider_phone=?${statusFilter} ORDER BY created_at DESC LIMIT ?`,
+    [providerPhone, limit],
+  );
+  const leads: DispatchLead[] = (rows[0]?.values || []).map((row: unknown[]) =>
+    leadFromObject(Object.fromEntries(rows[0].columns.map((column: string, index: number) => [column, row[index]]))),
+  );
+  const jobs: ProviderDispatchJob[] = [];
+  for (const lead of leads) {
+    const request = await getEconomicRequest(lead.requestId);
+    if (!request) continue;
+    const requirements = request.requirements || {};
+    const text = (value: unknown): string | undefined => {
+      const out = typeof value === 'string' ? value.trim() : undefined;
+      return out ? out.slice(0, 180) : undefined;
+    };
+    jobs.push({
+      lead,
+      request: {
+        id: request.id,
+        skill: request.skill,
+        status: request.status,
+        description: text(requirements.description),
+        origin: text(requirements.origin),
+        destination: text(requirements.destination),
+        pickupAt: text(requirements.pickup_at),
+        vehicleType: text(requirements.vehicle_type),
+        passengers: typeof requirements.passengers === 'number' ? requirements.passengers : undefined,
+      },
+    });
+  }
+  return { jobs };
 }

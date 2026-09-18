@@ -184,6 +184,27 @@ async function requireRegisteredAgent(agentId: string): Promise<void> {
 }
 
 /**
+ * The business owner who delegated an AI agent. An agent cannot act as its own
+ * direct participant identity, so its declared delegation owner carries the
+ * authority for agent-role progress updates.
+ */
+async function agentDelegationOwner(agentId: string): Promise<string | null> {
+  const db = await getDb();
+  let hasDelegations = false;
+  try {
+    hasDelegations = (db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='agent_delegations'")[0]?.values?.length || 0) > 0;
+  } catch {
+    hasDelegations = false;
+  }
+  if (!hasDelegations) return null;
+  const stmt = db.prepare("SELECT owner_phone FROM agent_delegations WHERE agent_id=? AND status='active' ORDER BY updated_at DESC LIMIT 1");
+  stmt.bind([String(agentId)]);
+  const owner = stmt.step() ? String(stmt.getAsObject().owner_phone || '') : '';
+  stmt.free();
+  return owner || null;
+}
+
+/**
  * Attach an informational seller offer to one canonical Economic Request.
  * Its item price never replaces the request quote or changes escrow settlement.
  */
@@ -504,7 +525,8 @@ export async function updateEconomicParticipant(input: {
   if (!row) throw new Error('Economic participant not found');
   const isOwner = request.phone === actorPhone;
   const isDirectParticipant = role !== 'agent' && providerPhone === actorPhone;
-  if (!isOwner && !isDirectParticipant) throw new Error('Request ownership or participant identity is required');
+  const isAgentDelegationOwner = role === 'agent' && (await agentDelegationOwner(providerPhone)) === actorPhone;
+  if (!isOwner && !isDirectParticipant && !isAgentDelegationOwner) throw new Error('Request ownership or participant identity is required');
   const status = input.status === undefined ? String(row.status) as EconomicParticipantStatus : normalizeStatus(input.status);
   const submittedEvidence = cleanEvidence(input.evidence);
   validateCustodyEvidenceUpdate({ role, status, isOwner, isDirectParticipant, evidence: submittedEvidence });
@@ -517,7 +539,7 @@ export async function updateEconomicParticipant(input: {
       ...priorSubmissions,
       {
         actor_phone: actorPhone,
-        actor_scope: isOwner ? 'request_owner' : 'participant',
+        actor_scope: isOwner ? 'request_owner' : isAgentDelegationOwner ? 'agent_delegation_owner' : 'participant',
         submitted_at: new Date().toISOString(),
         status,
         verification: 'submitted_unverified',

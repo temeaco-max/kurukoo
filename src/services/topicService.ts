@@ -3,6 +3,9 @@ import { randomUUID } from 'crypto';
 import { getDb, saveDb } from '../database.js';
 import { ECONOMIC_CATEGORIES, getEconomicCategory, getKnownSkills } from './skillFlows.js';
 import { addRedirect } from './seoService.js';
+import { executeAgentTask } from './aiAgentService.js';
+import { getAgentRepresentation } from './agentRepresentationService.js';
+import { retrieveKnowledge } from './knowledgeRetrievalService.js';
 import { notifyRelationshipTargetUpdate, revokeRelationshipsForTarget } from './relationshipService.js';
 import { sendFcmPush } from './pushNotifications.js';
 
@@ -401,6 +404,39 @@ export async function createReply(authorPhone: string, topicId: string, input: T
   const statement = db.prepare(`INSERT INTO topic_replies(id, topic_id, author_phone, body, status) VALUES(?,?,?,?, 'submitted')`);
   statement.bind([id, topicId, authorPhone, body]); statement.step(); statement.free(); saveDb();
   return getReplyForOwner(id, authorPhone);
+}
+
+export async function createAgentTopicReply(input: { agentId: string; ownerPhone: string; topicId: string; task: string }): Promise<Record<string, unknown>> {
+  const agentId = cleanText(input.agentId, 'agent id', 1, 160);
+  const ownerPhone = cleanText(input.ownerPhone, 'owner phone', 1, 64);
+  const topicId = cleanText(input.topicId, 'topic id', 1, 160);
+  const task = cleanText(input.task, 'agent task', 2, 2000);
+  const db = await getDb();
+  const agentRow = db.exec(`SELECT id, status FROM ai_agents WHERE id=? LIMIT 1`, [agentId]);
+  if (!agentRow[0]?.values?.length) throw new Error('The AI agent is not registered.');
+  if (String(agentRow[0].values[0][1] || '') !== 'active') throw new Error('The AI agent is not currently active.');
+  const representation = await getAgentRepresentation(agentId);
+  const delegationOwner = String(representation.ownerPhone || '');
+  if (!representation.isDelegated || !delegationOwner) throw new Error('Only a delegated agent with an active business owner may participate in topics.');
+  if (delegationOwner !== ownerPhone) throw new Error('Only the delegating business owner may task this agent in a topic.');
+  const topic = existingTopicById(db, topicId);
+  if (!topic || String(topic.status) !== 'public') throw new Error('Agent replies are available only on public Topics');
+  const evidence: Record<string, unknown>[] = [];
+  try {
+    const retrieval = await retrieveKnowledge({ query: `${String(topic.title || '')} ${task}`.slice(0, 500), limit: 3 });
+    for (const hit of retrieval.hits) evidence.push({ source: hit.source, reference: hit.reference, excerpt: hit.excerpt });
+  } catch { /* retrieval assists; it never blocks participation. */ }
+  const execution = await executeAgentTask(agentId, `Topic participation for "${String(topic.title || topicId)}" (topic ${topicId}).\nBusiness task: ${task}\nGround every factual claim in the following retrieved context; say nothing unverifiable. If the context is empty, say what is and is not known.\nRetrieved context:\n${evidence.length ? evidence.map((item, index) => `[${index + 1}] ${String(item.excerpt || '')} (source: ${String(item.source || '')})`).join('\n') : '(no retrieved context)'}`, ownerPhone);
+  if (!execution.success) throw new Error('The agent could not produce a reply for this topic.');
+  const body = [
+    execution.result.trim().slice(0, 3800),
+    '',
+    '— posted by an AI agent participant. Claims above should be checked against the cited sources; unverified claims are the agent\'s, not Kurukoo\'s.',
+  ].join('\n');
+  const id = randomUUID();
+  const statement = db.prepare(`INSERT INTO topic_replies(id, topic_id, author_phone, body, status) VALUES(?,?,?,?, 'submitted')`);
+  statement.bind([id, topicId, agentId, body]); statement.step(); statement.free(); saveDb();
+  return { ...(await getReplyForOwner(id, agentId) as object), providerKind: 'ai_agent', delegationOwner };
 }
 
 export async function getReplyForOwner(id: string, authorPhone: string) {

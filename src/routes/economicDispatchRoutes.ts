@@ -1,11 +1,13 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import { Router } from 'express';
 import { authenticateUser, type AuthRequest } from '../middleware/auth.js';
-import { broadcastDispatch, acceptDispatchLead, markDispatchArrived, completeDispatch, confirmDispatchCompletion } from '../services/economicDispatchCoordinator.js';
+import { broadcastDispatch, acceptDispatchLead, markDispatchArrived, completeDispatch, confirmDispatchCompletion, listDispatchLeadsForProvider } from '../services/economicDispatchCoordinator.js';
 import { createServiceReview } from '../services/serviceReviewService.js';
 
 const router=Router();
 const phone=(req:AuthRequest)=>String(req.user?.phone||'').trim();
+
+router.get('/dispatch-leads/mine',authenticateUser,async(req:AuthRequest,res)=>{try{const result=await listDispatchLeadsForProvider({providerPhone:phone(req),limit:req.query?.limit!==undefined?Number(req.query.limit):undefined,includeCompleted:req.query?.includeCompleted==='true'});res.json({success:true,...result});}catch(error){res.status(422).json({success:false,error:error instanceof Error?error.message:'Unable to list dispatch jobs.'});}});
 
 router.post('/economic-requests/:id/dispatch/broadcast',authenticateUser,async(req:AuthRequest,res)=>{try{const owner=phone(req);const result=await broadcastDispatch({requestId:String(req.params.id),ownerPhone:owner,skill:String(req.body?.skill||'ride_request'),vehicleType:req.body?.vehicleType?String(req.body.vehicleType):undefined,location:req.body?.location?String(req.body.location):undefined,latitude:req.body?.latitude!==undefined?Number(req.body.latitude):undefined,longitude:req.body?.longitude!==undefined?Number(req.body.longitude):undefined,maxProviders:req.body?.maxProviders!==undefined?Number(req.body.maxProviders):undefined});res.json({success:true,...result});}catch(error){res.status(422).json({success:false,error:error instanceof Error?error.message:'Unable to broadcast dispatch request.'});}});
 router.post('/dispatch-leads/:id/accept',authenticateUser,async(req:AuthRequest,res)=>{try{const result=await acceptDispatchLead({leadId:String(req.params.id),providerPhone:phone(req)});res.json({success:true,lead:result});}catch(error){res.status(409).json({success:false,error:error instanceof Error?error.message:'Unable to accept dispatch lead.'});}});

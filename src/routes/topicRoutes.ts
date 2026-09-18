@@ -4,6 +4,7 @@ import { authenticateAdmin, authenticateUser, type AuthRequest } from '../middle
 import { topicMutationRateLimit, topicReportRateLimit } from '../middleware/rateLimit.js';
 import {
   closeTopicReport,
+  createAgentTopicReply,
   createReply,
   createTopic,
   createTopicDraft,
@@ -24,6 +25,7 @@ import {
   removeTopic,
   updateTopic,
 } from '../services/topicService.js';
+import { retrieveKnowledge } from '../services/knowledgeRetrievalService.js';
 import {
   createTopicAdCampaign,
   ensureCommunityTopicSupport,
@@ -217,6 +219,28 @@ router.post('/topics/:id/replies', authenticateUser, topicMutationRateLimit, asy
   if (!topicId) return res.status(400).json({ error: 'A valid Topic id is required' });
   try { res.status(201).json({ reply: await createReply(phone, topicId, req.body || {}) }); }
   catch (error) { const message = error instanceof Error ? error.message : 'Unable to submit reply'; res.status(message.includes('available only') ? 409 : 400).json({ error: message }); }
+});
+
+router.post('/topics/:id/agent-replies', authenticateUser, topicMutationRateLimit, async (req: AuthRequest, res) => {
+  const phone = sessionPhone(req); const topicId = id(req.params.id);
+  if (!phone) return res.status(401).json({ error: 'Authentication required' });
+  if (!topicId) return res.status(400).json({ error: 'A valid Topic id is required' });
+  try {
+    const reply = await createAgentTopicReply({ agentId: String(req.body?.agentId || ''), ownerPhone: phone, topicId, task: String(req.body?.task || '') });
+    res.status(201).json({ reply });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to submit the agent reply';
+    res.status(message.includes('available only') ? 409 : message.includes('Only the delegating') ? 403 : 400).json({ error: message });
+  }
+});
+
+router.get('/knowledge/search', authenticateUser, async (req: AuthRequest, res) => {
+  const phone = sessionPhone(req);
+  if (!phone) return res.status(401).json({ error: 'Authentication required' });
+  try {
+    const result = await retrieveKnowledge({ query: String(req.query?.q || ''), ownerPhone: phone });
+    res.json({ success: true, ...result });
+  } catch (error) { res.status(422).json({ success: false, error: error instanceof Error ? error.message : 'Knowledge search failed.' }); }
 });
 
 router.post('/topics/:id/report', authenticateUser, topicReportRateLimit, async (req: AuthRequest, res) => {

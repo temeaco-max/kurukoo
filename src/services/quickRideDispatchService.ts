@@ -1,7 +1,7 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import crypto from 'node:crypto';
 import { createEconomicRequest, getEconomicRequest } from './skillFlows.js';
-import { broadcastDispatch, type DispatchLead } from './economicDispatchCoordinator.js';
+import { broadcastDispatch, type BroadcastNotificationSummary, type DispatchLead } from './economicDispatchCoordinator.js';
 import { normalizeRideVehicle, validateRideDispatchFields, type RideVehicleType } from './rideDispatchContract.js';
 import { syncCanonicalFulfilmentForEconomicRequest } from './canonicalFulfilmentService.js';
 
@@ -13,6 +13,7 @@ export interface QuickRideRequest {
   destination: { label: string; latitude?: number; longitude?: number };
   offers: DispatchLead[];
   state: string;
+  notifications: BroadcastNotificationSummary;
 }
 
 function coordinate(value: unknown, min: number, max: number): number {
@@ -124,5 +125,6 @@ export async function requestRide(input: {
     destination,
     offers: result.offers,
     state: String(fresh?.status || request.status),
+    notifications: result.notifications,
   };
 }

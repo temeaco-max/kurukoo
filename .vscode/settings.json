@@ -2,6 +2,11 @@
     // Ollama / LiteLLM proxy settings
     // The LiteLLM proxy runs on port 4000 and routes to local Ollama (port 11434)
     // Start it with: npm run litellm:start
+    // Silence false "Unknown at rule" warnings from the VS Code CSS language
+    // server for Tailwind v4 directives used in frontend/src/styles.css
+    // (@source, @custom-variant, @theme, @utility are valid Tailwind v4 syntax).
+    "css.lint.unknownAtRules": "ignore",
+
     "litellm-vscode-chat.servers": [
         {
             "label": "LiteServer (Local Ollama)",
