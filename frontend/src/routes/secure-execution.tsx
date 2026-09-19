@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { PageHeader, EmptyState } from "@/components/app-shell";
 import { Panel, SectionHeader } from "@/components/kurukoo/ui";
 import { Action } from "@/components/kurukoo/primitives";
-import { fetchExecutionSessions, createExecutionSession, fetchExecutionActions, queueExecutionAction, stopExecutionSession, type SecureSession, type ExecutionAction } from "@/lib/trust-api";
+import { fetchExecutionSessions, createExecutionSession, fetchExecutionActions, queueExecutionAction, stopExecutionSession, type ExecutionSession, type ExecutionAction, type ActionType } from "@/lib/trust-api";
 
 export const Route = createFileRoute("/secure-execution")({
   head: () => ({ meta: [{ title: "Secure execution — Kurukoo" }, { name: "description", content: "Isolated browser sessions for tasks that need a real browser." }] }),
@@ -17,7 +17,7 @@ function StatusPill({ status }: { status: string }) {
 }
 
 function SecureExecutionPage() {
-  const [sessions, setSessions] = useState<SecureSession[]>([]);
+  const [sessions, setSessions] = useState<ExecutionSession[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [actions, setActions] = useState<ExecutionAction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,14 +40,14 @@ function SecureExecutionPage() {
   }, [activeId]);
 
   async function handleCreate() {
-    try { const r = await createExecutionSession({ ttlMinutes: 30 }); setActiveId(r.session.id); await load(); }
-    catch (e: any) { if (e.message === 'provider_required') setError("Secure execution provider not configured. Set SECURE_EXECUTION_PROVIDER to enable."); else setError(e instanceof Error ? e.message : "Could not create session"); }
+    try { const r = await createExecutionSession({ ttlMinutes: 30 }); setActiveId(r.id); await load(); }
+    catch (e: unknown) { if (e instanceof Error && e.message === "provider_required") setError("Secure execution provider not configured. Set SECURE_EXECUTION_PROVIDER to enable."); else setError(e instanceof Error ? e.message : "Could not create session"); }
   }
 
   async function handleAction(type: string) {
     if (!activeId) return;
-    try { await queueExecutionAction(activeId, type, {}); await load(); }
-    catch (e: any) { if (e.message === 'provider_required') setError("Provider not configured"); else setError(e instanceof Error ? e.message : "Could not queue action"); }
+    try { await queueExecutionAction(activeId, type as ActionType, {}); await load(); }
+    catch (e: unknown) { if (e instanceof Error && e.message === "provider_required") setError("Provider not configured"); else setError(e instanceof Error ? e.message : "Could not queue action"); }
   }
 
   async function handleStop(id: string) {
@@ -72,7 +72,7 @@ function SecureExecutionPage() {
                   <Monitor className="size-4 shrink-0 text-primary" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[12px] font-medium">{s.id}</p>
-                    <p className="text-[10px] text-muted-foreground">expires {new Date(s.expiresAt).toLocaleString()}</p>
+                    <p className="text-[10px] text-muted-foreground">expires {s.expiresAt ? new Date(s.expiresAt).toLocaleString() : "—"}</p>
                   </div>
                   <StatusPill status={s.status} />
                 </li>

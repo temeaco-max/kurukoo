@@ -15,14 +15,15 @@ dist-ssr
 .tanstack/**
 .nitro
 *.local
+package-lock.json
 
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
 
 # Editor directories and files
-.vscode/*
-!.vscode/extensions.json
+.cline/
+.vscode/
 .idea
 .DS_Store
 *.suo

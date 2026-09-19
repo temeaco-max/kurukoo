@@ -101,6 +101,7 @@
     "test:execution-boundary": "tsx scripts/test-execution-boundary.ts",
     "test:physical-execution-foundation": "tsx scripts/test-physical-execution-foundation.ts",
     "test:external-agent-foundation": "tsx scripts/test-external-agent-foundation.ts",
+    "test:external-provider-activation": "npm run test:external-activation-contract",
     "test:local-repair-outcome": "tsx scripts/test-local-repair-outcome.ts",
     "test:native-assistance": "tsx scripts/test-native-assistance.ts",
     "test:behavioral-chat": "tsx scripts/test-behavioral-chat-matrix.ts",

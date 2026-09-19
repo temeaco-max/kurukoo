@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { PageHeader, EmptyState } from "@/components/app-shell";
 import { Panel } from "@/components/kurukoo/ui";
 import { Action } from "@/components/kurukoo/primitives";
-import { fetchCredentials, storeCredential, deleteCredential, type StoredCredential } from "@/lib/trust-api";
+import { fetchCredentials, storeCredential, deleteCredential, type Credential, type CredentialType } from "@/lib/trust-api";
 import { encryptSecret } from "@/lib/crypto-client";
 
 export const Route = createFileRoute("/credentials")({
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/credentials")({
 });
 
 function CredentialsPage() {
-  const [creds, setCreds] = useState<StoredCredential[]>([]);
+          const [creds, setCreds] = useState<Credential[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -21,7 +21,7 @@ function CredentialsPage() {
   const [domain, setDomain] = useState("");
   const [passphrase, setPassphrase] = useState("");
   const [secret, setSecret] = useState("");
-  const [credentialType, setCredentialType] = useState<StoredCredential["credentialType"]>('password');
+    const [credentialType, setCredentialType] = useState<Credential["credentialType"]>("password");
 
   async function load() {
     setLoading(true);
@@ -36,10 +36,10 @@ function CredentialsPage() {
     if (!label.trim() || !passphrase.trim() || !secret.trim()) { setError("Label, passphrase and secret are required"); return; }
     try {
       const encrypted = await encryptSecret(secret, passphrase);
-      const input: { label: string; ciphertext: string; iv: string; salt: string; domain?: string; credentialType?: string; expiresAt?: string } = { label: label.trim(), ciphertext: encrypted.ciphertext, iv: encrypted.iv, salt: encrypted.salt };
+      const input: { label: string; ciphertext: string; iv: string; salt: string; domain?: string; credentialType?: CredentialType; expiresAt?: string } = { label: label.trim(), ciphertext: encrypted.ciphertext, iv: encrypted.iv, salt: encrypted.salt };
       if (domain.trim()) input.domain = domain.trim();
       if (credentialType) input.credentialType = credentialType;
-      await storeCredentialRemote(input);
+      await storeCredential(input);
       setLabel(""); setDomain(""); setPassphrase(""); setSecret(""); setShowAdd(false);
       await load();
     } catch (e) { setError(e instanceof Error ? e.message : "Could not store credential"); }
@@ -47,7 +47,7 @@ function CredentialsPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this credential?")) return;
-    try { await deleteCredentialRemote(id); await load(); } catch { setError("Could not delete"); }
+    try { await deleteCredential(id); await load(); } catch { setError("Could not delete"); }
   }
 
   return (
@@ -63,7 +63,7 @@ function CredentialsPage() {
           <p className="text-[12px] text-muted-foreground">Your secret is encrypted in your browser with AES-256-GCM + PBKDF2 before it reaches Kurukoo's servers. Kurukoo never sees your passphrase or the plain text.</p>
           <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label (e.g. Gmail)" className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13px] outline-none" />
           <input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="Domain (optional)" className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13px] outline-none" />
-          <select value={credentialType} onChange={(e) => setCredentialType(e.target.value as StoredCredential["credentialType"])} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13px] outline-none">
+          <select value={credentialType} onChange={(e) => setCredentialType(e.target.value as Credential["credentialType"])} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13px] outline-none">
             <option value="password">Password</option><option value="api_key">API Key</option><option value="token">Token</option><option value="note">Secure Note</option><option value="other">Other</option>
           </select>
           <input type="password" value={passphrase} onChange={(e) => setPassphrase(e.target.value)} placeholder="Encryption passphrase (never stored)" className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13px] outline-none" />
@@ -84,7 +84,7 @@ function CredentialsPage() {
                 <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-elevated"><Lock className="size-4 text-primary" /></span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13.5px] font-medium">{c.label}</p>
-                  <p className="text-[11px] text-muted-foreground">{c.domain || c.credentialType} · updated {new Date(c.updatedAt).toLocaleDateString()}</p>
+                  <p className="text-[11px] text-muted-foreground">{c.domain || c.credentialType} · updated {c.updatedAt ? new Date(c.updatedAt).toLocaleDateString() : ""}</p>
                 </div>
                 <button type="button" onClick={() => handleDelete(c.id)} className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-elevated hover:text-destructive"><Trash2 className="size-3.5" /></button>
               </li>

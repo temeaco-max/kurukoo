@@ -66,7 +66,7 @@ function CardsPage() {
                 <span className={`rounded-full px-2 py-0.5 text-[9px] uppercase tracking-wide ${card.status === "active" ? "bg-[var(--color-success)]/15 text-[var(--color-success)]" : card.status === "frozen" ? "bg-accent/15 text-accent" : "bg-elevated text-muted-foreground"}`}>{card.status}</span>
               </div>
               <p className="mt-3 text-[20px] font-semibold tracking-tight">£{(card.spendLimitMinor / 100).toFixed(2)}</p>
-              <p className="text-[11px] text-muted-foreground">{card.currency}{card.merchantLock ? ` · locked to ${card.merchantLock}` : " · any merchant"} · expires {new Date(card.expiresAt).toLocaleDateString()}</p>
+              <p className="text-[11px] text-muted-foreground">{card.currency}{card.merchantLock ? ` · locked to ${card.merchantLock}` : " · any merchant"} · expires {card.expiresAt ? new Date(card.expiresAt).toLocaleDateString() : "—"}</p>
               <div className="mt-3 flex gap-2">
                 {card.status === "active" && <Action onClick={() => freezeCard(card.id).then(() => load())}><Snowflake className="size-3" /> Freeze</Action>}
                 <Action onClick={() => { if (confirm("Cancel this card?")) cancelCard(card.id).then(() => load()); }}>Cancel</Action>
@@ -82,7 +82,7 @@ function CardsPage() {
             {claims.map((c) => (
               <li key={c.id} className="flex items-center gap-3 px-4 py-3">
                 <AlertTriangle className={`size-4 shrink-0 ${c.status === "approved" ? "text-[var(--color-success)]" : c.status === "denied" ? "text-destructive" : "text-accent"}`} />
-                <div className="min-w-0 flex-1"><p className="text-[13px] font-medium">£{(c.amountMinor / 100).toFixed(2)} · {c.reason}</p><p className="text-[11px] text-muted-foreground">Order {c.orderRef} · {c.status} · {new Date(c.createdAt).toLocaleDateString()}</p></div>
+                <div className="min-w-0 flex-1"><p className="text-[13px] font-medium">£{(c.amountMinor / 100).toFixed(2)} · {c.reason}</p><p className="text-[11px] text-muted-foreground">Order {c.orderRef} · {c.status} · {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : ""}</p></div>
               </li>
             ))}
           </ul>

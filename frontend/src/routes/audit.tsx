@@ -31,10 +31,10 @@ function AuditPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
+                        let cancelled = false;
     setLoading(true);
     fetchAuditTimeline(100)
-      .then((r) => { if (!cancelled) setTimeline(r.timeline); })
+      .then((r) => { if (!cancelled) setTimeline(r); })
       .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : "Could not load audit timeline"); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -72,15 +72,15 @@ function AuditPage() {
           <ul className="divide-y divide-border/70">
             {timeline.entries.map((entry: AuditEntry) => (
               <li key={entry.id} className="flex items-start gap-3 px-4 py-3">
-                <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-elevated">{kindIcon(entry.kind)}</span>
+                <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-elevated">{kindIcon(entry.kind ?? "")}</span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="truncate text-[13.5px] font-medium">{entry.title}</p>
-                    <span className="shrink-0 rounded-full bg-elevated px-2 py-0.5 text-[9px] uppercase tracking-wide text-muted-foreground">{kindLabel[entry.kind] || entry.kind}</span>
+                    <span className="shrink-0 rounded-full bg-elevated px-2 py-0.5 text-[9px] uppercase tracking-wide text-muted-foreground">{kindLabel[entry.kind ?? ""] || entry.kind}</span>
                   </div>
                   {entry.description && <p className="mt-0.5 line-clamp-2 text-[12px] text-muted-foreground">{entry.description}</p>}
                   <div className="mt-1 flex items-center gap-2 text-[10.5px] text-muted-foreground">
-                    <span>{new Date(entry.occurredAt).toLocaleString()}</span>
+                    <span>{entry.occurredAt ? new Date(entry.occurredAt).toLocaleString() : ""}</span>
                     {entry.actor && <span>· {entry.actor}</span>}
                     <span className={`inline-flex items-center gap-1 ${entry.status === "completed" || entry.status === "success" ? "text-[var(--color-success)]" : ""}`}>· {entry.status}</span>
                   </div>
