@@ -7,109 +7,24 @@ import { PublicRail, RotatingPublicPrompt } from "@/components/public-kurukoo-ra
 import { PublicContextRail } from "@/components/public-kurukoo-context";
 import { PublicMobileNavigation } from "@/components/public-kurukoo-mobile-nav";
 export { PublicHome } from "@/components/public-kurukoo-home";
-const meetKurukoo = [
+const productFeatures = [
   {
-    heading: "Core features",
     items: [
-      ["/kurukoo-ai", "Kurukoo AI"],
-      ["/integrations", "Multi-Channel Access"],
-      ["/kurukoo-ai", "Frontier AI Intelligence"],
-      ["/chat", "Messaging & Calls"],
-      ["/capabilities", "200+ capabilities"],
-    ],
-  },
-  {
-    heading: "",
-    items: [
-      ["/kurukoo-ai", "Coordinated AI Fulfillment"],
-      ["/provider", "Personal AI Agents"],
-      ["/memory", "Living Memory"],
-      ["/provider", "Agentic AI Providers"],
-      ["/businesses", "Agentic Storefront"],
-    ],
-  },
-  {
-    heading: "Getting Started",
-    items: [
-      ["/about", "About"],
-      ["/chat", "Chat / Voice"],
-      ["/topics", "Community"],
-      ["/pricing", "Pricing"],
-      ["/opportunities", "Opportunities"],
+      ["/chat", "Chat / Voice", "Talk to Kurukoo in your own words."],
+      ["/capabilities", "Capabilities", "From reminders to rides — Kurukoo routes and executes."],
+      ["/work", "Work in progress", "Track what Kurukoo is handling for you."],
+      ["/perch", "Your Field", "Your personal workspace for conversation, work, and context."],
+      ["/how-it-works", "How it works", "See how Kurukoo turns conversation into outcome."],
     ],
   },
 ] as const;
-const discover = [
+const productResources = [
   {
-    heading: "Discover",
     items: [
-      ["/discover", "Nearby & ideas"],
-      ["/opportunities", "Opportunities"],
-      ["/use-cases", "Use cases"],
-    ],
-  },
-  {
-    heading: "People & places",
-    items: [
-      ["/providers", "Providers"],
-      ["/businesses", "Businesses"],
-      ["/creators", "Creators"],
-    ],
-  },
-  {
-    heading: "Community",
-    items: [
-      ["/topics", "Topics"],
-      ["/people", "People"],
-    ],
-  },
-] as const;
-const forYou = [
-  {
-    heading: "People & communities",
-    items: [
-      ["/people", "People"],
-      ["/creators", "Creators"],
-    ],
-  },
-  {
-    heading: "Services & businesses",
-    items: [
-      ["/providers", "Providers"],
-      ["/businesses", "Businesses"],
-    ],
-  },
-  {
-    heading: "Build with Kurukoo",
-    items: [
-      ["/contributors", "Contributors"],
-      ["/partners", "Partners"],
-      ["/developer", "Developer"],
-    ],
-  },
-  {
-    heading: "Reach & participate",
-    items: [
-      ["/advertise", "Advertisers"],
-      ["/local-agents", "Local Agents"],
-      ["/ambassadors", "Ambassadors"],
-    ],
-  },
-] as const;
-const resources = [
-  {
-    heading: "Learn",
-    items: [
-      ["/blog", "Blog"],
-      ["/help", "Help"],
-      ["/how-it-works", "How to Guides"],
-    ],
-  },
-  {
-    heading: "Trust",
-    items: [
-      ["/safety", "Trust & Safety"],
-      ["/legal", "Privacy & legal"],
+      ["/help", "Help", "Get answers to common questions."],
+      ["/blog", "Blog", "Thoughts on AI and everyday work."],
+      ["/legal/privacy", "Privacy & safety", "How your data, credentials, and actions are protected."],
+      ["/legal", "Legal", "Terms, cookies, and policies."],
     ],
   },
 ] as const;
@@ -196,7 +111,7 @@ function PublicMenu({
   railCollapsed,
 }: {
   label: string;
-  kind: "meet" | "discover" | "you" | "resources";
+  kind: "product" | "resources";
   items: readonly unknown[];
   railCollapsed: boolean;
 }) {
@@ -251,30 +166,35 @@ function PublicMenu({
               style={{ left: railCollapsed ? 76 : 200, right: 224 }}
             >
               <div className="mx-auto w-full max-w-[1160px] px-6 py-7 md:px-9">
-                {kind === "meet" ? (
-                  <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1.2fr]">
-                    {(items as typeof meetKurukoo).map((column) => (
-                      <div key={column.heading} className="min-w-0">
-                        <p
-                          className={`mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground ${column.heading ? "" : "invisible"}`}
-                          aria-hidden={!column.heading}
-                        >
-                          {column.heading || "Core features"}
-                        </p>
-                        <div className="border-t border-border/60">
-                          {column.items.map(([to, title]) => (
-                            <PublicDestinationLink
-                              key={`${to}-${title}`}
-                              to={to}
-                              onClick={() => setOpen(false)}
-                              className="block border-b border-border/50 px-1 py-3 text-[12px] font-medium text-foreground transition-colors last:border-b-0 hover:text-muted-foreground"
-                            >
-                              {title}
-                            </PublicDestinationLink>
-                          ))}
-                        </div>
+                                                <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_1.2fr]">
+                  {(items as typeof productFeatures).map((column) => (
+                    <div key={column.heading ?? "items"} className="min-w-0">
+                      <p
+                        className={`mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground ${column.heading ? "" : "invisible"}`}
+                        aria-hidden={column.heading ? undefined : true}
+                      >
+                        {column.heading || "Features"}
+                      </p>
+                      <div className="border-t border-border/60">
+                        {column.items.map(([to, title, desc]) => (
+                          <PublicDestinationLink
+                            key={`${to}-${title}`}
+                            to={to}
+                            onClick={() => setOpen(false)}
+                            className="group block border-b border-border/50 px-1 py-3 text-[12px] font-medium text-foreground transition-colors last:border-b-0 hover:text-muted-foreground"
+                          >
+                            <div className="flex flex-col">
+                              <span className="text-foreground group-hover:text-muted-foreground">{title}</span>
+                              {desc ? (
+                                <span className="mt-0.5 max-w-[260px] text-[10.5px] text-muted-foreground">{desc}</span>
+                              ) : null}
+                            </div>
+                          </PublicDestinationLink>
+                        ))}
                       </div>
-                    ))}
+                    </div>
+                  ))}
+                                      {kind === "product" ? (
                     <div className="min-w-0 border-l border-border/60 pl-6">
                       <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                         See it in action
@@ -304,82 +224,48 @@ function PublicMenu({
                         </div>
                       </Link>
                     </div>
-                  </div>
-                ) : kind === "resources" ? (
+                  ) : null}
+                </div>
+                {kind === "resources" ? (
                   <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
-                    {(items as typeof resources).map((column) => (
-                      <div key={column.heading} className="min-w-0">
+                    {(items as typeof productResources).map((column) => (
+                      <div key={column.heading ?? "resources"} className="min-w-0">
                         <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {column.heading}
+                          {column.heading || "Resources"}
                         </p>
                         <div className="border-t border-border/60">
-                          {column.items.map(([to, title]) => (
+                          {column.items.map(([to, title, desc]) => (
                             <PublicDestinationLink
                               key={`${to}-${title}`}
                               to={to}
                               onClick={() => setOpen(false)}
-                              className="block border-b border-border/50 px-1 py-3 text-[12px] font-medium text-foreground transition-colors last:border-b-0 hover:text-muted-foreground"
+                              className="group block border-b border-border/50 px-1 py-3 text-[12px] font-medium text-foreground transition-colors last:border-b-0 hover:text-muted-foreground"
                             >
-                              {title}
+                              <div className="flex flex-col">
+                                <span className="text-foreground group-hover:text-muted-foreground">{title}</span>
+                                {desc ? (
+                                  <span className="mt-0.5 max-w-[260px] text-[10.5px] text-muted-foreground">{desc}</span>
+                                ) : null}
+                              </div>
                             </PublicDestinationLink>
                           ))}
                         </div>
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-                    {(items as typeof forYou).map((column) => (
-                      <div key={column.heading} className="min-w-0">
-                        <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {column.heading}
-                        </p>
-                        <div className="border-t border-border/60">
-                          {column.items.map(([to, title]) => (
-                            <PublicDestinationLink
-                              key={`${to}-${title}`}
-                              to={to}
-                              onClick={() => setOpen(false)}
-                              className="block border-b border-border/50 px-1 py-3 text-[12px] font-medium text-foreground transition-colors last:border-b-0 hover:text-muted-foreground"
-                            >
-                              {title}
-                            </PublicDestinationLink>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                ) : null}
                 <div className="mt-7 flex items-center justify-between border-t border-border/60 pt-4">
-                  <p className="text-[10.5px] text-muted-foreground">
-                    {kind === "meet"
-                      ? "See the parts of Kurukoo that help you get things done."
-                      : kind === "resources"
-                        ? "Learn how Kurukoo works, build with it and understand the trust model."
-                        : kind === "discover"
-                          ? "Explore nearby context, opportunities and people around Kurukoo."
-                          : "People, services and participation around Kurukoo."}
+                                    <p className="text-[10.5px] text-muted-foreground">
+                    {kind === "product"
+                      ? "Explore the parts of Kurukoo that help you get things done."
+                      : "Learn how Kurukoo works, the tools it can use, and how your data stays yours."}
                   </p>
-                  <PublicDestinationLink
-                    to={
-                      kind === "meet"
-                        ? "/how-it-works"
-                        : kind === "resources"
-                          ? "/help"
-                          : kind === "discover"
-                            ? "/discover"
-                            : "/use-cases"
-                    }
+                                    <PublicDestinationLink
+                    to={kind === "product" ? "/how-it-works" : "/help"}
                     onClick={() => setOpen(false)}
                     className="text-[10.5px] font-medium text-foreground hover:opacity-70"
                   >
-                    {kind === "meet"
-                      ? "How it works"
-                      : kind === "resources"
-                        ? "Help"
-                        : kind === "discover"
-                          ? "Open Discover"
-                          : "See use cases"}
+                    {kind === "product" ? "How it works" : "Help"}
                   </PublicDestinationLink>
                 </div>
               </div>
@@ -395,13 +281,13 @@ function PublicMenu({
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls={menuId}
-        className={`group relative inline-flex h-full items-center gap-1.5 transition-colors ${open || kind === "you" ? "text-foreground" : "text-muted-foreground"}`}
+                className={`group relative inline-flex h-full items-center gap-1.5 transition-colors ${open || kind === "product" ? "text-foreground" : "text-muted-foreground"}`}
       >
         <span>{label}</span>
         <ChevronDown
           className={`size-3.5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
         />
-        {kind === "you" ? (
+                {kind === "product" ? (
           <span
             className={`absolute inset-x-0 bottom-0 h-px bg-foreground transition-opacity ${open ? "opacity-100" : "opacity-30 group-hover:opacity-70"}`}
           />
@@ -473,23 +359,16 @@ export function PublicKurukooShell({ children }: { children: ReactNode }) {
             aria-label="Kurukoo"
             className="absolute left-1/2 hidden h-full -translate-x-1/2 items-center justify-center gap-8 text-[12.5px] md:flex"
           >
-            <PublicMenu
-              label="Meet Kurukoo"
-              kind="meet"
-              items={meetKurukoo}
+                        <PublicMenu
+              label="Product"
+              kind="product"
+              items={productFeatures}
               railCollapsed={railCollapsed}
             />
-            <PublicMenu
-              label="Discover"
-              kind="discover"
-              items={discover}
-              railCollapsed={railCollapsed}
-            />
-            <PublicMenu label="For You" kind="you" items={forYou} railCollapsed={railCollapsed} />
             <PublicMenu
               label="Resources"
               kind="resources"
-              items={resources}
+              items={productResources}
               railCollapsed={railCollapsed}
             />
           </nav>
@@ -546,14 +425,17 @@ export function PublicKurukooShell({ children }: { children: ReactNode }) {
                   />
                   <span>© 2026 Kurukoo · Everyday AI that gets things done.</span>
                 </p>
-                <div className="ml-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
-                  <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground/80">
-                    Prototype build
-                  </span>
+                                <div className="ml-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
                   <nav aria-label="Information and legal">
                     <div className="flex flex-wrap justify-end gap-x-4 gap-y-2">
                       <PublicDestinationLink to="/about" className="hover:text-foreground">
                         About
+                      </PublicDestinationLink>
+                      <PublicDestinationLink to="/capabilities" className="hover:text-foreground">
+                        Capabilities
+                      </PublicDestinationLink>
+                      <PublicDestinationLink to="/pricing" className="hover:text-foreground">
+                        Pricing
                       </PublicDestinationLink>
                       <PublicDestinationLink to="/help" className="hover:text-foreground">
                         Help

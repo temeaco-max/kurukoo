@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Compass,
   Heart,
+  Lock,
   MessageCircle,
   Network,
   ShieldCheck,
@@ -319,6 +320,63 @@ export function PublicHome({ onSend }: { onSend?: (message: string) => void }) {
             >
               Start with Kurukoo <ArrowRight className="size-4" />
             </Link>
+          </div>
+                </div>
+      </section>
+
+      <section className="py-14 md:py-20">
+        <div className="mx-auto w-full max-w-[1160px] px-5 md:px-9">
+          <div className="grid gap-12 lg:grid-cols-2 lg:items-start">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Privacy & safety
+              </p>
+              <h2 className="mt-4 font-serif text-[36px] leading-[.98] tracking-[-0.05em] md:text-[48px]">
+                Your data, approvals, and evidence stay yours.
+              </h2>
+              <p className="mt-5 max-w-xl text-[15px] leading-7 text-muted-foreground md:text-[17px]">
+                Kurukoo never asks for your passwords. When an action requires your approval — a
+                purchase, a booking, an email — you see the details before anything happens.
+                Conversations, work history, and outcomes stay connected so nothing is lost.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-4">
+                <Link
+                  to="/legal/privacy"
+                  className="inline-flex items-center gap-1 text-[12px] font-medium text-foreground hover:opacity-70"
+                >
+                  Read the privacy policy <ArrowRight className="size-3" />
+                </Link>
+                <Link
+                  to="/legal/safety"
+                  className="inline-flex items-center gap-1 text-[12px] font-medium text-foreground hover:opacity-70"
+                >
+                  Trust & safety <ArrowRight className="size-3" />
+                </Link>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:justify-end">
+              <div className="flex flex-col items-center rounded-xl border border-border/60 bg-surface p-4 text-center">
+                <ShieldCheck className="size-6 text-primary" />
+                <p className="mt-2 text-[11px] font-semibold">You approve first</p>
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  Consequential actions need your sign-off.
+                </p>
+              </div>
+              <div className="flex flex-col items-center rounded-xl border border-border/60 bg-surface p-4 text-center">
+                <Lock className="size-6 text-primary" />
+                <p className="mt-2 text-[11px] font-semibold">Data stays private</p>
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  Conversations and memory are never sold.
+                </p>
+              </div>
+              <div className="flex flex-col items-center rounded-xl border border-border/60 bg-surface p-4 text-center">
+                <Network className="size-6 text-primary" />
+                <p className="mt-2 text-[11px] font-semibold">Evidence preserved</p>
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  Every step is connected and auditable.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
