@@ -13,6 +13,7 @@ export interface MicroTask {
     conversationId?: string;
     createdAt?: string;
     updatedAt?: string;
+    creditsReward?: number;
 }
 
 function rowToMicroTask(row: any): MicroTask {
@@ -29,6 +30,7 @@ function rowToMicroTask(row: any): MicroTask {
         conversationId: row.conversation_id ? String(row.conversation_id) : undefined,
         createdAt: row.created_at ? String(row.created_at) : undefined,
         updatedAt: row.updated_at ? String(row.updated_at) : undefined,
+        creditsReward: Number(row.credits_reward || 0),
     };
 }
 
