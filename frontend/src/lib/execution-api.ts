@@ -29,9 +29,11 @@ const API_BASE = (import.meta.env["VITE_KURUKOO_API_BASE_URL"] ?? "").replace(/\
 
 export async function fetchExecutionOverview(): Promise<ExecutionOverview | null> {
   try {
-    const response = await fetch(`${API_BASE}/api/v1/execution/overview`, { credentials: "include" });
+    const response = await fetch(`${API_BASE}/api/v1/execution/overview`, {
+      credentials: "include",
+    });
     if (!response.ok) return null;
-    return await response.json() as ExecutionOverview;
+    return (await response.json()) as ExecutionOverview;
   } catch {
     return null;
   }

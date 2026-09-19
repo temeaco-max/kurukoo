@@ -3,59 +3,534 @@ import { ExternalLink, Plus, RefreshCw, ShieldCheck, Smartphone } from "lucide-r
 import { useEffect, useState, type FormEvent } from "react";
 import { actionClass } from "@/components/kurukoo/primitives";
 import { Badge } from "@/components/kurukoo/ui";
-import { fetchConnectedResources, revokeConnectedResource, type ConnectedResource } from "@/lib/kurukoo-api";
-import { activateConnectedResource, issueConnectionChallenge, registerConnectedResource, type ConnectResourceKind, type ConnectionPairing } from "@/lib/kurukoo-connect";
+import {
+  fetchConnectedResources,
+  revokeConnectedResource,
+  type ConnectedResource,
+} from "@/lib/kurukoo-api";
+import {
+  activateConnectedResource,
+  issueConnectionChallenge,
+  registerConnectedResource,
+  type ConnectResourceKind,
+  type ConnectionPairing,
+} from "@/lib/kurukoo-connect";
 import { getIntegration } from "@/lib/integration-catalog";
-import { getIntegrationStatus, revokeIntegrationConnection, startIntegrationConnection, type IntegrationConnectionState } from "@/lib/kurukoo-integrations";
+import {
+  getIntegrationStatus,
+  revokeIntegrationConnection,
+  startIntegrationConnection,
+  type IntegrationConnectionState,
+} from "@/lib/kurukoo-integrations";
 
 export const Route = createFileRoute("/connect")({
-  head: () => ({ meta: [{ title: "Connections — Kurukoo" }, { name: "description", content: "Manage the services, channels and resources connected to your Kurukoo account." }] }),
+  head: () => ({
+    meta: [
+      { title: "Connections — Kurukoo" },
+      {
+        name: "description",
+        content: "Manage the services, channels and resources connected to your Kurukoo account.",
+      },
+    ],
+  }),
   component: ConnectPage,
 });
 
 const managedSlugs = ["google-drive", "google-sheets", "notion", "onedrive", "outlook"] as const;
 const resourceKinds: Array<{ value: ConnectResourceKind; label: string }> = [
-  { value: "phone", label: "Phone" }, { value: "tv", label: "TV" }, { value: "cctv", label: "CCTV" }, { value: "camera", label: "Camera" }, { value: "laptop", label: "Laptop" }, { value: "desktop", label: "Desktop" }, { value: "tablet", label: "Tablet" }, { value: "vehicle", label: "Vehicle" }, { value: "iot", label: "IoT" }, { value: "other", label: "Other" },
+  { value: "phone", label: "Phone" },
+  { value: "tv", label: "TV" },
+  { value: "cctv", label: "CCTV" },
+  { value: "camera", label: "Camera" },
+  { value: "laptop", label: "Laptop" },
+  { value: "desktop", label: "Desktop" },
+  { value: "tablet", label: "Tablet" },
+  { value: "vehicle", label: "Vehicle" },
+  { value: "iot", label: "IoT" },
+  { value: "other", label: "Other" },
 ];
 
-function ServiceRow({ slug, state, onRefresh }: { slug: typeof managedSlugs[number]; state?: IntegrationConnectionState; onRefresh: () => void }) {
+function ServiceRow({
+  slug,
+  state,
+  onRefresh,
+}: {
+  slug: (typeof managedSlugs)[number];
+  state?: IntegrationConnectionState;
+  onRefresh: () => void;
+}) {
   const integration = getIntegration(slug)!;
   const Icon = integration.icon;
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  async function connect() { setBusy(true); setMessage(null); try { const result = await startIntegrationConnection(integration); if (result.authorizationUrl) window.location.assign(result.authorizationUrl); else setMessage("The provider did not return an authorization link."); } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to start the connection."); } finally { setBusy(false); } }
-  async function disconnect() { if (!window.confirm(`Disconnect ${integration.name} from Kurukoo?`)) return; setBusy(true); setMessage(null); try { await revokeIntegrationConnection(integration); onRefresh(); } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to disconnect this source."); } finally { setBusy(false); } }
-  return <article className="rounded-[19px] border border-border bg-surface p-4"><div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-elevated"><Icon className="size-[18px]" /></span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="text-[13.5px] font-semibold">{integration.name}</h3><Badge tone={state?.connected ? "success" : "quiet"}>{state?.connected ? "Connected" : state?.configured && state.enabled ? "Ready to connect" : "Unavailable"}</Badge></div><p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">{state?.connected ? integration.description : state?.reason || integration.detail}</p></div></div><div className="mt-3 flex flex-wrap gap-2">{state?.connected ? <button type="button" disabled={busy} onClick={() => void disconnect()} className={actionClass()}>{busy ? "Disconnecting…" : "Disconnect"}</button> : state?.configured && state.enabled ? <button type="button" disabled={busy} onClick={() => void connect()} className={actionClass("primary")}>{busy ? "Preparing…" : integration.connectionLabel}</button> : null}<Link to="/integrations/$integrationId" params={{ integrationId: integration.slug }} className={actionClass()}><ExternalLink className="size-3.5" /> Details</Link></div>{message ? <p className="mt-3 text-[10.5px] text-destructive">{message}</p> : null}</article>;
+  async function connect() {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const result = await startIntegrationConnection(integration);
+      if (result.authorizationUrl) window.location.assign(result.authorizationUrl);
+      else setMessage("The provider did not return an authorization link.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to start the connection.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function disconnect() {
+    if (!window.confirm(`Disconnect ${integration.name} from Kurukoo?`)) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      await revokeIntegrationConnection(integration);
+      onRefresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to disconnect this source.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <article className="rounded-[19px] border border-border bg-surface p-4">
+      <div className="flex items-start gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-elevated">
+          <Icon className="size-[18px]" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-[13.5px] font-semibold">{integration.name}</h3>
+            <Badge tone={state?.connected ? "success" : "quiet"}>
+              {state?.connected
+                ? "Connected"
+                : state?.configured && state.enabled
+                  ? "Ready to connect"
+                  : "Unavailable"}
+            </Badge>
+          </div>
+          <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+            {state?.connected ? integration.description : state?.reason || integration.detail}
+          </p>
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {state?.connected ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void disconnect()}
+            className={actionClass()}
+          >
+            {busy ? "Disconnecting…" : "Disconnect"}
+          </button>
+        ) : state?.configured && state.enabled ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void connect()}
+            className={actionClass("primary")}
+          >
+            {busy ? "Preparing…" : integration.connectionLabel}
+          </button>
+        ) : null}
+        <Link
+          to="/integrations/$integrationId"
+          params={{ integrationId: integration.slug }}
+          className={actionClass()}
+        >
+          <ExternalLink className="size-3.5" /> Details
+        </Link>
+      </div>
+      {message ? <p className="mt-3 text-[10.5px] text-destructive">{message}</p> : null}
+    </article>
+  );
 }
 
-function ResourceCard({ resource, onRevoke }: { resource: ConnectedResource; onRevoke: (id: string) => void }) {
+function ResourceCard({
+  resource,
+  onRevoke,
+}: {
+  resource: ConnectedResource;
+  onRevoke: (id: string) => void;
+}) {
   const [busy, setBusy] = useState(false);
-  async function revoke() { if (!window.confirm(`Disconnect ${resource.label} from Kurukoo?`)) return; setBusy(true); try { await revokeConnectedResource(resource.id); onRevoke(resource.id); } finally { setBusy(false); } }
-  return <article className="rounded-[19px] border border-border bg-surface p-4"><div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-elevated"><Smartphone className="size-[18px]" /></span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="text-[13.5px] font-semibold">{resource.label}</h3><Badge tone="success">{resource.state || "Connected"}</Badge></div><p className="mt-1.5 text-[11px] text-muted-foreground">{resource.kind}{resource.vendor ? ` · ${resource.vendor}` : ""}{resource.protocol ? ` · ${resource.protocol}` : ""}</p><p className="mt-2 text-[10.5px] leading-relaxed text-muted-foreground">{resource.capabilities?.length ? resource.capabilities.join(" · ") : "Authorised resource"}</p></div></div><div className="mt-3"><button type="button" disabled={busy} onClick={() => void revoke()} className={actionClass()}>{busy ? "Disconnecting…" : "Disconnect"}</button></div></article>;
+  async function revoke() {
+    if (!window.confirm(`Disconnect ${resource.label} from Kurukoo?`)) return;
+    setBusy(true);
+    try {
+      await revokeConnectedResource(resource.id);
+      onRevoke(resource.id);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <article className="rounded-[19px] border border-border bg-surface p-4">
+      <div className="flex items-start gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-elevated">
+          <Smartphone className="size-[18px]" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-[13.5px] font-semibold">{resource.label}</h3>
+            <Badge tone="success">{resource.state || "Connected"}</Badge>
+          </div>
+          <p className="mt-1.5 text-[11px] text-muted-foreground">
+            {resource.kind}
+            {resource.vendor ? ` · ${resource.vendor}` : ""}
+            {resource.protocol ? ` · ${resource.protocol}` : ""}
+          </p>
+          <p className="mt-2 text-[10.5px] leading-relaxed text-muted-foreground">
+            {resource.capabilities?.length
+              ? resource.capabilities.join(" · ")
+              : "Authorised resource"}
+          </p>
+        </div>
+      </div>
+      <div className="mt-3">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void revoke()}
+          className={actionClass()}
+        >
+          {busy ? "Disconnecting…" : "Disconnect"}
+        </button>
+      </div>
+    </article>
+  );
 }
 
-function AddResource({ onCreated }: { onCreated: (resource: ConnectedResource, pairing: ConnectionPairing) => void }) {
-  const [kind, setKind] = useState<ConnectResourceKind>("phone"); const [label, setLabel] = useState(""); const [vendor, setVendor] = useState(""); const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null);
-  async function submit(event: FormEvent) { event.preventDefault(); if (!label.trim()) { setError("Give the resource a name."); return; } setBusy(true); setError(null); try { const result = await registerConnectedResource({ kind, label: label.trim(), vendor: vendor.trim() || undefined, protocol: "custom" }); setLabel(""); setVendor(""); onCreated(result.resource, result.pairing); } catch (cause) { setError(cause instanceof Error ? cause.message : "The resource could not be registered."); } finally { setBusy(false); } }
-  return <form onSubmit={submit} className="rounded-[19px] border border-dashed border-border bg-elevated/25 p-4"><div className="flex items-start gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-tint text-brand-ink"><Plus className="size-4" /></span><div><p className="text-[13.5px] font-semibold">Add a device or resource</p><p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">Register a supported physical resource and Kurukoo will issue a pairing code.</p></div></div><div className="mt-4 grid gap-3 sm:grid-cols-3"><label className="text-[10.5px] font-medium">Type<select value={kind} onChange={(event) => setKind(event.target.value as ConnectResourceKind)} className="mt-1.5 h-10 w-full rounded-xl border border-border bg-background px-3 text-[11.5px]">{resourceKinds.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label><label className="text-[10.5px] font-medium">Name<input value={label} onChange={(event) => setLabel(event.target.value)} placeholder="e.g. Living room camera" className="mt-1.5 h-10 w-full rounded-xl border border-border bg-background px-3 text-[11.5px]" /></label><label className="text-[10.5px] font-medium">Vendor <span className="font-normal text-muted-foreground">optional</span><input value={vendor} onChange={(event) => setVendor(event.target.value)} placeholder="e.g. Samsung" className="mt-1.5 h-10 w-full rounded-xl border border-border bg-background px-3 text-[11.5px]" /></label></div>{error ? <p className="mt-3 text-[10.5px] text-destructive">{error}</p> : null}<div className="mt-3"><button type="submit" disabled={busy} className={actionClass("primary")}>{busy ? "Registering…" : "Register resource"}</button></div></form>;
+function AddResource({
+  onCreated,
+}: {
+  onCreated: (resource: ConnectedResource, pairing: ConnectionPairing) => void;
+}) {
+  const [kind, setKind] = useState<ConnectResourceKind>("phone");
+  const [label, setLabel] = useState("");
+  const [vendor, setVendor] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!label.trim()) {
+      setError("Give the resource a name.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await registerConnectedResource({
+        kind,
+        label: label.trim(),
+        vendor: vendor.trim() || undefined,
+        protocol: "custom",
+      });
+      setLabel("");
+      setVendor("");
+      onCreated(result.resource, result.pairing);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The resource could not be registered.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <form
+      onSubmit={submit}
+      className="rounded-[19px] border border-dashed border-border bg-elevated/25 p-4"
+    >
+      <div className="flex items-start gap-3">
+        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-tint text-brand-ink">
+          <Plus className="size-4" />
+        </span>
+        <div>
+          <p className="text-[13.5px] font-semibold">Add a device or resource</p>
+          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+            Register a supported physical resource and Kurukoo will issue a pairing code.
+          </p>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <label className="text-[10.5px] font-medium">
+          Type
+          <select
+            value={kind}
+            onChange={(event) => setKind(event.target.value as ConnectResourceKind)}
+            className="mt-1.5 h-10 w-full rounded-xl border border-border bg-background px-3 text-[11.5px]"
+          >
+            {resourceKinds.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-[10.5px] font-medium">
+          Name
+          <input
+            value={label}
+            onChange={(event) => setLabel(event.target.value)}
+            placeholder="e.g. Living room camera"
+            className="mt-1.5 h-10 w-full rounded-xl border border-border bg-background px-3 text-[11.5px]"
+          />
+        </label>
+        <label className="text-[10.5px] font-medium">
+          Vendor <span className="font-normal text-muted-foreground">optional</span>
+          <input
+            value={vendor}
+            onChange={(event) => setVendor(event.target.value)}
+            placeholder="e.g. Samsung"
+            className="mt-1.5 h-10 w-full rounded-xl border border-border bg-background px-3 text-[11.5px]"
+          />
+        </label>
+      </div>
+      {error ? <p className="mt-3 text-[10.5px] text-destructive">{error}</p> : null}
+      <div className="mt-3">
+        <button type="submit" disabled={busy} className={actionClass("primary")}>
+          {busy ? "Registering…" : "Register resource"}
+        </button>
+      </div>
+    </form>
+  );
 }
 
-function Pairing({ resource, pairing, onDone }: { resource: ConnectedResource; pairing: ConnectionPairing; onDone: (resource: ConnectedResource) => void }) {
-  const [code, setCode] = useState(pairing.code); const [busy, setBusy] = useState(false); const [message, setMessage] = useState("");
-  async function activate() { setBusy(true); setMessage(""); try { const result = await activateConnectedResource(resource.id, code.trim()); if (!result.resource) throw new Error("The resource could not be activated."); onDone(result.resource); } catch (error) { setMessage(error instanceof Error ? error.message : "The pairing code could not be accepted."); } finally { setBusy(false); } }
-  async function refresh() { setBusy(true); setMessage(""); try { const next = await issueConnectionChallenge(resource.id); setCode(next.code); } catch (error) { setMessage(error instanceof Error ? error.message : "A new pairing code could not be issued."); } finally { setBusy(false); } }
-  return <div className="rounded-[19px] border border-primary/20 bg-brand-tint/10 p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-[13px] font-semibold">Activate {resource.label}</p><p className="mt-1 text-[10.5px] text-muted-foreground">Use the code with the resource before it expires.</p></div><Badge tone="accent">Pairing</Badge></div><div className="mt-3 flex flex-col gap-2 sm:flex-row"><input value={code} onChange={(event) => setCode(event.target.value)} className="h-10 min-w-0 flex-1 rounded-xl border border-border bg-background px-3 text-center font-mono tracking-[0.16em]" /><button type="button" disabled={busy} onClick={() => void activate()} className={actionClass("primary")}>{busy ? "Working…" : "Activate"}</button><button type="button" disabled={busy} onClick={() => void refresh()} className={actionClass()}><RefreshCw className="size-3.5" /> New code</button></div>{message ? <p className="mt-2 text-[10.5px] text-destructive">{message}</p> : null}</div>;
+function Pairing({
+  resource,
+  pairing,
+  onDone,
+}: {
+  resource: ConnectedResource;
+  pairing: ConnectionPairing;
+  onDone: (resource: ConnectedResource) => void;
+}) {
+  const [code, setCode] = useState(pairing.code);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  async function activate() {
+    setBusy(true);
+    setMessage("");
+    try {
+      const result = await activateConnectedResource(resource.id, code.trim());
+      if (!result.resource) throw new Error("The resource could not be activated.");
+      onDone(result.resource);
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "The pairing code could not be accepted.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function refresh() {
+    setBusy(true);
+    setMessage("");
+    try {
+      const next = await issueConnectionChallenge(resource.id);
+      setCode(next.code);
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "A new pairing code could not be issued.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="rounded-[19px] border border-primary/20 bg-brand-tint/10 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[13px] font-semibold">Activate {resource.label}</p>
+          <p className="mt-1 text-[10.5px] text-muted-foreground">
+            Use the code with the resource before it expires.
+          </p>
+        </div>
+        <Badge tone="accent">Pairing</Badge>
+      </div>
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+        <input
+          value={code}
+          onChange={(event) => setCode(event.target.value)}
+          className="h-10 min-w-0 flex-1 rounded-xl border border-border bg-background px-3 text-center font-mono tracking-[0.16em]"
+        />
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void activate()}
+          className={actionClass("primary")}
+        >
+          {busy ? "Working…" : "Activate"}
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void refresh()}
+          className={actionClass()}
+        >
+          <RefreshCw className="size-3.5" /> New code
+        </button>
+      </div>
+      {message ? <p className="mt-2 text-[10.5px] text-destructive">{message}</p> : null}
+    </div>
+  );
 }
 
 function ConnectPage() {
-  const [states, setStates] = useState<Record<string, IntegrationConnectionState>>({}); const [resources, setResources] = useState<ConnectedResource[]>([]); const [pairing, setPairing] = useState<{ resource: ConnectedResource; pairing: ConnectionPairing } | null>(null); const [loading, setLoading] = useState(true);
-  async function refresh() { setLoading(true); const next: Record<string, IntegrationConnectionState> = {}; await Promise.all(managedSlugs.map(async (slug) => { const integration = getIntegration(slug)!; try { next[slug] = await getIntegrationStatus(integration); } catch { next[slug] = { configured: false, enabled: false, reason: "Connection status is unavailable for this session." }; } })); setStates(next); try { setResources(await fetchConnectedResources()); } catch { setResources([]); } setLoading(false); }
-  useEffect(() => { void refresh(); }, []);
-  return <div className="mx-auto w-full max-w-6xl space-y-8 pb-10">
-    <header className="max-w-3xl"><p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-primary">Connections</p><h1 className="mt-2 text-[40px] font-semibold leading-[1.02] tracking-[-0.045em] md:text-[52px]">Manage what Kurukoo can use</h1><p className="mt-4 text-[15px] leading-7 text-muted-foreground">Review connected services, start a new provider connection, or link a supported physical resource. Every connection stays visible here.</p><div className="mt-5 flex flex-wrap gap-2"><Link to="/integrations" className={actionClass("primary")}>Browse integrations</Link><button type="button" onClick={() => void refresh()} className={actionClass()} disabled={loading}>{loading ? "Refreshing…" : "Refresh status"}</button></div></header>
-    <section className="rounded-[22px] border border-border bg-surface p-5 md:p-6"><div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-tint text-brand-ink"><ShieldCheck className="size-5" /></span><div><h2 className="text-[15px] font-semibold">You stay in control</h2><p className="mt-1.5 max-w-3xl text-[12px] leading-relaxed text-muted-foreground">A connection gives Kurukoo a defined doorway into a service. It does not mean unlimited access or automatic permission to act. Important external actions follow the relevant approval and evidence flow.</p></div></div></section>
-    <section><div className="mb-3"><p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">External services</p><h2 className="mt-1.5 text-[29px] font-semibold tracking-[-0.035em]">Your connected sources</h2><p className="mt-1 text-[10.5px] text-muted-foreground">These are the sources with live account-level connection flows today.</p></div><div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">{managedSlugs.map((slug) => <ServiceRow key={slug} slug={slug} state={states[slug]} onRefresh={() => void refresh()} />)}</div></section>
-    <section><div className="mb-3"><p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Devices & resources</p><h2 className="mt-1.5 text-[29px] font-semibold tracking-[-0.035em]">Physical resources</h2><p className="mt-1 text-[10.5px] text-muted-foreground">Pair supported devices and resources when Kurukoo needs a physical-world connection.</p></div><div className="grid gap-3 md:grid-cols-2">{resources.map((resource) => <ResourceCard key={resource.id} resource={resource} onRevoke={(id) => setResources((current) => current.filter((item) => item.id !== id))} />)}<AddResource onCreated={(resource, nextPairing) => { setResources((current) => [resource, ...current]); setPairing({ resource, pairing: nextPairing }); }} /></div>{pairing ? <div className="mt-3"><Pairing resource={pairing.resource} pairing={pairing.pairing} onDone={(resource) => { setResources((current) => current.map((item) => item.id === resource.id ? resource : item)); setPairing(null); }} /></div> : null}</section>
-    <section className="rounded-[22px] border border-border bg-elevated/35 p-5 md:p-6"><p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Need another source?</p><h2 className="mt-1.5 text-[25px] font-semibold tracking-[-0.03em]">See the full integration directory</h2><p className="mt-2 max-w-2xl text-[11.5px] leading-relaxed text-muted-foreground">Storage, productivity, communication and AI-assistant sources are listed there, including sources that are planned but not yet connected in this deployment.</p><Link to="/integrations" className={`${actionClass()} mt-4`}>Open integration directory</Link></section>
-  </div>;
+  const [states, setStates] = useState<Record<string, IntegrationConnectionState>>({});
+  const [resources, setResources] = useState<ConnectedResource[]>([]);
+  const [pairing, setPairing] = useState<{
+    resource: ConnectedResource;
+    pairing: ConnectionPairing;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  async function refresh() {
+    setLoading(true);
+    const next: Record<string, IntegrationConnectionState> = {};
+    await Promise.all(
+      managedSlugs.map(async (slug) => {
+        const integration = getIntegration(slug)!;
+        try {
+          next[slug] = await getIntegrationStatus(integration);
+        } catch {
+          next[slug] = {
+            configured: false,
+            enabled: false,
+            reason: "Connection status is unavailable for this session.",
+          };
+        }
+      }),
+    );
+    setStates(next);
+    try {
+      setResources(await fetchConnectedResources());
+    } catch {
+      setResources([]);
+    }
+    setLoading(false);
+  }
+  useEffect(() => {
+    void refresh();
+  }, []);
+  return (
+    <div className="mx-auto w-full max-w-6xl space-y-8 pb-10">
+      <header className="max-w-3xl">
+        <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-primary">
+          Connections
+        </p>
+        <h1 className="mt-2 text-[40px] font-semibold leading-[1.02] tracking-[-0.045em] md:text-[52px]">
+          Manage what Kurukoo can use
+        </h1>
+        <p className="mt-4 text-[15px] leading-7 text-muted-foreground">
+          Review connected services, start a new provider connection, or link a supported physical
+          resource. Every connection stays visible here.
+        </p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Link to="/integrations" className={actionClass("primary")}>
+            Browse integrations
+          </Link>
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            className={actionClass()}
+            disabled={loading}
+          >
+            {loading ? "Refreshing…" : "Refresh status"}
+          </button>
+        </div>
+      </header>
+      <section className="rounded-[22px] border border-border bg-surface p-5 md:p-6">
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-tint text-brand-ink">
+            <ShieldCheck className="size-5" />
+          </span>
+          <div>
+            <h2 className="text-[15px] font-semibold">You stay in control</h2>
+            <p className="mt-1.5 max-w-3xl text-[12px] leading-relaxed text-muted-foreground">
+              A connection gives Kurukoo a defined doorway into a service. It does not mean
+              unlimited access or automatic permission to act. Important external actions follow the
+              relevant approval and evidence flow.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section>
+        <div className="mb-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            External services
+          </p>
+          <h2 className="mt-1.5 text-[29px] font-semibold tracking-[-0.035em]">
+            Your connected sources
+          </h2>
+          <p className="mt-1 text-[10.5px] text-muted-foreground">
+            These are the sources with live account-level connection flows today.
+          </p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {managedSlugs.map((slug) => (
+            <ServiceRow
+              key={slug}
+              slug={slug}
+              state={states[slug]}
+              onRefresh={() => void refresh()}
+            />
+          ))}
+        </div>
+      </section>
+      <section>
+        <div className="mb-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            Devices & resources
+          </p>
+          <h2 className="mt-1.5 text-[29px] font-semibold tracking-[-0.035em]">
+            Physical resources
+          </h2>
+          <p className="mt-1 text-[10.5px] text-muted-foreground">
+            Pair supported devices and resources when Kurukoo needs a physical-world connection.
+          </p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          {resources.map((resource) => (
+            <ResourceCard
+              key={resource.id}
+              resource={resource}
+              onRevoke={(id) => setResources((current) => current.filter((item) => item.id !== id))}
+            />
+          ))}
+          <AddResource
+            onCreated={(resource, nextPairing) => {
+              setResources((current) => [resource, ...current]);
+              setPairing({ resource, pairing: nextPairing });
+            }}
+          />
+        </div>
+        {pairing ? (
+          <div className="mt-3">
+            <Pairing
+              resource={pairing.resource}
+              pairing={pairing.pairing}
+              onDone={(resource) => {
+                setResources((current) =>
+                  current.map((item) => (item.id === resource.id ? resource : item)),
+                );
+                setPairing(null);
+              }}
+            />
+          </div>
+        ) : null}
+      </section>
+      <section className="rounded-[22px] border border-border bg-elevated/35 p-5 md:p-6">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          Need another source?
+        </p>
+        <h2 className="mt-1.5 text-[25px] font-semibold tracking-[-0.03em]">
+          See the full integration directory
+        </h2>
+        <p className="mt-2 max-w-2xl text-[11.5px] leading-relaxed text-muted-foreground">
+          Storage, productivity, communication and AI-assistant sources are listed there, including
+          sources that are planned but not yet connected in this deployment.
+        </p>
+        <Link to="/integrations" className={`${actionClass()} mt-4`}>
+          Open integration directory
+        </Link>
+      </section>
+    </div>
+  );
 }

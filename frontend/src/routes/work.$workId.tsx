@@ -13,7 +13,11 @@ import { ExecutionStory } from "@/components/kurukoo/execution-story";
 import { Rows, SectionHeader } from "@/components/kurukoo/ui";
 import { artifacts, entities } from "@/lib/kurukoo-demo";
 import { ArtifactRow, ContactRow } from "@/components/kurukoo/cards";
-import { fetchEconomicRequest, isKurukooApiConfigured, type EconomicRequest } from "@/lib/kurukoo-api";
+import {
+  fetchEconomicRequest,
+  isKurukooApiConfigured,
+  type EconomicRequest,
+} from "@/lib/kurukoo-api";
 import { useKurukoo } from "@/lib/kurukoo-store";
 import { canonicalWorkItem, previewEconomicRequest } from "@/lib/work-projection";
 
@@ -46,7 +50,8 @@ function WorkDetail() {
           setRequestError("");
         }
       } catch (error) {
-        if (!cancelled) setRequestError(error instanceof Error ? error.message : "Unable to load request.");
+        if (!cancelled)
+          setRequestError(error instanceof Error ? error.message : "Unable to load request.");
       }
     };
     void load();
@@ -62,7 +67,7 @@ function WorkDetail() {
     [configured, localItem, request],
   );
   const displayRequest = useMemo(
-    () => (request ?? (!configured && localItem ? previewEconomicRequest(localItem) : null)),
+    () => request ?? (!configured && localItem ? previewEconomicRequest(localItem) : null),
     [configured, localItem, request],
   );
 
@@ -71,7 +76,12 @@ function WorkDetail() {
       <>
         <PageHeader title="Request" />
         <EmptyState title="Request unavailable" body={requestError} />
-        <div className="mt-4"><Link to="/work" className="inline-flex items-center gap-1.5 text-[14px] underline"><ArrowLeft className="size-3.5" />Back to Work</Link></div>
+        <div className="mt-4">
+          <Link to="/work" className="inline-flex items-center gap-1.5 text-[14px] underline">
+            <ArrowLeft className="size-3.5" />
+            Back to Work
+          </Link>
+        </div>
       </>
     );
   }
@@ -80,23 +90,48 @@ function WorkDetail() {
     return (
       <>
         <PageHeader title="Request" />
-        <EmptyState title="Request not found" body="This request is no longer available in your current Work list." />
-        <div className="mt-4"><Link to="/work" className="inline-flex items-center gap-1.5 text-[14px] underline"><ArrowLeft className="size-3.5" />Back to Work</Link></div>
+        <EmptyState
+          title="Request not found"
+          body="This request is no longer available in your current Work list."
+        />
+        <div className="mt-4">
+          <Link to="/work" className="inline-flex items-center gap-1.5 text-[14px] underline">
+            <ArrowLeft className="size-3.5" />
+            Back to Work
+          </Link>
+        </div>
       </>
     );
   }
 
   const requirementEntries = request
-    ? Object.entries(request.requirements ?? {}).filter(([, value]) => value !== null && value !== undefined && String(value).trim())
+    ? Object.entries(request.requirements ?? {}).filter(
+        ([, value]) => value !== null && value !== undefined && String(value).trim(),
+      )
     : [];
-  const candidateEnabled = Boolean(request) && ["requested", "awaiting_match", "partially_matched", "matched", "quoting"].includes(request?.status ?? "");
-  const terminal = request ? ["completed", "cancelled", "abandoned", "disputed", "failed"].includes(request.status) : false;
+  const candidateEnabled =
+    Boolean(request) &&
+    ["requested", "awaiting_match", "partially_matched", "matched", "quoting"].includes(
+      request?.status ?? "",
+    );
+  const terminal = request
+    ? ["completed", "cancelled", "abandoned", "disputed", "failed"].includes(request.status)
+    : false;
 
   return (
     <div className="space-y-7 pb-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link to="/work" className="inline-flex min-h-9 items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground"><ArrowLeft className="size-3.5" />All Work</Link>
-        <div className="flex items-center gap-2 text-[10.5px] text-muted-foreground"><span className="size-1.5 rounded-full bg-primary" />{terminal ? "Closed request" : "Live request"}</div>
+        <Link
+          to="/work"
+          className="inline-flex min-h-9 items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="size-3.5" />
+          All Work
+        </Link>
+        <div className="flex items-center gap-2 text-[10.5px] text-muted-foreground">
+          <span className="size-1.5 rounded-full bg-primary" />
+          {terminal ? "Closed request" : "Live request"}
+        </div>
       </div>
 
       <PageHeader title={displayItem.title} subtitle={displayItem.detail} />
@@ -114,7 +149,9 @@ function WorkDetail() {
           requestId={request.id}
           enabled={candidateEnabled}
           onSelected={() => {
-            void fetchEconomicRequest(workId).then(setRequest).catch(() => undefined);
+            void fetchEconomicRequest(workId)
+              .then(setRequest)
+              .catch(() => undefined);
           }}
         />
       ) : null}
@@ -123,38 +160,62 @@ function WorkDetail() {
       {request ? (
         <>
           <section>
-            <SectionHeader title="Request details" subtitle="The source-of-truth requirements returned by the canonical request." />
+            <SectionHeader
+              title="Request details"
+              subtitle="The source-of-truth requirements returned by the canonical request."
+            />
             <Rows>
               <li className="px-4 py-4 sm:px-5">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-elevated px-2.5 py-1 text-[10.5px] font-medium">{request.status.replace(/[_-]/g, " ")}</span>
-                  <span className="text-[11px] text-muted-foreground">{request.skill.replace(/[_-]/g, " ")}</span>
+                  <span className="rounded-full bg-elevated px-2.5 py-1 text-[10.5px] font-medium">
+                    {request.status.replace(/[_-]/g, " ")}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {request.skill.replace(/[_-]/g, " ")}
+                  </span>
                 </div>
                 {requirementEntries.length ? (
                   <dl className="mt-4 grid gap-3 sm:grid-cols-2">
                     {requirementEntries.map(([key, value]) => (
                       <div key={key} className="rounded-xl bg-elevated/60 px-3 py-2.5">
-                        <dt className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">{key.replace(/[_-]/g, " ")}</dt>
-                        <dd className="mt-1 text-[13px] leading-5">{typeof value === "object" ? JSON.stringify(value) : String(value)}</dd>
+                        <dt className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                          {key.replace(/[_-]/g, " ")}
+                        </dt>
+                        <dd className="mt-1 text-[13px] leading-5">
+                          {typeof value === "object" ? JSON.stringify(value) : String(value)}
+                        </dd>
                       </div>
                     ))}
                   </dl>
                 ) : (
-                  <p className="mt-3 text-[12.5px] text-muted-foreground">No additional request details were returned.</p>
+                  <p className="mt-3 text-[12.5px] text-muted-foreground">
+                    No additional request details were returned.
+                  </p>
                 )}
               </li>
             </Rows>
           </section>
 
           <section>
-            <SectionHeader title="Commercial state" subtitle="Only canonical quote and payment state is shown here." />
+            <SectionHeader
+              title="Commercial state"
+              subtitle="Only canonical quote and payment state is shown here."
+            />
             <Rows>
               <li className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-5">
                 <div>
                   <p className="text-[13.5px] font-medium">Quote</p>
-                  <p className="mt-0.5 text-[12px] text-muted-foreground">{request.quote ? "Quote information is available." : "No quote has been returned yet."}</p>
+                  <p className="mt-0.5 text-[12px] text-muted-foreground">
+                    {request.quote
+                      ? "Quote information is available."
+                      : "No quote has been returned yet."}
+                  </p>
                 </div>
-                <span className="text-[13px] font-medium">{request.amount != null ? `${request.currency ?? ""} ${request.amount}`.trim() : "Not available"}</span>
+                <span className="text-[13px] font-medium">
+                  {request.amount != null
+                    ? `${request.currency ?? ""} ${request.amount}`.trim()
+                    : "Not available"}
+                </span>
               </li>
             </Rows>
           </section>
@@ -163,26 +224,63 @@ function WorkDetail() {
 
       {!configured ? (
         <>
-          <div className="rounded-xl border border-dashed border-border bg-elevated/35 px-3.5 py-2.5 text-[10.5px] text-muted-foreground">Disconnected development preview. No external action is represented as completed.</div>
+          <div className="rounded-xl border border-dashed border-border bg-elevated/35 px-3.5 py-2.5 text-[10.5px] text-muted-foreground">
+            Disconnected development preview. No external action is represented as completed.
+          </div>
           <section>
             <SectionHeader title="People" />
             <Rows>
               {entities.slice(0, 2).map((entity) => (
-                <ContactRow key={entity.id} entity={entity} right={<Link to="/messages" className="text-[13px] text-muted-foreground hover:underline">Message</Link>} />
+                <ContactRow
+                  key={entity.id}
+                  entity={entity}
+                  right={
+                    <Link
+                      to="/messages"
+                      className="text-[13px] text-muted-foreground hover:underline"
+                    >
+                      Message
+                    </Link>
+                  }
+                />
               ))}
             </Rows>
           </section>
           <section>
             <SectionHeader title="Files" />
-            <Rows>{artifacts.map((artifact) => <ArtifactRow key={artifact.id} artifact={artifact} />)}</Rows>
+            <Rows>
+              {artifacts.map((artifact) => (
+                <ArtifactRow key={artifact.id} artifact={artifact} />
+              ))}
+            </Rows>
           </section>
         </>
       ) : null}
 
       <section className="rounded-[20px] border border-border bg-elevated/25 px-5 py-5 sm:px-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-xl bg-background"><CheckCircle2 className="size-4 text-primary" /></span><div><p className="text-[13px] font-semibold">Keep the outcome moving</p><p className="mt-1 text-[11px] leading-5 text-muted-foreground">Continue in Chat, return to Work, or move to Artifacts when the request produces something worth keeping.</p></div></div>
-          <div className="flex flex-wrap gap-2"><Link to="/chat"><Action variant="primary">Continue conversation</Action></Link><Link to="/artifacts"><Action>Open Artifacts <ArrowRight className="ml-1 size-3.5" /></Action></Link></div>
+          <div className="flex items-start gap-3">
+            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-background">
+              <CheckCircle2 className="size-4 text-primary" />
+            </span>
+            <div>
+              <p className="text-[13px] font-semibold">Keep the outcome moving</p>
+              <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+                Continue in Chat, return to Work, or move to Artifacts when the request produces
+                something worth keeping.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link to="/chat">
+              <Action variant="primary">Continue conversation</Action>
+            </Link>
+            <Link to="/artifacts">
+              <Action>
+                Open Artifacts <ArrowRight className="ml-1 size-3.5" />
+              </Action>
+            </Link>
+          </div>
         </div>
       </section>
     </div>

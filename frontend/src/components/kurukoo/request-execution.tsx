@@ -1,17 +1,86 @@
-import { Check, Circle, CreditCard, FileCheck2, MapPin, MessageCircle, ShieldCheck, Star, Truck, UserRound, Users, XCircle } from "lucide-react";
+import {
+  Check,
+  Circle,
+  CreditCard,
+  FileCheck2,
+  MapPin,
+  MessageCircle,
+  ShieldCheck,
+  Star,
+  Truck,
+  UserRound,
+  Users,
+  XCircle,
+} from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { approveEconomicRequest, broadcastEconomicRequest, cancelEconomicRequest, completeEconomicRequest, confirmDispatchCompletion, lockEconomicEscrow, submitEconomicReview } from "@/lib/canonical-work-api";
-import { fetchEconomicCoordination, fetchEconomicExecution, fetchEconomicRequest, type EconomicRequest, type EconomicCoordination, type ExecutionRequest } from "@/lib/kurukoo-api";
+import {
+  approveEconomicRequest,
+  broadcastEconomicRequest,
+  cancelEconomicRequest,
+  completeEconomicRequest,
+  confirmDispatchCompletion,
+  lockEconomicEscrow,
+  submitEconomicReview,
+} from "@/lib/canonical-work-api";
+import {
+  fetchEconomicCoordination,
+  fetchEconomicExecution,
+  fetchEconomicRequest,
+  type EconomicRequest,
+  type EconomicCoordination,
+  type ExecutionRequest,
+} from "@/lib/kurukoo-api";
 import { cn } from "@/lib/utils";
 
-const stages = [["request", "Request"], ["discovery", "Options"], ["quote", "Quote"], ["approval", "Approval"], ["payment", "Payment"], ["fulfilment", "Fulfilment"], ["evidence", "Outcome"]] as const;
-type Stage = typeof stages[number][0];
-function stageFor(status: string): Stage { if (["requested", "awaiting_match", "partially_matched"].includes(status)) return "request"; if (["matched", "quoting"].includes(status)) return "discovery"; if (status === "quoted") return "quote"; if (status === "awaiting_confirmation") return "approval"; if (["payment_pending", "paid"].includes(status)) return "payment"; if (["reserved", "in_fulfillment", "fulfilled", "dispatched", "driver_assigned", "arriving", "in_transit"].includes(status)) return "fulfilment"; return status === "completed" ? "evidence" : "request"; }
-function label(value: string) { return value.replace(/[_-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()); }
-function field(request: EconomicRequest, names: string[]) { for (const name of names) { const value = request.requirements?.[name]; if (value !== undefined && value !== null && String(value).trim()) return String(value); } return ""; }
+const stages = [
+  ["request", "Request"],
+  ["discovery", "Options"],
+  ["quote", "Quote"],
+  ["approval", "Approval"],
+  ["payment", "Payment"],
+  ["fulfilment", "Fulfilment"],
+  ["evidence", "Outcome"],
+] as const;
+type Stage = (typeof stages)[number][0];
+function stageFor(status: string): Stage {
+  if (["requested", "awaiting_match", "partially_matched"].includes(status)) return "request";
+  if (["matched", "quoting"].includes(status)) return "discovery";
+  if (status === "quoted") return "quote";
+  if (status === "awaiting_confirmation") return "approval";
+  if (["payment_pending", "paid"].includes(status)) return "payment";
+  if (
+    [
+      "reserved",
+      "in_fulfillment",
+      "fulfilled",
+      "dispatched",
+      "driver_assigned",
+      "arriving",
+      "in_transit",
+    ].includes(status)
+  )
+    return "fulfilment";
+  return status === "completed" ? "evidence" : "request";
+}
+function label(value: string) {
+  return value.replace(/[_-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+function field(request: EconomicRequest, names: string[]) {
+  for (const name of names) {
+    const value = request.requirements?.[name];
+    if (value !== undefined && value !== null && String(value).trim()) return String(value);
+  }
+  return "";
+}
 
-export function RequestExecution({ request: initialRequest, onAsk }: { request: EconomicRequest; onAsk?: (prompt: string) => void }) {
+export function RequestExecution({
+  request: initialRequest,
+  onAsk,
+}: {
+  request: EconomicRequest;
+  onAsk?: (prompt: string) => void;
+}) {
   const [request, setRequest] = useState(initialRequest);
   const [coordination, setCoordination] = useState<EconomicCoordination | null>(null);
   const [execution, setExecution] = useState<ExecutionRequest[]>([]);
@@ -21,39 +90,585 @@ export function RequestExecution({ request: initialRequest, onAsk }: { request: 
   const [reviewFeedback, setReviewFeedback] = useState("");
   const [reviewBusy, setReviewBusy] = useState(false);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
-  useEffect(() => { setRequest(initialRequest); setReviewSubmitted(false); setReviewRating(0); setReviewFeedback(""); }, [initialRequest]);
-  useEffect(() => { let cancelled = false; void Promise.all([fetchEconomicCoordination(initialRequest.id), fetchEconomicExecution(initialRequest.id)]).then(([nextCoordination, nextExecution]) => { if (cancelled) return; setCoordination(nextCoordination); setExecution(nextExecution); }).catch(() => { if (!cancelled) { setCoordination(null); setExecution([]); } }); return () => { cancelled = true; }; }, [initialRequest.id]);
-  const current = stageFor(request.status); const currentIndex = stages.findIndex(([key]) => key === current);
-  const from = field(request, ["pickup", "from", "origin", "pickup_location"]); const to = field(request, ["dropoff", "to", "destination", "dropoff_location"]);
-  const location = field(request, ["location", "pickup", "pickup_location", "from", "origin"]); const provider = field(request, ["provider", "provider_name", "seller", "rider", "driver"]); const eta = field(request, ["eta", "estimated_arrival", "arrival"]); const vehicle = field(request, ["vehicle", "vehicle_type", "ride_type"]);
+  useEffect(() => {
+    setRequest(initialRequest);
+    setReviewSubmitted(false);
+    setReviewRating(0);
+    setReviewFeedback("");
+  }, [initialRequest]);
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.all([
+      fetchEconomicCoordination(initialRequest.id),
+      fetchEconomicExecution(initialRequest.id),
+    ])
+      .then(([nextCoordination, nextExecution]) => {
+        if (cancelled) return;
+        setCoordination(nextCoordination);
+        setExecution(nextExecution);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCoordination(null);
+          setExecution([]);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [initialRequest.id]);
+  const current = stageFor(request.status);
+  const currentIndex = stages.findIndex(([key]) => key === current);
+  const from = field(request, ["pickup", "from", "origin", "pickup_location"]);
+  const to = field(request, ["dropoff", "to", "destination", "dropoff_location"]);
+  const location = field(request, ["location", "pickup", "pickup_location", "from", "origin"]);
+  const provider = field(request, ["provider", "provider_name", "seller", "rider", "driver"]);
+  const eta = field(request, ["eta", "estimated_arrival", "arrival"]);
+  const vehicle = field(request, ["vehicle", "vehicle_type", "ride_type"]);
   const participants = coordination?.participants ?? [];
-  const selectedProvider = participants.find((item) => item.providerPhone && ["selected", "accepted", "arrived", "in_progress", "completion_reported", "confirmed"].includes(String(item.status || ""))) ?? participants.find((item) => item.providerPhone) ?? null;
+  const selectedProvider =
+    participants.find(
+      (item) =>
+        item.providerPhone &&
+        [
+          "selected",
+          "accepted",
+          "arrived",
+          "in_progress",
+          "completion_reported",
+          "confirmed",
+        ].includes(String(item.status || "")),
+    ) ??
+    participants.find((item) => item.providerPhone) ??
+    null;
   const providerLabel = provider || selectedProvider?.providerPhone || "Not assigned";
-  const completionReport = participants.find((item) => item.status === "completion_reported" && item.providerPhone);
-  const completionLeadId = useMemo(() => { const raw = completionReport?.evidence?.dispatch_lead_id; return typeof raw === "string" && raw.trim() ? raw : ""; }, [completionReport]);
-  const reviewProviderPhone = selectedProvider?.providerPhone || completionReport?.providerPhone || "";
-  const quoteText = request.amount != null ? `${request.currency ?? ""} ${request.amount}`.trim() : request.quote ? "Quote available" : "Not returned yet";
-  const terminal = ["completed", "cancelled", "abandoned", "disputed", "failed"].includes(request.status); const isRide = /ride|transport|taxi|car|motor/i.test(request.skill);
-  const canApprove = request.status === "awaiting_confirmation"; const canBroadcast = ["requested", "awaiting_match", "partially_matched"].includes(request.status); const canPay = request.status === "payment_pending"; const canComplete = request.status === "fulfilled"; const canCancel = !terminal && !["in_fulfillment", "fulfilled", "completed"].includes(request.status); const awaitingOwnerConfirmation = Boolean(completionLeadId) && request.status !== "completed";
-  async function refreshRequestState() { const [nextRequest, nextCoordination, nextExecution] = await Promise.all([fetchEconomicRequest(request.id), fetchEconomicCoordination(request.id), fetchEconomicExecution(request.id)]); setRequest(nextRequest); setCoordination(nextCoordination); setExecution(nextExecution); }
-  async function runCanonicalAction(action: "approve" | "pay" | "complete" | "cancel" | "confirm_completion" | "broadcast") { if (actionBusy) return; setActionBusy(true); setActionError(""); try { if (action === "broadcast") { await broadcastEconomicRequest({ requestId: request.id, skill: request.skill, vehicleType: vehicle || undefined, location: location || undefined }); await refreshRequestState(); } else if (action === "confirm_completion") { if (!completionLeadId) throw new Error("The provider completion reference is not available yet."); await confirmDispatchCompletion(completionLeadId); await refreshRequestState(); } else if (action === "pay") { await lockEconomicEscrow(request.id); await refreshRequestState(); } else { const updated = action === "approve" ? await approveEconomicRequest(request.id) : action === "complete" ? await completeEconomicRequest(request.id, { source: "user_confirmed_from_work" }) : await cancelEconomicRequest(request.id); if (!updated) throw new Error("Kurukoo did not return the updated request."); setRequest(updated); const [nextCoordination, nextExecution] = await Promise.all([fetchEconomicCoordination(request.id), fetchEconomicExecution(request.id)]); setCoordination(nextCoordination); setExecution(nextExecution); } } catch (error) { setActionError(error instanceof Error ? error.message : "That request action could not be completed."); } finally { setActionBusy(false); } }
-  async function submitReview() { if (reviewBusy || reviewSubmitted) return; setReviewBusy(true); setActionError(""); try { if (!reviewProviderPhone) throw new Error("The completed request does not have a provider identity to review yet."); if (!reviewRating) throw new Error("Choose a rating from 1 to 5."); await submitEconomicReview({ requestId: request.id, providerPhone: reviewProviderPhone, rating: reviewRating, feedback: reviewFeedback }); setReviewSubmitted(true); } catch (error) { setActionError(error instanceof Error ? error.message : "The review could not be submitted."); } finally { setReviewBusy(false); } }
-  return <section className="mt-8 rounded-2xl border border-border bg-surface p-5 shadow-[var(--shadow-soft)]" aria-label="Request execution">
-    <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">Request</p><h2 className="mt-1 text-[19px] font-semibold">{label(request.skill)}</h2><p className="mt-1 text-[12px] text-muted-foreground">Follow the live request state and take the next action when Kurukoo needs you.</p></div><span className="rounded-full bg-elevated px-2.5 py-1 text-[10.5px] font-medium">{label(request.status)}</span></div>
-    <ol className="mt-5 grid grid-cols-4 gap-2 sm:grid-cols-7">{stages.map(([key, name], index) => { const done = terminal || index < currentIndex; const active = index === currentIndex && !terminal; return <li key={key} className="min-w-0"><div className="flex items-center gap-1.5"><span className={cn("grid size-7 shrink-0 place-items-center rounded-full border", done ? "border-primary bg-primary text-primary-foreground" : active ? "border-primary text-primary" : "border-border text-muted-foreground")}>{done ? <Check className="size-3.5" strokeWidth={3} /> : <Circle className="size-3" />}</span><span className={cn("truncate text-[10px]", active && "font-semibold text-foreground", !active && !done && "text-muted-foreground")}>{name}</span></div></li>; })}</ol>
-    <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{from || to ? <div className="rounded-xl bg-elevated/60 p-3"><MapPin className="size-4 text-primary"/><p className="mt-2 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">Route</p><p className="mt-1 text-[12px]">{from || "Pickup not specified"}</p>{to ? <p className="mt-0.5 text-[12px] text-muted-foreground">→ {to}</p> : null}</div> : null}<div className="rounded-xl bg-elevated/60 p-3"><UserRound className="size-4 text-primary"/><p className="mt-2 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">Provider</p><p className="mt-1 text-[12px]">{providerLabel}</p><p className="mt-0.5 text-[10.5px] text-muted-foreground">{selectedProvider?.status ? label(selectedProvider.status) : "Awaiting provider evidence"}</p></div>{eta ? <div className="rounded-xl bg-elevated/60 p-3"><Truck className="size-4 text-primary"/><p className="mt-2 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">ETA</p><p className="mt-1 text-[12px]">{eta}</p></div> : null}<div className="rounded-xl bg-elevated/60 p-3"><CreditCard className="size-4 text-primary"/><p className="mt-2 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">Commercial</p><p className="mt-1 text-[12px]">{quoteText}</p><p className="mt-0.5 text-[10.5px] text-muted-foreground">{request.status === "awaiting_confirmation" || request.status === "payment_pending" ? "Needs your review" : "Canonical state"}</p></div></div>
-    {canBroadcast ? <div className="mt-3 rounded-xl border border-primary/20 bg-brand-tint/10 p-4"><div className="flex items-start gap-3"><Users className="mt-0.5 size-4 shrink-0 text-primary"/><div className="min-w-0"><p className="text-[12.5px] font-semibold">Find live help</p><p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">Kurukoo can broadcast this request to eligible providers using the request details already captured. Provider acceptance will appear here as real evidence.</p><button type="button" disabled={actionBusy} onClick={() => void runCanonicalAction("broadcast")} className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground disabled:opacity-50">{actionBusy ? "Finding providers…" : "Find providers"}</button></div></div></div> : null}
-    {coordination?.offer ? <div className="mt-3 rounded-xl border border-border bg-elevated/25 p-3"><p className="text-[10px] font-bold uppercase tracking-[0.1em] text-primary">Selected offer</p><p className="mt-1 text-[12.5px] font-medium">{coordination.offer.description || "Offer returned"}</p>{coordination.offer.priceMinor != null ? <p className="mt-1 text-[11px] text-muted-foreground">{coordination.offer.currency || ""} {(coordination.offer.priceMinor / 100).toFixed(2)} · {coordination.offer.status || "status not returned"}</p> : null}</div> : null}
-    {canApprove ? <div className="mt-3 rounded-xl border border-primary/20 bg-brand-tint/10 p-4"><div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary"/><div><p className="text-[12.5px] font-semibold">Before Kurukoo acts</p><p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">You are approving this specific request to move into reservation. Kurukoo will use the returned provider/offer information above; it will not treat this approval as permission for unrelated actions.</p><div className="mt-3 grid gap-2 text-[10.5px] sm:grid-cols-3"><div><span className="text-muted-foreground">Who</span><p className="mt-0.5 font-medium">{providerLabel}</p></div><div><span className="text-muted-foreground">Cost</span><p className="mt-0.5 font-medium">{quoteText}</p></div><div><span className="text-muted-foreground">Next</span><p className="mt-0.5 font-medium">Reserve request</p></div></div></div></div></div> : null}
-    {canPay ? <div className="mt-3 rounded-xl border border-primary/20 bg-brand-tint/10 p-4"><div className="flex items-start gap-3"><CreditCard className="mt-0.5 size-4 shrink-0 text-primary"/><div><p className="text-[12.5px] font-semibold">Payment is ready</p><p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">This step asks the canonical payment boundary to authorise the confirmed request amount. Kurukoo will only record payment when the backend returns verified payment evidence.</p><button type="button" disabled={actionBusy} onClick={() => void runCanonicalAction("pay")} className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground disabled:opacity-50">{actionBusy ? "Authorising…" : "Authorise payment"}</button></div></div></div> : null}
-    {awaitingOwnerConfirmation ? <div className="mt-3 rounded-xl border border-primary/20 bg-brand-tint/10 p-4"><div className="flex items-start gap-3"><FileCheck2 className="mt-0.5 size-4 shrink-0 text-primary"/><div className="min-w-0"><p className="text-[12.5px] font-semibold">Provider reported completion</p><p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">The provider has supplied completion evidence. Your confirmation is the final customer-side step before Kurukoo records the real-world outcome as complete.</p><button type="button" disabled={actionBusy} onClick={() => void runCanonicalAction("confirm_completion")} className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground disabled:opacity-50">{actionBusy ? "Confirming…" : "Confirm completion"}</button></div></div></div> : null}
-    {participants.length ? <div className="mt-3 rounded-xl border border-border p-3"><div className="flex items-center gap-2"><UserRound className="size-4 text-primary"/><p className="text-[12px] font-medium">People on this request</p></div><div className="mt-2 space-y-2">{participants.slice(0, 5).map((participant) => <div key={String(participant.id ?? participant.providerPhone ?? participant.role)} className="flex items-center justify-between gap-3 text-[11px]"><span>{participant.role ? label(participant.role) : "Participant"}</span><span className="text-muted-foreground">{participant.providerPhone || "Provider identity pending"} · {participant.status ? label(participant.status) : "state unavailable"}</span></div>)}</div></div> : null}
-    {execution.length ? <div className="mt-3 rounded-xl border border-border p-3"><div className="flex items-center gap-2"><ShieldCheck className="size-4 text-primary"/><p className="text-[12px] font-medium">Execution</p></div><div className="mt-2 space-y-2">{execution.slice(0, 5).map((item) => <div key={String(item.id ?? item.actionRequested)} className="flex items-center justify-between gap-3 text-[11px]"><span>{label(item.actionRequested || item.capability || "Action")}</span><span className="text-muted-foreground">{item.status ? label(item.status) : "State not returned"}</span></div>)}</div></div> : null}
-    {isRide && (provider || eta || vehicle) ? <div className="mt-3 rounded-xl border border-primary/15 bg-brand-tint/10 p-3"><div className="flex items-center gap-2"><Truck className="size-4 text-primary"/><p className="text-[12px] font-medium">Ride progress</p></div><div className="mt-2 grid gap-2 sm:grid-cols-3"><div><p className="text-[9.5px] uppercase tracking-wide text-muted-foreground">Driver</p><p className="mt-0.5 text-[11.5px]">{provider || "Not assigned"}</p></div><div><p className="text-[9.5px] uppercase tracking-wide text-muted-foreground">Vehicle</p><p className="mt-0.5 text-[11.5px]">{vehicle || "Not returned"}</p></div><div><p className="text-[9.5px] uppercase tracking-wide text-muted-foreground">Arrival</p><p className="mt-0.5 text-[11.5px]">{eta || "Not returned"}</p></div></div></div> : null}
-    {!terminal ? <div className="mt-4 rounded-xl border border-border px-3.5 py-3"><div className="flex items-center gap-2"><ShieldCheck className="size-4 text-primary"/><p className="text-[12px] font-medium">Next step</p></div><p className="mt-1.5 text-[11.5px] leading-relaxed text-muted-foreground">{request.status === "requested" || request.status === "awaiting_match" || request.status === "partially_matched" ? "Start provider discovery when you are ready. Kurukoo will only show provider responses that come back from the connected dispatch path." : request.status === "awaiting_confirmation" ? "Review the returned option. Approving will reserve the request through the canonical lifecycle." : request.status === "payment_pending" ? "Authorise the payment step explicitly. Payment is not treated as verified until the canonical payment boundary confirms it." : request.status === "in_fulfillment" ? "The provider is carrying out the request. Kurukoo will surface status and evidence as they arrive." : "Kurukoo will move the request forward using connected capability evidence and surface the next decision when one is needed."}</p></div> : null}
-    {actionError ? <p className="mt-3 text-[11.5px] text-destructive">{actionError}</p> : null}
-    <div className="mt-4 flex flex-wrap gap-2">{canApprove ? <button type="button" disabled={actionBusy} onClick={() => void runCanonicalAction("approve")} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground disabled:opacity-50">{actionBusy ? "Updating…" : "Approve and reserve"}</button> : null}{canComplete ? <button type="button" disabled={actionBusy} onClick={() => void runCanonicalAction("complete")} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground disabled:opacity-50">{actionBusy ? "Updating…" : "Mark complete"}</button> : null}{canCancel ? <button type="button" disabled={actionBusy} onClick={() => void runCanonicalAction("cancel")} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[12px] font-medium hover:bg-elevated disabled:opacity-50"><XCircle className="size-3.5"/>{actionBusy ? "Updating…" : "Cancel request"}</button> : null}</div>
-    {request.status === "completed" ? <div className="mt-4 rounded-xl border border-border bg-elevated/35 p-4"><div className="flex items-center gap-2"><Star className="size-4 text-primary"/><p className="text-[12px] font-medium">How did it go?</p></div>{reviewSubmitted ? <p className="mt-2 text-[11.5px] text-muted-foreground">Thanks. Your review has been recorded against this completed request.</p> : <><p className="mt-1 text-[11px] text-muted-foreground">Your rating goes to the provider attached to this request. It is not submitted until you choose it.</p><div className="mt-3 flex gap-1.5" aria-label="Rating controls">{[1,2,3,4,5].map((n)=><button key={n} type="button" onClick={() => setReviewRating(n)} className={cn("grid size-8 place-items-center rounded-lg border", reviewRating >= n ? "border-primary bg-brand-tint/25" : "border-border hover:bg-surface")} aria-label={`${n} out of 5`} aria-pressed={reviewRating === n}><Star className={cn("size-3.5", reviewRating >= n && "fill-current")}/></button>)}</div><label className="mt-3 block"><span className="text-[10.5px] font-medium text-muted-foreground">Optional feedback</span><textarea value={reviewFeedback} onChange={(event) => setReviewFeedback(event.target.value.slice(0, 1000))} rows={3} placeholder="What was helpful, and what should improve?" className="mt-1.5 w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-[11.5px] outline-none focus:border-primary" /></label><button type="button" disabled={reviewBusy || !reviewRating || !reviewProviderPhone} onClick={() => void submitReview()} className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground disabled:opacity-50">{reviewBusy ? "Submitting…" : "Submit review"}</button>{!reviewProviderPhone ? <p className="mt-2 text-[10.5px] text-muted-foreground">A provider identity is required before a review can be attached.</p> : null}</>}</div> : null}
-    <div className="mt-4 flex flex-wrap gap-2">{onAsk ? <button type="button" onClick={() => onAsk(`Review request ${request.id}. Tell me the current status, evidence, provider, quote, payment state and exactly what needs my approval.`)} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground">Ask Kurukoo about this request</button> : null}<Link to="/chat" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[12px] font-medium hover:bg-elevated"><MessageCircle className="size-3.5"/>Continue conversation</Link>{request.status === "completed" ? <span className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-elevated px-3 py-1.5 text-[12px] font-medium"><FileCheck2 className="size-3.5"/>Outcome recorded</span> : null}</div>
-  </section>;
+  const completionReport = participants.find(
+    (item) => item.status === "completion_reported" && item.providerPhone,
+  );
+  const completionLeadId = useMemo(() => {
+    const raw = completionReport?.evidence?.dispatch_lead_id;
+    return typeof raw === "string" && raw.trim() ? raw : "";
+  }, [completionReport]);
+  const reviewProviderPhone =
+    selectedProvider?.providerPhone || completionReport?.providerPhone || "";
+  const quoteText =
+    request.amount != null
+      ? `${request.currency ?? ""} ${request.amount}`.trim()
+      : request.quote
+        ? "Quote available"
+        : "Not returned yet";
+  const terminal = ["completed", "cancelled", "abandoned", "disputed", "failed"].includes(
+    request.status,
+  );
+  const isRide = /ride|transport|taxi|car|motor/i.test(request.skill);
+  const canApprove = request.status === "awaiting_confirmation";
+  const canBroadcast = ["requested", "awaiting_match", "partially_matched"].includes(
+    request.status,
+  );
+  const canPay = request.status === "payment_pending";
+  const canComplete = request.status === "fulfilled";
+  const canCancel =
+    !terminal && !["in_fulfillment", "fulfilled", "completed"].includes(request.status);
+  const awaitingOwnerConfirmation = Boolean(completionLeadId) && request.status !== "completed";
+  async function refreshRequestState() {
+    const [nextRequest, nextCoordination, nextExecution] = await Promise.all([
+      fetchEconomicRequest(request.id),
+      fetchEconomicCoordination(request.id),
+      fetchEconomicExecution(request.id),
+    ]);
+    setRequest(nextRequest);
+    setCoordination(nextCoordination);
+    setExecution(nextExecution);
+  }
+  async function runCanonicalAction(
+    action: "approve" | "pay" | "complete" | "cancel" | "confirm_completion" | "broadcast",
+  ) {
+    if (actionBusy) return;
+    setActionBusy(true);
+    setActionError("");
+    try {
+      if (action === "broadcast") {
+        await broadcastEconomicRequest({
+          requestId: request.id,
+          skill: request.skill,
+          vehicleType: vehicle || undefined,
+          location: location || undefined,
+        });
+        await refreshRequestState();
+      } else if (action === "confirm_completion") {
+        if (!completionLeadId)
+          throw new Error("The provider completion reference is not available yet.");
+        await confirmDispatchCompletion(completionLeadId);
+        await refreshRequestState();
+      } else if (action === "pay") {
+        await lockEconomicEscrow(request.id);
+        await refreshRequestState();
+      } else {
+        const updated =
+          action === "approve"
+            ? await approveEconomicRequest(request.id)
+            : action === "complete"
+              ? await completeEconomicRequest(request.id, { source: "user_confirmed_from_work" })
+              : await cancelEconomicRequest(request.id);
+        if (!updated) throw new Error("Kurukoo did not return the updated request.");
+        setRequest(updated);
+        const [nextCoordination, nextExecution] = await Promise.all([
+          fetchEconomicCoordination(request.id),
+          fetchEconomicExecution(request.id),
+        ]);
+        setCoordination(nextCoordination);
+        setExecution(nextExecution);
+      }
+    } catch (error) {
+      setActionError(
+        error instanceof Error ? error.message : "That request action could not be completed.",
+      );
+    } finally {
+      setActionBusy(false);
+    }
+  }
+  async function submitReview() {
+    if (reviewBusy || reviewSubmitted) return;
+    setReviewBusy(true);
+    setActionError("");
+    try {
+      if (!reviewProviderPhone)
+        throw new Error("The completed request does not have a provider identity to review yet.");
+      if (!reviewRating) throw new Error("Choose a rating from 1 to 5.");
+      await submitEconomicReview({
+        requestId: request.id,
+        providerPhone: reviewProviderPhone,
+        rating: reviewRating,
+        feedback: reviewFeedback,
+      });
+      setReviewSubmitted(true);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "The review could not be submitted.");
+    } finally {
+      setReviewBusy(false);
+    }
+  }
+  return (
+    <section
+      className="mt-8 rounded-2xl border border-border bg-surface p-5 shadow-[var(--shadow-soft)]"
+      aria-label="Request execution"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">Request</p>
+          <h2 className="mt-1 text-[19px] font-semibold">{label(request.skill)}</h2>
+          <p className="mt-1 text-[12px] text-muted-foreground">
+            Follow the live request state and take the next action when Kurukoo needs you.
+          </p>
+        </div>
+        <span className="rounded-full bg-elevated px-2.5 py-1 text-[10.5px] font-medium">
+          {label(request.status)}
+        </span>
+      </div>
+      <ol className="mt-5 grid grid-cols-4 gap-2 sm:grid-cols-7">
+        {stages.map(([key, name], index) => {
+          const done = terminal || index < currentIndex;
+          const active = index === currentIndex && !terminal;
+          return (
+            <li key={key} className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={cn(
+                    "grid size-7 shrink-0 place-items-center rounded-full border",
+                    done
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : active
+                        ? "border-primary text-primary"
+                        : "border-border text-muted-foreground",
+                  )}
+                >
+                  {done ? (
+                    <Check className="size-3.5" strokeWidth={3} />
+                  ) : (
+                    <Circle className="size-3" />
+                  )}
+                </span>
+                <span
+                  className={cn(
+                    "truncate text-[10px]",
+                    active && "font-semibold text-foreground",
+                    !active && !done && "text-muted-foreground",
+                  )}
+                >
+                  {name}
+                </span>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {from || to ? (
+          <div className="rounded-xl bg-elevated/60 p-3">
+            <MapPin className="size-4 text-primary" />
+            <p className="mt-2 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
+              Route
+            </p>
+            <p className="mt-1 text-[12px]">{from || "Pickup not specified"}</p>
+            {to ? <p className="mt-0.5 text-[12px] text-muted-foreground">→ {to}</p> : null}
+          </div>
+        ) : null}
+        <div className="rounded-xl bg-elevated/60 p-3">
+          <UserRound className="size-4 text-primary" />
+          <p className="mt-2 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
+            Provider
+          </p>
+          <p className="mt-1 text-[12px]">{providerLabel}</p>
+          <p className="mt-0.5 text-[10.5px] text-muted-foreground">
+            {selectedProvider?.status
+              ? label(selectedProvider.status)
+              : "Awaiting provider evidence"}
+          </p>
+        </div>
+        {eta ? (
+          <div className="rounded-xl bg-elevated/60 p-3">
+            <Truck className="size-4 text-primary" />
+            <p className="mt-2 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">ETA</p>
+            <p className="mt-1 text-[12px]">{eta}</p>
+          </div>
+        ) : null}
+        <div className="rounded-xl bg-elevated/60 p-3">
+          <CreditCard className="size-4 text-primary" />
+          <p className="mt-2 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
+            Commercial
+          </p>
+          <p className="mt-1 text-[12px]">{quoteText}</p>
+          <p className="mt-0.5 text-[10.5px] text-muted-foreground">
+            {request.status === "awaiting_confirmation" || request.status === "payment_pending"
+              ? "Needs your review"
+              : "Canonical state"}
+          </p>
+        </div>
+      </div>
+      {canBroadcast ? (
+        <div className="mt-3 rounded-xl border border-primary/20 bg-brand-tint/10 p-4">
+          <div className="flex items-start gap-3">
+            <Users className="mt-0.5 size-4 shrink-0 text-primary" />
+            <div className="min-w-0">
+              <p className="text-[12.5px] font-semibold">Find live help</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                Kurukoo can broadcast this request to eligible providers using the request details
+                already captured. Provider acceptance will appear here as real evidence.
+              </p>
+              <button
+                type="button"
+                disabled={actionBusy}
+                onClick={() => void runCanonicalAction("broadcast")}
+                className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground disabled:opacity-50"
+              >
+                {actionBusy ? "Finding providers…" : "Find providers"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {coordination?.offer ? (
+        <div className="mt-3 rounded-xl border border-border bg-elevated/25 p-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-primary">
+            Selected offer
+          </p>
+          <p className="mt-1 text-[12.5px] font-medium">
+            {coordination.offer.description || "Offer returned"}
+          </p>
+          {coordination.offer.priceMinor != null ? (
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              {coordination.offer.currency || ""} {(coordination.offer.priceMinor / 100).toFixed(2)}{" "}
+              · {coordination.offer.status || "status not returned"}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+      {canApprove ? (
+        <div className="mt-3 rounded-xl border border-primary/20 bg-brand-tint/10 p-4">
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+            <div>
+              <p className="text-[12.5px] font-semibold">Before Kurukoo acts</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                You are approving this specific request to move into reservation. Kurukoo will use
+                the returned provider/offer information above; it will not treat this approval as
+                permission for unrelated actions.
+              </p>
+              <div className="mt-3 grid gap-2 text-[10.5px] sm:grid-cols-3">
+                <div>
+                  <span className="text-muted-foreground">Who</span>
+                  <p className="mt-0.5 font-medium">{providerLabel}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Cost</span>
+                  <p className="mt-0.5 font-medium">{quoteText}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Next</span>
+                  <p className="mt-0.5 font-medium">Reserve request</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {canPay ? (
+        <div className="mt-3 rounded-xl border border-primary/20 bg-brand-tint/10 p-4">
+          <div className="flex items-start gap-3">
+            <CreditCard className="mt-0.5 size-4 shrink-0 text-primary" />
+            <div>
+              <p className="text-[12.5px] font-semibold">Payment is ready</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                This step asks the canonical payment boundary to authorise the confirmed request
+                amount. Kurukoo will only record payment when the backend returns verified payment
+                evidence.
+              </p>
+              <button
+                type="button"
+                disabled={actionBusy}
+                onClick={() => void runCanonicalAction("pay")}
+                className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground disabled:opacity-50"
+              >
+                {actionBusy ? "Authorising…" : "Authorise payment"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {awaitingOwnerConfirmation ? (
+        <div className="mt-3 rounded-xl border border-primary/20 bg-brand-tint/10 p-4">
+          <div className="flex items-start gap-3">
+            <FileCheck2 className="mt-0.5 size-4 shrink-0 text-primary" />
+            <div className="min-w-0">
+              <p className="text-[12.5px] font-semibold">Provider reported completion</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                The provider has supplied completion evidence. Your confirmation is the final
+                customer-side step before Kurukoo records the real-world outcome as complete.
+              </p>
+              <button
+                type="button"
+                disabled={actionBusy}
+                onClick={() => void runCanonicalAction("confirm_completion")}
+                className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground disabled:opacity-50"
+              >
+                {actionBusy ? "Confirming…" : "Confirm completion"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {participants.length ? (
+        <div className="mt-3 rounded-xl border border-border p-3">
+          <div className="flex items-center gap-2">
+            <UserRound className="size-4 text-primary" />
+            <p className="text-[12px] font-medium">People on this request</p>
+          </div>
+          <div className="mt-2 space-y-2">
+            {participants.slice(0, 5).map((participant) => (
+              <div
+                key={String(participant.id ?? participant.providerPhone ?? participant.role)}
+                className="flex items-center justify-between gap-3 text-[11px]"
+              >
+                <span>{participant.role ? label(participant.role) : "Participant"}</span>
+                <span className="text-muted-foreground">
+                  {participant.providerPhone || "Provider identity pending"} ·{" "}
+                  {participant.status ? label(participant.status) : "state unavailable"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {execution.length ? (
+        <div className="mt-3 rounded-xl border border-border p-3">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="size-4 text-primary" />
+            <p className="text-[12px] font-medium">Execution</p>
+          </div>
+          <div className="mt-2 space-y-2">
+            {execution.slice(0, 5).map((item) => (
+              <div
+                key={String(item.id ?? item.actionRequested)}
+                className="flex items-center justify-between gap-3 text-[11px]"
+              >
+                <span>{label(item.actionRequested || item.capability || "Action")}</span>
+                <span className="text-muted-foreground">
+                  {item.status ? label(item.status) : "State not returned"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {isRide && (provider || eta || vehicle) ? (
+        <div className="mt-3 rounded-xl border border-primary/15 bg-brand-tint/10 p-3">
+          <div className="flex items-center gap-2">
+            <Truck className="size-4 text-primary" />
+            <p className="text-[12px] font-medium">Ride progress</p>
+          </div>
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            <div>
+              <p className="text-[9.5px] uppercase tracking-wide text-muted-foreground">Driver</p>
+              <p className="mt-0.5 text-[11.5px]">{provider || "Not assigned"}</p>
+            </div>
+            <div>
+              <p className="text-[9.5px] uppercase tracking-wide text-muted-foreground">Vehicle</p>
+              <p className="mt-0.5 text-[11.5px]">{vehicle || "Not returned"}</p>
+            </div>
+            <div>
+              <p className="text-[9.5px] uppercase tracking-wide text-muted-foreground">Arrival</p>
+              <p className="mt-0.5 text-[11.5px]">{eta || "Not returned"}</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {!terminal ? (
+        <div className="mt-4 rounded-xl border border-border px-3.5 py-3">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="size-4 text-primary" />
+            <p className="text-[12px] font-medium">Next step</p>
+          </div>
+          <p className="mt-1.5 text-[11.5px] leading-relaxed text-muted-foreground">
+            {request.status === "requested" ||
+            request.status === "awaiting_match" ||
+            request.status === "partially_matched"
+              ? "Start provider discovery when you are ready. Kurukoo will only show provider responses that come back from the connected dispatch path."
+              : request.status === "awaiting_confirmation"
+                ? "Review the returned option. Approving will reserve the request through the canonical lifecycle."
+                : request.status === "payment_pending"
+                  ? "Authorise the payment step explicitly. Payment is not treated as verified until the canonical payment boundary confirms it."
+                  : request.status === "in_fulfillment"
+                    ? "The provider is carrying out the request. Kurukoo will surface status and evidence as they arrive."
+                    : "Kurukoo will move the request forward using connected capability evidence and surface the next decision when one is needed."}
+          </p>
+        </div>
+      ) : null}
+      {actionError ? <p className="mt-3 text-[11.5px] text-destructive">{actionError}</p> : null}
+      <div className="mt-4 flex flex-wrap gap-2">
+        {canApprove ? (
+          <button
+            type="button"
+            disabled={actionBusy}
+            onClick={() => void runCanonicalAction("approve")}
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground disabled:opacity-50"
+          >
+            {actionBusy ? "Updating…" : "Approve and reserve"}
+          </button>
+        ) : null}
+        {canComplete ? (
+          <button
+            type="button"
+            disabled={actionBusy}
+            onClick={() => void runCanonicalAction("complete")}
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground disabled:opacity-50"
+          >
+            {actionBusy ? "Updating…" : "Mark complete"}
+          </button>
+        ) : null}
+        {canCancel ? (
+          <button
+            type="button"
+            disabled={actionBusy}
+            onClick={() => void runCanonicalAction("cancel")}
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[12px] font-medium hover:bg-elevated disabled:opacity-50"
+          >
+            <XCircle className="size-3.5" />
+            {actionBusy ? "Updating…" : "Cancel request"}
+          </button>
+        ) : null}
+      </div>
+      {request.status === "completed" ? (
+        <div className="mt-4 rounded-xl border border-border bg-elevated/35 p-4">
+          <div className="flex items-center gap-2">
+            <Star className="size-4 text-primary" />
+            <p className="text-[12px] font-medium">How did it go?</p>
+          </div>
+          {reviewSubmitted ? (
+            <p className="mt-2 text-[11.5px] text-muted-foreground">
+              Thanks. Your review has been recorded against this completed request.
+            </p>
+          ) : (
+            <>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Your rating goes to the provider attached to this request. It is not submitted until
+                you choose it.
+              </p>
+              <div className="mt-3 flex gap-1.5" aria-label="Rating controls">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setReviewRating(n)}
+                    className={cn(
+                      "grid size-8 place-items-center rounded-lg border",
+                      reviewRating >= n
+                        ? "border-primary bg-brand-tint/25"
+                        : "border-border hover:bg-surface",
+                    )}
+                    aria-label={`${n} out of 5`}
+                    aria-pressed={reviewRating === n}
+                  >
+                    <Star className={cn("size-3.5", reviewRating >= n && "fill-current")} />
+                  </button>
+                ))}
+              </div>
+              <label className="mt-3 block">
+                <span className="text-[10.5px] font-medium text-muted-foreground">
+                  Optional feedback
+                </span>
+                <textarea
+                  value={reviewFeedback}
+                  onChange={(event) => setReviewFeedback(event.target.value.slice(0, 1000))}
+                  rows={3}
+                  placeholder="What was helpful, and what should improve?"
+                  className="mt-1.5 w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-[11.5px] outline-none focus:border-primary"
+                />
+              </label>
+              <button
+                type="button"
+                disabled={reviewBusy || !reviewRating || !reviewProviderPhone}
+                onClick={() => void submitReview()}
+                className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground disabled:opacity-50"
+              >
+                {reviewBusy ? "Submitting…" : "Submit review"}
+              </button>
+              {!reviewProviderPhone ? (
+                <p className="mt-2 text-[10.5px] text-muted-foreground">
+                  A provider identity is required before a review can be attached.
+                </p>
+              ) : null}
+            </>
+          )}
+        </div>
+      ) : null}
+      <div className="mt-4 flex flex-wrap gap-2">
+        {onAsk ? (
+          <button
+            type="button"
+            onClick={() =>
+              onAsk(
+                `Review request ${request.id}. Tell me the current status, evidence, provider, quote, payment state and exactly what needs my approval.`,
+              )
+            }
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground"
+          >
+            Ask Kurukoo about this request
+          </button>
+        ) : null}
+        <Link
+          to="/chat"
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[12px] font-medium hover:bg-elevated"
+        >
+          <MessageCircle className="size-3.5" />
+          Continue conversation
+        </Link>
+        {request.status === "completed" ? (
+          <span className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-elevated px-3 py-1.5 text-[12px] font-medium">
+            <FileCheck2 className="size-3.5" />
+            Outcome recorded
+          </span>
+        ) : null}
+      </div>
+    </section>
+  );
 }

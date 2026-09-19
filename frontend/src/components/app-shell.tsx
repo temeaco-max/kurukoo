@@ -1,14 +1,43 @@
 import { cn } from "@/lib/utils";
-import { AppShell as ContextualAppShell, EmptyState, useProfileName, KurukooLogo, PageHeader as ContextualPageHeader } from "./app-shell-contextual";
+import {
+  AppShell as ContextualAppShell,
+  EmptyState,
+  useProfileName,
+  KurukooLogo,
+  PageHeader as ContextualPageHeader,
+} from "./app-shell-contextual";
 import type { ReactNode } from "react";
 
 export { ContextualAppShell as AppShell, EmptyState, useProfileName, KurukooLogo };
 
 const marketingPrefixes = [
-  "/about", "/blog", "/capabilities", "/contributors", "/contact", "/creators",
-  "/advertising", "/explore", "/discover", "/help", "/how-it-works", "/legal", "/cookies",
-  "/login", "/partners", "/people", "/pricing", "/providers", "/businesses", "/agents",
-  "/connect", "/resources", "/signup", "/topics", "/use-cases", "/opportunities", "/safety",
+  "/about",
+  "/blog",
+  "/capabilities",
+  "/contributors",
+  "/contact",
+  "/creators",
+  "/advertising",
+  "/explore",
+  "/discover",
+  "/help",
+  "/how-it-works",
+  "/legal",
+  "/cookies",
+  "/login",
+  "/partners",
+  "/people",
+  "/pricing",
+  "/providers",
+  "/businesses",
+  "/agents",
+  "/connect",
+  "/resources",
+  "/signup",
+  "/topics",
+  "/use-cases",
+  "/opportunities",
+  "/safety",
 ];
 
 function isMarketingPath() {
@@ -32,7 +61,15 @@ export function PageHeader({
   action?: ReactNode;
 }) {
   if (!isMarketingPath()) {
-    return <ContextualPageHeader title={title} description={description} subtitle={subtitle} eyebrow={eyebrow} action={action} />;
+    return (
+      <ContextualPageHeader
+        title={title}
+        description={description}
+        subtitle={subtitle}
+        eyebrow={eyebrow}
+        action={action}
+      />
+    );
   }
   const label = eyebrow ?? title ?? "Kurukoo";
   return (

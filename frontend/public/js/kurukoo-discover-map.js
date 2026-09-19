@@ -1,39 +1,291 @@
 (() => {
-  const mapEl = document.getElementById('discover-map');
-  const list = document.getElementById('discover-list');
+  const mapEl = document.getElementById("discover-map");
+  const list = document.getElementById("discover-list");
   if (!mapEl || !window.L || !list) return;
 
-  const map = L.map(mapEl, { zoomControl: true, attributionControl: true }).setView([6.5244, 3.3792], 12);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap contributors' }).addTo(map);
+  const map = L.map(mapEl, { zoomControl: true, attributionControl: true }).setView(
+    [6.5244, 3.3792],
+    12,
+  );
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "© OpenStreetMap contributors",
+  }).addTo(map);
   const markers = L.layerGroup().addTo(map);
-  const state = { radius: 10000, sort: 'distance', features: [], loading: false };
-  const colors = { service: '#cf795f', place: '#527e91', event: '#b88b3e', business: '#806b8b', provider: '#527e91', agent: '#806b8b', community_context: '#b88b3e', cluster: '#777068' };
-  const statusEl = document.querySelector('[data-map-status]');
-  const resultCount = document.querySelector('[data-result-count]');
-  const updatedEl = document.querySelector('[data-last-updated]');
-  const workspace = document.querySelector('.discover-workspace');
-  const areaLabel = document.querySelector('[data-area-label]');
-  const safeText = (value, fallback) => String(value || fallback || '').trim();
-  const makeElement = (tag, className, text) => { const node = document.createElement(tag); if (className) node.className = className; if (text !== undefined) node.textContent = text; return node; };
-  const iconFor = (type) => ({ service: 'work', place: 'discover', event: 'calendar', business: 'package', provider: 'person', agent: 'sparkles' }[type] || 'discover');
-  const labelFor = (type) => ({ service: 'Service', place: 'Place', event: 'Event', business: 'Business', provider: 'Provider', agent: 'Agent' }[type] || 'Discovery');
-  const lifecycleLabel = (value) => String(value || 'discovered').replaceAll('_', ' ');
-  const iconMarkup = (name) => { const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.classList.add('k-icon'); svg.setAttribute('aria-hidden', 'true'); const use = document.createElementNS('http://www.w3.org/2000/svg', 'use'); use.setAttribute('href', `/icons/kurukoo-icons.svg#${name}`); svg.appendChild(use); return svg; };
-  const distanceLabel = (value) => { const metres = Number(value); if (!Number.isFinite(metres)) return 'Approximate distance'; return metres < 1000 ? `${Math.round(metres)} m away` : `${(metres / 1000).toFixed(1)} km away`; };
-  function setStatus(text, stateName) { if (statusEl) statusEl.textContent = text; if (workspace) workspace.dataset.discoverState = stateName || 'ready'; }
-  function actionUrl(properties) { const params = new URLSearchParams({ prompt: `Help me explore ${safeText(properties?.name, 'this discovery context')} nearby` }); if (properties?.entityId) params.set('discoveryEntityId', properties.entityId); return `/chat?${params.toString()}`; }
-  function currentFeatures() { return state.features.filter((feature) => { const type = feature?.properties?.entityType; const activeInput = document.querySelector(`[data-layer="${type}"]`); return !activeInput || activeInput.checked; }); }
-  function sortedFeatures(features) { return [...features].sort((a,b) => { const pa=a.properties||{}, pb=b.properties||{}; if(state.sort==='freshness') return String(pb.freshnessAt||'').localeCompare(String(pa.freshnessAt||'')); if(state.sort==='lifecycle') return String(pb.lifecycle||'').localeCompare(String(pa.lifecycle||'')); return Number(pa.distanceMetres||Infinity)-Number(pb.distanceMetres||Infinity); }); }
-  function renderList(){ const features=sortedFeatures(currentFeatures()); list.replaceChildren(); list.setAttribute('aria-busy','false'); if(resultCount) resultCount.textContent=String(features.filter((feature)=>feature?.properties?.entityType!=='cluster').length); if(!features.length){const empty=makeElement('div','discover-empty');empty.append(makeElement('strong','','Nothing attributed here yet'),makeElement('p','','Try a wider radius. Kurukoo will not turn an empty map into an invented result.'));list.appendChild(empty);return;} features.filter((feature)=>feature?.properties?.entityType!=='cluster').forEach((feature)=>{const p=feature.properties||{};const card=makeElement('article','discover-result-card');const mark=makeElement('div','discover-result-card__mark');mark.appendChild(iconMarkup(iconFor(p.entityType)));const body=makeElement('div','discover-result-card__body');const top=makeElement('div','discover-result-card__top');top.append(makeElement('h3','discover-result-card__title',safeText(p.name,'Nearby discovery')),makeElement('span','discover-result-card__distance',distanceLabel(p.distanceMetres)));const detail=makeElement('p','discover-result-card__detail',safeText(p.detail,'Source-attributed discovery entity'));const meta=makeElement('div','discover-result-card__meta');meta.append(makeElement('span','discover-result-badge',labelFor(p.entityType)),makeElement('span','discover-result-badge discover-result-badge--lifecycle',lifecycleLabel(p.lifecycle)),makeElement('span','discover-result-badge discover-result-badge--source',safeText(p.source,'Attributed source')));const action=makeElement('a','discover-result-card__action','Open exact context in Chat');action.href=actionUrl(p);body.append(top,detail,meta,action);card.append(mark,body);list.appendChild(card);}); }
-  function renderMap(){markers.clearLayers();const features=sortedFeatures(currentFeatures());features.forEach((feature)=>{const p=feature.properties||{},coords=feature.geometry?.coordinates;if(!Array.isArray(coords)||coords.length<2)return;const [lng,lat]=coords;const color=colors[p.entityType]||colors.cluster;const marker=L.circleMarker([lat,lng],{radius:p.entityType==='cluster'?10:7,color,fillColor:color,fillOpacity:.78,weight:2});const popup=document.createElement('div');popup.className='discover-map-popup';popup.append(makeElement('strong','',safeText(p.name,'Nearby discovery')),makeElement('div','',safeText(p.detail,'Source-attributed discovery entity')),makeElement('small','',`${labelFor(p.entityType)} · ${lifecycleLabel(p.lifecycle)} · ${safeText(p.source,'Attributed source')}`));const action=makeElement('a','discover-network-action','Open exact context in Chat');action.href=actionUrl(p);popup.appendChild(action);marker.bindPopup(popup).addTo(markers);});}
-  function render(){renderMap();renderList();}
-  async function getPosition(){if(!navigator.geolocation)return{latitude:6.5244,longitude:3.3792,approximate:true};return new Promise((resolve)=>navigator.geolocation.getCurrentPosition((p)=>resolve({latitude:p.coords.latitude,longitude:p.coords.longitude,approximate:false}),()=>resolve({latitude:6.5244,longitude:3.3792,approximate:true}),{enableHighAccuracy:false,maximumAge:120000,timeout:7000}));}
-  async function load(){state.loading=true;list.setAttribute('aria-busy','true');setStatus('Checking nearby network…','loading');try{const where=await getPosition();if(areaLabel)areaLabel.textContent=where.approximate?'Approximate preview area':'Approximate area near you';if(!where.approximate)map.setView([where.latitude,where.longitude],Math.max(map.getZoom(),13));const params=new URLSearchParams({lat:String(Math.round(where.latitude*10000)/10000),lng:String(Math.round(where.longitude*10000)/10000),radius:String(state.radius),layers:'place,business,service,event,provider,agent,community_context',cluster:'true'});const controller=new AbortController();const timeoutId=window.setTimeout(()=>controller.abort(),5000);const response=await fetch(`/api/discover/map?${params.toString()}`,{credentials:'include',signal:controller.signal});window.clearTimeout(timeoutId);if(!response.ok)throw new Error('Discovery network unavailable');const data=await response.json();state.features=Array.isArray(data?.features)?data.features:[];setStatus(state.features.length?'Freshness-aware nearby results':'No attributed nearby results','ready');if(updatedEl)updatedEl.textContent=state.features.length?(where.approximate?'Approximate area · location not shared':`Updated ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`):'No live attributed results';}catch{state.features=[];setStatus('Nearby network unavailable','empty');if(updatedEl)updatedEl.textContent='Nearby data unavailable';}finally{state.loading=false;render();}}
-  document.querySelectorAll('[data-layer]').forEach((input)=>input.addEventListener('change',render));
-  document.querySelectorAll('[data-radius]').forEach((button)=>button.addEventListener('click',()=>{state.radius=Number(button.dataset.radius)||10000;document.querySelectorAll('[data-radius]').forEach((item)=>item.classList.toggle('is-active',item===button));load();}));
-  document.querySelector('[data-discover-sort]')?.addEventListener('change',(event)=>{state.sort=event.target.value;render();});
-  document.querySelector('[data-discover-refresh]')?.addEventListener('click',load);
-  document.querySelector('[data-discover-clear]')?.addEventListener('click',()=>{state.radius=10000;document.querySelectorAll('[data-layer]').forEach((input)=>input.checked=true);document.querySelectorAll('[data-radius]').forEach((item)=>item.classList.toggle('is-active',item.dataset.radius==='10000'));load();});
-  window.addEventListener('kurukoo:discover-reload',load);
+  const state = { radius: 10000, sort: "distance", features: [], loading: false };
+  const colors = {
+    service: "#cf795f",
+    place: "#527e91",
+    event: "#b88b3e",
+    business: "#806b8b",
+    provider: "#527e91",
+    agent: "#806b8b",
+    community_context: "#b88b3e",
+    cluster: "#777068",
+  };
+  const statusEl = document.querySelector("[data-map-status]");
+  const resultCount = document.querySelector("[data-result-count]");
+  const updatedEl = document.querySelector("[data-last-updated]");
+  const workspace = document.querySelector(".discover-workspace");
+  const areaLabel = document.querySelector("[data-area-label]");
+  const safeText = (value, fallback) => String(value || fallback || "").trim();
+  const makeElement = (tag, className, text) => {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  };
+  const iconFor = (type) =>
+    ({
+      service: "work",
+      place: "discover",
+      event: "calendar",
+      business: "package",
+      provider: "person",
+      agent: "sparkles",
+    })[type] || "discover";
+  const labelFor = (type) =>
+    ({
+      service: "Service",
+      place: "Place",
+      event: "Event",
+      business: "Business",
+      provider: "Provider",
+      agent: "Agent",
+    })[type] || "Discovery";
+  const lifecycleLabel = (value) => String(value || "discovered").replaceAll("_", " ");
+  const iconMarkup = (name) => {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.classList.add("k-icon");
+    svg.setAttribute("aria-hidden", "true");
+    const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    use.setAttribute("href", `/icons/kurukoo-icons.svg#${name}`);
+    svg.appendChild(use);
+    return svg;
+  };
+  const distanceLabel = (value) => {
+    const metres = Number(value);
+    if (!Number.isFinite(metres)) return "Approximate distance";
+    return metres < 1000 ? `${Math.round(metres)} m away` : `${(metres / 1000).toFixed(1)} km away`;
+  };
+  function setStatus(text, stateName) {
+    if (statusEl) statusEl.textContent = text;
+    if (workspace) workspace.dataset.discoverState = stateName || "ready";
+  }
+  function actionUrl(properties) {
+    const params = new URLSearchParams({
+      prompt: `Help me explore ${safeText(properties?.name, "this discovery context")} nearby`,
+    });
+    if (properties?.entityId) params.set("discoveryEntityId", properties.entityId);
+    return `/chat?${params.toString()}`;
+  }
+  function currentFeatures() {
+    return state.features.filter((feature) => {
+      const type = feature?.properties?.entityType;
+      const activeInput = document.querySelector(`[data-layer="${type}"]`);
+      return !activeInput || activeInput.checked;
+    });
+  }
+  function sortedFeatures(features) {
+    return [...features].sort((a, b) => {
+      const pa = a.properties || {},
+        pb = b.properties || {};
+      if (state.sort === "freshness")
+        return String(pb.freshnessAt || "").localeCompare(String(pa.freshnessAt || ""));
+      if (state.sort === "lifecycle")
+        return String(pb.lifecycle || "").localeCompare(String(pa.lifecycle || ""));
+      return Number(pa.distanceMetres || Infinity) - Number(pb.distanceMetres || Infinity);
+    });
+  }
+  function renderList() {
+    const features = sortedFeatures(currentFeatures());
+    list.replaceChildren();
+    list.setAttribute("aria-busy", "false");
+    if (resultCount)
+      resultCount.textContent = String(
+        features.filter((feature) => feature?.properties?.entityType !== "cluster").length,
+      );
+    if (!features.length) {
+      const empty = makeElement("div", "discover-empty");
+      empty.append(
+        makeElement("strong", "", "Nothing attributed here yet"),
+        makeElement(
+          "p",
+          "",
+          "Try a wider radius. Kurukoo will not turn an empty map into an invented result.",
+        ),
+      );
+      list.appendChild(empty);
+      return;
+    }
+    features
+      .filter((feature) => feature?.properties?.entityType !== "cluster")
+      .forEach((feature) => {
+        const p = feature.properties || {};
+        const card = makeElement("article", "discover-result-card");
+        const mark = makeElement("div", "discover-result-card__mark");
+        mark.appendChild(iconMarkup(iconFor(p.entityType)));
+        const body = makeElement("div", "discover-result-card__body");
+        const top = makeElement("div", "discover-result-card__top");
+        top.append(
+          makeElement("h3", "discover-result-card__title", safeText(p.name, "Nearby discovery")),
+          makeElement("span", "discover-result-card__distance", distanceLabel(p.distanceMetres)),
+        );
+        const detail = makeElement(
+          "p",
+          "discover-result-card__detail",
+          safeText(p.detail, "Source-attributed discovery entity"),
+        );
+        const meta = makeElement("div", "discover-result-card__meta");
+        meta.append(
+          makeElement("span", "discover-result-badge", labelFor(p.entityType)),
+          makeElement(
+            "span",
+            "discover-result-badge discover-result-badge--lifecycle",
+            lifecycleLabel(p.lifecycle),
+          ),
+          makeElement(
+            "span",
+            "discover-result-badge discover-result-badge--source",
+            safeText(p.source, "Attributed source"),
+          ),
+        );
+        const action = makeElement(
+          "a",
+          "discover-result-card__action",
+          "Open exact context in Chat",
+        );
+        action.href = actionUrl(p);
+        body.append(top, detail, meta, action);
+        card.append(mark, body);
+        list.appendChild(card);
+      });
+  }
+  function renderMap() {
+    markers.clearLayers();
+    const features = sortedFeatures(currentFeatures());
+    features.forEach((feature) => {
+      const p = feature.properties || {},
+        coords = feature.geometry?.coordinates;
+      if (!Array.isArray(coords) || coords.length < 2) return;
+      const [lng, lat] = coords;
+      const color = colors[p.entityType] || colors.cluster;
+      const marker = L.circleMarker([lat, lng], {
+        radius: p.entityType === "cluster" ? 10 : 7,
+        color,
+        fillColor: color,
+        fillOpacity: 0.78,
+        weight: 2,
+      });
+      const popup = document.createElement("div");
+      popup.className = "discover-map-popup";
+      popup.append(
+        makeElement("strong", "", safeText(p.name, "Nearby discovery")),
+        makeElement("div", "", safeText(p.detail, "Source-attributed discovery entity")),
+        makeElement(
+          "small",
+          "",
+          `${labelFor(p.entityType)} · ${lifecycleLabel(p.lifecycle)} · ${safeText(p.source, "Attributed source")}`,
+        ),
+      );
+      const action = makeElement("a", "discover-network-action", "Open exact context in Chat");
+      action.href = actionUrl(p);
+      popup.appendChild(action);
+      marker.bindPopup(popup).addTo(markers);
+    });
+  }
+  function render() {
+    renderMap();
+    renderList();
+  }
+  async function getPosition() {
+    if (!navigator.geolocation) return { latitude: 6.5244, longitude: 3.3792, approximate: true };
+    return new Promise((resolve) =>
+      navigator.geolocation.getCurrentPosition(
+        (p) =>
+          resolve({
+            latitude: p.coords.latitude,
+            longitude: p.coords.longitude,
+            approximate: false,
+          }),
+        () => resolve({ latitude: 6.5244, longitude: 3.3792, approximate: true }),
+        { enableHighAccuracy: false, maximumAge: 120000, timeout: 7000 },
+      ),
+    );
+  }
+  async function load() {
+    state.loading = true;
+    list.setAttribute("aria-busy", "true");
+    setStatus("Checking nearby network…", "loading");
+    try {
+      const where = await getPosition();
+      if (areaLabel)
+        areaLabel.textContent = where.approximate
+          ? "Approximate preview area"
+          : "Approximate area near you";
+      if (!where.approximate)
+        map.setView([where.latitude, where.longitude], Math.max(map.getZoom(), 13));
+      const params = new URLSearchParams({
+        lat: String(Math.round(where.latitude * 10000) / 10000),
+        lng: String(Math.round(where.longitude * 10000) / 10000),
+        radius: String(state.radius),
+        layers: "place,business,service,event,provider,agent,community_context",
+        cluster: "true",
+      });
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 5000);
+      const response = await fetch(`/api/discover/map?${params.toString()}`, {
+        credentials: "include",
+        signal: controller.signal,
+      });
+      window.clearTimeout(timeoutId);
+      if (!response.ok) throw new Error("Discovery network unavailable");
+      const data = await response.json();
+      state.features = Array.isArray(data?.features) ? data.features : [];
+      setStatus(
+        state.features.length ? "Freshness-aware nearby results" : "No attributed nearby results",
+        "ready",
+      );
+      if (updatedEl)
+        updatedEl.textContent = state.features.length
+          ? where.approximate
+            ? "Approximate area · location not shared"
+            : `Updated ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+          : "No live attributed results";
+    } catch {
+      state.features = [];
+      setStatus("Nearby network unavailable", "empty");
+      if (updatedEl) updatedEl.textContent = "Nearby data unavailable";
+    } finally {
+      state.loading = false;
+      render();
+    }
+  }
+  document
+    .querySelectorAll("[data-layer]")
+    .forEach((input) => input.addEventListener("change", render));
+  document.querySelectorAll("[data-radius]").forEach((button) =>
+    button.addEventListener("click", () => {
+      state.radius = Number(button.dataset.radius) || 10000;
+      document
+        .querySelectorAll("[data-radius]")
+        .forEach((item) => item.classList.toggle("is-active", item === button));
+      load();
+    }),
+  );
+  document.querySelector("[data-discover-sort]")?.addEventListener("change", (event) => {
+    state.sort = event.target.value;
+    render();
+  });
+  document.querySelector("[data-discover-refresh]")?.addEventListener("click", load);
+  document.querySelector("[data-discover-clear]")?.addEventListener("click", () => {
+    state.radius = 10000;
+    document.querySelectorAll("[data-layer]").forEach((input) => (input.checked = true));
+    document
+      .querySelectorAll("[data-radius]")
+      .forEach((item) => item.classList.toggle("is-active", item.dataset.radius === "10000"));
+    load();
+  });
+  window.addEventListener("kurukoo:discover-reload", load);
   load();
 })();

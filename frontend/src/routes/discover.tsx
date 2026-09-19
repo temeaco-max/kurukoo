@@ -1,40 +1,618 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, ArrowUpRight, CarFront, Compass, LocateFixed, MapPin, Navigation, Search, Store, Tag, Users, Zap } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  CarFront,
+  Compass,
+  LocateFixed,
+  MapPin,
+  Navigation,
+  Search,
+  Store,
+  Tag,
+  Users,
+  Zap,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/app-shell";
 import { AskKurukoo } from "@/components/kurukoo/ask-kurukoo";
 import { PulseControl } from "@/components/kurukoo/pulse-control";
-import { CapabilityPills, DirectoryEmpty, DirectoryStateBadge } from "@/components/kurukoo/surface-directory";
+import {
+  CapabilityPills,
+  DirectoryEmpty,
+  DirectoryStateBadge,
+} from "@/components/kurukoo/surface-directory";
 import { CommerceOutcomes } from "@/components/kurukoo/commerce-outcomes";
 import { Panel, Chips, SearchField, SectionHeader } from "@/components/kurukoo/ui";
-import { fetchCanonicalTopics, fetchDiscoveryEntities, fetchDiscoveryMap, fetchProactiveFeed, fetchPublicPulseProviders, type CanonicalTopic, type DiscoveryEntity, type ProactiveOpportunity, type PulseProvider } from "@/lib/kurukoo-api";
+import {
+  fetchCanonicalTopics,
+  fetchDiscoveryEntities,
+  fetchDiscoveryMap,
+  fetchProactiveFeed,
+  fetchPublicPulseProviders,
+  type CanonicalTopic,
+  type DiscoveryEntity,
+  type ProactiveOpportunity,
+  type PulseProvider,
+} from "@/lib/kurukoo-api";
 import { exploreGoalGroups } from "@/lib/explore-goals";
 
-export const Route = createFileRoute("/discover")({ head: () => ({ meta: [{ title: "Discover — Kurukoo" }, { name: "description", content: "Nearby context, useful ideas, people, places, offers, events and opportunities Kurukoo can help you act on." }] }), component: DiscoverPage });
-const layers = ["Everything", "Live now", "People", "Places", "Offers", "Events", "Opportunities"] as const;
-const destination: Record<string, string> = { food: "/explore/food", groceries: "/explore/groceries", ride: "/explore/mobility", travel: "/explore/mobility", repair: "/explore/repairs", cleaning: "/explore/home", solar: "/explore/home", "money-circle": "/explore/money-circle", work: "/explore/work", business: "/explore/work", sell: "/explore/selling", health: "/explore/health", education: "/explore/learning", events: "/explore/events", spiritual: "/explore/prayer", connect: "/explore/community", emergency: "/explore/safety", security: "/explore/safety" };
-function pretty(value: string) { return value.replace(/[_-]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()); }
-function iconFor(value: string) { const text = value.toLowerCase(); if (text.includes("business") || text.includes("place") || text.includes("shop")) return Store; if (text.includes("transport") || text.includes("delivery") || text.includes("ride")) return CarFront; if (text.includes("offer") || text.includes("deal")) return Tag; if (text.includes("event")) return MapPin; if (text.includes("opportun")) return Zap; return Users; }
-function Evidence({ entity }: { entity: DiscoveryEntity }) { const live = Boolean(entity.liveNow); const confirmed = live || entity.available === true; return <div className="flex flex-wrap items-center gap-1.5"><DirectoryStateBadge state={live ? "live" : confirmed ? "available" : "not-connected"}/><span className="text-[9.5px] text-muted-foreground">{entity.evidence ? pretty(entity.evidence) : "Source attributed"}</span>{entity.freshness ? <span className="text-[9.5px] text-muted-foreground">· {entity.freshness}</span> : null}</div>; }
-function ResultCard({ entity }: { entity: DiscoveryEntity }) { const Icon = iconFor(`${entity.kind} ${entity.category ?? ""}`); const prompt = `Tell me more about ${entity.name}${entity.location ? ` in ${entity.location}` : ""}. Help me decide whether this is useful and, if appropriate, move me into a verified request. Do not invent availability, price or capability.`; return <article className="rounded-[18px] border border-border bg-surface p-4 transition-colors hover:bg-elevated/45"><div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-elevated text-muted-foreground"><Icon className="size-4.5"/></span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-1.5"><h3 className="truncate text-[13.5px] font-semibold">{entity.name}</h3><Evidence entity={entity}/></div><p className="mt-1 text-[10.5px] text-muted-foreground">{pretty(entity.category ?? entity.kind)}{entity.location ? ` · ${entity.location}` : ""}</p>{entity.description ? <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">{entity.description}</p> : null}{entity.skills?.length ? <div className="mt-2"><CapabilityPills items={entity.skills} limit={3}/></div> : null}</div></div><div className="mt-3 flex flex-wrap gap-2"><AskKurukoo prompt={prompt}/>{entity.chatAction?.conversationId ? <Link to="/chat" className="inline-flex min-h-8 items-center rounded-lg border border-border px-3 text-[10.5px]">Open conversation</Link> : null}</div></article>; }
-function MapPanel({ features, located }: { features: Array<{ geometry?: { coordinates?: [number, number] }; properties?: Record<string, unknown> }>; located: boolean }) { const points = features.flatMap((feature, index) => { const coordinates = feature.geometry?.coordinates; return coordinates ? [{ id: String(feature.properties?.id ?? index), x: Number(coordinates[0]), y: Number(coordinates[1]), name: String(feature.properties?.name ?? feature.properties?.title ?? "Nearby") }] : []; }); const xs = points.map((point) => point.x), ys = points.map((point) => point.y); const minX = xs.length ? Math.min(...xs) : 0, maxX = xs.length ? Math.max(...xs) : 1, minY = ys.length ? Math.min(...ys) : 0, maxY = ys.length ? Math.max(...ys) : 1; const dx = maxX - minX || 1, dy = maxY - minY || 1; return <Panel className="overflow-hidden p-0"><div className="border-b border-border px-4 py-3.5"><div className="flex items-center gap-2"><Navigation className="size-4 text-primary"/><div><p className="text-[13px] font-semibold">Local map</p><p className="text-[10px] text-muted-foreground">{located ? "Centred on your approximate area" : "Approximate public positions"}</p></div></div></div><div className="p-3"><svg viewBox="0 0 100 100" className="h-[330px] w-full rounded-[16px] border border-border bg-background" role="img" aria-label="Approximate nearby map"><defs><pattern id="kurukoo-nearby-grid" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M 8 0 L 0 0 0 8" fill="none" stroke="currentColor" strokeOpacity=".07" strokeWidth=".4"/></pattern></defs><rect width="100" height="100" fill="url(#kurukoo-nearby-grid)"/><circle cx="50" cy="50" r="8" fill="currentColor" fillOpacity=".04" stroke="currentColor" strokeOpacity=".12"/><circle cx="50" cy="50" r="2" fill="currentColor" fillOpacity=".5"/>{points.slice(0, 40).map((point) => { const x = 8 + ((point.x - minX) / dx) * 84, y = 92 - ((point.y - minY) / dy) * 84; return <g key={point.id}><circle cx={x} cy={y} r="2" fill="currentColor" fillOpacity=".72"/><title>{point.name}</title></g>; })}</svg><p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">Discovery shows context. Exact provider positions, live availability and fulfilment commitments remain protected by their respective trust and request flows.</p></div></Panel>; }
-function DiscoverPage() { const [layer, setLayer] = useState<string>("Everything"); const [q, setQ] = useState(""); const [entities, setEntities] = useState<DiscoveryEntity[]>([]); const [pulses, setPulses] = useState<PulseProvider[]>([]); const [features, setFeatures] = useState<Array<{ geometry?: { coordinates?: [number, number] }; properties?: Record<string, unknown> }>>([]); const [topics, setTopics] = useState<CanonicalTopic[]>([]); const [opportunities, setOpportunities] = useState<ProactiveOpportunity[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [located, setLocated] = useState(false);
-  const load = async (position?: GeolocationPosition, search?: string) => { setLoading(true); setError(""); try { const opts = position ? { lat: position.coords.latitude, lng: position.coords.longitude, radius: 5000, q: search || undefined } : { radius: 5000, q: search || undefined }; const [data, map, live] = await Promise.all([fetchDiscoveryEntities(opts), fetchDiscoveryMap(opts), fetchPublicPulseProviders()]); setEntities(data); setFeatures(map.features ?? []); setPulses(live); } catch (e) { setError(e instanceof Error ? e.message : "Discovery is unavailable right now."); } finally { setLoading(false); } };
-  useEffect(() => { void load(); const timer = window.setInterval(() => void load(undefined, q.trim() || undefined), 30000); return () => window.clearInterval(timer); }, []);
-  useEffect(() => { const term = q.trim(); if (!term) return; const timer = window.setTimeout(() => void load(undefined, term), 300); return () => window.clearTimeout(timer); }, [q]);
-  useEffect(() => { let cancelled = false; Promise.allSettled([fetchCanonicalTopics(6), fetchProactiveFeed()]).then(([topicResult, opportunityResult]) => { if (cancelled) return; if (topicResult.status === "fulfilled") setTopics(topicResult.value); if (opportunityResult.status === "fulfilled") setOpportunities(opportunityResult.value); }); return () => { cancelled = true; }; }, []);
-  const locate = () => { if (!navigator.geolocation) { setError("Your browser cannot provide location."); return; } navigator.geolocation.getCurrentPosition((position) => { setLocated(true); void load(position, q.trim() || undefined); }, () => setError("Location was not granted. Discover can still show source-attributed context."), { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 }); };
-  const filtered = useMemo(() => entities.filter((entity) => { const text = `${entity.kind} ${entity.category ?? ""}`.toLowerCase(); if (layer === "Live now") return Boolean(entity.liveNow); if (layer === "People") return text.includes("person") || text.includes("agent") || text.includes("provider"); if (layer === "Places") return /business|place|shop|venue/.test(text); if (layer === "Offers") return /offer|deal|promotion/.test(text); if (layer === "Events") return text.includes("event"); if (layer === "Opportunities") return text.includes("opportun"); return true; }), [entities, layer]);
-  const liveOnly = pulses.map((pulse) => ({ id: pulse.id, name: pulse.name, kind: "provider", category: pulse.skill, description: "Live Nearby Pulse provider signal.", location: pulse.location, evidence: "Verified live signal", liveNow: true, available: true, skills: [pulse.skill] } as DiscoveryEntity));
-  const results = [...liveOnly, ...filtered].filter((entity, index, list) => list.findIndex((item) => item.id === entity.id) === index).slice(0, 30);
+export const Route = createFileRoute("/discover")({
+  head: () => ({
+    meta: [
+      { title: "Discover — Kurukoo" },
+      {
+        name: "description",
+        content:
+          "Nearby context, useful ideas, people, places, offers, events and opportunities Kurukoo can help you act on.",
+      },
+    ],
+  }),
+  component: DiscoverPage,
+});
+const layers = [
+  "Everything",
+  "Live now",
+  "People",
+  "Places",
+  "Offers",
+  "Events",
+  "Opportunities",
+] as const;
+const destination: Record<string, string> = {
+  food: "/explore/food",
+  groceries: "/explore/groceries",
+  ride: "/explore/mobility",
+  travel: "/explore/mobility",
+  repair: "/explore/repairs",
+  cleaning: "/explore/home",
+  solar: "/explore/home",
+  "money-circle": "/explore/money-circle",
+  work: "/explore/work",
+  business: "/explore/work",
+  sell: "/explore/selling",
+  health: "/explore/health",
+  education: "/explore/learning",
+  events: "/explore/events",
+  spiritual: "/explore/prayer",
+  connect: "/explore/community",
+  emergency: "/explore/safety",
+  security: "/explore/safety",
+};
+function pretty(value: string) {
+  return value.replace(/[_-]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+function iconFor(value: string) {
+  const text = value.toLowerCase();
+  if (text.includes("business") || text.includes("place") || text.includes("shop")) return Store;
+  if (text.includes("transport") || text.includes("delivery") || text.includes("ride"))
+    return CarFront;
+  if (text.includes("offer") || text.includes("deal")) return Tag;
+  if (text.includes("event")) return MapPin;
+  if (text.includes("opportun")) return Zap;
+  return Users;
+}
+function Evidence({ entity }: { entity: DiscoveryEntity }) {
+  const live = Boolean(entity.liveNow);
+  const confirmed = live || entity.available === true;
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <DirectoryStateBadge state={live ? "live" : confirmed ? "available" : "not-connected"} />
+      <span className="text-[9.5px] text-muted-foreground">
+        {entity.evidence ? pretty(entity.evidence) : "Source attributed"}
+      </span>
+      {entity.freshness ? (
+        <span className="text-[9.5px] text-muted-foreground">· {entity.freshness}</span>
+      ) : null}
+    </div>
+  );
+}
+function ResultCard({ entity }: { entity: DiscoveryEntity }) {
+  const Icon = iconFor(`${entity.kind} ${entity.category ?? ""}`);
+  const prompt = `Tell me more about ${entity.name}${entity.location ? ` in ${entity.location}` : ""}. Help me decide whether this is useful and, if appropriate, move me into a verified request. Do not invent availability, price or capability.`;
+  return (
+    <article className="rounded-[18px] border border-border bg-surface p-4 transition-colors hover:bg-elevated/45">
+      <div className="flex items-start gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-elevated text-muted-foreground">
+          <Icon className="size-4.5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <h3 className="truncate text-[13.5px] font-semibold">{entity.name}</h3>
+            <Evidence entity={entity} />
+          </div>
+          <p className="mt-1 text-[10.5px] text-muted-foreground">
+            {pretty(entity.category ?? entity.kind)}
+            {entity.location ? ` · ${entity.location}` : ""}
+          </p>
+          {entity.description ? (
+            <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
+              {entity.description}
+            </p>
+          ) : null}
+          {entity.skills?.length ? (
+            <div className="mt-2">
+              <CapabilityPills items={entity.skills} limit={3} />
+            </div>
+          ) : null}
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <AskKurukoo prompt={prompt} />
+        {entity.chatAction?.conversationId ? (
+          <Link
+            to="/chat"
+            className="inline-flex min-h-8 items-center rounded-lg border border-border px-3 text-[10.5px]"
+          >
+            Open conversation
+          </Link>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+function MapPanel({
+  features,
+  located,
+}: {
+  features: Array<{
+    geometry?: { coordinates?: [number, number] };
+    properties?: Record<string, unknown>;
+  }>;
+  located: boolean;
+}) {
+  const points = features.flatMap((feature, index) => {
+    const coordinates = feature.geometry?.coordinates;
+    return coordinates
+      ? [
+          {
+            id: String(feature.properties?.id ?? index),
+            x: Number(coordinates[0]),
+            y: Number(coordinates[1]),
+            name: String(feature.properties?.name ?? feature.properties?.title ?? "Nearby"),
+          },
+        ]
+      : [];
+  });
+  const xs = points.map((point) => point.x),
+    ys = points.map((point) => point.y);
+  const minX = xs.length ? Math.min(...xs) : 0,
+    maxX = xs.length ? Math.max(...xs) : 1,
+    minY = ys.length ? Math.min(...ys) : 0,
+    maxY = ys.length ? Math.max(...ys) : 1;
+  const dx = maxX - minX || 1,
+    dy = maxY - minY || 1;
+  return (
+    <Panel className="overflow-hidden p-0">
+      <div className="border-b border-border px-4 py-3.5">
+        <div className="flex items-center gap-2">
+          <Navigation className="size-4 text-primary" />
+          <div>
+            <p className="text-[13px] font-semibold">Local map</p>
+            <p className="text-[10px] text-muted-foreground">
+              {located ? "Centred on your approximate area" : "Approximate public positions"}
+            </p>
+          </div>
+        </div>
+      </div>
+      <div className="p-3">
+        <svg
+          viewBox="0 0 100 100"
+          className="h-[330px] w-full rounded-[16px] border border-border bg-background"
+          role="img"
+          aria-label="Approximate nearby map"
+        >
+          <defs>
+            <pattern id="kurukoo-nearby-grid" width="8" height="8" patternUnits="userSpaceOnUse">
+              <path
+                d="M 8 0 L 0 0 0 8"
+                fill="none"
+                stroke="currentColor"
+                strokeOpacity=".07"
+                strokeWidth=".4"
+              />
+            </pattern>
+          </defs>
+          <rect width="100" height="100" fill="url(#kurukoo-nearby-grid)" />
+          <circle
+            cx="50"
+            cy="50"
+            r="8"
+            fill="currentColor"
+            fillOpacity=".04"
+            stroke="currentColor"
+            strokeOpacity=".12"
+          />
+          <circle cx="50" cy="50" r="2" fill="currentColor" fillOpacity=".5" />
+          {points.slice(0, 40).map((point) => {
+            const x = 8 + ((point.x - minX) / dx) * 84,
+              y = 92 - ((point.y - minY) / dy) * 84;
+            return (
+              <g key={point.id}>
+                <circle cx={x} cy={y} r="2" fill="currentColor" fillOpacity=".72" />
+                <title>{point.name}</title>
+              </g>
+            );
+          })}
+        </svg>
+        <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
+          Discovery shows context. Exact provider positions, live availability and fulfilment
+          commitments remain protected by their respective trust and request flows.
+        </p>
+      </div>
+    </Panel>
+  );
+}
+function DiscoverPage() {
+  const [layer, setLayer] = useState<string>("Everything");
+  const [q, setQ] = useState("");
+  const [entities, setEntities] = useState<DiscoveryEntity[]>([]);
+  const [pulses, setPulses] = useState<PulseProvider[]>([]);
+  const [features, setFeatures] = useState<
+    Array<{ geometry?: { coordinates?: [number, number] }; properties?: Record<string, unknown> }>
+  >([]);
+  const [topics, setTopics] = useState<CanonicalTopic[]>([]);
+  const [opportunities, setOpportunities] = useState<ProactiveOpportunity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [located, setLocated] = useState(false);
+  const load = async (position?: GeolocationPosition, search?: string) => {
+    setLoading(true);
+    setError("");
+    try {
+      const opts = position
+        ? {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            radius: 5000,
+            q: search || undefined,
+          }
+        : { radius: 5000, q: search || undefined };
+      const [data, map, live] = await Promise.all([
+        fetchDiscoveryEntities(opts),
+        fetchDiscoveryMap(opts),
+        fetchPublicPulseProviders(),
+      ]);
+      setEntities(data);
+      setFeatures(map.features ?? []);
+      setPulses(live);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Discovery is unavailable right now.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    void load();
+    const timer = window.setInterval(() => void load(undefined, q.trim() || undefined), 30000);
+    return () => window.clearInterval(timer);
+  }, []);
+  useEffect(() => {
+    const term = q.trim();
+    if (!term) return;
+    const timer = window.setTimeout(() => void load(undefined, term), 300);
+    return () => window.clearTimeout(timer);
+  }, [q]);
+  useEffect(() => {
+    let cancelled = false;
+    Promise.allSettled([fetchCanonicalTopics(6), fetchProactiveFeed()]).then(
+      ([topicResult, opportunityResult]) => {
+        if (cancelled) return;
+        if (topicResult.status === "fulfilled") setTopics(topicResult.value);
+        if (opportunityResult.status === "fulfilled") setOpportunities(opportunityResult.value);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const locate = () => {
+    if (!navigator.geolocation) {
+      setError("Your browser cannot provide location.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocated(true);
+        void load(position, q.trim() || undefined);
+      },
+      () =>
+        setError("Location was not granted. Discover can still show source-attributed context."),
+      { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 },
+    );
+  };
+  const filtered = useMemo(
+    () =>
+      entities.filter((entity) => {
+        const text = `${entity.kind} ${entity.category ?? ""}`.toLowerCase();
+        if (layer === "Live now") return Boolean(entity.liveNow);
+        if (layer === "People")
+          return text.includes("person") || text.includes("agent") || text.includes("provider");
+        if (layer === "Places") return /business|place|shop|venue/.test(text);
+        if (layer === "Offers") return /offer|deal|promotion/.test(text);
+        if (layer === "Events") return text.includes("event");
+        if (layer === "Opportunities") return text.includes("opportun");
+        return true;
+      }),
+    [entities, layer],
+  );
+  const liveOnly = pulses.map(
+    (pulse) =>
+      ({
+        id: pulse.id,
+        name: pulse.name,
+        kind: "provider",
+        category: pulse.skill,
+        description: "Live Nearby Pulse provider signal.",
+        location: pulse.location,
+        evidence: "Verified live signal",
+        liveNow: true,
+        available: true,
+        skills: [pulse.skill],
+      }) as DiscoveryEntity,
+  );
+  const results = [...liveOnly, ...filtered]
+    .filter((entity, index, list) => list.findIndex((item) => item.id === entity.id) === index)
+    .slice(0, 30);
   const featuredGroups = exploreGoalGroups.slice(0, 4);
-  return <div className="space-y-10"><PageHeader title="Discover" subtitle="Nearby context, useful ideas, people, places, offers, events and opportunities — with the route into action kept close."/>
-    <section className="border-y border-border py-6 md:py-7"><div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center bg-brand-tint text-brand-ink"><Compass className="size-4.5"/></span><div><p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-primary">Start with the outcome</p><h2 className="mt-1.5 text-[28px] font-semibold tracking-[-0.04em]">Tell Kurukoo what you are trying to change.</h2><p className="mt-2 max-w-xl text-[12.5px] leading-6 text-muted-foreground">Search when you already have something specific in mind. Otherwise, describe the result you want and let Kurukoo work out the route.</p></div></div><div className="mt-5 flex flex-col gap-2 sm:flex-row"><div className="relative min-w-0 flex-1"><Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"/><input aria-label="Search Discover" value={q} onChange={(e)=>setQ(e.target.value)} placeholder="Try “I need a plumber” or “find dinner nearby”…" className="min-h-12 w-full border border-border bg-background pl-10 pr-10 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring"/>{q?<button type="button" aria-label="Clear Discover search" onClick={()=>setQ("")} className="absolute right-3 top-1/2 grid size-7 -translate-y-1/2 place-items-center text-muted-foreground hover:text-foreground"><span aria-hidden>×</span></button>:null}</div><AskKurukoo prompt={q.trim()?`Help me with ${q.trim()}.`:"Help me choose what to do next."}/></div>{q.trim()?<p className="mt-2 text-[10.5px] text-muted-foreground">Search stays in the Discover context while nearby signals remain evidence-backed.</p>:null}</section>
-    <section><div className="mb-3"><p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-primary">Ideas</p><h2 className="mt-1 text-[17px] font-semibold">You might want to…</h2><p className="mt-1 text-[10.5px] text-muted-foreground">Examples of outcomes Kurukoo can help you move forward.</p></div><div className="grid gap-px overflow-hidden border border-border bg-border md:grid-cols-2">{featuredGroups.map((group)=>{const Icon=group.icon;return <div key={group.id} className="bg-surface p-5"><div className="flex items-center gap-2"><span className="grid size-8 place-items-center bg-elevated"><Icon className="size-4"/></span><h3 className="text-[13.5px] font-semibold">{group.label}</h3></div><div className="mt-3 grid gap-2 sm:grid-cols-2">{group.goals.slice(0,4).map((goal)=><Link key={goal.id} to={(destination[goal.id]??"/chat") as never} search={destination[goal.id]?undefined:({query:goal.prompt} as never)} className="border border-border bg-background p-3 transition-colors hover:bg-elevated"><p className="text-[12px] font-medium">{goal.label}</p>{goal.description ? <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-muted-foreground">{goal.description}</p> : null}<div className="mt-2"><CapabilityPills items={goal.capabilityIds} limit={2}/></div></Link>)}</div></div>})}</div></section>
-    {opportunities.length?<section><div className="mb-3 flex items-end justify-between"><div><p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-primary">Worth knowing</p><h2 className="mt-1 text-[17px] font-semibold">Things Kurukoo found</h2></div><Link to="/opportunities" className="text-[10.5px] font-medium">See all <ArrowRight className="ml-1 inline size-3.5"/></Link></div><div className="grid gap-px overflow-hidden border border-border bg-border md:grid-cols-3">{opportunities.slice(0,3).map((item)=><Link key={item.id} to={item.ctaLink as never} className="bg-surface p-5 transition-colors hover:bg-elevated/45"><p className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-primary">{item.type}</p><h3 className="mt-2 text-[13.5px] font-semibold">{item.title}</h3><p className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">{item.subtitle}</p><span className="mt-4 inline-flex items-center gap-1 text-[10.5px] font-medium">{item.ctaText}<ArrowRight className="size-3.5"/></span></Link>)}</div></section>:null}
-    <section><Panel className="p-4"><div className="flex flex-col gap-3 lg:flex-row lg:items-center"><SearchField label="Search Nearby" placeholder="Search people, places, services or offers…" value={q} onChange={setQ}/><button type="button" onClick={locate} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-border px-4 text-[11.5px] font-medium hover:bg-elevated"><LocateFixed className="size-3.5"/>Use my location</button></div><div className="mt-3"><Chips items={layers} value={layer} onChange={setLayer} label="Nearby layers"/></div></Panel>{error?<div className="mt-4 rounded-xl border border-border bg-elevated/50 px-4 py-3 text-[11px] text-muted-foreground">{error}</div>:null}<div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,.65fr)]"><section><SectionHeader title={layer} subtitle={loading?"Refreshing local signals…":`${results.length} result${results.length===1?"":"s"}`}/>{results.length?<div className="grid gap-3 md:grid-cols-2">{results.map((entity)=><ResultCard key={entity.id} entity={entity}/>)}</div>:<DirectoryEmpty title="Nothing is showing here yet" body="That is not proof that the service is unavailable. Ask Kurukoo about the job and it can move from discovery into a verified request when a suitable path exists." action={<AskKurukoo prompt={q?`I am looking for ${q} nearby. Help me find the best available route.`:"Help me find something useful nearby."}/>}/>}</section><div className="space-y-4"><MapPanel features={features} located={located}/><PulseControl/></div></div></section>
-    <CommerceOutcomes />
-    {topics.length?<section><div className="mb-3"><p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-primary">Community context</p><h2 className="mt-1 text-[17px] font-semibold">What people are talking about</h2><p className="mt-1 text-[10.5px] text-muted-foreground">Topics can help you understand context. They are not fulfilment proof.</p></div><div className="grid gap-px overflow-hidden border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">{topics.map((topic)=><Link key={topic.id} to="/topics/$slug" params={{slug:topic.slug}} className="bg-surface p-5 hover:bg-elevated/45"><p className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-primary">Topic</p><h3 className="mt-2 text-[13px] font-semibold leading-snug">{topic.title}</h3><p className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">{topic.body}</p></Link>)}</div></section>:null}
-    <section className="border-t border-border pt-7"><div className="mb-3"><p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-primary">From discovery to action</p><h2 className="mt-1 text-[17px] font-semibold">Found something useful?</h2><p className="mt-1 text-[10.5px] text-muted-foreground">Discovery provides context. Chat / Voice carries the chosen outcome into a request, with consent and evidence where the route supports it.</p></div><div className="flex flex-wrap gap-2"><Link to="/chat" className="inline-flex min-h-9 items-center gap-1 bg-primary px-3 text-[10.5px] font-medium text-primary-foreground">Start a request <ArrowUpRight className="size-3.5"/></Link><Link to="/topics" className="inline-flex min-h-9 items-center gap-1 border border-border px-3 text-[10.5px] font-medium">Open Topics <ArrowUpRight className="size-3.5"/></Link></div></section>
-  </div>;
+  return (
+    <div className="space-y-10">
+      <PageHeader
+        title="Discover"
+        subtitle="Nearby context, useful ideas, people, places, offers, events and opportunities — with the route into action kept close."
+      />
+      <section className="border-y border-border py-6 md:py-7">
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center bg-brand-tint text-brand-ink">
+            <Compass className="size-4.5" />
+          </span>
+          <div>
+            <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-primary">
+              Start with the outcome
+            </p>
+            <h2 className="mt-1.5 text-[28px] font-semibold tracking-[-0.04em]">
+              Tell Kurukoo what you are trying to change.
+            </h2>
+            <p className="mt-2 max-w-xl text-[12.5px] leading-6 text-muted-foreground">
+              Search when you already have something specific in mind. Otherwise, describe the
+              result you want and let Kurukoo work out the route.
+            </p>
+          </div>
+        </div>
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              aria-label="Search Discover"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Try “I need a plumber” or “find dinner nearby”…"
+              className="min-h-12 w-full border border-border bg-background pl-10 pr-10 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+            {q ? (
+              <button
+                type="button"
+                aria-label="Clear Discover search"
+                onClick={() => setQ("")}
+                className="absolute right-3 top-1/2 grid size-7 -translate-y-1/2 place-items-center text-muted-foreground hover:text-foreground"
+              >
+                <span aria-hidden>×</span>
+              </button>
+            ) : null}
+          </div>
+          <AskKurukoo
+            prompt={q.trim() ? `Help me with ${q.trim()}.` : "Help me choose what to do next."}
+          />
+        </div>
+        {q.trim() ? (
+          <p className="mt-2 text-[10.5px] text-muted-foreground">
+            Search stays in the Discover context while nearby signals remain evidence-backed.
+          </p>
+        ) : null}
+      </section>
+      <section>
+        <div className="mb-3">
+          <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-primary">Ideas</p>
+          <h2 className="mt-1 text-[17px] font-semibold">You might want to…</h2>
+          <p className="mt-1 text-[10.5px] text-muted-foreground">
+            Examples of outcomes Kurukoo can help you move forward.
+          </p>
+        </div>
+        <div className="grid gap-px overflow-hidden border border-border bg-border md:grid-cols-2">
+          {featuredGroups.map((group) => {
+            const Icon = group.icon;
+            return (
+              <div key={group.id} className="bg-surface p-5">
+                <div className="flex items-center gap-2">
+                  <span className="grid size-8 place-items-center bg-elevated">
+                    <Icon className="size-4" />
+                  </span>
+                  <h3 className="text-[13.5px] font-semibold">{group.label}</h3>
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {group.goals.slice(0, 4).map((goal) => (
+                    <Link
+                      key={goal.id}
+                      to={(destination[goal.id] ?? "/chat") as never}
+                      search={destination[goal.id] ? undefined : ({ query: goal.prompt } as never)}
+                      className="border border-border bg-background p-3 transition-colors hover:bg-elevated"
+                    >
+                      <p className="text-[12px] font-medium">{goal.label}</p>
+                      {goal.description ? (
+                        <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-muted-foreground">
+                          {goal.description}
+                        </p>
+                      ) : null}
+                      <div className="mt-2">
+                        <CapabilityPills items={goal.capabilityIds} limit={2} />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+      {opportunities.length ? (
+        <section>
+          <div className="mb-3 flex items-end justify-between">
+            <div>
+              <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-primary">
+                Worth knowing
+              </p>
+              <h2 className="mt-1 text-[17px] font-semibold">Things Kurukoo found</h2>
+            </div>
+            <Link to="/opportunities" className="text-[10.5px] font-medium">
+              See all <ArrowRight className="ml-1 inline size-3.5" />
+            </Link>
+          </div>
+          <div className="grid gap-px overflow-hidden border border-border bg-border md:grid-cols-3">
+            {opportunities.slice(0, 3).map((item) => (
+              <Link
+                key={item.id}
+                to={item.ctaLink as never}
+                className="bg-surface p-5 transition-colors hover:bg-elevated/45"
+              >
+                <p className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-primary">
+                  {item.type}
+                </p>
+                <h3 className="mt-2 text-[13.5px] font-semibold">{item.title}</h3>
+                <p className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
+                  {item.subtitle}
+                </p>
+                <span className="mt-4 inline-flex items-center gap-1 text-[10.5px] font-medium">
+                  {item.ctaText}
+                  <ArrowRight className="size-3.5" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
+      <section>
+        <Panel className="p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <SearchField
+              label="Search Nearby"
+              placeholder="Search people, places, services or offers…"
+              value={q}
+              onChange={setQ}
+            />
+            <button
+              type="button"
+              onClick={locate}
+              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-border px-4 text-[11.5px] font-medium hover:bg-elevated"
+            >
+              <LocateFixed className="size-3.5" />
+              Use my location
+            </button>
+          </div>
+          <div className="mt-3">
+            <Chips items={layers} value={layer} onChange={setLayer} label="Nearby layers" />
+          </div>
+        </Panel>
+        {error ? (
+          <div className="mt-4 rounded-xl border border-border bg-elevated/50 px-4 py-3 text-[11px] text-muted-foreground">
+            {error}
+          </div>
+        ) : null}
+        <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,.65fr)]">
+          <section>
+            <SectionHeader
+              title={layer}
+              subtitle={
+                loading
+                  ? "Refreshing local signals…"
+                  : `${results.length} result${results.length === 1 ? "" : "s"}`
+              }
+            />
+            {results.length ? (
+              <div className="grid gap-3 md:grid-cols-2">
+                {results.map((entity) => (
+                  <ResultCard key={entity.id} entity={entity} />
+                ))}
+              </div>
+            ) : (
+              <DirectoryEmpty
+                title="Nothing is showing here yet"
+                body="That is not proof that the service is unavailable. Ask Kurukoo about the job and it can move from discovery into a verified request when a suitable path exists."
+                action={
+                  <AskKurukoo
+                    prompt={
+                      q
+                        ? `I am looking for ${q} nearby. Help me find the best available route.`
+                        : "Help me find something useful nearby."
+                    }
+                  />
+                }
+              />
+            )}
+          </section>
+          <div className="space-y-4">
+            <MapPanel features={features} located={located} />
+            <PulseControl />
+          </div>
+        </div>
+      </section>
+      <CommerceOutcomes />
+      {topics.length ? (
+        <section>
+          <div className="mb-3">
+            <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-primary">
+              Community context
+            </p>
+            <h2 className="mt-1 text-[17px] font-semibold">What people are talking about</h2>
+            <p className="mt-1 text-[10.5px] text-muted-foreground">
+              Topics can help you understand context. They are not fulfilment proof.
+            </p>
+          </div>
+          <div className="grid gap-px overflow-hidden border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
+            {topics.map((topic) => (
+              <Link
+                key={topic.id}
+                to="/topics/$slug"
+                params={{ slug: topic.slug }}
+                className="bg-surface p-5 hover:bg-elevated/45"
+              >
+                <p className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-primary">
+                  Topic
+                </p>
+                <h3 className="mt-2 text-[13px] font-semibold leading-snug">{topic.title}</h3>
+                <p className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
+                  {topic.body}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
+      <section className="border-t border-border pt-7">
+        <div className="mb-3">
+          <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-primary">
+            From discovery to action
+          </p>
+          <h2 className="mt-1 text-[17px] font-semibold">Found something useful?</h2>
+          <p className="mt-1 text-[10.5px] text-muted-foreground">
+            Discovery provides context. Chat / Voice carries the chosen outcome into a request, with
+            consent and evidence where the route supports it.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            to="/chat"
+            className="inline-flex min-h-9 items-center gap-1 bg-primary px-3 text-[10.5px] font-medium text-primary-foreground"
+          >
+            Start a request <ArrowUpRight className="size-3.5" />
+          </Link>
+          <Link
+            to="/topics"
+            className="inline-flex min-h-9 items-center gap-1 border border-border px-3 text-[10.5px] font-medium"
+          >
+            Open Topics <ArrowUpRight className="size-3.5" />
+          </Link>
+        </div>
+      </section>
+    </div>
+  );
 }

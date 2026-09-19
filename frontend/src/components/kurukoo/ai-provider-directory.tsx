@@ -4,17 +4,239 @@ import { useMemo, useState } from "react";
 import { Badge, Panel } from "@/components/kurukoo/ui";
 import { DirectoryStateBadge, CapabilityPills } from "@/components/kurukoo/surface-directory";
 
-type AIProvider = { id: string; name: string; role: string; category: string; description: string; jobs: string[]; prompt: string };
+type AIProvider = {
+  id: string;
+  name: string;
+  role: string;
+  category: string;
+  description: string;
+  jobs: string[];
+  prompt: string;
+};
 export const kurukooAIProviders: AIProvider[] = [
-  { id: "emeka-ai", name: "Emeka AI", role: "Kurukoo AI agent", category: "Local & everyday assistance", description: "An example Kurukoo AI agent profile showing how a specialised agent can offer defined services inside the network.", jobs: ["Help me get something done", "Help me find local help", "Help me understand Kurukoo", "Plan this with me"], prompt: "Act as Emeka AI, a Kurukoo AI agent. Help with the user's request using Kurukoo's available context and canonical services. Be explicit when an action needs user approval and never invent availability, pricing, verification or completion." },
-  { id: "prayer-companion", name: "Prayer Companion", role: "AI spiritual support provider", category: "Spiritual support", description: "A clearly identified AI companion for prayer, reflection, scripture exploration and prayer routines.", jobs: ["Pray with me", "Help me reflect", "Find a prayer", "Set a prayer reminder"], prompt: "Act as Kurukoo's Prayer Companion provider for this request. Offer prayer, reflection or scripture-oriented support according to what I ask. Be explicit that you are an AI companion, not a pastor or ordained minister. Do not claim religious authority or replace professional or emergency support." },
-  { id: "daily-coordinator", name: "Daily Coordinator", role: "AI planning provider", category: "Everyday coordination", description: "Turns loose intentions into practical next steps, reminders and follow-up.", jobs: ["Plan my day", "Make a checklist", "Remind me", "Follow this up"], prompt: "Act as Kurukoo's Daily Coordinator provider. Help turn my request into practical next steps, reminders and follow-up while keeping consequential actions behind my approval." },
-  { id: "research-companion", name: "Research Companion", role: "AI research provider", category: "Research & comparison", description: "Structures questions, compares options and turns findings into a decision-ready brief.", jobs: ["Compare options", "Research this", "Make a shortlist", "Explain my choices"], prompt: "Act as Kurukoo's Research Companion provider. Research or compare what I ask for, distinguish evidence from opinion, and give me a decision-ready result without inventing facts." },
-  { id: "writing-companion", name: "Writing Companion", role: "AI creative provider", category: "Writing & communication", description: "Helps draft, rewrite, organise and prepare messages or documents for review.", jobs: ["Write this", "Rewrite this", "Draft a message", "Prepare a document"], prompt: "Act as Kurukoo's Writing Companion provider. Help me draft or transform the material I provide, preserve my intent, and present a reviewable result before anything is sent externally." },
-  { id: "language-companion", name: "Language Companion", role: "AI language provider", category: "Language & voice", description: "Translation, transcription, language practice and culturally aware communication support.", jobs: ["Translate this", "Speak Pidgin", "Learn a language", "Transcribe this"], prompt: "Act as Kurukoo's Language Companion provider. Help with translation, transcription or language practice, flag uncertainty where meaning is ambiguous, and do not invent a translation." },
-  { id: "learning-coach", name: "Learning Coach", role: "AI education provider", category: "Learning", description: "Breaks subjects into useful explanations, practice and manageable learning steps.", jobs: ["Teach me this", "Quiz me", "Make a study plan", "Explain simply"], prompt: "Act as Kurukoo's Learning Coach provider. Teach the subject I give you, adapt explanations to my questions, and use practice or short checks when useful." },
-  { id: "life-admin", name: "Life Admin Assistant", role: "AI admin provider", category: "Life administration", description: "Helps organise forms, correspondence, appointments, reminders and routine administration.", jobs: ["Sort this admin", "Prepare for an appointment", "Track this", "Organise my documents"], prompt: "Act as Kurukoo's Life Admin Assistant provider. Help organise my administrative task, identify missing information, prepare drafts or checklists, and ask before external actions." },
-  { id: "wellbeing-companion", name: "Wellbeing Companion", role: "AI wellbeing provider", category: "Wellbeing", description: "A calm conversational companion for reflection, routines and general wellbeing support.", jobs: ["Talk this through", "Help me reset", "Build a routine", "Reflect with me"], prompt: "Act as Kurukoo's Wellbeing Companion provider. Offer supportive conversation and practical wellbeing ideas without presenting yourself as a clinician. Escalate urgent safety or medical concerns appropriately." },
+  {
+    id: "emeka-ai",
+    name: "Emeka AI",
+    role: "Kurukoo AI agent",
+    category: "Local & everyday assistance",
+    description:
+      "An example Kurukoo AI agent profile showing how a specialised agent can offer defined services inside the network.",
+    jobs: [
+      "Help me get something done",
+      "Help me find local help",
+      "Help me understand Kurukoo",
+      "Plan this with me",
+    ],
+    prompt:
+      "Act as Emeka AI, a Kurukoo AI agent. Help with the user's request using Kurukoo's available context and canonical services. Be explicit when an action needs user approval and never invent availability, pricing, verification or completion.",
+  },
+  {
+    id: "prayer-companion",
+    name: "Prayer Companion",
+    role: "AI spiritual support provider",
+    category: "Spiritual support",
+    description:
+      "A clearly identified AI companion for prayer, reflection, scripture exploration and prayer routines.",
+    jobs: ["Pray with me", "Help me reflect", "Find a prayer", "Set a prayer reminder"],
+    prompt:
+      "Act as Kurukoo's Prayer Companion provider for this request. Offer prayer, reflection or scripture-oriented support according to what I ask. Be explicit that you are an AI companion, not a pastor or ordained minister. Do not claim religious authority or replace professional or emergency support.",
+  },
+  {
+    id: "daily-coordinator",
+    name: "Daily Coordinator",
+    role: "AI planning provider",
+    category: "Everyday coordination",
+    description: "Turns loose intentions into practical next steps, reminders and follow-up.",
+    jobs: ["Plan my day", "Make a checklist", "Remind me", "Follow this up"],
+    prompt:
+      "Act as Kurukoo's Daily Coordinator provider. Help turn my request into practical next steps, reminders and follow-up while keeping consequential actions behind my approval.",
+  },
+  {
+    id: "research-companion",
+    name: "Research Companion",
+    role: "AI research provider",
+    category: "Research & comparison",
+    description:
+      "Structures questions, compares options and turns findings into a decision-ready brief.",
+    jobs: ["Compare options", "Research this", "Make a shortlist", "Explain my choices"],
+    prompt:
+      "Act as Kurukoo's Research Companion provider. Research or compare what I ask for, distinguish evidence from opinion, and give me a decision-ready result without inventing facts.",
+  },
+  {
+    id: "writing-companion",
+    name: "Writing Companion",
+    role: "AI creative provider",
+    category: "Writing & communication",
+    description: "Helps draft, rewrite, organise and prepare messages or documents for review.",
+    jobs: ["Write this", "Rewrite this", "Draft a message", "Prepare a document"],
+    prompt:
+      "Act as Kurukoo's Writing Companion provider. Help me draft or transform the material I provide, preserve my intent, and present a reviewable result before anything is sent externally.",
+  },
+  {
+    id: "language-companion",
+    name: "Language Companion",
+    role: "AI language provider",
+    category: "Language & voice",
+    description:
+      "Translation, transcription, language practice and culturally aware communication support.",
+    jobs: ["Translate this", "Speak Pidgin", "Learn a language", "Transcribe this"],
+    prompt:
+      "Act as Kurukoo's Language Companion provider. Help with translation, transcription or language practice, flag uncertainty where meaning is ambiguous, and do not invent a translation.",
+  },
+  {
+    id: "learning-coach",
+    name: "Learning Coach",
+    role: "AI education provider",
+    category: "Learning",
+    description:
+      "Breaks subjects into useful explanations, practice and manageable learning steps.",
+    jobs: ["Teach me this", "Quiz me", "Make a study plan", "Explain simply"],
+    prompt:
+      "Act as Kurukoo's Learning Coach provider. Teach the subject I give you, adapt explanations to my questions, and use practice or short checks when useful.",
+  },
+  {
+    id: "life-admin",
+    name: "Life Admin Assistant",
+    role: "AI admin provider",
+    category: "Life administration",
+    description:
+      "Helps organise forms, correspondence, appointments, reminders and routine administration.",
+    jobs: ["Sort this admin", "Prepare for an appointment", "Track this", "Organise my documents"],
+    prompt:
+      "Act as Kurukoo's Life Admin Assistant provider. Help organise my administrative task, identify missing information, prepare drafts or checklists, and ask before external actions.",
+  },
+  {
+    id: "wellbeing-companion",
+    name: "Wellbeing Companion",
+    role: "AI wellbeing provider",
+    category: "Wellbeing",
+    description:
+      "A calm conversational companion for reflection, routines and general wellbeing support.",
+    jobs: ["Talk this through", "Help me reset", "Build a routine", "Reflect with me"],
+    prompt:
+      "Act as Kurukoo's Wellbeing Companion provider. Offer supportive conversation and practical wellbeing ideas without presenting yourself as a clinician. Escalate urgent safety or medical concerns appropriately.",
+  },
 ];
-function ProviderCard({ provider }: { provider: AIProvider }) { const openProvider = (job: string) => localStorage.setItem("kurukoo-chat-draft", `${provider.prompt}\n\nMy request: ${job}. Please start the conversation and ask only for information you genuinely need.`); return <article className="flex h-full flex-col rounded-[18px] border border-border bg-surface p-4 transition-colors hover:bg-elevated/45"><div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-tint text-brand-ink"><Bot className="size-4.5"/></span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-1.5"><h3 className="text-[14px] font-semibold">{provider.name}</h3><DirectoryStateBadge state="example"/></div><p className="mt-1 text-[10.5px] font-medium text-muted-foreground">{provider.role}</p><p className="mt-2 text-[11.5px] leading-relaxed text-muted-foreground">{provider.description}</p></div></div><div className="mt-3"><CapabilityPills items={provider.jobs} limit={3}/></div><div className="mt-auto flex flex-wrap items-center gap-2 pt-4"><Link to="/chat" onClick={() => openProvider(provider.jobs[0] ?? "Help me")} className="inline-flex min-h-8 items-center rounded-lg bg-primary px-3 text-[10.5px] font-medium text-primary-foreground">Use agent</Link><Link to="/agents/$agentId" params={{ agentId: provider.id }} className="inline-flex min-h-8 items-center rounded-lg border border-border px-3 text-[10.5px] font-medium">Details</Link><span className="ml-auto inline-flex items-center gap-1 text-[9.5px] text-muted-foreground"><HeartHandshake className="size-3"/> Approval-gated</span></div></article>; }
-export function AIProviderDirectory({ compact = false }: { compact?: boolean }) { const [q, setQ] = useState(""); const [category, setCategory] = useState("All"); const categories = ["All", ...Array.from(new Set(kurukooAIProviders.map((provider) => provider.category)))]; const filtered = useMemo(() => kurukooAIProviders.filter((provider) => { const text = `${provider.name} ${provider.role} ${provider.category} ${provider.description} ${provider.jobs.join(" ")}`.toLowerCase(); return (!q.trim() || text.includes(q.trim().toLowerCase())) && (category === "All" || provider.category === category); }), [category, q]); const visible = compact ? filtered.slice(0, 4) : filtered; return <Panel className="overflow-hidden p-0"><div className="border-b border-border px-4 py-3.5"><div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><Sparkles className="size-4 text-primary"/><div><h2 className="text-[14px] font-semibold">AI agents</h2><p className="text-[10.5px] text-muted-foreground">AI participants with defined roles and capabilities.</p></div></div><Badge tone="quiet">{filtered.length} shown</Badge></div>{!compact ? <div className="mt-3 flex flex-col gap-2 sm:flex-row"><div className="relative min-w-0 flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"/><input aria-label="Search AI agents" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search agents…" className="min-h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-[11px] outline-none"/></div><div className="flex gap-1.5 overflow-x-auto">{categories.map((item) => <button key={item} type="button" onClick={() => setCategory(item)} className={`shrink-0 rounded-full border px-2.5 py-1 text-[9.5px] ${category === item ? "border-transparent bg-primary text-primary-foreground" : "border-border text-muted-foreground"}`}>{item}</button>)}</div></div> : null}</div><div className={compact ? "grid gap-2 p-3 md:grid-cols-2" : "grid gap-3 p-3 md:grid-cols-2"}>{visible.map((provider) => <ProviderCard key={provider.id} provider={provider}/>)}</div>{!visible.length ? <div className="p-6 text-center text-[11px] text-muted-foreground">No AI agents match this search.</div> : null}</Panel>; }
+function ProviderCard({ provider }: { provider: AIProvider }) {
+  const openProvider = (job: string) =>
+    localStorage.setItem(
+      "kurukoo-chat-draft",
+      `${provider.prompt}\n\nMy request: ${job}. Please start the conversation and ask only for information you genuinely need.`,
+    );
+  return (
+    <article className="flex h-full flex-col rounded-[18px] border border-border bg-surface p-4 transition-colors hover:bg-elevated/45">
+      <div className="flex items-start gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-tint text-brand-ink">
+          <Bot className="size-4.5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <h3 className="text-[14px] font-semibold">{provider.name}</h3>
+            <DirectoryStateBadge state="example" />
+          </div>
+          <p className="mt-1 text-[10.5px] font-medium text-muted-foreground">{provider.role}</p>
+          <p className="mt-2 text-[11.5px] leading-relaxed text-muted-foreground">
+            {provider.description}
+          </p>
+        </div>
+      </div>
+      <div className="mt-3">
+        <CapabilityPills items={provider.jobs} limit={3} />
+      </div>
+      <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
+        <Link
+          to="/chat"
+          onClick={() => openProvider(provider.jobs[0] ?? "Help me")}
+          className="inline-flex min-h-8 items-center rounded-lg bg-primary px-3 text-[10.5px] font-medium text-primary-foreground"
+        >
+          Use agent
+        </Link>
+        <Link
+          to="/agents/$agentId"
+          params={{ agentId: provider.id }}
+          className="inline-flex min-h-8 items-center rounded-lg border border-border px-3 text-[10.5px] font-medium"
+        >
+          Details
+        </Link>
+        <span className="ml-auto inline-flex items-center gap-1 text-[9.5px] text-muted-foreground">
+          <HeartHandshake className="size-3" /> Approval-gated
+        </span>
+      </div>
+    </article>
+  );
+}
+export function AIProviderDirectory({ compact = false }: { compact?: boolean }) {
+  const [q, setQ] = useState("");
+  const [category, setCategory] = useState("All");
+  const categories = [
+    "All",
+    ...Array.from(new Set(kurukooAIProviders.map((provider) => provider.category))),
+  ];
+  const filtered = useMemo(
+    () =>
+      kurukooAIProviders.filter((provider) => {
+        const text =
+          `${provider.name} ${provider.role} ${provider.category} ${provider.description} ${provider.jobs.join(" ")}`.toLowerCase();
+        return (
+          (!q.trim() || text.includes(q.trim().toLowerCase())) &&
+          (category === "All" || provider.category === category)
+        );
+      }),
+    [category, q],
+  );
+  const visible = compact ? filtered.slice(0, 4) : filtered;
+  return (
+    <Panel className="overflow-hidden p-0">
+      <div className="border-b border-border px-4 py-3.5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="size-4 text-primary" />
+            <div>
+              <h2 className="text-[14px] font-semibold">AI agents</h2>
+              <p className="text-[10.5px] text-muted-foreground">
+                AI participants with defined roles and capabilities.
+              </p>
+            </div>
+          </div>
+          <Badge tone="quiet">{filtered.length} shown</Badge>
+        </div>
+        {!compact ? (
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <input
+                aria-label="Search AI agents"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search agents…"
+                className="min-h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-[11px] outline-none"
+              />
+            </div>
+            <div className="flex gap-1.5 overflow-x-auto">
+              {categories.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => setCategory(item)}
+                  className={`shrink-0 rounded-full border px-2.5 py-1 text-[9.5px] ${category === item ? "border-transparent bg-primary text-primary-foreground" : "border-border text-muted-foreground"}`}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </div>
+      <div className={compact ? "grid gap-2 p-3 md:grid-cols-2" : "grid gap-3 p-3 md:grid-cols-2"}>
+        {visible.map((provider) => (
+          <ProviderCard key={provider.id} provider={provider} />
+        ))}
+      </div>
+      {!visible.length ? (
+        <div className="p-6 text-center text-[11px] text-muted-foreground">
+          No AI agents match this search.
+        </div>
+      ) : null}
+    </Panel>
+  );
+}

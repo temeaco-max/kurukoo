@@ -92,13 +92,34 @@ function NotificationsPage() {
             {notifications.map((item) => (
               <article key={item.id} className="rounded-2xl border border-border bg-surface p-4">
                 <div className="flex items-start gap-3">
-                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-elevated"><Bell className="size-4" /></span>
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-elevated">
+                    <Bell className="size-4" />
+                  </span>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2"><p className="text-[13px] font-medium">{item.title}</p>{item.needsConfirmation ? <span className="rounded-full bg-brand-tint px-2 py-0.5 text-[9.5px] font-medium text-brand-ink">Needs you</span> : null}</div>
-                    <p className="mt-1 text-[11.5px] leading-relaxed text-muted-foreground">{item.body}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-[13px] font-medium">{item.title}</p>
+                      {item.needsConfirmation ? (
+                        <span className="rounded-full bg-brand-tint px-2 py-0.5 text-[9.5px] font-medium text-brand-ink">
+                          Needs you
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-1 text-[11.5px] leading-relaxed text-muted-foreground">
+                      {item.body}
+                    </p>
                     <p className="mt-1.5 text-[9.5px] text-muted-foreground">{item.when}</p>
                   </div>
-                  {!item.read ? <button type="button" onClick={() => markRead(item.id)} className="shrink-0 rounded-lg border border-border px-2.5 py-1.5 text-[10.5px] hover:bg-elevated">Mark read</button> : <span className="text-[10px] text-muted-foreground">Read</span>}
+                  {!item.read ? (
+                    <button
+                      type="button"
+                      onClick={() => markRead(item.id)}
+                      className="shrink-0 rounded-lg border border-border px-2.5 py-1.5 text-[10.5px] hover:bg-elevated"
+                    >
+                      Mark read
+                    </button>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground">Read</span>
+                  )}
                 </div>
               </article>
             ))}

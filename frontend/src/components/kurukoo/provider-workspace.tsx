@@ -1,4 +1,16 @@
-import { CarFront, CheckCircle2, ChevronRight, Clock3, FileCheck2, MapPin, MessageCircle, RefreshCw, Send, UsersRound, XCircle } from "lucide-react";
+import {
+  CarFront,
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  FileCheck2,
+  MapPin,
+  MessageCircle,
+  RefreshCw,
+  Send,
+  UsersRound,
+  XCircle,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/app-shell";
@@ -8,23 +20,140 @@ import { actionClass } from "@/components/kurukoo/primitives";
 import { AIProviderDirectory } from "@/components/kurukoo/ai-provider-directory";
 import { Badge, Panel, SectionHeader, Tabs } from "@/components/kurukoo/ui";
 import { PulseControl } from "@/components/kurukoo/pulse-control";
-import { fetchDiscoveryEntities, fetchPublicPulseProviders, type DiscoveryEntity, type PulseProvider } from "@/lib/kurukoo-api";
-import { acceptProviderRequest, declineProviderRequest, fetchProviderRequest, fetchProviderRequests, fetchProviderSessionMessages, sendProviderSessionMessage, startProviderCommunication, submitProviderEvidence, submitProviderQuote, type ProviderRequest } from "@/lib/provider-execution-api";
+import {
+  fetchDiscoveryEntities,
+  fetchPublicPulseProviders,
+  type DiscoveryEntity,
+  type PulseProvider,
+} from "@/lib/kurukoo-api";
+import {
+  acceptProviderRequest,
+  declineProviderRequest,
+  fetchProviderRequest,
+  fetchProviderRequests,
+  fetchProviderSessionMessages,
+  sendProviderSessionMessage,
+  startProviderCommunication,
+  submitProviderEvidence,
+  submitProviderQuote,
+  type ProviderRequest,
+} from "@/lib/provider-execution-api";
 import { entities } from "@/lib/kurukoo-demo";
 
 const tabs = ["Requests", "Find help", "Offer your capability"] as const;
-function label(value: string) { return value.replace(/[_-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()); }
-function money(quote: Record<string, unknown> | null) { const amount = Number(quote?.amount_minor); if (!Number.isFinite(amount)) return "No quote yet"; return `${String(quote?.currency || "NGN")} ${(amount / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`; }
-function requestSummary(request: ProviderRequest) { const values = Object.entries(request.requirements || {}).filter(([, value]) => value !== null && value !== undefined && String(value).trim()).slice(0, 3); return values.map(([key, value]) => `${label(key)}: ${typeof value === "object" ? JSON.stringify(value) : String(value)}`).join(" · "); }
+function label(value: string) {
+  return value.replace(/[_-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+function money(quote: Record<string, unknown> | null) {
+  const amount = Number(quote?.amount_minor);
+  if (!Number.isFinite(amount)) return "No quote yet";
+  return `${String(quote?.currency || "NGN")} ${(amount / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+}
+function requestSummary(request: ProviderRequest) {
+  const values = Object.entries(request.requirements || {})
+    .filter(([, value]) => value !== null && value !== undefined && String(value).trim())
+    .slice(0, 3);
+  return values
+    .map(
+      ([key, value]) =>
+        `${label(key)}: ${typeof value === "object" ? JSON.stringify(value) : String(value)}`,
+    )
+    .join(" · ");
+}
 
 function LiveProviderCard({ provider }: { provider: PulseProvider }) {
-  return <article className="rounded-[18px] border border-border bg-surface p-4"><div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-tint text-brand-ink">{provider.source === "mobile" ? <CarFront className="size-4.5" /> : <UsersRound className="size-4.5" />}</span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-1.5"><p className="truncate text-[14px] font-semibold">{provider.name}</p><Badge tone="success">Live now</Badge><Badge>Verified</Badge></div><p className="mt-1 text-[11.5px] text-muted-foreground">{provider.skill}{provider.location ? ` · ${provider.location}` : ""}</p><p className="mt-1.5 flex items-center gap-1 text-[10.5px] text-muted-foreground"><MapPin className="size-3" /> Approximate location · {provider.location_radius_m}m visibility radius</p></div></div><div className="mt-3 flex flex-wrap gap-2"><AskKurukoo prompt={`Help me contact ${provider.name} about ${provider.skill}. Check what is actually available before making any commitment.`} /><Link to="/chat" search={{ query: `Help me contact ${provider.name} about ${provider.skill}.` } as never} className={actionClass()}>Ask in chat</Link></div></article>;
+  return (
+    <article className="rounded-[18px] border border-border bg-surface p-4">
+      <div className="flex items-start gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-tint text-brand-ink">
+          {provider.source === "mobile" ? (
+            <CarFront className="size-4.5" />
+          ) : (
+            <UsersRound className="size-4.5" />
+          )}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <p className="truncate text-[14px] font-semibold">{provider.name}</p>
+            <Badge tone="success">Live now</Badge>
+            <Badge>Verified</Badge>
+          </div>
+          <p className="mt-1 text-[11.5px] text-muted-foreground">
+            {provider.skill}
+            {provider.location ? ` · ${provider.location}` : ""}
+          </p>
+          <p className="mt-1.5 flex items-center gap-1 text-[10.5px] text-muted-foreground">
+            <MapPin className="size-3" /> Approximate location · {provider.location_radius_m}m
+            visibility radius
+          </p>
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <AskKurukoo
+          prompt={`Help me contact ${provider.name} about ${provider.skill}. Check what is actually available before making any commitment.`}
+        />
+        <Link
+          to="/chat"
+          search={{ query: `Help me contact ${provider.name} about ${provider.skill}.` } as never}
+          className={actionClass()}
+        >
+          Ask in chat
+        </Link>
+      </div>
+    </article>
+  );
 }
 function DiscoveryProviderCard({ entity }: { entity: DiscoveryEntity }) {
-  return <article className="rounded-[18px] border border-border bg-surface p-4"><div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-elevated text-muted-foreground"><UsersRound className="size-4.5" /></span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-1.5"><p className="truncate text-[14px] font-semibold">{entity.name}</p>{entity.liveNow ? <Badge tone="success">Live now</Badge> : entity.available === true ? <Badge tone="success">Available</Badge> : <Badge>Not confirmed</Badge>}{entity.evidence ? <Badge>{entity.evidence.replace(/[_-]/g, " ")}</Badge> : null}</div><p className="mt-1 text-[11.5px] text-muted-foreground">{entity.category ?? entity.kind}{entity.location ? ` · ${entity.location}` : ""}</p><p className="mt-1.5 text-[10.5px] leading-relaxed text-muted-foreground">{entity.description ?? "Discovery information from a connected Kurukoo source."}</p></div></div><Link to="/chat" onClick={() => localStorage.setItem("kurukoo-chat-draft", `Tell me about ${entity.name} and, if appropriate, help me make a verified request.`)} className="mt-3 inline-flex min-h-8 items-center rounded-lg bg-primary px-3 text-[11.5px] font-medium text-primary-foreground">Ask Kurukoo</Link></article>;
+  return (
+    <article className="rounded-[18px] border border-border bg-surface p-4">
+      <div className="flex items-start gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-elevated text-muted-foreground">
+          <UsersRound className="size-4.5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <p className="truncate text-[14px] font-semibold">{entity.name}</p>
+            {entity.liveNow ? (
+              <Badge tone="success">Live now</Badge>
+            ) : entity.available === true ? (
+              <Badge tone="success">Available</Badge>
+            ) : (
+              <Badge>Not confirmed</Badge>
+            )}
+            {entity.evidence ? <Badge>{entity.evidence.replace(/[_-]/g, " ")}</Badge> : null}
+          </div>
+          <p className="mt-1 text-[11.5px] text-muted-foreground">
+            {entity.category ?? entity.kind}
+            {entity.location ? ` · ${entity.location}` : ""}
+          </p>
+          <p className="mt-1.5 text-[10.5px] leading-relaxed text-muted-foreground">
+            {entity.description ?? "Discovery information from a connected Kurukoo source."}
+          </p>
+        </div>
+      </div>
+      <Link
+        to="/chat"
+        onClick={() =>
+          localStorage.setItem(
+            "kurukoo-chat-draft",
+            `Tell me about ${entity.name} and, if appropriate, help me make a verified request.`,
+          )
+        }
+        className="mt-3 inline-flex min-h-8 items-center rounded-lg bg-primary px-3 text-[11.5px] font-medium text-primary-foreground"
+      >
+        Ask Kurukoo
+      </Link>
+    </article>
+  );
 }
 
-function ProviderRequestDetail({ request, onChanged }: { request: ProviderRequest; onChanged: () => void }) {
+function ProviderRequestDetail({
+  request,
+  onChanged,
+}: {
+  request: ProviderRequest;
+  onChanged: () => void;
+}) {
   const [quoteAmount, setQuoteAmount] = useState("");
   const [quoteCurrency, setQuoteCurrency] = useState("NGN");
   const [quoteNote, setQuoteNote] = useState("");
@@ -32,34 +161,334 @@ function ProviderRequestDetail({ request, onChanged }: { request: ProviderReques
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Array<{ id: number; sender: string; content: string; created_at?: string }>>([]);
+  const [messages, setMessages] = useState<
+    Array<{ id: number; sender: string; content: string; created_at?: string }>
+  >([]);
   const [message, setMessage] = useState("");
   const [communicationBusy, setCommunicationBusy] = useState(false);
   const canQuote = ["matched", "quoting", "partially_matched"].includes(request.status);
-  const canAccept = ["quoted", "reserved", "paid"].includes(request.status) && !["confirmed", "in_progress", "completion_reported", "delivered"].includes(request.participant.status);
-  const canReport = ["reserved", "paid", "in_fulfillment"].includes(request.status) || ["confirmed", "in_progress"].includes(request.participant.status);
+  const canAccept =
+    ["quoted", "reserved", "paid"].includes(request.status) &&
+    !["confirmed", "in_progress", "completion_reported", "delivered"].includes(
+      request.participant.status,
+    );
+  const canReport =
+    ["reserved", "paid", "in_fulfillment"].includes(request.status) ||
+    ["confirmed", "in_progress"].includes(request.participant.status);
 
-  async function refreshSession(id: string) { const next = await fetchProviderSessionMessages(id); setMessages(next.map((item) => ({ id: item.id, sender: item.sender, content: item.content, created_at: item.created_at }))); }
-  async function startChat() { setCommunicationBusy(true); setError(""); try { const result = sessionId ? { session: { id: sessionId } } : await startProviderCommunication(request.id); const id = result.session.id; setSessionId(id); await refreshSession(id); } catch (e) { setError(e instanceof Error ? e.message : "Unable to open customer communication."); } finally { setCommunicationBusy(false); } }
-  async function sendMessage() { const clean = message.trim(); if (!clean || !sessionId || communicationBusy) return; setCommunicationBusy(true); try { await sendProviderSessionMessage(sessionId, clean); setMessage(""); await refreshSession(sessionId); } catch (e) { setError(e instanceof Error ? e.message : "Unable to send message."); } finally { setCommunicationBusy(false); } }
-  async function act(action: () => Promise<unknown>) { setBusy(true); setError(""); try { await action(); onChanged(); } catch (e) { setError(e instanceof Error ? e.message : "That provider action could not be completed."); } finally { setBusy(false); } }
-  const submitQuote = () => { const major = Number(quoteAmount); if (!Number.isFinite(major) || major <= 0) { setError("Enter a valid quote amount."); return; } void act(() => submitProviderQuote(request.id, { amountMinor: Math.round(major * 100), currency: quoteCurrency, note: quoteNote || undefined, revision: request.quote ? Number(request.quote.revision || 1) + 1 : 1 })); };
-  const submitEvidence = () => { if (!evidenceNote.trim()) { setError("Add a short completion note so the customer can understand what happened."); return; } void act(() => submitProviderEvidence(request.id, "completion_reported", { note: evidenceNote.trim(), source: "provider_workspace" })); };
+  async function refreshSession(id: string) {
+    const next = await fetchProviderSessionMessages(id);
+    setMessages(
+      next.map((item) => ({
+        id: item.id,
+        sender: item.sender,
+        content: item.content,
+        created_at: item.created_at,
+      })),
+    );
+  }
+  async function startChat() {
+    setCommunicationBusy(true);
+    setError("");
+    try {
+      const result = sessionId
+        ? { session: { id: sessionId } }
+        : await startProviderCommunication(request.id);
+      const id = result.session.id;
+      setSessionId(id);
+      await refreshSession(id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unable to open customer communication.");
+    } finally {
+      setCommunicationBusy(false);
+    }
+  }
+  async function sendMessage() {
+    const clean = message.trim();
+    if (!clean || !sessionId || communicationBusy) return;
+    setCommunicationBusy(true);
+    try {
+      await sendProviderSessionMessage(sessionId, clean);
+      setMessage("");
+      await refreshSession(sessionId);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unable to send message.");
+    } finally {
+      setCommunicationBusy(false);
+    }
+  }
+  async function act(action: () => Promise<unknown>) {
+    setBusy(true);
+    setError("");
+    try {
+      await action();
+      onChanged();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "That provider action could not be completed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  const submitQuote = () => {
+    const major = Number(quoteAmount);
+    if (!Number.isFinite(major) || major <= 0) {
+      setError("Enter a valid quote amount.");
+      return;
+    }
+    void act(() =>
+      submitProviderQuote(request.id, {
+        amountMinor: Math.round(major * 100),
+        currency: quoteCurrency,
+        note: quoteNote || undefined,
+        revision: request.quote ? Number(request.quote.revision || 1) + 1 : 1,
+      }),
+    );
+  };
+  const submitEvidence = () => {
+    if (!evidenceNote.trim()) {
+      setError("Add a short completion note so the customer can understand what happened.");
+      return;
+    }
+    void act(() =>
+      submitProviderEvidence(request.id, "completion_reported", {
+        note: evidenceNote.trim(),
+        source: "provider_workspace",
+      }),
+    );
+  };
 
-  return <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-    <section className="rounded-[20px] border border-border bg-surface p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary">Customer request</p><h2 className="mt-1 text-[20px] font-semibold">{label(request.skill)}</h2><p className="mt-1 text-[12px] text-muted-foreground">{requestSummary(request) || "The request has no additional structured details yet."}</p></div><Badge tone={request.status === "in_fulfillment" ? "success" : "quiet"}>{label(request.status)}</Badge></div>
-      <div className="mt-5 grid gap-3 sm:grid-cols-3"><div className="rounded-xl bg-elevated/60 p-3"><p className="text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">Your role</p><p className="mt-1 text-[12.5px] font-medium">{label(request.participant.role)}</p><p className="mt-0.5 text-[10.5px] text-muted-foreground">{label(request.participant.status)}</p></div><div className="rounded-xl bg-elevated/60 p-3"><p className="text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">Current quote</p><p className="mt-1 text-[12.5px] font-medium">{money(request.quote)}</p><p className="mt-0.5 text-[10.5px] text-muted-foreground">{request.quote?.note ? String(request.quote.note) : "No quote submitted"}</p></div><div className="rounded-xl bg-elevated/60 p-3"><p className="text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">Customer</p><p className="mt-1 text-[12.5px] font-medium">Kurukoo customer</p><p className="mt-0.5 text-[10.5px] text-muted-foreground">Contact stays inside the request</p></div></div>
-      {canQuote ? <div className="mt-4 rounded-2xl border border-primary/20 bg-brand-tint/10 p-4"><div className="flex items-center gap-2"><Clock3 className="size-4 text-primary"/><p className="text-[13px] font-semibold">Make an offer</p></div><p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">Give the customer a clear price and any conditions. They decide whether to approve it.</p><div className="mt-3 grid gap-2 sm:grid-cols-[1fr_110px]"><input value={quoteAmount} onChange={(e) => setQuoteAmount(e.target.value)} inputMode="decimal" placeholder="Amount" className="h-10 rounded-lg border border-border bg-surface px-3 text-[12px] outline-none focus:ring-2 focus:ring-primary/20"/><select value={quoteCurrency} onChange={(e) => setQuoteCurrency(e.target.value)} className="h-10 rounded-lg border border-border bg-surface px-3 text-[12px]"><option>NGN</option><option>GBP</option><option>USD</option><option>EUR</option></select></div><input value={quoteNote} onChange={(e) => setQuoteNote(e.target.value)} placeholder="Optional terms, timing or what is included" className="mt-2 h-10 w-full rounded-lg border border-border bg-surface px-3 text-[12px] outline-none focus:ring-2 focus:ring-primary/20"/><button type="button" disabled={busy} onClick={submitQuote} className="mt-2 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[11.5px] font-medium text-primary-foreground disabled:opacity-50">{busy ? "Sending…" : request.quote ? "Send revised quote" : "Send quote"}<ChevronRight className="size-3.5"/></button></div> : null}
-      {canAccept ? <div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={busy} onClick={() => void act(() => acceptProviderRequest(request.id))} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[11.5px] font-medium text-primary-foreground disabled:opacity-50"><CheckCircle2 className="size-3.5"/>{busy ? "Updating…" : "Accept request"}</button><button type="button" disabled={busy} onClick={() => void act(() => declineProviderRequest(request.id, "Provider is unavailable for this request."))} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-[11.5px] font-medium hover:bg-elevated disabled:opacity-50"><XCircle className="size-3.5"/>Decline</button></div> : null}
-      {canReport ? <div className="mt-4 rounded-2xl border border-border p-4"><div className="flex items-center gap-2"><FileCheck2 className="size-4 text-primary"/><p className="text-[13px] font-semibold">Report the work</p></div><p className="mt-1 text-[11px] text-muted-foreground">Add evidence or a completion note. This does not falsely mark the customer's request complete; the customer still sees and confirms the outcome.</p><textarea value={evidenceNote} onChange={(e) => setEvidenceNote(e.target.value)} rows={3} placeholder="What was done? What should the customer know?" className="mt-3 w-full resize-none rounded-xl border border-border bg-background p-3 text-[12px] outline-none focus:ring-2 focus:ring-primary/20"/><button type="button" disabled={busy} onClick={submitEvidence} className="mt-2 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[11.5px] font-medium text-primary-foreground disabled:opacity-50">{busy ? "Submitting…" : "Submit completion evidence"}</button></div> : null}
-      {error ? <p role="alert" className="mt-3 text-[11.5px] text-destructive">{error}</p> : null}
-    </section>
-    <aside className="space-y-3">
-      <section className="rounded-[20px] border border-border bg-surface p-4"><div className="flex items-center justify-between gap-2"><div><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary">Customer communication</p><p className="mt-1 text-[13px] font-semibold">Keep the work moving</p></div><MessageCircle className="size-4 text-primary"/></div>{sessionId ? <div className="mt-3 max-h-52 space-y-2 overflow-auto rounded-xl bg-elevated/40 p-2">{messages.length ? messages.map((item) => <div key={item.id} className="rounded-lg bg-surface px-2.5 py-2"><p className="text-[10px] text-muted-foreground">{item.sender === "user" ? "Participant" : label(item.sender)}</p><p className="mt-0.5 text-[11.5px] leading-relaxed">{item.content}</p></div>) : <p className="p-2 text-[11px] text-muted-foreground">No messages yet.</p>}</div> : <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">Use Kurukoo communication for clarifications and coordination. Keep contact and request context together.</p>}<button type="button" disabled={communicationBusy} onClick={() => void startChat()} className="mt-3 inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-[11.5px] font-medium hover:bg-elevated disabled:opacity-50">{communicationBusy ? "Opening…" : sessionId ? "Refresh conversation" : "Open conversation"}</button>{sessionId ? <div className="mt-2 flex gap-2"><input value={message} onChange={(e) => setMessage(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void sendMessage(); } }} placeholder="Message the customer" className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background px-2.5 text-[11.5px]"/><button type="button" onClick={() => void sendMessage()} disabled={!message.trim() || communicationBusy} className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground disabled:opacity-50" aria-label="Send message"><Send className="size-3.5"/></button></div> : null}</section>
-      <section className="rounded-[20px] border border-border bg-elevated/30 p-4"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Trust boundary</p><p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">Only quote what you can genuinely provide. Evidence is recorded against this request, and completion remains separate from your submission.</p></section>
-    </aside>
-  </div>;
+  return (
+    <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <section className="rounded-[20px] border border-border bg-surface p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary">
+              Customer request
+            </p>
+            <h2 className="mt-1 text-[20px] font-semibold">{label(request.skill)}</h2>
+            <p className="mt-1 text-[12px] text-muted-foreground">
+              {requestSummary(request) || "The request has no additional structured details yet."}
+            </p>
+          </div>
+          <Badge tone={request.status === "in_fulfillment" ? "success" : "quiet"}>
+            {label(request.status)}
+          </Badge>
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl bg-elevated/60 p-3">
+            <p className="text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">
+              Your role
+            </p>
+            <p className="mt-1 text-[12.5px] font-medium">{label(request.participant.role)}</p>
+            <p className="mt-0.5 text-[10.5px] text-muted-foreground">
+              {label(request.participant.status)}
+            </p>
+          </div>
+          <div className="rounded-xl bg-elevated/60 p-3">
+            <p className="text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">
+              Current quote
+            </p>
+            <p className="mt-1 text-[12.5px] font-medium">{money(request.quote)}</p>
+            <p className="mt-0.5 text-[10.5px] text-muted-foreground">
+              {request.quote?.note ? String(request.quote.note) : "No quote submitted"}
+            </p>
+          </div>
+          <div className="rounded-xl bg-elevated/60 p-3">
+            <p className="text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">
+              Customer
+            </p>
+            <p className="mt-1 text-[12.5px] font-medium">Kurukoo customer</p>
+            <p className="mt-0.5 text-[10.5px] text-muted-foreground">
+              Contact stays inside the request
+            </p>
+          </div>
+        </div>
+        {canQuote ? (
+          <div className="mt-4 rounded-2xl border border-primary/20 bg-brand-tint/10 p-4">
+            <div className="flex items-center gap-2">
+              <Clock3 className="size-4 text-primary" />
+              <p className="text-[13px] font-semibold">Make an offer</p>
+            </div>
+            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+              Give the customer a clear price and any conditions. They decide whether to approve it.
+            </p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_110px]">
+              <input
+                value={quoteAmount}
+                onChange={(e) => setQuoteAmount(e.target.value)}
+                inputMode="decimal"
+                placeholder="Amount"
+                className="h-10 rounded-lg border border-border bg-surface px-3 text-[12px] outline-none focus:ring-2 focus:ring-primary/20"
+              />
+              <select
+                value={quoteCurrency}
+                onChange={(e) => setQuoteCurrency(e.target.value)}
+                className="h-10 rounded-lg border border-border bg-surface px-3 text-[12px]"
+              >
+                <option>NGN</option>
+                <option>GBP</option>
+                <option>USD</option>
+                <option>EUR</option>
+              </select>
+            </div>
+            <input
+              value={quoteNote}
+              onChange={(e) => setQuoteNote(e.target.value)}
+              placeholder="Optional terms, timing or what is included"
+              className="mt-2 h-10 w-full rounded-lg border border-border bg-surface px-3 text-[12px] outline-none focus:ring-2 focus:ring-primary/20"
+            />
+            <button
+              type="button"
+              disabled={busy}
+              onClick={submitQuote}
+              className="mt-2 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[11.5px] font-medium text-primary-foreground disabled:opacity-50"
+            >
+              {busy ? "Sending…" : request.quote ? "Send revised quote" : "Send quote"}
+              <ChevronRight className="size-3.5" />
+            </button>
+          </div>
+        ) : null}
+        {canAccept ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void act(() => acceptProviderRequest(request.id))}
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[11.5px] font-medium text-primary-foreground disabled:opacity-50"
+            >
+              <CheckCircle2 className="size-3.5" />
+              {busy ? "Updating…" : "Accept request"}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() =>
+                void act(() =>
+                  declineProviderRequest(request.id, "Provider is unavailable for this request."),
+                )
+              }
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-[11.5px] font-medium hover:bg-elevated disabled:opacity-50"
+            >
+              <XCircle className="size-3.5" />
+              Decline
+            </button>
+          </div>
+        ) : null}
+        {canReport ? (
+          <div className="mt-4 rounded-2xl border border-border p-4">
+            <div className="flex items-center gap-2">
+              <FileCheck2 className="size-4 text-primary" />
+              <p className="text-[13px] font-semibold">Report the work</p>
+            </div>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Add evidence or a completion note. This does not falsely mark the customer's request
+              complete; the customer still sees and confirms the outcome.
+            </p>
+            <textarea
+              value={evidenceNote}
+              onChange={(e) => setEvidenceNote(e.target.value)}
+              rows={3}
+              placeholder="What was done? What should the customer know?"
+              className="mt-3 w-full resize-none rounded-xl border border-border bg-background p-3 text-[12px] outline-none focus:ring-2 focus:ring-primary/20"
+            />
+            <button
+              type="button"
+              disabled={busy}
+              onClick={submitEvidence}
+              className="mt-2 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[11.5px] font-medium text-primary-foreground disabled:opacity-50"
+            >
+              {busy ? "Submitting…" : "Submit completion evidence"}
+            </button>
+          </div>
+        ) : null}
+        {error ? (
+          <p role="alert" className="mt-3 text-[11.5px] text-destructive">
+            {error}
+          </p>
+        ) : null}
+      </section>
+      <aside className="space-y-3">
+        <section className="rounded-[20px] border border-border bg-surface p-4">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary">
+                Customer communication
+              </p>
+              <p className="mt-1 text-[13px] font-semibold">Keep the work moving</p>
+            </div>
+            <MessageCircle className="size-4 text-primary" />
+          </div>
+          {sessionId ? (
+            <div className="mt-3 max-h-52 space-y-2 overflow-auto rounded-xl bg-elevated/40 p-2">
+              {messages.length ? (
+                messages.map((item) => (
+                  <div key={item.id} className="rounded-lg bg-surface px-2.5 py-2">
+                    <p className="text-[10px] text-muted-foreground">
+                      {item.sender === "user" ? "Participant" : label(item.sender)}
+                    </p>
+                    <p className="mt-0.5 text-[11.5px] leading-relaxed">{item.content}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="p-2 text-[11px] text-muted-foreground">No messages yet.</p>
+              )}
+            </div>
+          ) : (
+            <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+              Use Kurukoo communication for clarifications and coordination. Keep contact and
+              request context together.
+            </p>
+          )}
+          <button
+            type="button"
+            disabled={communicationBusy}
+            onClick={() => void startChat()}
+            className="mt-3 inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-[11.5px] font-medium hover:bg-elevated disabled:opacity-50"
+          >
+            {communicationBusy
+              ? "Opening…"
+              : sessionId
+                ? "Refresh conversation"
+                : "Open conversation"}
+          </button>
+          {sessionId ? (
+            <div className="mt-2 flex gap-2">
+              <input
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void sendMessage();
+                  }
+                }}
+                placeholder="Message the customer"
+                className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background px-2.5 text-[11.5px]"
+              />
+              <button
+                type="button"
+                onClick={() => void sendMessage()}
+                disabled={!message.trim() || communicationBusy}
+                className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground disabled:opacity-50"
+                aria-label="Send message"
+              >
+                <Send className="size-3.5" />
+              </button>
+            </div>
+          ) : null}
+        </section>
+        <section className="rounded-[20px] border border-border bg-elevated/30 p-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+            Trust boundary
+          </p>
+          <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+            Only quote what you can genuinely provide. Evidence is recorded against this request,
+            and completion remains separate from your submission.
+          </p>
+        </section>
+      </aside>
+    </div>
+  );
 }
 
 export function ProviderWorkspace() {
@@ -75,11 +504,296 @@ export function ProviderWorkspace() {
   const [liveError, setLiveError] = useState(false);
   const providers = entities.filter((e) => e.kind === "provider");
 
-  const refreshRequests = async () => { setRequestLoading(true); setRequestError(""); try { const next = await fetchProviderRequests(); setRequests(next); if (selectedId) { const detail = await fetchProviderRequest(selectedId); const base = next.find((item) => item.id === selectedId); if (base) setSelected({ ...base, quote: detail.request.quote ?? base.quote, status: detail.request.status, participant: { ...base.participant, status: detail.participant.status, evidence: detail.participant.evidence || {} } }); } } catch (e) { setRequestError(e instanceof Error ? e.message : "Provider requests are not available right now."); } finally { setRequestLoading(false); } };
-  const selectRequest = async (id: string) => { setSelectedId(id); const base = requests.find((item) => item.id === id); if (base) setSelected(base); try { const detail = await fetchProviderRequest(id); if (base) setSelected({ ...base, quote: detail.request.quote ?? base.quote, status: detail.request.status, participant: { ...base.participant, status: detail.participant.status, evidence: detail.participant.evidence || {} } }); } catch (e) { setRequestError(e instanceof Error ? e.message : "Unable to open this request."); } };
-  const refreshLive = async () => { setLoadingLive(true); setLiveError(false); try { const [pulse, discovered] = await Promise.all([fetchPublicPulseProviders(), fetchDiscoveryEntities({ layers: ["mobile", "stationary"] })]); setLiveProviders(pulse); setDiscoveredProviders(discovered.filter((entity) => entity.kind.toLowerCase().includes("provider") || entity.kind.toLowerCase().includes("business"))); } catch { setLiveError(true); } finally { setLoadingLive(false); } };
-  useEffect(() => { void refreshRequests(); }, []);
-  useEffect(() => { void refreshLive(); const timer = window.setInterval(() => void refreshLive(), 30000); return () => window.clearInterval(timer); }, []);
+  const refreshRequests = async () => {
+    setRequestLoading(true);
+    setRequestError("");
+    try {
+      const next = await fetchProviderRequests();
+      setRequests(next);
+      if (selectedId) {
+        const detail = await fetchProviderRequest(selectedId);
+        const base = next.find((item) => item.id === selectedId);
+        if (base)
+          setSelected({
+            ...base,
+            quote: detail.request.quote ?? base.quote,
+            status: detail.request.status,
+            participant: {
+              ...base.participant,
+              status: detail.participant.status,
+              evidence: detail.participant.evidence || {},
+            },
+          });
+      }
+    } catch (e) {
+      setRequestError(
+        e instanceof Error ? e.message : "Provider requests are not available right now.",
+      );
+    } finally {
+      setRequestLoading(false);
+    }
+  };
+  const selectRequest = async (id: string) => {
+    setSelectedId(id);
+    const base = requests.find((item) => item.id === id);
+    if (base) setSelected(base);
+    try {
+      const detail = await fetchProviderRequest(id);
+      if (base)
+        setSelected({
+          ...base,
+          quote: detail.request.quote ?? base.quote,
+          status: detail.request.status,
+          participant: {
+            ...base.participant,
+            status: detail.participant.status,
+            evidence: detail.participant.evidence || {},
+          },
+        });
+    } catch (e) {
+      setRequestError(e instanceof Error ? e.message : "Unable to open this request.");
+    }
+  };
+  const refreshLive = async () => {
+    setLoadingLive(true);
+    setLiveError(false);
+    try {
+      const [pulse, discovered] = await Promise.all([
+        fetchPublicPulseProviders(),
+        fetchDiscoveryEntities({ layers: ["mobile", "stationary"] }),
+      ]);
+      setLiveProviders(pulse);
+      setDiscoveredProviders(
+        discovered.filter(
+          (entity) =>
+            entity.kind.toLowerCase().includes("provider") ||
+            entity.kind.toLowerCase().includes("business"),
+        ),
+      );
+    } catch {
+      setLiveError(true);
+    } finally {
+      setLoadingLive(false);
+    }
+  };
+  useEffect(() => {
+    void refreshRequests();
+  }, []);
+  useEffect(() => {
+    void refreshLive();
+    const timer = window.setInterval(() => void refreshLive(), 30000);
+    return () => window.clearInterval(timer);
+  }, []);
 
-  return <><PageHeader title="Provider workspace" subtitle="Receive real work, make clear offers, communicate, and report what actually happened." /><Tabs items={tabs} value={tab} onChange={setTab} />{tab === "Requests" ? <div className="mt-4 space-y-4"><section className="rounded-[22px] border border-border bg-surface p-5"><div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary">Your work</p><h2 className="mt-1 text-[22px] font-semibold tracking-tight">Requests that reached you</h2><p className="mt-1 text-[12px] text-muted-foreground">Review the request, quote only what you can deliver, then keep the customer informed.</p></div><button type="button" onClick={() => void refreshRequests()} disabled={requestLoading} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-[11.5px] font-medium hover:bg-elevated disabled:opacity-50"><RefreshCw className={requestLoading ? "size-3.5 animate-spin" : "size-3.5"}/>Refresh</button></div></section>{requestError ? <div role="alert" className="rounded-xl border border-border bg-elevated/50 px-4 py-3 text-[11.5px] text-muted-foreground">{requestError}</div> : null}{requestLoading && !requests.length ? <Panel className="p-6 text-center text-[11.5px] text-muted-foreground">Loading provider requests…</Panel> : requests.length ? <div className="grid gap-3 lg:grid-cols-[360px_minmax(0,1fr)]"><section className="space-y-2">{requests.map((item) => <button key={item.id} type="button" onClick={() => void selectRequest(item.id)} className={`w-full rounded-[16px] border p-4 text-left transition-colors ${selectedId === item.id ? "border-primary/40 bg-brand-tint/10" : "border-border bg-surface hover:bg-elevated"}`}><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-[13.5px] font-semibold">{label(item.skill)}</p><p className="mt-1 line-clamp-2 text-[10.5px] text-muted-foreground">{requestSummary(item) || "Request details are available when opened."}</p></div><Badge tone={item.status === "in_fulfillment" ? "success" : "quiet"}>{label(item.status)}</Badge></div><div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground"><span>{money(item.quote)}</span><span>{label(item.participant.status)}</span></div></button>)}</section>{selected ? <ProviderRequestDetail request={selected} onChanged={() => void refreshRequests()} /> : <Panel className="p-8 text-center"><UsersRound className="mx-auto size-6 text-muted-foreground"/><p className="mt-3 text-[13px] font-medium">Choose a request</p><p className="mt-1 text-[11.5px] text-muted-foreground">The full offer, communication and evidence controls will appear here.</p></Panel>}</div> : <section className="rounded-[20px] border border-dashed border-border bg-elevated/30 p-8 text-center"><CheckCircle2 className="mx-auto size-6 text-muted-foreground"/><p className="mt-3 text-[14px] font-medium">No provider requests yet</p><p className="mt-1 text-[11.5px] text-muted-foreground">When a supported request is assigned or invited to you, it will appear here. Kurukoo will not invent demand or pretend a request exists.</p><Link to="/capabilities" className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-[11.5px] font-medium text-primary-foreground">Review capabilities <ChevronRight className="size-3.5"/></Link></section>}</div> : tab === "Find help" ? <div className="mt-4 grid gap-4"><AIProviderDirectory compact />{liveProviders.length || discoveredProviders.length ? <section className="space-y-3"><div className="flex items-center justify-between gap-3"><div><p className="text-[11px] font-bold uppercase tracking-[0.12em] text-primary">Connected discovery</p><h2 className="mt-1 text-[17px] font-semibold">Human providers visible now</h2></div><button type="button" onClick={() => void refreshLive()} disabled={loadingLive} className="grid size-8 shrink-0 place-items-center rounded-lg border border-border hover:bg-elevated disabled:opacity-50" aria-label="Refresh provider discovery"><RefreshCw className={loadingLive ? "size-3.5 animate-spin" : "size-3.5"} /></button></div><div className="grid gap-3">{liveProviders.map((provider) => <LiveProviderCard key={provider.id} provider={provider} />)}{discoveredProviders.map((entity) => <DiscoveryProviderCard key={`discovery-${entity.id}`} entity={entity} />)}</div></section> : null}{liveError ? <div className="rounded-2xl border border-border bg-elevated/50 px-4 py-3 text-[12px] text-muted-foreground">Connected provider discovery is not available right now. Kurukoo will not present it as live.</div> : null}{providers.length ? <section className="grid gap-3"><div className="flex items-center justify-between"><h2 className="text-[17px] font-semibold">Provider directory</h2><Badge tone="quiet">Preview</Badge></div>{providers.map((p) => <EntityCard key={p.id} entity={p} />)}</section> : null}</div> : <div className="mt-4 space-y-6"><PulseControl /><Panel className="p-5"><SectionHeader title="Offer what you can do" subtitle="Tell Kurukoo what service you provide, where you work and when you can accept requests." /><div className="mt-4 flex flex-wrap gap-2"><AskKurukoo prompt="Help me set up my provider profile on Kurukoo. I want to offer a service and make myself available for suitable requests." /><Link to="/chat" search={{ query: "Help me set up my provider profile on Kurukoo." } as never} className={actionClass("primary")}>Start in chat</Link><Link to="/pricing" className={actionClass()}>Provider plan</Link></div></Panel><section><SectionHeader title="Provider tools" subtitle="Open the part of your provider account you want to work on." /><div className="grid gap-2">{[["Capabilities", "Describe what you can provide", "/capabilities"], ["Availability", "Go Live on Nearby Pulse", "/discover"], ["Incoming requests", "Review requests waiting for you", "/provider"], ["Messages", "Open customer conversations", "/messages"], ["Customers", "Review customer relationships", "/contacts"], ["Payments", "Open wallet and payout tools", "/wallet"]].map(([title, note, to]) => <div key={title} className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface px-4 py-3.5"><span><span className="block text-[13.5px] font-medium">{title}</span><span className="block text-[11px] text-muted-foreground">{note}</span></span><Link to={to as never} className="text-[11.5px] font-medium underline">Open</Link></div>)}</div></section></div>}</>;
+  return (
+    <>
+      <PageHeader
+        title="Provider workspace"
+        subtitle="Receive real work, make clear offers, communicate, and report what actually happened."
+      />
+      <Tabs items={tabs} value={tab} onChange={setTab} />
+      {tab === "Requests" ? (
+        <div className="mt-4 space-y-4">
+          <section className="rounded-[22px] border border-border bg-surface p-5">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary">
+                  Your work
+                </p>
+                <h2 className="mt-1 text-[22px] font-semibold tracking-tight">
+                  Requests that reached you
+                </h2>
+                <p className="mt-1 text-[12px] text-muted-foreground">
+                  Review the request, quote only what you can deliver, then keep the customer
+                  informed.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void refreshRequests()}
+                disabled={requestLoading}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-[11.5px] font-medium hover:bg-elevated disabled:opacity-50"
+              >
+                <RefreshCw className={requestLoading ? "size-3.5 animate-spin" : "size-3.5"} />
+                Refresh
+              </button>
+            </div>
+          </section>
+          {requestError ? (
+            <div
+              role="alert"
+              className="rounded-xl border border-border bg-elevated/50 px-4 py-3 text-[11.5px] text-muted-foreground"
+            >
+              {requestError}
+            </div>
+          ) : null}
+          {requestLoading && !requests.length ? (
+            <Panel className="p-6 text-center text-[11.5px] text-muted-foreground">
+              Loading provider requests…
+            </Panel>
+          ) : requests.length ? (
+            <div className="grid gap-3 lg:grid-cols-[360px_minmax(0,1fr)]">
+              <section className="space-y-2">
+                {requests.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => void selectRequest(item.id)}
+                    className={`w-full rounded-[16px] border p-4 text-left transition-colors ${selectedId === item.id ? "border-primary/40 bg-brand-tint/10" : "border-border bg-surface hover:bg-elevated"}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-[13.5px] font-semibold">{label(item.skill)}</p>
+                        <p className="mt-1 line-clamp-2 text-[10.5px] text-muted-foreground">
+                          {requestSummary(item) || "Request details are available when opened."}
+                        </p>
+                      </div>
+                      <Badge tone={item.status === "in_fulfillment" ? "success" : "quiet"}>
+                        {label(item.status)}
+                      </Badge>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
+                      <span>{money(item.quote)}</span>
+                      <span>{label(item.participant.status)}</span>
+                    </div>
+                  </button>
+                ))}
+              </section>
+              {selected ? (
+                <ProviderRequestDetail
+                  request={selected}
+                  onChanged={() => void refreshRequests()}
+                />
+              ) : (
+                <Panel className="p-8 text-center">
+                  <UsersRound className="mx-auto size-6 text-muted-foreground" />
+                  <p className="mt-3 text-[13px] font-medium">Choose a request</p>
+                  <p className="mt-1 text-[11.5px] text-muted-foreground">
+                    The full offer, communication and evidence controls will appear here.
+                  </p>
+                </Panel>
+              )}
+            </div>
+          ) : (
+            <section className="rounded-[20px] border border-dashed border-border bg-elevated/30 p-8 text-center">
+              <CheckCircle2 className="mx-auto size-6 text-muted-foreground" />
+              <p className="mt-3 text-[14px] font-medium">No provider requests yet</p>
+              <p className="mt-1 text-[11.5px] text-muted-foreground">
+                When a supported request is assigned or invited to you, it will appear here. Kurukoo
+                will not invent demand or pretend a request exists.
+              </p>
+              <Link
+                to="/capabilities"
+                className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-[11.5px] font-medium text-primary-foreground"
+              >
+                Review capabilities <ChevronRight className="size-3.5" />
+              </Link>
+            </section>
+          )}
+        </div>
+      ) : tab === "Find help" ? (
+        <div className="mt-4 grid gap-4">
+          <AIProviderDirectory compact />
+          {liveProviders.length || discoveredProviders.length ? (
+            <section className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-primary">
+                    Connected discovery
+                  </p>
+                  <h2 className="mt-1 text-[17px] font-semibold">Human providers visible now</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void refreshLive()}
+                  disabled={loadingLive}
+                  className="grid size-8 shrink-0 place-items-center rounded-lg border border-border hover:bg-elevated disabled:opacity-50"
+                  aria-label="Refresh provider discovery"
+                >
+                  <RefreshCw className={loadingLive ? "size-3.5 animate-spin" : "size-3.5"} />
+                </button>
+              </div>
+              <div className="grid gap-3">
+                {liveProviders.map((provider) => (
+                  <LiveProviderCard key={provider.id} provider={provider} />
+                ))}
+                {discoveredProviders.map((entity) => (
+                  <DiscoveryProviderCard key={`discovery-${entity.id}`} entity={entity} />
+                ))}
+              </div>
+            </section>
+          ) : null}
+          {liveError ? (
+            <div className="rounded-2xl border border-border bg-elevated/50 px-4 py-3 text-[12px] text-muted-foreground">
+              Connected provider discovery is not available right now. Kurukoo will not present it
+              as live.
+            </div>
+          ) : null}
+          {providers.length ? (
+            <section className="grid gap-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-[17px] font-semibold">Provider directory</h2>
+                <Badge tone="quiet">Preview</Badge>
+              </div>
+              {providers.map((p) => (
+                <EntityCard key={p.id} entity={p} />
+              ))}
+            </section>
+          ) : null}
+        </div>
+      ) : (
+        <div className="mt-4 space-y-6">
+          <PulseControl />
+          <Panel className="p-5">
+            <SectionHeader
+              title="Offer what you can do"
+              subtitle="Tell Kurukoo what service you provide, where you work and when you can accept requests."
+            />
+            <div className="mt-4 flex flex-wrap gap-2">
+              <AskKurukoo prompt="Help me set up my provider profile on Kurukoo. I want to offer a service and make myself available for suitable requests." />
+              <Link
+                to="/chat"
+                search={{ query: "Help me set up my provider profile on Kurukoo." } as never}
+                className={actionClass("primary")}
+              >
+                Start in chat
+              </Link>
+              <Link to="/pricing" className={actionClass()}>
+                Provider plan
+              </Link>
+            </div>
+          </Panel>
+          <section>
+            <SectionHeader
+              title="Provider tools"
+              subtitle="Open the part of your provider account you want to work on."
+            />
+            <div className="grid gap-2">
+              {[
+                ["Capabilities", "Describe what you can provide", "/capabilities"],
+                ["Availability", "Go Live on Nearby Pulse", "/discover"],
+                ["Incoming requests", "Review requests waiting for you", "/provider"],
+                ["Messages", "Open customer conversations", "/messages"],
+                ["Customers", "Review customer relationships", "/contacts"],
+                ["Payments", "Open wallet and payout tools", "/wallet"],
+              ].map(([title, note, to]) => (
+                <div
+                  key={title}
+                  className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface px-4 py-3.5"
+                >
+                  <span>
+                    <span className="block text-[13.5px] font-medium">{title}</span>
+                    <span className="block text-[11px] text-muted-foreground">{note}</span>
+                  </span>
+                  <Link to={to as never} className="text-[11.5px] font-medium underline">
+                    Open
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      )}
+    </>
+  );
 }

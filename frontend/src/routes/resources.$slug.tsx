@@ -4,18 +4,153 @@ import { useEffect, useState } from "react";
 import { FAQSection } from "@/components/kurukoo/faq-section";
 import { AskKurukoo } from "@/components/kurukoo/ask-kurukoo";
 
-type Resource = { slug: string; title: string; category: string; body: string; excerpt: string; updated_at?: string | null };
+type Resource = {
+  slug: string;
+  title: string;
+  category: string;
+  body: string;
+  excerpt: string;
+  updated_at?: string | null;
+};
 export const Route = createFileRoute("/resources/$slug")({
-  head: () => ({ meta: [{ title: "Kurukoo resource" }, { name: "description", content: "A practical Kurukoo guide for getting more from the product." }] }),
+  head: () => ({
+    meta: [
+      { title: "Kurukoo resource" },
+      {
+        name: "description",
+        content: "A practical Kurukoo guide for getting more from the product.",
+      },
+    ],
+  }),
   component: ResourcePage,
 });
 function cleanResourceHtml(value: string) {
-  return value.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "").replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "").replace(/javascript:/gi, "");
+  return value
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+    .replace(/javascript:/gi, "");
 }
 function ResourcePage() {
-  const { slug } = Route.useParams(); const [resource, setResource] = useState<Resource | null>(null); const [loading, setLoading] = useState(true);
-  useEffect(() => { let cancelled = false; void fetch(`/api/resources/${encodeURIComponent(slug)}`).then((response) => { if (!response.ok) throw new Error("Resource unavailable"); return response.json() as Promise<Resource>; }).then((payload) => { if (!cancelled) setResource(payload); }).catch(() => { if (!cancelled) setResource(null); }).finally(() => { if (!cancelled) setLoading(false); }); return () => { cancelled = true; }; }, [slug]);
-  if (loading) return <div className="mx-auto max-w-3xl animate-pulse space-y-4"><div className="h-5 w-24 rounded bg-elevated"/><div className="h-10 w-2/3 rounded bg-elevated"/><div className="h-56 rounded-2xl bg-elevated"/></div>;
-  if (!resource) return <div className="mx-auto max-w-2xl py-12 text-center"><BookOpen className="mx-auto size-5 text-muted-foreground"/><h1 className="mt-4 font-serif text-[32px] leading-[1.05] tracking-[-0.035em]">That guide isn’t available.</h1><p className="mt-2 text-[13px] text-muted-foreground">The guide may have moved or is not available right now.</p><Link to="/resources" className="mt-4 inline-flex items-center gap-1.5 text-[12px] text-primary">Back to Resources <ArrowUpRight className="size-3.5"/></Link></div>;
-  return <article className="mx-auto max-w-3xl space-y-8"><Link to="/resources" className="inline-flex items-center gap-1.5 text-[11.5px] font-medium text-muted-foreground hover:text-foreground"><ArrowLeft className="size-3.5"/> Resources</Link><header><p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-primary">{resource.category}</p><h1 className="mt-2 font-serif text-[40px] leading-[1.02] tracking-[-0.045em] md:text-[50px]">{resource.title}</h1><p className="mt-3 max-w-2xl text-[13.5px] leading-relaxed text-muted-foreground">{resource.excerpt}</p>{resource.updated_at ? <p className="mt-2 text-[10.5px] text-muted-foreground">Updated {new Date(resource.updated_at).toLocaleDateString()}</p> : null}<div className="mt-4 flex flex-wrap gap-2"><AskKurukoo prompt={`Help me with the Kurukoo guide “${resource.title}”.`} /><Link to="/explore" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border px-3 text-[12.5px] font-medium hover:bg-elevated">Explore <ArrowUpRight className="size-3.5"/></Link></div></header><div className="rounded-[22px] border border-border bg-surface p-5 md:p-7"><div className="prose prose-neutral max-w-none text-[14px] leading-7 dark:prose-invert" dangerouslySetInnerHTML={{ __html: cleanResourceHtml(resource.body) }}/></div><section className="rounded-[22px] border border-border bg-elevated/35 p-5"><p className="text-[13px] font-semibold">Ready to use this?</p><p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">Take the idea from the guide into a real request, or ask Kurukoo to help you work out the next step.</p><div className="mt-3"><AskKurukoo prompt={`I read the Kurukoo guide “${resource.title}”. Help me use it for something I need to get done.`}/></div></section><FAQSection items={[{ question: "Can I ask Kurukoo about this guide?", answer: "Yes. Use Ask Kurukoo to bring the guide into a conversation and describe what you want to do next." }, { question: "Where should I go to take action?", answer: "Use Explore when you want a visual goal-based starting point, or Conversation when you already know what you want to ask." }, { question: "Are these guides part of Kurukoo?", answer: "Yes. Resources explain useful ways to use Kurukoo and support the product's real task flows." }]}/></article>;
+  const { slug } = Route.useParams();
+  const [resource, setResource] = useState<Resource | null>(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    void fetch(`/api/resources/${encodeURIComponent(slug)}`)
+      .then((response) => {
+        if (!response.ok) throw new Error("Resource unavailable");
+        return response.json() as Promise<Resource>;
+      })
+      .then((payload) => {
+        if (!cancelled) setResource(payload);
+      })
+      .catch(() => {
+        if (!cancelled) setResource(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+  if (loading)
+    return (
+      <div className="mx-auto max-w-3xl animate-pulse space-y-4">
+        <div className="h-5 w-24 rounded bg-elevated" />
+        <div className="h-10 w-2/3 rounded bg-elevated" />
+        <div className="h-56 rounded-2xl bg-elevated" />
+      </div>
+    );
+  if (!resource)
+    return (
+      <div className="mx-auto max-w-2xl py-12 text-center">
+        <BookOpen className="mx-auto size-5 text-muted-foreground" />
+        <h1 className="mt-4 font-serif text-[32px] leading-[1.05] tracking-[-0.035em]">
+          That guide isn’t available.
+        </h1>
+        <p className="mt-2 text-[13px] text-muted-foreground">
+          The guide may have moved or is not available right now.
+        </p>
+        <Link
+          to="/resources"
+          className="mt-4 inline-flex items-center gap-1.5 text-[12px] text-primary"
+        >
+          Back to Resources <ArrowUpRight className="size-3.5" />
+        </Link>
+      </div>
+    );
+  return (
+    <article className="mx-auto max-w-3xl space-y-8">
+      <Link
+        to="/resources"
+        className="inline-flex items-center gap-1.5 text-[11.5px] font-medium text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="size-3.5" /> Resources
+      </Link>
+      <header>
+        <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-primary">
+          {resource.category}
+        </p>
+        <h1 className="mt-2 font-serif text-[40px] leading-[1.02] tracking-[-0.045em] md:text-[50px]">
+          {resource.title}
+        </h1>
+        <p className="mt-3 max-w-2xl text-[13.5px] leading-relaxed text-muted-foreground">
+          {resource.excerpt}
+        </p>
+        {resource.updated_at ? (
+          <p className="mt-2 text-[10.5px] text-muted-foreground">
+            Updated {new Date(resource.updated_at).toLocaleDateString()}
+          </p>
+        ) : null}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <AskKurukoo prompt={`Help me with the Kurukoo guide “${resource.title}”.`} />
+          <Link
+            to="/explore"
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border px-3 text-[12.5px] font-medium hover:bg-elevated"
+          >
+            Explore <ArrowUpRight className="size-3.5" />
+          </Link>
+        </div>
+      </header>
+      <div className="rounded-[22px] border border-border bg-surface p-5 md:p-7">
+        <div
+          className="prose prose-neutral max-w-none text-[14px] leading-7 dark:prose-invert"
+          dangerouslySetInnerHTML={{ __html: cleanResourceHtml(resource.body) }}
+        />
+      </div>
+      <section className="rounded-[22px] border border-border bg-elevated/35 p-5">
+        <p className="text-[13px] font-semibold">Ready to use this?</p>
+        <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">
+          Take the idea from the guide into a real request, or ask Kurukoo to help you work out the
+          next step.
+        </p>
+        <div className="mt-3">
+          <AskKurukoo
+            prompt={`I read the Kurukoo guide “${resource.title}”. Help me use it for something I need to get done.`}
+          />
+        </div>
+      </section>
+      <FAQSection
+        items={[
+          {
+            question: "Can I ask Kurukoo about this guide?",
+            answer:
+              "Yes. Use Ask Kurukoo to bring the guide into a conversation and describe what you want to do next.",
+          },
+          {
+            question: "Where should I go to take action?",
+            answer:
+              "Use Explore when you want a visual goal-based starting point, or Conversation when you already know what you want to ask.",
+          },
+          {
+            question: "Are these guides part of Kurukoo?",
+            answer:
+              "Yes. Resources explain useful ways to use Kurukoo and support the product's real task flows.",
+          },
+        ]}
+      />
+    </article>
+  );
 }

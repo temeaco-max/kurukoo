@@ -17,9 +17,15 @@ export function DailyPicksStrip() {
     let cancelled = false;
     setLoading(true);
     fetchDailyPick()
-      .then((p) => { if (!cancelled) setPick(p); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+      .then((p) => {
+        if (!cancelled) setPick(p);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (!isKurukooApiConfigured()) return null;
@@ -54,7 +60,10 @@ export function DailyPicksStrip() {
               <Link
                 to={pick.ctaLink as never}
                 onClick={() => {
-                  if (pick.ctaText.toLowerCase().includes("chat") || pick.ctaText.toLowerCase().includes("ask")) {
+                  if (
+                    pick.ctaText.toLowerCase().includes("chat") ||
+                    pick.ctaText.toLowerCase().includes("ask")
+                  ) {
                     void send(pick.description);
                   }
                 }}
@@ -71,9 +80,7 @@ export function DailyPicksStrip() {
         </div>
       ) : (
         <div className="px-4 py-5">
-          <p className="text-[11.5px] text-muted-foreground">
-            No pick scheduled for today.
-          </p>
+          <p className="text-[11.5px] text-muted-foreground">No pick scheduled for today.</p>
         </div>
       )}
     </Panel>

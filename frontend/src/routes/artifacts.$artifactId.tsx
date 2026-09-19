@@ -5,5 +5,130 @@ import { actionClass } from "@/components/kurukoo/primitives";
 import { Panel } from "@/components/kurukoo/ui";
 import { AskKurukoo } from "@/components/kurukoo/ask-kurukoo";
 import { DirectoryStateBadge } from "@/components/kurukoo/surface-directory";
-export const Route = createFileRoute("/artifacts/$artifactId")({ head: () => ({ meta: [{ title: "Artifact — Kurukoo" }] }), component: ArtifactDetailPage });
-function ArtifactDetailPage() { const { artifactId } = Route.useParams(); const artifact = artifacts.find((item) => item.id === artifactId); if (!artifact) return <div className="mx-auto max-w-3xl py-12"><Link to="/artifacts" className="text-[11px] font-medium">Back to Artifacts</Link><h1 className="mt-5 font-serif text-3xl">Artifact not found</h1><p className="mt-2 text-sm text-muted-foreground">This artifact is no longer in the current workspace.</p></div>; return <div className="mx-auto w-full max-w-4xl space-y-7 pb-10"><Link to="/artifacts" className="inline-flex items-center gap-1.5 text-[10.5px] font-medium text-muted-foreground hover:text-foreground"><ArrowLeft className="size-3.5"/> All artifacts</Link><header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between"><div className="flex items-start gap-3"><span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-tint text-brand-ink"><FileText className="size-5"/></span><div><div className="flex flex-wrap items-center gap-2"><h1 className="font-serif text-[32px] leading-tight tracking-[-0.04em]">{artifact.name}</h1><DirectoryStateBadge state="example"/></div><p className="mt-1.5 text-[11px] text-muted-foreground">{artifact.type} · {artifact.size} · {artifact.when}</p></div></div><div className="flex flex-wrap gap-2"><Link to="/chat" search={{ query: `Use the artifact ${artifact.name} in my request.` } as never} className={actionClass()}><MessageSquare className="mr-1.5 size-3.5"/>Use in Chat</Link><AskKurukoo prompt={`Help me share the artifact ${artifact.name}.`}/></div></header><div className="grid gap-4 md:grid-cols-[1.35fr_.65fr]"><Panel className="min-h-[260px] p-5"><div className="grid h-full min-h-[220px] place-items-center rounded-xl bg-elevated/45"><div className="text-center"><FileText className="mx-auto size-8 text-muted-foreground"/><p className="mt-3 text-[12px] font-medium">Artifact preview</p><p className="mt-1 text-[10.5px] text-muted-foreground">The workspace has the artifact metadata; a provider-specific preview opens when its storage integration supports it.</p></div></div></Panel><div className="space-y-4"><Panel className="p-4"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary">Context</p><dl className="mt-3 space-y-3 text-[11px]"><div><dt className="text-muted-foreground">Stored in</dt><dd className="mt-0.5 font-medium">{artifact.storage}</dd></div>{artifact.workTitle ? <div><dt className="text-muted-foreground">Work</dt><dd className="mt-0.5 font-medium">{artifact.workTitle}</dd></div> : null}<div><dt className="text-muted-foreground">Added</dt><dd className="mt-0.5 font-medium">{artifact.when}</dd></div></dl></Panel><Panel className="p-4"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary">Next actions</p><div className="mt-3 grid gap-2"><AskKurukoo prompt={`Help me export the artifact ${artifact.name}.`}/><AskKurukoo prompt={`Help me move or save the artifact ${artifact.name} to a connected storage service.`}/><Link to="/integrations" className="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-lg border border-border text-[10.5px] font-medium"><FolderOpen className="size-3.5"/>Connect storage<ExternalLink className="size-3"/></Link></div></Panel></div></div><div className="flex flex-wrap gap-2"><Link to="/work" className={actionClass()}>Open Work</Link><Link to="/chat" className={actionClass()}>Open Chat</Link><span className="inline-flex items-center gap-1.5 rounded-lg bg-elevated px-3 py-2 text-[10.5px] text-muted-foreground"><Share2 className="size-3.5"/>Sharing stays approval-gated</span></div></div>; }
+export const Route = createFileRoute("/artifacts/$artifactId")({
+  head: () => ({ meta: [{ title: "Artifact — Kurukoo" }] }),
+  component: ArtifactDetailPage,
+});
+function ArtifactDetailPage() {
+  const { artifactId } = Route.useParams();
+  const artifact = artifacts.find((item) => item.id === artifactId);
+  if (!artifact)
+    return (
+      <div className="mx-auto max-w-3xl py-12">
+        <Link to="/artifacts" className="text-[11px] font-medium">
+          Back to Artifacts
+        </Link>
+        <h1 className="mt-5 font-serif text-3xl">Artifact not found</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          This artifact is no longer in the current workspace.
+        </p>
+      </div>
+    );
+  return (
+    <div className="mx-auto w-full max-w-4xl space-y-7 pb-10">
+      <Link
+        to="/artifacts"
+        className="inline-flex items-center gap-1.5 text-[10.5px] font-medium text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="size-3.5" /> All artifacts
+      </Link>
+      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="flex items-start gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-tint text-brand-ink">
+            <FileText className="size-5" />
+          </span>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="font-serif text-[32px] leading-tight tracking-[-0.04em]">
+                {artifact.name}
+              </h1>
+              <DirectoryStateBadge state="example" />
+            </div>
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              {artifact.type} · {artifact.size} · {artifact.when}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            to="/chat"
+            search={{ query: `Use the artifact ${artifact.name} in my request.` } as never}
+            className={actionClass()}
+          >
+            <MessageSquare className="mr-1.5 size-3.5" />
+            Use in Chat
+          </Link>
+          <AskKurukoo prompt={`Help me share the artifact ${artifact.name}.`} />
+        </div>
+      </header>
+      <div className="grid gap-4 md:grid-cols-[1.35fr_.65fr]">
+        <Panel className="min-h-[260px] p-5">
+          <div className="grid h-full min-h-[220px] place-items-center rounded-xl bg-elevated/45">
+            <div className="text-center">
+              <FileText className="mx-auto size-8 text-muted-foreground" />
+              <p className="mt-3 text-[12px] font-medium">Artifact preview</p>
+              <p className="mt-1 text-[10.5px] text-muted-foreground">
+                The workspace has the artifact metadata; a provider-specific preview opens when its
+                storage integration supports it.
+              </p>
+            </div>
+          </div>
+        </Panel>
+        <div className="space-y-4">
+          <Panel className="p-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary">
+              Context
+            </p>
+            <dl className="mt-3 space-y-3 text-[11px]">
+              <div>
+                <dt className="text-muted-foreground">Stored in</dt>
+                <dd className="mt-0.5 font-medium">{artifact.storage}</dd>
+              </div>
+              {artifact.workTitle ? (
+                <div>
+                  <dt className="text-muted-foreground">Work</dt>
+                  <dd className="mt-0.5 font-medium">{artifact.workTitle}</dd>
+                </div>
+              ) : null}
+              <div>
+                <dt className="text-muted-foreground">Added</dt>
+                <dd className="mt-0.5 font-medium">{artifact.when}</dd>
+              </div>
+            </dl>
+          </Panel>
+          <Panel className="p-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary">
+              Next actions
+            </p>
+            <div className="mt-3 grid gap-2">
+              <AskKurukoo prompt={`Help me export the artifact ${artifact.name}.`} />
+              <AskKurukoo
+                prompt={`Help me move or save the artifact ${artifact.name} to a connected storage service.`}
+              />
+              <Link
+                to="/integrations"
+                className="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-lg border border-border text-[10.5px] font-medium"
+              >
+                <FolderOpen className="size-3.5" />
+                Connect storage
+                <ExternalLink className="size-3" />
+              </Link>
+            </div>
+          </Panel>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Link to="/work" className={actionClass()}>
+          Open Work
+        </Link>
+        <Link to="/chat" className={actionClass()}>
+          Open Chat
+        </Link>
+        <span className="inline-flex items-center gap-1.5 rounded-lg bg-elevated px-3 py-2 text-[10.5px] text-muted-foreground">
+          <Share2 className="size-3.5" />
+          Sharing stays approval-gated
+        </span>
+      </div>
+    </div>
+  );
+}

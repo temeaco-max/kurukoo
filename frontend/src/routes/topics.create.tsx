@@ -3,17 +3,129 @@ import { ArrowLeft, Check, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { Panel } from "@/components/kurukoo/ui";
 import { TopicEditor } from "@/components/kurukoo/topic-editor";
-import { saveTopicDraft, submitTopic, topicApiConfigured, type OwnerTopic, type TopicInput } from "@/lib/topic-lifecycle";
+import {
+  saveTopicDraft,
+  submitTopic,
+  topicApiConfigured,
+  type OwnerTopic,
+  type TopicInput,
+} from "@/lib/topic-lifecycle";
 
 export const Route = createFileRoute("/topics/create")({
-  head: () => ({ meta: [{ title: "Create a Topic — Kurukoo" }, { name: "description", content: "Start a moderated public Topic on Kurukoo and share useful community context." }] }),
+  head: () => ({
+    meta: [
+      { title: "Create a Topic — Kurukoo" },
+      {
+        name: "description",
+        content: "Start a moderated public Topic on Kurukoo and share useful community context.",
+      },
+    ],
+  }),
   component: CreateTopicPage,
 });
 function CreateTopicPage() {
   const navigate = useNavigate();
-  const [saved, setSaved] = useState<{ topic: OwnerTopic; action: "draft" | "submitted" } | null>(null);
-  if (saved) return <div className="w-full max-w-3xl"><Link to="/topics" className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground"><ArrowLeft className="size-3.5" /> Topics</Link><section className="mt-8 max-w-2xl"><span className="grid size-11 place-items-center rounded-2xl bg-elevated"><Check className="size-5" /></span><p className="mt-5 text-[12px] font-medium text-muted-foreground">{saved.action === "draft" ? "Draft saved" : "Topic submitted"}</p><h1 className="mt-2 font-serif text-[40px] leading-[1.04] tracking-[-0.045em] md:text-[52px]">{saved.topic.title}</h1><p className="mt-4 text-[15px] leading-relaxed text-muted-foreground">{saved.action === "draft" ? "Your draft is private. Continue editing it from Your Topics when you are ready." : "Your Topic has been submitted for moderation. It will become public only if approved."}</p><div className="mt-5 flex flex-wrap gap-2"><Link to="/topics/mine" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-[12.5px] font-medium text-primary-foreground hover:opacity-90">Open Your Topics</Link>{saved.action === "draft" ? <Link to="/topics/edit/$id" params={{ id: saved.topic.id }} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border px-3.5 text-[12.5px] hover:bg-elevated">Continue editing</Link> : null}</div></section><Panel className="mt-8 p-5"><div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 size-4 text-muted-foreground" /><div><p className="text-[13px] font-medium">Community context stays separate from fulfilment</p><p className="mt-1.5 text-[12.5px] leading-relaxed text-muted-foreground">A Topic can help people understand what others are saying. Kurukoo still checks evidence before treating a provider, price, availability or next step as authoritative.</p></div></div></Panel></div>;
-  async function saveDraft(input: TopicInput) { return saveTopicDraft(input); }
-  async function submit(input: TopicInput) { return submitTopic(input); }
-  return <div className="w-full max-w-3xl"><Link to="/topics" className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground"><ArrowLeft className="size-3.5" /> Topics</Link><section className="mt-5 max-w-2xl"><p className="text-[12px] font-medium text-muted-foreground">Create a Topic</p><h1 className="mt-2 font-serif text-[40px] leading-[1.02] tracking-[-0.045em] md:text-[52px]">Start a conversation people can use.</h1><p className="mt-4 text-[15px] leading-relaxed text-muted-foreground">Share a question, experience, local report or opinion. Save it privately, then submit it for moderation when it is ready.</p></section>{!topicApiConfigured() ? <Panel className="mt-6 p-4"><p className="text-[12.5px] leading-relaxed text-muted-foreground">Topic creation is not available in this environment right now. You can still browse Topics and return here when creation is enabled.</p></Panel> : null}<TopicEditor mode="create" onSaved={(topic, action) => setSaved({ topic, action })} onCancel={() => void navigate({ to: "/topics" })} saveDraft={saveDraft} submit={submit} /></div>;
+  const [saved, setSaved] = useState<{ topic: OwnerTopic; action: "draft" | "submitted" } | null>(
+    null,
+  );
+  if (saved)
+    return (
+      <div className="w-full max-w-3xl">
+        <Link
+          to="/topics"
+          className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="size-3.5" /> Topics
+        </Link>
+        <section className="mt-8 max-w-2xl">
+          <span className="grid size-11 place-items-center rounded-2xl bg-elevated">
+            <Check className="size-5" />
+          </span>
+          <p className="mt-5 text-[12px] font-medium text-muted-foreground">
+            {saved.action === "draft" ? "Draft saved" : "Topic submitted"}
+          </p>
+          <h1 className="mt-2 font-serif text-[40px] leading-[1.04] tracking-[-0.045em] md:text-[52px]">
+            {saved.topic.title}
+          </h1>
+          <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground">
+            {saved.action === "draft"
+              ? "Your draft is private. Continue editing it from Your Topics when you are ready."
+              : "Your Topic has been submitted for moderation. It will become public only if approved."}
+          </p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Link
+              to="/topics/mine"
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-[12.5px] font-medium text-primary-foreground hover:opacity-90"
+            >
+              Open Your Topics
+            </Link>
+            {saved.action === "draft" ? (
+              <Link
+                to="/topics/edit/$id"
+                params={{ id: saved.topic.id }}
+                className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border px-3.5 text-[12.5px] hover:bg-elevated"
+              >
+                Continue editing
+              </Link>
+            ) : null}
+          </div>
+        </section>
+        <Panel className="mt-8 p-5">
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="mt-0.5 size-4 text-muted-foreground" />
+            <div>
+              <p className="text-[13px] font-medium">
+                Community context stays separate from fulfilment
+              </p>
+              <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted-foreground">
+                A Topic can help people understand what others are saying. Kurukoo still checks
+                evidence before treating a provider, price, availability or next step as
+                authoritative.
+              </p>
+            </div>
+          </div>
+        </Panel>
+      </div>
+    );
+  async function saveDraft(input: TopicInput) {
+    return saveTopicDraft(input);
+  }
+  async function submit(input: TopicInput) {
+    return submitTopic(input);
+  }
+  return (
+    <div className="w-full max-w-3xl">
+      <Link
+        to="/topics"
+        className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="size-3.5" /> Topics
+      </Link>
+      <section className="mt-5 max-w-2xl">
+        <p className="text-[12px] font-medium text-muted-foreground">Create a Topic</p>
+        <h1 className="mt-2 font-serif text-[40px] leading-[1.02] tracking-[-0.045em] md:text-[52px]">
+          Start a conversation people can use.
+        </h1>
+        <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground">
+          Share a question, experience, local report or opinion. Save it privately, then submit it
+          for moderation when it is ready.
+        </p>
+      </section>
+      {!topicApiConfigured() ? (
+        <Panel className="mt-6 p-4">
+          <p className="text-[12.5px] leading-relaxed text-muted-foreground">
+            Topic creation is not available in this environment right now. You can still browse
+            Topics and return here when creation is enabled.
+          </p>
+        </Panel>
+      ) : null}
+      <TopicEditor
+        mode="create"
+        onSaved={(topic, action) => setSaved({ topic, action })}
+        onCancel={() => void navigate({ to: "/topics" })}
+        saveDraft={saveDraft}
+        submit={submit}
+      />
+    </div>
+  );
 }

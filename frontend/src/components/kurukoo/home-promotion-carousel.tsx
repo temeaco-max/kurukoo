@@ -69,11 +69,17 @@ export function HomePromotionCarousel() {
                 {campaign.disclosure || "Kurukoo"}
               </span>
               {campaigns.length > 1 ? (
-                <span className="text-[9px] text-muted-foreground">{index + 1}/{campaigns.length}</span>
+                <span className="text-[9px] text-muted-foreground">
+                  {index + 1}/{campaigns.length}
+                </span>
               ) : null}
             </div>
-            <h2 className="mt-1 text-[14px] font-semibold leading-5 tracking-tight">{campaign.title}</h2>
-            <p className="mt-0.5 line-clamp-2 text-[11px] leading-4 text-muted-foreground">{campaign.desc}</p>
+            <h2 className="mt-1 text-[14px] font-semibold leading-5 tracking-tight">
+              {campaign.title}
+            </h2>
+            <p className="mt-0.5 line-clamp-2 text-[11px] leading-4 text-muted-foreground">
+              {campaign.desc}
+            </p>
           </div>
           <a
             href={campaign.clickUrl}

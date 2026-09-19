@@ -5,7 +5,12 @@ const API_BASE = (import.meta.env["VITE_KURUKOO_API_BASE_URL"] ?? "").replace(/\
 async function readJson<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, { credentials: "include" });
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(typeof payload?.error === "string" ? payload.error : `Kurukoo request failed (${response.status})`);
+  if (!response.ok)
+    throw new Error(
+      typeof payload?.error === "string"
+        ? payload.error
+        : `Kurukoo request failed (${response.status})`,
+    );
   return payload as T;
 }
 

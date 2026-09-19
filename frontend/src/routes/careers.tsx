@@ -36,7 +36,11 @@ const BENEFITS = [
 ];
 
 const ROLES = [
-  { team: "Engineering", title: "Senior Full-Stack Engineer", location: "Lagos, Nigeria · Full-time" },
+  {
+    team: "Engineering",
+    title: "Senior Full-Stack Engineer",
+    location: "Lagos, Nigeria · Full-time",
+  },
   { team: "Design", title: "Product Designer (UX/UI)", location: "London, UK · Hybrid" },
   { team: "Operations", title: "Growth & Operations Lead", location: "Accra, Ghana · Full-time" },
 ];
@@ -92,7 +96,10 @@ function CareersPage() {
         <h2 className="text-[24px] font-semibold tracking-tight">Open roles</h2>
         <div className="mt-5 grid gap-3">
           {ROLES.map((role) => (
-            <Panel key={role.title} className="flex flex-wrap items-center justify-between gap-4 p-5">
+            <Panel
+              key={role.title}
+              className="flex flex-wrap items-center justify-between gap-4 p-5"
+            >
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
                   {role.team}

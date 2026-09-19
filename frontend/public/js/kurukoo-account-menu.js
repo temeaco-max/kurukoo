@@ -1,19 +1,21 @@
 (() => {
-  'use strict';
-  if (!document.body?.classList.contains('k-app-page')) return;
+  "use strict";
+  if (!document.body?.classList.contains("k-app-page")) return;
   const install = () => {
     const trigger = document.querySelector('[aria-controls="kurukoo-drawer-profile"]');
-    if (!trigger || trigger.dataset.accountMenuEnhanced === 'true') return;
-    trigger.dataset.accountMenuEnhanced = 'true';
-    trigger.addEventListener('click', () => {
-      setTimeout(() => {
-        const drawer = document.getElementById('kurukoo-drawer-profile');
-        const body = drawer?.querySelector('.k-desk-drawer-body');
-        if (!drawer || !body || drawer.hidden) return;
-        const identityNode = document.querySelector('.k-app-identity');
-        const name = identityNode?.querySelector('strong')?.textContent?.trim() || 'Your account';
-        const phone = identityNode?.querySelector('small')?.textContent?.trim() || '';
-        body.innerHTML = `
+    if (!trigger || trigger.dataset.accountMenuEnhanced === "true") return;
+    trigger.dataset.accountMenuEnhanced = "true";
+    trigger.addEventListener(
+      "click",
+      () => {
+        setTimeout(() => {
+          const drawer = document.getElementById("kurukoo-drawer-profile");
+          const body = drawer?.querySelector(".k-desk-drawer-body");
+          if (!drawer || !body || drawer.hidden) return;
+          const identityNode = document.querySelector(".k-app-identity");
+          const name = identityNode?.querySelector("strong")?.textContent?.trim() || "Your account";
+          const phone = identityNode?.querySelector("small")?.textContent?.trim() || "";
+          body.innerHTML = `
           <div class="k-account-menu-identity">
             <div class="k-desk-avatar">${name.slice(0, 1).toUpperCase()}</div>
             <div><strong>${name}</strong><span>${phone}</span></div>
@@ -43,9 +45,13 @@
           </div>
           <a class="k-desk-drawer-link is-danger" href="/api/auth/logout">Sign out</a>
         `;
-      }, 0);
-    }, true);
+        }, 0);
+      },
+      true,
+    );
   };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install, { once: true }); else install();
+  if (document.readyState === "loading")
+    document.addEventListener("DOMContentLoaded", install, { once: true });
+  else install();
   new MutationObserver(install).observe(document.body, { childList: true, subtree: true });
 })();

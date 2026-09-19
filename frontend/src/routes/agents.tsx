@@ -1,5 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowUpRight, Bot, Brain, Clock3, MapPin, Pause, Play, Square, UsersRound, Workflow } from "lucide-react";
+import {
+  ArrowUpRight,
+  Bot,
+  Brain,
+  Clock3,
+  MapPin,
+  Pause,
+  Play,
+  Square,
+  UsersRound,
+  Workflow,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/app-shell";
 import { AIProviderDirectory } from "@/components/kurukoo/ai-provider-directory";
@@ -9,52 +20,366 @@ import { AskKurukoo } from "@/components/kurukoo/ask-kurukoo";
 import { Action, actionClass } from "@/components/kurukoo/primitives";
 import { DirectoryStateBadge } from "@/components/kurukoo/surface-directory";
 import { Panel, SectionHeader } from "@/components/kurukoo/ui";
-import { controlAgentGoal, fetchAgentGoals, fetchDiscoveryEntities, type AgentGoal, type DiscoveryEntity } from "@/lib/kurukoo-api";
+import {
+  controlAgentGoal,
+  fetchAgentGoals,
+  fetchDiscoveryEntities,
+  type AgentGoal,
+  type DiscoveryEntity,
+} from "@/lib/kurukoo-api";
 
 export const Route = createFileRoute("/agents")({
-  head: () => ({ meta: [{ title: "Agents — Kurukoo" }, { name: "description", content: "Advanced AI participants and bounded work running through Kurukoo." }] }),
+  head: () => ({
+    meta: [
+      { title: "Agents — Kurukoo" },
+      {
+        name: "description",
+        content: "Advanced AI participants and bounded work running through Kurukoo.",
+      },
+    ],
+  }),
   component: AgentsPage,
 });
 
-const quickJobs = ["Get me a ride", "Find a plumber", "Order food", "Repair my phone", "Plan my day", "Find local help"];
+const quickJobs = [
+  "Get me a ride",
+  "Find a plumber",
+  "Order food",
+  "Repair my phone",
+  "Plan my day",
+  "Find local help",
+];
 
-function GoalCard({ goal, onChange }: { goal: AgentGoal; onChange: (goal: AgentGoal | null) => void }) {
+function GoalCard({
+  goal,
+  onChange,
+}: {
+  goal: AgentGoal;
+  onChange: (goal: AgentGoal | null) => void;
+}) {
   const [busy, setBusy] = useState(false);
   const status = String(goal.status || "active").toLowerCase();
-  const next = status === "paused" ? "resume" : /cancel|complete|done|stopped/.test(status) ? null : "pause";
+  const next =
+    status === "paused" ? "resume" : /cancel|complete|done|stopped/.test(status) ? null : "pause";
   async function run(action: "pause" | "resume" | "cancel") {
     setBusy(true);
     try {
       const result = await controlAgentGoal(goal.id, action);
-      onChange(result.goal ?? { ...goal, status: action === "pause" ? "paused" : action === "cancel" ? "cancelled" : "active" });
+      onChange(
+        result.goal ?? {
+          ...goal,
+          status: action === "pause" ? "paused" : action === "cancel" ? "cancelled" : "active",
+        },
+      );
     } catch {
       // Leave the displayed state unchanged when the control request fails.
     } finally {
       setBusy(false);
     }
   }
-  return <article className="border border-border bg-surface p-4"><div className="flex items-start gap-3"><span className="grid size-9 shrink-0 place-items-center bg-brand-tint text-brand-ink"><Bot className="size-4" /></span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-1.5"><h3 className="truncate text-[13px] font-semibold">{goal.objective || goal.skill || "Agent task"}</h3><DirectoryStateBadge state={status === "paused" ? "not-connected" : "live"} /></div>{goal.nextRunAt ? <p className="mt-1 text-[10.5px] text-muted-foreground">Next run · {new Date(goal.nextRunAt).toLocaleString()}</p> : null}</div></div><div className="mt-3 flex flex-wrap gap-2">{next ? <Action onClick={() => void run(next)} disabled={busy}>{next === "pause" ? <><Pause className="mr-1.5 size-3.5" />Pause</> : <><Play className="mr-1.5 size-3.5" />Resume</>}</Action> : null}{!["cancelled", "completed"].includes(status) ? <Action onClick={() => void run("cancel")} disabled={busy}><Square className="mr-1.5 size-3.5" />Stop</Action> : null}{goal.conversationId ? <Link to="/chat" className={actionClass()}>Open conversation <ArrowUpRight className="ml-1 size-3.5" /></Link> : null}</div></article>;
+  return (
+    <article className="border border-border bg-surface p-4">
+      <div className="flex items-start gap-3">
+        <span className="grid size-9 shrink-0 place-items-center bg-brand-tint text-brand-ink">
+          <Bot className="size-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <h3 className="truncate text-[13px] font-semibold">
+              {goal.objective || goal.skill || "Agent task"}
+            </h3>
+            <DirectoryStateBadge state={status === "paused" ? "not-connected" : "live"} />
+          </div>
+          {goal.nextRunAt ? (
+            <p className="mt-1 text-[10.5px] text-muted-foreground">
+              Next run · {new Date(goal.nextRunAt).toLocaleString()}
+            </p>
+          ) : null}
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {next ? (
+          <Action onClick={() => void run(next)} disabled={busy}>
+            {next === "pause" ? (
+              <>
+                <Pause className="mr-1.5 size-3.5" />
+                Pause
+              </>
+            ) : (
+              <>
+                <Play className="mr-1.5 size-3.5" />
+                Resume
+              </>
+            )}
+          </Action>
+        ) : null}
+        {!["cancelled", "completed"].includes(status) ? (
+          <Action onClick={() => void run("cancel")} disabled={busy}>
+            <Square className="mr-1.5 size-3.5" />
+            Stop
+          </Action>
+        ) : null}
+        {goal.conversationId ? (
+          <Link to="/chat" className={actionClass()}>
+            Open conversation <ArrowUpRight className="ml-1 size-3.5" />
+          </Link>
+        ) : null}
+      </div>
+    </article>
+  );
 }
 
 function PublicAgents() {
-  return <div className="mx-auto w-full max-w-6xl space-y-9 pb-10"><header className="max-w-3xl"><p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-primary">Advanced capabilities</p><h1 className="mt-2 text-[40px] font-semibold leading-[1.02] tracking-[-0.045em] md:text-[52px]">Let Kurukoo do more of the work.</h1><p className="mt-4 text-[15px] leading-7 text-muted-foreground">Agents are for work that can continue under defined rules. You do not need to manage them to use Kurukoo; ask Kurukoo first, and use this area when you want to inspect advanced agent capability.</p><div className="mt-5 flex flex-wrap gap-2"><AskKurukoo prompt="What can Kurukoo agents help me get done?" /><Link to="/work" className={actionClass()}>See Work</Link></div></header><section className="grid gap-px overflow-hidden border border-border bg-border md:grid-cols-3"><div className="bg-surface p-5"><Brain className="size-5 text-primary" /><h2 className="mt-3 text-[13.5px] font-semibold">Understand</h2><p className="mt-1.5 text-[11.5px] leading-relaxed text-muted-foreground">Keep the goal and relevant context together.</p></div><div className="bg-surface p-5"><Workflow className="size-5 text-primary" /><h2 className="mt-3 text-[13.5px] font-semibold">Act</h2><p className="mt-1.5 text-[11.5px] leading-relaxed text-muted-foreground">Use defined Kurukoo capabilities when the task and permissions allow it.</p></div><div className="bg-surface p-5"><Clock3 className="size-5 text-primary" /><h2 className="mt-3 text-[13.5px] font-semibold">Stay bounded</h2><p className="mt-1.5 text-[11.5px] leading-relaxed text-muted-foreground">Approvals, schedules and tool scope remain visible around consequential work.</p></div></section><AIProviderDirectory /><section className="border border-border bg-elevated/35 p-5"><p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-primary">Human help</p><h2 className="mt-1.5 text-[26px] font-semibold tracking-[-0.03em]">AI is not the only way to act.</h2><p className="mt-2 max-w-2xl text-[12px] leading-relaxed text-muted-foreground">When a task needs a person on the ground, Kurukoo can work with providers, Local Agents and Ambassadors through the same request and trust boundaries.</p><div className="mt-4 flex flex-wrap gap-2"><Link to="/discover" className={actionClass()}>Discover nearby</Link><Link to="/local-agents" className={actionClass()}>Local Agents</Link><Link to="/ambassadors" className={actionClass()}>Ambassadors</Link></div></section></div>;
+  return (
+    <div className="mx-auto w-full max-w-6xl space-y-9 pb-10">
+      <header className="max-w-3xl">
+        <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-primary">
+          Advanced capabilities
+        </p>
+        <h1 className="mt-2 text-[40px] font-semibold leading-[1.02] tracking-[-0.045em] md:text-[52px]">
+          Let Kurukoo do more of the work.
+        </h1>
+        <p className="mt-4 text-[15px] leading-7 text-muted-foreground">
+          Agents are for work that can continue under defined rules. You do not need to manage them
+          to use Kurukoo; ask Kurukoo first, and use this area when you want to inspect advanced
+          agent capability.
+        </p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <AskKurukoo prompt="What can Kurukoo agents help me get done?" />
+          <Link to="/work" className={actionClass()}>
+            See Work
+          </Link>
+        </div>
+      </header>
+      <section className="grid gap-px overflow-hidden border border-border bg-border md:grid-cols-3">
+        <div className="bg-surface p-5">
+          <Brain className="size-5 text-primary" />
+          <h2 className="mt-3 text-[13.5px] font-semibold">Understand</h2>
+          <p className="mt-1.5 text-[11.5px] leading-relaxed text-muted-foreground">
+            Keep the goal and relevant context together.
+          </p>
+        </div>
+        <div className="bg-surface p-5">
+          <Workflow className="size-5 text-primary" />
+          <h2 className="mt-3 text-[13.5px] font-semibold">Act</h2>
+          <p className="mt-1.5 text-[11.5px] leading-relaxed text-muted-foreground">
+            Use defined Kurukoo capabilities when the task and permissions allow it.
+          </p>
+        </div>
+        <div className="bg-surface p-5">
+          <Clock3 className="size-5 text-primary" />
+          <h2 className="mt-3 text-[13.5px] font-semibold">Stay bounded</h2>
+          <p className="mt-1.5 text-[11.5px] leading-relaxed text-muted-foreground">
+            Approvals, schedules and tool scope remain visible around consequential work.
+          </p>
+        </div>
+      </section>
+      <AIProviderDirectory />
+      <section className="border border-border bg-elevated/35 p-5">
+        <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-primary">
+          Human help
+        </p>
+        <h2 className="mt-1.5 text-[26px] font-semibold tracking-[-0.03em]">
+          AI is not the only way to act.
+        </h2>
+        <p className="mt-2 max-w-2xl text-[12px] leading-relaxed text-muted-foreground">
+          When a task needs a person on the ground, Kurukoo can work with providers, Local Agents
+          and Ambassadors through the same request and trust boundaries.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link to="/discover" className={actionClass()}>
+            Discover nearby
+          </Link>
+          <Link to="/local-agents" className={actionClass()}>
+            Local Agents
+          </Link>
+          <Link to="/ambassadors" className={actionClass()}>
+            Ambassadors
+          </Link>
+        </div>
+      </section>
+    </div>
+  );
 }
 
-function HumanLocalHelp() { return <section className="border border-border bg-surface p-5"><div className="flex items-start gap-3"><span className="grid size-9 place-items-center bg-elevated text-primary"><UsersRound className="size-4" /></span><div className="min-w-0 flex-1"><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">Human help nearby</p><h2 className="mt-1.5 text-[25px] font-semibold tracking-[-0.03em]">Need a person on the ground?</h2><p className="mt-2 max-w-2xl text-[12px] leading-5 text-muted-foreground">Ask Kurukoo to look for a Local Agent, Ambassador or provider. A person should only be presented as available when current discovery evidence supports that claim.</p><div className="mt-4 flex flex-wrap gap-2"><AskKurukoo prompt="Find a Local Agent near me who can help with physical assistance or local coordination." /><AskKurukoo prompt="Find a Kurukoo Ambassador near me who can help me get started." /><Link to="/discover" className={actionClass()}>Open Nearby <MapPin className="ml-1 size-3.5" /></Link></div></div></div></section>; }
+function HumanLocalHelp() {
+  return (
+    <section className="border border-border bg-surface p-5">
+      <div className="flex items-start gap-3">
+        <span className="grid size-9 place-items-center bg-elevated text-primary">
+          <UsersRound className="size-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+            Human help nearby
+          </p>
+          <h2 className="mt-1.5 text-[25px] font-semibold tracking-[-0.03em]">
+            Need a person on the ground?
+          </h2>
+          <p className="mt-2 max-w-2xl text-[12px] leading-5 text-muted-foreground">
+            Ask Kurukoo to look for a Local Agent, Ambassador or provider. A person should only be
+            presented as available when current discovery evidence supports that claim.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <AskKurukoo prompt="Find a Local Agent near me who can help with physical assistance or local coordination." />
+            <AskKurukoo prompt="Find a Kurukoo Ambassador near me who can help me get started." />
+            <Link to="/discover" className={actionClass()}>
+              Open Nearby <MapPin className="ml-1 size-3.5" />
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 function AuthenticatedAgents() {
   const [goals, setGoals] = useState<AgentGoal[]>([]);
   const [agentEntities, setAgentEntities] = useState<DiscoveryEntity[]>([]);
-  useEffect(() => { void fetchAgentGoals().then(setGoals).catch(() => setGoals([])); }, []);
-  useEffect(() => { void fetchDiscoveryEntities({ layers: ["agents"] }).then(setAgentEntities).catch(() => setAgentEntities([])); }, []);
+  useEffect(() => {
+    void fetchAgentGoals()
+      .then(setGoals)
+      .catch(() => setGoals([]));
+  }, []);
+  useEffect(() => {
+    void fetchDiscoveryEntities({ layers: ["agents"] })
+      .then(setAgentEntities)
+      .catch(() => setAgentEntities([]));
+  }, []);
   const surfaceAgents = agentEntities.slice(0, 6).map((entity) => ({
     id: entity.id,
     name: entity.name,
     description: entity.description || entity.category || "Agent-discovered capability",
-    status: entity.liveNow ? "connected" as const : entity.available ? "available" as const : "not-configured" as const,
+    status: entity.liveNow
+      ? ("connected" as const)
+      : entity.available
+        ? ("available" as const)
+        : ("not-configured" as const),
     capabilities: entity.category ? [entity.category] : [],
   }));
-  return <div className="space-y-7"><PageHeader title="Agents" subtitle="Advanced capabilities for work that can continue under defined rules. Most of the time, you can simply ask Kurukoo." /><AIProviderDirectory /><section><SectionHeader title="Available agent capabilities" subtitle={surfaceAgents.length ? `${surfaceAgents.length} supported discovery result${surfaceAgents.length === 1 ? "" : "s"}` : "Only supported agent signals are shown"} /><AgentSurface agents={surfaceAgents} /></section><HumanLocalHelp /><section className="grid gap-4 lg:grid-cols-[1.25fr_.75fr]"><Panel className="overflow-hidden p-0"><div className="flex items-center justify-between border-b border-border px-4 py-3.5"><div className="flex items-center gap-2"><span className="grid size-8 place-items-center bg-brand-tint text-brand-ink"><Bot className="size-4" /></span><h2 className="text-[14px] font-semibold">Agent activity</h2></div><Link to="/chat" className="text-[10.5px] font-medium">Ask Kurukoo <ArrowUpRight className="ml-1 inline size-3.5" /></Link></div><AgentIntelligence maxItems={5} title="" /></Panel><Panel className="p-4"><p className="text-[11px] text-muted-foreground">Start through conversation</p><p className="mt-1 text-[12px] leading-5 text-muted-foreground">These examples open the normal Kurukoo conversation. Agents stay behind the relationship unless advanced control is needed.</p><div className="mt-3 grid gap-2">{quickJobs.map((job) => <Link key={job} to="/chat" search={{ query: job } as never} className="flex min-h-10 items-center justify-between border border-border px-3 text-[12px] font-medium hover:bg-elevated">{job}<ArrowUpRight className="size-3.5 text-muted-foreground" /></Link>)}</div></Panel></section><section><SectionHeader title="Running" subtitle={goals.length ? `${goals.length} active or recent goals` : ""} />{goals.length ? <div className="grid gap-3 md:grid-cols-2">{goals.map((goal) => <GoalCard key={goal.id} goal={goal} onChange={(next) => setGoals((items) => next ? items.map((item) => item.id === next.id ? next : item) : items.filter((item) => item.id !== goal.id))} />)}</div> : <Panel className="p-5"><div className="flex items-center gap-3"><Clock3 className="size-5 text-muted-foreground" /><div><p className="text-[13px] font-medium">Nothing running</p><p className="mt-1 text-[11px] text-muted-foreground">Agent work will appear here when a goal is actually created.</p></div><Link to="/chat" className="ml-auto bg-primary px-3 py-2 text-[11px] font-medium text-primary-foreground">Start in Chat</Link></div></Panel>}</section><div className="flex flex-wrap gap-2"><Link to="/work" className={actionClass()}>Open Work</Link><Link to="/activity" className={actionClass()}>Open Activity</Link></div></div>;
+  return (
+    <div className="space-y-7">
+      <PageHeader
+        title="Agents"
+        subtitle="Advanced capabilities for work that can continue under defined rules. Most of the time, you can simply ask Kurukoo."
+      />
+      <AIProviderDirectory />
+      <section>
+        <SectionHeader
+          title="Available agent capabilities"
+          subtitle={
+            surfaceAgents.length
+              ? `${surfaceAgents.length} supported discovery result${surfaceAgents.length === 1 ? "" : "s"}`
+              : "Only supported agent signals are shown"
+          }
+        />
+        <AgentSurface agents={surfaceAgents} />
+      </section>
+      <HumanLocalHelp />
+      <section className="grid gap-4 lg:grid-cols-[1.25fr_.75fr]">
+        <Panel className="overflow-hidden p-0">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3.5">
+            <div className="flex items-center gap-2">
+              <span className="grid size-8 place-items-center bg-brand-tint text-brand-ink">
+                <Bot className="size-4" />
+              </span>
+              <h2 className="text-[14px] font-semibold">Agent activity</h2>
+            </div>
+            <Link to="/chat" className="text-[10.5px] font-medium">
+              Ask Kurukoo <ArrowUpRight className="ml-1 inline size-3.5" />
+            </Link>
+          </div>
+          <AgentIntelligence maxItems={5} title="" />
+        </Panel>
+        <Panel className="p-4">
+          <p className="text-[11px] text-muted-foreground">Start through conversation</p>
+          <p className="mt-1 text-[12px] leading-5 text-muted-foreground">
+            These examples open the normal Kurukoo conversation. Agents stay behind the relationship
+            unless advanced control is needed.
+          </p>
+          <div className="mt-3 grid gap-2">
+            {quickJobs.map((job) => (
+              <Link
+                key={job}
+                to="/chat"
+                search={{ query: job } as never}
+                className="flex min-h-10 items-center justify-between border border-border px-3 text-[12px] font-medium hover:bg-elevated"
+              >
+                {job}
+                <ArrowUpRight className="size-3.5 text-muted-foreground" />
+              </Link>
+            ))}
+          </div>
+        </Panel>
+      </section>
+      <section>
+        <SectionHeader
+          title="Running"
+          subtitle={goals.length ? `${goals.length} active or recent goals` : ""}
+        />
+        {goals.length ? (
+          <div className="grid gap-3 md:grid-cols-2">
+            {goals.map((goal) => (
+              <GoalCard
+                key={goal.id}
+                goal={goal}
+                onChange={(next) =>
+                  setGoals((items) =>
+                    next
+                      ? items.map((item) => (item.id === next.id ? next : item))
+                      : items.filter((item) => item.id !== goal.id),
+                  )
+                }
+              />
+            ))}
+          </div>
+        ) : (
+          <Panel className="p-5">
+            <div className="flex items-center gap-3">
+              <Clock3 className="size-5 text-muted-foreground" />
+              <div>
+                <p className="text-[13px] font-medium">Nothing running</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Agent work will appear here when a goal is actually created.
+                </p>
+              </div>
+              <Link
+                to="/chat"
+                className="ml-auto bg-primary px-3 py-2 text-[11px] font-medium text-primary-foreground"
+              >
+                Start in Chat
+              </Link>
+            </div>
+          </Panel>
+        )}
+      </section>
+      <div className="flex flex-wrap gap-2">
+        <Link to="/work" className={actionClass()}>
+          Open Work
+        </Link>
+        <Link to="/activity" className={actionClass()}>
+          Open Activity
+        </Link>
+      </div>
+    </div>
+  );
 }
 
-function AgentsPage() { const [authenticated, setAuthenticated] = useState(false); const [ready, setReady] = useState(false); useEffect(() => { const read = () => { setAuthenticated(window.localStorage.getItem("kurukoo-authenticated") === "true"); setReady(true); }; read(); window.addEventListener("kurukoo-auth-updated", read); window.addEventListener("storage", read); return () => { window.removeEventListener("kurukoo-auth-updated", read); window.removeEventListener("storage", read); }; }, []); return ready && authenticated ? <AuthenticatedAgents /> : <PublicAgents />; }
+function AgentsPage() {
+  const [authenticated, setAuthenticated] = useState(false);
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const read = () => {
+      setAuthenticated(window.localStorage.getItem("kurukoo-authenticated") === "true");
+      setReady(true);
+    };
+    read();
+    window.addEventListener("kurukoo-auth-updated", read);
+    window.addEventListener("storage", read);
+    return () => {
+      window.removeEventListener("kurukoo-auth-updated", read);
+      window.removeEventListener("storage", read);
+    };
+  }, []);
+  return ready && authenticated ? <AuthenticatedAgents /> : <PublicAgents />;
+}

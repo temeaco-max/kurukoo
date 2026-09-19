@@ -1,14 +1,107 @@
 (() => {
-  const path=window.location.pathname||'';
-  if(!['/top-up','/points'].includes(path))return;
-  const mount=document.querySelector('.k-app-container');if(!mount)return;
-  const json=async(url,options={})=>{const r=await fetch(url,{credentials:'same-origin',headers:{'Content-Type':'application/json',...(options.headers||{})},...options});const p=await r.json().catch(()=>({}));if(!r.ok)throw new Error(p.error||`Request failed (${r.status})`);return p;};
-  const root=document.createElement('section');root.className='k-agent-commerce';root.innerHTML='<div class="k-agent-commerce-head"><div><span class="k-app-card-label">Agent Network</span><h2>Sell Points &amp; earn commission</h2><p>Use your authorised OPay/Moniepoint/POS process to collect the customer payment. Kurukoo records the sale and does not credit Points until the payment evidence is verified.</p></div></div><div class="k-agent-commerce-state" data-kind="loading">Checking your agent status…</div><div class="k-agent-commerce-grid"><form data-form="sale"><h3>Record a Points sale</h3><label>Customer phone<input name="customerPhone" required placeholder="+234…"></label><label>Points<input name="points" type="number" min="1" required></label><label>Customer payment amount (minor units)<input name="fiatAmountMinor" type="number" min="1" required></label><label>Currency<input name="currency" value="NGN" maxlength="8" required></label><label>Payment/reference evidence<input name="externalReference" required placeholder="OPay/Moniepoint receipt/reference"></label><button type="submit">Record sale</button><p class="k-agent-commerce-result" data-result="sale"></p></form><section class="k-agent-commerce-balance"><h3>Commission</h3><div data-balance>Loading…</div><label>Payout amount (minor units)<input data-payout-amount type="number" min="1"></label><label>Settlement rail<select data-payout-rail><option value="opay">OPay</option><option value="moniepoint">Moniepoint</option><option value="manual">Manual</option></select></label><label>Destination reference<input data-payout-destination placeholder="Wallet/account/POS reference"></label><button type="button" data-payout>Request payout</button><p class="k-agent-commerce-result" data-result="payout"></p></section></div>';
+  const path = window.location.pathname || "";
+  if (!["/top-up", "/points"].includes(path)) return;
+  const mount = document.querySelector(".k-app-container");
+  if (!mount) return;
+  const json = async (url, options = {}) => {
+    const r = await fetch(url, {
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+      ...options,
+    });
+    const p = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(p.error || `Request failed (${r.status})`);
+    return p;
+  };
+  const root = document.createElement("section");
+  root.className = "k-agent-commerce";
+  root.innerHTML =
+    '<div class="k-agent-commerce-head"><div><span class="k-app-card-label">Agent Network</span><h2>Sell Points &amp; earn commission</h2><p>Use your authorised OPay/Moniepoint/POS process to collect the customer payment. Kurukoo records the sale and does not credit Points until the payment evidence is verified.</p></div></div><div class="k-agent-commerce-state" data-kind="loading">Checking your agent status…</div><div class="k-agent-commerce-grid"><form data-form="sale"><h3>Record a Points sale</h3><label>Customer phone<input name="customerPhone" required placeholder="+234…"></label><label>Points<input name="points" type="number" min="1" required></label><label>Customer payment amount (minor units)<input name="fiatAmountMinor" type="number" min="1" required></label><label>Currency<input name="currency" value="NGN" maxlength="8" required></label><label>Payment/reference evidence<input name="externalReference" required placeholder="OPay/Moniepoint receipt/reference"></label><button type="submit">Record sale</button><p class="k-agent-commerce-result" data-result="sale"></p></form><section class="k-agent-commerce-balance"><h3>Commission</h3><div data-balance>Loading…</div><label>Payout amount (minor units)<input data-payout-amount type="number" min="1"></label><label>Settlement rail<select data-payout-rail><option value="opay">OPay</option><option value="moniepoint">Moniepoint</option><option value="manual">Manual</option></select></label><label>Destination reference<input data-payout-destination placeholder="Wallet/account/POS reference"></label><button type="button" data-payout>Request payout</button><p class="k-agent-commerce-result" data-result="payout"></p></section></div>';
   mount.prepend(root);
-  const state=root.querySelector('.k-agent-commerce-state'),balance=root.querySelector('[data-balance]'),saleForm=root.querySelector('[data-form="sale"]'),saleResult=root.querySelector('[data-result="sale"]'),payoutResult=root.querySelector('[data-result="payout"]');
-  const showState=(kind,text)=>{state.dataset.kind=kind;state.textContent=text;};const showResult=(el,kind,text)=>{el.dataset.kind=kind;el.textContent=text;};
-  const init=async()=>{try{const me=await json('/api/agent-network/me');if(!me.agent||me.agent.status!=='active'){showState('blocked','You are not an active Points-selling agent. Register through the Agent Network onboarding flow to use this surface.');saleForm.hidden=true;return;}showState('active',`Active ${me.agent.agentType} agent · ${me.agent.region||me.agent.country||'network'}`);const commission=await json('/api/agent-network/me/commission?currency=NGN');const b=commission.balance;balance.textContent=`Available: ${b.availableMinor} NGN minor units · Accrued: ${b.accruedMinor} · Reserved: ${b.reservedMinor} · Paid: ${b.paidMinor}`;}catch(error){showState('error',error?.message||'Agent status unavailable.');saleForm.hidden=true;}};
-  saleForm.addEventListener('submit',async e=>{e.preventDefault();showResult(saleResult,'','');const data=new FormData(saleForm);try{const result=await json('/api/agent-network/me/points/sales',{method:'POST',body:JSON.stringify({customerPhone:data.get('customerPhone'),points:Number(data.get('points')),fiatAmountMinor:Number(data.get('fiatAmountMinor')),currency:data.get('currency'),externalReference:data.get('externalReference')})});showResult(saleResult,'success',`Sale ${result.topUp?.id||''} recorded. Points remain pending until payment verification.`);saleForm.reset();saleForm.querySelector('[name="currency"]').value='NGN';await init();}catch(error){showResult(saleResult,'error',error?.message||'Sale could not be recorded.');}});
-  root.querySelector('[data-payout]').addEventListener('click',async()=>{showResult(payoutResult,'','');try{const result=await json('/api/agent-network/me/commission/payout',{method:'POST',body:JSON.stringify({amountMinor:Number(root.querySelector('[data-payout-amount]').value),currency:'NGN',rail:root.querySelector('[data-payout-rail]').value,destinationRef:root.querySelector('[data-payout-destination]').value})});showResult(payoutResult,'success',`Payout ${result.payout?.id||''} requested. Settlement remains pending until the configured rail provides external evidence.`);await init();}catch(error){showResult(payoutResult,'error',error?.message||'Payout request failed.');}});
+  const state = root.querySelector(".k-agent-commerce-state"),
+    balance = root.querySelector("[data-balance]"),
+    saleForm = root.querySelector('[data-form="sale"]'),
+    saleResult = root.querySelector('[data-result="sale"]'),
+    payoutResult = root.querySelector('[data-result="payout"]');
+  const showState = (kind, text) => {
+    state.dataset.kind = kind;
+    state.textContent = text;
+  };
+  const showResult = (el, kind, text) => {
+    el.dataset.kind = kind;
+    el.textContent = text;
+  };
+  const init = async () => {
+    try {
+      const me = await json("/api/agent-network/me");
+      if (!me.agent || me.agent.status !== "active") {
+        showState(
+          "blocked",
+          "You are not an active Points-selling agent. Register through the Agent Network onboarding flow to use this surface.",
+        );
+        saleForm.hidden = true;
+        return;
+      }
+      showState(
+        "active",
+        `Active ${me.agent.agentType} agent · ${me.agent.region || me.agent.country || "network"}`,
+      );
+      const commission = await json("/api/agent-network/me/commission?currency=NGN");
+      const b = commission.balance;
+      balance.textContent = `Available: ${b.availableMinor} NGN minor units · Accrued: ${b.accruedMinor} · Reserved: ${b.reservedMinor} · Paid: ${b.paidMinor}`;
+    } catch (error) {
+      showState("error", error?.message || "Agent status unavailable.");
+      saleForm.hidden = true;
+    }
+  };
+  saleForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    showResult(saleResult, "", "");
+    const data = new FormData(saleForm);
+    try {
+      const result = await json("/api/agent-network/me/points/sales", {
+        method: "POST",
+        body: JSON.stringify({
+          customerPhone: data.get("customerPhone"),
+          points: Number(data.get("points")),
+          fiatAmountMinor: Number(data.get("fiatAmountMinor")),
+          currency: data.get("currency"),
+          externalReference: data.get("externalReference"),
+        }),
+      });
+      showResult(
+        saleResult,
+        "success",
+        `Sale ${result.topUp?.id || ""} recorded. Points remain pending until payment verification.`,
+      );
+      saleForm.reset();
+      saleForm.querySelector('[name="currency"]').value = "NGN";
+      await init();
+    } catch (error) {
+      showResult(saleResult, "error", error?.message || "Sale could not be recorded.");
+    }
+  });
+  root.querySelector("[data-payout]").addEventListener("click", async () => {
+    showResult(payoutResult, "", "");
+    try {
+      const result = await json("/api/agent-network/me/commission/payout", {
+        method: "POST",
+        body: JSON.stringify({
+          amountMinor: Number(root.querySelector("[data-payout-amount]").value),
+          currency: "NGN",
+          rail: root.querySelector("[data-payout-rail]").value,
+          destinationRef: root.querySelector("[data-payout-destination]").value,
+        }),
+      });
+      showResult(
+        payoutResult,
+        "success",
+        `Payout ${result.payout?.id || ""} requested. Settlement remains pending until the configured rail provides external evidence.`,
+      );
+      await init();
+    } catch (error) {
+      showResult(payoutResult, "error", error?.message || "Payout request failed.");
+    }
+  });
   void init();
 })();

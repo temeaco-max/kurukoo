@@ -5,7 +5,10 @@ export const Route = createFileRoute("/perch")({
   head: () => ({
     meta: [
       { title: "Your Field — Kurukoo" },
-      { name: "description", content: "Your Kurukoo Field for conversation, Work, context and next steps." },
+      {
+        name: "description",
+        content: "Your Kurukoo Field for conversation, Work, context and next steps.",
+      },
     ],
   }),
   component: PerchPage,

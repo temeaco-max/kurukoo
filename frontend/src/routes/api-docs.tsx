@@ -17,7 +17,14 @@ export const Route = createFileRoute("/api-docs")({
   component: ApiDocsPage,
 });
 
-const SECTIONS: Array<{ id: string; tag: string; title: string; body: string; code: string | null; schema?: Array<[string, string]> }> = [
+const SECTIONS: Array<{
+  id: string;
+  tag: string;
+  title: string;
+  body: string;
+  code: string | null;
+  schema?: Array<[string, string]>;
+}> = [
   {
     id: "getting-started",
     tag: "Reference",
@@ -94,7 +101,10 @@ function ApiDocsPage() {
           <ul className="sticky top-24 space-y-1.5 text-[12.5px]">
             {SECTIONS.map((section) => (
               <li key={section.id}>
-                <a href={`#${section.id}`} className="text-muted-foreground transition-colors hover:text-foreground">
+                <a
+                  href={`#${section.id}`}
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                >
                   {section.title}
                 </a>
               </li>
@@ -105,9 +115,13 @@ function ApiDocsPage() {
           {SECTIONS.map((section) => (
             <Panel key={section.id} className="scroll-mt-24 p-6">
               <div id={section.id} />
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">{section.tag}</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
+                {section.tag}
+              </p>
               <h2 className="mt-1.5 text-[19px] font-semibold tracking-tight">{section.title}</h2>
-              <p className="mt-2.5 text-[13px] leading-relaxed text-muted-foreground">{section.body}</p>
+              <p className="mt-2.5 text-[13px] leading-relaxed text-muted-foreground">
+                {section.body}
+              </p>
               {section.code && (
                 <pre className="mt-4 overflow-x-auto rounded-lg border border-border bg-elevated/40 p-3 text-[12px] leading-relaxed">
                   <code>{section.code}</code>

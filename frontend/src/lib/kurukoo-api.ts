@@ -1,90 +1,813 @@
-export type ChatStreamEvent = { type: string; conversationId?: string; content?: string; text?: string; fullReply?: string; error?: string; cardData?: Record<string, unknown> | null; canonicalAction?: string; progressStage?: string; capabilityResult?: Record<string, unknown> | null };
-export type CanonicalTopicReply = { id: string; topicId: string; body: string; status: string; createdAt: string; updatedAt: string; authorLabel: string };
+export type ChatStreamEvent = {
+  type: string;
+  conversationId?: string;
+  content?: string;
+  text?: string;
+  fullReply?: string;
+  error?: string;
+  cardData?: Record<string, unknown> | null;
+  canonicalAction?: string;
+  progressStage?: string;
+  capabilityResult?: Record<string, unknown> | null;
+};
+export type CanonicalTopicReply = {
+  id: string;
+  topicId: string;
+  body: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  authorLabel: string;
+};
 export type CanonicalTopicResource = { slug: string; title: string };
-export type CanonicalTopicRelationship = { relationshipType: string; notificationPreference?: string };
-export type CanonicalTopic = { id: string; slug: string; title: string; body: string; type: string; category: string | null; skills: string[]; city: string | null; lga: string | null; status: string; createdAt: string; updatedAt: string; publishedAt: string | null; replyCount: number; authorLabel: string; replies?: CanonicalTopicReply[]; relatedResources?: CanonicalTopicResource[]; provenance?: string };
-export type TopicTaxonomy = { types: string[]; categories: string[]; skillsByCategory: Record<string, string[]> };
-export type ChatHistoryMessage = { id: number; sender: "user" | "assistant" | "system" | string; content: string; conversation_id?: string | null; conversationId?: string | null; created_at?: string; createdAt?: string; card_data?: Record<string, unknown> | null; cardData?: Record<string, unknown> | null; metadata?: string | Record<string, unknown> | null };
-export type ChatHistoryResponse = { success?: boolean; conversations?: Array<{ id: string; title?: string | null; channel?: string; updated_at?: string }>; messages?: ChatHistoryMessage[]; nextBeforeId?: number | null };
-export type ProactiveOpportunity = { id: string; type: string; title: string; subtitle: string; ctaText: string; ctaLink: string; status: string; createdAt: string };
-export type DiscoveryEntity = { id: string; name: string; kind: string; category?: string | null; description?: string | null; lat?: number; lng?: number; location?: string | null; source?: string | null; freshness?: string | null; evidence?: string | null; lifecycle?: string | null; available?: boolean | null; liveNow?: boolean | null; skills?: string[]; chatAction?: { type?: string; entityId?: string; conversationId?: string | null } | null };
-export type PulseProvider = { id: string; skill: string; name: string; location?: string; subscription_tier?: string; source: "mobile" | "stationary"; lat: number; lng: number; location_radius_m: number; verified: true; live_now: true };
-export type PulseReadiness = { radarDefaultOn: boolean; active: boolean; eligibleToBroadcast: boolean; role: "provider" | "user"; nudge?: string };
-export type CanonicalMemoryFact = { id: number; field: string; value: string; provenance?: string; confidence?: number; sourceConversationId?: string | null; observedAt?: string | null; expiresAt?: string | null };
-export type AuthenticatedAd = { id: number | string; title: string; desc: string; image?: string; disclosure: string; advertiserName: string; destination: string; clickUrl: string; ctaText: string; placement: string };
-export type SponsoredAd = { id: number | string; title: string; desc?: string; image?: string; alt?: string; disclosure?: string; advertiserName?: string; destination?: string; clickUrl: string; ctaText?: string; placement?: string };
-export type Notification = { id: string | number; title?: string; body?: string; read?: boolean; readAt?: string | null; createdAt?: string; type?: string };
-export type EconomicRequest = { id: string; phone?: string; skill: string; requirements: Record<string, unknown>; status: string; created_at?: string; updated_at?: string; quote?: Record<string, unknown> | null; amount?: number | null; currency?: string | null };
-export type EconomicParticipant = { id?: number | string; role?: string; providerPhone?: string | null; capability?: string | null; status?: string; evidence?: Record<string, unknown> | null; addedAt?: string | null; updatedAt?: string | null };
-export type EconomicOffer = { id?: string; sellerPhone?: string | null; description?: string; priceMinor?: number | null; currency?: string | null; source?: string | null; availabilityNote?: string | null; status?: string | null; provenance?: string | null; externalUrl?: string | null };
-export type EconomicCoordination = { offer: EconomicOffer | null; participants: EconomicParticipant[] };
-export type ExecutionRequest = { id?: string; requestId?: string; providerPhone?: string; role?: string; capability?: string; actionRequested?: string; status?: string; createdAt?: string; updatedAt?: string; evidence?: Record<string, unknown> | null };
+export type CanonicalTopicRelationship = {
+  relationshipType: string;
+  notificationPreference?: string;
+};
+export type CanonicalTopic = {
+  id: string;
+  slug: string;
+  title: string;
+  body: string;
+  type: string;
+  category: string | null;
+  skills: string[];
+  city: string | null;
+  lga: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string | null;
+  replyCount: number;
+  authorLabel: string;
+  replies?: CanonicalTopicReply[];
+  relatedResources?: CanonicalTopicResource[];
+  provenance?: string;
+};
+export type TopicTaxonomy = {
+  types: string[];
+  categories: string[];
+  skillsByCategory: Record<string, string[]>;
+};
+export type ChatHistoryMessage = {
+  id: number;
+  sender: "user" | "assistant" | "system" | string;
+  content: string;
+  conversation_id?: string | null;
+  conversationId?: string | null;
+  created_at?: string;
+  createdAt?: string;
+  card_data?: Record<string, unknown> | null;
+  cardData?: Record<string, unknown> | null;
+  metadata?: string | Record<string, unknown> | null;
+};
+export type ChatHistoryResponse = {
+  success?: boolean;
+  conversations?: Array<{
+    id: string;
+    title?: string | null;
+    channel?: string;
+    updated_at?: string;
+  }>;
+  messages?: ChatHistoryMessage[];
+  nextBeforeId?: number | null;
+};
+export type ProactiveOpportunity = {
+  id: string;
+  type: string;
+  title: string;
+  subtitle: string;
+  ctaText: string;
+  ctaLink: string;
+  status: string;
+  createdAt: string;
+};
+export type DiscoveryEntity = {
+  id: string;
+  name: string;
+  kind: string;
+  category?: string | null;
+  description?: string | null;
+  lat?: number;
+  lng?: number;
+  location?: string | null;
+  source?: string | null;
+  freshness?: string | null;
+  evidence?: string | null;
+  lifecycle?: string | null;
+  available?: boolean | null;
+  liveNow?: boolean | null;
+  skills?: string[];
+  chatAction?: { type?: string; entityId?: string; conversationId?: string | null } | null;
+};
+export type PulseProvider = {
+  id: string;
+  skill: string;
+  name: string;
+  location?: string;
+  subscription_tier?: string;
+  source: "mobile" | "stationary";
+  lat: number;
+  lng: number;
+  location_radius_m: number;
+  verified: true;
+  live_now: true;
+};
+export type PulseReadiness = {
+  radarDefaultOn: boolean;
+  active: boolean;
+  eligibleToBroadcast: boolean;
+  role: "provider" | "user";
+  nudge?: string;
+};
+export type CanonicalMemoryFact = {
+  id: number;
+  field: string;
+  value: string;
+  provenance?: string;
+  confidence?: number;
+  sourceConversationId?: string | null;
+  observedAt?: string | null;
+  expiresAt?: string | null;
+};
+export type AuthenticatedAd = {
+  id: number | string;
+  title: string;
+  desc: string;
+  image?: string;
+  disclosure: string;
+  advertiserName: string;
+  destination: string;
+  clickUrl: string;
+  ctaText: string;
+  placement: string;
+};
+export type SponsoredAd = {
+  id: number | string;
+  title: string;
+  desc?: string;
+  image?: string;
+  alt?: string;
+  disclosure?: string;
+  advertiserName?: string;
+  destination?: string;
+  clickUrl: string;
+  ctaText?: string;
+  placement?: string;
+};
+export type Notification = {
+  id: string | number;
+  title?: string;
+  body?: string;
+  read?: boolean;
+  readAt?: string | null;
+  createdAt?: string;
+  type?: string;
+};
+export type EconomicRequest = {
+  id: string;
+  phone?: string;
+  skill: string;
+  requirements: Record<string, unknown>;
+  status: string;
+  created_at?: string;
+  updated_at?: string;
+  quote?: Record<string, unknown> | null;
+  amount?: number | null;
+  currency?: string | null;
+};
+export type EconomicParticipant = {
+  id?: number | string;
+  role?: string;
+  providerPhone?: string | null;
+  capability?: string | null;
+  status?: string;
+  evidence?: Record<string, unknown> | null;
+  addedAt?: string | null;
+  updatedAt?: string | null;
+};
+export type EconomicOffer = {
+  id?: string;
+  sellerPhone?: string | null;
+  description?: string;
+  priceMinor?: number | null;
+  currency?: string | null;
+  source?: string | null;
+  availabilityNote?: string | null;
+  status?: string | null;
+  provenance?: string | null;
+  externalUrl?: string | null;
+};
+export type EconomicCoordination = {
+  offer: EconomicOffer | null;
+  participants: EconomicParticipant[];
+};
+export type ExecutionRequest = {
+  id?: string;
+  requestId?: string;
+  providerPhone?: string;
+  role?: string;
+  capability?: string;
+  actionRequested?: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  evidence?: Record<string, unknown> | null;
+};
 
 const API_BASE = (import.meta.env["VITE_KURUKOO_API_BASE_URL"] ?? "").replace(/\/$/, "");
-function apiUrl(path: string) { return `${API_BASE}${path}`; }
-export function isKurukooApiConfigured() { return Boolean(API_BASE); }
-async function readJson<T>(path: string, init?: RequestInit): Promise<T> { const response = await fetch(apiUrl(path), { credentials: "include", ...init }); const payload = await response.json().catch(() => ({})); if (!response.ok) throw new Error(typeof payload?.error === "string" ? payload.error : `Kurukoo request failed (${response.status})`); return payload as T; }
-export async function fetchAuthenticatedAd(placement: "left-rail" | "context-rail" | "desk-content") { const payload = await readJson<{ campaigns?: AuthenticatedAd[] }>(`/api/advertising/${placement}`); return payload.campaigns?.[0] ?? null; }
+function apiUrl(path: string) {
+  return `${API_BASE}${path}`;
+}
+export function isKurukooApiConfigured() {
+  return Boolean(API_BASE);
+}
+async function readJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(apiUrl(path), { credentials: "include", ...init });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok)
+    throw new Error(
+      typeof payload?.error === "string"
+        ? payload.error
+        : `Kurukoo request failed (${response.status})`,
+    );
+  return payload as T;
+}
+export async function fetchAuthenticatedAd(
+  placement: "left-rail" | "context-rail" | "desk-content",
+) {
+  const payload = await readJson<{ campaigns?: AuthenticatedAd[] }>(
+    `/api/advertising/${placement}`,
+  );
+  return payload.campaigns?.[0] ?? null;
+}
 /** Sponsored campaigns rendered by the public chat sidebar and public context rail. */
-export async function fetchSponsoredAds() { const payload = await readJson<{ campaigns?: SponsoredAd[] }>("/api/chat/sponsored"); return Array.isArray(payload.campaigns) ? payload.campaigns : []; }
+export async function fetchSponsoredAds() {
+  const payload = await readJson<{ campaigns?: SponsoredAd[] }>("/api/chat/sponsored");
+  return Array.isArray(payload.campaigns) ? payload.campaigns : [];
+}
 /** All Topics ad placements from the admin campaign system in one request. Unauthenticated callers receive an empty map. */
-export async function fetchTopicsAdSlots() { const payload = await readJson<{ slots?: Record<string, SponsoredAd[]> }>("/api/advertising/topics-slots"); return payload.slots && typeof payload.slots === "object" ? payload.slots : {}; }
-export async function fetchDiscoveryEntities(input?: { lat?: number; lng?: number; radius?: number; layers?: string[]; q?: string }) { const p = new URLSearchParams(); if (input?.lat !== undefined) p.set("lat", String(input.lat)); if (input?.lng !== undefined) p.set("lng", String(input.lng)); p.set("radius", String(input?.radius ?? 5000)); p.set("layers", (input?.layers ?? ["mobile", "stationary", "agents", "emergency", "deals", "events"]).join(",")); if (input?.q) p.set("q", input.q); const payload = await readJson<{ entities?: DiscoveryEntity[] }>(`/api/discover/entities?${p.toString()}`); return Array.isArray(payload.entities) ? payload.entities : []; }
-export async function fetchDiscoveryMap(input?: { lat?: number; lng?: number; radius?: number; layers?: string[] }) { const p = new URLSearchParams(); if (input?.lat !== undefined) p.set("lat", String(input.lat)); if (input?.lng !== undefined) p.set("lng", String(input.lng)); p.set("radius", String(input?.radius ?? 5000)); p.set("layers", (input?.layers ?? ["mobile", "stationary", "agents", "emergency", "deals", "events"]).join(",")); return readJson<{ type: "FeatureCollection"; features?: Array<{ id?: string; type?: string; geometry?: { coordinates?: [number, number] }; properties?: Record<string, unknown> }>; meta?: Record<string, unknown> }>(`/api/discover/map?${p.toString()}`); }
-export async function fetchPublicPulseProviders() { const payload = await readJson<{ providers?: PulseProvider[] }>("/api/pulse/providers"); return Array.isArray(payload.providers) ? payload.providers : []; }
-export async function fetchPulseReadiness() { return readJson<PulseReadiness>("/api/pulse/readiness"); }
-export async function activatePulse(skill: string, lat: number, lng: number) { return readJson<{ success: boolean; message: string }>("/api/pulse/live", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ skill, lat, lng }) }); }
-export async function deactivatePulse() { return readJson<{ success: boolean; message: string }>("/api/pulse/deactivate", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); }
-export async function fetchCanonicalTopics(limit = 5, filters?: { type?: string; category?: string }) { const p = new URLSearchParams({ limit: String(Math.min(20, Math.max(1, limit))) }); if (filters?.type) p.set("type", filters.type); if (filters?.category) p.set("category", filters.category); const payload = await readJson<{ topics?: CanonicalTopic[] }>(`/api/topics?${p.toString()}`); return Array.isArray(payload.topics) ? payload.topics : []; }
-export async function fetchCanonicalTopic(slug: string) { const payload = await readJson<{ topic?: CanonicalTopic }>(`/api/topics/${encodeURIComponent(slug)}`); if (!payload.topic) throw new Error("Topic not found"); return payload.topic; }
-export async function fetchTopicTaxonomy() { return readJson<TopicTaxonomy>("/api/topics/taxonomy"); }
-export async function fetchTopicRelationship(topicId: string) { const payload = await readJson<{ relationship?: CanonicalTopicRelationship | null }>(`/api/relationships/topic/${encodeURIComponent(topicId)}`); return payload.relationship ?? null; }
-export async function followCanonicalTopic(topicId: string) { const payload = await readJson<{ relationship?: CanonicalTopicRelationship }>("/api/relationships", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ targetType: "topic", targetId: topicId, relationshipType: "follow" }) }); return payload.relationship ?? null; }
-export async function unfollowCanonicalTopic(topicId: string) { await readJson(`/api/relationships/topic/${encodeURIComponent(topicId)}`, { method: "DELETE" }); }
-export async function setTopicNotificationPreference(topicId: string, preference: "all" | "muted") { const payload = await readJson<{ relationship?: CanonicalTopicRelationship }>(`/api/relationships/topic/${encodeURIComponent(topicId)}/preferences`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ relationshipType: "follow", notificationPreference: preference }) }); return payload.relationship ?? null; }
-export async function submitCanonicalReply(topicId: string, body: string) { const payload = await readJson<{ reply?: CanonicalTopicReply }>(`/api/topics/${encodeURIComponent(topicId)}/replies`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body }) }); if (!payload.reply) throw new Error("Reply could not be submitted"); return payload.reply; }
-export async function reportCanonicalTopic(topicId: string, reason: string) { const payload = await readJson<{ report?: { id: string } }>(`/api/topics/${encodeURIComponent(topicId)}/report`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason }) }); return payload.report; }
-export async function submitCanonicalTopic(input: { title: string; body: string; type: string; category?: string; skills?: string[]; city?: string; lga?: string }) { const payload = await readJson<{ topic?: CanonicalTopic }>("/api/topics", { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID().replace(/-/g, "") }, body: JSON.stringify(input) }); if (!payload.topic) throw new Error("Topic could not be submitted"); return payload.topic; }
-export async function fetchCanonicalMemoryFacts() { const payload = await readJson<{ facts?: CanonicalMemoryFact[] }>("/api/memory/facts"); return Array.isArray(payload.facts) ? payload.facts : []; }
-export async function revokeCanonicalMemoryFact(id: number) { return readJson<{ success: boolean; revoked?: boolean }>(`/api/memory/facts/${encodeURIComponent(String(id))}`, { method: "DELETE" }); }
-export async function fetchChatHistory(conversationId?: string, limit = 50) { const p = new URLSearchParams({ limit: String(Math.min(100, Math.max(1, limit))) }); if (conversationId) p.set("conversationId", conversationId); const controller = new AbortController(); const timer = window.setTimeout(() => controller.abort(), 8000); try { return await readJson<ChatHistoryResponse>(`/api/v1/chat/history?${p.toString()}`, { signal: controller.signal }); } finally { window.clearTimeout(timer); } }
-export async function fetchProactiveFeed() { const payload = await readJson<{ opportunities?: ProactiveOpportunity[] }>("/api/v1/proactive/feed"); return Array.isArray(payload.opportunities) ? payload.opportunities : []; }
-export async function streamKurukooChat(input: { message: string; conversationId?: string; channel?: string; onEvent: (event: ChatStreamEvent) => void }): Promise<{ conversationId?: string; reply: string }> { const response = await fetch(apiUrl("/api/v1/chat/stream"), { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: input.message.trim(), conversationId: input.conversationId, channel: input.channel ?? "web" }) }); if (!response.ok || !response.body) { const payload = await response.json().catch(() => ({})); throw new Error(typeof payload?.error === "string" ? payload.error : `Chat request failed (${response.status})`); } const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = "", reply = "", conversationId = input.conversationId; const consume = (chunk: string) => { buffer += chunk; const frames = buffer.split("\n\n"); buffer = frames.pop() ?? ""; for (const frame of frames) { const data = frame.split("\n").filter((line) => line.startsWith("data:")).map((line) => line.slice(5).trim()).join("\n"); if (!data) continue; try { const parsed = JSON.parse(data) as ChatStreamEvent | "[DONE]"; if (parsed === "[DONE]") continue; input.onEvent(parsed); if (typeof parsed.conversationId === "string") conversationId = parsed.conversationId; if (parsed.type === "text" && typeof parsed.content === "string") reply += parsed.content; if (parsed.type === "delta" && typeof parsed.text === "string") reply += parsed.text; if (parsed.type === "done" && typeof parsed.fullReply === "string") reply = parsed.fullReply; } catch { input.onEvent({ type: "error", error: "Kurukoo returned an unreadable response." }); } } }; while (true) { const { value, done } = await reader.read(); if (done) break; consume(decoder.decode(value, { stream: true })); } consume(decoder.decode()); return { conversationId, reply: reply.trim() }; }
-export type VoiceSession = { sessionId: string; conversationId?: string; provider?: string; model?: string; capability?: string; expiresAt?: string };
-export async function createVoiceSession(conversationId?: string) { const payload = await readJson<{ voice?: VoiceSession }>("/api/voice/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(conversationId ? { conversationId } : {}) }); if (!payload.voice) throw new Error("Voice session could not be started."); return payload.voice; }
-export async function endVoiceSession(sessionId: string, reason = "client_disconnect") { return readJson<{ ended: boolean }>("/api/voice/end", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, reason }) }); }
-export async function fetchEconomicRequests() { const payload = await readJson<{ requests?: EconomicRequest[] }>("/api/v1/chat/economic-requests"); return Array.isArray(payload.requests) ? payload.requests : []; }
-export async function fetchEconomicRequest(id: string) { const payload = await readJson<{ request?: EconomicRequest }>(`/api/v1/chat/economic-requests/${encodeURIComponent(id)}`); if (!payload.request) throw new Error("Request not found"); return payload.request; }
-export async function fetchEconomicCoordination(id: string) { const payload = await readJson<{ offer?: EconomicOffer | null; participants?: EconomicParticipant[] }>(`/api/economic-requests/${encodeURIComponent(id)}/participants`); return { offer: payload.offer ?? null, participants: Array.isArray(payload.participants) ? payload.participants : [] }; }
-export async function fetchEconomicExecution(id: string) { const payload = await readJson<{ ok?: boolean; executionRequests?: ExecutionRequest[] }>(`/api/economic-requests/${encodeURIComponent(id)}/execution`); return Array.isArray(payload.executionRequests) ? payload.executionRequests : []; }
-export async function fetchDeliveryCandidates(id: string) { const payload = await readJson<{ providers?: EconomicParticipant[] }>(`/api/economic-requests/${encodeURIComponent(id)}/delivery-candidates`); return Array.isArray(payload.providers) ? payload.providers : []; }
-export async function selectDeliveryCandidate(id: string, providerPhone: string) { return readJson<{ success: boolean; participant?: EconomicParticipant }>(`/api/economic-requests/${encodeURIComponent(id)}/delivery-selection`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ providerPhone }) }); }
-export async function submitServiceReview(requestId: string, providerPhone: string, rating: number, feedback?: string) { const payload = await readJson<{ success: boolean; review?: Record<string, unknown> }>(`/api/economic-requests/${encodeURIComponent(requestId)}/review`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ providerPhone, rating, feedback }) }); if (!payload.review) throw new Error("Review was not recorded."); return payload.review; }
-export async function fetchNotifications() { return readJson<{ notifications?: Notification[] }>("/api/notifications"); }
-export async function markNotificationRead(id: string | number) { const numericId = Number(id); if (!Number.isInteger(numericId) || numericId <= 0) throw new Error("Invalid notification id"); return readJson<{ success: boolean }>(`/api/notifications/${numericId}/read`, { method: "POST" }); }
-export type AgentGoal = { id: string; objective?: string; status: string; skill?: string; createdAt?: string; updatedAt?: string; nextRunAt?: string | null; conversationId?: string | null };
-export async function fetchAgentGoals() { const payload = await readJson<{ goals?: AgentGoal[] }>("/api/agent/goals"); return Array.isArray(payload.goals) ? payload.goals : []; }
-export async function controlAgentGoal(id: string, action: "pause" | "resume" | "cancel") { return readJson<{ success?: boolean; goal?: AgentGoal }>(`/api/agent/goals/${encodeURIComponent(id)}/${action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); }
-export type ConnectedResource = { id: string; kind: string; label: string; vendor?: string | null; protocol?: string | null; capabilities?: string[]; state?: string; createdAt?: string; updatedAt?: string };
-export async function fetchConnectedResources() { const payload = await readJson<{ resources?: ConnectedResource[] }>("/api/connect/resources"); return Array.isArray(payload.resources) ? payload.resources : []; }
-export async function revokeConnectedResource(id: string) { return readJson<{ success: boolean; status?: string }>(`/api/connect/resources/${encodeURIComponent(id)}`, { method: "DELETE" }); }
-export type ChannelStatus = { channelStatuses: Record<string, string | { state?: string; note?: string } | null>; integrationReadiness: Array<{ id: string; name?: string; summary?: string; category?: string; uiState?: string }> };
-export async function fetchChannelReadiness() { return readJson<ChannelStatus>("/api/content/channels"); }
-export type ProviderProfileContent = { provider: { name: string; initials: string; location: string; verified: boolean; trustScore: number; skills: Array<{ skill: string; rating: number; jobsCompleted: number; hourlyRate: number }> } };
-export async function fetchProviderProfile(slug: string) { return readJson<ProviderProfileContent>(`/api/content/providers/${encodeURIComponent(slug)}`); }
-export type ResourceGuide = { slug: string; title: string; category: string; body?: string; excerpt: string; updated_at?: string | null };
-export async function fetchResourcesList() { return readJson<{ resources?: ResourceGuide[] }>("/api/content/resources"); }
-export async function fetchResource(slug: string) { return readJson<ResourceGuide>(`/api/content/resources/${encodeURIComponent(slug)}`); }
-export type DailyPick = { id: string; title: string; description: string; image?: string | null; ctaText: string; ctaLink: string; category: string; tags?: string[]; created_at?: string };
-export type QuickReply = { id: string; label: string; action: string; icon?: string | null; order: number };
+export async function fetchTopicsAdSlots() {
+  const payload = await readJson<{ slots?: Record<string, SponsoredAd[]> }>(
+    "/api/advertising/topics-slots",
+  );
+  return payload.slots && typeof payload.slots === "object" ? payload.slots : {};
+}
+export async function fetchDiscoveryEntities(input?: {
+  lat?: number;
+  lng?: number;
+  radius?: number;
+  layers?: string[];
+  q?: string;
+}) {
+  const p = new URLSearchParams();
+  if (input?.lat !== undefined) p.set("lat", String(input.lat));
+  if (input?.lng !== undefined) p.set("lng", String(input.lng));
+  p.set("radius", String(input?.radius ?? 5000));
+  p.set(
+    "layers",
+    (input?.layers ?? ["mobile", "stationary", "agents", "emergency", "deals", "events"]).join(","),
+  );
+  if (input?.q) p.set("q", input.q);
+  const payload = await readJson<{ entities?: DiscoveryEntity[] }>(
+    `/api/discover/entities?${p.toString()}`,
+  );
+  return Array.isArray(payload.entities) ? payload.entities : [];
+}
+export async function fetchDiscoveryMap(input?: {
+  lat?: number;
+  lng?: number;
+  radius?: number;
+  layers?: string[];
+}) {
+  const p = new URLSearchParams();
+  if (input?.lat !== undefined) p.set("lat", String(input.lat));
+  if (input?.lng !== undefined) p.set("lng", String(input.lng));
+  p.set("radius", String(input?.radius ?? 5000));
+  p.set(
+    "layers",
+    (input?.layers ?? ["mobile", "stationary", "agents", "emergency", "deals", "events"]).join(","),
+  );
+  return readJson<{
+    type: "FeatureCollection";
+    features?: Array<{
+      id?: string;
+      type?: string;
+      geometry?: { coordinates?: [number, number] };
+      properties?: Record<string, unknown>;
+    }>;
+    meta?: Record<string, unknown>;
+  }>(`/api/discover/map?${p.toString()}`);
+}
+export async function fetchPublicPulseProviders() {
+  const payload = await readJson<{ providers?: PulseProvider[] }>("/api/pulse/providers");
+  return Array.isArray(payload.providers) ? payload.providers : [];
+}
+export async function fetchPulseReadiness() {
+  return readJson<PulseReadiness>("/api/pulse/readiness");
+}
+export async function activatePulse(skill: string, lat: number, lng: number) {
+  return readJson<{ success: boolean; message: string }>("/api/pulse/live", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ skill, lat, lng }),
+  });
+}
+export async function deactivatePulse() {
+  return readJson<{ success: boolean; message: string }>("/api/pulse/deactivate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  });
+}
+export async function fetchCanonicalTopics(
+  limit = 5,
+  filters?: { type?: string; category?: string },
+) {
+  const p = new URLSearchParams({ limit: String(Math.min(20, Math.max(1, limit))) });
+  if (filters?.type) p.set("type", filters.type);
+  if (filters?.category) p.set("category", filters.category);
+  const payload = await readJson<{ topics?: CanonicalTopic[] }>(`/api/topics?${p.toString()}`);
+  return Array.isArray(payload.topics) ? payload.topics : [];
+}
+export async function fetchCanonicalTopic(slug: string) {
+  const payload = await readJson<{ topic?: CanonicalTopic }>(
+    `/api/topics/${encodeURIComponent(slug)}`,
+  );
+  if (!payload.topic) throw new Error("Topic not found");
+  return payload.topic;
+}
+export async function fetchTopicTaxonomy() {
+  return readJson<TopicTaxonomy>("/api/topics/taxonomy");
+}
+export async function fetchTopicRelationship(topicId: string) {
+  const payload = await readJson<{ relationship?: CanonicalTopicRelationship | null }>(
+    `/api/relationships/topic/${encodeURIComponent(topicId)}`,
+  );
+  return payload.relationship ?? null;
+}
+export async function followCanonicalTopic(topicId: string) {
+  const payload = await readJson<{ relationship?: CanonicalTopicRelationship }>(
+    "/api/relationships",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetType: "topic", targetId: topicId, relationshipType: "follow" }),
+    },
+  );
+  return payload.relationship ?? null;
+}
+export async function unfollowCanonicalTopic(topicId: string) {
+  await readJson(`/api/relationships/topic/${encodeURIComponent(topicId)}`, { method: "DELETE" });
+}
+export async function setTopicNotificationPreference(topicId: string, preference: "all" | "muted") {
+  const payload = await readJson<{ relationship?: CanonicalTopicRelationship }>(
+    `/api/relationships/topic/${encodeURIComponent(topicId)}/preferences`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ relationshipType: "follow", notificationPreference: preference }),
+    },
+  );
+  return payload.relationship ?? null;
+}
+export async function submitCanonicalReply(topicId: string, body: string) {
+  const payload = await readJson<{ reply?: CanonicalTopicReply }>(
+    `/api/topics/${encodeURIComponent(topicId)}/replies`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body }),
+    },
+  );
+  if (!payload.reply) throw new Error("Reply could not be submitted");
+  return payload.reply;
+}
+export async function reportCanonicalTopic(topicId: string, reason: string) {
+  const payload = await readJson<{ report?: { id: string } }>(
+    `/api/topics/${encodeURIComponent(topicId)}/report`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason }),
+    },
+  );
+  return payload.report;
+}
+export async function submitCanonicalTopic(input: {
+  title: string;
+  body: string;
+  type: string;
+  category?: string;
+  skills?: string[];
+  city?: string;
+  lga?: string;
+}) {
+  const payload = await readJson<{ topic?: CanonicalTopic }>("/api/topics", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Idempotency-Key": crypto.randomUUID().replace(/-/g, ""),
+    },
+    body: JSON.stringify(input),
+  });
+  if (!payload.topic) throw new Error("Topic could not be submitted");
+  return payload.topic;
+}
+export async function fetchCanonicalMemoryFacts() {
+  const payload = await readJson<{ facts?: CanonicalMemoryFact[] }>("/api/memory/facts");
+  return Array.isArray(payload.facts) ? payload.facts : [];
+}
+export async function revokeCanonicalMemoryFact(id: number) {
+  return readJson<{ success: boolean; revoked?: boolean }>(
+    `/api/memory/facts/${encodeURIComponent(String(id))}`,
+    { method: "DELETE" },
+  );
+}
+export async function fetchChatHistory(conversationId?: string, limit = 50) {
+  const p = new URLSearchParams({ limit: String(Math.min(100, Math.max(1, limit))) });
+  if (conversationId) p.set("conversationId", conversationId);
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), 8000);
+  try {
+    return await readJson<ChatHistoryResponse>(`/api/v1/chat/history?${p.toString()}`, {
+      signal: controller.signal,
+    });
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+export async function fetchProactiveFeed() {
+  const payload = await readJson<{ opportunities?: ProactiveOpportunity[] }>(
+    "/api/v1/proactive/feed",
+  );
+  return Array.isArray(payload.opportunities) ? payload.opportunities : [];
+}
+export async function streamKurukooChat(input: {
+  message: string;
+  conversationId?: string;
+  channel?: string;
+  onEvent: (event: ChatStreamEvent) => void;
+}): Promise<{ conversationId?: string; reply: string }> {
+  const response = await fetch(apiUrl("/api/v1/chat/stream"), {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: input.message.trim(),
+      conversationId: input.conversationId,
+      channel: input.channel ?? "web",
+    }),
+  });
+  if (!response.ok || !response.body) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(
+      typeof payload?.error === "string"
+        ? payload.error
+        : `Chat request failed (${response.status})`,
+    );
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "",
+    reply = "",
+    conversationId = input.conversationId;
+  const consume = (chunk: string) => {
+    buffer += chunk;
+    const frames = buffer.split("\n\n");
+    buffer = frames.pop() ?? "";
+    for (const frame of frames) {
+      const data = frame
+        .split("\n")
+        .filter((line) => line.startsWith("data:"))
+        .map((line) => line.slice(5).trim())
+        .join("\n");
+      if (!data) continue;
+      try {
+        const parsed = JSON.parse(data) as ChatStreamEvent | "[DONE]";
+        if (parsed === "[DONE]") continue;
+        input.onEvent(parsed);
+        if (typeof parsed.conversationId === "string") conversationId = parsed.conversationId;
+        if (parsed.type === "text" && typeof parsed.content === "string") reply += parsed.content;
+        if (parsed.type === "delta" && typeof parsed.text === "string") reply += parsed.text;
+        if (parsed.type === "done" && typeof parsed.fullReply === "string")
+          reply = parsed.fullReply;
+      } catch {
+        input.onEvent({ type: "error", error: "Kurukoo returned an unreadable response." });
+      }
+    }
+  };
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    consume(decoder.decode(value, { stream: true }));
+  }
+  consume(decoder.decode());
+  return { conversationId, reply: reply.trim() };
+}
+export type VoiceSession = {
+  sessionId: string;
+  conversationId?: string;
+  provider?: string;
+  model?: string;
+  capability?: string;
+  expiresAt?: string;
+};
+export async function createVoiceSession(conversationId?: string) {
+  const payload = await readJson<{ voice?: VoiceSession }>("/api/voice/session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(conversationId ? { conversationId } : {}),
+  });
+  if (!payload.voice) throw new Error("Voice session could not be started.");
+  return payload.voice;
+}
+export async function endVoiceSession(sessionId: string, reason = "client_disconnect") {
+  return readJson<{ ended: boolean }>("/api/voice/end", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId, reason }),
+  });
+}
+export async function fetchEconomicRequests() {
+  const payload = await readJson<{ requests?: EconomicRequest[] }>(
+    "/api/v1/chat/economic-requests",
+  );
+  return Array.isArray(payload.requests) ? payload.requests : [];
+}
+export async function fetchEconomicRequest(id: string) {
+  const payload = await readJson<{ request?: EconomicRequest }>(
+    `/api/v1/chat/economic-requests/${encodeURIComponent(id)}`,
+  );
+  if (!payload.request) throw new Error("Request not found");
+  return payload.request;
+}
+export async function fetchEconomicCoordination(id: string) {
+  const payload = await readJson<{
+    offer?: EconomicOffer | null;
+    participants?: EconomicParticipant[];
+  }>(`/api/economic-requests/${encodeURIComponent(id)}/participants`);
+  return {
+    offer: payload.offer ?? null,
+    participants: Array.isArray(payload.participants) ? payload.participants : [],
+  };
+}
+export async function fetchEconomicExecution(id: string) {
+  const payload = await readJson<{ ok?: boolean; executionRequests?: ExecutionRequest[] }>(
+    `/api/economic-requests/${encodeURIComponent(id)}/execution`,
+  );
+  return Array.isArray(payload.executionRequests) ? payload.executionRequests : [];
+}
+export async function fetchDeliveryCandidates(id: string) {
+  const payload = await readJson<{ providers?: EconomicParticipant[] }>(
+    `/api/economic-requests/${encodeURIComponent(id)}/delivery-candidates`,
+  );
+  return Array.isArray(payload.providers) ? payload.providers : [];
+}
+export async function selectDeliveryCandidate(id: string, providerPhone: string) {
+  return readJson<{ success: boolean; participant?: EconomicParticipant }>(
+    `/api/economic-requests/${encodeURIComponent(id)}/delivery-selection`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ providerPhone }),
+    },
+  );
+}
+export async function submitServiceReview(
+  requestId: string,
+  providerPhone: string,
+  rating: number,
+  feedback?: string,
+) {
+  const payload = await readJson<{ success: boolean; review?: Record<string, unknown> }>(
+    `/api/economic-requests/${encodeURIComponent(requestId)}/review`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ providerPhone, rating, feedback }),
+    },
+  );
+  if (!payload.review) throw new Error("Review was not recorded.");
+  return payload.review;
+}
+export async function fetchNotifications() {
+  return readJson<{ notifications?: Notification[] }>("/api/notifications");
+}
+export async function markNotificationRead(id: string | number) {
+  const numericId = Number(id);
+  if (!Number.isInteger(numericId) || numericId <= 0) throw new Error("Invalid notification id");
+  return readJson<{ success: boolean }>(`/api/notifications/${numericId}/read`, { method: "POST" });
+}
+export type AgentGoal = {
+  id: string;
+  objective?: string;
+  status: string;
+  skill?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  nextRunAt?: string | null;
+  conversationId?: string | null;
+};
+export async function fetchAgentGoals() {
+  const payload = await readJson<{ goals?: AgentGoal[] }>("/api/agent/goals");
+  return Array.isArray(payload.goals) ? payload.goals : [];
+}
+export async function controlAgentGoal(id: string, action: "pause" | "resume" | "cancel") {
+  return readJson<{ success?: boolean; goal?: AgentGoal }>(
+    `/api/agent/goals/${encodeURIComponent(id)}/${action}`,
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" },
+  );
+}
+export type ConnectedResource = {
+  id: string;
+  kind: string;
+  label: string;
+  vendor?: string | null;
+  protocol?: string | null;
+  capabilities?: string[];
+  state?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+export async function fetchConnectedResources() {
+  const payload = await readJson<{ resources?: ConnectedResource[] }>("/api/connect/resources");
+  return Array.isArray(payload.resources) ? payload.resources : [];
+}
+export async function revokeConnectedResource(id: string) {
+  return readJson<{ success: boolean; status?: string }>(
+    `/api/connect/resources/${encodeURIComponent(id)}`,
+    { method: "DELETE" },
+  );
+}
+export type ChannelStatus = {
+  channelStatuses: Record<string, string | { state?: string; note?: string } | null>;
+  integrationReadiness: Array<{
+    id: string;
+    name?: string;
+    summary?: string;
+    category?: string;
+    uiState?: string;
+  }>;
+};
+export async function fetchChannelReadiness() {
+  return readJson<ChannelStatus>("/api/content/channels");
+}
+export type ProviderProfileContent = {
+  provider: {
+    name: string;
+    initials: string;
+    location: string;
+    verified: boolean;
+    trustScore: number;
+    skills: Array<{ skill: string; rating: number; jobsCompleted: number; hourlyRate: number }>;
+  };
+};
+export async function fetchProviderProfile(slug: string) {
+  return readJson<ProviderProfileContent>(`/api/content/providers/${encodeURIComponent(slug)}`);
+}
+export type ResourceGuide = {
+  slug: string;
+  title: string;
+  category: string;
+  body?: string;
+  excerpt: string;
+  updated_at?: string | null;
+};
+export async function fetchResourcesList() {
+  return readJson<{ resources?: ResourceGuide[] }>("/api/content/resources");
+}
+export async function fetchResource(slug: string) {
+  return readJson<ResourceGuide>(`/api/content/resources/${encodeURIComponent(slug)}`);
+}
+export type DailyPick = {
+  id: string;
+  title: string;
+  description: string;
+  image?: string | null;
+  ctaText: string;
+  ctaLink: string;
+  category: string;
+  tags?: string[];
+  created_at?: string;
+};
+export type QuickReply = {
+  id: string;
+  label: string;
+  action: string;
+  icon?: string | null;
+  order: number;
+};
 export type SurveyPrompt = { id: string; question: string; topic: string; answerTypes: string[] };
-export type SurveyResponse = { id: string; question: string; answer: string; topic: string; submitted_at: string };
-export type ArtistBooking = { id: string; skill: string; providerPhone: string; providerName: string; managerName: string; managerContact: string; status: "pending_verification" | "verification_pending" | "verified" | "booking_pending" | "booked" | "confirmed" | "active" | "completed" | "refunded"; escrowAmount?: number | null; currency?: string | null; created_at?: string; updated_at?: string; verification?: { requested_at?: string; managerName: string; managerContact: string } | null };
-export async function fetchDailyPick(): Promise<DailyPick | null> { const payload = await readJson<{ success: boolean; pick?: DailyPick | null }>("/api/orphan-wire-back/daily-picks"); return payload.success && payload.pick ? payload.pick : null; }
-export async function fetchQuickReplies(): Promise<QuickReply[]> { const payload = await readJson<{ success: boolean; quickReplies?: QuickReply[] }>("/api/orphan-wire-back/quick-replies"); return payload.success && Array.isArray(payload.quickReplies) ? payload.quickReplies : []; }
-export async function fetchSurveyPrompt(): Promise<SurveyPrompt | null> { const payload = await readJson<{ success: boolean; prompt?: SurveyPrompt | null }>("/api/orphan-wire-back/survey-prompt"); return payload.success && payload.prompt ? payload.prompt : null; }
-export async function submitSurveyResponse(question: string, answer: string): Promise<SurveyResponse | null> { const payload = await readJson<{ success: boolean; result?: SurveyResponse }>("/api/orphan-wire-back/survey-response", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question, answer }) }); return payload.success && payload.result ? payload.result : null; }
-export async function requestArtistVerification(skill: string, managerName: string, managerContact: string) { return readJson<{ success: boolean; message?: string }>("/api/orphan-wire-back/artist/request-verification", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ skill, managerName, managerContact }) }); }
-export async function bookArtist(skill: string, providerPhone: string, requirements?: Record<string, unknown>) { const payload = await readJson<{ success: boolean; booking?: ArtistBooking }>("/api/orphan-wire-back/artist/book", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ skill, providerPhone, requirements }) }); return payload.success && payload.booking ? payload.booking : null; }
-export async function confirmArtistBooking(bookingId: string) { const payload = await readJson<{ success: boolean; booking?: ArtistBooking }>("/api/orphan-wire-back/artist/confirm-booking", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bookingId }) }); return payload.success && payload.booking ? payload.booking : null; }
-export async function releaseArtistEscrow(bookingId: string) { return readJson<{ success: boolean; message?: string }>("/api/orphan-wire-back/artist/release-escrow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bookingId }) }); }
+export type SurveyResponse = {
+  id: string;
+  question: string;
+  answer: string;
+  topic: string;
+  submitted_at: string;
+};
+export type ArtistBooking = {
+  id: string;
+  skill: string;
+  providerPhone: string;
+  providerName: string;
+  managerName: string;
+  managerContact: string;
+  status:
+    | "pending_verification"
+    | "verification_pending"
+    | "verified"
+    | "booking_pending"
+    | "booked"
+    | "confirmed"
+    | "active"
+    | "completed"
+    | "refunded";
+  escrowAmount?: number | null;
+  currency?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  verification?: { requested_at?: string; managerName: string; managerContact: string } | null;
+};
+export async function fetchDailyPick(): Promise<DailyPick | null> {
+  const payload = await readJson<{ success: boolean; pick?: DailyPick | null }>(
+    "/api/orphan-wire-back/daily-picks",
+  );
+  return payload.success && payload.pick ? payload.pick : null;
+}
+export async function fetchQuickReplies(): Promise<QuickReply[]> {
+  const payload = await readJson<{ success: boolean; quickReplies?: QuickReply[] }>(
+    "/api/orphan-wire-back/quick-replies",
+  );
+  return payload.success && Array.isArray(payload.quickReplies) ? payload.quickReplies : [];
+}
+export async function fetchSurveyPrompt(): Promise<SurveyPrompt | null> {
+  const payload = await readJson<{ success: boolean; prompt?: SurveyPrompt | null }>(
+    "/api/orphan-wire-back/survey-prompt",
+  );
+  return payload.success && payload.prompt ? payload.prompt : null;
+}
+export async function submitSurveyResponse(
+  question: string,
+  answer: string,
+): Promise<SurveyResponse | null> {
+  const payload = await readJson<{ success: boolean; result?: SurveyResponse }>(
+    "/api/orphan-wire-back/survey-response",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, answer }),
+    },
+  );
+  return payload.success && payload.result ? payload.result : null;
+}
+export async function requestArtistVerification(
+  skill: string,
+  managerName: string,
+  managerContact: string,
+) {
+  return readJson<{ success: boolean; message?: string }>(
+    "/api/orphan-wire-back/artist/request-verification",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ skill, managerName, managerContact }),
+    },
+  );
+}
+export async function bookArtist(
+  skill: string,
+  providerPhone: string,
+  requirements?: Record<string, unknown>,
+) {
+  const payload = await readJson<{ success: boolean; booking?: ArtistBooking }>(
+    "/api/orphan-wire-back/artist/book",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ skill, providerPhone, requirements }),
+    },
+  );
+  return payload.success && payload.booking ? payload.booking : null;
+}
+export async function confirmArtistBooking(bookingId: string) {
+  const payload = await readJson<{ success: boolean; booking?: ArtistBooking }>(
+    "/api/orphan-wire-back/artist/confirm-booking",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bookingId }),
+    },
+  );
+  return payload.success && payload.booking ? payload.booking : null;
+}
+export async function releaseArtistEscrow(bookingId: string) {
+  return readJson<{ success: boolean; message?: string }>(
+    "/api/orphan-wire-back/artist/release-escrow",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bookingId }),
+    },
+  );
+}

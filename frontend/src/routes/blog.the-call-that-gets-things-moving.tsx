@@ -9,12 +9,14 @@ export const Route = createFileRoute("/blog/the-call-that-gets-things-moving")({
       { title: "The Call That Gets Things Moving — Kurukoo" },
       {
         name: "description",
-        content: "The story behind Kurukoo, told through voice, movement, context, trust and the places where real life happens.",
+        content:
+          "The story behind Kurukoo, told through voice, movement, context, trust and the places where real life happens.",
       },
       { property: "og:title", content: "The Call That Gets Things Moving — Kurukoo" },
       {
         property: "og:description",
-        content: "A rhyming story about the idea behind Kurukoo and the world it is being built to move.",
+        content:
+          "A rhyming story about the idea behind Kurukoo and the world it is being built to move.",
       },
     ],
   }),
@@ -132,28 +134,53 @@ function StoryPage() {
   return (
     <MarketingPage>
       <article className="mx-auto w-full max-w-3xl pb-14">
-        <Link to="/blog" className="inline-flex items-center gap-1.5 text-[11.5px] font-medium text-muted-foreground hover:text-foreground">
+        <Link
+          to="/blog"
+          className="inline-flex items-center gap-1.5 text-[11.5px] font-medium text-muted-foreground hover:text-foreground"
+        >
           <ArrowLeft className="size-3.5" /> Blog
         </Link>
         <header className="mt-6 border-b border-border pb-8">
-          <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-primary">Kurukoo · Our story</p>
-          <h1 className="mt-3 font-serif text-[44px] leading-[1.01] tracking-[-0.05em] md:text-[58px]">The Call That Gets Things Moving</h1>
+          <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-primary">
+            Kurukoo · Our story
+          </p>
+          <h1 className="mt-3 font-serif text-[44px] leading-[1.01] tracking-[-0.05em] md:text-[58px]">
+            The Call That Gets Things Moving
+          </h1>
           <p className="mt-5 max-w-2xl text-[15px] leading-7 text-muted-foreground">
-            A story about why Kurukoo listens, remembers, finds a way, asks before it acts, and keeps moving until useful work has somewhere real to land.
+            A story about why Kurukoo listens, remembers, finds a way, asks before it acts, and
+            keeps moving until useful work has somewhere real to land.
           </p>
         </header>
         <div className="mt-10 space-y-8">
           {stanzas.map((lines, index) => (
             <section key={index} className="space-y-2">
-              {lines.map((line) => <p key={line} className="font-serif text-[18px] leading-[1.65] tracking-[-0.01em] md:text-[20px]">{line}</p>)}
+              {lines.map((line) => (
+                <p
+                  key={line}
+                  className="font-serif text-[18px] leading-[1.65] tracking-[-0.01em] md:text-[20px]"
+                >
+                  {line}
+                </p>
+              ))}
             </section>
           ))}
         </div>
         <footer className="mt-12 border-t border-border pt-7">
           <div className="flex flex-wrap gap-2">
             <AskKurukoo prompt="Tell me more about the ideas behind Kurukoo and how Croon, Thicket, Perch, Actions and Nearby fit together." />
-            <Link to="/explore" className="inline-flex min-h-9 items-center gap-1.5 border border-border px-3 text-[12px] font-medium hover:bg-elevated">Explore <ArrowUpRight className="size-3.5" /></Link>
-            <Link to="/blog" className="inline-flex min-h-9 items-center gap-1.5 px-3 text-[12px] font-medium text-muted-foreground hover:text-foreground">More from the journal</Link>
+            <Link
+              to="/explore"
+              className="inline-flex min-h-9 items-center gap-1.5 border border-border px-3 text-[12px] font-medium hover:bg-elevated"
+            >
+              Explore <ArrowUpRight className="size-3.5" />
+            </Link>
+            <Link
+              to="/blog"
+              className="inline-flex min-h-9 items-center gap-1.5 px-3 text-[12px] font-medium text-muted-foreground hover:text-foreground"
+            >
+              More from the journal
+            </Link>
           </div>
         </footer>
       </article>

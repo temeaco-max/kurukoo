@@ -38,12 +38,19 @@ const apiUrl = (path: string) => `${API_BASE}${path}`;
 async function readJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(apiUrl(path), { credentials: "include", ...init });
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(typeof payload?.error === "string" ? payload.error : `Kurukoo request failed (${response.status})`);
+  if (!response.ok)
+    throw new Error(
+      typeof payload?.error === "string"
+        ? payload.error
+        : `Kurukoo request failed (${response.status})`,
+    );
   return payload as T;
 }
 
 export async function fetchCommunityTaxonomy() {
-  const payload = await readJson<{ categories?: CommunityCategory[] }>("/api/topics/community/taxonomy");
+  const payload = await readJson<{ categories?: CommunityCategory[] }>(
+    "/api/topics/community/taxonomy",
+  );
   return Array.isArray(payload.categories) ? payload.categories : [];
 }
 
@@ -63,10 +70,16 @@ export async function fetchCommunityAdInventory(category?: string, subcategory?:
   const params = new URLSearchParams();
   if (category) params.set("category", category);
   if (subcategory) params.set("subcategory", subcategory);
-  const payload = await readJson<{ inventory?: CommunityAdInventory[] }>(`/api/topics/community/ads?${params.toString()}`);
+  const payload = await readJson<{ inventory?: CommunityAdInventory[] }>(
+    `/api/topics/community/ads?${params.toString()}`,
+  );
   return Array.isArray(payload.inventory) ? payload.inventory : [];
 }
 
 export async function fetchCommunityCategory(categorySlug: string) {
-  return readJson<{ category: CommunityCategory; topics: unknown[]; inventory: CommunityAdInventory[] }>(`/api/topics/community/category/${encodeURIComponent(categorySlug)}`);
+  return readJson<{
+    category: CommunityCategory;
+    topics: unknown[];
+    inventory: CommunityAdInventory[];
+  }>(`/api/topics/community/category/${encodeURIComponent(categorySlug)}`);
 }

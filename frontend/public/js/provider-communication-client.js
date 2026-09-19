@@ -1,21 +1,295 @@
 (() => {
-  const pagePath=window.location.pathname||'';if(!/\/app\/call$/.test(pagePath))return;const params=new URLSearchParams(window.location.search);const sessionId=params.get('session');if(!sessionId)return;let pc,dataChannel,localStream,signalCursor=0;const seenSignals=new Set();let session,role,gpsTimer,audioEnabled=false;
-  const mount=document.querySelector('.k-app-container');if(!mount)return;const root=document.createElement('section');root.className='k-provider-session';root.innerHTML='<div class="k-provider-session-head"><div><span class="k-app-card-label">Provider session</span><h2>Live communication</h2><p class="k-provider-session-state">Connecting to the active request…</p></div><span class="k-status" data-state="info">WebRTC</span></div><div class="k-provider-session-actions"><button type="button" data-action="voice" disabled>Start voice</button><button type="button" data-action="arrived" hidden>Mark arrived</button><button type="button" data-action="complete" hidden>Mark completed</button><button type="button" data-action="end">End session</button></div><div class="k-provider-session-messages" aria-live="polite"></div><form class="k-provider-session-form"><input name="message" maxlength="4000" autocomplete="off" placeholder="Message the provider…" aria-label="Message the provider"><button type="submit">Send</button></form><div class="k-provider-session-note">Live messages use WebRTC data when available and are persisted through the active Kurukoo request conversation. Provider location is sampled sparingly; the next GPS sample is not requested until the configured interval.</div>';mount.prepend(root);
-  const stateEl=root.querySelector('.k-provider-session-state'),messagesEl=root.querySelector('.k-provider-session-messages'),voiceBtn=root.querySelector('[data-action="voice"]'),arrivedBtn=root.querySelector('[data-action="arrived"]'),completeBtn=root.querySelector('[data-action="complete"]'),endBtn=root.querySelector('[data-action="end"]'),form=root.querySelector('form'),input=root.querySelector('input[name="message"]');
-  const say=(text,kind='system')=>{const line=document.createElement('div');line.className=`k-provider-message ${kind}`;line.textContent=String(text||'');messagesEl.appendChild(line);messagesEl.scrollTop=messagesEl.scrollHeight;};
-  const setState=text=>{stateEl.textContent=text;};
-  const json=async(url,options={})=>{const response=await fetch(url,{credentials:'same-origin',headers:{'Content-Type':'application/json',...(options.headers||{})},...options});const payload=await response.json().catch(()=>({}));if(!response.ok)throw new Error(payload.error||`Request failed (${response.status})`);return payload;};
-  const sendSignal=async(kind,payload,to)=>json('/api/webrtc/signal',{method:'POST',body:JSON.stringify({roomId:session.roomId,kind,payload,to})});
-  const renderSession=()=>{const voiceAllowed=Boolean(session?.roomId)&&(role==='provider'||['arrived','in_progress'].includes(String(session?.state)));voiceBtn.disabled=!voiceAllowed;if(role==='provider'){arrivedBtn.hidden=!['accepted','connected','provider_en_route'].includes(session?.state);completeBtn.hidden=!['arrived','in_progress'].includes(session?.state);}setState(`${role==='provider'?'Provider':'Customer'} · ${String(session?.state||'created').replace(/_/g,' ')}`);};
-  const wireDataChannel=()=>{if(!dataChannel)return;dataChannel.onopen=()=>{setState('Connected · live messaging ready');renderSession();};dataChannel.onmessage=event=>{try{const payload=JSON.parse(event.data);if(payload?.type==='message')say(payload.text,'peer');else if(payload?.type==='status')say(payload.text,'system');}catch{say(event.data,'peer');}};dataChannel.onclose=()=>{if(session?.state!=='completed')setState('WebRTC connection closed; request state remains canonical.');};};
-  const addTracks=async()=>{if(localStream||!pc)return;localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});for(const track of localStream.getTracks())pc.addTrack(track,localStream);audioEnabled=true;};
-  const initialisePeer=async(config)=>{pc=new RTCPeerConnection({iceServers:Array.isArray(config?.iceServers)?config.iceServers:[]});pc.onicecandidate=async event=>{if(event.candidate)await sendSignal('ice',event.candidate.toJSON?event.candidate.toJSON():event.candidate).catch(()=>undefined);};pc.ontrack=event=>{if(!event.streams?.[0])return;let audio=root.querySelector('audio[data-remote="true"]');if(!audio){audio=document.createElement('audio');audio.autoplay=true;audio.controls=false;audio.dataset.remote='true';audio.setAttribute('aria-label','Provider session audio');root.appendChild(audio);}audio.srcObject=event.streams[0];};pc.onconnectionstatechange=()=>{if(pc.connectionState==='connected')session.state='connected';setState(`Live connection · ${pc.connectionState}`);renderSession();};pc.ondatachannel=event=>{dataChannel=event.channel;wireDataChannel();};dataChannel=pc.createDataChannel('kurukoo-provider-session');wireDataChannel();if(role==='customer'){const peers=(await json(`/api/webrtc/peers?roomId=${encodeURIComponent(session.roomId)}`)).peers||[];if(peers.length>=2){const offer=await pc.createOffer({offerToReceiveAudio:true,offerToReceiveVideo:false});await pc.setLocalDescription(offer);await sendSignal('offer',offer);}}};
-  const pollSignals=async()=>{if(!session?.roomId||!pc)return;try{const result=await json(`/api/webrtc/signals?roomId=${encodeURIComponent(session.roomId)}&after=${encodeURIComponent(signalCursor)}`);for(const signal of result.signals||[]){if(seenSignals.has(signal.id))continue;seenSignals.add(signal.id);signalCursor=Math.max(signalCursor,Number(signal.createdAt||0));if(signal.kind==='offer'){await pc.setRemoteDescription(new RTCSessionDescription(signal.payload));const answer=await pc.createAnswer();await pc.setLocalDescription(answer);await sendSignal('answer',answer,signal.from);}else if(signal.kind==='answer'){await pc.setRemoteDescription(new RTCSessionDescription(signal.payload));}else if(signal.kind==='ice'){try{await pc.addIceCandidate(signal.payload);}catch{}}else if(signal.kind==='hangup'){pc.close();}}}catch{}};
-  const beginLocationSampling=()=>{if(role!=='provider'||gpsTimer||!navigator.geolocation||!session?.roomId)return;const intervalMs=Math.max(5000,Math.min(120000,Number(session.gpsIntervalMs)||15000));const publish=()=>navigator.geolocation.getCurrentPosition(async position=>{try{await json(`/api/provider-communication/sessions/${encodeURIComponent(sessionId)}/location`,{method:'POST',body:JSON.stringify({latitude:position.coords.latitude,longitude:position.coords.longitude})});}catch{}},()=>undefined,{enableHighAccuracy:false,maximumAge:Math.max(5000,intervalMs),timeout:Math.min(intervalMs,10000)});publish();gpsTimer=window.setInterval(publish,intervalMs);};
-  voiceBtn.addEventListener('click',async()=>{try{if(!audioEnabled)await addTracks();say('Voice enabled for this provider session.','system');setState('Voice ready · live WebRTC audio');renderSession();}catch(error){say(error?.message||'Microphone access was not available.','system');}});
-  arrivedBtn.addEventListener('click',async()=>{try{const result=await json(`/api/dispatch-leads/${encodeURIComponent(session.dispatchLeadId||params.get('lead')||'')}/arrived`,{method:'POST'});session.state=result.lead.status;renderSession();}catch(error){say(error?.message||'Unable to mark arrival.','system');}});
-  completeBtn.addEventListener('click',async()=>{try{const result=await json(`/api/dispatch-leads/${encodeURIComponent(session.dispatchLeadId||params.get('lead')||'')}/completed`,{method:'POST',body:JSON.stringify({evidence:{provider_session_completed:true}})});session.state=result.lead.status;renderSession();}catch(error){say(error?.message||'Unable to complete request.','system');}});
-  endBtn.addEventListener('click',async()=>{try{await json(`/api/provider-communication/sessions/${encodeURIComponent(sessionId)}/end`,{method:'POST'});if(gpsTimer)clearInterval(gpsTimer);if(pc)pc.close();setState('Session ended');renderSession();}catch(error){say(error?.message||'Unable to end session.','system');}});
-  form.addEventListener('submit',async event=>{event.preventDefault();const text=String(input.value||'').trim();if(!text)return;input.value='';say(text,'self');try{if(dataChannel?.readyState==='open')dataChannel.send(JSON.stringify({type:'message',text}));await json(`/api/provider-communication/sessions/${encodeURIComponent(sessionId)}/messages`,{method:'POST',body:JSON.stringify({content:text})});}catch(error){say(error?.message||'Message could not be sent.','system');}});
-  (async()=>{try{const result=await json(`/api/provider-communication/sessions/${encodeURIComponent(sessionId)}`);session=result.session;role=result.role;session.gpsIntervalMs=result.gpsIntervalMs;session.dispatchLeadId=session.dispatchLeadId||params.get('lead');renderSession();if(session.roomId){const config=await json('/api/webrtc/config');await json('/api/webrtc/create',{method:'POST',body:JSON.stringify({roomId:session.roomId})});await initialisePeer(config.webrtc||config);window.setInterval(pollSignals,500);beginLocationSampling();}else say('Realtime transport is not active in this deployment. The request conversation remains available.','system');}catch(error){setState('Provider session unavailable');say(error?.message||'Unable to load provider session.','system');}})();
+  const pagePath = window.location.pathname || "";
+  if (!/\/app\/call$/.test(pagePath)) return;
+  const params = new URLSearchParams(window.location.search);
+  const sessionId = params.get("session");
+  if (!sessionId) return;
+  let pc,
+    dataChannel,
+    localStream,
+    signalCursor = 0;
+  const seenSignals = new Set();
+  let session,
+    role,
+    gpsTimer,
+    audioEnabled = false;
+  const mount = document.querySelector(".k-app-container");
+  if (!mount) return;
+  const root = document.createElement("section");
+  root.className = "k-provider-session";
+  root.innerHTML =
+    '<div class="k-provider-session-head"><div><span class="k-app-card-label">Provider session</span><h2>Live communication</h2><p class="k-provider-session-state">Connecting to the active request…</p></div><span class="k-status" data-state="info">WebRTC</span></div><div class="k-provider-session-actions"><button type="button" data-action="voice" disabled>Start voice</button><button type="button" data-action="arrived" hidden>Mark arrived</button><button type="button" data-action="complete" hidden>Mark completed</button><button type="button" data-action="end">End session</button></div><div class="k-provider-session-messages" aria-live="polite"></div><form class="k-provider-session-form"><input name="message" maxlength="4000" autocomplete="off" placeholder="Message the provider…" aria-label="Message the provider"><button type="submit">Send</button></form><div class="k-provider-session-note">Live messages use WebRTC data when available and are persisted through the active Kurukoo request conversation. Provider location is sampled sparingly; the next GPS sample is not requested until the configured interval.</div>';
+  mount.prepend(root);
+  const stateEl = root.querySelector(".k-provider-session-state"),
+    messagesEl = root.querySelector(".k-provider-session-messages"),
+    voiceBtn = root.querySelector('[data-action="voice"]'),
+    arrivedBtn = root.querySelector('[data-action="arrived"]'),
+    completeBtn = root.querySelector('[data-action="complete"]'),
+    endBtn = root.querySelector('[data-action="end"]'),
+    form = root.querySelector("form"),
+    input = root.querySelector('input[name="message"]');
+  const say = (text, kind = "system") => {
+    const line = document.createElement("div");
+    line.className = `k-provider-message ${kind}`;
+    line.textContent = String(text || "");
+    messagesEl.appendChild(line);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  };
+  const setState = (text) => {
+    stateEl.textContent = text;
+  };
+  const json = async (url, options = {}) => {
+    const response = await fetch(url, {
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+      ...options,
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `Request failed (${response.status})`);
+    return payload;
+  };
+  const sendSignal = async (kind, payload, to) =>
+    json("/api/webrtc/signal", {
+      method: "POST",
+      body: JSON.stringify({ roomId: session.roomId, kind, payload, to }),
+    });
+  const renderSession = () => {
+    const voiceAllowed =
+      Boolean(session?.roomId) &&
+      (role === "provider" || ["arrived", "in_progress"].includes(String(session?.state)));
+    voiceBtn.disabled = !voiceAllowed;
+    if (role === "provider") {
+      arrivedBtn.hidden = !["accepted", "connected", "provider_en_route"].includes(session?.state);
+      completeBtn.hidden = !["arrived", "in_progress"].includes(session?.state);
+    }
+    setState(
+      `${role === "provider" ? "Provider" : "Customer"} · ${String(session?.state || "created").replace(/_/g, " ")}`,
+    );
+  };
+  const wireDataChannel = () => {
+    if (!dataChannel) return;
+    dataChannel.onopen = () => {
+      setState("Connected · live messaging ready");
+      renderSession();
+    };
+    dataChannel.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        if (payload?.type === "message") say(payload.text, "peer");
+        else if (payload?.type === "status") say(payload.text, "system");
+      } catch {
+        say(event.data, "peer");
+      }
+    };
+    dataChannel.onclose = () => {
+      if (session?.state !== "completed")
+        setState("WebRTC connection closed; request state remains canonical.");
+    };
+  };
+  const addTracks = async () => {
+    if (localStream || !pc) return;
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    for (const track of localStream.getTracks()) pc.addTrack(track, localStream);
+    audioEnabled = true;
+  };
+  const initialisePeer = async (config) => {
+    pc = new RTCPeerConnection({
+      iceServers: Array.isArray(config?.iceServers) ? config.iceServers : [],
+    });
+    pc.onicecandidate = async (event) => {
+      if (event.candidate)
+        await sendSignal(
+          "ice",
+          event.candidate.toJSON ? event.candidate.toJSON() : event.candidate,
+        ).catch(() => undefined);
+    };
+    pc.ontrack = (event) => {
+      if (!event.streams?.[0]) return;
+      let audio = root.querySelector('audio[data-remote="true"]');
+      if (!audio) {
+        audio = document.createElement("audio");
+        audio.autoplay = true;
+        audio.controls = false;
+        audio.dataset.remote = "true";
+        audio.setAttribute("aria-label", "Provider session audio");
+        root.appendChild(audio);
+      }
+      audio.srcObject = event.streams[0];
+    };
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === "connected") session.state = "connected";
+      setState(`Live connection · ${pc.connectionState}`);
+      renderSession();
+    };
+    pc.ondatachannel = (event) => {
+      dataChannel = event.channel;
+      wireDataChannel();
+    };
+    dataChannel = pc.createDataChannel("kurukoo-provider-session");
+    wireDataChannel();
+    if (role === "customer") {
+      const peers =
+        (await json(`/api/webrtc/peers?roomId=${encodeURIComponent(session.roomId)}`)).peers || [];
+      if (peers.length >= 2) {
+        const offer = await pc.createOffer({
+          offerToReceiveAudio: true,
+          offerToReceiveVideo: false,
+        });
+        await pc.setLocalDescription(offer);
+        await sendSignal("offer", offer);
+      }
+    }
+  };
+  const pollSignals = async () => {
+    if (!session?.roomId || !pc) return;
+    try {
+      const result = await json(
+        `/api/webrtc/signals?roomId=${encodeURIComponent(session.roomId)}&after=${encodeURIComponent(signalCursor)}`,
+      );
+      for (const signal of result.signals || []) {
+        if (seenSignals.has(signal.id)) continue;
+        seenSignals.add(signal.id);
+        signalCursor = Math.max(signalCursor, Number(signal.createdAt || 0));
+        if (signal.kind === "offer") {
+          await pc.setRemoteDescription(new RTCSessionDescription(signal.payload));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          await sendSignal("answer", answer, signal.from);
+        } else if (signal.kind === "answer") {
+          await pc.setRemoteDescription(new RTCSessionDescription(signal.payload));
+        } else if (signal.kind === "ice") {
+          try {
+            await pc.addIceCandidate(signal.payload);
+          } catch {}
+        } else if (signal.kind === "hangup") {
+          pc.close();
+        }
+      }
+    } catch {}
+  };
+  const beginLocationSampling = () => {
+    if (role !== "provider" || gpsTimer || !navigator.geolocation || !session?.roomId) return;
+    const intervalMs = Math.max(5000, Math.min(120000, Number(session.gpsIntervalMs) || 15000));
+    const publish = () =>
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            await json(
+              `/api/provider-communication/sessions/${encodeURIComponent(sessionId)}/location`,
+              {
+                method: "POST",
+                body: JSON.stringify({
+                  latitude: position.coords.latitude,
+                  longitude: position.coords.longitude,
+                }),
+              },
+            );
+          } catch {}
+        },
+        () => undefined,
+        {
+          enableHighAccuracy: false,
+          maximumAge: Math.max(5000, intervalMs),
+          timeout: Math.min(intervalMs, 10000),
+        },
+      );
+    publish();
+    gpsTimer = window.setInterval(publish, intervalMs);
+  };
+  voiceBtn.addEventListener("click", async () => {
+    try {
+      if (!audioEnabled) await addTracks();
+      say("Voice enabled for this provider session.", "system");
+      setState("Voice ready · live WebRTC audio");
+      renderSession();
+    } catch (error) {
+      say(error?.message || "Microphone access was not available.", "system");
+    }
+  });
+  arrivedBtn.addEventListener("click", async () => {
+    try {
+      const result = await json(
+        `/api/dispatch-leads/${encodeURIComponent(session.dispatchLeadId || params.get("lead") || "")}/arrived`,
+        { method: "POST" },
+      );
+      session.state = result.lead.status;
+      renderSession();
+    } catch (error) {
+      say(error?.message || "Unable to mark arrival.", "system");
+    }
+  });
+  completeBtn.addEventListener("click", async () => {
+    try {
+      const result = await json(
+        `/api/dispatch-leads/${encodeURIComponent(session.dispatchLeadId || params.get("lead") || "")}/completed`,
+        {
+          method: "POST",
+          body: JSON.stringify({ evidence: { provider_session_completed: true } }),
+        },
+      );
+      session.state = result.lead.status;
+      renderSession();
+    } catch (error) {
+      say(error?.message || "Unable to complete request.", "system");
+    }
+  });
+  endBtn.addEventListener("click", async () => {
+    try {
+      await json(`/api/provider-communication/sessions/${encodeURIComponent(sessionId)}/end`, {
+        method: "POST",
+      });
+      if (gpsTimer) clearInterval(gpsTimer);
+      if (pc) pc.close();
+      setState("Session ended");
+      renderSession();
+    } catch (error) {
+      say(error?.message || "Unable to end session.", "system");
+    }
+  });
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const text = String(input.value || "").trim();
+    if (!text) return;
+    input.value = "";
+    say(text, "self");
+    try {
+      if (dataChannel?.readyState === "open")
+        dataChannel.send(JSON.stringify({ type: "message", text }));
+      await json(`/api/provider-communication/sessions/${encodeURIComponent(sessionId)}/messages`, {
+        method: "POST",
+        body: JSON.stringify({ content: text }),
+      });
+    } catch (error) {
+      say(error?.message || "Message could not be sent.", "system");
+    }
+  });
+  (async () => {
+    try {
+      const result = await json(
+        `/api/provider-communication/sessions/${encodeURIComponent(sessionId)}`,
+      );
+      session = result.session;
+      role = result.role;
+      session.gpsIntervalMs = result.gpsIntervalMs;
+      session.dispatchLeadId = session.dispatchLeadId || params.get("lead");
+      renderSession();
+      if (session.roomId) {
+        const config = await json("/api/webrtc/config");
+        await json("/api/webrtc/create", {
+          method: "POST",
+          body: JSON.stringify({ roomId: session.roomId }),
+        });
+        await initialisePeer(config.webrtc || config);
+        window.setInterval(pollSignals, 500);
+        beginLocationSampling();
+      } else
+        say(
+          "Realtime transport is not active in this deployment. The request conversation remains available.",
+          "system",
+        );
+    } catch (error) {
+      setState("Provider session unavailable");
+      say(error?.message || "Unable to load provider session.", "system");
+    }
+  })();
 })();

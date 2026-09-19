@@ -3,22 +3,391 @@
 // AUTHENTICATED OS SHELL: authenticated prefixes use AppShell + Trusted Context Rail.
 // `/perch` is the canonical authenticated personal surface; `/workspace` remains a compatibility route.
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Outlet, Link, createRootRouteWithContext, useRouter, useRouterState, HeadContent, Scripts } from "@tanstack/react-router";
-import { Compass, Home, LayoutDashboard, MapPin, MessageCircle, MoreHorizontal, Sparkles } from "lucide-react";
+import {
+  Outlet,
+  Link,
+  createRootRouteWithContext,
+  useRouter,
+  useRouterState,
+  HeadContent,
+  Scripts,
+} from "@tanstack/react-router";
+import {
+  Compass,
+  Home,
+  LayoutDashboard,
+  MapPin,
+  MessageCircle,
+  MoreHorizontal,
+  Sparkles,
+} from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "../components/app-shell-contextual";
 import { PublicHome, PublicKurukooShell } from "../components/public-kurukoo";
 import { KurukooProvider } from "@/lib/kurukoo-store";
-import { getKurukooAuthState, hasTemporaryBuildEmailSession, isAllowedKurukooBuildAccount, logoutKurukoo } from "@/lib/kurukoo-auth";
-const publicPrefixes = ["/about","/blog","/capabilities","/contributors","/contact","/creators","/advertise","/developer","/api-docs","/careers","/earn","/help","/how-it-works","/legal","/cookies","/login","/partners","/people","/pricing","/providers","/businesses","/kurukoo-ai","/integrations","/resources","/signup","/topics","/use-cases","/opportunities","/safety","/network","/local-agents","/ambassadors","/ai-terms"] as const;
-const authenticatedSurfacePrefixes = ["/perch","/chat","/workspace","/explore","/discover","/activity","/work","/notifications","/contacts","/messages","/memory","/artifacts","/calls","/subscriptions","/wallet","/settings","/agents","/connect","/provider","/advertising","/profile"] as const;
-const moreItems = [["/work","Actions"],["/topics","Topics"],["/capabilities","Capabilities"],["/provider","Providers"],["/businesses","Businesses"],["/creators","Creators"],["/advertising","Advertising"],["/pricing","Plans"],["/subscriptions","Subscriptions"],["/wallet","Wallet"],["/memory","Memory"],["/messages","Messages"],["/contacts","Contacts"],["/connect","Connect"],["/safety","Safety"],["/settings","Settings"],["/legal","Legal & policies"]] as const;
-function ChatVoiceIcon({ className = "size-[17px]" }: { className?: string }) { return <span aria-hidden="true" className={`relative inline-block shrink-0 ${className}`}><MessageCircle className="absolute inset-0 size-full" strokeWidth={1.8}/><span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-[1px]"><i className="h-[5px] w-px rounded-full bg-current"/><i className="h-[8px] w-px rounded-full bg-current"/><i className="h-[5px] w-px rounded-full bg-current"/></span></span>; }
-function NotFound(){return <div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="max-w-md text-center"><p className="text-7xl font-bold">404</p><h1 className="mt-4 text-xl font-semibold">Page not found</h1><p className="mt-2 text-sm text-muted-foreground">The page does not exist or has moved.</p><Link to="/" className="mt-6 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Go to Kurukoo</Link></div></div>}
-function ErrorView({error,reset}:{error:Error;reset:()=>void}){const router=useRouter();useEffect(()=>{reportLovableError(error,{boundary:"root"});},[error]);return <div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="max-w-md text-center"><h1 className="text-xl font-semibold">This page didn't load</h1><p className="mt-2 text-sm text-muted-foreground">Try again or return to Kurukoo.</p><button type="button" onClick={()=>{router.invalidate();reset();}} className="mt-6 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Try again</button></div></div>}
-function MobileBar(){const pathname=useRouterState({select:s=>s.location.pathname});const [moreOpen,setMoreOpen]=useState(false);useEffect(()=>setMoreOpen(false),[pathname]);return <><div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-surface/98 backdrop-blur md:hidden"><nav className="mx-auto grid max-w-lg grid-cols-5 px-2 py-2"><Link to="/perch" className={`grid place-items-center rounded-xl px-1 py-1.5 text-[10px] ${pathname.startsWith("/perch")?"bg-elevated font-medium text-foreground":"text-muted-foreground"}`}><LayoutDashboard className="size-[17px]"/>Perch</Link><Link to="/chat" className={`grid place-items-center rounded-xl px-1 py-1.5 text-[10px] ${pathname.startsWith("/chat")?"bg-elevated font-medium text-foreground":"text-muted-foreground"}`}><ChatVoiceIcon/>Chat / Voice</Link><Link to="/explore" className={`grid place-items-center rounded-xl px-1 py-1.5 text-[10px] ${pathname.startsWith("/explore")?"bg-elevated font-medium text-foreground":"text-muted-foreground"}`}><Compass className="size-[17px]"/>Explore</Link><Link to="/discover" className={`grid place-items-center rounded-xl px-1 py-1.5 text-[10px] ${pathname.startsWith("/discover")?"bg-elevated font-medium text-foreground":"text-muted-foreground"}`}><MapPin className="size-[17px]"/>Nearby</Link><button type="button" onClick={()=>setMoreOpen(v=>!v)} className={`grid place-items-center rounded-xl px-1 py-1.5 text-[10px] ${moreOpen?"bg-elevated font-medium text-foreground":"text-muted-foreground"}`}><MoreHorizontal className="size-[17px]"/>More</button></nav></div>{moreOpen?<><button type="button" aria-label="Close more navigation" onClick={()=>setMoreOpen(false)} className="fixed inset-0 z-[49] bg-foreground/10 md:hidden"/><div className="fixed inset-x-3 bottom-[68px] z-[51] max-h-[60vh] overflow-y-auto scrollbar-none rounded-2xl border border-border bg-surface p-2 shadow-[var(--shadow-lift)]"><nav className="grid grid-cols-2 gap-1">{moreItems.map(([to,label])=><Link key={to} to={to} onClick={()=>setMoreOpen(false)} className="rounded-xl px-3 py-2.5 text-[12.5px] text-muted-foreground hover:bg-elevated">{label}</Link>)}</nav></div></>:null}</>}
-export const Route=createRootRouteWithContext<{queryClient:QueryClient}>()({head:()=>({meta:[{charSet:"utf-8"},{name:"viewport",content:"width=device-width, initial-scale=1, viewport-fit=cover"},{title:"Everyday AI OS for real life - Kurukoo"},{name:"description",content:"Tell Kurukoo what needs doing."},{property:"og:title",content:"Everyday AI OS for real life - Kurukoo"},{property:"og:description",content:"A conversation-first assistant that gets things done."}],links:[{rel:"stylesheet",href:appCss},{rel:"stylesheet",href:"https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap"},{rel:"icon",href:"/favicon.ico",type:"image/x-icon"},{rel:"apple-touch-icon",href:"/favicon.ico",type:"image/x-icon"},{rel:"manifest",href:"/manifest.webmanifest"}]}),shellComponent:({children}:{children:ReactNode})=><html lang="en"><head><HeadContent/></head><body>{children}<Scripts/></body></html>,component:RootComponent,notFoundComponent:NotFound,errorComponent:ErrorView});
-function ProtectedPrompt(){return <div className="flex min-h-[60vh] items-center justify-center px-4"><div className="max-w-md text-center"><p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Kurukoo</p><h1 className="mt-3 text-[40px] font-semibold leading-[1.02] tracking-[-0.045em]">Log in to continue</h1><p className="mx-auto mt-3 max-w-md text-[13px] leading-relaxed text-muted-foreground">Your Perch keeps your conversations, work and account context private. Sign in to continue where you left off.</p><Link to="/login" className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-primary px-4 py-2 text-[12px] font-medium text-primary-foreground">Log in</Link></div></div>}
-function RootComponent(){const {queryClient}=Route.useRouteContext();const pathname=useRouterState({select:s=>s.location.pathname});const [authenticated,setAuthenticated]=useState(false);const [hydrated,setHydrated]=useState(false);useEffect(()=>{let cancelled=false;let previousLocalAuth=window.localStorage.getItem("kurukoo-authenticated")==="true";const read=async()=>{const localAuth=window.localStorage.getItem("kurukoo-authenticated")==="true";if(previousLocalAuth&&!localAuth){try{await fetch("/api/auth/logout",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:"{}"});}catch{}}previousLocalAuth=localAuth;const state=await getKurukooAuthState();if(cancelled)return;const allowed=state.authenticated&&(isAllowedKurukooBuildAccount(state.user)||hasTemporaryBuildEmailSession());if(state.authenticated&&!allowed){await logoutKurukoo();if(cancelled)return;}setAuthenticated(allowed);setHydrated(true);if(allowed)window.localStorage.setItem("kurukoo-authenticated","true");else window.localStorage.removeItem("kurukoo-authenticated");};void read();const onAuth=()=>void read();window.addEventListener("kurukoo-auth-updated",onAuth);window.addEventListener("storage",onAuth);return()=>{cancelled=true;window.removeEventListener("kurukoo-auth-updated",onAuth);window.removeEventListener("storage",onAuth);};},[]);const isPublic=publicPrefixes.some(p=>pathname===p||pathname.startsWith(`${p}/`));const isAuthenticatedSurface=authenticatedSurfacePrefixes.some(p=>pathname===p||pathname.startsWith(`${p}/`));const anonymousHome=pathname==="/";const needsAuthentication=!authenticated&&isAuthenticatedSurface;const savePrompt=(prompt:string)=>window.localStorage.setItem("kurukoo-chat-draft",prompt);const localAuthHint=typeof window!=="undefined"&&window.localStorage.getItem("kurukoo-authenticated")==="true";const hydrationView=!hydrated?(isAuthenticatedSurface&&localAuthHint?<AppShell><div className="min-h-[60vh]"/></AppShell>:<PublicKurukooShell><div className="min-h-[60vh]"/></PublicKurukooShell>):null;return <QueryClientProvider client={queryClient}><KurukooProvider>{hydrationView??(needsAuthentication?<ProtectedPrompt/>:anonymousHome?<PublicKurukooShell><PublicHome onSend={savePrompt}/></PublicKurukooShell>:isPublic?<PublicKurukooShell><Outlet/></PublicKurukooShell>:<><AppShell><Outlet/></AppShell><MobileBar/></>)}</KurukooProvider></QueryClientProvider>}
+import {
+  getKurukooAuthState,
+  hasTemporaryBuildEmailSession,
+  isAllowedKurukooBuildAccount,
+  logoutKurukoo,
+} from "@/lib/kurukoo-auth";
+const publicPrefixes = [
+  "/about",
+  "/blog",
+  "/capabilities",
+  "/contributors",
+  "/contact",
+  "/creators",
+  "/advertise",
+  "/developer",
+  "/api-docs",
+  "/careers",
+  "/earn",
+  "/help",
+  "/how-it-works",
+  "/legal",
+  "/cookies",
+  "/login",
+  "/partners",
+  "/people",
+  "/pricing",
+  "/providers",
+  "/businesses",
+  "/kurukoo-ai",
+  "/integrations",
+  "/resources",
+  "/signup",
+  "/topics",
+  "/use-cases",
+  "/opportunities",
+  "/safety",
+  "/network",
+  "/local-agents",
+  "/ambassadors",
+  "/ai-terms",
+] as const;
+const authenticatedSurfacePrefixes = [
+  "/perch",
+  "/chat",
+  "/workspace",
+  "/explore",
+  "/discover",
+  "/activity",
+  "/work",
+  "/notifications",
+  "/contacts",
+  "/messages",
+  "/memory",
+  "/artifacts",
+  "/calls",
+  "/subscriptions",
+  "/wallet",
+  "/settings",
+  "/agents",
+  "/connect",
+  "/provider",
+  "/advertising",
+  "/profile",
+] as const;
+const moreItems = [
+  ["/work", "Actions"],
+  ["/topics", "Topics"],
+  ["/capabilities", "Capabilities"],
+  ["/provider", "Providers"],
+  ["/businesses", "Businesses"],
+  ["/creators", "Creators"],
+  ["/advertising", "Advertising"],
+  ["/pricing", "Plans"],
+  ["/subscriptions", "Subscriptions"],
+  ["/wallet", "Wallet"],
+  ["/memory", "Memory"],
+  ["/messages", "Messages"],
+  ["/contacts", "Contacts"],
+  ["/connect", "Connect"],
+  ["/safety", "Safety"],
+  ["/settings", "Settings"],
+  ["/legal", "Legal & policies"],
+] as const;
+function ChatVoiceIcon({ className = "size-[17px]" }: { className?: string }) {
+  return (
+    <span aria-hidden="true" className={`relative inline-block shrink-0 ${className}`}>
+      <MessageCircle className="absolute inset-0 size-full" strokeWidth={1.8} />
+      <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-[1px]">
+        <i className="h-[5px] w-px rounded-full bg-current" />
+        <i className="h-[8px] w-px rounded-full bg-current" />
+        <i className="h-[5px] w-px rounded-full bg-current" />
+      </span>
+    </span>
+  );
+}
+function NotFound() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center">
+        <p className="text-7xl font-bold">404</p>
+        <h1 className="mt-4 text-xl font-semibold">Page not found</h1>
+        <p className="mt-2 text-sm text-muted-foreground">The page does not exist or has moved.</p>
+        <Link
+          to="/"
+          className="mt-6 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+        >
+          Go to Kurukoo
+        </Link>
+      </div>
+    </div>
+  );
+}
+function ErrorView({ error, reset }: { error: Error; reset: () => void }) {
+  const router = useRouter();
+  useEffect(() => {
+    reportLovableError(error, { boundary: "root" });
+  }, [error]);
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center">
+        <h1 className="text-xl font-semibold">This page didn't load</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Try again or return to Kurukoo.</p>
+        <button
+          type="button"
+          onClick={() => {
+            router.invalidate();
+            reset();
+          }}
+          className="mt-6 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+        >
+          Try again
+        </button>
+      </div>
+    </div>
+  );
+}
+function MobileBar() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [moreOpen, setMoreOpen] = useState(false);
+  useEffect(() => setMoreOpen(false), [pathname]);
+  return (
+    <>
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-surface/98 backdrop-blur md:hidden">
+        <nav className="mx-auto grid max-w-lg grid-cols-5 px-2 py-2">
+          <Link
+            to="/perch"
+            className={`grid place-items-center rounded-xl px-1 py-1.5 text-[10px] ${pathname.startsWith("/perch") ? "bg-elevated font-medium text-foreground" : "text-muted-foreground"}`}
+          >
+            <LayoutDashboard className="size-[17px]" />
+            Perch
+          </Link>
+          <Link
+            to="/chat"
+            className={`grid place-items-center rounded-xl px-1 py-1.5 text-[10px] ${pathname.startsWith("/chat") ? "bg-elevated font-medium text-foreground" : "text-muted-foreground"}`}
+          >
+            <ChatVoiceIcon />
+            Chat / Voice
+          </Link>
+          <Link
+            to="/explore"
+            className={`grid place-items-center rounded-xl px-1 py-1.5 text-[10px] ${pathname.startsWith("/explore") ? "bg-elevated font-medium text-foreground" : "text-muted-foreground"}`}
+          >
+            <Compass className="size-[17px]" />
+            Explore
+          </Link>
+          <Link
+            to="/discover"
+            className={`grid place-items-center rounded-xl px-1 py-1.5 text-[10px] ${pathname.startsWith("/discover") ? "bg-elevated font-medium text-foreground" : "text-muted-foreground"}`}
+          >
+            <MapPin className="size-[17px]" />
+            Nearby
+          </Link>
+          <button
+            type="button"
+            onClick={() => setMoreOpen((v) => !v)}
+            className={`grid place-items-center rounded-xl px-1 py-1.5 text-[10px] ${moreOpen ? "bg-elevated font-medium text-foreground" : "text-muted-foreground"}`}
+          >
+            <MoreHorizontal className="size-[17px]" />
+            More
+          </button>
+        </nav>
+      </div>
+      {moreOpen ? (
+        <>
+          <button
+            type="button"
+            aria-label="Close more navigation"
+            onClick={() => setMoreOpen(false)}
+            className="fixed inset-0 z-[49] bg-foreground/10 md:hidden"
+          />
+          <div className="fixed inset-x-3 bottom-[68px] z-[51] max-h-[60vh] overflow-y-auto scrollbar-none rounded-2xl border border-border bg-surface p-2 shadow-[var(--shadow-lift)]">
+            <nav className="grid grid-cols-2 gap-1">
+              {moreItems.map(([to, label]) => (
+                <Link
+                  key={to}
+                  to={to}
+                  onClick={() => setMoreOpen(false)}
+                  className="rounded-xl px-3 py-2.5 text-[12.5px] text-muted-foreground hover:bg-elevated"
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        </>
+      ) : null}
+    </>
+  );
+}
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  head: () => ({
+    meta: [
+      { charSet: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { title: "Everyday AI OS for real life - Kurukoo" },
+      { name: "description", content: "Tell Kurukoo what needs doing." },
+      { property: "og:title", content: "Everyday AI OS for real life - Kurukoo" },
+      {
+        property: "og:description",
+        content: "A conversation-first assistant that gets things done.",
+      },
+    ],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap",
+      },
+      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "apple-touch-icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+    ],
+  }),
+  shellComponent: ({ children }: { children: ReactNode }) => (
+    <html lang="en">
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        {children}
+        <Scripts />
+      </body>
+    </html>
+  ),
+  component: RootComponent,
+  notFoundComponent: NotFound,
+  errorComponent: ErrorView,
+});
+function ProtectedPrompt() {
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center px-4">
+      <div className="max-w-md text-center">
+        <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          Kurukoo
+        </p>
+        <h1 className="mt-3 text-[40px] font-semibold leading-[1.02] tracking-[-0.045em]">
+          Log in to continue
+        </h1>
+        <p className="mx-auto mt-3 max-w-md text-[13px] leading-relaxed text-muted-foreground">
+          Your Perch keeps your conversations, work and account context private. Sign in to continue
+          where you left off.
+        </p>
+        <Link
+          to="/login"
+          className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-primary px-4 py-2 text-[12px] font-medium text-primary-foreground"
+        >
+          Log in
+        </Link>
+      </div>
+    </div>
+  );
+}
+function RootComponent() {
+  const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [authenticated, setAuthenticated] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    let previousLocalAuth = window.localStorage.getItem("kurukoo-authenticated") === "true";
+    const read = async () => {
+      const localAuth = window.localStorage.getItem("kurukoo-authenticated") === "true";
+      if (previousLocalAuth && !localAuth) {
+        try {
+          await fetch("/api/auth/logout", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: "{}",
+          });
+        } catch {}
+      }
+      previousLocalAuth = localAuth;
+      const state = await getKurukooAuthState();
+      if (cancelled) return;
+      const allowed =
+        state.authenticated &&
+        (isAllowedKurukooBuildAccount(state.user) || hasTemporaryBuildEmailSession());
+      if (state.authenticated && !allowed) {
+        await logoutKurukoo();
+        if (cancelled) return;
+      }
+      setAuthenticated(allowed);
+      setHydrated(true);
+      if (allowed) window.localStorage.setItem("kurukoo-authenticated", "true");
+      else window.localStorage.removeItem("kurukoo-authenticated");
+    };
+    void read();
+    const onAuth = () => void read();
+    window.addEventListener("kurukoo-auth-updated", onAuth);
+    window.addEventListener("storage", onAuth);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("kurukoo-auth-updated", onAuth);
+      window.removeEventListener("storage", onAuth);
+    };
+  }, []);
+  const isPublic = publicPrefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const isAuthenticatedSurface = authenticatedSurfacePrefixes.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  );
+  const anonymousHome = pathname === "/";
+  const needsAuthentication = !authenticated && isAuthenticatedSurface;
+  const savePrompt = (prompt: string) => window.localStorage.setItem("kurukoo-chat-draft", prompt);
+  const localAuthHint =
+    typeof window !== "undefined" &&
+    window.localStorage.getItem("kurukoo-authenticated") === "true";
+  const hydrationView = !hydrated ? (
+    isAuthenticatedSurface && localAuthHint ? (
+      <AppShell>
+        <div className="min-h-[60vh]" />
+      </AppShell>
+    ) : (
+      <PublicKurukooShell>
+        <div className="min-h-[60vh]" />
+      </PublicKurukooShell>
+    )
+  ) : null;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <KurukooProvider>
+        {hydrationView ??
+          (needsAuthentication ? (
+            <ProtectedPrompt />
+          ) : anonymousHome ? (
+            <PublicKurukooShell>
+              <PublicHome onSend={savePrompt} />
+            </PublicKurukooShell>
+          ) : isPublic ? (
+            <PublicKurukooShell>
+              <Outlet />
+            </PublicKurukooShell>
+          ) : (
+            <>
+              <AppShell>
+                <Outlet />
+              </AppShell>
+              <MobileBar />
+            </>
+          ))}
+      </KurukooProvider>
+    </QueryClientProvider>
+  );
+}

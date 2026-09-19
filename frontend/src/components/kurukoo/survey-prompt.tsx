@@ -1,7 +1,12 @@
 import { MessageCircle, Check, Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Panel, SoftSurface, Rows } from "@/components/kurukoo/ui";
-import { fetchSurveyPrompt, submitSurveyResponse, type SurveyPrompt, type SurveyResponse } from "@/lib/kurukoo-api";
+import {
+  fetchSurveyPrompt,
+  submitSurveyResponse,
+  type SurveyPrompt,
+  type SurveyResponse,
+} from "@/lib/kurukoo-api";
 import { isKurukooApiConfigured } from "@/lib/kurukoo-api";
 import { cn } from "@/lib/utils";
 
@@ -18,9 +23,18 @@ export function SurveyPromptCard() {
     let cancelled = false;
     setLoading(true);
     fetchSurveyPrompt()
-      .then((p) => { if (!cancelled) { setPrompt(p); setError(p ? null : "No survey available"); } })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+      .then((p) => {
+        if (!cancelled) {
+          setPrompt(p);
+          setError(p ? null : "No survey available");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function handleSubmit() {
@@ -49,7 +63,11 @@ export function SurveyPromptCard() {
         </div>
         <button
           type="button"
-          onClick={() => { setSubmitted(null); setPrompt(null); setLoading(true); }}
+          onClick={() => {
+            setSubmitted(null);
+            setPrompt(null);
+            setLoading(true);
+          }}
           className="text-[10.5px] text-muted-foreground hover:text-foreground"
           aria-label="Get a new survey question"
         >
@@ -72,14 +90,20 @@ export function SurveyPromptCard() {
             <div className="min-w-0 flex-1">
               <p className="text-[13.5px] font-medium">Thanks for your input</p>
               <p className="mt-1 text-[11.5px] text-muted-foreground">
-                Your answer has been recorded for <span className="font-medium text-foreground">{submitted.topic}</span>.
+                Your answer has been recorded for{" "}
+                <span className="font-medium text-foreground">{submitted.topic}</span>.
               </p>
             </div>
           </div>
           <div className="mt-3 flex justify-end">
             <button
               type="button"
-              onClick={() => { void fetchSurveyPrompt().then((p) => { setPrompt(p); setSubmitted(null); }); }}
+              onClick={() => {
+                void fetchSurveyPrompt().then((p) => {
+                  setPrompt(p);
+                  setSubmitted(null);
+                });
+              }}
               className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[11.5px] text-muted-foreground hover:bg-elevated"
             >
               Answer another
@@ -88,7 +112,9 @@ export function SurveyPromptCard() {
         </div>
       ) : prompt ? (
         <div className="px-4 py-4">
-          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Topic: {prompt.topic}</p>
+          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+            Topic: {prompt.topic}
+          </p>
           <p className="mt-2 text-[13.5px] font-medium">{prompt.question}</p>
           <p className="mt-1 text-[10.5px] text-muted-foreground">
             {prompt.answerTypes.join(", ")}
@@ -109,7 +135,11 @@ export function SurveyPromptCard() {
               disabled={!answer.trim() || submitting}
               className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[11.5px] text-primary-foreground hover:opacity-90 disabled:opacity-40"
             >
-              {submitting ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+              {submitting ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Check className="size-3.5" />
+              )}
               Submit
             </button>
             <button

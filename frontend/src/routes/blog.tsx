@@ -52,10 +52,12 @@ function BlogPage() {
               </h2>
               <p className="mt-3 max-w-2xl text-[13.5px] leading-relaxed text-muted-foreground">
                 A rhyming story about the voice, timing, movement, adaptability and distinctive call
-                behind Kurukoo — and the path from Croon through Thicket, Nearby, consent and Actions.
+                behind Kurukoo — and the path from Croon through Thicket, Nearby, consent and
+                Actions.
               </p>
               <span className="mt-5 inline-flex items-center gap-1 text-[12px] font-medium">
-                Read the story <ArrowUpRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+                Read the story{" "}
+                <ArrowUpRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
               </span>
             </div>
             <div className="min-h-[220px] bg-[radial-gradient(circle_at_70%_20%,color-mix(in_oklch,var(--brand-tint)_85%,transparent),transparent_30%),linear-gradient(145deg,var(--elevated),var(--surface))] p-6">
@@ -83,7 +85,8 @@ function BlogPage() {
                   {featured.excerpt}
                 </p>
                 <span className="mt-5 inline-flex items-center gap-1 text-[12px] font-medium">
-                  Read article <ArrowUpRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+                  Read article{" "}
+                  <ArrowUpRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
                 </span>
               </div>
               <div className="min-h-[220px] bg-[radial-gradient(circle_at_70%_20%,color-mix(in_oklch,var(--brand-tint)_85%,transparent),transparent_30%),linear-gradient(145deg,var(--elevated),var(--surface))] p-6">
@@ -98,24 +101,42 @@ function BlogPage() {
       <section className="mt-8">
         <div className="mb-4 flex items-end justify-between gap-4">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">All notes</p>
-            <h2 className="mt-1.5 text-[22px] font-semibold tracking-tight">More from the journal</h2>
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
+              All notes
+            </p>
+            <h2 className="mt-1.5 text-[22px] font-semibold tracking-tight">
+              More from the journal
+            </h2>
           </div>
           <span className="text-[11px] text-muted-foreground">{articles.length} articles</span>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
           {rest.map((article, index) => (
-            <Link key={article.slug} to="/blog/$slug" params={{ slug: article.slug }} className="group">
+            <Link
+              key={article.slug}
+              to="/blog/$slug"
+              params={{ slug: article.slug }}
+              className="group"
+            >
               <Panel className="h-full p-5 transition-colors group-hover:bg-elevated/45">
                 <div className="flex items-center gap-2 text-[10.5px] text-muted-foreground">
-                  <span>0{index + 2}</span><span>·</span><span>{article.date}</span>
+                  <span>0{index + 2}</span>
+                  <span>·</span>
+                  <span>{article.date}</span>
                 </div>
                 <div className="mt-3 flex items-start gap-3">
-                  <span className="grid size-9 shrink-0 place-items-center border border-border bg-elevated"><BookOpen className="size-4" /></span>
+                  <span className="grid size-9 shrink-0 place-items-center border border-border bg-elevated">
+                    <BookOpen className="size-4" />
+                  </span>
                   <div className="min-w-0">
                     <h3 className="text-[16px] font-semibold tracking-tight">{article.title}</h3>
-                    <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">{article.excerpt}</p>
-                    <span className="mt-4 inline-flex items-center gap-1 text-[11.5px] font-medium">Read <ArrowUpRight className="size-3.5 transition-transform group-hover:translate-x-0.5" /></span>
+                    <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                      {article.excerpt}
+                    </p>
+                    <span className="mt-4 inline-flex items-center gap-1 text-[11.5px] font-medium">
+                      Read{" "}
+                      <ArrowUpRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+                    </span>
                   </div>
                 </div>
               </Panel>
@@ -124,7 +145,8 @@ function BlogPage() {
         </div>
       </section>
       <p className="mt-8 text-[12px] text-muted-foreground">
-        Editorial content explains the system, documents decisions and gives people useful context before they sign in.
+        Editorial content explains the system, documents decisions and gives people useful context
+        before they sign in.
       </p>
     </div>
   );
