@@ -1,0 +1,18 @@
+KURUKOO PROPRIETARY NOTICE
+
+Kurukoo and its associated product concepts, product architecture,
+execution model, user experiences, interface designs, terminology,
+documentation, specifications and original software are proprietary
+intellectual property of the owner.
+
+This repository contains the canonical Kurukoo backend source. Internal
+architecture, orchestration, agent, capability, economic-request,
+provider, connected-resource, memory, execution and evidence designs
+may contain confidential or commercially sensitive information.
+
+Unauthorised reproduction, commercial exploitation or creation of
+substantially similar derivative implementations is not authorised.
+
+Third-party components remain subject to their respective licences.
+
+Copyright © 2026 Kurukoo. All rights reserved.
