@@ -1,6 +1,6 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 /**
- * Routes for the 4 muse.ai gap-fill capabilities:
+ * Routes for the secure execution and payment-protection capabilities:
  *   - Secure credential store (agent-blind secrets)
  *   - One-time cards + purchase protections
  *   - Secure execution environment (sandboxed browser / VM)
