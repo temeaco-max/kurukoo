@@ -57,8 +57,33 @@ export function ContextualTrustedRail({ open, onOpenChange }: { open: boolean; o
   const { work, memory, notifications } = useKurukoo();
   const [readiness, setReadiness] = useState<PulseReadiness | null>(null);
   const [ad, setAd] = useState<AuthenticatedAd | null>(null);
+  const [trustedProfile, setTrustedProfile] = useState<{ location: string; role: string } | null>(null);
   const focus = work.find((item) => item.stage !== "done");
   const unread = notifications.filter((item) => !item.read).length;
+  const trustedLocation = trustedProfile?.location || "Hackney, London";
+  const trustedRole = trustedProfile?.role || "Phone Technician";
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadProfile = async () => {
+      try {
+        const response = await fetch("/api/profile", { credentials: "include", headers: { Accept: "application/json" } });
+        if (!response.ok) return;
+        const payload = (await response.json()) as { profile?: { location?: string; primary_lga?: string; primary_state?: string }; skills?: Array<{ skill?: string }> };
+        if (cancelled) return;
+        const profileLocation = payload.profile?.location?.trim();
+        const lga = payload.profile?.primary_lga?.trim();
+        const state = payload.profile?.primary_state?.trim();
+        const roleSkill = payload.skills?.map((item) => String(item.skill || "").trim()).find(Boolean);
+        const role = roleSkill ? roleSkill.replaceAll("_", " ").replace(/\b\w/g, (char) => char.toUpperCase()) : "";
+        setTrustedProfile({ location: profileLocation || [lga, state].filter(Boolean).join(", "), role });
+      } catch {
+        if (!cancelled) setTrustedProfile(null);
+      }
+    };
+    void loadProfile();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,7 +94,7 @@ export function ContextualTrustedRail({ open, onOpenChange }: { open: boolean; o
   useEffect(() => { if (!open) return; void fetchAuthenticatedAd("context-rail").then(setAd).catch(() => setAd(null)); }, [open, pathname]);
 
   const defaultContent = <>
-    <Section title="Trusted context" icon={Brain} to="/memory"><Row icon={Sparkles} title="Home" detail="Your Field" to="/perch"/><Row icon={Briefcase} title="Work" detail={focus?.title ?? "No active Work"} to="/work"/><Row icon={Brain} title="Memory" detail={memory.length ? "Private continuity" : "No saved context shown"} to="/memory"/></Section>
+    <Section title="Trusted" icon={Brain} to="/memory"><Row icon={Sparkles} title="Home" detail={trustedLocation} to="/perch"/><Row icon={Briefcase} title="Work" detail={focus?.title ?? trustedRole} to="/work"/><Row icon={Brain} title="Memory" detail={memory.length ? `${memory.length} saved memories` : "Personal continuity"} to="/memory"/></Section>
     <Section title="Nearby pulse" icon={MapPin} to="/discover"><Row icon={MapPin} title="Nearby" detail="People, places and local activity" to="/discover"/><PulseControl readiness={readiness} onChange={setReadiness}/></Section>
     <Section title="Safety state" icon={ShieldCheck} to="/trust"><div className="safety-state-card"><span className="safety-state-icon"><ShieldCheck className="size-4"/></span><div><p className="text-[11.5px] font-semibold">All good</p><p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">Your safety controls are available when you need them.</p></div></div></Section>
     <Section title="Current focus" icon={Target} to="/work">{focus ? <Row icon={Target} title={focus.title} detail={focus.stage === "needs_you" ? "Needs you" : "In progress"} to={`/work/${focus.id}`} /> : <Row icon={MessageSquare} title="Nothing in motion" detail="Start with Ask Kurukoo" to="/chat"/>}</Section>
