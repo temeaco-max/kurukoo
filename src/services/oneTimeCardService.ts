@@ -1,6 +1,6 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 /**
- * One-Time Card + Purchase Protections — muse.ai gap filler.
+ * One-Time Card + Purchase Protections.
  * Virtual card generation with single-use tokens + purchase protection claims.
  * Provider-agnostic: real card issuance delegated to a payment provider
  * (Stripe Issuing, etc.) configured via ONE_TIME_CARD_PROVIDER.
