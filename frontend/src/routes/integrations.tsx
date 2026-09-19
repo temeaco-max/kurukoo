@@ -327,24 +327,27 @@ function IntegrationsPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-8 pb-10">
-      <header className="max-w-3xl">
+            <header className="max-w-3xl">
         <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-primary">
           Integrations
         </p>
         <h1 className="mt-2 text-[40px] font-semibold leading-[1.02] tracking-[-0.045em] md:text-[52px]">
-          Connect the tools you already use
+          Works with everything
         </h1>
         <p className="mt-4 max-w-2xl text-[15px] leading-7 text-muted-foreground">
-          Kurukoo can connect supported services and resources so authorised context can help get a
-          job done. Connections are scoped, visible and under your control. Bring your tools into
-          the flow.
+          Connect the tools, channels and services you already use. Kurukoo brings authorised
+          context into the flow of work, with every connection scoped and under your control.
+        </p>
+        <p className="mt-4 max-w-2xl text-[15px] leading-7 text-muted-foreground">
+          Connect via OAuth where supported, link through MCP for AI assistant doorways, use
+          native capabilities built into Kurukoo, or pair devices and IoT resources directly.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
           <Link to="/connect" className={actionClass("primary")}>
             Manage connections
           </Link>
-          <Link to="/chat" className={actionClass()}>
-            Use Kurukoo
+          <Link to="/how-it-works" className={actionClass()}>
+            How it works
           </Link>
         </div>
       </header>
@@ -374,37 +377,61 @@ function IntegrationsPage() {
           role="tablist"
           aria-label="Integration categories"
         >
-          {["All", ...integrationCategories].map((item) => (
-            <button
-              key={item}
-              type="button"
-              role="tab"
-              aria-selected={category === item}
-              onClick={() => setCategory(item as typeof category)}
-              className={`whitespace-nowrap px-3 py-2 text-[10.5px] font-medium ${category === item ? "bg-foreground text-background" : "bg-elevated text-muted-foreground hover:text-foreground"}`}
-            >
-              {item}
-            </button>
-          ))}
+                    {["All", ...integrationCategories].map((item) => {
+            const count =
+              item === "All"
+                ? integrations.length
+                : integrations.filter((i) => i.category === item).length;
+            return (
+              <button
+                key={item}
+                type="button"
+                role="tab"
+                aria-selected={category === item}
+                onClick={() => setCategory(item as typeof category)}
+                className={`whitespace-nowrap px-3 py-2 text-[10.5px] font-medium ${category === item ? "bg-foreground text-background" : "bg-elevated text-muted-foreground hover:text-foreground"}`}
+              >
+                {item}{" "}
+                <span
+                  className={`text-muted-foreground/60 ${
+                    category === item ? "text-background/70" : ""
+                  }`}
+                >
+                  ({count})
+                </span>
+              </button>
+            );
+          })}
         </div>
         {integrationCategories.map((group) => {
           const items = filtered.filter((integration) => integration.category === group);
           if (!items.length) return null;
           return (
             <section key={group} aria-labelledby={`integration-group-${group}`}>
-              <div className="mb-3">
-                <h3 id={`integration-group-${group}`} className="text-[14px] font-semibold">
-                  {group}
-                </h3>
-                <p className="mt-0.5 text-[10.5px] text-muted-foreground">
-                  {group === "Built into Kurukoo"
-                    ? "No external account required."
-                    : group === "AI assistants"
-                      ? "External conversation surfaces for the same Kurukoo experience."
-                      : "Connect only what a request needs."}
+                              <div className="mb-3 flex items-baseline justify-between gap-2">
+                  <h3 id={`integration-group-${group}`} className="text-[14px] font-semibold">
+                    {group}
+                  </h3>
+                  <span className="text-[10.5px] text-muted-foreground">
+                    {items.length} {items.length === 1 ? "integration" : "integrations"}
+                  </span>
+                </div>
+                <p className="mt-1 max-w-xl text-[11px] leading-relaxed text-muted-foreground">
+                  {group === "Storage & knowledge"
+                    ? "Files, notes and knowledge bases you authorise Kurukoo to search."
+                    : group === "Work & productivity"
+                      ? "Email, calendars and productivity tools for request context."
+                      : group === "Communication"
+                        ? "Talk to Kurukoo through your existing chat apps."
+                        : group === "AI assistants"
+                          ? "ChatGPT, Claude and Gemini connect to the same Kurukoo execution layer."
+                          : group === "Built into Kurukoo"
+                            ? "No external account required — these run inside Kurukoo."
+                            : group === "Devices & resources"
+                              ? "Phones, cameras, computers and IoT resources paired directly."
+                                                               : "Connect only what a request needs."}
                 </p>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {items.map((integration) => (
                   <IntegrationCard
                     key={integration.slug}
