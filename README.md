@@ -1,186 +1,38 @@
-# Kurukoo — AI that gets things done
+# Kurukoo — Backend
 
-**Consumer promise:** **AI that gets things done.**
+**AI that gets things done.**
 
-**Primary action:** Tell Kurukoo what needs doing.
+Copyright © 2026 Kurukoo. All rights reserved.
 
-> **Kurukoo turns intentions into outcomes across the digital and physical world.**
->
-> You tell Kurukoo what you need, want, notice, or are worried about.
->
-> Kurukoo understands the situation, works out the appropriate route, takes permitted action, gets help from people or services when necessary, keeps you informed, shows what happened, and remembers what matters.
+This is the canonical backend repository for Kurukoo. It contains
+proprietary software and commercially sensitive implementation
+material.
 
-The execution network is infrastructure, not the consumer-facing definition. Users do not need to understand whether Kurukoo used a skill, capability, agent, AI model, connected device, provider, API, business or another internal mechanism. Those are ways Kurukoo gets the job done.
+## Repository status
 
-## What Kurukoo can help with
+The `main` branch is the integration source for the Kurukoo backend.
 
-Kurukoo is not limited to a single category or vertical. You can start with a need in your own words and Kurukoo can help with things such as:
+The paired frontend repository is:
 
-- fixing and troubleshooting phones, tablets, computers and other technology;
-- checking connected devices, networks and supported IoT resources;
-- finding and coordinating people who can do work for you;
-- rides, food, deliveries, shopping and other everyday services;
-- reminders, tasks, follow-ups and things you want Kurukoo to keep track of;
-- discovering useful services, places, opportunities and information;
-- buying, sourcing or arranging products and services when supported;
-- coordinating providers, businesses, contributors and physical participants;
-- monitoring work and telling you when something needs your attention;
-- continuing work across Chat and supported external channels;
-- helping providers and operators get work done as well as helping consumers.
+`temeaco-max/remix-of-start-the-journey`
 
-This list is illustrative, not a hard ceiling. A new need should be considered another thing Kurukoo may be able to help accomplish before a new product or subsystem is proposed.
+The frontend and backend are developed as a single product, but this
+repository contains the backend's canonical execution and service
+implementation.
 
-## The universal execution loop
+## Development
 
-**Tell → Understand → Find/Plan → Choose → Approve → Do → Show proof → Done**
+Detailed internal development instructions, architecture documentation,
+product contracts, operational procedures and unreleased implementation
+plans are maintained separately where appropriate and are not reproduced
+here as public documentation.
 
-Kurukoo supports digital, physical, hybrid and user-assisted execution. The internal graph is:
+## Proprietary status
 
-**Intent → Context → Capability → Execution resource → Consent → Action → Evidence → Outcome → Memory/Trust**
+No permission is granted to copy, reproduce, redistribute, publish,
+commercialise, adapt, or create derivative works from the proprietary
+contents of this repository without prior written permission, except
+for rights that cannot lawfully be excluded and rights applicable to
+separately identified third-party components.
 
-Providers are one execution resource among many. Resources may include people, businesses, inventory, websites, APIs, connected apps, Kurukoo agents, approved third-party agents, communication channels, logistics, devices and future robotics/IoT.
-
-## How it should feel
-
-You should be able to say:
-
-> “My laptop is slow. Check it.”
-
-Kurukoo should use the information and capabilities actually available to it, ask for permission when required, diagnose what it can, safely fix what it can, verify the result where possible, and tell you plainly what happened. If the problem needs a person, Kurukoo should continue by finding and coordinating the appropriate help rather than making you start again.
-
-The same principle applies to:
-
-> “Check my Wi-Fi.”
-
-or:
-
-> “I need someone to repair this.”
-
-The user starts with the outcome. Kurukoo works out the route.
-
-## One Kurukoo across the service
-
-Web, PWA, iOS and Android are first-party presentations of the same Kurukoo service. Chat is the primary conversational control surface. WhatsApp, Telegram, SMS, email, FCM, Voice, USSD and other channels are delivery/interaction paths when configured; they do not become separate assistants or separate sources of truth.
-
-Kurukoo can work with connected resources, providers, businesses, autonomous agents and physical participants. When direct software help is possible, it should prefer that before unnecessary escalation. When a human or external service is needed, Kurukoo should carry useful context into the handoff.
-
-## Global core / local execution
-
-Kurukoo has one global product model. Country and regional adapters provide local execution mechanisms such as payments, identity, language, providers, logistics, communications, government systems and regulatory requirements.
-
-Nigeria is an execution environment, not the definition of Kurukoo. The same core should operate in the UK, Ghana, US, India and other markets without product forks.
-
-## Architecture — for people building Kurukoo
-
-The implementation is intentionally composable. Existing skills, behaviour instructions, capabilities, agent tools, connected resources, AI adapters, canonical services, Economic Requests, providers, physical participants, evidence, memory, notifications and channels should be reused and extended before new subsystems are introduced.
-
-The architectural rule is:
-
-> **Maximise useful capability while preserving genuine safety, privacy, consent, authorization, security, legal and evidence boundaries.**
-
-AI may interpret, reason, communicate and coordinate. Canonical services retain consequential authority, mutation, execution and evidence so that Kurukoo can be both capable and truthful.
-
-## User-facing surfaces
-
-Public and authenticated user surfaces should lead with outcomes rather than internal architecture. They should help answer:
-
-- What can Kurukoo do for me?
-- What can I ask it?
-- What is happening with something I asked it to do?
-- What does it need from me?
-- What happened while I was away?
-- What can I do next?
-
-The UI should make complex work feel simple without hiding important confirmation, permission, uncertainty or failure states.
-
-## Internal surfaces
-
-Admin, operations, provider and developer surfaces are intentionally different. They expose the information needed to run the service: canonical ownership, lifecycle state, capability/tool availability, agent goals, provider/connector health, evidence and verification, authorization, failures, recovery, audit information and deployment activation.
-
-Internal surfaces operate on the same canonical OS state; they must not create parallel consumer workflows or authorities.
-
-## Frontend/backend vertical-slice rule
-
-Every user-facing capability is product-complete only when the paired vertical slice exists:
-
-**Frontend surface → canonical backend capability → persistence/state → execution → evidence → UI outcome**
-
-Frontend-only fake completion and backend-only invisible capability do not count as complete. The frontend repository is `temeaco-max/remix-of-start-the-journey`; the canonical backend repository is this repository; `main` is the integration truth for both.
-
-## Repository authorities
-
-- `docs/product/KURUKOO_MASTER_PRODUCT_CONTRACT.md` — locked product definition and frontend/backend vertical-slice contract.
-- `BLUEPRINT.md` — long-range product and architecture intent.
-- `docs/product/KURUKOO_USER_OUTCOME_CONTRACT.md` — user-outcome lens.
-- `docs/architecture/CURRENT_PRODUCT_TRUTH.md` — current-state truth and verification authority.
-- `AGENTS.md` — engineering rules.
-- `BLUEPRINT_IMPLEMENTATION_ADDENDUM.md` — implementation companion.
-- `BLUEPRINT_AI_MODEL_ADDENDUM.md` — AI/student-model extension.
-- `docs/KURUKOO_AI_MODEL_SYSTEM.md` — AI model architecture and completion contract.
-- `BUILD_STATUS.md` — route ownership and release verification status.
-- `SECURITY_AUDIT_STATUS.md` — security posture and residual risks.
-- `ECOSYSTEM.md` — economic taxonomy.
-
-## Current implementation
-
-| Area | Current implementation |
-|---|---|
-| Composition root | `src/index.ts` performs startup and mounts canonical route boundaries. |
-| HTTP boundaries | `src/routes/*` owns HTTP routes and canonical public/authenticated/admin boundaries. |
-| Services and skills | `src/services/*` owns business orchestration. `skillFlows.ts` is the canonical Economic Request skill, requirement, capability and lifecycle catalogue. |
-| Economy | A single economic lifecycle handles rides, food, repair, work, product sourcing, tickets, and other supported requests. |
-| Identity | One canonical authenticated identity and Memory Profile model; no parallel consumer identity silos. |
-| Authorization | Consequential user-owned operations require explicit authentication/authorization at their canonical boundaries. |
-| Database | `sql.js` runs in-process and persists to `kurukoo.sqlite` (`DB_PATH` override); the current launch model is single-process until PostgreSQL/Redis transition criteria are met. |
-| Channels | Web Chat is active; external channels remain adapter boundaries whose availability depends on truthful configuration and independent verification. |
-| Connected resources | Existing connected-resource services support device/IoT-style resources and exposed capabilities; actual device capability depends on the device, client, protocol and granted permissions. |
-| Agents | The canonical agent runtime composes goals, instructions, skills, tools, capabilities and existing OS services; it is not a collection of isolated vertical assistants. |
-| Evidence | Consequential outcomes remain evidence-bound and independently verifiable. |
-
-## Quick Start
-
-Kurukoo uses **npm 10.9.2** and commits `package-lock.json` for reproducible installs. Use Node.js 22.
-
-```bash
-npm ci --ignore-scripts --no-audit --no-fund
-npm run dev
-npm run lint
-npm run build
-npm run test:routes
-npm run audit:complete
-npm run audit:css:all
-npm run audit:security
-npm run pilot:readiness
-npm run test:pilot-readiness
-npm run test:pilot-production-guards
-npm run test:whatsapp-webhook-boundary
-npm run test:fresh-database
-```
-
-## Controlled development/test Chat
-
-The verified canonical release branch is `main`, which is also the GitHub default branch. Kurukoo includes an explicit development/test authentication mode for exercising the real canonical Chat without a live OTP delivery provider. Enable it only outside production with `KURUKOO_DEV_AUTH=true`, `KURUKOO_TEST_PHONE` and optionally `KURUKOO_TEST_NAME`. The deterministic development code is accepted only for that configured identity while `NODE_ENV` is not `production` and does not bypass provider verification, payment, Economic Request ownership, or other execution boundaries.
-
-The authenticated Chat uses the same conversation, Memory Profile, Living Memory, routing, skill, native-assistance, Economic Request, deferred-request, agent, notification and response-persistence services as other user journeys.
-
-## Production transition points
-
-The current launch architecture is intentionally cost-effective but has clear boundaries. Do not run multiple application replicas against the `sql.js` file or assume process-local rate limits coordinate across replicas. Move to PostgreSQL and Redis when high availability, concurrent multi-instance writes, distributed rate limiting/presence, or sustained scale requires them.
-
-Payment, regulated escrow, real provider/identity verification, malware-scanned object storage, external FCM delivery, and provider-console credential rotation remain operational requirements. The application must not claim that a database record, indicative rate, sandbox payment, or profile is proof of an external financial, verification, availability or fulfilment event.
-
-## Security notes
-
-Current CI includes build, test, custom audit, FastText, and secret-scan jobs. The current environment templates contain placeholders only. See `SECURITY_AUDIT_STATUS.md` for the current status and residual risks.
-
-## Stack
-
-`express` · `ejs` · `sql.js` · `mqtt` (Universal Remote/IoT) · `dotenv` · `tsx` · `typescript` (strict)
-
-## License
-
-**Kurukoo is proprietary software.** Copyright (c) 2026 temeaco-max. All rights reserved.
-
-No copying, modification, distribution, or derivative use is permitted without explicit written authorization. See [`LICENSE`](LICENSE) for the full terms.
-
-For licensing inquiries, contact the repository owner.
+See `LICENSE` and `NOTICE`.
