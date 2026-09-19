@@ -344,12 +344,12 @@ export function ContextualTrustedRail({
 
   const chatContent = (
     <>
-      <div className="mb-2">
-        <div className="px-1 pb-1 text-center text-[11px] font-semibold text-muted-foreground">Daily Picks</div>
-        <div className="flex h-[132px] items-center justify-center rounded-2xl border border-dashed border-border bg-elevated/40 text-[10px] text-muted-foreground">
-          Ad
+      {ad ? (
+        <div className="mb-2">
+          <div className="px-1 pb-1 text-center text-[11px] font-semibold text-muted-foreground">Daily Picks</div>
+          <RailAd campaign={ad} />
         </div>
-      </div>
+      ) : null}
       <Section title="Chat Context" icon={MessageSquare} to="/chat" className="h-[132px]">
         <Row
           icon={MessageSquare}
