@@ -99,7 +99,6 @@ import { Route as ExploreRepairsRouteImport } from './routes/explore/repairs'
 import { Route as ExploreSafetyRouteImport } from './routes/explore/safety'
 import { Route as ExploreSellingRouteImport } from './routes/explore/selling'
 import { Route as ExploreWorkRouteImport } from './routes/explore/work'
-import { Route as IntegrationsIntegrationIdRouteImport } from './routes/integrations.$integrationId'
 import { Route as LegalSectionRouteImport } from './routes/legal.$section'
 import { Route as MessagesThreadIdRouteImport } from './routes/messages.$threadId'
 import { Route as ProfileEntityIdRouteImport } from './routes/profile.$entityId'
@@ -567,12 +566,6 @@ const ExploreWorkRoute = ExploreWorkRouteImport.update({
   path: '/work',
   getParentRoute: () => ExploreRoute,
 } as any)
-const IntegrationsIntegrationIdRoute =
-  IntegrationsIntegrationIdRouteImport.update({
-    id: '/$integrationId',
-    path: '/$integrationId',
-    getParentRoute: () => IntegrationsRoute,
-  } as any)
 const LegalSectionRoute = LegalSectionRouteImport.update({
   id: '/$section',
   path: '/$section',
@@ -686,7 +679,7 @@ export interface FileRoutesByFullPath {
   '/following': typeof FollowingRoute
   '/help': typeof HelpRoute
   '/how-it-works': typeof HowItWorksRoute
-  '/integrations': typeof IntegrationsRouteWithChildren
+  '/integrations': typeof IntegrationsRoute
   '/kurukoo-ai': typeof KurukooAiRoute
   '/legal': typeof LegalRouteWithChildren
   '/local-agents': typeof LocalAgentsRoute
@@ -741,7 +734,6 @@ export interface FileRoutesByFullPath {
   '/explore/safety': typeof ExploreSafetyRoute
   '/explore/selling': typeof ExploreSellingRoute
   '/explore/work': typeof ExploreWorkRoute
-  '/integrations/$integrationId': typeof IntegrationsIntegrationIdRoute
   '/legal/$section': typeof LegalSectionRoute
   '/messages/$threadId': typeof MessagesThreadIdRoute
   '/profile/$entityId': typeof ProfileEntityIdRoute
@@ -794,7 +786,7 @@ export interface FileRoutesByTo {
   '/following': typeof FollowingRoute
   '/help': typeof HelpRoute
   '/how-it-works': typeof HowItWorksRoute
-  '/integrations': typeof IntegrationsRouteWithChildren
+  '/integrations': typeof IntegrationsRoute
   '/kurukoo-ai': typeof KurukooAiRoute
   '/legal': typeof LegalRouteWithChildren
   '/local-agents': typeof LocalAgentsRoute
@@ -848,7 +840,6 @@ export interface FileRoutesByTo {
   '/explore/safety': typeof ExploreSafetyRoute
   '/explore/selling': typeof ExploreSellingRoute
   '/explore/work': typeof ExploreWorkRoute
-  '/integrations/$integrationId': typeof IntegrationsIntegrationIdRoute
   '/legal/$section': typeof LegalSectionRoute
   '/messages/$threadId': typeof MessagesThreadIdRoute
   '/profile/$entityId': typeof ProfileEntityIdRoute
@@ -902,7 +893,7 @@ export interface FileRoutesById {
   '/following': typeof FollowingRoute
   '/help': typeof HelpRoute
   '/how-it-works': typeof HowItWorksRoute
-  '/integrations': typeof IntegrationsRouteWithChildren
+  '/integrations': typeof IntegrationsRoute
   '/kurukoo-ai': typeof KurukooAiRoute
   '/legal': typeof LegalRouteWithChildren
   '/local-agents': typeof LocalAgentsRoute
@@ -957,7 +948,6 @@ export interface FileRoutesById {
   '/explore/safety': typeof ExploreSafetyRoute
   '/explore/selling': typeof ExploreSellingRoute
   '/explore/work': typeof ExploreWorkRoute
-  '/integrations/$integrationId': typeof IntegrationsIntegrationIdRoute
   '/legal/$section': typeof LegalSectionRoute
   '/messages/$threadId': typeof MessagesThreadIdRoute
   '/profile/$entityId': typeof ProfileEntityIdRoute
@@ -1067,7 +1057,6 @@ export interface FileRouteTypes {
     | '/explore/safety'
     | '/explore/selling'
     | '/explore/work'
-    | '/integrations/$integrationId'
     | '/legal/$section'
     | '/messages/$threadId'
     | '/profile/$entityId'
@@ -1174,7 +1163,6 @@ export interface FileRouteTypes {
     | '/explore/safety'
     | '/explore/selling'
     | '/explore/work'
-    | '/integrations/$integrationId'
     | '/legal/$section'
     | '/messages/$threadId'
     | '/profile/$entityId'
@@ -1282,7 +1270,6 @@ export interface FileRouteTypes {
     | '/explore/safety'
     | '/explore/selling'
     | '/explore/work'
-    | '/integrations/$integrationId'
     | '/legal/$section'
     | '/messages/$threadId'
     | '/profile/$entityId'
@@ -1336,7 +1323,7 @@ export interface RootRouteChildren {
   FollowingRoute: typeof FollowingRoute
   HelpRoute: typeof HelpRoute
   HowItWorksRoute: typeof HowItWorksRoute
-  IntegrationsRoute: typeof IntegrationsRouteWithChildren
+  IntegrationsRoute: typeof IntegrationsRoute
   KurukooAiRoute: typeof KurukooAiRoute
   LegalRoute: typeof LegalRouteWithChildren
   LocalAgentsRoute: typeof LocalAgentsRoute
@@ -2006,13 +1993,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExploreWorkRouteImport
       parentRoute: typeof ExploreRoute
     }
-    '/integrations/$integrationId': {
-      id: '/integrations/$integrationId'
-      path: '/$integrationId'
-      fullPath: '/integrations/$integrationId'
-      preLoaderRoute: typeof IntegrationsIntegrationIdRouteImport
-      parentRoute: typeof IntegrationsRoute
-    }
     '/legal/$section': {
       id: '/legal/$section'
       path: '/$section'
@@ -2195,18 +2175,6 @@ const ExploreRouteChildren: ExploreRouteChildren = {
 const ExploreRouteWithChildren =
   ExploreRoute._addFileChildren(ExploreRouteChildren)
 
-interface IntegrationsRouteChildren {
-  IntegrationsIntegrationIdRoute: typeof IntegrationsIntegrationIdRoute
-}
-
-const IntegrationsRouteChildren: IntegrationsRouteChildren = {
-  IntegrationsIntegrationIdRoute: IntegrationsIntegrationIdRoute,
-}
-
-const IntegrationsRouteWithChildren = IntegrationsRoute._addFileChildren(
-  IntegrationsRouteChildren,
-)
-
 interface LegalRouteChildren {
   LegalSectionRoute: typeof LegalSectionRoute
 }
@@ -2336,7 +2304,7 @@ const rootRouteChildren: RootRouteChildren = {
   FollowingRoute: FollowingRoute,
   HelpRoute: HelpRoute,
   HowItWorksRoute: HowItWorksRoute,
-  IntegrationsRoute: IntegrationsRouteWithChildren,
+  IntegrationsRoute: IntegrationsRoute,
   KurukooAiRoute: KurukooAiRoute,
   LegalRoute: LegalRouteWithChildren,
   LocalAgentsRoute: LocalAgentsRoute,

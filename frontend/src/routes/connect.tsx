@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ExternalLink, Plus, RefreshCw, ShieldCheck, Smartphone } from "lucide-react";
+import { Plus, RefreshCw, ShieldCheck, Smartphone } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { actionClass } from "@/components/kurukoo/primitives";
 import { Badge } from "@/components/kurukoo/ui";
@@ -130,14 +130,7 @@ function ServiceRow({
           >
             {busy ? "Preparing…" : integration.connectionLabel}
           </button>
-        ) : null}
-        <Link
-          to="/integrations/$integrationId"
-          params={{ integrationId: integration.slug }}
-          className={actionClass()}
-        >
-          <ExternalLink className="size-3.5" /> Details
-        </Link>
+          ) : null}
       </div>
       {message ? <p className="mt-3 text-[10.5px] text-destructive">{message}</p> : null}
     </article>
