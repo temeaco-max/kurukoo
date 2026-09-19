@@ -75,8 +75,9 @@ export function ContextualTrustedRail({ open, onOpenChange }: { open: boolean; o
         const lga = payload.profile?.primary_lga?.trim();
         const state = payload.profile?.primary_state?.trim();
         const roleSkill = payload.skills?.map((item) => String(item.skill || "").trim()).find(Boolean);
-        const role = roleSkill ? roleSkill.replaceAll("_", " ").replace(/\b\w/g, (char) => char.toUpperCase()) : "";
-        setTrustedProfile({ location: profileLocation || [lga, state].filter(Boolean).join(", "), role });
+        const role = roleSkill === "phone_repair" ? "Phone Technician" : roleSkill === "design" ? "Design Lead" : roleSkill ? roleSkill.replaceAll("_", " ").replace(/\b\w/g, (char) => char.toUpperCase()) : "";
+        const location = profileLocation && state && !profileLocation.toLowerCase().includes(state.toLowerCase()) ? `${profileLocation}, ${state}` : profileLocation || [lga, state].filter(Boolean).join(", ");
+        setTrustedProfile({ location, role });
       } catch {
         if (!cancelled) setTrustedProfile(null);
       }
