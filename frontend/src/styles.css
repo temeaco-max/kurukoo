@@ -253,10 +253,13 @@ body:has(aside[aria-label="Trusted context rail"]) aside[aria-label="OS navigati
 .field-welcome { position: relative; min-height: 196px; display: flex; align-items: flex-start; justify-content: space-between; overflow: hidden; padding: 10px 6px 0; }
 .field-welcome-copy { position: relative; z-index: 2; }
 .field-kicker { margin: 0 0 16px; color: var(--muted-foreground); font-size: 15px; font-weight: 500; }
+.field-welcome-weather { display: inline-flex; align-items: center; gap: 5px; margin-left: 8px; padding-left: 8px; border-left: 1px solid var(--border); color: var(--foreground); }
+.field-welcome-weather .field-sun { font-size: 15px; line-height: 1; }
+
 .field-welcome h1 { margin: 0; color: var(--foreground); font-size: clamp(40px, 7vw, 58px); line-height: .42; }
 .field-subtitle { margin: 18px 0 0; color: var(--muted-foreground); font-size: 19px; }
 .field-welcome-meta { position: relative; z-index: 3; display: flex; align-items: center; gap: 28px; color: var(--muted-foreground); font-size: 12px; }
-.field-weather, .field-date { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+ .field-weather, .field-date { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 .field-weather strong { color: var(--foreground); font-weight: 600; }
 .field-sun { color: var(--primary); font-size: 25px; line-height: 1; }
 .field-notification { position: relative; display: inline-flex; align-items: center; gap: 2px; margin-left: 10px; color: var(--foreground); }
@@ -317,7 +320,7 @@ body:has(aside[aria-label="Trusted context rail"]) aside[aria-label="OS navigati
 .field-composer-card-bottom { margin-top: 20px; }
 @media (max-width: 900px) { .field-topics-split { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 1120px) { .field-main-grid { grid-template-columns: minmax(0, 1.1fr) minmax(220px, .9fr); }.field-side-stack { grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); }.field-people-card { grid-column: 2; }.field-lower-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }.field-lower-grid .field-card:last-child { grid-column: 1 / -1; } }
-@media (max-width: 720px) { .field-welcome { min-height: 236px; padding-top: 4px; }.field-welcome-meta { position: absolute; left: 6px; right: 6px; bottom: 11px; justify-content: space-between; }.field-weather { display: none; }.field-horizon { right: -20px; width: 90%; opacity: .55; }.field-welcome h1 { font-size: 58px; }.field-subtitle { font-size: 17px; }.field-composer-card { padding: 15px; }.field-composer-hint { display: none; }.field-main-grid, .field-side-stack, .field-lower-grid, .field-topics-split { grid-template-columns: 1fr; }.field-side-stack, .field-people-card, .field-lower-grid .field-card:last-child { grid-column: auto; }.field-status { display: none; } }
+@media (max-width: 720px) { .field-welcome-weather { margin-left: 6px; padding-left: 6px; } .field-welcome { min-height: 236px; padding-top: 4px; }.field-welcome-meta { position: absolute; left: 6px; right: 6px; bottom: 11px; justify-content: space-between; }.field-weather { display: none; }.field-horizon { right: -20px; width: 90%; opacity: .55; }.field-welcome h1 { font-size: 58px; }.field-subtitle { font-size: 17px; }.field-composer-card { padding: 15px; }.field-composer-hint { display: none; }.field-main-grid, .field-side-stack, .field-lower-grid, .field-topics-split { grid-template-columns: 1fr; }.field-side-stack, .field-people-card, .field-lower-grid .field-card:last-child { grid-column: auto; }.field-status { display: none; } }
 @media (prefers-reduced-motion: reduce) { .field-loading span { animation: none; } }
 .field-creators-card{padding-bottom:10px}.field-creators-card .field-video-scroller{padding-bottom:22px}
 
