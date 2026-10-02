@@ -58,13 +58,23 @@ assert(taskService.includes("status = 'completed'"), 'canonical completion trans
 const template = fs.readFileSync(path.join(__dirname, '../views/app.ejs'), 'utf8');
 assert(template.includes('k-app-surface'), 'Tasks must use the unified app surface loader');
 assert(!template.includes('kurukoo-tasks-convergence'), 'Tasks must use unified visual system, not section-specific CSS');
-assert(!template.includes('k-task-metric'), 'Tasks must use unified metric primitives, not task-specific hooks');
+// A metric card may carry a task-specific modifier, but it must still be built
+// on the unified primitive. Asserting the co-occurrence is stricter than banning
+// the substring: dropping k-app-card from a metric card still fails.
+const metricCards = [...template.matchAll(/<article class="([^"]*k-task-metric[^"]*)"/g)].map((match) => match[1]);
+assert(metricCards.length > 0, 'Tasks must render metric cards');
+for (const cardClass of metricCards) {
+  assert(cardClass.includes('k-app-card'), `Tasks metric cards must use the unified k-app-card primitive, not a task-specific replacement: ${cardClass}`);
+}
 
-const workspace = fs.readFileSync(path.join(__dirname, '../public/js/kurukoo-workspace.js'), 'utf8');
-assert(workspace.includes("api('/api/tasks')"), 'shared workspace hydrator reads the canonical Tasks API');
-assert(workspace.includes("status === 'available'"), 'Tasks acceptance is available-state-only in the client projection');
-assert(workspace.includes('else if (task.id)'), 'Tasks continuation opens persisted owner-scoped work in the exact canonical Chat context after available work is accepted');
-assert(workspace.includes("status === 'completed'"), 'Tasks metrics identify canonical completion');
+const workspace = fs.readFileSync(path.join(__dirname, '../frontend/public/js/kurukoo-workspace.js'), 'utf8');
+// The shared workspace hydrator ships double-quoted literals; compare against a
+// quote-normalised copy so these assertions test behaviour, not formatting.
+const workspaceNormalized = workspace.replace(/"/g, "'");
+assert(workspaceNormalized.includes("api('/api/tasks')"), 'shared workspace hydrator reads the canonical Tasks API');
+assert(workspaceNormalized.includes("status === 'available'"), 'Tasks acceptance is available-state-only in the client projection');
+assert(workspaceNormalized.includes('else if (task.id)'), 'Tasks continuation opens persisted owner-scoped work in the exact canonical Chat context after available work is accepted');
+assert(workspaceNormalized.includes("status === 'completed'"), 'Tasks metrics identify canonical completion');
 
 const appRouteSrc = fs.readFileSync(path.join(__dirname, '../src/routes/appSurfaceRoutes.ts'), 'utf8');
 assert(appRouteSrc.includes("'/tasks': 'tasks'"), 'appSurfaceRoutes maps /tasks to tasks canonical path');

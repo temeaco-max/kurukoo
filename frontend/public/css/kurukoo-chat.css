@@ -1,7 +1,6 @@
 /* Canonical Chat stylesheet entrypoint. Base Chat styling plus the final Chat-only
    interaction geometry contract. No second renderer or visual system is introduced. */
 @import url("/css/kurukoo-chat-base.css");
-@import url("/css/kurukoo-chat-convergence.css");
 
 /* --------------------------------------------------------------------------
    Kurukoo Chat visual completion

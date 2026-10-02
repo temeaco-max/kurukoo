@@ -50,7 +50,7 @@ const canonicalPathBySection: Record<string, string> = {
   agent: '/chat', desk: '/home', discover: '/explore', requests: '/activity', tasks: '/work', topics: '/topics', reminders: '/reminders', saved: '/saved', cart: '/cart', connect: '/connect', agents: '/agents', capabilities: '/capabilities', opportunities: '/opportunities', wallet: '/wallet', points: '/points', 'top-up': '/top-up', subscriptions: '/subscriptions', checkout: '/checkout', confirmations: '/confirmations', memory: '/memory', artifacts: '/artifacts', prayer: '/prayer', call: '/call', notifications: '/notifications', safety: '/safety', settings: '/settings',
 };
 
-const sharedPublicAuthenticated = new Set(['/explore', '/discover', '/topics']);
+const sharedPublicAuthenticated = new Set(['/explore', '/discover', '/topics', '/chat']);
 
 function screenAssets(section: string): string {
   if (section === 'discover') return '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">';

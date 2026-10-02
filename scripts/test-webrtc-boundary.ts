@@ -15,7 +15,7 @@ assert.match(routeSource, /getWebRTCStatus/);
 assert.match(routeSource, /authorizeProviderSessionRoom/);
 assert.match(routeSource, /getProviderCommunicationSession/);
 assert.match(routeSource, /Only the authenticated provider communication participants may access this room/);
-assert.match(callClientSource, /params\.get\('session'\)/);
+assert.match(callClientSource, /params\.get\((['"])session\1\)/);
 assert.match(callClientSource, /provider-session:\$\{sessionId\}/);
 
 const names = [

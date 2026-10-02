@@ -21,8 +21,12 @@ function cookieValue(headers: Headers, name: string, required = true): string {
 }
 
 function streamDone(body: string): StreamDone {
-  const done = body.split('\n\n').filter(Boolean).map(chunk => chunk.replace(/^data:\s*/, '')).map(chunk => JSON.parse(chunk)).find(event => event.type === 'done');
-  assert.ok(done, 'Expected a completed chat stream.');
+  const events = body.split('\n\n').filter(Boolean).map(chunk => chunk.replace(/^data:\s*/, ''))
+    .filter(chunk => chunk && chunk !== '[DONE]').map(chunk => { try { return JSON.parse(chunk); } catch { return { type: 'unparsable' }; } });
+  const done = events.find(event => event.type === 'done');
+  // Report what the stream actually carried, so a missing terminal event is
+  // diagnosable from the failure output instead of only 'expected done'.
+  assert.ok(done, `Expected a completed chat stream. Received event types: ${JSON.stringify(events.map(event => event.type))}`);
   return done as StreamDone;
 }
 

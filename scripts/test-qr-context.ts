@@ -136,17 +136,17 @@ try {
   assert.ok(qrRequests >= 1, 'Only the user’s subsequent intent may enter the existing Economic Request lifecycle');
 
   const voice = fs.readFileSync('frontend/public/js/kurukoo-voice.js', 'utf8');
-  assert.match(voice, /localStorage\.getItem\('kurukoo_conversation_id'\)/, 'Voice must reuse the QR-originated canonical conversation ID');
+  assert.match(voice, /localStorage\.getItem\((['"])kurukoo_conversation_id\1\)/, 'Voice must reuse the QR-originated canonical conversation ID');
   assert.match(voice, /body: JSON\.stringify\(\{ conversationId: requestedConversationId \}\)/, 'Voice session must converge on the existing chat conversation');
   const scanner = fs.readFileSync('frontend/public/js/kurukoo-qr-page.js', 'utf8');
   const primaryChat = fs.readFileSync('frontend/public/js/kurukoo-primary-chat.js', 'utf8');
-  assert.match(primaryChat, /document\.addEventListener\('kurukoo:qr'/, 'primary Chat must consume activated QR contexts');
-  assert.match(primaryChat, /canonicalAction: 'qr\.context\.open'/, 'QR activation must use the canonical Chat action contract');
+  assert.match(primaryChat, /document\.addEventListener\((['"])kurukoo:qr\1/, 'primary Chat must consume activated QR contexts');
+  assert.match(primaryChat, /canonicalAction: (['"])qr\.context\.open\1/, 'QR activation must use the canonical Chat action contract');
   assert.match(primaryChat, /state\.resumeCanonicalContextOnLoad = true/, 'QR activation must resume once after authenticated hydration');
-  assert.match(primaryChat, /Continue with this context\./, 'QR activation must provide a clear continuation prompt');
+  assert.match(primaryChat, /(['"])Continue with this context\.\1/, 'QR activation must provide a clear continuation prompt');
   assert.match(primaryChat, /if \(state\.canonicalContextAction\?\.contextId === contextId\) return/, 'QR activation must be idempotent in the Chat client');
   assert.match(scanner, /url\.origin !== location\.origin/, 'QR scanner must reject external destinations instead of opening them');
-  assert.match(scanner, /url\.pathname !== '\/start'/, 'QR scanner must accept only the signed Kurukoo entry route');
+  assert.match(scanner, /url\.pathname !== (['"])\/start\1/, 'QR scanner must accept only the signed Kurukoo entry route');
   const qrRouterSource = fs.readFileSync('src/routes/qrRouter.ts', 'utf8');
   assert.doesNotMatch(qrRouterSource, /addPoints\(|addCredits\(/, 'QR routes must never award Points');
   assert.match(qrRouterSource, /verifyQrContext\(/, 'QR activation must verify signed opaque context');

@@ -27,10 +27,15 @@ saveDb();
 
 const token = (phone: string, role = 'user') => jwt.sign({ phone, role }, process.env.JWT_SECRET!, { algorithm: 'HS256', expiresIn: '10m' });
 const headers = (phone: string, role = 'user') => ({ Authorization: `Bearer ${token(phone, role)}`, 'Content-Type': 'application/json' });
-  const nativeTopicsSurface = fs.readFileSync(new URL('../public/js/kurukoo-app-convergence.js', import.meta.url), 'utf8');
-  assert.match(nativeTopicsSurface, /api\('\/api\/topics\?limit=15'\)/, 'the native Topics surface must load public data from the JSON API, not a page route');
-  assert.ok(nativeTopicsSurface.includes('api(`/api/topics/mine/${encodeURIComponent(draftId)}`)'), 'the native Topics surface must load owner drafts through the canonical API');
-  assert.ok(nativeTopicsSurface.includes('api(`/api/topics/${encodeURIComponent(topic.id)}`'), 'the native Topics surface must submit the reviewed draft through the canonical API');
+  // The section-specific convergence bundle was retired into the unified
+  // k-app-surface system (8b8c25918). kurukoo-topics.js is the canonical
+  // owner of the Topics client surface now; the same three guarantees are
+  // asserted there rather than against a deleted file.
+  const nativeTopicsSurface = fs.readFileSync(new URL('../frontend/public/js/kurukoo-topics.js', import.meta.url), 'utf8');
+  assert.ok(nativeTopicsSurface.includes('await api(`/api/topics${query.toString()'), 'the native Topics surface must load public data from the JSON API, not a page route');
+  assert.ok(nativeTopicsSurface.includes('await api(`/api/topics/mine/${encodeURIComponent(draftId)}`)'), 'the native Topics surface must load owner drafts through the canonical API');
+  assert.ok(nativeTopicsSurface.includes('await api(`/api/topics/${encodeURIComponent(draftId)}`'), 'the native Topics surface must submit the reviewed draft through the canonical API');
+  assert.ok(nativeTopicsSurface.includes('await api("/api/topics", {'), 'the native Topics surface must create a reviewed draft through the canonical API');
   const server = app.listen(0);
 const address = server.address();
 assert.ok(address && typeof address === 'object');
@@ -80,7 +85,7 @@ try {
   const moderationQueue = await fetch(`${baseUrl}/api/admin/topics/submitted`, { headers: headers(moderator, 'admin') });
   assert.equal(moderationQueue.status, 200);
   assert.ok((await moderationQueue.json() as { topics?: Array<{ id: string }> }).topics?.some((topic) => topic.id === topicId));
-  const published = await fetch(`${baseUrl}/api/admin/topics/${topicId}/moderate`, { method: 'POST', headers: headers(moderator, 'admin'), body: JSON.stringify({ decision: 'frontend/public', note: 'Community question permitted as context, not a provider claim.' }) });
+  const published = await fetch(`${baseUrl}/api/admin/topics/${topicId}/moderate`, { method: 'POST', headers: headers(moderator, 'admin'), body: JSON.stringify({ decision: 'public', note: 'Community question permitted as context, not a provider claim.' }) });
   assert.equal(published.status, 200, await published.text());
   const authorModerationNotification = (await getInternalNotifications(author, 20)).find((notification) => notification.object_type === 'topic' && notification.object_id === topicId);
   assert.ok(authorModerationNotification, 'Topic moderation must queue an owner-scoped attention update.');

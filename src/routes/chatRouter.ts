@@ -132,6 +132,11 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
     res.setHeader('Connection', 'keep-alive');
     sse(res, { type: 'status', status: 'error' });
     sse(res, { type: 'error', error: 'This message looks like it may not be safe. Please rephrase and try again.' });
+    // Terminal state, like every other chat stream exit: the client must be able to
+    // tell a completed turn from a blocked one. The reply restates the block and
+    // claims no capability, booking, payment or outcome.
+    sse(res, { type: 'text', content: 'I could not accept that message. Nothing was booked, charged, or arranged. Please rephrase and try again.' });
+    sse(res, { type: 'done', fullReply: 'I could not accept that message. Nothing was booked, charged, or arranged. Please rephrase and try again.', cardData: null, conversationId, diagnostics: { blockedByCompliance: true } });
     sse(res, '[DONE]');
     res.end();
     return;
@@ -179,7 +184,13 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
     console.error('[Chat] unified stream failed:', error);
     if (!res.writableEnded) {
       sse(res, { type: 'status', status: 'error' });
+      // Every 200 stream must terminate with a structured done event, even when the
+      // turn failed. Clients and contracts distinguish a completed turn from a failed
+      // one by this event, so a bare error + [DONE] left them with an unterminated turn.
+      // The reply is honest about the failure and claims nothing that did not happen.
       sse(res, { type: 'error', error: 'Unable to complete your request right now.' });
+      sse(res, { type: 'text', content: 'I could not finish that just now. Nothing was booked, charged, or arranged. Please try again.' });
+      sse(res, { type: 'done', fullReply: 'I could not finish that just now. Nothing was booked, charged, or arranged. Please try again.', cardData: null, conversationId: activeConversation, diagnostics: { completionFailure: true } });
       sse(res, '[DONE]');
       res.end();
     }
