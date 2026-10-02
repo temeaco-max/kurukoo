@@ -9,6 +9,9 @@ RUN npm run build
 
 FROM node:22-bookworm-slim AS runtime
 WORKDIR /app
+# The manifests must exist before `npm ci`: without them the runtime stage has no
+# lockfile to install from and the production image fails to build.
+COPY package.json package-lock.json ./
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=8080 \
