@@ -6,7 +6,7 @@ describe("Chat composer control contract", () => {
   const mobile = readFileSync(resolve(process.cwd(), "app/(tabs)/index.tsx"), "utf8");
   const webRoot = resolve(process.cwd(), "../..");
   const webApp = readFileSync(resolve(webRoot, "views/app.ejs"), "utf8");
-  const foundation = readFileSync(resolve(webRoot, "public/css/kurukoo-client-foundation.css"), "utf8");
+  const foundation = readFileSync(resolve(webRoot, "frontend/public/css/kurukoo-client-foundation.css"), "utf8");
 
   it("keeps every mobile composer control connected to an action", () => {
     expect(mobile).toContain('accessibilityLabel="Show conversation context"');
