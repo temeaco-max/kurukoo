@@ -60,7 +60,7 @@ export const EXECUTION_NETWORK_PILLARS: readonly ExecutionNetworkPillar[] = [
   P('progressive_disclosure_ux', 'Progressive-disclosure UX', 'implemented', ['chatRouter', 'workSurface', 'activitySurface'], ['economic_request', 'execution'], 'The user sees a simple outcome-first journey while important consent and failure states remain visible.'),
   P('execution_network_effects', 'Execution-network effects', 'plumbed', ['providerNetwork', 'economicRequestService', 'executionPersistence'], ['provider', 'economic_request', 'evidence'], 'Each verified execution can strengthen future matching/trust without becoming an ungrounded claim.'),
   P('provider_consumer_dual_network', 'Provider-consumer dual network', 'plumbed', ['consumerChat', 'providerRoutes', 'economicRequestService'], ['provider', 'economic_request'], 'The consumer and provider sides use the same canonical request/execution objects.'),
-  // ── muse.ai gap-fill pillars ─────────────────────────────────────────
+  // ── Secure execution and payment-protection pillars ─────────────────────
   P('secure_credential_vault', 'Secure credential vault', 'plumbed', ['secureCredentialStore'], ['credential_vault'], 'User-scoped encrypted credential store the agent cannot see.'),
   P('one_time_card_protection', 'One-time card + purchase protection', 'plumbed', ['oneTimeCardService'], ['payment_protection'], 'Virtual cards with single-use tokens and purchase protection claims.'),
   P('isolated_execution_surface', 'Isolated execution surface', 'external_activation_required', ['secureExecutionEnvironment'], ['sandboxed_execution'], 'Sandboxed browser/VM execution surface for agent tasks.'),

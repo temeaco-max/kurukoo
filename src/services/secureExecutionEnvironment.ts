@@ -1,6 +1,6 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 /**
- * Secure Execution Environment — muse.ai "Secure VM" gap filler.
+ * Secure Execution Environment — isolated browser/VM execution boundary.
  * Isolated execution surface (sandboxed browser / headless runtime) for tasks
  * needing a real browser or OS-level action. Kurukoo-side infra (session
  * lifecycle, action queue, result retrieval, audit) is fully functional; the
