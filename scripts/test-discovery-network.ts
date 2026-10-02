@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { getDiscoveryEntity, inviteContributorToDiscoveryEntity, queryDiscoveryEntities, transitionDiscoveryEntity, upsertDiscoveryEntity } from '../src/services/discoveryNetwork.js';
 import { processCanonicalChatTurn } from '../src/services/canonicalChatTurnService.js';
 
-const discoverController = fs.readFileSync(new URL('../public/js/kurukoo-discover-map.js', import.meta.url), 'utf8');
+const discoverController = fs.readFileSync(new URL('../frontend/public/js/kurukoo-discover-map.js', import.meta.url), 'utf8');
 const discoverExperience = fs.readFileSync(new URL('../src/services/discoverExperience.ts', import.meta.url), 'utf8');
 assert.match(discoverExperience, /canonicalAction:'notification\.open'/, 'watch notifications must return through the canonical notification action');
 assert.match(discoverExperience, /contextId:`notification:\$\{inserted\}`/, 'watch notifications must preserve their persisted notification context');
