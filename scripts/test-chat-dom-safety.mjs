@@ -5,11 +5,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const source = fs.readFileSync(path.join(__dirname, '../public/js/kurukoo-primary-chat.js'), 'utf8');
-const shell = fs.readFileSync(path.join(__dirname, '../public/chat/index.html'), 'utf8');
-const chatCssEntry = fs.readFileSync(path.join(__dirname, '../public/css/kurukoo-chat.css'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '../frontend/public/js/kurukoo-primary-chat.js'), 'utf8');
+const shell = fs.readFileSync(path.join(__dirname, '../frontend/public/chat/index.html'), 'utf8');
+const chatCssEntry = fs.readFileSync(path.join(__dirname, '../frontend/public/css/kurukoo-chat.css'), 'utf8');
 const cssImports = [...chatCssEntry.matchAll(/@import\s+url\(["']([^"']+)["']\)/g)].map((match) => match[1]);
-const importedChatCss = cssImports.map((href) => fs.readFileSync(path.join(__dirname, '../public', href.replace(/^\//, '')), 'utf8')).join('\n');
+const importedChatCss = cssImports.map((href) => fs.readFileSync(path.join(__dirname, '../frontend/public', href.replace(/^\//, '')), 'utf8')).join('\n');
 const chatCss = `${chatCssEntry}\n${importedChatCss}`;
 const storefrontStart = source.indexOf('function renderAgenticStorefront');
 const storefrontEnd = source.indexOf('function renderCard', storefrontStart);
@@ -37,7 +37,7 @@ assert.match(source, /\/api\/safety\/contacts\/.*\/revoke/, 'context inspector m
 assert.match(source, /function updateNativeAssistanceStatus\(/, 'primary chat must derive proactive Native Assistance status from canonical state');
 assert.match(source, /no contact is notified automatically/, 'safety status must preserve the non-emergency delivery boundary');
 assert.match(source, /function setTypingStatus\(/, 'chat must own a reusable live typing-status renderer');
-assert.match(source, /data\.type === 'status'.*setTypingStatus/s, 'stream status events must drive the typing indicator');
+assert.match(source, /data\.type === (['"])status\1.*setTypingStatus/s, 'stream status events must drive the typing indicator');
 assert.match(source, /data-kurukoo-typing/, 'typing presence must remain transient rather than becoming a saved message');
 assert.match(source, /aria-live.*polite/, 'typing presence must be announced accessibly');
 assert.match(source, /message-arrived/, 'streamed assistant content must receive the enhanced arrival state');

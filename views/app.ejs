@@ -25,7 +25,7 @@
     <%- include('_partials/app-header', { selected, section, canonicalPath, displayName, phone }) %>
     <%- include('_partials/app-sidebar', { selected, section, canonicalPath, displayName, phone }) %>
     <main class="k-app-main">
-      <div class="k-app-container">
+      <div class="k-app-container k-app-surface">
         <%- include('_partials/app-page-header', { selected, section, canonicalPath, displayName, phone }) %>
         <%- include('_partials/app-context-bridge', { selected, section, canonicalPath, displayName, phone }) %>
         <% if (section === 'desk') { %>
