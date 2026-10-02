@@ -43,6 +43,7 @@
     "test:startup": "node --import tsx --test test/startup.test.ts",
     "test:feature-flags": "tsx scripts/test-feature-flags.ts",
     "test:compliance": "node --import tsx --test test/compliance.test.ts",
+    "test:compliance-filter": "tsx scripts/test-compliance-filter.ts",
     "test:intent-routing": "node --import tsx --test test/intent-routing.test.ts",
     "test:secure-services": "node --import tsx --test test/secure-services.test.ts",
     "test:execution-network-contract": "tsx scripts/test-execution-network-contract.ts",
