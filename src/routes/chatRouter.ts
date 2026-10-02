@@ -179,7 +179,13 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
     console.error('[Chat] unified stream failed:', error);
     if (!res.writableEnded) {
       sse(res, { type: 'status', status: 'error' });
+      // Every 200 stream must terminate with a structured done event, even when the
+      // turn failed. Clients and contracts distinguish a completed turn from a failed
+      // one by this event, so a bare error + [DONE] left them with an unterminated turn.
+      // The reply is honest about the failure and claims nothing that did not happen.
       sse(res, { type: 'error', error: 'Unable to complete your request right now.' });
+      sse(res, { type: 'text', content: 'I could not finish that just now. Nothing was booked, charged, or arranged. Please try again.' });
+      sse(res, { type: 'done', fullReply: 'I could not finish that just now. Nothing was booked, charged, or arranged. Please try again.', cardData: null, conversationId: activeConversation, diagnostics: { completionFailure: true } });
       sse(res, '[DONE]');
       res.end();
     }
