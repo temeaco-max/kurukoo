@@ -132,6 +132,11 @@ router.post('/stream', optionalAuthenticateUser, async (req: AuthRequest, res) =
     res.setHeader('Connection', 'keep-alive');
     sse(res, { type: 'status', status: 'error' });
     sse(res, { type: 'error', error: 'This message looks like it may not be safe. Please rephrase and try again.' });
+    // Terminal state, like every other chat stream exit: the client must be able to
+    // tell a completed turn from a blocked one. The reply restates the block and
+    // claims no capability, booking, payment or outcome.
+    sse(res, { type: 'text', content: 'I could not accept that message. Nothing was booked, charged, or arranged. Please rephrase and try again.' });
+    sse(res, { type: 'done', fullReply: 'I could not accept that message. Nothing was booked, charged, or arranged. Please rephrase and try again.', cardData: null, conversationId, diagnostics: { blockedByCompliance: true } });
     sse(res, '[DONE]');
     res.end();
     return;
