@@ -75,6 +75,34 @@ KURUKOO_LOCATION_CONSENT_ENABLED=false
 
 Production operators must set them deliberately after reviewing privacy, notification, device-revocation, recovery, and provider requirements. The repository is complete for activation when the flags and provider prerequisites are supplied, but it does not claim that push, WhatsApp, Telegram, SMS, email, or location delivery is live without external evidence.
 
+## Boundary ownership
+
+Five boundaries are adjacent and easy to confuse. Each has exactly one owner. Do not
+add a second store, queue, or lifecycle for any of them; extend the owner instead.
+
+| Boundary | Canonical owner | Persistence | HTTP surface | State |
+|---|---|---|---|---|
+| Trusted contact | `src/services/authChallengeService.ts` (`addTrustedContact`, `listTrustedContacts`, revoke/recovery) | `trusted_contacts`, owner-scoped, verified flag | `src/routes/authRoutes.ts` | Implemented |
+| Contact consent | `src/services/trustedContactService.ts` (`createTrustedContactConsentRequest`, `respondToTrustedContactConsent`, `revokeTrustedContactConsentRequest`) | `trusted_contact_consent_requests` | `src/routes/trustedContactConsentRoutes.ts` | Implemented; guarded by `scripts/test-trusted-contact-consent.ts` |
+| Notification | `src/services/pushNotifications.ts` (`sendFcmPush`, `transitionNotificationDelivery`, `recordNotificationAttempt`, `listQueuedNotifications`) | `internal_notifications` with delivery state, attempt count, backoff, dead-letter | `src/routes/notificationRoutes.ts`, `src/routes/fcmPublicRoutes.ts`, `src/routes/adminFcmRoutes.ts` | Implemented behind provider credentials |
+| Linked device | `src/services/telegramLinkedDeviceService.ts`, `src/services/whatsappLinkedDeviceService.ts` | provider session plus canonical participant state | `src/routes/telegramLinkedDeviceRoutes.ts`, `src/routes/whatsappLinkedDeviceRoutes.ts` | Implemented; gated by `pilotReadiness` / `externalIntegrationReadiness` |
+| Payment | `src/routes/paymentRoutes.ts` with `src/services/stripePayment.ts` and `paystackPayment.ts` | orders, escrow, points ledger | `src/routes/paymentRoutes.ts`, `stripeAgentPointsWebhookRoutes.ts` | Implemented; `externalIntegrationReadiness` reports `productionActive=false` until a provider is activated |
+
+### Deliberate gap: the trusted-contact provider adapter
+
+`src/services/contactSyncService.ts` is the placeholder for importing a contact
+provider's address book. It is intentionally inert:
+
+- `getContactSyncReadiness()` reports unavailable unless `KURUKOO_CONTACT_SYNC_ENABLED=true`
+  and `KURUKOO_CONTACT_SYNC_SOURCE=trusted_provider`, and its `reason` states the boundary is
+  `ready_for_adapter_validation`.
+- `startContactSyncService()` logs that no adapter is activated and changes no contact data.
+
+The adapter stays unimplemented until the provider, consent, ownership, retention and
+deletion contract is approved. The consent lifecycle above already exists, so the
+missing piece is the provider adapter only — not a second consent store. Readiness text
+must not be promoted to a claim that any contact was imported or verified.
+
 ## Remaining activation requirements
 
 | Capability | Repository state | External requirement |
