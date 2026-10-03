@@ -65,6 +65,7 @@ Never use `COMPLETE`, `DONE`, `LIVE`, `READY`, `PRODUCTION`, or `VERIFIED` as a 
 | Discover | canonical discovery services | Implemented; source/availability claims remain evidence-bound. |
 | Topics | canonical Topic services | Implemented/foundation depending on deployment surface. |
 | Student model | `ml/` + canonical AI runtime | Training foundation exists; a Kurukoo-trained production adapter is **not** assumed until evaluation/registry evidence proves it. |
+| Web serving | Express static layers, then EJS routers, then JSON APIs | Measured request order: built SPA prerender (`.output/public`, 12 static shells, no client hydration) → source static (`frontend/public` legacy shells) → EJS routers (`publicRoutes` marketing, `appSurfaceRoutes` authenticated shell; 47 templates, all render targets present) → API routers. The TanStack SPA runs only under `vite dev`; its production bundles are referenced by no served page. Backend page rendering is therefore load-bearing today, not legacy fallback. Removing any EJS page route requires a production SPA boot path first (entry shell, hydration, fallback routing) plus per-route coverage proof — deletion without that breaks the route. |
 
 ## 5. Locked Agent / communication foundation
 
