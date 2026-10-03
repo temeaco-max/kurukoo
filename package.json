@@ -8,7 +8,7 @@
   "copyright": "Copyright (c) 2026 temeaco-max. All rights reserved.",
   "scripts": {
     "dev": "NODE_ENV=development tsx index.ts",
-    "build:spa": "npm --prefix frontend ci --ignore-scripts --no-audit --no-fund && npm --prefix frontend run build",
+    "build:spa": "npm --prefix frontend ci --ignore-scripts --no-audit --no-fund && NODE_ENV=production npm --prefix frontend run build",
     "build": "tsc && npm run build:spa && npm run copy:public && npm run optimize:css",
     "copy:public": "node scripts/copy-public.mjs",
     "optimize:css": "node scripts/optimize-css.mjs",

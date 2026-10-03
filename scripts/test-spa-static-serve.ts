@@ -63,17 +63,13 @@ try {
   const bundleBody = await bundleResponse.text();
   assert.ok(bundleBody.length > 1000, 'Client bundle must have real content');
 
-  // MEASURED LIMITATION, asserted so it cannot be forgotten.
-  //
-  // The prerenderer currently emits the document shell with an empty <main>
-  // (17 of 21 built pages carry `min-h-[60vh]` and nothing else). Page content
-  // appears only after client hydration. That is acceptable for a pilot but it
-  // is NOT acceptable SEO, and it must not be silently inherited by later
-  // routes. When the prerenderer is fixed to capture rendered route output,
-  // this assertion should start failing and be inverted.
+  // Every prerendered page now emits its route content server-side. This
+  // asserts the about document carries its real <main> copy instead of the
+  // empty hydration placeholder, so the SPA may actually own the route.
   const aboutMain = aboutHtml.match(/<main[^>]*>([\s\S]*?)<\/main>/)?.[1] ?? '';
   const aboutMainText = aboutMain.replace(/<footer[\s\S]*$/, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-  assert.equal(aboutMainText.length, 0, 'Prerendered <main> is currently empty by measurement; if this now passes, update the SEO parity work rather than deleting the assertion');
+  assert.ok(aboutMainText.length > 0, 'Prerendered <main> must contain server-rendered page content');
+  assert.match(aboutMainText, /A calmer way to get life moving\./, 'Prerendered <main> must include the About page copy server-side');
 
   // A route outside the pilot must keep its previous owner rather than 404 or go blank.
   const discover = await fetch(`${base}/discover/`);
