@@ -276,6 +276,11 @@ const ExploreRoute = ExploreRouteImport.update({
   path: '/explore',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FieldRoute = FieldRouteImport.update({
+  id: '/field',
+  path: '/field',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FollowingRoute = FollowingRouteImport.update({
   id: '/following',
   path: '/following',
@@ -349,11 +354,6 @@ const PartnersRoute = PartnersRouteImport.update({
 const PeopleRoute = PeopleRouteImport.update({
   id: '/people',
   path: '/people',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FieldRoute = FieldRouteImport.update({
-  id: '/field',
-  path: '/field',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PerchRoute = PerchRouteImport.update({
@@ -682,6 +682,7 @@ export interface FileRoutesByFullPath {
   '/developer': typeof DeveloperRoute
   '/discover': typeof DiscoverRoute
   '/explore': typeof ExploreRouteWithChildren
+  '/field': typeof FieldRoute
   '/following': typeof FollowingRoute
   '/help': typeof HelpRoute
   '/how-it-works': typeof HowItWorksRoute
@@ -697,7 +698,6 @@ export interface FileRoutesByFullPath {
   '/opportunities': typeof OpportunitiesRoute
   '/partners': typeof PartnersRoute
   '/people': typeof PeopleRoute
-  '/field': typeof FieldRoute
   '/perch': typeof PerchRoute
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRouteWithChildren
@@ -790,6 +790,7 @@ export interface FileRoutesByTo {
   '/developer': typeof DeveloperRoute
   '/discover': typeof DiscoverRoute
   '/explore': typeof ExploreRouteWithChildren
+  '/field': typeof FieldRoute
   '/following': typeof FollowingRoute
   '/help': typeof HelpRoute
   '/how-it-works': typeof HowItWorksRoute
@@ -805,7 +806,6 @@ export interface FileRoutesByTo {
   '/opportunities': typeof OpportunitiesRoute
   '/partners': typeof PartnersRoute
   '/people': typeof PeopleRoute
-  '/field': typeof FieldRoute
   '/perch': typeof PerchRoute
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRouteWithChildren
@@ -898,6 +898,7 @@ export interface FileRoutesById {
   '/developer': typeof DeveloperRoute
   '/discover': typeof DiscoverRoute
   '/explore': typeof ExploreRouteWithChildren
+  '/field': typeof FieldRoute
   '/following': typeof FollowingRoute
   '/help': typeof HelpRoute
   '/how-it-works': typeof HowItWorksRoute
@@ -913,7 +914,6 @@ export interface FileRoutesById {
   '/opportunities': typeof OpportunitiesRoute
   '/partners': typeof PartnersRoute
   '/people': typeof PeopleRoute
-  '/field': typeof FieldRoute
   '/perch': typeof PerchRoute
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRouteWithChildren
@@ -1008,6 +1008,7 @@ export interface FileRouteTypes {
     | '/developer'
     | '/discover'
     | '/explore'
+    | '/field'
     | '/following'
     | '/help'
     | '/how-it-works'
@@ -1023,7 +1024,6 @@ export interface FileRouteTypes {
     | '/opportunities'
     | '/partners'
     | '/people'
-    | '/field'
     | '/perch'
     | '/pricing'
     | '/profile'
@@ -1116,6 +1116,7 @@ export interface FileRouteTypes {
     | '/developer'
     | '/discover'
     | '/explore'
+    | '/field'
     | '/following'
     | '/help'
     | '/how-it-works'
@@ -1131,7 +1132,6 @@ export interface FileRouteTypes {
     | '/opportunities'
     | '/partners'
     | '/people'
-    | '/field'
     | '/perch'
     | '/pricing'
     | '/profile'
@@ -1223,6 +1223,7 @@ export interface FileRouteTypes {
     | '/developer'
     | '/discover'
     | '/explore'
+    | '/field'
     | '/following'
     | '/help'
     | '/how-it-works'
@@ -1238,7 +1239,6 @@ export interface FileRouteTypes {
     | '/opportunities'
     | '/partners'
     | '/people'
-    | '/field'
     | '/perch'
     | '/pricing'
     | '/profile'
@@ -1332,6 +1332,7 @@ export interface RootRouteChildren {
   DeveloperRoute: typeof DeveloperRoute
   DiscoverRoute: typeof DiscoverRoute
   ExploreRoute: typeof ExploreRouteWithChildren
+  FieldRoute: typeof FieldRoute
   FollowingRoute: typeof FollowingRoute
   HelpRoute: typeof HelpRoute
   HowItWorksRoute: typeof HowItWorksRoute
@@ -1347,7 +1348,6 @@ export interface RootRouteChildren {
   OpportunitiesRoute: typeof OpportunitiesRoute
   PartnersRoute: typeof PartnersRoute
   PeopleRoute: typeof PeopleRoute
-  FieldRoute: typeof FieldRoute
   PerchRoute: typeof PerchRoute
   PricingRoute: typeof PricingRoute
   ProfileRoute: typeof ProfileRouteWithChildren
@@ -1600,6 +1600,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExploreRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/field': {
+      id: '/field'
+      path: '/field'
+      fullPath: '/field'
+      preLoaderRoute: typeof FieldRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/following': {
       id: '/following'
       path: '/following'
@@ -1703,13 +1710,6 @@ declare module '@tanstack/react-router' {
       path: '/people'
       fullPath: '/people'
       preLoaderRoute: typeof PeopleRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/field': {
-      id: '/field'
-      path: '/field'
-      fullPath: '/field'
-      preLoaderRoute: typeof FieldRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/perch': {
@@ -2321,6 +2321,7 @@ const rootRouteChildren: RootRouteChildren = {
   DeveloperRoute: DeveloperRoute,
   DiscoverRoute: DiscoverRoute,
   ExploreRoute: ExploreRouteWithChildren,
+  FieldRoute: FieldRoute,
   FollowingRoute: FollowingRoute,
   HelpRoute: HelpRoute,
   HowItWorksRoute: HowItWorksRoute,
@@ -2336,7 +2337,6 @@ const rootRouteChildren: RootRouteChildren = {
   OpportunitiesRoute: OpportunitiesRoute,
   PartnersRoute: PartnersRoute,
   PeopleRoute: PeopleRoute,
-  FieldRoute: FieldRoute,
   PerchRoute: PerchRoute,
   PricingRoute: PricingRoute,
   ProfileRoute: ProfileRouteWithChildren,
