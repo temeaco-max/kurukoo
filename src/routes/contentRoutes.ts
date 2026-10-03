@@ -6,13 +6,6 @@ import { getAllBlogArticles, getBlogArticleBySlug, getAllResourceMetadata, getRe
 export function createContentRouter(): Router {
     const router = express.Router();
 
-    router.get('/resources', async (_req, res, next) => {
-        try {
-            return res.render('resources/index');
-        } catch (error) {
-            return next(error);
-        }
-    });
 
     router.get('/resources/:slug', async (req, res, next) => {
         try {

@@ -60,6 +60,9 @@ try {
       '/how-it-works': /<title>How Kurukoo works — everyday AI that gets things done<\/title>/,
       '/partners': /<title>Partners — Kurukoo<\/title>/,
       '/advertise': /<title>Advertisers — Kurukoo<\/title>/,
+      '/network': /<title>The Kurukoo Network<\/title>/,
+      '/topics': /<title>Topics — Kurukoo<\/title>/,
+      '/resources': /<title>Kurukoo resources and visual guides<\/title>/,
     };
     const expectedTitle = expectedTitles[route];
     assert.ok(expectedTitle, `${route} must be in the expected-title contract`);
