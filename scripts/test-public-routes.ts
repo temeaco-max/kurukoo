@@ -4,6 +4,8 @@ import publicRouter from '../src/routes/publicRoutes.js';
 const expected = [
     '/',
     '/discover/:slug',
+    '/explore',
+    '/explore/',
     '/p/:providerSlug',
     '/admin',
     '/admin/',
@@ -44,10 +46,14 @@ const expected = [
 
 const stack = (publicRouter as any).stack || [];
 const routes = stack.filter((layer: any) => layer.route).map((layer: any) => layer.route.path);
+// /explore and /explore/ are registered only as the 302 removal mechanism for the retired
+// browse surface; they must never render content again.
+const retiredExploreAliases = ['/explore', '/explore/'];
 const retiredWorkspaceAliases = ['/requests','/reminders','/saved','/cart','/confirmation','/points','/tasks','/daily-picks','/memory','/safety','/call','/settings','/top-up','/subscription','/connect'];
 const missing = expected.filter(path => !routes.includes(path));
 const retired = retiredWorkspaceAliases.filter(path => routes.includes(path));
 if (missing.length) throw new Error(`Public route module is missing: ${missing.join(', ')}`);
 if (retired.length) throw new Error(`Public route module must not retain workspace aliases: ${retired.join(', ')}`);
+if (retiredExploreAliases.some((path) => !routes.includes(path))) throw new Error('Explore removal redirects must stay registered until external links expire');
 if (routes.length !== expected.length) { const unexpected = routes.filter((route: string) => !expected.includes(route)); throw new Error(`Public route module has unexpected routes: ${unexpected.join(', ')}`); }
 console.log(`Public route module contract passed: ${routes.length} routes.`);
