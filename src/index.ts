@@ -1,7 +1,9 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import dotenv from 'dotenv';
 import { assertProductionPersistenceSafe } from './services/persistenceReadiness.js';
+import { getSpaStaticBoundary } from './services/spaStaticService.js';
 dotenv.config();
 const production = process.env.NODE_ENV === 'production';
 const databaseMode = String(process.env.KURUKOO_DATABASE_MODE || 'sqljs').trim().toLowerCase();
@@ -108,10 +110,43 @@ const app = express();
 app.set('view engine', 'ejs'); app.set('views', path.join(process.cwd(),'views')); app.disable('x-powered-by'); app.use(observabilityMiddleware);
 app.use((_req,res,next)=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','SAMEORIGIN');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');res.setHeader('Permissions-Policy','camera=(self), microphone=(self), geolocation=(self), payment=()');if(production)res.setHeader('Strict-Transport-Security','max-age=31536000; includeSubDomains');next();});
 app.use(compression({threshold:1024}));
+// The built SPA is mounted before the legacy static layer so its hashed client
+// bundle is reachable. Only routes listed in SPA_PILOT_ROUTES are served from
+// the built output; everything else keeps its existing owner.
+const spaStatic = getSpaStaticBoundary();
+if (spaStatic.available && spaStatic.publicDir) {
+  app.use(express.static(spaStatic.publicDir, {
+    index: false,
+    fallthrough: true,
+    setHeaders: (res, filePath) => {
+      const lower = filePath.toLowerCase();
+      if (/\.(?:css|js|html)$/.test(lower) || lower.endsWith('/sw.js') || lower.endsWith('/manifest.json')) {
+        res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+        return;
+      }
+      if (/\.(?:svg|png|jpe?g|webp|woff2?)$/.test(lower)) {
+        res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
+      }
+    },
+  }));
+}
 app.use(express.static(path.join(process.cwd(),'frontend/public'),{index:false,fallthrough:true,setHeaders:(res,filePath)=>{const lower=filePath.toLowerCase();if(lower.endsWith('.html')||lower.endsWith('/sw.js')||lower.endsWith('/manifest.json')||/\.(?:css|js)$/.test(lower)){res.setHeader('Cache-Control','no-cache, must-revalidate');return;}if(/\.(?:svg|png|jpe?g|webp|woff2?)$/.test(lower))res.setHeader('Cache-Control','public, max-age=604800, stale-while-revalidate=86400');}}));
 // Admin is a privileged client surface, deliberately outside the customer web frontend (frontend/).
 // UI pages live in /admin (repo root); the canonical Admin API lives at /api/admin.
 app.use('/admin',express.static(path.join(process.cwd(),'admin'),{index:false,fallthrough:true,setHeaders:(res,filePath)=>{const lower=filePath.toLowerCase();if(lower.endsWith('.html')||/\.(?:css|js)$/.test(lower))res.setHeader('Cache-Control','no-cache, must-revalidate');}}));
+// Prerendered SPA pages. express.static is mounted with index:false so a
+// route like /about does not resolve to the directory index on its own; the
+// pilot routes are served explicitly here, ahead of the legacy EJS routers.
+// If the built output is missing, the request falls through and the previous
+// owner still answers, so an unbuilt deployment degrades to the old behaviour.
+if (spaStatic.available && spaStatic.publicDir) {
+  app.use((req, res, next) => {
+    if (!spaStatic.serves(req.path)) return next();
+    const entry = path.join(spaStatic.publicDir as string, req.path.replace(/^\/+/, ''), 'index.html');
+    if (!fs.existsSync(entry)) return next();
+    return res.sendFile(entry);
+  });
+}
 app.use(express.urlencoded({ extended:false, limit:process.env.CHAT_ATTACHMENT_BODY_LIMIT || '35mb' }));
 app.use(express.json({limit:process.env.CHAT_ATTACHMENT_BODY_LIMIT || '35mb',verify:(req,_res,buf)=>{(req as any).rawBody=Buffer.from(buf);}}));
 app.use(apiV1Bridge);
