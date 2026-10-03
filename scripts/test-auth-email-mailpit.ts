@@ -73,7 +73,7 @@ console.log(`[mailpit] Mailpit ready — SMTP ${SMTP_HOST}:${SMTP_PORT}, web UI 
 
 // ── 1. The canonical magic-link flow sends through sendEmail() → Mailpit ──
 const challengeService = await import('../src/services/authChallengeService.js');
-const result = await challengeService.requestMagicLink({ email: 'temea.co@gmail.com', name: 'Temea', returnPath: '/perch' });
+const result = await challengeService.requestMagicLink({ email: 'temea.co@gmail.com', name: 'Temea', returnPath: '/field' });
 assert.equal(result.success, true, `magic link request failed: ${result.message}`);
 assert.equal(result.delivery, 'email', 'email must be really delivered through the transport');
 assert.equal(result.provider, 'mailpit', 'delivery must go through the Mailpit SMTP transport');
@@ -91,7 +91,7 @@ const haystack = `${detail.Text || ''}\n${detail.HTML || ''}`;
 const linkMatch = haystack.match(/https?:\/\/[^\s"'<>]+\/auth\/challenge\/complete\?token=[^\s"'<>]+/);
 assert.ok(linkMatch, 'captured email must contain the magic link');
 const magicLink = linkMatch[0].replace(/&amp;/g, '&');
-assert.ok(magicLink.includes('return=%2Fperch') || magicLink.includes('return=/perch'), 'magic link must target /perch');
+assert.ok(magicLink.includes('return=%2Ffield') || magicLink.includes('return=/field'), 'magic link must target /field');
 console.log(`[mailpit] Captured magic link from the real email: ${magicLink.replace(/token=[^&]+/, 'token=<redacted>')}`);
 
 // ── 3. Completing the captured link issues the canonical session ──
@@ -101,7 +101,7 @@ const consumed = await challengeService.consumeAuthChallengeToken(token);
 assert.equal(consumed.success, true, 'the captured magic link must complete the canonical challenge');
 assert.equal(consumed.challenge.phone, existingPhone, 'session must bind to the existing canonical phone identity');
 assert.ok(!consumed.challenge.phone.startsWith('em_'), 'existing email must never resolve to em_*');
-console.log(`[mailpit] Captured link completed the canonical challenge for ${consumed.challenge.phone} (returnPath /perch).`);
+console.log(`[mailpit] Captured link completed the canonical challenge for ${consumed.challenge.phone} (returnPath /field).`);
 
 // ── 4. Mailpit is refused in production (truthful failure, no fake send) ──
 const previousNodeEnv = process.env.NODE_ENV;

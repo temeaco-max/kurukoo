@@ -41,6 +41,7 @@ import { Route as DailyPicksRouteImport } from './routes/daily-picks'
 import { Route as DeveloperRouteImport } from './routes/developer'
 import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as ExploreRouteImport } from './routes/explore'
+import { Route as FieldRouteImport } from './routes/field'
 import { Route as FollowingRouteImport } from './routes/following'
 import { Route as HelpRouteImport } from './routes/help'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
@@ -273,6 +274,11 @@ const DiscoverRoute = DiscoverRouteImport.update({
 const ExploreRoute = ExploreRouteImport.update({
   id: '/explore',
   path: '/explore',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FieldRoute = FieldRouteImport.update({
+  id: '/field',
+  path: '/field',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FollowingRoute = FollowingRouteImport.update({
@@ -676,6 +682,7 @@ export interface FileRoutesByFullPath {
   '/developer': typeof DeveloperRoute
   '/discover': typeof DiscoverRoute
   '/explore': typeof ExploreRouteWithChildren
+  '/field': typeof FieldRoute
   '/following': typeof FollowingRoute
   '/help': typeof HelpRoute
   '/how-it-works': typeof HowItWorksRoute
@@ -783,6 +790,7 @@ export interface FileRoutesByTo {
   '/developer': typeof DeveloperRoute
   '/discover': typeof DiscoverRoute
   '/explore': typeof ExploreRouteWithChildren
+  '/field': typeof FieldRoute
   '/following': typeof FollowingRoute
   '/help': typeof HelpRoute
   '/how-it-works': typeof HowItWorksRoute
@@ -890,6 +898,7 @@ export interface FileRoutesById {
   '/developer': typeof DeveloperRoute
   '/discover': typeof DiscoverRoute
   '/explore': typeof ExploreRouteWithChildren
+  '/field': typeof FieldRoute
   '/following': typeof FollowingRoute
   '/help': typeof HelpRoute
   '/how-it-works': typeof HowItWorksRoute
@@ -999,6 +1008,7 @@ export interface FileRouteTypes {
     | '/developer'
     | '/discover'
     | '/explore'
+    | '/field'
     | '/following'
     | '/help'
     | '/how-it-works'
@@ -1106,6 +1116,7 @@ export interface FileRouteTypes {
     | '/developer'
     | '/discover'
     | '/explore'
+    | '/field'
     | '/following'
     | '/help'
     | '/how-it-works'
@@ -1212,6 +1223,7 @@ export interface FileRouteTypes {
     | '/developer'
     | '/discover'
     | '/explore'
+    | '/field'
     | '/following'
     | '/help'
     | '/how-it-works'
@@ -1320,6 +1332,7 @@ export interface RootRouteChildren {
   DeveloperRoute: typeof DeveloperRoute
   DiscoverRoute: typeof DiscoverRoute
   ExploreRoute: typeof ExploreRouteWithChildren
+  FieldRoute: typeof FieldRoute
   FollowingRoute: typeof FollowingRoute
   HelpRoute: typeof HelpRoute
   HowItWorksRoute: typeof HowItWorksRoute
@@ -1585,6 +1598,13 @@ declare module '@tanstack/react-router' {
       path: '/explore'
       fullPath: '/explore'
       preLoaderRoute: typeof ExploreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/field': {
+      id: '/field'
+      path: '/field'
+      fullPath: '/field'
+      preLoaderRoute: typeof FieldRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/following': {
@@ -2301,6 +2321,7 @@ const rootRouteChildren: RootRouteChildren = {
   DeveloperRoute: DeveloperRoute,
   DiscoverRoute: DiscoverRoute,
   ExploreRoute: ExploreRouteWithChildren,
+  FieldRoute: FieldRoute,
   FollowingRoute: FollowingRoute,
   HelpRoute: HelpRoute,
   HowItWorksRoute: HowItWorksRoute,

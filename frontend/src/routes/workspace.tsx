@@ -2,14 +2,14 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/workspace")({
   beforeLoad: () => {
-    throw redirect({ to: "/perch" });
+    throw redirect({ to: "/field" });
   },
   head: () => ({
     meta: [
-      { title: "Perch — Kurukoo" },
+      { title: "Field — Kurukoo" },
       {
         name: "description",
-        content: "Your personal Perch for getting useful things done with Kurukoo.",
+        content: "Your personal Field for getting useful things done with Kurukoo.",
       },
     ],
   }),

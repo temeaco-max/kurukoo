@@ -100,7 +100,7 @@ That includes:
 * public marketing;
 * public Chat/Voice;
 * authenticated OS;
-* Perch;
+* Field;
 * Work;
 * Explore;
 * Artifacts;
@@ -826,7 +826,7 @@ We then progressively connect:
 
 * Chat;
 * auth;
-* Perch;
+* Field;
 * Work;
 * Explore;
 * providers;

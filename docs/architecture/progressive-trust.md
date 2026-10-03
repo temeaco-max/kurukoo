@@ -103,6 +103,19 @@ deletion contract is approved. The consent lifecycle above already exists, so th
 missing piece is the provider adapter only — not a second consent store. Readiness text
 must not be promoted to a claim that any contact was imported or verified.
 
+### Scam filter: digit runs need a money context
+
+`src/services/complianceFilter.ts` blocks scam keywords and patterns unconditionally,
+but a long digit run contributes to a block only alongside money or transfer wording
+(`DIGIT_RUN` plus `MONEY_TRANSFER_CONTEXT`). An unconditional digit rule blocked the
+canonical conversational sign-in path — the user typing their own phone number — as
+well as ordinary dated and reference-bearing messages, so it was narrowed to its
+stated intent. Credential solicitation (`pin`/`otp`/`code`) and platform bypass stay
+unconditional because they are unambiguous without digits. `scripts/test-compliance-filter.ts`
+asserts both directions together: scam and payout patterns still blocked, ordinary
+digit-bearing messages allowed, refusals recorded. Do not restore the blanket digit
+rule to make a different check pass; add a narrower context pattern instead.
+
 ## Remaining activation requirements
 
 | Capability | Repository state | External requirement |

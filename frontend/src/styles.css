@@ -339,7 +339,7 @@ body:has(aside[aria-label="Trusted context rail"]) aside[aria-label="OS navigati
 .activity-summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.activity-summary-grid>div{border-radius:13px;background:color-mix(in oklab,var(--surface) 72%,var(--background));padding:10px}.activity-summary-grid strong{display:block;font-size:18px;line-height:1.1}.activity-summary-grid span{display:block;margin-top:4px;font-size:9.5px;color:var(--muted-foreground)}
 
 
-/* Perch canonical card hierarchy: titles carry the hierarchy; eyebrow labels stay hidden. */
+/* Field canonical card hierarchy: titles carry the hierarchy; eyebrow labels stay hidden. */
 .field-card-heading h2 { margin-top: 0; }
 .field-subhead-title { font-size: 12px; font-weight: 700; color: var(--foreground); }
 .field-earnings-card .field-metric-row:last-child { background: color-mix(in oklab, var(--accent) 55%, var(--surface)); border-radius: 14px; margin: 4px 12px; padding-inline: 10px; }

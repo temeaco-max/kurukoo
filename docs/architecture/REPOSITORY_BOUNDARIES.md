@@ -36,7 +36,7 @@ The `frontend/` directory inside this repo is a **workspace integration copy** o
 | Database, migrations, external integrations | kurukoo |
 | SEO endpoints (robots.txt, sitemaps, JSON-LD data) | kurukoo |
 | Web UI — marketing pages | frontend repo |
-| Web UI — authenticated OS (Chat, Work, Explore, Perch, Artifacts, Connect) | frontend repo |
+| Web UI — authenticated OS (Chat, Work, Explore, Field, Artifacts, Connect) | frontend repo |
 | Web UI — admin screens | frontend repo (admin client) |
 | PWA (manifest, service worker, offline, push client) | frontend repo — a capability of web, **not** a separate app |
 | Shared frontend components / visual system / API clients | frontend repo |

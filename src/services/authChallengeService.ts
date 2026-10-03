@@ -83,7 +83,7 @@ function publicAppBaseUrl(): string {
   return String(process.env.KURUKOO_PUBLIC_BASE_URL || process.env.PUBLIC_BASE_URL || '').replace(/\/$/, '');
 }
 
-const ALLOWED_RETURN_PREFIXES = ['/chat', '/connect', '/login', '/settings', '/profile', '/wallet', '/orders', '/provider', '/workspace', '/perch', '/notifications', '/'];
+const ALLOWED_RETURN_PREFIXES = ['/chat', '/connect', '/login', '/settings', '/profile', '/wallet', '/orders', '/provider', '/workspace', '/field', '/notifications', '/'];
 
 export function sanitizeReturnPath(raw?: string | null): string | undefined {
   const p = String(raw || '').trim();
