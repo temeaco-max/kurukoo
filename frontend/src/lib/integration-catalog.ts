@@ -185,7 +185,7 @@ export const integrations: Integration[] = [
     auth: "mcp",
     capabilities: ["Chat", "Voice where supported", "Invoke Kurukoo capabilities"],
     connectionLabel: "Connect from ChatGPT",
-    setupPath: "/integrations/chatgpt",
+    setupPath: "/connect",
     setupLabel: "View ChatGPT setup",
   },
   {
@@ -200,7 +200,7 @@ export const integrations: Integration[] = [
     auth: "mcp",
     capabilities: ["Conversation", "Kurukoo context", "Supported actions"],
     connectionLabel: "Set up in Claude",
-    setupPath: "/integrations/claude",
+    setupPath: "/connect",
     setupLabel: "View Claude setup",
   },
   {
@@ -215,7 +215,7 @@ export const integrations: Integration[] = [
     auth: "mcp",
     capabilities: ["Conversation", "Kurukoo context", "Supported actions"],
     connectionLabel: "Set up in Gemini",
-    setupPath: "/integrations/gemini",
+    setupPath: "/connect",
     setupLabel: "View Gemini setup",
   },
   {
@@ -230,7 +230,7 @@ export const integrations: Integration[] = [
     auth: "mcp",
     capabilities: ["Conversation", "Kurukoo context", "Supported actions"],
     connectionLabel: "Set up in Grok",
-    setupPath: "/integrations/grok",
+    setupPath: "/connect",
     setupLabel: "View Grok setup",
   },
   {
