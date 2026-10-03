@@ -2,8 +2,52 @@
 import { Channel } from '../services/channelIdentifiers.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import makeWASocket, { DisconnectReason, useMultiFileAuthState, type WASocket } from '@whiskeysockets/baileys';
 import QRCode from 'qrcode';
+
+/**
+ * Baileys is loaded LAZILY, and a load failure is remembered.
+ *
+ * Baileys 7 depends on the `whatsapp-rust-bridge` native module. Where that
+ * native binary is absent, a static `import` from '@whiskeysockets/baileys'
+ * throws at MODULE LOAD time. Because this service is imported by the admin
+ * console, the pilot-readiness report and the progressive-identity check, that
+ * one bad import could take down the whole process — a broken OPTIONAL WhatsApp
+ * connector stopping the backend from starting at all.
+ *
+ * Deferring the import contains the failure: the connector reports itself
+ * unavailable and every caller degrades to "WhatsApp linking is not available on
+ * this deployment", which is the truthful state. It never pretends to work and
+ * never fabricates a connection.
+ */
+type BaileysModule = typeof import('@whiskeysockets/baileys');
+type WASocket = import('@whiskeysockets/baileys').WASocket;
+
+let baileysModule: BaileysModule | null = null;
+let baileysLoadError: string | null = null;
+
+/**
+ * The Baileys disconnect codes we branch on, mirrored as constants.
+ *
+ * `isQrPairingExpiry` is synchronous and exported (the contract test calls it
+ * directly), so it cannot await the lazy loader. Hard-coding the enum's own
+ * values keeps it working on a deployment where the Baileys library fails to
+ * load, without reintroducing a module-load import. Values are from Baileys
+ * `Types.DisconnectReason` (connectionClosed 428, connectionLost 408,
+ * timedOut 408, loggedOut 401).
+ */
+const DISCONNECT = { connectionClosed: 428, connectionLost: 408, timedOut: 408, loggedOut: 401 } as const;
+
+async function loadBaileys(): Promise<BaileysModule | null> {
+    if (baileysModule) return baileysModule;
+    if (baileysLoadError) return null;
+    try {
+        baileysModule = (await import('@whiskeysockets/baileys')) as BaileysModule;
+        return baileysModule;
+    } catch (error) {
+        baileysLoadError = error instanceof Error ? error.message : 'The WhatsApp library could not be loaded.';
+        return null;
+    }
+}
 
 export type LinkedDeviceState = 'disabled' | 'idle' | 'pairing' | 'connecting' | 'connected' | 'logged_out' | 'error';
 
@@ -60,10 +104,12 @@ function updateStatus(patch: Partial<LinkedDeviceStatus>): void {
 
 export function getWhatsAppLinkedDevicePairingCode(): string | null { return currentQrText || null; }
 export function getWhatsAppLinkedDeviceStatus(): LinkedDeviceStatus {
-  return { ...currentStatus, enabled: enabled(), ownerConfigured: Boolean(configuredOwner()), authDirectory: authDirectory(), qrDataUrl: currentStatus.qrDataUrl };
+  return { ...currentStatus, enabled: enabled(), ownerConfigured: Boolean(configuredOwner()), authDirectory: authDirectory(), qrDataUrl: currentStatus.qrDataUrl, ...(baileysLoadError ? { lastError: `WhatsApp linking is unavailable on this deployment: ${baileysLoadError}` } : {}) };
 }
 export function isWhatsAppLinkedDeviceConfigured(): boolean {
-  return enabled() && Boolean(configuredOwner()) && authStorageSafe();
+  // A connector whose library failed to load is NOT configured. Reporting it as
+  // configured would let the route return 200 for a pairing that can never work.
+  return !baileysLoadError && enabled() && Boolean(configuredOwner()) && authStorageSafe();
 }
 export function isWhatsAppLinkedDeviceOwner(phone: string): boolean {
   return Boolean(configuredOwner()) && String(phone).trim() === configuredOwner();
@@ -112,7 +158,7 @@ export function isQrPairingExpiry(code: number | undefined, detail: unknown, had
   if (hadRegisteredSession) return false;
   const message = String((detail as any)?.message || detail || '').toLowerCase();
   if (message.includes('qr refs attempts ended') || (message.includes('qr refs') && message.includes('attempts'))) return true;
-  return code === DisconnectReason.connectionLost || code === DisconnectReason.timedOut || code === DisconnectReason.connectionClosed;
+  return code === DISCONNECT.connectionLost || code === DISCONNECT.timedOut || code === DISCONNECT.connectionClosed;
 }
 
 export async function startWhatsAppLinkedDevice(): Promise<void> {
@@ -126,9 +172,16 @@ export async function startWhatsAppLinkedDevice(): Promise<void> {
     const directory = authDirectory();
     fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
     try { fs.chmodSync(directory, 0o700); } catch {}
-    const { state, saveCreds } = await useMultiFileAuthState(directory);
+    // Loaded here, not at module scope, so a broken Baileys install degrades to
+    // "unavailable" instead of preventing the process from starting.
+    const baileys = await loadBaileys();
+    if (!baileys) {
+      updateStatus({ state: 'error', connected: false, qrAvailable: false, qrDataUrl: undefined, lastError: `WhatsApp linking is unavailable on this deployment: ${baileysLoadError}` });
+      return;
+    }
+    const { state, saveCreds } = await baileys.useMultiFileAuthState(directory);
     updateStatus({ state: state.creds.registered ? 'connecting' : 'pairing', lastError: undefined });
-    socket = makeWASocket({
+    socket = baileys.default({
       auth: state,
       printQRInTerminal: false,
       markOnlineOnConnect: false,
@@ -167,7 +220,7 @@ export async function startWhatsAppLinkedDevice(): Promise<void> {
           return;
         }
 
-        if (code === DisconnectReason.loggedOut) {
+        if (code === DISCONNECT.loggedOut) {
           currentQrText = '';
           updateStatus({ state: 'logged_out', connected: false, qrAvailable: false, qrDataUrl: undefined, lastError: 'WhatsApp linked-device session logged out; pair again explicitly.' });
           return;
@@ -207,5 +260,3 @@ export async function stopWhatsAppLinkedDevice(logout = false): Promise<void> {
   currentQrText = '';
   updateStatus({ state: logout ? 'logged_out' : enabled() ? 'idle' : 'disabled', connected: false, qrAvailable: false, qrDataUrl: undefined });
 }
-
-export const __linkedDeviceInternal = { textFromMessage, phoneFromJid, statusBase, isQrPairingExpiry };
