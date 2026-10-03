@@ -13,7 +13,7 @@ const productFeatures = [
       ["/chat", "Chat / Voice", "Talk to Kurukoo in your own words."],
       ["/capabilities", "Capabilities", "From reminders to rides — Kurukoo routes and executes."],
       ["/work", "Work in progress", "Track what Kurukoo is handling for you."],
-      ["/perch", "Your Field", "Your personal workspace for conversation, work, and context."],
+      ["/field", "Your Field", "Your personal workspace for conversation, work, and context."],
       ["/how-it-works", "How it works", "See how Kurukoo turns conversation into outcome."],
     ],
   },

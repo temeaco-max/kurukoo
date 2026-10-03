@@ -1,7 +1,7 @@
 // ── Shell ownership ─────────────────────────────────────────────────────
 // PUBLIC OS SHELL: `/` and publicPrefixes use PublicKurukooShell + PublicHome.
 // AUTHENTICATED OS SHELL: authenticated prefixes use AppShell + Trusted Context Rail.
-// `/perch` is the canonical authenticated personal surface; `/workspace` remains a compatibility route.
+// `/field` is the canonical authenticated personal surface; `/workspace` and `/perch` remain compatibility routes.
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -72,7 +72,7 @@ const publicPrefixes = [
 // in-chat through the canonical auth card. Gating it here would wall off the
 // primary entry while the backend already serves guest turns.
 const authenticatedSurfacePrefixes = [
-  "/perch",
+  "/field",
   "/workspace",
   "/explore",
   "/discover",
@@ -174,11 +174,11 @@ function MobileBar() {
       <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-surface/98 backdrop-blur md:hidden">
         <nav className="mx-auto grid max-w-lg grid-cols-5 px-2 py-2">
           <Link
-            to="/perch"
-            className={`grid place-items-center rounded-xl px-1 py-1.5 text-[10px] ${pathname.startsWith("/perch") ? "bg-elevated font-medium text-foreground" : "text-muted-foreground"}`}
+            to="/field"
+            className={`grid place-items-center rounded-xl px-1 py-1.5 text-[10px] ${pathname.startsWith("/field") ? "bg-elevated font-medium text-foreground" : "text-muted-foreground"}`}
           >
             <LayoutDashboard className="size-[17px]" />
-            Perch
+            Field
           </Link>
           <Link
             to="/chat"
@@ -288,7 +288,7 @@ function ProtectedPrompt() {
           Log in to continue
         </h1>
         <p className="mx-auto mt-3 max-w-md text-[13px] leading-relaxed text-muted-foreground">
-          Your Perch keeps your conversations, work and account context private. Sign in to continue
+          Your Field keeps your conversations, work and account context private. Sign in to continue
           where you left off.
         </p>
         <Link

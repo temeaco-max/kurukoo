@@ -41,6 +41,7 @@ import { Route as DailyPicksRouteImport } from './routes/daily-picks'
 import { Route as DeveloperRouteImport } from './routes/developer'
 import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as ExploreRouteImport } from './routes/explore'
+import { Route as FieldRouteImport } from './routes/field'
 import { Route as FollowingRouteImport } from './routes/following'
 import { Route as HelpRouteImport } from './routes/help'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
@@ -348,6 +349,11 @@ const PartnersRoute = PartnersRouteImport.update({
 const PeopleRoute = PeopleRouteImport.update({
   id: '/people',
   path: '/people',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FieldRoute = FieldRouteImport.update({
+  id: '/field',
+  path: '/field',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PerchRoute = PerchRouteImport.update({
@@ -691,6 +697,7 @@ export interface FileRoutesByFullPath {
   '/opportunities': typeof OpportunitiesRoute
   '/partners': typeof PartnersRoute
   '/people': typeof PeopleRoute
+  '/field': typeof FieldRoute
   '/perch': typeof PerchRoute
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRouteWithChildren
@@ -798,6 +805,7 @@ export interface FileRoutesByTo {
   '/opportunities': typeof OpportunitiesRoute
   '/partners': typeof PartnersRoute
   '/people': typeof PeopleRoute
+  '/field': typeof FieldRoute
   '/perch': typeof PerchRoute
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRouteWithChildren
@@ -905,6 +913,7 @@ export interface FileRoutesById {
   '/opportunities': typeof OpportunitiesRoute
   '/partners': typeof PartnersRoute
   '/people': typeof PeopleRoute
+  '/field': typeof FieldRoute
   '/perch': typeof PerchRoute
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRouteWithChildren
@@ -1014,6 +1023,7 @@ export interface FileRouteTypes {
     | '/opportunities'
     | '/partners'
     | '/people'
+    | '/field'
     | '/perch'
     | '/pricing'
     | '/profile'
@@ -1121,6 +1131,7 @@ export interface FileRouteTypes {
     | '/opportunities'
     | '/partners'
     | '/people'
+    | '/field'
     | '/perch'
     | '/pricing'
     | '/profile'
@@ -1227,6 +1238,7 @@ export interface FileRouteTypes {
     | '/opportunities'
     | '/partners'
     | '/people'
+    | '/field'
     | '/perch'
     | '/pricing'
     | '/profile'
@@ -1335,6 +1347,7 @@ export interface RootRouteChildren {
   OpportunitiesRoute: typeof OpportunitiesRoute
   PartnersRoute: typeof PartnersRoute
   PeopleRoute: typeof PeopleRoute
+  FieldRoute: typeof FieldRoute
   PerchRoute: typeof PerchRoute
   PricingRoute: typeof PricingRoute
   ProfileRoute: typeof ProfileRouteWithChildren
@@ -1690,6 +1703,13 @@ declare module '@tanstack/react-router' {
       path: '/people'
       fullPath: '/people'
       preLoaderRoute: typeof PeopleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/field': {
+      id: '/field'
+      path: '/field'
+      fullPath: '/field'
+      preLoaderRoute: typeof FieldRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/perch': {
@@ -2316,6 +2336,7 @@ const rootRouteChildren: RootRouteChildren = {
   OpportunitiesRoute: OpportunitiesRoute,
   PartnersRoute: PartnersRoute,
   PeopleRoute: PeopleRoute,
+  FieldRoute: FieldRoute,
   PerchRoute: PerchRoute,
   PricingRoute: PricingRoute,
   ProfileRoute: ProfileRouteWithChildren,

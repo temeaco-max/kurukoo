@@ -1,6 +1,6 @@
 # Kurukoo frontend surface implementation
 
-Scope: build the authenticated consumer surfaces in sequence: Perch/Home, Explore, Agents, Artifacts, Activity, Connect, Pulse/Nearby, then Work detail.
+Scope: build the authenticated consumer surfaces in sequence: Field, Explore, Agents, Artifacts, Activity, Connect, Pulse/Nearby, then Work detail.
 
 Principles:
 - reuse existing canonical APIs/projections and shell components;
@@ -10,7 +10,7 @@ Principles:
 - preserve current main architecture and existing backend contracts.
 
 Sequence:
-1. Perch/Home command centre
+1. Field command centre
 2. Explore discovery
 3. Agents
 4. Artifacts

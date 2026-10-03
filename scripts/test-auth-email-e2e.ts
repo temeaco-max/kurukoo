@@ -5,7 +5,7 @@
  * Uses the real local .env Resend credentials. Sends a REAL email through
  * Resend for temea.co@gmail.com, verifies provider delivery evidence through
  * the Resend API, completes the canonical challenge over HTTP, and proves the
- * resulting kurukoo_auth cookie session authenticates /api/auth/me and /perch.
+ * resulting kurukoo_auth cookie session authenticates /api/auth/me and /field.
  * Also proves single-use and expiry safety, and that existing emails resolve
  * to the existing canonical user (never an em_* provisional identity).
  */
@@ -113,7 +113,7 @@ function cookieFrom(res: Response): string | undefined {
 const requestRes = await fetch(`${BASE}/api/auth/request-magic-link`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ email: 'temea.co@gmail.com', name: 'Temea', returnPath: '/perch' }),
+  body: JSON.stringify({ email: 'temea.co@gmail.com', name: 'Temea', returnPath: '/field' }),
 });
 const requestPayload = await requestRes.json() as { success?: boolean; delivery?: string; provider?: string; providerReference?: string; debugUrl?: string; message?: string };
 assert.equal(requestRes.status, 200, `magic link request failed: ${requestPayload.message}`);
@@ -159,12 +159,12 @@ assert.equal(completeRes.status, 200, `challenge completion failed: ${completePa
 assert.equal(completePayload.success, true);
 assert.equal(completePayload.phone, existingPhone, 'session must bind to the existing canonical phone identity');
 assert.equal(completePayload.provisional, false, 'existing email must never resolve to a provisional em_* identity');
-assert.equal(completePayload.returnPath, '/perch', 'return path must honour the requested /perch destination');
+assert.equal(completePayload.returnPath, '/field', 'return path must honour the requested /field destination');
 const authCookie = cookieFrom(completeRes);
 assert.ok(authCookie?.startsWith('kurukoo_auth='), 'canonical kurukoo_auth cookie must be set');
-console.log(`[e2e] Session issued for ${completePayload.phone} (not em_*); returnPath /perch; kurukoo_auth cookie set.`);
+console.log(`[e2e] Session issued for ${completePayload.phone} (not em_*); returnPath /field; kurukoo_auth cookie set.`);
 
-// ── 5. The cookie authenticates /api/auth/me and /perch ──
+// ── 5. The cookie authenticates /api/auth/me and /field ──
 const meRes = await fetch(`${BASE}/api/auth/me`, { headers: { Cookie: authCookie.split(';')[0] } });
 const mePayload = await meRes.json() as { success?: boolean; user?: { phone?: string } };
 assert.equal(meRes.status, 200);
@@ -174,7 +174,7 @@ const profileRes = await fetch(`${BASE}/api/user/profile`, { headers: { Cookie: 
 const profilePayload = await profileRes.json() as { profile?: { email?: string; phone?: string } };
 assert.equal(profileRes.status, 200, 'authenticated API calls must succeed with the session cookie');
 assert.equal(profilePayload.profile?.phone, existingPhone, 'profile must resolve to the existing canonical user');
-console.log(`[e2e] /api/auth/me authenticated; /api/user/profile resolved (email ${profilePayload.profile?.email}). The /perch destination is carried by returnPath and served by the frontend /perch route with this same session cookie.`);
+console.log(`[e2e] /api/auth/me authenticated; /api/user/profile resolved (email ${profilePayload.profile?.email}). The /field destination is carried by returnPath and served by the frontend /field route with this same session cookie.`);
 
 // ── 6. Single-use safety ──
 const replayRes = await fetch(`${BASE}/api/auth/complete-challenge`, {
@@ -232,6 +232,6 @@ for (const suffix of ['', '-wal', '-shm']) if (fs.existsSync(dbPath + suffix)) f
 
 console.log('\n=== REAL EMAIL MAGIC-LINK E2E PASSED ===');
 console.log('Real Resend delivery: VERIFIED (provider accepted the send and returned a message id; read-scope confirmation depends on key permissions).');
-console.log('Canonical session: VERIFIED (kurukoo_auth cookie → /api/auth/me + authenticated profile; /perch served by the frontend with the same cookie).');
+console.log('Canonical session: VERIFIED (kurukoo_auth cookie → /api/auth/me + authenticated profile; /field served by the frontend with the same cookie).');
 console.log('Single-use + expiry safety: VERIFIED.');
 console.log('Existing email → existing user (no em_*): VERIFIED.');

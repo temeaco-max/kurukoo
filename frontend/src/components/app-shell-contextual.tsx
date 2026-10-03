@@ -26,7 +26,7 @@ import {
   Zap,
 } from "lucide-react";
 
-// Keep canonical Perch rail icon imports explicit for Vite module evaluation.
+// Keep canonical Field rail icon imports explicit for Vite module evaluation.
 import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useKurukoo } from "@/lib/kurukoo-store";
@@ -164,7 +164,7 @@ function ChatVoiceIcon({ className = "size-[18px]" }: { className?: string }) {
 }
 
 const nav = [
-  { to: "/perch", label: "Field", icon: LayoutDashboard, color: "text-muted-foreground" },
+  { to: "/field", label: "Field", icon: LayoutDashboard, color: "text-muted-foreground" },
   { to: "/chat", label: "Chat", icon: MessageCircle, color: "text-muted-foreground" },
   { to: "/work", label: "Requests", icon: ListChecks, color: "text-muted-foreground" },
   { to: "/tasks", label: "Tasks", icon: CheckCircle2, color: "text-muted-foreground" },

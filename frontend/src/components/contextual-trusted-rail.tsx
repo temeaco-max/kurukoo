@@ -288,7 +288,7 @@ export function ContextualTrustedRail({
   const defaultContent = (
     <>
       <Section title="Trusted" icon={Brain} to="/memory">
-        <Row icon={Sparkles} title="Home" detail="Hackney, London" to="/perch" />
+        <Row icon={Sparkles} title="Home" detail="Hackney, London" to="/field" />
         <Row icon={Briefcase} title="Work" detail={focus?.title ?? "Phone Technician"} to="/work" />
         <Row icon={Brain} title="Memory" detail={memory.length ? "Private continuity" : "No saved context shown"} to="/memory" />
         <Link to="/memory" className="trusted-context-view mt-2 text-[10px] font-medium text-primary">
@@ -436,7 +436,7 @@ export function ContextualTrustedRail({
         ? nearbyContent
         : defaultContent;
   const compact = [
-    { label: "Field", to: "/perch", Icon: Sparkles },
+    { label: "Field", to: "/field", Icon: Sparkles },
     { label: "Work", to: "/work", Icon: Briefcase },
     { label: "Memory", to: "/memory", Icon: Brain },
     { label: "Nearby", to: "/discover", Icon: MapPin },
