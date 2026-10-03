@@ -24,5 +24,12 @@ export default defineConfig({
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
+    // Static prerender list. Each entry renders at build time into
+    // .output/public/<route>/index.html, which the Express static layer serves
+    // ahead of the EJS routers — that ordering IS the SPA migration mechanism.
+    // Rules: only list routes with no committed public/ file (the build errors
+    // on collision) and no loader needing backend data at build time. Grow this
+    // list route by route; each addition is proven by the built output below.
+    pages: [{ path: "/about", prerender: { enabled: true } }],
   },
 });
