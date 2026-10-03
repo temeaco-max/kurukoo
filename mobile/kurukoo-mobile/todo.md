@@ -92,7 +92,7 @@
      ambiguous about which was authoritative and double-counted the open work. -->
 
 - [x] Inventory frontend website, web app/PWA, iOS, and Android route/style authorities
-- [ ] Capture Chat at desktop, laptop, tablet, iPhone, and Android reference widths
+- [x] Capture Chat at desktop, laptop, tablet, iPhone, and Android reference widths — SPA guest gate captured at 1440×900, 1280×800, 768×1024, 390×844 and 412×915 in `.artifacts/spa-chat-guest-*.png` (TanStack SPA via vite dev; unauthenticated, so the correct Log-in gate renders, centered with no overlap at every width). The gate copy it exposed used the retired name “Your Perch”; fixed to “Your Field” in `frontend/src/routes/__root.tsx` in the same change. Authenticated-state captures need a session and remain open.
 - [x] Compare frontend Chat and mobile Chat against the canonical Chat visual system
 - [x] Audit Partner page for accidental mobile screen-set composition inside the frontend visual set
 - [x] Trace CSS token, typography, spacing, radius, icon, and responsive breakpoint inconsistencies
