@@ -234,8 +234,8 @@
     },
     {
       "id": "discover",
-      "screen": "Explore",
-      "route": "/explore",
+      "screen": "Discover",
+      "route": "/discover",
       "routeOwner": "src/routes/appSurfaceRoutes.ts::renderApp(section='discover')",
       "templateComponentOwner": "views/app.ejs::section=discover",
       "cssOwner": "shared authenticated app CSS + discovery classes owned by existing platform visual vocabulary",

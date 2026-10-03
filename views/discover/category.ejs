@@ -8,7 +8,7 @@
 %>
 
 <main class="container page-container public-category-page">
-    <div class="breadcrumb"><a class="public-return-link" href="/explore"><span aria-hidden="true">←</span> Back to capabilities</a><span aria-hidden="true">/</span><span><%= category.name %></span></div>
+    <div class="breadcrumb"><a class="public-return-link" href="/discover"><span aria-hidden="true">←</span> Back to capabilities</a><span aria-hidden="true">/</span><span><%= category.name %></span></div>
 
     <div class="category-hero-layout">
         <div class="category-info">
@@ -18,14 +18,14 @@
             </div>
             <p class="lead"><%= category.description %></p>
             <div class="public-note"><strong>State boundary:</strong> this page explains the request pathway. It does not by itself mean a provider, price, inventory, payment or fulfilment outcome is confirmed.</div>
-            <div class="category-actions public-action-row"><a href="/chat?prompt=I%20need%20help%20with%20<%= encodeURIComponent(category.name) %>" class="btn btn-primary">Start conversation</a><a href="/explore" class="btn btn-outline">Browse capabilities</a></div>
+            <div class="category-actions public-action-row"><a href="/chat?prompt=I%20need%20help%20with%20<%= encodeURIComponent(category.name) %>" class="btn btn-primary">Start conversation</a><a href="/discover" class="btn btn-outline">Browse capabilities</a></div>
 
             <% if (category.subCategories && category.subCategories.length > 0) { %>
                 <div class="sub-capabilities">
                     <h2>Related Capabilities</h2>
                     <div class="subcat-grid">
                         <% category.subCategories.forEach(sub => { %>
-                            <a href="/explore/<%= sub.slug %>" class="subcat-card"><span><%= sub.name %></span><span class="arrow" aria-hidden="true">→</span></a>
+                            <a href="/discover/<%= sub.slug %>" class="subcat-card"><span><%= sub.name %></span><span class="arrow" aria-hidden="true">→</span></a>
                         <% }) %>
                     </div>
                 </div>

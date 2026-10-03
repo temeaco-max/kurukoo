@@ -21,7 +21,7 @@ const expected = {
   contacts: '/connect',
   memory: '/memory',
   agent: '/chat',
-  discover: '/explore',
+  discover: '/discover',
 };
 
 assert.equal(manifest.manifestVersion, 1);

@@ -3,8 +3,7 @@ import publicRouter from '../src/routes/publicRoutes.js';
 
 const expected = [
     '/',
-    '/explore',
-    '/explore/:slug',
+    '/discover/:slug',
     '/p/:providerSlug',
     '/admin',
     '/admin/',

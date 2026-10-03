@@ -43,14 +43,14 @@ const surfaceMap = new Map([
 ]);
 
 const cleanCanonicalSections: Record<string, string> = {
-  '/agent': 'agent', '/chat': 'agent', '/home': 'desk', '/desk': 'desk', '/explore': 'discover', '/discover': 'discover', '/topics': 'topics', '/activity': 'requests', '/requests': 'requests', '/reminders': 'reminders', '/saved': 'saved', '/cart': 'cart', '/work': 'tasks', '/tasks': 'tasks', '/connect': 'connect', '/agents': 'agents', '/capabilities': 'capabilities', '/opportunities': 'opportunities', '/wallet': 'wallet', '/points': 'points', '/top-up': 'top-up', '/subscriptions': 'subscriptions', '/checkout': 'checkout', '/confirmations': 'confirmations', '/memory': 'memory', '/artifacts': 'artifacts', '/prayer': 'prayer', '/call': 'call', '/notifications': 'notifications', '/safety': 'safety', '/settings': 'settings',
+  '/agent': 'agent', '/chat': 'agent', '/home': 'desk', '/desk': 'desk', '/discover': 'discover', '/topics': 'topics', '/activity': 'requests', '/requests': 'requests', '/reminders': 'reminders', '/saved': 'saved', '/cart': 'cart', '/work': 'tasks', '/tasks': 'tasks', '/connect': 'connect', '/agents': 'agents', '/capabilities': 'capabilities', '/opportunities': 'opportunities', '/wallet': 'wallet', '/points': 'points', '/top-up': 'top-up', '/subscriptions': 'subscriptions', '/checkout': 'checkout', '/confirmations': 'confirmations', '/memory': 'memory', '/artifacts': 'artifacts', '/prayer': 'prayer', '/call': 'call', '/notifications': 'notifications', '/safety': 'safety', '/settings': 'settings',
 };
 
 const canonicalPathBySection: Record<string, string> = {
-  agent: '/chat', desk: '/home', discover: '/explore', requests: '/activity', tasks: '/work', topics: '/topics', reminders: '/reminders', saved: '/saved', cart: '/cart', connect: '/connect', agents: '/agents', capabilities: '/capabilities', opportunities: '/opportunities', wallet: '/wallet', points: '/points', 'top-up': '/top-up', subscriptions: '/subscriptions', checkout: '/checkout', confirmations: '/confirmations', memory: '/memory', artifacts: '/artifacts', prayer: '/prayer', call: '/call', notifications: '/notifications', safety: '/safety', settings: '/settings',
+  agent: '/chat', desk: '/home', discover: '/discover', requests: '/activity', tasks: '/work', topics: '/topics', reminders: '/reminders', saved: '/saved', cart: '/cart', connect: '/connect', agents: '/agents', capabilities: '/capabilities', opportunities: '/opportunities', wallet: '/wallet', points: '/points', 'top-up': '/top-up', subscriptions: '/subscriptions', checkout: '/checkout', confirmations: '/confirmations', memory: '/memory', artifacts: '/artifacts', prayer: '/prayer', call: '/call', notifications: '/notifications', safety: '/safety', settings: '/settings',
 };
 
-const sharedPublicAuthenticated = new Set(['/explore', '/discover', '/topics', '/chat']);
+const sharedPublicAuthenticated = new Set(['/discover', '/topics', '/chat']);
 
 function screenAssets(section: string): string {
   if (section === 'discover') return '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">';

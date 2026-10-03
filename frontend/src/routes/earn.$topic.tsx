@@ -23,8 +23,8 @@ export const Route = createFileRoute("/earn/$topic")({
   beforeLoad: ({ params }) => {
     const category = EARN_CATEGORY[params.topic];
     if (category) {
-      throw redirect({ to: `/explore/${category}`, replace: true });
+      throw redirect({ to: `/discover/${category}`, replace: true });
     }
-    throw redirect({ to: "/explore", replace: true });
+    throw redirect({ to: "/discover", replace: true });
   },
 });

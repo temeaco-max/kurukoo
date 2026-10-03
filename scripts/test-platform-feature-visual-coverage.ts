@@ -23,12 +23,12 @@ for (const feature of CANONICAL_PLATFORM_FEATURE_CONTRACTS) {
 }
 
 const mobileIds = new Set(MOBILE_PLATFORM_CONTRACTS.map(contract => contract.id));
-const requiredCrossClient = ['chat','discover','ride_request','delivery','repairs','bookings','reminders','notifications','tasks','agents','points','top_up','provider_communication','webrtc_call','provider_tracking','reviews','checkout','memory','safety','explore_capabilities','channels','connect'];
+const requiredCrossClient = ['chat','discover','ride_request','delivery','repairs','bookings','reminders','notifications','tasks','agents','points','top_up','provider_communication','webrtc_call','provider_tracking','reviews','checkout','memory','safety','discover_capabilities','channels','connect'];
 for (const id of requiredCrossClient) assert.ok(mobileIds.has(id) || CANONICAL_PLATFORM_FEATURE_CONTRACTS.some(feature => feature.id === id), `${id}: not represented by either cross-client contract or visual registry`);
 
 const publicRoutes = fs.readFileSync(path.join(process.cwd(),'src/routes/publicRoutes.ts'),'utf8');
 const contentRoutes = fs.readFileSync(path.join(process.cwd(),'src/routes/contentRoutes.ts'),'utf8');
-for (const route of ['/help','/about','/careers','/legal','/pricing','/blog','/advertise','/partners','/channels','/explore','/network']) {
+for (const route of ['/help','/about','/careers','/legal','/pricing','/blog','/advertise','/partners','/channels','/discover','/network']) {
   const available = publicRoutes.includes(`router.get('${route}'`) || contentRoutes.includes(`router.get('${route}'`) || (route === '/legal' && publicRoutes.includes("router.get('/legal/:section?'"));
   assert.ok(available, `public feature route missing from visual feature surface: ${route}`);
 }

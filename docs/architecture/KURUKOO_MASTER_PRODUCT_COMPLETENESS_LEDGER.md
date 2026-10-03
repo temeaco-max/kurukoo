@@ -44,7 +44,7 @@ Kurukoo is a conversational operating system for coordinating everyday intention
 
 ```text
 Public product/discovery
-  / /about /features /explore /discover /network /channels /topics /resources
+  / /about /features /discover /network /channels /topics /resources
   /how-it-works /help /contact /pricing /partners /advertise /careers /blog
   /developers /legal /cookies
 

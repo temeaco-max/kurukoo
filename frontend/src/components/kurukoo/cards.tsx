@@ -764,7 +764,7 @@ function InteractiveChatCard({
           {cardAction(
             String(data.ctaText || "Explore opportunity"),
             undefined,
-            String(data.ctaLink || "/explore"),
+            String(data.ctaLink || "/discover"),
             true,
           )}
         </>

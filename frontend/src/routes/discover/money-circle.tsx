@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/app-shell";
 import { Action } from "@/components/kurukoo/primitives";
 import { Panel } from "@/components/kurukoo/ui";
 
-export const Route = createFileRoute("/explore/money-circle")({
+export const Route = createFileRoute("/discover/money-circle")({
   head: () => ({
     meta: [{ title: "Money Circle — Kurukoo" }],
   }),
@@ -35,7 +35,7 @@ function MoneyCirclePage() {
       />
 
       <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-        <Link to="/explore" className="inline-flex items-center gap-1 hover:text-foreground">
+        <Link to="/discover" className="inline-flex items-center gap-1 hover:text-foreground">
           <ArrowLeft className="size-3.5" /> Explore
         </Link>
         <span>/</span>

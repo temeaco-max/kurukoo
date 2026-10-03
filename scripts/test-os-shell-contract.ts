@@ -20,7 +20,7 @@ const mobileNav = readFileSync(resolve(process.cwd(), 'views/_partials/app-mobil
 const surfaceRegistry = readFileSync(resolve(process.cwd(), 'src/services/clientSurfaceRegistry.ts'), 'utf8');
 
 for (const required of [
-  'Search Kurukoo','Notifications','Account','/points','/cart','/chat','/activity','/tasks','/explore','/connect','/topics','/saved','/reminders','/memory','/safety','/settings'
+  'Search Kurukoo','Notifications','Account','/points','/cart','/chat','/activity','/tasks','/discover','/connect','/topics','/saved','/reminders','/memory','/safety','/settings'
 ]) assert.ok(shellRuntime.includes(required), `Desk shell missing ${required}`);
 assert.ok(shellRuntime.includes("'k-desk-search-trigger'"));
 assert.ok(shellRuntime.includes("'k-desk-header-cart'"));
@@ -50,7 +50,7 @@ for (const forbidden of [
 ]) assert.doesNotMatch(shellRuntime, new RegExp(forbidden.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `Home shell must not expose retired user-facing wording: ${forbidden}`);
 assert.match(shellRuntime, /\['Activity',\s*'\/activity'/, 'Home shell must link to Activity using the canonical route');
 assert.match(shellRuntime, /\['Work',\s*'\/work'/, 'Home shell must link to Work using the canonical route');
-assert.match(shellRuntime, /\['Explore',\s*'\/explore'/, 'Home shell must link to Explore using the canonical route');
+assert.match(shellRuntime, /\['Discover',\s*'\/discover'/, 'Home shell must link to Discover using the canonical route');
 
 assert.ok(componentCss.includes('.kos-conversation-card'));
 assert.ok(componentCss.includes('.kos-activity-card'));
@@ -76,7 +76,7 @@ assert.ok(providerCss.includes('min-height:44px'));
 assert.ok(providerCss.includes('button[disabled]'));
 assert.ok(presenceRuntime.includes("'listening'"));
 
-for (const [label, href] of [['Home','/home'],['Explore','/explore'],['Chat','/chat'],['Activity','/activity'],['Work','/work']]) {
+for (const [label, href] of [['Home','/home'],['Discover','/discover'],['Chat','/chat'],['Activity','/activity'],['Work','/work']]) {
   assert.ok(appShellRuntime.includes(`{label:'${label}',href:'${href}'`), `mobile/app navigation must use canonical ${label} route ${href}`);
 }
 assert.ok(appShellRuntime.includes('const createSecondaryNav=()=>{'), 'mobile/app shell must define the secondary navigation builder');
@@ -100,4 +100,4 @@ assert.ok(KURUKOO_OS_COMPONENTS.some((item) => item.id === 'conversation-continu
 assert.ok(KURUKOO_OS_COMPONENTS.some((item) => item.id === 'pulse-timeline'));
 assert.ok(KURUKOO_OS_COMPONENTS.some((item) => item.id === 'context-inspector'));
 
-console.log('OS shell contract passed: canonical authenticated route ownership, assistant-first Home/Explore/Activity/Work vocabulary, shared surface primitive, shared state/presence vocabulary, mobile IA, non-duplicated workspace navigation and canonical visual token bridges are present.');
+console.log('OS shell contract passed: canonical authenticated route ownership, assistant-first Home/Discover/Activity/Work vocabulary, shared surface primitive, shared state/presence vocabulary, mobile IA, non-duplicated workspace navigation and canonical visual token bridges are present.');

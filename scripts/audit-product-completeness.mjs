@@ -68,10 +68,10 @@ for (const section of appSections) {
   require(matrix.includes(`/${section}`), `Missing Page Architecture entry: /${section}`);
 }
 
-for (const route of ['/','/explore','/discover','/network','/channels','/topics','/resources','/how-it-works','/about','/help','/contact','/careers','/partners','/advertise','/pricing','/legal','/api-docs','/offline']) {
+for (const route of ['/','/discover','/network','/channels','/topics','/resources','/how-it-works','/about','/help','/contact','/careers','/partners','/advertise','/pricing','/legal','/api-docs','/offline']) {
   require(matrix.includes(route === '/' ? 'Homepage' : route), `Missing public Page Architecture entry: ${route}`);
 }
-for (const href of ['/explore','/channels','/about','/help','/chat']) {
+for (const href of ['/discover','/channels','/about','/help','/chat']) {
   require(publicNav.includes(`href="${href}"`), `Public navigation no longer exposes ${href}.`);
 }
 

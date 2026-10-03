@@ -3,7 +3,6 @@ export const CANONICAL_URLS = {
   public: {
     home: '/',
     features: '/features',
-    explore: '/explore',
     discover: '/discover',
     network: '/network',
     channels: '/channels',
@@ -33,7 +32,7 @@ export const CANONICAL_URLS = {
   },
   desk: {
     home: '/home',
-    discover: '/explore',
+    discover: '/discover',
     topics: '/topics',
     requests: '/activity',
     request: (requestId: string) => `/activity/${encodeURIComponent(requestId)}`,

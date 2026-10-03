@@ -42,7 +42,7 @@ const HOME_PROMOTIONS = [
   ['Get groceries', 'Build your list, find options and get the shopping moving.', 'groceries', 'Get groceries', '/chat?prompt=Help%20me%20get%20my%20groceries', '/assets/chat/sponsored-fresh-market.webp'],
   ['Send something', 'Arrange a local rider or get help moving something where it needs to go.', 'delivery', 'Arrange delivery', '/chat?prompt=I%20need%20to%20send%20something', '/assets/chat/campaign-rider-delivery.webp'],
   ['Get home help', 'Find help with cleaning, plumbing, electrical work and more.', 'home help', 'Find home help', '/chat?prompt=I%20need%20help%20at%20home', '/assets/chat/sponsored-home-repair.webp'],
-  ['Start a Money Circle', 'Set up or manage a group savings circle with Kurukoo.', 'money circle', 'Start a Money Circle', '/explore/money-circle', '/assets/chat/campaign-digital-worker.webp'],
+  ['Start a Money Circle', 'Set up or manage a group savings circle with Kurukoo.', 'money circle', 'Start a Money Circle', '/discover/money-circle', '/assets/chat/campaign-digital-worker.webp'],
   ['Sell something', 'Get help listing an item and finding interested people.', 'sell', 'Sell something', '/chat?prompt=Help%20me%20sell%20something', '/assets/chat/campaign-beauty.webp'],
   ['Find work', 'Explore gigs, tasks and opportunities you can act on.', 'work', 'Find work', '/chat?prompt=Help%20me%20find%20work', '/assets/chat/campaign-tailor.webp'],
   ['Join as a driver', 'Offer rides locally and let people discover when you are available.', 'driver', 'Join as a driver', '/chat?prompt=I%20want%20to%20join%20as%20a%20driver', '/assets/chat/campaign-rider-delivery.webp'],

@@ -1,14 +1,8 @@
-import { ArrowRight, Compass, FileStack, MapPin, UsersRound } from "lucide-react";
+import { ArrowRight, FileStack, MapPin, UsersRound } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { actionClass } from "@/components/kurukoo/primitives";
 
 const items = [
-  {
-    href: "/explore",
-    label: "Explore",
-    description: "People, businesses, services, products and opportunities.",
-    icon: Compass,
-  },
   {
     href: "/agents",
     label: "Agents",

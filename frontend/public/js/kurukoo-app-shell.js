@@ -1,6 +1,6 @@
 (() => {
   const path=window.location.pathname||'/';
-  const routes=[{label:'Home',href:'/home',icon:'chat'},{label:'Explore',href:'/explore',icon:'discover'},{label:'Chat',href:'/chat',icon:'chat'},{label:'Activity',href:'/activity',icon:'request'},{label:'Work',href:'/work',icon:'work'}];
+  const routes=[{label:'Home',href:'/home',icon:'chat'},{label:'Discover',href:'/discover',icon:'discover'},{label:'Chat',href:'/chat',icon:'chat'},{label:'Activity',href:'/activity',icon:'request'},{label:'Work',href:'/work',icon:'work'}];
   const current=href=>path===href||(href!=='/chat'&&path.startsWith(`${href}/`));
   const safe=value=>String(value||'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;' }[c]));
   const establishSurface=()=>{const surface=document.querySelector('.k-app-container');if(surface)surface.classList.add('k-app-surface');};

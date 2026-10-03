@@ -491,7 +491,7 @@ function TopicsPage() {
               to do next. When you are ready to act, bring the context into Kurukoo.
             </p>
             <Link
-              to="/explore"
+              to="/discover"
               className="mt-4 inline-flex items-center gap-1.5 text-[11.5px] font-medium"
             >
               Explore what you can do <ArrowRight className="size-3.5" />

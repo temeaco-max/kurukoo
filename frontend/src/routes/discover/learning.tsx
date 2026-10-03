@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { GoalActionSurface } from "@/components/kurukoo/goal-action-surface";
 
-export const Route = createFileRoute("/explore/learning")({ component: LearningPage });
+export const Route = createFileRoute("/discover/learning")({ component: LearningPage });
 
 function LearningPage() {
   return (

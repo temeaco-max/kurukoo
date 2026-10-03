@@ -13,7 +13,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import {
-  Compass,
+  CheckCircle2,
   Home,
   LayoutDashboard,
   MapPin,
@@ -74,7 +74,6 @@ const publicPrefixes = [
 const authenticatedSurfacePrefixes = [
   "/field",
   "/workspace",
-  "/explore",
   "/discover",
   "/activity",
   "/work",
@@ -181,6 +180,13 @@ function MobileBar() {
             Field
           </Link>
           <Link
+            to="/discover"
+            className={`grid place-items-center rounded-xl px-1 py-1.5 text-[10px] ${pathname.startsWith("/discover") ? "bg-elevated font-medium text-foreground" : "text-muted-foreground"}`}
+          >
+            <MapPin className="size-[17px]" />
+            Discover
+          </Link>
+          <Link
             to="/chat"
             className={`grid place-items-center rounded-xl px-1 py-1.5 text-[10px] ${pathname.startsWith("/chat") ? "bg-elevated font-medium text-foreground" : "text-muted-foreground"}`}
           >
@@ -188,18 +194,11 @@ function MobileBar() {
             Chat / Voice
           </Link>
           <Link
-            to="/explore"
-            className={`grid place-items-center rounded-xl px-1 py-1.5 text-[10px] ${pathname.startsWith("/explore") ? "bg-elevated font-medium text-foreground" : "text-muted-foreground"}`}
+            to="/work"
+            className={`grid place-items-center rounded-xl px-1 py-1.5 text-[10px] ${pathname.startsWith("/work") ? "bg-elevated font-medium text-foreground" : "text-muted-foreground"}`}
           >
-            <Compass className="size-[17px]" />
-            Explore
-          </Link>
-          <Link
-            to="/discover"
-            className={`grid place-items-center rounded-xl px-1 py-1.5 text-[10px] ${pathname.startsWith("/discover") ? "bg-elevated font-medium text-foreground" : "text-muted-foreground"}`}
-          >
-            <MapPin className="size-[17px]" />
-            Nearby
+            <CheckCircle2 className="size-[17px]" />
+            Work
           </Link>
           <button
             type="button"

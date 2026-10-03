@@ -33,7 +33,7 @@ const requiredMounts = [
 for (const mount of requiredMounts) assert.match(indexSource, mount, `missing composition boundary: ${mount.source}`);
 assert.doesNotMatch(indexSource, /legacyApp|registerLegacyRoutes/, 'composition root must not depend on legacyApp');
 
-for (const route of ["router.get('/',", "router.get('/explore',", "router.get('/p/:providerSlug',"]) {
+for (const route of ["router.get('/',", "router.get('/discover',", "router.get('/p/:providerSlug',"]) {
   assert.ok(publicSource.includes(route), `publicRoutes must own ${route}`);
 }
 assert.match(indexSource,/dotenv\.config\(\)/, 'startup environment initialization must remain in composition root');

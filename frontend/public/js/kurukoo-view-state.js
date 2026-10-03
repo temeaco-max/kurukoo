@@ -6,7 +6,6 @@
   const ROUTES = Object.freeze({
     agent: "/chat",
     home: "/home",
-    explore: "/explore",
     activity: "/activity",
     tasks: "/tasks",
     connect: "/connect",

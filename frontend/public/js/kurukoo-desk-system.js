@@ -65,7 +65,7 @@
     const sources = [
       ["Chat", "/chat", "Talk to Kurukoo"],
       ["Home", "/home", "What matters now"],
-      ["Explore", "/explore", "Find people, places, products and opportunities"],
+      ["Discover", "/discover", "Find people, places, products and opportunities"],
       ["Activity", "/activity", "Track work in motion and completed activity"],
       ["Work", "/tasks", "Manage work and contributions"],
       ["Connect", "/connect", "Connected services and channels"],
@@ -192,7 +192,7 @@
         [
           ["Activity", "/activity"],
           ["Work", "/work"],
-          ["Explore", "/explore"],
+          ["Discover", "/discover"],
           ["Connect", "/connect"],
           ["Topics", "/topics"],
         ],
@@ -404,10 +404,10 @@
     );
     const opportunityCard = makeDeskModule(
       "opportunity-radar",
-      "Explore",
+      "Discover",
       "Useful possibilities",
-      "Explore relevant people, places and opportunities with their source and availability made clear.",
-      [{ label: "Explore", href: "/explore", tone: "primary" }],
+      "Discover relevant people, places and opportunities with their source and availability made clear.",
+      [{ label: "Discover", href: "/discover", tone: "primary" }],
     );
     opportunityCard.appendChild(
       makeDeskState(
@@ -447,7 +447,7 @@
       "Sponsored provider",
       "Promoted visibility stays disclosed",
       "Paid placement is shown only when sponsorship and provider evidence support it.",
-      [{ label: "Explore", href: "/explore", tone: "secondary" }],
+      [{ label: "Discover", href: "/discover", tone: "secondary" }],
     );
     sponsorCard.appendChild(
       makeDeskState(

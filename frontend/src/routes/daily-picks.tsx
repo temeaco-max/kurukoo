@@ -72,7 +72,7 @@ function LivePick({ pick }: { pick: DailyPick }) {
             <AskKurukoo
               prompt={`Tell me more about today's Kurukoo pick: ${pick.title}. If it is suitable, help me make a verified request.`}
             />
-            <Link to="/explore" className={actionClass()}>
+            <Link to="/discover" className={actionClass()}>
               Explore <ArrowUpRight className="ml-1 size-3.5" />
             </Link>
           </div>

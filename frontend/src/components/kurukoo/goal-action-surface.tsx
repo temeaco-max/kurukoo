@@ -86,7 +86,7 @@ export function GoalActionSurface({
   return (
     <div className="mx-auto w-full max-w-6xl space-y-7 pb-4">
       <Link
-        to="/explore"
+        to="/discover"
         className="inline-flex items-center gap-1.5 text-[11.5px] font-medium text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="size-3.5" />

@@ -449,7 +449,7 @@ function ChatCard({
         <div className="mt-3">
           <CardAction
             label={text(data.ctaText, "Explore opportunity")}
-            href={text(data.ctaLink) || hrefFor(data, "/explore")}
+            href={text(data.ctaLink) || hrefFor(data, "/discover")}
             primary
           />
         </div>
@@ -519,7 +519,7 @@ function ChatCard({
         title="Referral"
         body={body || "Continue through the canonical referral surface."}
       >
-        <CardAction label="Open referral" href={text(data.destination, "/explore")} primary />
+        <CardAction label="Open referral" href={text(data.destination, "/discover")} primary />
       </Shell>
     );
   return null;

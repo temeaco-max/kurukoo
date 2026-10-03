@@ -170,7 +170,7 @@ function StoryPage() {
           <div className="flex flex-wrap gap-2">
             <AskKurukoo prompt="Tell me more about the ideas behind Kurukoo and how Croon, Thicket, Perch, Actions and Nearby fit together." />
             <Link
-              to="/explore"
+              to="/discover"
               className="inline-flex min-h-9 items-center gap-1.5 border border-border px-3 text-[12px] font-medium hover:bg-elevated"
             >
               Explore <ArrowUpRight className="size-3.5" />

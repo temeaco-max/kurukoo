@@ -149,7 +149,7 @@ const roleGuide: Record<KurukooRoleId, keyof typeof guideScenes> = {
 function SearchBox() {
   return (
     <form
-      action="/explore"
+      action="/chat"
       method="get"
       className="rounded-xl border border-border bg-surface p-2.5 shadow-[var(--shadow-soft)]"
     >

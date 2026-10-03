@@ -5,7 +5,7 @@ export interface AuthNavItem { id: string; label: string; route?: string; placem
 export const AUTHENTICATED_NAVIGATION: readonly AuthNavItem[] = [
   { id: 'chat', label: 'Chat', route: '/chat', placement: 'primary-sidebar', frequency: 'core', purpose: 'The conversational control surface for asking Kurukoo to get things done.', reason: 'Core daily interaction.' },
   { id: 'home', label: 'Home', route: '/home', placement: 'primary-sidebar', frequency: 'core', purpose: 'Personal starting point for what matters now, ongoing work and useful next actions.', reason: 'Always-visible home.' },
-  { id: 'explore', label: 'Explore', route: '/explore', placement: 'primary-sidebar', frequency: 'frequent', purpose: 'Discover useful people, places, services, products, Topics and opportunities.', reason: 'Frequent discovery task.' },
+  { id: 'discover', label: 'Discover', route: '/discover', placement: 'primary-sidebar', frequency: 'frequent', purpose: 'Discover useful people, places, services, products, Topics and opportunities.', reason: 'Frequent discovery task.' },
   { id: 'activity', label: 'Activity', route: '/activity', placement: 'primary-sidebar', frequency: 'core', purpose: 'See what is happening, what needs attention and what has finished.', reason: 'Core continuity surface.' },
   { id: 'work', label: 'Work', route: '/work', placement: 'primary-sidebar', frequency: 'frequent', purpose: 'Review tasks and follow-through that need attention.', reason: 'Active work surface.' },
   { id: 'reminders', label: 'Reminders', route: '/reminders', placement: 'secondary-sidebar', frequency: 'frequent', purpose: 'View and manage reminders.' },

@@ -33,7 +33,7 @@ for (const section of appSections) {
 }
 
 const requiredPublicFamilies = [
-  'Homepage','/explore','/discover','/network','/channels','/topics','/topics/:slug','/resources','/resources/:slug',
+  'Homepage','/discover','/network','/channels','/topics','/topics/:slug','/resources','/resources/:slug',
   '/how-it-works','/about','/help','/contact','/careers','/partners','/advertise','/pricing','/legal/*','/api-docs','/offline'
 ];
 for (const item of requiredPublicFamilies) require(matrix.includes(item), `Page Architecture Matrix missing public surface/family: ${item}`);

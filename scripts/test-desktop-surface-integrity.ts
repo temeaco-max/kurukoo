@@ -19,7 +19,7 @@ for (const file of adminFiles) {
 const publicNav = read('views/_partials/nav.ejs');
 const publicHead = read('views/_partials/head.ejs');
 if (!publicNav.includes('/chat')) failures.push('Public navigation has no Chat entry');
-if (!publicNav.includes('/explore')) failures.push('Public navigation has no Explore entry');
+if (!publicNav.includes('/discover')) failures.push('Public navigation has no Discover entry');
 if (!publicHead.includes('site-navigation.js')) failures.push('Public navigation runtime is not loaded by shared head');
 
 const appShell = read('views/app.ejs');

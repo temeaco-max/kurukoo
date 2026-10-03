@@ -82,10 +82,10 @@ const starts = [
   ],
   [
     Compass,
-    "Explore",
+    "Discover",
     "Choose a goal such as food, groceries, mobility, repairs, work, selling, health, events, community or safety.",
-    "/explore",
-    "Explore goals",
+    "/discover",
+    "Discover goals",
   ],
   [
     Search,
@@ -124,10 +124,10 @@ function HowItWorksPage() {
         <div className="mt-5 flex flex-wrap gap-2">
           <AskKurukoo prompt="Show me how Kurukoo can help with something I need to get done." />
           <Link
-            to="/explore"
+            to="/discover"
             className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-border px-4 text-[12px] font-medium hover:bg-elevated"
           >
-            Explore <ArrowRight className="size-3.5" />
+            Discover <ArrowRight className="size-3.5" />
           </Link>
         </div>
       </header>
