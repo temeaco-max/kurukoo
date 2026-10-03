@@ -68,9 +68,11 @@ const publicPrefixes = [
   "/ambassadors",
   "/ai-terms",
 ] as const;
+// Chat is intentionally absent: guests converse immediately and authenticate
+// in-chat through the canonical auth card. Gating it here would wall off the
+// primary entry while the backend already serves guest turns.
 const authenticatedSurfacePrefixes = [
   "/perch",
-  "/chat",
   "/workspace",
   "/explore",
   "/discover",
