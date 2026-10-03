@@ -355,16 +355,13 @@ function RootComponent() {
   const localAuthHint =
     typeof window !== "undefined" &&
     window.localStorage.getItem("kurukoo-authenticated") === "true";
-  const hydrationView = !hydrated ? (
-    isAuthenticatedSurface && localAuthHint ? (
-      <AppShell>
-        <div className="min-h-[60vh]" />
-      </AppShell>
-    ) : (
-      <PublicKurukooShell>
-        <div className="min-h-[60vh]" />
-      </PublicKurukooShell>
-    )
+  // Only hold the shell for unsigned authenticated surfaces on the first
+  // render. Public routes must render their document server-side so the
+  // prerendered HTML actually contains them.
+  const hydrationView = !hydrated && isAuthenticatedSurface ? (
+    <AppShell>
+      <div className="min-h-[60vh]" />
+    </AppShell>
   ) : null;
   return (
     <QueryClientProvider client={queryClient}>
