@@ -445,7 +445,7 @@ function TopicPage() {
             {topic.relatedResources.map((resource) => (
               <Link
                 key={resource.slug}
-                to="/explore"
+                to="/discover"
                 className="rounded-[18px] border border-border bg-surface p-4 hover:bg-elevated/50"
               >
                 <p className="text-[14px] font-medium">{resource.title}</p>

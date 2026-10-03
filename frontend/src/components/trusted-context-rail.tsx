@@ -30,7 +30,7 @@ const shortcuts: Array<{ label: string; to: string; icon: Icon }> = [
   { label: "Attention", to: "/activity", icon: Bell },
   { label: "Topics", to: "/topics", icon: Tags },
   { label: "Opportunities", to: "/opportunities", icon: Target },
-  { label: "Explore", to: "/explore", icon: Compass },
+  { label: "Discover", to: "/discover", icon: Compass },
   { label: "Messages", to: "/messages", icon: MessageSquare },
   { label: "Wallet", to: "/wallet", icon: Wallet },
 ];

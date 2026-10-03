@@ -9,14 +9,14 @@ const require = (value: boolean, message: string) => { if (!value) failures.push
 
 const publicNav = read('views/_partials/nav.ejs');
 const publicRoutes = read('src/routes/publicRoutes.ts');
-for (const route of ['/explore','/channels','/about','/help','/chat']) require(publicNav.includes(`href="${route}"`), `Public header missing ${route}`);
-for (const route of ['/explore','/channels','/about','/help','/chat']) require(publicRoutes.includes(`router.get('${route}'`), `Public route owner missing ${route}`);
+for (const route of ['/discover','/channels','/about','/help','/chat']) require(publicNav.includes(`href="${route}"`), `Public header missing ${route}`);
+for (const route of ['/discover','/channels','/about','/help','/chat']) require(publicRoutes.includes(`router.get('${route}'`), `Public route owner missing ${route}`);
 
 const app = read('views/app.ejs');
 const appRoutes = read('src/routes/appSurfaceRoutes.ts');
 const directSections: Record<string, string> = { agent: 'chat', discover: 'discover', requests: 'requests', work: 'tasks', connect: 'connect', reminders: 'reminders', saved: 'saved', cart: 'cart', agents: 'agents', capabilities: 'capabilities', opportunities: 'opportunities', topics: 'topics', wallet: 'wallet', points: 'points', 'top-up': 'top-up', subscriptions: 'subscriptions', checkout: 'checkout', confirmations: 'confirmations', memory: 'memory', artifacts: 'artifacts', prayer: 'prayer', call: 'call', notifications: 'notifications', safety: 'safety' };
 for (const [section, route] of Object.entries(directSections)) require(appRoutes.includes(`'/${route}'`), `Authenticated canonical route missing /${route} for ${section}`);
-for (const route of ['home','explore','activity','work']) require(appRoutes.includes(`'/${route}'`), `Authenticated primary route does not expose /${route}`);
+for (const route of ['home','discover','activity','work']) require(appRoutes.includes(`'/${route}'`), `Authenticated primary route does not expose /${route}`);
 require(app.includes('href="/chat"'), 'Authenticated Web App missing Chat recovery');
 require(!app.includes('/app/'), 'Authenticated Web App must not retain legacy app aliases');
 require(!app.includes('/daily-picks'), 'Authenticated Web App must not retain a Daily Picks alias');

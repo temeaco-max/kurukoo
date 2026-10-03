@@ -30,7 +30,6 @@ const productResources = [
 ] as const;
 const routerDestinations = new Set([
   "/",
-  "/explore",
   "/discover",
   "/network",
   "/local-agents",

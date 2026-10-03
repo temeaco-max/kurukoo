@@ -9,10 +9,10 @@ import {
 } from '../src/services/authenticatedNavigationModel';
 
 // Assistant-first IA: Chat is the primary entry point, followed by
-// Home (what matters now), Explore (discovery), Activity (what is
+// Home (what matters now), Discover (discovery), Activity (what is
 // happening) and Work (active fulfilment).
-assert.deepEqual(PRIMARY_SIDEBAR_ITEMS.map((item) => item.id), ['chat', 'home', 'explore', 'activity', 'work']);
-assert.deepEqual(PRIMARY_SIDEBAR_ITEMS.map((item) => item.route), ['/chat', '/home', '/explore', '/activity', '/work']);
+assert.deepEqual(PRIMARY_SIDEBAR_ITEMS.map((item) => item.id), ['chat', 'home', 'discover', 'activity', 'work']);
+assert.deepEqual(PRIMARY_SIDEBAR_ITEMS.map((item) => item.route), ['/chat', '/home', '/discover', '/activity', '/work']);
 assert.deepEqual(SECONDARY_SIDEBAR_ITEMS.map((item) => item.id), ['reminders', 'saved', 'notifications', 'memory']);
 
 // Header affordances (search, points, cart, notifications, account)

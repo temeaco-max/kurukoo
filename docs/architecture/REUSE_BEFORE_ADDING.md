@@ -38,7 +38,7 @@ Add new code only when:
 | Channels | channel adapters → canonical Chat | Never duplicate domain/skill logic per channel |
 | Agent runtime | existing agent runtime/coordinator | Add skills/capabilities/budget policies, not another agent engine |
 | Admin | existing Admin Control Room/domain routes | Add operator modules under one protected surface |
-| Public web | existing public/explore/earn/help/legal routes | Extend existing funnels instead of adding duplicate sites |
+| Public web | existing public/discover/earn/help/legal routes | Extend existing funnels instead of adding duplicate sites |
 | Mobile | Expo app + platform contract | Add native presentation over canonical APIs; never recreate backend logic |
 
 ## Current shared interaction rule

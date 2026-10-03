@@ -260,7 +260,7 @@ Kurukoo is an everyday utility platform powered by AI that enables users to requ
 
 ## Key Resources
 - Homepage: https://kurukoo.com/
-- Explore Services: https://kurukoo.com/explore
+- Discover: https://kurukoo.com/discover
 - Developer & API Docs: https://kurukoo.com/api/docs
 - Help & Support: https://kurukoo.com/help
 - Pricing Tiers: https://kurukoo.com/pricing
@@ -290,9 +290,9 @@ export async function getChildSitemap(type: string): Promise<string> {
     let urls: string[] = [];
 
     if (type === 'pages') {
-        urls = ['/', '/explore', '/pricing', '/about', '/help', '/contact', '/terms', '/privacy'];
+        urls = ['/', '/discover', '/pricing', '/about', '/help', '/contact', '/terms', '/privacy'];
     } else if (type === 'categories') {
-        urls = ['/explore/transport-mobility', '/explore/food-drink', '/explore/repairs-maintenance', '/explore/health-medical', '/explore/digital-services'];
+        urls = ['/discover/transport-mobility', '/discover/food-drink', '/discover/repairs-maintenance', '/discover/health-medical', '/discover/digital-services'];
     } else if (type === 'blog') {
         urls = ['/blog'];
     } else {
@@ -672,7 +672,7 @@ export async function deleteInternalLink(id: number) {
 
 export async function getOrphanPages() {
     return [
-        { url_path: '/explore/niche-skills', reason: 'No inbound internal links found' }
+        { url_path: '/discover/niche-skills', reason: 'No inbound internal links found' }
     ];
 }
 
@@ -725,9 +725,9 @@ export async function deleteKeyword(id: number) {
 
 export async function getRankings() {
     return [
-        { keyword: 'request plumber lagos', position: 3, url: '/explore/repairs-maintenance' },
-        { keyword: 'okada ride booking app', position: 1, url: '/explore/transport-mobility' },
-        { keyword: 'uk life admin reminder bot', position: 2, url: '/explore/digital-services' }
+        { keyword: 'request plumber lagos', position: 3, url: '/discover/repairs-maintenance' },
+        { keyword: 'okada ride booking app', position: 1, url: '/discover/transport-mobility' },
+        { keyword: 'uk life admin reminder bot', position: 2, url: '/discover/digital-services' }
     ];
 }
 

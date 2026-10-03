@@ -18,7 +18,6 @@ const marketingPrefixes = [
   "/contact",
   "/creators",
   "/advertising",
-  "/explore",
   "/discover",
   "/help",
   "/how-it-works",

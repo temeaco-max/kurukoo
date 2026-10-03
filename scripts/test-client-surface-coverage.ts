@@ -56,7 +56,7 @@ for (const required of ['food','groceries','errands','logistics','parcels','fuel
 const publicRoutes = read('src/routes/publicRoutes.ts');
 const topicRoutes = read('src/routes/topicRoutes.ts');
 const contentRoutes = read('src/routes/contentRoutes.ts');
-const publicRouteExpectations = ['/chat', '/discover', '/how-it-works', '/explore', '/network', '/channels', '/help', '/partners', '/advertise', '/about', '/contact', '/pricing', '/blog', '/careers', '/api-docs'];
+const publicRouteExpectations = ['/chat', '/discover', '/how-it-works', '/network', '/channels', '/help', '/partners', '/advertise', '/about', '/contact', '/pricing', '/blog', '/careers', '/api-docs'];
 const publicWorkspaceDuplicates = ['/requests', '/tasks', '/connect', '/points', '/top-up', '/subscription', '/call', '/confirmation', '/daily-picks'];
 const retiredSingularAliases = ['/subscription', '/confirmation', '/daily-picks'];
 for (const route of publicRouteExpectations) if (!publicRoutes.includes(`router.get('${route}'`)) failures.push(`Public Web route missing ${route}`);
@@ -203,7 +203,7 @@ if (!mobilePackage.includes('expo-camera')) failures.push('Native client is miss
 if (!mobilePackage.includes('expo-notifications')) failures.push('Native client is missing push/notification capability');
 
 const surfaceIds = new Set(CLIENT_SURFACES.map(surface => surface.id));
-for (const required of ['web-marketing', 'web-how-it-works', 'web-explore', 'web-discover-public', 'web-topics-public', 'web-network', 'web-channels', 'web-resources', 'web-help', 'web-partners', 'web-advertise', 'web-chat', 'web-topics', 'web-requests', 'web-reminders', 'web-saved', 'web-cart', 'web-tasks', 'web-connect', 'web-agents', 'web-capabilities', 'web-opportunities', 'web-wallet', 'web-points', 'web-top-up', 'web-subscriptions', 'web-checkout', 'web-confirmations', 'web-memory', 'web-notifications', 'web-artifacts', 'web-prayer', 'web-call', 'web-safety', 'pwa-shell', 'native-ios', 'native-android', 'admin-control-room', 'admin-providers', 'admin-compliance', 'admin-settings']) if (!surfaceIds.has(required)) failures.push(`Client surface registry missing ${required}`);
+for (const required of ['web-marketing', 'web-how-it-works', 'web-discover-goals', 'web-discover-public', 'web-topics-public', 'web-network', 'web-channels', 'web-resources', 'web-help', 'web-partners', 'web-advertise', 'web-chat', 'web-topics', 'web-requests', 'web-reminders', 'web-saved', 'web-cart', 'web-tasks', 'web-connect', 'web-agents', 'web-capabilities', 'web-opportunities', 'web-wallet', 'web-points', 'web-top-up', 'web-subscriptions', 'web-checkout', 'web-confirmations', 'web-memory', 'web-notifications', 'web-artifacts', 'web-prayer', 'web-call', 'web-safety', 'pwa-shell', 'native-ios', 'native-android', 'admin-control-room', 'admin-providers', 'admin-compliance', 'admin-settings']) if (!surfaceIds.has(required)) failures.push(`Client surface registry missing ${required}`);
 
 if (failures.length) { console.error('Kurukoo client-surface coverage failed:'); failures.forEach(failure => console.error(`- ${failure}`)); process.exit(1); }
 console.log(`Kurukoo client-surface coverage passed: ${CLIENT_SURFACES.length} declared client surfaces and ${CLIENT_FEATURE_ENTRYPOINTS.length} historical capability entrypoints; shared calm lifecycle states, user-safe Objective continuity, identifier redaction, Chat/Workspace authorities, PWA/native authorities and five-domain mobile navigation are present.`);

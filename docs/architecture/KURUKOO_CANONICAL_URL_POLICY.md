@@ -29,7 +29,7 @@ The authenticated header, primary sidebar and contextual inspector are shared ac
 
 ## Public product website
 
-The public site is a product site for Kurukoo, not a mirror of internal services. Public routes explain the product and answer search intent. Core product pages include `/about`, `/features`, `/pricing`, `/explore`, `/discover`, `/network`, `/channels`, `/topics`, `/resources`, `/how-it-works`, `/help`, `/partners`, `/advertise`, `/developers`, `/legal` and `/blog`.
+The public site is a product site for Kurukoo, not a mirror of internal services. Public routes explain the product and answer search intent. Core product pages include `/about`, `/features`, `/pricing`, `/discover`, `/network`, `/channels`, `/topics`, `/resources`, `/how-it-works`, `/help`, `/partners`, `/advertise`, `/developers`, `/legal` and `/blog`.
 
 ## Page completeness rule
 

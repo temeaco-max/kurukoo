@@ -32,7 +32,7 @@ const paths = [
     "Find work",
     "Discover paid work, gigs and useful opportunities.",
     BriefcaseBusiness,
-    "/explore/work",
+    "/discover/work",
     "Show me work and gigs that fit what I can do.",
   ],
   [
@@ -89,10 +89,10 @@ function Opportunities() {
         <div className="mt-5 flex flex-wrap gap-2">
           <AskKurukoo prompt="Show me opportunities that fit what I can offer." />
           <Link
-            to="/explore"
+            to="/discover"
             className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-border px-4 text-[12px] font-medium hover:bg-elevated"
           >
-            Explore <ArrowRight className="size-3.5" />
+            Discover <ArrowRight className="size-3.5" />
           </Link>
         </div>
       </header>

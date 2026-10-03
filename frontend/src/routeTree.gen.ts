@@ -40,7 +40,6 @@ import { Route as CredentialsRouteImport } from './routes/credentials'
 import { Route as DailyPicksRouteImport } from './routes/daily-picks'
 import { Route as DeveloperRouteImport } from './routes/developer'
 import { Route as DiscoverRouteImport } from './routes/discover'
-import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as FieldRouteImport } from './routes/field'
 import { Route as FollowingRouteImport } from './routes/following'
 import { Route as HelpRouteImport } from './routes/help'
@@ -84,22 +83,22 @@ import { Route as AgentsAgentIdRouteImport } from './routes/agents.$agentId'
 import { Route as ArtifactsArtifactIdRouteImport } from './routes/artifacts.$artifactId'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as BlogTheCallThatGetsThingsMovingRouteImport } from './routes/blog.the-call-that-gets-things-moving'
+import { Route as DiscoverCommunityRouteImport } from './routes/discover/community'
+import { Route as DiscoverEventsRouteImport } from './routes/discover/events'
+import { Route as DiscoverFoodRouteImport } from './routes/discover/food'
+import { Route as DiscoverGovernmentRouteImport } from './routes/discover/government'
+import { Route as DiscoverGroceriesRouteImport } from './routes/discover/groceries'
+import { Route as DiscoverHealthRouteImport } from './routes/discover/health'
+import { Route as DiscoverHomeRouteImport } from './routes/discover/home'
+import { Route as DiscoverLearningRouteImport } from './routes/discover/learning'
+import { Route as DiscoverMobilityRouteImport } from './routes/discover/mobility'
+import { Route as DiscoverMoneyCircleRouteImport } from './routes/discover/money-circle'
+import { Route as DiscoverPrayerRouteImport } from './routes/discover/prayer'
+import { Route as DiscoverRepairsRouteImport } from './routes/discover/repairs'
+import { Route as DiscoverSafetyRouteImport } from './routes/discover/safety'
+import { Route as DiscoverSellingRouteImport } from './routes/discover/selling'
+import { Route as DiscoverWorkRouteImport } from './routes/discover/work'
 import { Route as EarnTopicRouteImport } from './routes/earn.$topic'
-import { Route as ExploreCommunityRouteImport } from './routes/explore/community'
-import { Route as ExploreEventsRouteImport } from './routes/explore/events'
-import { Route as ExploreFoodRouteImport } from './routes/explore/food'
-import { Route as ExploreGovernmentRouteImport } from './routes/explore/government'
-import { Route as ExploreGroceriesRouteImport } from './routes/explore/groceries'
-import { Route as ExploreHealthRouteImport } from './routes/explore/health'
-import { Route as ExploreHomeRouteImport } from './routes/explore/home'
-import { Route as ExploreLearningRouteImport } from './routes/explore/learning'
-import { Route as ExploreMobilityRouteImport } from './routes/explore/mobility'
-import { Route as ExploreMoneyCircleRouteImport } from './routes/explore/money-circle'
-import { Route as ExplorePrayerRouteImport } from './routes/explore/prayer'
-import { Route as ExploreRepairsRouteImport } from './routes/explore/repairs'
-import { Route as ExploreSafetyRouteImport } from './routes/explore/safety'
-import { Route as ExploreSellingRouteImport } from './routes/explore/selling'
-import { Route as ExploreWorkRouteImport } from './routes/explore/work'
 import { Route as LegalSectionRouteImport } from './routes/legal.$section'
 import { Route as MessagesThreadIdRouteImport } from './routes/messages.$threadId'
 import { Route as ProfileEntityIdRouteImport } from './routes/profile.$entityId'
@@ -269,11 +268,6 @@ const DeveloperRoute = DeveloperRouteImport.update({
 const DiscoverRoute = DiscoverRouteImport.update({
   id: '/discover',
   path: '/discover',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ExploreRoute = ExploreRouteImport.update({
-  id: '/explore',
-  path: '/explore',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FieldRoute = FieldRouteImport.update({
@@ -492,85 +486,85 @@ const BlogTheCallThatGetsThingsMovingRoute =
     path: '/the-call-that-gets-things-moving',
     getParentRoute: () => BlogRoute,
   } as any)
+const DiscoverCommunityRoute = DiscoverCommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
+  getParentRoute: () => DiscoverRoute,
+} as any)
+const DiscoverEventsRoute = DiscoverEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => DiscoverRoute,
+} as any)
+const DiscoverFoodRoute = DiscoverFoodRouteImport.update({
+  id: '/food',
+  path: '/food',
+  getParentRoute: () => DiscoverRoute,
+} as any)
+const DiscoverGovernmentRoute = DiscoverGovernmentRouteImport.update({
+  id: '/government',
+  path: '/government',
+  getParentRoute: () => DiscoverRoute,
+} as any)
+const DiscoverGroceriesRoute = DiscoverGroceriesRouteImport.update({
+  id: '/groceries',
+  path: '/groceries',
+  getParentRoute: () => DiscoverRoute,
+} as any)
+const DiscoverHealthRoute = DiscoverHealthRouteImport.update({
+  id: '/health',
+  path: '/health',
+  getParentRoute: () => DiscoverRoute,
+} as any)
+const DiscoverHomeRoute = DiscoverHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => DiscoverRoute,
+} as any)
+const DiscoverLearningRoute = DiscoverLearningRouteImport.update({
+  id: '/learning',
+  path: '/learning',
+  getParentRoute: () => DiscoverRoute,
+} as any)
+const DiscoverMobilityRoute = DiscoverMobilityRouteImport.update({
+  id: '/mobility',
+  path: '/mobility',
+  getParentRoute: () => DiscoverRoute,
+} as any)
+const DiscoverMoneyCircleRoute = DiscoverMoneyCircleRouteImport.update({
+  id: '/money-circle',
+  path: '/money-circle',
+  getParentRoute: () => DiscoverRoute,
+} as any)
+const DiscoverPrayerRoute = DiscoverPrayerRouteImport.update({
+  id: '/prayer',
+  path: '/prayer',
+  getParentRoute: () => DiscoverRoute,
+} as any)
+const DiscoverRepairsRoute = DiscoverRepairsRouteImport.update({
+  id: '/repairs',
+  path: '/repairs',
+  getParentRoute: () => DiscoverRoute,
+} as any)
+const DiscoverSafetyRoute = DiscoverSafetyRouteImport.update({
+  id: '/safety',
+  path: '/safety',
+  getParentRoute: () => DiscoverRoute,
+} as any)
+const DiscoverSellingRoute = DiscoverSellingRouteImport.update({
+  id: '/selling',
+  path: '/selling',
+  getParentRoute: () => DiscoverRoute,
+} as any)
+const DiscoverWorkRoute = DiscoverWorkRouteImport.update({
+  id: '/work',
+  path: '/work',
+  getParentRoute: () => DiscoverRoute,
+} as any)
 const EarnTopicRoute = EarnTopicRouteImport.update({
   id: '/earn/$topic',
   path: '/earn/$topic',
   getParentRoute: () => rootRouteImport,
-} as any)
-const ExploreCommunityRoute = ExploreCommunityRouteImport.update({
-  id: '/community',
-  path: '/community',
-  getParentRoute: () => ExploreRoute,
-} as any)
-const ExploreEventsRoute = ExploreEventsRouteImport.update({
-  id: '/events',
-  path: '/events',
-  getParentRoute: () => ExploreRoute,
-} as any)
-const ExploreFoodRoute = ExploreFoodRouteImport.update({
-  id: '/food',
-  path: '/food',
-  getParentRoute: () => ExploreRoute,
-} as any)
-const ExploreGovernmentRoute = ExploreGovernmentRouteImport.update({
-  id: '/government',
-  path: '/government',
-  getParentRoute: () => ExploreRoute,
-} as any)
-const ExploreGroceriesRoute = ExploreGroceriesRouteImport.update({
-  id: '/groceries',
-  path: '/groceries',
-  getParentRoute: () => ExploreRoute,
-} as any)
-const ExploreHealthRoute = ExploreHealthRouteImport.update({
-  id: '/health',
-  path: '/health',
-  getParentRoute: () => ExploreRoute,
-} as any)
-const ExploreHomeRoute = ExploreHomeRouteImport.update({
-  id: '/home',
-  path: '/home',
-  getParentRoute: () => ExploreRoute,
-} as any)
-const ExploreLearningRoute = ExploreLearningRouteImport.update({
-  id: '/learning',
-  path: '/learning',
-  getParentRoute: () => ExploreRoute,
-} as any)
-const ExploreMobilityRoute = ExploreMobilityRouteImport.update({
-  id: '/mobility',
-  path: '/mobility',
-  getParentRoute: () => ExploreRoute,
-} as any)
-const ExploreMoneyCircleRoute = ExploreMoneyCircleRouteImport.update({
-  id: '/money-circle',
-  path: '/money-circle',
-  getParentRoute: () => ExploreRoute,
-} as any)
-const ExplorePrayerRoute = ExplorePrayerRouteImport.update({
-  id: '/prayer',
-  path: '/prayer',
-  getParentRoute: () => ExploreRoute,
-} as any)
-const ExploreRepairsRoute = ExploreRepairsRouteImport.update({
-  id: '/repairs',
-  path: '/repairs',
-  getParentRoute: () => ExploreRoute,
-} as any)
-const ExploreSafetyRoute = ExploreSafetyRouteImport.update({
-  id: '/safety',
-  path: '/safety',
-  getParentRoute: () => ExploreRoute,
-} as any)
-const ExploreSellingRoute = ExploreSellingRouteImport.update({
-  id: '/selling',
-  path: '/selling',
-  getParentRoute: () => ExploreRoute,
-} as any)
-const ExploreWorkRoute = ExploreWorkRouteImport.update({
-  id: '/work',
-  path: '/work',
-  getParentRoute: () => ExploreRoute,
 } as any)
 const LegalSectionRoute = LegalSectionRouteImport.update({
   id: '/$section',
@@ -680,8 +674,7 @@ export interface FileRoutesByFullPath {
   '/credentials': typeof CredentialsRoute
   '/daily-picks': typeof DailyPicksRoute
   '/developer': typeof DeveloperRoute
-  '/discover': typeof DiscoverRoute
-  '/explore': typeof ExploreRouteWithChildren
+  '/discover': typeof DiscoverRouteWithChildren
   '/field': typeof FieldRoute
   '/following': typeof FollowingRoute
   '/help': typeof HelpRoute
@@ -725,22 +718,22 @@ export interface FileRoutesByFullPath {
   '/artifacts/$artifactId': typeof ArtifactsArtifactIdRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/the-call-that-gets-things-moving': typeof BlogTheCallThatGetsThingsMovingRoute
+  '/discover/community': typeof DiscoverCommunityRoute
+  '/discover/events': typeof DiscoverEventsRoute
+  '/discover/food': typeof DiscoverFoodRoute
+  '/discover/government': typeof DiscoverGovernmentRoute
+  '/discover/groceries': typeof DiscoverGroceriesRoute
+  '/discover/health': typeof DiscoverHealthRoute
+  '/discover/home': typeof DiscoverHomeRoute
+  '/discover/learning': typeof DiscoverLearningRoute
+  '/discover/mobility': typeof DiscoverMobilityRoute
+  '/discover/money-circle': typeof DiscoverMoneyCircleRoute
+  '/discover/prayer': typeof DiscoverPrayerRoute
+  '/discover/repairs': typeof DiscoverRepairsRoute
+  '/discover/safety': typeof DiscoverSafetyRoute
+  '/discover/selling': typeof DiscoverSellingRoute
+  '/discover/work': typeof DiscoverWorkRoute
   '/earn/$topic': typeof EarnTopicRoute
-  '/explore/community': typeof ExploreCommunityRoute
-  '/explore/events': typeof ExploreEventsRoute
-  '/explore/food': typeof ExploreFoodRoute
-  '/explore/government': typeof ExploreGovernmentRoute
-  '/explore/groceries': typeof ExploreGroceriesRoute
-  '/explore/health': typeof ExploreHealthRoute
-  '/explore/home': typeof ExploreHomeRoute
-  '/explore/learning': typeof ExploreLearningRoute
-  '/explore/mobility': typeof ExploreMobilityRoute
-  '/explore/money-circle': typeof ExploreMoneyCircleRoute
-  '/explore/prayer': typeof ExplorePrayerRoute
-  '/explore/repairs': typeof ExploreRepairsRoute
-  '/explore/safety': typeof ExploreSafetyRoute
-  '/explore/selling': typeof ExploreSellingRoute
-  '/explore/work': typeof ExploreWorkRoute
   '/legal/$section': typeof LegalSectionRoute
   '/messages/$threadId': typeof MessagesThreadIdRoute
   '/profile/$entityId': typeof ProfileEntityIdRoute
@@ -788,8 +781,7 @@ export interface FileRoutesByTo {
   '/credentials': typeof CredentialsRoute
   '/daily-picks': typeof DailyPicksRoute
   '/developer': typeof DeveloperRoute
-  '/discover': typeof DiscoverRoute
-  '/explore': typeof ExploreRouteWithChildren
+  '/discover': typeof DiscoverRouteWithChildren
   '/field': typeof FieldRoute
   '/following': typeof FollowingRoute
   '/help': typeof HelpRoute
@@ -832,22 +824,22 @@ export interface FileRoutesByTo {
   '/artifacts/$artifactId': typeof ArtifactsArtifactIdRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/the-call-that-gets-things-moving': typeof BlogTheCallThatGetsThingsMovingRoute
+  '/discover/community': typeof DiscoverCommunityRoute
+  '/discover/events': typeof DiscoverEventsRoute
+  '/discover/food': typeof DiscoverFoodRoute
+  '/discover/government': typeof DiscoverGovernmentRoute
+  '/discover/groceries': typeof DiscoverGroceriesRoute
+  '/discover/health': typeof DiscoverHealthRoute
+  '/discover/home': typeof DiscoverHomeRoute
+  '/discover/learning': typeof DiscoverLearningRoute
+  '/discover/mobility': typeof DiscoverMobilityRoute
+  '/discover/money-circle': typeof DiscoverMoneyCircleRoute
+  '/discover/prayer': typeof DiscoverPrayerRoute
+  '/discover/repairs': typeof DiscoverRepairsRoute
+  '/discover/safety': typeof DiscoverSafetyRoute
+  '/discover/selling': typeof DiscoverSellingRoute
+  '/discover/work': typeof DiscoverWorkRoute
   '/earn/$topic': typeof EarnTopicRoute
-  '/explore/community': typeof ExploreCommunityRoute
-  '/explore/events': typeof ExploreEventsRoute
-  '/explore/food': typeof ExploreFoodRoute
-  '/explore/government': typeof ExploreGovernmentRoute
-  '/explore/groceries': typeof ExploreGroceriesRoute
-  '/explore/health': typeof ExploreHealthRoute
-  '/explore/home': typeof ExploreHomeRoute
-  '/explore/learning': typeof ExploreLearningRoute
-  '/explore/mobility': typeof ExploreMobilityRoute
-  '/explore/money-circle': typeof ExploreMoneyCircleRoute
-  '/explore/prayer': typeof ExplorePrayerRoute
-  '/explore/repairs': typeof ExploreRepairsRoute
-  '/explore/safety': typeof ExploreSafetyRoute
-  '/explore/selling': typeof ExploreSellingRoute
-  '/explore/work': typeof ExploreWorkRoute
   '/legal/$section': typeof LegalSectionRoute
   '/messages/$threadId': typeof MessagesThreadIdRoute
   '/profile/$entityId': typeof ProfileEntityIdRoute
@@ -896,8 +888,7 @@ export interface FileRoutesById {
   '/credentials': typeof CredentialsRoute
   '/daily-picks': typeof DailyPicksRoute
   '/developer': typeof DeveloperRoute
-  '/discover': typeof DiscoverRoute
-  '/explore': typeof ExploreRouteWithChildren
+  '/discover': typeof DiscoverRouteWithChildren
   '/field': typeof FieldRoute
   '/following': typeof FollowingRoute
   '/help': typeof HelpRoute
@@ -941,22 +932,22 @@ export interface FileRoutesById {
   '/artifacts/$artifactId': typeof ArtifactsArtifactIdRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/the-call-that-gets-things-moving': typeof BlogTheCallThatGetsThingsMovingRoute
+  '/discover/community': typeof DiscoverCommunityRoute
+  '/discover/events': typeof DiscoverEventsRoute
+  '/discover/food': typeof DiscoverFoodRoute
+  '/discover/government': typeof DiscoverGovernmentRoute
+  '/discover/groceries': typeof DiscoverGroceriesRoute
+  '/discover/health': typeof DiscoverHealthRoute
+  '/discover/home': typeof DiscoverHomeRoute
+  '/discover/learning': typeof DiscoverLearningRoute
+  '/discover/mobility': typeof DiscoverMobilityRoute
+  '/discover/money-circle': typeof DiscoverMoneyCircleRoute
+  '/discover/prayer': typeof DiscoverPrayerRoute
+  '/discover/repairs': typeof DiscoverRepairsRoute
+  '/discover/safety': typeof DiscoverSafetyRoute
+  '/discover/selling': typeof DiscoverSellingRoute
+  '/discover/work': typeof DiscoverWorkRoute
   '/earn/$topic': typeof EarnTopicRoute
-  '/explore/community': typeof ExploreCommunityRoute
-  '/explore/events': typeof ExploreEventsRoute
-  '/explore/food': typeof ExploreFoodRoute
-  '/explore/government': typeof ExploreGovernmentRoute
-  '/explore/groceries': typeof ExploreGroceriesRoute
-  '/explore/health': typeof ExploreHealthRoute
-  '/explore/home': typeof ExploreHomeRoute
-  '/explore/learning': typeof ExploreLearningRoute
-  '/explore/mobility': typeof ExploreMobilityRoute
-  '/explore/money-circle': typeof ExploreMoneyCircleRoute
-  '/explore/prayer': typeof ExplorePrayerRoute
-  '/explore/repairs': typeof ExploreRepairsRoute
-  '/explore/safety': typeof ExploreSafetyRoute
-  '/explore/selling': typeof ExploreSellingRoute
-  '/explore/work': typeof ExploreWorkRoute
   '/legal/$section': typeof LegalSectionRoute
   '/messages/$threadId': typeof MessagesThreadIdRoute
   '/profile/$entityId': typeof ProfileEntityIdRoute
@@ -1007,7 +998,6 @@ export interface FileRouteTypes {
     | '/daily-picks'
     | '/developer'
     | '/discover'
-    | '/explore'
     | '/field'
     | '/following'
     | '/help'
@@ -1051,22 +1041,22 @@ export interface FileRouteTypes {
     | '/artifacts/$artifactId'
     | '/blog/$slug'
     | '/blog/the-call-that-gets-things-moving'
+    | '/discover/community'
+    | '/discover/events'
+    | '/discover/food'
+    | '/discover/government'
+    | '/discover/groceries'
+    | '/discover/health'
+    | '/discover/home'
+    | '/discover/learning'
+    | '/discover/mobility'
+    | '/discover/money-circle'
+    | '/discover/prayer'
+    | '/discover/repairs'
+    | '/discover/safety'
+    | '/discover/selling'
+    | '/discover/work'
     | '/earn/$topic'
-    | '/explore/community'
-    | '/explore/events'
-    | '/explore/food'
-    | '/explore/government'
-    | '/explore/groceries'
-    | '/explore/health'
-    | '/explore/home'
-    | '/explore/learning'
-    | '/explore/mobility'
-    | '/explore/money-circle'
-    | '/explore/prayer'
-    | '/explore/repairs'
-    | '/explore/safety'
-    | '/explore/selling'
-    | '/explore/work'
     | '/legal/$section'
     | '/messages/$threadId'
     | '/profile/$entityId'
@@ -1115,7 +1105,6 @@ export interface FileRouteTypes {
     | '/daily-picks'
     | '/developer'
     | '/discover'
-    | '/explore'
     | '/field'
     | '/following'
     | '/help'
@@ -1158,22 +1147,22 @@ export interface FileRouteTypes {
     | '/artifacts/$artifactId'
     | '/blog/$slug'
     | '/blog/the-call-that-gets-things-moving'
+    | '/discover/community'
+    | '/discover/events'
+    | '/discover/food'
+    | '/discover/government'
+    | '/discover/groceries'
+    | '/discover/health'
+    | '/discover/home'
+    | '/discover/learning'
+    | '/discover/mobility'
+    | '/discover/money-circle'
+    | '/discover/prayer'
+    | '/discover/repairs'
+    | '/discover/safety'
+    | '/discover/selling'
+    | '/discover/work'
     | '/earn/$topic'
-    | '/explore/community'
-    | '/explore/events'
-    | '/explore/food'
-    | '/explore/government'
-    | '/explore/groceries'
-    | '/explore/health'
-    | '/explore/home'
-    | '/explore/learning'
-    | '/explore/mobility'
-    | '/explore/money-circle'
-    | '/explore/prayer'
-    | '/explore/repairs'
-    | '/explore/safety'
-    | '/explore/selling'
-    | '/explore/work'
     | '/legal/$section'
     | '/messages/$threadId'
     | '/profile/$entityId'
@@ -1222,7 +1211,6 @@ export interface FileRouteTypes {
     | '/daily-picks'
     | '/developer'
     | '/discover'
-    | '/explore'
     | '/field'
     | '/following'
     | '/help'
@@ -1266,22 +1254,22 @@ export interface FileRouteTypes {
     | '/artifacts/$artifactId'
     | '/blog/$slug'
     | '/blog/the-call-that-gets-things-moving'
+    | '/discover/community'
+    | '/discover/events'
+    | '/discover/food'
+    | '/discover/government'
+    | '/discover/groceries'
+    | '/discover/health'
+    | '/discover/home'
+    | '/discover/learning'
+    | '/discover/mobility'
+    | '/discover/money-circle'
+    | '/discover/prayer'
+    | '/discover/repairs'
+    | '/discover/safety'
+    | '/discover/selling'
+    | '/discover/work'
     | '/earn/$topic'
-    | '/explore/community'
-    | '/explore/events'
-    | '/explore/food'
-    | '/explore/government'
-    | '/explore/groceries'
-    | '/explore/health'
-    | '/explore/home'
-    | '/explore/learning'
-    | '/explore/mobility'
-    | '/explore/money-circle'
-    | '/explore/prayer'
-    | '/explore/repairs'
-    | '/explore/safety'
-    | '/explore/selling'
-    | '/explore/work'
     | '/legal/$section'
     | '/messages/$threadId'
     | '/profile/$entityId'
@@ -1330,8 +1318,7 @@ export interface RootRouteChildren {
   CredentialsRoute: typeof CredentialsRoute
   DailyPicksRoute: typeof DailyPicksRoute
   DeveloperRoute: typeof DeveloperRoute
-  DiscoverRoute: typeof DiscoverRoute
-  ExploreRoute: typeof ExploreRouteWithChildren
+  DiscoverRoute: typeof DiscoverRouteWithChildren
   FieldRoute: typeof FieldRoute
   FollowingRoute: typeof FollowingRoute
   HelpRoute: typeof HelpRoute
@@ -1591,13 +1578,6 @@ declare module '@tanstack/react-router' {
       path: '/discover'
       fullPath: '/discover'
       preLoaderRoute: typeof DiscoverRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/explore': {
-      id: '/explore'
-      path: '/explore'
-      fullPath: '/explore'
-      preLoaderRoute: typeof ExploreRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/field': {
@@ -1901,117 +1881,117 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogTheCallThatGetsThingsMovingRouteImport
       parentRoute: typeof BlogRoute
     }
+    '/discover/community': {
+      id: '/discover/community'
+      path: '/community'
+      fullPath: '/discover/community'
+      preLoaderRoute: typeof DiscoverCommunityRouteImport
+      parentRoute: typeof DiscoverRoute
+    }
+    '/discover/events': {
+      id: '/discover/events'
+      path: '/events'
+      fullPath: '/discover/events'
+      preLoaderRoute: typeof DiscoverEventsRouteImport
+      parentRoute: typeof DiscoverRoute
+    }
+    '/discover/food': {
+      id: '/discover/food'
+      path: '/food'
+      fullPath: '/discover/food'
+      preLoaderRoute: typeof DiscoverFoodRouteImport
+      parentRoute: typeof DiscoverRoute
+    }
+    '/discover/government': {
+      id: '/discover/government'
+      path: '/government'
+      fullPath: '/discover/government'
+      preLoaderRoute: typeof DiscoverGovernmentRouteImport
+      parentRoute: typeof DiscoverRoute
+    }
+    '/discover/groceries': {
+      id: '/discover/groceries'
+      path: '/groceries'
+      fullPath: '/discover/groceries'
+      preLoaderRoute: typeof DiscoverGroceriesRouteImport
+      parentRoute: typeof DiscoverRoute
+    }
+    '/discover/health': {
+      id: '/discover/health'
+      path: '/health'
+      fullPath: '/discover/health'
+      preLoaderRoute: typeof DiscoverHealthRouteImport
+      parentRoute: typeof DiscoverRoute
+    }
+    '/discover/home': {
+      id: '/discover/home'
+      path: '/home'
+      fullPath: '/discover/home'
+      preLoaderRoute: typeof DiscoverHomeRouteImport
+      parentRoute: typeof DiscoverRoute
+    }
+    '/discover/learning': {
+      id: '/discover/learning'
+      path: '/learning'
+      fullPath: '/discover/learning'
+      preLoaderRoute: typeof DiscoverLearningRouteImport
+      parentRoute: typeof DiscoverRoute
+    }
+    '/discover/mobility': {
+      id: '/discover/mobility'
+      path: '/mobility'
+      fullPath: '/discover/mobility'
+      preLoaderRoute: typeof DiscoverMobilityRouteImport
+      parentRoute: typeof DiscoverRoute
+    }
+    '/discover/money-circle': {
+      id: '/discover/money-circle'
+      path: '/money-circle'
+      fullPath: '/discover/money-circle'
+      preLoaderRoute: typeof DiscoverMoneyCircleRouteImport
+      parentRoute: typeof DiscoverRoute
+    }
+    '/discover/prayer': {
+      id: '/discover/prayer'
+      path: '/prayer'
+      fullPath: '/discover/prayer'
+      preLoaderRoute: typeof DiscoverPrayerRouteImport
+      parentRoute: typeof DiscoverRoute
+    }
+    '/discover/repairs': {
+      id: '/discover/repairs'
+      path: '/repairs'
+      fullPath: '/discover/repairs'
+      preLoaderRoute: typeof DiscoverRepairsRouteImport
+      parentRoute: typeof DiscoverRoute
+    }
+    '/discover/safety': {
+      id: '/discover/safety'
+      path: '/safety'
+      fullPath: '/discover/safety'
+      preLoaderRoute: typeof DiscoverSafetyRouteImport
+      parentRoute: typeof DiscoverRoute
+    }
+    '/discover/selling': {
+      id: '/discover/selling'
+      path: '/selling'
+      fullPath: '/discover/selling'
+      preLoaderRoute: typeof DiscoverSellingRouteImport
+      parentRoute: typeof DiscoverRoute
+    }
+    '/discover/work': {
+      id: '/discover/work'
+      path: '/work'
+      fullPath: '/discover/work'
+      preLoaderRoute: typeof DiscoverWorkRouteImport
+      parentRoute: typeof DiscoverRoute
+    }
     '/earn/$topic': {
       id: '/earn/$topic'
       path: '/earn/$topic'
       fullPath: '/earn/$topic'
       preLoaderRoute: typeof EarnTopicRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/explore/community': {
-      id: '/explore/community'
-      path: '/community'
-      fullPath: '/explore/community'
-      preLoaderRoute: typeof ExploreCommunityRouteImport
-      parentRoute: typeof ExploreRoute
-    }
-    '/explore/events': {
-      id: '/explore/events'
-      path: '/events'
-      fullPath: '/explore/events'
-      preLoaderRoute: typeof ExploreEventsRouteImport
-      parentRoute: typeof ExploreRoute
-    }
-    '/explore/food': {
-      id: '/explore/food'
-      path: '/food'
-      fullPath: '/explore/food'
-      preLoaderRoute: typeof ExploreFoodRouteImport
-      parentRoute: typeof ExploreRoute
-    }
-    '/explore/government': {
-      id: '/explore/government'
-      path: '/government'
-      fullPath: '/explore/government'
-      preLoaderRoute: typeof ExploreGovernmentRouteImport
-      parentRoute: typeof ExploreRoute
-    }
-    '/explore/groceries': {
-      id: '/explore/groceries'
-      path: '/groceries'
-      fullPath: '/explore/groceries'
-      preLoaderRoute: typeof ExploreGroceriesRouteImport
-      parentRoute: typeof ExploreRoute
-    }
-    '/explore/health': {
-      id: '/explore/health'
-      path: '/health'
-      fullPath: '/explore/health'
-      preLoaderRoute: typeof ExploreHealthRouteImport
-      parentRoute: typeof ExploreRoute
-    }
-    '/explore/home': {
-      id: '/explore/home'
-      path: '/home'
-      fullPath: '/explore/home'
-      preLoaderRoute: typeof ExploreHomeRouteImport
-      parentRoute: typeof ExploreRoute
-    }
-    '/explore/learning': {
-      id: '/explore/learning'
-      path: '/learning'
-      fullPath: '/explore/learning'
-      preLoaderRoute: typeof ExploreLearningRouteImport
-      parentRoute: typeof ExploreRoute
-    }
-    '/explore/mobility': {
-      id: '/explore/mobility'
-      path: '/mobility'
-      fullPath: '/explore/mobility'
-      preLoaderRoute: typeof ExploreMobilityRouteImport
-      parentRoute: typeof ExploreRoute
-    }
-    '/explore/money-circle': {
-      id: '/explore/money-circle'
-      path: '/money-circle'
-      fullPath: '/explore/money-circle'
-      preLoaderRoute: typeof ExploreMoneyCircleRouteImport
-      parentRoute: typeof ExploreRoute
-    }
-    '/explore/prayer': {
-      id: '/explore/prayer'
-      path: '/prayer'
-      fullPath: '/explore/prayer'
-      preLoaderRoute: typeof ExplorePrayerRouteImport
-      parentRoute: typeof ExploreRoute
-    }
-    '/explore/repairs': {
-      id: '/explore/repairs'
-      path: '/repairs'
-      fullPath: '/explore/repairs'
-      preLoaderRoute: typeof ExploreRepairsRouteImport
-      parentRoute: typeof ExploreRoute
-    }
-    '/explore/safety': {
-      id: '/explore/safety'
-      path: '/safety'
-      fullPath: '/explore/safety'
-      preLoaderRoute: typeof ExploreSafetyRouteImport
-      parentRoute: typeof ExploreRoute
-    }
-    '/explore/selling': {
-      id: '/explore/selling'
-      path: '/selling'
-      fullPath: '/explore/selling'
-      preLoaderRoute: typeof ExploreSellingRouteImport
-      parentRoute: typeof ExploreRoute
-    }
-    '/explore/work': {
-      id: '/explore/work'
-      path: '/work'
-      fullPath: '/explore/work'
-      preLoaderRoute: typeof ExploreWorkRouteImport
-      parentRoute: typeof ExploreRoute
     }
     '/legal/$section': {
       id: '/legal/$section'
@@ -2156,44 +2136,45 @@ const BlogRouteChildren: BlogRouteChildren = {
 
 const BlogRouteWithChildren = BlogRoute._addFileChildren(BlogRouteChildren)
 
-interface ExploreRouteChildren {
-  ExploreCommunityRoute: typeof ExploreCommunityRoute
-  ExploreEventsRoute: typeof ExploreEventsRoute
-  ExploreFoodRoute: typeof ExploreFoodRoute
-  ExploreGovernmentRoute: typeof ExploreGovernmentRoute
-  ExploreGroceriesRoute: typeof ExploreGroceriesRoute
-  ExploreHealthRoute: typeof ExploreHealthRoute
-  ExploreHomeRoute: typeof ExploreHomeRoute
-  ExploreLearningRoute: typeof ExploreLearningRoute
-  ExploreMobilityRoute: typeof ExploreMobilityRoute
-  ExploreMoneyCircleRoute: typeof ExploreMoneyCircleRoute
-  ExplorePrayerRoute: typeof ExplorePrayerRoute
-  ExploreRepairsRoute: typeof ExploreRepairsRoute
-  ExploreSafetyRoute: typeof ExploreSafetyRoute
-  ExploreSellingRoute: typeof ExploreSellingRoute
-  ExploreWorkRoute: typeof ExploreWorkRoute
+interface DiscoverRouteChildren {
+  DiscoverCommunityRoute: typeof DiscoverCommunityRoute
+  DiscoverEventsRoute: typeof DiscoverEventsRoute
+  DiscoverFoodRoute: typeof DiscoverFoodRoute
+  DiscoverGovernmentRoute: typeof DiscoverGovernmentRoute
+  DiscoverGroceriesRoute: typeof DiscoverGroceriesRoute
+  DiscoverHealthRoute: typeof DiscoverHealthRoute
+  DiscoverHomeRoute: typeof DiscoverHomeRoute
+  DiscoverLearningRoute: typeof DiscoverLearningRoute
+  DiscoverMobilityRoute: typeof DiscoverMobilityRoute
+  DiscoverMoneyCircleRoute: typeof DiscoverMoneyCircleRoute
+  DiscoverPrayerRoute: typeof DiscoverPrayerRoute
+  DiscoverRepairsRoute: typeof DiscoverRepairsRoute
+  DiscoverSafetyRoute: typeof DiscoverSafetyRoute
+  DiscoverSellingRoute: typeof DiscoverSellingRoute
+  DiscoverWorkRoute: typeof DiscoverWorkRoute
 }
 
-const ExploreRouteChildren: ExploreRouteChildren = {
-  ExploreCommunityRoute: ExploreCommunityRoute,
-  ExploreEventsRoute: ExploreEventsRoute,
-  ExploreFoodRoute: ExploreFoodRoute,
-  ExploreGovernmentRoute: ExploreGovernmentRoute,
-  ExploreGroceriesRoute: ExploreGroceriesRoute,
-  ExploreHealthRoute: ExploreHealthRoute,
-  ExploreHomeRoute: ExploreHomeRoute,
-  ExploreLearningRoute: ExploreLearningRoute,
-  ExploreMobilityRoute: ExploreMobilityRoute,
-  ExploreMoneyCircleRoute: ExploreMoneyCircleRoute,
-  ExplorePrayerRoute: ExplorePrayerRoute,
-  ExploreRepairsRoute: ExploreRepairsRoute,
-  ExploreSafetyRoute: ExploreSafetyRoute,
-  ExploreSellingRoute: ExploreSellingRoute,
-  ExploreWorkRoute: ExploreWorkRoute,
+const DiscoverRouteChildren: DiscoverRouteChildren = {
+  DiscoverCommunityRoute: DiscoverCommunityRoute,
+  DiscoverEventsRoute: DiscoverEventsRoute,
+  DiscoverFoodRoute: DiscoverFoodRoute,
+  DiscoverGovernmentRoute: DiscoverGovernmentRoute,
+  DiscoverGroceriesRoute: DiscoverGroceriesRoute,
+  DiscoverHealthRoute: DiscoverHealthRoute,
+  DiscoverHomeRoute: DiscoverHomeRoute,
+  DiscoverLearningRoute: DiscoverLearningRoute,
+  DiscoverMobilityRoute: DiscoverMobilityRoute,
+  DiscoverMoneyCircleRoute: DiscoverMoneyCircleRoute,
+  DiscoverPrayerRoute: DiscoverPrayerRoute,
+  DiscoverRepairsRoute: DiscoverRepairsRoute,
+  DiscoverSafetyRoute: DiscoverSafetyRoute,
+  DiscoverSellingRoute: DiscoverSellingRoute,
+  DiscoverWorkRoute: DiscoverWorkRoute,
 }
 
-const ExploreRouteWithChildren =
-  ExploreRoute._addFileChildren(ExploreRouteChildren)
+const DiscoverRouteWithChildren = DiscoverRoute._addFileChildren(
+  DiscoverRouteChildren,
+)
 
 interface LegalRouteChildren {
   LegalSectionRoute: typeof LegalSectionRoute
@@ -2319,8 +2300,7 @@ const rootRouteChildren: RootRouteChildren = {
   CredentialsRoute: CredentialsRoute,
   DailyPicksRoute: DailyPicksRoute,
   DeveloperRoute: DeveloperRoute,
-  DiscoverRoute: DiscoverRoute,
-  ExploreRoute: ExploreRouteWithChildren,
+  DiscoverRoute: DiscoverRouteWithChildren,
   FieldRoute: FieldRoute,
   FollowingRoute: FollowingRoute,
   HelpRoute: HelpRoute,

@@ -29,8 +29,8 @@ Legend: ✅ exists and wired · 🟡 page exists, content still prototype/demo �
 | `/features`, `/developers`, `/developers/api` | `views/features.ejs`, `views/developers.ejs` | `/developer` | 🟡 consolidate |
 | `/p/:providerSlug` public provider profile | DB (`memory_profiles`+`skills`), `/api/content/providers/:slug` | `/profile/$slug` | 🟡 wire to API |
 | `/earn/:topic`, `/earn/rides` | redirect map, `/api/content/earn-map` | `/earn/$topic` | ✅ redirect implemented |
-| `/events` | redirect → `/explore/events` | `/explore/events` | ✅ |
-| `/explore`, `/explore/:slug` | `views/explore/*` | `/explore` + subpages | 🟡 |
+| `/events` | redirect → `/discover/events` | `/discover/events` | ✅ |
+| `/discover`, `/discover/:slug` | `views/discover/category.ejs` | `/discover` + `routes/discover/<slug>.tsx` | ✅ single spine |
 | `/topics`, `/topics/:slug` | `views/topics/*`, `/api/topics` | `/topics`, `/topics/$slug` | ✅ wired via kurukoo-api |
 | `/login` (OTP) | `views/login.ejs`, `/api/auth/*` | `/login` | ✅ wired via kurukoo-auth |
 | `/whatsapp-linked-device`, `auth-challenge-complete` | device-link flow | — | ❌ niche flow, defer |

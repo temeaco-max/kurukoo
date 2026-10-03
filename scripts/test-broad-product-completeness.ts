@@ -16,7 +16,7 @@ const requiredSurfaceIds = [
 ];
 for (const id of requiredSurfaceIds) assert.ok(PRODUCT_SURFACE_COMPLETENESS.some(surface => surface.id === id), `Missing broad surface contract: ${id}`);
 
-const publicFamilies = ['/about', '/features', '/explore', '/discover', '/network', '/channels', '/topics', '/resources', '/help', '/contact', '/pricing', '/partners', '/advertise', '/careers', '/blog', '/developers', '/legal'];
+const publicFamilies = ['/about', '/features', '/discover', '/network', '/channels', '/topics', '/resources', '/help', '/contact', '/pricing', '/partners', '/advertise', '/careers', '/blog', '/developers', '/legal'];
 for (const route of publicFamilies) assert.ok(appRoutes.includes(route) || canonicalUrls.includes(route) || featureRegistry.includes(`webSurface:'${route}`), `Public product family is not represented: ${route}`);
 
 for (const url of ['/desk', '/chat', '/requests', '/tasks', '/connect', '/subscriptions', '/points', '/top-up', '/wallet']) {

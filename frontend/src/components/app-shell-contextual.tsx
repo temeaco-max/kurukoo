@@ -174,7 +174,7 @@ const nav = [
 const more = [
   { to: "/settings", label: "Settings", icon: Wallet },
   { to: "/activity", label: "Activity", icon: Bell },
-  { to: "/explore", label: "Explore", icon: Compass },
+
   { to: "/messages", label: "Messages", icon: MessageCircle },
   { to: "/artifacts", label: "Artifacts", icon: Tags },
   { to: "/connect", label: "Connect", icon: Users },
@@ -219,7 +219,7 @@ function HeaderSearch() {
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const value = q.trim();
-    window.location.href = value ? `/explore?query=${encodeURIComponent(value)}` : "/explore";
+    window.location.href = value ? `/chat?query=${encodeURIComponent(value)}` : "/chat";
     setOpen(false);
   };
   return (
@@ -302,7 +302,7 @@ function Header() {
     window.location.href = "/";
   };
   const headerItems = [
-    { to: "/explore", label: "Explore", icon: Compass },
+
     { to: "/discover", label: "Nearby", icon: MapPin },
     { to: "/topics", label: "Topics", icon: Tags },
     { to: "/wallet", label: "Wallet", icon: Wallet },
@@ -499,8 +499,8 @@ function Header() {
             e.preventDefault();
             const value = new FormData(e.currentTarget).get("q")?.toString().trim() || "";
             window.location.href = value
-              ? `/explore?query=${encodeURIComponent(value)}`
-              : "/explore";
+              ? `/chat?query=${encodeURIComponent(value)}`
+              : "/chat";
           }}
         >
           <div className="flex h-10 items-center gap-2 rounded-xl border border-border bg-surface px-3">

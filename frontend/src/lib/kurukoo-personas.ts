@@ -80,7 +80,7 @@ export const KURUKOO_ROLES: KurukooRole[] = [
         detail: "Create useful content and connect it to discovery.",
         to: "/creators",
       },
-      { title: "Explore opportunities", detail: "Find ways to participate.", to: "/explore" },
+      { title: "Discover opportunities", detail: "Find ways to participate.", to: "/discover" },
       { title: "Connect", detail: "Build useful relationships.", to: "/contacts" },
     ],
   },
@@ -96,12 +96,12 @@ export const KURUKOO_ROLES: KurukooRole[] = [
       {
         title: "Find opportunities",
         detail: "See where your contribution can help.",
-        to: "/explore",
+        to: "/discover",
       },
       {
         title: "Take a contribution task",
         detail: "Work on a defined piece of useful work.",
-        to: "/explore",
+        to: "/discover",
       },
     ],
   },
@@ -113,7 +113,7 @@ export const KURUKOO_ROLES: KurukooRole[] = [
     homeLabel: "Build a partnership",
     actions: [
       { title: "Connect a service", detail: "Explore connection options.", to: "/connect" },
-      { title: "Find network demand", detail: "Explore goals and opportunities.", to: "/explore" },
+      { title: "Find network demand", detail: "Explore goals and opportunities.", to: "/discover" },
       { title: "Work with Kurukoo", detail: "See active coordination.", to: "/work" },
     ],
   },

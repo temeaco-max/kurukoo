@@ -65,9 +65,6 @@ function PeoplePage() {
               <Link to="/discover" className={actionClass()}>
                 Open Nearby
               </Link>
-              <Link to="/explore" className={actionClass()}>
-                Explore
-              </Link>
             </div>
           </div>
         </div>

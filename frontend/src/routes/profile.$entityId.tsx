@@ -49,7 +49,7 @@ function ProfilePage() {
       <>
         <PageHeader title="Profile" />
         <EmptyState title="Not found" body="This profile isn't part of the preview directory." />
-        <Link to="/explore" className="mt-4 inline-block text-[14px] underline">
+        <Link to="/discover" className="mt-4 inline-block text-[14px] underline">
           Back to Explore
         </Link>
       </>

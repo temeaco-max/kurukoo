@@ -21,9 +21,8 @@ Kurukoo is one product with three browser planes: public product/discovery, the 
 - `/features`
 - `/pricing`
 - `/how-it-works`
-- `/explore`
-- `/explore/:category`
 - `/discover`
+- `/discover/:category`
 - `/network`
 - `/channels`
 - `/topics`

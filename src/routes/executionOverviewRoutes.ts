@@ -30,7 +30,7 @@ router.get('/execution/overview', (req, res) => {
 
   const surfaceGroups = [
     { id: 'assist', title: 'Assist', path: '/chat', description: 'Tell Kurukoo what needs doing.' },
-    { id: 'discover', title: 'Discover', path: '/explore', description: 'Find people, places, products, services, opportunities and information.' },
+    { id: 'discover', title: 'Discover', path: '/discover', description: 'Find people, places, products, services, opportunities and information.' },
     { id: 'work', title: 'Work', path: '/work', description: 'See everything Kurukoo is doing, waiting on, or has completed.' },
     { id: 'memory', title: 'Memory', path: '/memory', description: 'Control the context Kurukoo remembers and uses.' },
     { id: 'trust', title: 'Trust', path: '/safety', description: 'Permissions, safety, identity, verification, evidence and truthful outcomes.' },

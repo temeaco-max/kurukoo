@@ -43,7 +43,7 @@
             <div class="k-home-intent-suggestions" aria-label="Suggested ways to start">
               <a href="/chat?prompt=Help%20me%20find%20a%20provider">Find a provider</a>
               <a href="/chat?prompt=Show%20me%20what%20needs%20my%20attention">Show what needs attention</a>
-              <a href="/explore">Explore nearby</a>
+              <a href="/discover">Discover nearby</a>
             </div>
           </section>
           <section class="k-desk-live" data-desk-root data-workspace-owned-surface="desk" aria-label="Live Home summary">
@@ -103,7 +103,7 @@
         <% } else if (section === 'capabilities') { %>
           <section class="k-app-card"><span class="k-app-card-label">Capabilities</span><h2>Many roles. One identity.</h2><p>A user can be a barber, contributor, delivery worker, seller and buyer at the same time without creating separate accounts or memories.</p><a href="/chat?prompt=Show%20me%20my%20capabilities" class="k-app-primary">Open Capabilities</a></section>
         <% } else if (section === 'opportunities') { %>
-          <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label">Opportunities</span><h2>Useful ideas without noise.</h2><p>Quiet-user engagement, daily picks and network opportunities are surfaced only when relevant and clearly labelled.</p><a href="/explore" class="k-app-card-action">Open Explore →</a></article><article class="k-app-card"><span class="k-app-card-label">Truth</span><h2>No invented opportunity.</h2><p>Availability, provider status, price and fulfilment are shown only when supported by current information.</p><a href="/explore" class="k-app-card-action">Explore the network →</a></article></section>
+          <section class="k-app-grid two"><article class="k-app-card"><span class="k-app-card-label">Opportunities</span><h2>Useful ideas without noise.</h2><p>Quiet-user engagement, daily picks and network opportunities are surfaced only when relevant and clearly labelled.</p><a href="/discover" class="k-app-card-action">Open Discover →</a></article><article class="k-app-card"><span class="k-app-card-label">Truth</span><h2>No invented opportunity.</h2><p>Availability, provider status, price and fulfilment are shown only when supported by current information.</p><a href="/discover" class="k-app-card-action">Discover the network →</a></article></section>
         <% } else if (section === 'artifacts') { %>
           <section class="k-app-card"><span class="k-app-card-label">Files</span><h2>Your files, recordings and transcripts.</h2><p>Your files remain tied to your account and supported storage connections.</p><a href="/connect" class="k-app-primary">Open File History</a></section>
         <% } else if (section === 'prayer') { %>
@@ -115,7 +115,7 @@
         <% } else if (section === 'discover') { %>
           <section class="k-app-grid two k-discover-route-links">
             <article class="k-app-card"><span class="k-app-card-label">Find a provider</span><h2>Get help with everyday needs.</h2><p>Describe what you need and Kurukoo sources, compares and coordinates verified people and services.</p><a href="/chat?prompt=I%20need%20help%20finding%20a%20provider" class="k-app-primary">Start a request</a></article>
-            <article class="k-app-card"><span class="k-app-card-label">Explore nearby</span><h2>Local presence with consent and truth.</h2><p>See people, places, products and opportunities near you, surfaced from current network information.</p><a href="/explore" class="k-app-card-action">Open Explore →</a></article>
+            <article class="k-app-card"><span class="k-app-card-label">Discover nearby</span><h2>Local presence with consent and truth.</h2><p>See people, places, products and opportunities near you, surfaced from current network information.</p><a href="/discover" class="k-app-card-action">Open Discover →</a></article>
             <article class="k-app-card"><span class="k-app-card-label">Ride and delivery</span><h2>Move something from A to B.</h2><p>Coordinate a ride, a delivery or freight without leaving the same Kurukoo relationship.</p><a href="/chat?prompt=I%20need%20a%20ride" class="k-app-card-action">Ask Kurukoo →</a></article>
             <article class="k-app-card"><span class="k-app-card-label">Browse opportunities</span><h2>Ways to participate and earn.</h2><p>Products, provider openings and network activity you can act on today.</p><a href="/opportunities" class="k-app-card-action">See opportunities →</a></article>
           </section>

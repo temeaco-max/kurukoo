@@ -107,7 +107,7 @@ function ResourcePage() {
         <div className="mt-4 flex flex-wrap gap-2">
           <AskKurukoo prompt={`Help me with the Kurukoo guide “${resource.title}”.`} />
           <Link
-            to="/explore"
+            to="/discover"
             className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border px-3 text-[12.5px] font-medium hover:bg-elevated"
           >
             Explore <ArrowUpRight className="size-3.5" />

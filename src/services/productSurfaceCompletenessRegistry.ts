@@ -45,9 +45,9 @@ export const PRODUCT_SURFACE_COMPLETENESS: readonly ProductSurfaceCompletenessCo
   {
     id: 'public-content', domain: 'public', owner: 'publicRoutes + contentRoutes + seoService',
     purpose: 'Explain what Kurukoo is, answer public search intent and guide users into the product.',
-    requiredRepresentations: ['overview/about', 'features', 'explore', 'discover', 'network', 'channels', 'topics', 'resources', 'help/support', 'contact', 'pricing', 'partners', 'advertise', 'careers', 'blog/media', 'developers', 'legal/terms/privacy/safety', 'cookies', 'disclaimers'],
+    requiredRepresentations: ['overview/about', 'features', 'discover', 'network', 'channels', 'topics', 'resources', 'help/support', 'contact', 'pricing', 'partners', 'advertise', 'careers', 'blog/media', 'developers', 'legal/terms/privacy/safety', 'cookies', 'disclaimers'],
     requiredStates: ['published', 'updated', 'draft_or_unavailable', '404', 'offline'],
-    canonicalUrls: ['/about', '/features', '/explore', '/discover', '/network', '/channels', '/topics', '/resources', '/help', '/contact', '/pricing', '/partners', '/advertise', '/careers', '/blog', '/developers', '/legal', '/cookies'],
+    canonicalUrls: ['/about', '/features', '/discover', '/network', '/channels', '/topics', '/resources', '/help', '/contact', '/pricing', '/partners', '/advertise', '/careers', '/blog', '/developers', '/legal', '/cookies'],
   },
   {
     id: 'monetisation', domain: 'monetisation', owner: 'economicRequest + payment + points + advertising + commission services',
