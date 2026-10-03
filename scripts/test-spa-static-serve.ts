@@ -48,7 +48,8 @@ try {
     const response = await fetch(`${base}${route}/`, { redirect: 'follow' });
     assert.equal(response.status, 200, `${route} must be served by the built SPA`);
     const html = await response.text();
-    assert.match(html, /<title>About — Kurukoo<\/title>/, `${route} must serve its real prerendered metadata, not the retired EJS page`);
+    const expectedTitle = route === '/about' ? 'About — Kurukoo' : 'Help — Kurukoo';
+    assert.match(html, new RegExp(`<title>${expectedTitle}</title>`), `${route} must serve its real prerendered metadata, not the retired EJS page`);
     assert.match(html, /id="\$tsr-stream-barrier"/, `${route} must serve TanStack prerendered output, proving the SPA owns this route`);
     assert.match(html, /src="\/assets\/index-[A-Za-z0-9_-]+\.js"/, `${route} must reference the built client bundle so the page can hydrate`);
     assert.ok(!/<nav class="k-nav"/.test(html), `${route} must not serve the legacy hand-written shell markup`);

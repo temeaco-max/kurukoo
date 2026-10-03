@@ -30,6 +30,6 @@ export default defineConfig({
     // Rules: only list routes with no committed public/ file (the build errors
     // on collision) and no loader needing backend data at build time. Grow this
     // list route by route; each addition is proven by the built output below.
-    pages: [{ path: "/about", prerender: { enabled: true } }],
+    pages: [{ path: "/about", prerender: { enabled: true } }, { path: "/help", prerender: { enabled: true } }],
   },
 });
