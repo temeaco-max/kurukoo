@@ -48,8 +48,22 @@ try {
     const response = await fetch(`${base}${route}/`, { redirect: 'follow' });
     assert.equal(response.status, 200, `${route} must be served by the built SPA`);
     const html = await response.text();
-    const expectedTitle = route === '/about' ? 'About — Kurukoo' : 'Help — Kurukoo';
-    assert.match(html, new RegExp(`<title>${expectedTitle}</title>`), `${route} must serve its real prerendered metadata, not the retired EJS page`);
+    const expectedTitles: Record<string, RegExp> = {
+      '/about': /<title>About — Kurukoo<\/title>/,
+      '/help': /<title>Help — Kurukoo<\/title>/,
+      '/pricing': /<title>Plans and pricing — Kurukoo<\/title>/,
+      '/contact': /<title>Contact — Kurukoo<\/title>/,
+      '/careers': /<title>Careers — Kurukoo<\/title>/,
+      '/blog': /<title>Blog — Kurukoo<\/title>/,
+      '/api-docs': /<title>API reference — Kurukoo<\/title>/,
+      '/legal': /<title>Legal &amp; policies — Kurukoo<\/title>/,
+      '/how-it-works': /<title>How Kurukoo works — everyday AI that gets things done<\/title>/,
+      '/partners': /<title>Partners — Kurukoo<\/title>/,
+      '/advertise': /<title>Advertisers — Kurukoo<\/title>/,
+    };
+    const expectedTitle = expectedTitles[route];
+    assert.ok(expectedTitle, `${route} must be in the expected-title contract`);
+    assert.match(html, expectedTitle!, `${route} must serve its real prerendered metadata, not the retired EJS page`);
     assert.match(html, /id="\$tsr-stream-barrier"/, `${route} must serve TanStack prerendered output, proving the SPA owns this route`);
     assert.match(html, /src="\/assets\/index-[A-Za-z0-9_-]+\.js"/, `${route} must reference the built client bundle so the page can hydrate`);
     assert.ok(!/<nav class="k-nav"/.test(html), `${route} must not serve the legacy hand-written shell markup`);
