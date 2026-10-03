@@ -248,11 +248,11 @@
 
 ## Full 27-reference and authenticated-fixture completion pass
 
-- [ ] Recheck crop manifest, scoring outputs, fixture captures, and device report
+- [x] Recheck crop manifest, scoring outputs, fixture captures, and device report
 - [ ] Resolve and validate all remaining crop semantic labels
 - [ ] Connect all 27 canonical references to automated pixel-diff scoring
 - [ ] Capture valid populated Admin, Checkout, and Opportunities fixture evidence
-- [ ] Preserve truthful physical iOS/Android not-run status and update handoff
+- [x] Preserve truthful physical iOS/Android not-run status and update handoff
 - [ ] Run final validation and save a recoverable checkpoint
 
 

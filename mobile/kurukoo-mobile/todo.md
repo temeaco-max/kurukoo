@@ -79,7 +79,7 @@
 - [x] Fix all safe repository-side defects and incomplete build surfaces found by the red-team
 - [x] Re-run full regression and reconcile truth documentation and residual activation gates
 
-- [ ] Inventory trusted-contact, consent, notification, linked-device and payment boundaries
+- [x] Inventory trusted-contact, consent, notification, linked-device and payment boundaries — recorded in `docs/architecture/progressive-trust.md` § Boundary ownership: one canonical owner, table, HTTP surface and state per boundary, plus the deliberately inert trusted-contact adapter gap in `contactSyncService`. Every file, function and flag named there was verified to exist.
 - [ ] Implement the trusted-contact provider adapter and complete consent lifecycle
 - [ ] Cleanly restart the mobile preview and clear stale watcher health noise
 - [ ] Prepare and execute real-device notification, linked-device and payment activation tests
@@ -87,22 +87,15 @@
 
 ## Cross-platform visual consistency audit
 
-- [ ] Inventory frontend website, web app/PWA, iOS, and Android route/style authorities
-- [ ] Capture Chat at desktop, laptop, tablet, iPhone, and Android reference widths
-- [ ] Compare frontend Chat and mobile Chat against the canonical Chat visual system
-- [ ] Audit Partner page for accidental mobile screen-set composition inside the frontend visual set
-- [ ] Trace CSS token, typography, spacing, radius, icon, and responsive breakpoint inconsistencies
-- [ ] Produce an evidence-based cross-platform remediation plan and validation matrix
-- [ ] Implement the approved convergence fixes without collapsing web and mobile interaction models
-- [ ] Re-run route-by-route responsive visual validation and update the audit record
+<!-- The "Cross-platform visual audit" block below this one was byte-identical and
+     has been merged here. Two copies of the same open items made the ledger
+     ambiguous about which was authoritative and double-counted the open work. -->
 
-## Cross-platform visual audit
-
-- [ ] Inventory frontend website, web app/PWA, iOS, and Android route/style authorities
+- [x] Inventory frontend website, web app/PWA, iOS, and Android route/style authorities
 - [ ] Capture Chat at desktop, laptop, tablet, iPhone, and Android reference widths
-- [ ] Compare frontend Chat and mobile Chat against the canonical Chat visual system
-- [ ] Audit Partner page for accidental mobile screen-set composition inside the frontend visual set
-- [ ] Trace CSS token, typography, spacing, radius, icon, and responsive breakpoint inconsistencies
-- [ ] Produce an evidence-based cross-platform remediation plan and validation matrix
-- [ ] Implement the approved convergence fixes without collapsing web and mobile interaction models
+- [x] Compare frontend Chat and mobile Chat against the canonical Chat visual system
+- [x] Audit Partner page for accidental mobile screen-set composition inside the frontend visual set
+- [x] Trace CSS token, typography, spacing, radius, icon, and responsive breakpoint inconsistencies
+- [x] Produce an evidence-based cross-platform remediation plan and validation matrix
+- [x] Implement the approved convergence fixes without collapsing web and mobile interaction models
 - [ ] Re-run route-by-route responsive visual validation and update the audit record
