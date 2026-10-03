@@ -5,7 +5,7 @@ import fs from 'node:fs';
 const manifestPath = 'src/services/canonicalAuthenticatedScreenSetManifest.json';
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 const routes = fs.readFileSync('src/routes/appSurfaceRoutes.ts', 'utf8');
-const chatPageRoutes = fs.readFileSync('src/routes/chatPageRoutes.ts', 'utf8');
+const publicRoutes = fs.readFileSync('src/routes/publicRoutes.ts', 'utf8');
 const appTemplate = fs.readFileSync('views/app.ejs', 'utf8');
 const appExtensions = fs.readFileSync('frontend/public/js/kurukoo-app-extensions.js', 'utf8');
 const chat = fs.readFileSync('frontend/public/chat/index.html', 'utf8');
@@ -51,7 +51,7 @@ for (const [id, route] of Object.entries(expected)) {
 }
 
 assert.match(routes, /router\.get\('\/chat\/:conversationId'/);
-assert.match(chatPageRoutes, /path\.join\(process\.cwd\(\), 'frontend\/public', 'chat', 'index\.html'\)/);
+assert.match(publicRoutes, /path\.join\(process\.cwd\(\),\s*'frontend\/public',\s*'chat',\s*'index\.html'\)/);
 assert.match(routes, /\['desk', \{ title: 'Home'/);
 assert.match(routes, /const cleanCanonicalSections: Record<string, string> = \{/);
 assert.match(routes, /'\/desk': 'desk'/) || assert.match(routes, /'\/home': 'desk'/);
