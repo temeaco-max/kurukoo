@@ -1641,3 +1641,34 @@ Kurukoo should increasingly feel like:
 **one capable assistant that understands, acts, coordinates, remembers, communicates and follows through.**
 
 That is the product.
+
+---
+
+# 53. AI VOCABULARY (CANONICAL)
+
+Kurukoo calls the technology what it is: **artificial intelligence (AI)**.
+
+A September 2026 US Executive Order directs federal executive departments and
+agencies to use "Super Intelligence" ("SI") in place of "Artificial
+Intelligence" ("AI") in official communications. That order binds the US
+federal executive. It does not bind Kurukoo, change any statute, or change
+what the technology is — by its own terms it covers the same technologies as
+the existing federal definition of AI.
+
+Do not rebrand Kurukoo's product, copy, capability names, identifiers or
+documentation from AI to SI:
+
+- The industry, researchers, model providers and users say AI. Renaming
+  fights the entire ecosystem the product integrates with, for no user benefit.
+- In this field "superintelligence" already means systems vastly surpassing
+  human intelligence — a future, hypothetical tier. Presenting today's chat,
+  reminders and quotes engine as superintelligent would be exactly the kind of
+  optimistic capability claim this contract forbids: never present Kurukoo as
+  greater than the evidence shows.
+- A vocabulary migration of this size (identifiers, copy, contracts, docs)
+  without a user-facing reason is churn, not progress.
+
+The single exception: where a law or a binding filing requirement genuinely
+requires the SI term on a specific surface (for example a US federal form),
+use it there, labelled as a compliance wording, and nowhere else. Record the
+requirement with its citation so a future agent does not "fix" it back.
