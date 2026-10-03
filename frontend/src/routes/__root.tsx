@@ -286,7 +286,7 @@ function ProtectedPrompt() {
           Log in to continue
         </h1>
         <p className="mx-auto mt-3 max-w-md text-[13px] leading-relaxed text-muted-foreground">
-          Your Perch keeps your conversations, work and account context private. Sign in to continue
+          Your Field keeps your conversations, work and account context private. Sign in to continue
           where you left off.
         </p>
         <Link
