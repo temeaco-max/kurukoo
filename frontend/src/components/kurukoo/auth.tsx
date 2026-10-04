@@ -9,11 +9,29 @@ import {
 } from "@/lib/kurukoo-auth";
 
 export type AuthMode = "login" | "signup";
-type AuthFlowProps = { mode: AuthMode; compact?: boolean; onClose?: () => void };
+type AuthFlowProps = {
+  mode: AuthMode;
+  compact?: boolean;
+  onClose?: () => void;
+  returnTo?: string | undefined;
+  guestId?: string | undefined;
+  conversationId?: string | undefined;
+};
 type AuthStep = "identifier" | "code";
 type SignInMethod = "email" | "phone";
 
-function AuthFlow({ mode, compact = false, onClose }: AuthFlowProps) {
+function safeReturnTo(returnTo?: string) {
+  try {
+    const url = new URL(returnTo || "/chat", window.location.origin);
+    return url.origin === window.location.origin && url.pathname.startsWith("/")
+      ? `${url.pathname}${url.search}${url.hash}`
+      : "/chat";
+  } catch {
+    return "/chat";
+  }
+}
+
+function AuthFlow({ mode, compact = false, onClose, returnTo, guestId, conversationId }: AuthFlowProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -58,9 +76,9 @@ function AuthFlow({ mode, compact = false, onClose }: AuthFlowProps) {
     setBusy(true);
     setMessage(null);
     try {
-      await requestPhoneOtp(normalizedPhone);
+      const sent = await requestPhoneOtp(normalizedPhone);
       setStep("code");
-      setMessage("Verification code sent to your phone.");
+      setMessage(sent?.devCode || sent?.debugCode ? `Development verification code: ${sent.devCode || sent.debugCode}` : "Verification code sent to your phone.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "We could not send a verification code.");
     } finally {
@@ -80,10 +98,13 @@ function AuthFlow({ mode, compact = false, onClose }: AuthFlowProps) {
         code: normalizedCode,
         name: name || undefined,
         email: KURUKOO_BUILD_EMAIL,
+        guestPhone: guestId || undefined,
+        conversationId: conversationId || undefined,
       });
       window.localStorage.setItem("kurukoo-authenticated", "true");
       window.dispatchEvent(new Event("kurukoo-auth-updated"));
       onClose?.();
+      window.location.assign(safeReturnTo(returnTo));
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "We could not verify your phone.");
     } finally {
@@ -336,19 +357,25 @@ export function AuthPanel({
   cta,
   footer,
   showName = false,
+  returnTo,
+  guestId,
+  conversationId,
 }: {
   title: string;
   subtitle: string;
   cta: string;
   footer: ReactNode;
   showName?: boolean;
+  returnTo?: string | undefined;
+  guestId?: string | undefined;
+  conversationId?: string | undefined;
 }) {
   return (
     <div className="mx-auto max-w-md py-6">
       <h1 className="font-serif text-[38px] leading-[1.02] tracking-[-0.045em]">{title}</h1>
       <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">{subtitle}</p>
       <Panel className="mt-6 p-5">
-        <AuthFlow mode={showName ? "signup" : "login"} />
+        <AuthFlow mode={showName ? "signup" : "login"} returnTo={returnTo} guestId={guestId} conversationId={conversationId} />
       </Panel>
       <p className="mt-4 text-[13px] text-muted-foreground">{footer}</p>
       <p className="mt-2 text-[11.5px] text-muted-foreground">

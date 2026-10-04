@@ -64,6 +64,7 @@ try {
       '/topics': /<title>Topics — Kurukoo<\/title>/,
       '/resources': /<title>Kurukoo resources and visual guides<\/title>/,
       '/discover': /<title>Discover — Kurukoo<\/title>/,
+      '/login': /<title>Log in — Kurukoo<\/title>/,
       '/discover/food': /<title>Discover — Kurukoo<\/title>/,
       '/discover/work': /<title>Discover — Kurukoo<\/title>/,
     };

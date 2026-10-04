@@ -12,12 +12,21 @@ export const Route = createFileRoute("/login")({
     ],
     links: [{ rel: "canonical", href: "/login" }],
   }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    return: typeof search['return'] === "string" ? search['return'] : "",
+    conversationId: typeof search['conversationId'] === "string" ? search['conversationId'] : "",
+    guest_id: typeof search['guest_id'] === "string" ? search['guest_id'] : "",
+  }),
   component: LoginPage,
 });
 
 function LoginPage() {
+  const search = Route.useSearch();
   return (
     <AuthPanel
+      returnTo={search['return'] || "/chat"}
+      conversationId={search['conversationId'] || undefined}
+      guestId={search['guest_id'] || undefined}
       title="Welcome back"
       subtitle="Log in to see what Kurukoo has been getting on with."
       cta="Log in"

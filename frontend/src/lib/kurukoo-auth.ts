@@ -87,6 +87,9 @@ export async function requestPhoneOtp(phone: string) {
     success?: boolean;
     message?: string;
     error?: string;
+    testMode?: boolean;
+    devCode?: string;
+    debugCode?: string;
   }>("/api/auth/request-otp", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -100,8 +103,10 @@ export async function requestPhoneOtp(phone: string) {
 export async function verifyPhoneOtp(input: {
   phone: string;
   code: string;
-  name?: string;
-  email?: string;
+  name?: string | undefined;
+  email?: string | undefined;
+  guestPhone?: string | undefined;
+  conversationId?: string | undefined;
 }) {
   const phone = input.phone.trim();
   const code = input.code.trim();
@@ -125,6 +130,8 @@ export async function verifyPhoneOtp(input: {
       email,
       deviceId: getDeviceId(),
       credentialType: "web",
+      guestPhone: input.guestPhone,
+      conversationId: input.conversationId,
     }),
   });
   if (!response.ok || payload.success === false)
@@ -135,8 +142,10 @@ export async function verifyPhoneOtp(input: {
 /** Email delivery is intentionally bypassed for the temporary frontend access gate. */
 export async function requestMagicLink(input: {
   email: string;
-  name?: string;
-  returnPath?: string;
+  name?: string | undefined;
+  returnPath?: string | undefined;
+  guestPhone?: string | undefined;
+  conversationId?: string | undefined;
 }) {
   const email = input.email.trim().toLowerCase();
   if (email !== KURUKOO_BUILD_EMAIL) {
