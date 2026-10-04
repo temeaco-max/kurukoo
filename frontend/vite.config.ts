@@ -30,6 +30,6 @@ export default defineConfig({
     // Rules: only list routes with no committed public/ file (the build errors
     // on collision) and no loader needing backend data at build time. Grow this
     // list route by route; each addition is proven by the built output below.
-    pages: ["/about", "/help", "/pricing", "/contact", "/careers", "/blog", "/api-docs", "/legal", "/how-it-works", "/partners", "/advertise", "/network", "/topics", "/resources", "/login", "/features", "/developers", "/discover", "/auth/challenge/complete", "/discover/community", "/discover/events", "/discover/food", "/discover/government", "/discover/groceries", "/discover/health", "/discover/home", "/discover/learning", "/discover/mobility", "/discover/money-circle", "/discover/prayer", "/discover/repairs", "/discover/safety", "/discover/selling", "/discover/work"].map((path) => ({ path, prerender: { enabled: true } })),
+    pages: ["/about", "/help", "/pricing", "/contact", "/careers", "/blog", "/api-docs", "/legal", "/how-it-works", "/partners", "/advertise", "/network", "/topics", "/resources", "/login", "/features", "/developers", "/discover", "/auth/challenge/complete", "/whatsapp-linked-device", "/discover/community", "/discover/events", "/discover/food", "/discover/government", "/discover/groceries", "/discover/health", "/discover/home", "/discover/learning", "/discover/mobility", "/discover/money-circle", "/discover/prayer", "/discover/repairs", "/discover/safety", "/discover/selling", "/discover/work"].map((path) => ({ path, prerender: { enabled: true } })),
   },
 });

@@ -23,7 +23,7 @@ import path from 'node:path';
  * is what makes the built client reachable for it; removing an EJS template is
  * a separate, later step.
  */
-export const SPA_PILOT_ROUTES = ['/about', '/help', '/pricing', '/contact', '/careers', '/blog', '/api-docs', '/legal', '/how-it-works', '/partners', '/advertise', '/network', '/topics', '/resources', '/discover', '/discover/community', '/discover/events', '/discover/food', '/discover/government', '/discover/groceries', '/discover/health', '/discover/home', '/discover/learning', '/discover/mobility', '/discover/money-circle', '/discover/prayer', '/discover/repairs', '/discover/safety', '/discover/selling', '/discover/work', '/login', '/features', '/developers', '/auth/challenge/complete'] as const;
+export const SPA_PILOT_ROUTES = ['/about', '/help', '/pricing', '/contact', '/careers', '/blog', '/api-docs', '/legal', '/how-it-works', '/partners', '/advertise', '/network', '/topics', '/resources', '/discover', '/discover/community', '/discover/events', '/discover/food', '/discover/government', '/discover/groceries', '/discover/health', '/discover/home', '/discover/learning', '/discover/mobility', '/discover/money-circle', '/discover/prayer', '/discover/repairs', '/discover/safety', '/discover/selling', '/discover/work', '/login', '/features', '/developers', '/auth/challenge/complete', '/whatsapp-linked-device'] as const;
 
 export type SpaStaticBoundary = {
   /** Absolute path of the built SPA public directory, or null when not built. */

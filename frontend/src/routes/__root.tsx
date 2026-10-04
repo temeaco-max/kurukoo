@@ -51,6 +51,7 @@ const publicPrefixes = [
   "/earn",
   "/help",
   "/how-it-works",
+  "/whatsapp-linked-device",
   "/legal",
   "/cookies",
   "/login",

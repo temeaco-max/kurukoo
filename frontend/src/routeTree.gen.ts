@@ -78,6 +78,7 @@ import { Route as UsageRouteImport } from './routes/usage'
 import { Route as UseCasesRouteImport } from './routes/use-cases'
 import { Route as VideosRouteImport } from './routes/videos'
 import { Route as WalletRouteImport } from './routes/wallet'
+import { Route as WhatsappLinkedDeviceRouteImport } from './routes/whatsapp-linked-device'
 import { Route as WorkRouteImport } from './routes/work'
 import { Route as WorkspaceRouteImport } from './routes/workspace'
 import { Route as YouRouteImport } from './routes/you'
@@ -463,6 +464,11 @@ const WalletRoute = WalletRouteImport.update({
   path: '/wallet',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WhatsappLinkedDeviceRoute = WhatsappLinkedDeviceRouteImport.update({
+  id: '/whatsapp-linked-device',
+  path: '/whatsapp-linked-device',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WorkRoute = WorkRouteImport.update({
   id: '/work',
   path: '/work',
@@ -731,6 +737,7 @@ export interface FileRoutesByFullPath {
   '/use-cases': typeof UseCasesRoute
   '/videos': typeof VideosRouteWithChildren
   '/wallet': typeof WalletRoute
+  '/whatsapp-linked-device': typeof WhatsappLinkedDeviceRoute
   '/work': typeof WorkRouteWithChildren
   '/workspace': typeof WorkspaceRoute
   '/you': typeof YouRoute
@@ -841,6 +848,7 @@ export interface FileRoutesByTo {
   '/use-cases': typeof UseCasesRoute
   '/videos': typeof VideosRouteWithChildren
   '/wallet': typeof WalletRoute
+  '/whatsapp-linked-device': typeof WhatsappLinkedDeviceRoute
   '/workspace': typeof WorkspaceRoute
   '/you': typeof YouRoute
   '/agents/$agentId': typeof AgentsAgentIdRoute
@@ -951,6 +959,7 @@ export interface FileRoutesById {
   '/use-cases': typeof UseCasesRoute
   '/videos': typeof VideosRouteWithChildren
   '/wallet': typeof WalletRoute
+  '/whatsapp-linked-device': typeof WhatsappLinkedDeviceRoute
   '/work': typeof WorkRouteWithChildren
   '/workspace': typeof WorkspaceRoute
   '/you': typeof YouRoute
@@ -1063,6 +1072,7 @@ export interface FileRouteTypes {
     | '/use-cases'
     | '/videos'
     | '/wallet'
+    | '/whatsapp-linked-device'
     | '/work'
     | '/workspace'
     | '/you'
@@ -1173,6 +1183,7 @@ export interface FileRouteTypes {
     | '/use-cases'
     | '/videos'
     | '/wallet'
+    | '/whatsapp-linked-device'
     | '/workspace'
     | '/you'
     | '/agents/$agentId'
@@ -1282,6 +1293,7 @@ export interface FileRouteTypes {
     | '/use-cases'
     | '/videos'
     | '/wallet'
+    | '/whatsapp-linked-device'
     | '/work'
     | '/workspace'
     | '/you'
@@ -1393,6 +1405,7 @@ export interface RootRouteChildren {
   UseCasesRoute: typeof UseCasesRoute
   VideosRoute: typeof VideosRouteWithChildren
   WalletRoute: typeof WalletRoute
+  WhatsappLinkedDeviceRoute: typeof WhatsappLinkedDeviceRoute
   WorkRoute: typeof WorkRouteWithChildren
   WorkspaceRoute: typeof WorkspaceRoute
   YouRoute: typeof YouRoute
@@ -1883,6 +1896,13 @@ declare module '@tanstack/react-router' {
       path: '/wallet'
       fullPath: '/wallet'
       preLoaderRoute: typeof WalletRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/whatsapp-linked-device': {
+      id: '/whatsapp-linked-device'
+      path: '/whatsapp-linked-device'
+      fullPath: '/whatsapp-linked-device'
+      preLoaderRoute: typeof WhatsappLinkedDeviceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/work': {
@@ -2399,6 +2419,7 @@ const rootRouteChildren: RootRouteChildren = {
   UseCasesRoute: UseCasesRoute,
   VideosRoute: VideosRouteWithChildren,
   WalletRoute: WalletRoute,
+  WhatsappLinkedDeviceRoute: WhatsappLinkedDeviceRoute,
   WorkRoute: WorkRouteWithChildren,
   WorkspaceRoute: WorkspaceRoute,
   YouRoute: YouRoute,

@@ -68,6 +68,7 @@ try {
       '/features': /<title>Features — Kurukoo<\/title>/,
       '/developers': /<title>Developers — Kurukoo<\/title>/,
       '/auth/challenge/complete': /<title>Completing Kurukoo sign-in<\/title>/,
+      '/whatsapp-linked-device': /<title>WhatsApp linked device — Kurukoo<\/title>/,
       '/discover/food': /<title>Discover — Kurukoo<\/title>/,
       '/discover/work': /<title>Discover — Kurukoo<\/title>/,
     };
