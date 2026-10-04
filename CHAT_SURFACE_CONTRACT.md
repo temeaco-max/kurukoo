@@ -279,6 +279,10 @@ The canonical composer accepts a request `attachment` (image/file) per turn. Att
 - Attachment byte streams are bounded by `CHAT_ATTACHMENT_BODY_LIMIT` for both `urlencoded` and JSON routes; oversized bodies fail closed at the express body layer.
 - Expired attachments are removed from `stored_path` and the ledger; the message text remains but the attachment evidence is gone by design.
 
+## Identity inside the conversation
+
+Sign in, create an account and sign out are presented as a card in the conversation stream (`frontend/src/components/kurukoo/chat-identity-card.tsx`), not as a separate page or modal. Guest chat stays available; the card only appears when identity is needed or when it is requested via `?auth=login` / `?auth=signup`. The public header's primary action is `Ask Kurukoo` and links to `/chat`. Verified in `scripts/test-spa-static-serve.ts` (the chat document must carry the in-chat identity entry and must not contain the retired `Try for free` CTA).
+
 ## Detail surfaces and identity continuity
 
 `/topics/:slug` and `/resources/:slug` are SPA-owned detail routes served by `spaSsrService.serveSpaDetail`: the prerendered document is preferred, otherwise the built Node server entry renders the route, otherwise the route returns a truthful 503. Each route keeps its own existence guard (`getPublicTopic`, `getResourceBySlug`), so an unknown slug is 404 rather than an empty page. `/p/:providerSlug` is retired; provider content remains available through the JSON content API.

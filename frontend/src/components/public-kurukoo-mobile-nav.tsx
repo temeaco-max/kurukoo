@@ -171,9 +171,19 @@ export function PublicMobileNavigation({ onAuth }: { onAuth: (mode: AuthMode) =>
                   close();
                   onAuth("signup");
                 }}
+                className="mt-2 flex w-full items-center justify-center rounded-xl border border-border px-3 py-2 text-[12px] font-medium"
+              >
+                Sign in
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  close();
+                  window.location.assign("/chat");
+                }}
                 className="mt-2 flex w-full items-center justify-center rounded-xl bg-foreground px-3 py-2 text-[12px] font-medium text-background"
               >
-                Try for free
+                Ask Kurukoo
               </button>
             </div>
           </aside>

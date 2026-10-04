@@ -9,7 +9,7 @@ import {
 } from "@/lib/kurukoo-auth";
 
 export type AuthMode = "login" | "signup";
-type AuthFlowProps = {
+export type AuthFlowProps = {
   mode: AuthMode;
   compact?: boolean;
   onClose?: () => void;
@@ -31,7 +31,7 @@ function safeReturnTo(returnTo?: string) {
   }
 }
 
-function AuthFlow({ mode, compact = false, onClose, returnTo, guestId, conversationId }: AuthFlowProps) {
+export function AuthFlow({ mode, compact = false, onClose, returnTo, guestId, conversationId }: AuthFlowProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");

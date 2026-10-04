@@ -386,20 +386,20 @@ export function PublicKurukooShell({ children }: { children: ReactNode }) {
           <div className="ml-auto flex items-center gap-2">
             <RotatingPublicPrompt />
             <PublicThemeToggle />
-            <button
-              type="button"
-              onClick={() => openAuth("login")}
-              className="px-3 py-2 text-[12px] font-medium text-muted-foreground hover:text-foreground"
+            {/* Sign in, create an account and sign out all happen inside the
+                conversation itself, so the header only starts one. */}
+            <Link
+              to="/chat"
+              className="px-3 py-2 text-[12px] font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
-              Log In
-            </button>
-            <button
-              type="button"
-              onClick={() => openAuth("signup")}
+              Sign in
+            </Link>
+            <Link
+              to="/chat"
               className="bg-primary px-4 py-2 text-[12px] font-medium text-primary-foreground"
             >
-              Try for free
-            </button>
+              Ask Kurukoo
+            </Link>
           </div>
         </div>
       </header>

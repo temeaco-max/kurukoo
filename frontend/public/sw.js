@@ -13,15 +13,15 @@ const LIVE_STATIC_PATHS = new Set([
   "/sw.js",
 ]);
 
+// Chat is owned by the SPA (see src/services/spaStaticService.ts), so the
+// precached PWA shell is the SPA chat document rather than the retired
+// hand-written chat shell scripts.
 const SHELL_ASSETS = [
   "/chat/",
   "/offline.html",
   "/css/site.css",
   "/css/kurukoo-platform.css",
-  "/css/kurukoo-chat.css",
   "/css/kurukoo-hub.css",
-  "/js/kurukoo-primary-chat.js?v=21",
-  "/js/kurukoo-workspace.js",
   "/js/site-navigation.js",
   "/js/kurukoo-pwa.js",
   "/manifest.json",
@@ -40,7 +40,8 @@ const PAGES_TO_CACHE = [
   "/contact",
   "/help",
   "/blog",
-  "/resources/",
+  "/features",
+  "/topics",
   "/partners/",
   "/advertise/",
   "/api/hero-taglines",

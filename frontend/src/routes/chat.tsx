@@ -16,6 +16,8 @@ import { Message } from "@/components/kurukoo/primitives";
 import { ChatDiscovery } from "@/components/kurukoo/chat-discovery";
 import { fetchChatHistory } from "@/lib/kurukoo-api";
 import { useKurukoo } from "@/lib/kurukoo-store";
+import { ChatIdentityCard } from "@/components/kurukoo/chat-identity-card";
+import type { AuthMode } from "@/components/kurukoo/auth";
 
 export const Route = createFileRoute("/chat")({
   head: () => ({
@@ -251,6 +253,11 @@ function ChatPage() {
   >([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [topicContext, setTopicContext] = useState<TopicContext | null>(null);
+  // Identity is presented as a card in the conversation rather than a separate
+  // page, so the thread keeps its context while the user proves who they are.
+  const [identityOpen, setIdentityOpen] = useState(false);
+  const [identityMode, setIdentityMode] = useState<AuthMode>("login");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const latestRequestIndex = [...messages]
     .map((message, index) => ({ message, index }))
     .reverse()
@@ -301,6 +308,11 @@ function ChatPage() {
     if (openConversation) {
       localStorage.removeItem("kurukoo-open-conversation");
       void loadConversation(openConversation);
+    }
+    const requestedAuth = new URLSearchParams(window.location.search).get("auth");
+    if (requestedAuth === "login" || requestedAuth === "signup") {
+      setIdentityMode(requestedAuth);
+      setIdentityOpen(true);
     }
     const rawTopic = localStorage.getItem("kurukoo-topic-context");
     if (rawTopic) {
@@ -462,6 +474,34 @@ function ChatPage() {
           <div ref={endRef} />
         </main>
       )}
+      {identityOpen ? (
+        <div className="pb-3">
+          <ChatIdentityCard
+            requestedMode={identityMode}
+            onDismiss={() => setIdentityOpen(false)}
+            onIdentityChange={setIsAuthenticated}
+          />
+        </div>
+      ) : null}
+      {!identityOpen ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 px-1 pb-2">
+          <span className="text-[11.5px] text-muted-foreground">
+            {isAuthenticated
+              ? "Signed in · your requests, memory and reminders stay connected"
+              : "Using Kurukoo as a guest · identity is only needed when an action requires your account"}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setIdentityMode(isAuthenticated ? "login" : "login");
+              setIdentityOpen(true);
+            }}
+            className="rounded-lg border border-border px-2.5 py-1 text-[11.5px] font-medium text-muted-foreground transition-colors hover:bg-elevated hover:text-foreground"
+          >
+            {isAuthenticated ? "Account" : "Sign in"}
+          </button>
+        </div>
+      ) : null}
       {lastError ? (
         <p role="alert" className="pb-1 text-center text-[12px] text-destructive">
           {lastError}

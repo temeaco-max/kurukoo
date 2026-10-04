@@ -158,40 +158,23 @@ export function PublicRail({
       {collapsed && (
         <div className="mt-auto shrink-0 space-y-2 px-1 pb-4 pt-4">
           <ReferralCard variant="public" collapsed onPublicAuth={() => onAuth("login")} />
-          <button
-            type="button"
-            onClick={() => onAuth("login")}
-            className="flex w-full items-center justify-center rounded-xl border border-border px-2 py-2 text-muted-foreground hover:bg-elevated"
-            title="Log In"
-          >
-            <span className="text-[11px] font-semibold">↪</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => onAuth("signup")}
+          <Link
+            to="/chat"
             className="flex w-full items-center justify-center rounded-xl bg-foreground px-2 py-2 text-background hover:opacity-90"
-            title="Try for free"
+            title="Ask Kurukoo"
           >
             <span className="text-[11px] font-semibold">+</span>
-          </button>
+          </Link>
         </div>
       )}
       {!collapsed && (
         <div className="mt-auto shrink-0 px-1 pb-4 pt-4">
-          <button
-            type="button"
-            onClick={() => onAuth("login")}
-            className="flex w-full items-center justify-center rounded-xl border border-border bg-background px-3 py-2 text-[12px] font-medium leading-4"
+          <Link
+            to="/chat"
+            className="flex w-full items-center justify-center rounded-xl bg-foreground px-3 py-2 text-[12px] font-medium leading-4 text-background"
           >
-            Log In
-          </button>
-          <button
-            type="button"
-            onClick={() => onAuth("signup")}
-            className="mt-2 flex w-full items-center justify-center rounded-xl bg-foreground px-3 py-2 text-[12px] font-medium leading-4 text-background"
-          >
-            Try for free
-          </button>
+            Ask Kurukoo
+          </Link>
         </div>
       )}
     </aside>

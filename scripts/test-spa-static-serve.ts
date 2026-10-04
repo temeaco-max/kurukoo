@@ -39,7 +39,7 @@ try {
   // Only proven routes are claimed. Everything else keeps its existing owner.
   assert.ok(SPA_PILOT_ROUTES.includes('/about'), '/about must be a proven SPA-served route');
   assert.ok(boundary.serves('/about'), '/about must be served from the built SPA');
-  assert.ok(!boundary.serves('/chat'), '/chat is not proven yet and must not be claimed by the SPA boundary');
+  assert.ok(boundary.serves('/chat'), '/chat is served from the built SPA so identity can happen in the conversation');
   assert.ok(boundary.serves('/discover'), '/discover must be served from the built SPA');
 
   for (const route of SPA_PILOT_ROUTES) {
@@ -62,6 +62,7 @@ try {
       '/advertise': /<title>Advertisers — Kurukoo<\/title>/,
       '/network': /<title>The Kurukoo Network<\/title>/,
       '/topics': /<title>Topics — Kurukoo<\/title>/,
+      '/chat': /<title>Chat \/ Voice — Kurukoo<\/title>/,
       '/discover': /<title>Discover — Kurukoo<\/title>/,
       '/login': /<title>Log in — Kurukoo<\/title>/,
       '/features': /<title>Features — Kurukoo<\/title>/,
@@ -122,6 +123,13 @@ try {
   assert.equal(unknownResource.status, 404, 'Unknown resource slugs must stay not found');
   const unknownTopic = await fetch(`${base}/topics/not-a-real-topic`);
   assert.equal(unknownTopic.status, 404, 'Unknown topic slugs must stay not found');
+
+  // Identity lives in the conversation: the chat document must carry the
+  // in-chat identity entry rather than sending people to a separate page.
+  const chatDocument = await fetch(`${base}/chat`, { redirect: 'follow' });
+  const chatHtml = await chatDocument.text();
+  assert.match(chatHtml, /Using Kurukoo as a guest|Continue the conversation/, 'Chat must present identity inside the conversation');
+  assert.doesNotMatch(chatHtml, /Try for free/, 'The retired signup CTA must not remain in the header');
 
   // The retired provider profile route must not come back.
   const providerProfile = await fetch(`${base}/p/anyone`);

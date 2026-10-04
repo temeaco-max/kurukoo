@@ -1043,6 +1043,7 @@ Consequences:
 
 - An EJS template may only be deleted after its route serves SPA-owned content at that URL, verified in a runtime request.
 - A new slug-based detail surface does not get an EJS template. It uses the SPA route plus the detail owner chain, and keeps its own existence guard so an unknown slug is 404.
+- Identity (sign in, create account, sign out) is presented inside the conversation by `chat-identity-card.tsx`; public CTAs say `Ask Kurukoo` and route to `/chat`. Do not reintroduce a separate signup modal as the primary entry.
 - `/home` and `/desk` are retired: `/field` is the canonical personal surface and both old paths 302 there.
 - `/resources` is retired as a page and 302s to `/help`. Guides live at `/help/guides/<slug>`; Help owns help areas, guides and ideas. `/blog` is Kurukoo updates. `/features` is the feature showcase. Top public navigation is Features, Discover and a Resources menu (Help, Kurukoo updates, Topics, guides, privacy and legal).
 - `/p/:providerSlug` is retired; provider content is a JSON API concern.
