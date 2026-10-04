@@ -105,6 +105,25 @@ try {
     '/discover must not be served the /about prerendered payload',
   );
 
+  // Detail surfaces with a real prerendered document must be served by the SPA,
+  // not by a legacy template, and an unknown slug must stay a 404.
+  const seededResource = await fetch(`${base}/resources/how-kurukoo-works/`, { redirect: 'follow' });
+  assert.equal(seededResource.status, 200, 'A prerendered /resources/<slug> guide must be served');
+  assert.match(await seededResource.text(), /id="\$tsr-stream-barrier"/, 'Resource detail must come from the SPA prerender');
+
+  const seededTopic = await fetch(`${base}/topics/finding-a-trustworthy-plumber-in-lagos`);
+  assert.equal(seededTopic.status, 200, 'A public Topic detail must be served');
+  assert.match(await seededTopic.text(), /id="\$tsr-stream-barrier"/, 'Topic detail must come from the SPA owner');
+
+  const unknownResource = await fetch(`${base}/resources/not-a-real-resource/`);
+  assert.equal(unknownResource.status, 404, 'Unknown resource slugs must stay not found');
+  const unknownTopic = await fetch(`${base}/topics/not-a-real-topic`);
+  assert.equal(unknownTopic.status, 404, 'Unknown topic slugs must stay not found');
+
+  // The retired provider profile route must not come back.
+  const providerProfile = await fetch(`${base}/p/anyone`);
+  assert.equal(providerProfile.status, 404, '/p/:providerSlug is retired and must not resolve');
+
   console.log('SPA static serve contract passed: built output resolves, pilot routes serve prerendered content and a reachable bundle, unproven routes keep their existing owner.');
 } finally {
   await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));

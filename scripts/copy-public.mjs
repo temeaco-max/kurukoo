@@ -34,3 +34,14 @@ copyRecursive('frontend/public', 'dist/public');
 copyRecursive('views', 'dist/views');
 copyRecursive('locales', 'dist/locales');
 console.log('Assets copied successfully.');
+
+// The Node server entry the SPA build emits is required by the detail-surface
+// SSR bridge (src/services/spaSsrService.ts): routes whose slug cannot be
+// prerendered at build time are rendered through it at request time. Without
+// this copy a production image serves prerendered routes only.
+const builtSpaServerSource = path.join('frontend', '.output', 'server');
+if (!fs.existsSync(builtSpaServerSource)) {
+  console.warn('[copy-public] frontend/.output/server is missing: detail routes fall back to prerendered documents only. Run `npm run build:spa`.');
+} else {
+  copyRecursive(builtSpaServerSource, path.join('dist', 'spa-server'));
+}

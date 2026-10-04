@@ -1,6 +1,7 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import express, { Router } from 'express';
 import { getAllBlogArticles, getBlogArticleBySlug, getAllResourceMetadata, getResourceBySlug } from '../services/contentManager.js';
+import { serveSpaDetail } from '../services/spaSsrService.js';
 
 /** Public content API and educational Resources surfaces. Storage remains owned by contentManager. */
 export function createContentRouter(): Router {
@@ -10,8 +11,11 @@ export function createContentRouter(): Router {
     router.get('/resources/:slug', async (req, res, next) => {
         try {
             const resource = await getResourceBySlug(String(req.params.slug || ''));
-            if (!resource) return res.status(404).render('resources/article', { slug: req.params.slug });
-            return res.render('resources/article', { slug: resource.slug });
+            if (!resource) return res.status(404).send('Resource not found');
+            // The SPA owns this detail route: serve its prerendered document,
+            // otherwise render it through the built Node server entry.
+            if (await serveSpaDetail(req, res)) return;
+            return res.status(503).type('text/plain').send('This guide is served by the Kurukoo app build. Run npm run build:spa to serve it.');
         } catch (error) {
             return next(error);
         }

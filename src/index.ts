@@ -141,8 +141,8 @@ app.use('/admin',express.static(path.join(process.cwd(),'admin'),{index:false,fa
 if (spaStatic.available && spaStatic.publicDir) {
   app.use((req, res, next) => {
     if (!spaStatic.serves(req.path)) return next();
-    const entry = path.join(spaStatic.publicDir as string, req.path.replace(/^\/+/, ''), 'index.html');
-    if (!fs.existsSync(entry)) return next();
+    const entry = spaStatic.documentFor(req.path);
+    if (!entry) return next();
     return res.sendFile(entry);
   });
 }

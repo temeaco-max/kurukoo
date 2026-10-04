@@ -37,11 +37,9 @@ requireFile('src/routes/appSurfaceRoutes.ts', 'Canonical authenticated Web App r
 requireFile('src/routes/contentRoutes.ts', 'Canonical public content/resource router');
 requireFile('frontend/public/api-docs.html', 'API docs visual surface');
 requireFile('views/resources/index.ejs', 'Resources hub frontend');
-requireFile('views/resources/article.ejs', 'Resource article frontend');
 requireFile('frontend/public/js/kurukoo-resources.js', 'Resources frontend behavior module');
 requireFile('src/routes/topicRoutes.ts', 'Topics route authority');
 requireFile('views/topics/index.ejs', 'Topics list frontend');
-requireFile('views/topics/detail.ejs', 'Topic detail frontend');
 requireFile('admin/index.html', 'Admin control room shell');
 requireFile('admin/ai-agents.html', 'Admin AI agents screen');
 requireFile('frontend/public/js/kurukoo-admin.js', 'Admin control room behavior');
@@ -152,7 +150,6 @@ for (const [file, markers] of [
   ['views/resources/index.ejs', ['k-screen-card', 'latest-guides-section']],
   ['views/contact.ejs', ['k-screen-set', 'contact-grid']],
   ['views/legal.ejs', ['k-legal-layout', 'k-legal-content']],
-  ['views/provider-profile.ejs', ['k-screen-set', 'k-context-band', 'k-evidence-grid']],
 ] as const) {
   const source = read(file); for (const marker of markers) if (!source.includes(marker)) failures.push(`${file} is missing visual screen-set marker ${marker}`);
 }
