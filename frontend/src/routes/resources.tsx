@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { ArrowUpRight, BookOpen } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FAQSection } from "@/components/kurukoo/faq-section";
@@ -32,6 +32,10 @@ export const Route = createFileRoute("/resources")({
 });
 
 function ResourcesPage() {
+  const pathname = useLocation({ select: (location) => location.pathname });
+  if (pathname !== "/resources" && pathname !== "/resources/") {
+    return <Outlet />;
+  }
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import {
   ArrowRight,
   ChevronDown,
@@ -224,6 +224,10 @@ function TopicRow({ topic }: { topic: CanonicalTopic & { followerCount?: number 
 }
 
 function TopicsPage() {
+  const pathname = useLocation({ select: (location) => location.pathname });
+  if (pathname !== "/topics" && pathname !== "/topics/") {
+    return <Outlet />;
+  }
   const [topics, setTopics] = useState<CanonicalTopic[]>([]);
   const [taxonomy, setTaxonomy] = useState<TopicTaxonomy>({
     types: [],

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -244,6 +244,10 @@ function MapPanel({
   );
 }
 function DiscoverPage() {
+  const pathname = useLocation({ select: (location) => location.pathname });
+  if (pathname !== "/discover" && pathname !== "/discover/") {
+    return <Outlet />;
+  }
   const [layer, setLayer] = useState<string>("Everything");
   const [q, setQ] = useState("");
   const [entities, setEntities] = useState<DiscoveryEntity[]>([]);

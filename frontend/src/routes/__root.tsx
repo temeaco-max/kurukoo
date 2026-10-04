@@ -34,6 +34,7 @@ import {
   logoutKurukoo,
 } from "@/lib/kurukoo-auth";
 const publicPrefixes = [
+  "/discover",
   "/about",
   "/blog",
   "/capabilities",
@@ -74,7 +75,6 @@ const publicPrefixes = [
 const authenticatedSurfacePrefixes = [
   "/field",
   "/workspace",
-  "/discover",
   "/activity",
   "/work",
   "/notifications",

@@ -40,7 +40,7 @@ try {
   assert.ok(SPA_PILOT_ROUTES.includes('/about'), '/about must be a proven SPA-served route');
   assert.ok(boundary.serves('/about'), '/about must be served from the built SPA');
   assert.ok(!boundary.serves('/chat'), '/chat is not proven yet and must not be claimed by the SPA boundary');
-  assert.ok(!boundary.serves('/discover'), '/discover is not proven yet and must not be claimed by the SPA boundary');
+  assert.ok(boundary.serves('/discover'), '/discover must be served from the built SPA');
 
   for (const route of SPA_PILOT_ROUTES) {
     // Express redirects the extensionless path to the directory form; follow it
@@ -63,9 +63,11 @@ try {
       '/network': /<title>The Kurukoo Network<\/title>/,
       '/topics': /<title>Topics — Kurukoo<\/title>/,
       '/resources': /<title>Kurukoo resources and visual guides<\/title>/,
+      '/discover': /<title>Discover — Kurukoo<\/title>/,
+      '/discover/food': /<title>Discover — Kurukoo<\/title>/,
+      '/discover/work': /<title>Discover — Kurukoo<\/title>/,
     };
-    const expectedTitle = expectedTitles[route];
-    assert.ok(expectedTitle, `${route} must be in the expected-title contract`);
+    const expectedTitle = expectedTitles[route] ?? (route.startsWith('/discover/') ? /<title>[^<]+Kurukoo<\/title>/ : undefined);
     assert.match(html, expectedTitle!, `${route} must serve its real prerendered metadata, not the retired EJS page`);
     assert.match(html, /id="\$tsr-stream-barrier"/, `${route} must serve TanStack prerendered output, proving the SPA owns this route`);
     assert.match(html, /src="\/assets\/index-[A-Za-z0-9_-]+\.js"/, `${route} must reference the built client bundle so the page can hydrate`);

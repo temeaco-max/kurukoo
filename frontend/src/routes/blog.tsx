@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { ArrowUpRight, BookOpen, Feather } from "lucide-react";
 import { Panel } from "@/components/kurukoo/ui";
 import { articles } from "@/lib/kurukoo-demo";
@@ -22,6 +22,10 @@ export const Route = createFileRoute("/blog")({
 });
 
 function BlogPage() {
+  const pathname = useLocation({ select: (location) => location.pathname });
+  if (pathname !== "/blog" && pathname !== "/blog/") {
+    return <Outlet />;
+  }
   const featured = articles[0];
   const rest = articles.slice(1);
   return (
