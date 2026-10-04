@@ -408,6 +408,12 @@ function DiscoverPage() {
             prompt={q.trim() ? `Help me with ${q.trim()}.` : "Help me choose what to do next."}
           />
         </div>
+        <Link
+          to="/chat"
+          className="mt-4 inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-border px-4 text-[12px] font-medium transition-colors hover:bg-elevated"
+        >
+          Continue in Chat <ArrowRight className="size-3.5" />
+        </Link>
         {q.trim() ? (
           <p className="mt-2 text-[10.5px] text-muted-foreground">
             Search stays in the Discover context while nearby signals remain evidence-backed.

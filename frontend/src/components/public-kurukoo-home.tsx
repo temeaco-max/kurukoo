@@ -47,8 +47,15 @@ const capabilities = [
 ] as const;
 
 export function PublicHome({ onSend }: { onSend?: (message: string) => void }) {
+  const [ads, setAds] = useState<Array<{ id: number | string; title: string; desc?: string; imageUrl?: string; alt?: string; destination?: string; clickUrl?: string | null; ctaText?: string; disclosure?: string; placement?: string }>>([]);
   const [promptIndex, setPromptIndex] = useState(0);
   const [exampleIndex, setExampleIndex] = useState(0);
+  useEffect(() => {
+    fetch("/api/public-ads")
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("ads"))))
+      .then((data) => setAds(Array.isArray(data.campaigns) ? data.campaigns : []))
+      .catch(() => setAds([]));
+  }, []);
   useEffect(() => {
     const timer = window.setInterval(
       () => setPromptIndex((value) => (value + 1) % prompts.length),
@@ -56,6 +63,7 @@ export function PublicHome({ onSend }: { onSend?: (message: string) => void }) {
     );
     return () => window.clearInterval(timer);
   }, []);
+  const managedAd = ads.find((ad) => ad.placement === "public_business") ?? ads.find((ad) => ad.placement === "public_diaspora") ?? null;
   const sendPrompt = (prompt: string) => {
     onSend?.(prompt);
     window.location.href = "/chat";
@@ -146,6 +154,54 @@ export function PublicHome({ onSend }: { onSend?: (message: string) => void }) {
               </p>
             </div>
           </aside>
+        </div>
+      </section>
+
+      <section className="border-b border-border/80 py-10 md:py-12">
+        <div className="mx-auto w-full max-w-[1160px] px-5 md:px-9">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Daily picks</h2>
+            <Link to="/discover" className="text-[12px] text-primary">Browse Discover →</Link>
+          </div>
+          {ads.length === 0 ? (
+            <p className="text-[12px] text-muted-foreground">
+              Daily picks will appear here when an approved first-party campaign is active.
+            </p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {ads.filter((ad) => ad.id !== managedAd?.id).slice(0, 3).map((ad) => (
+                <a
+                  key={ad.id}
+                  href={ad.clickUrl || ad.destination || "/advertise"}
+                  className="group flex flex-col gap-2 rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-primary/40"
+                >
+                  <span className="inline-flex w-fit items-center rounded-full bg-brand-tint/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-ink">
+                    {ad.disclosure || "Sponsored"}
+                  </span>
+                  {ad.imageUrl ? (
+                    <img src={ad.imageUrl} alt={ad.alt || ad.title} className="h-32 w-full rounded-xl object-cover" loading="lazy" />
+                  ) : null}
+                  <strong className="text-[13.5px]">{ad.title}</strong>
+                  {ad.desc ? <small className="text-[12px] leading-5 text-muted-foreground">{ad.desc}</small> : null}
+                </a>
+              ))}
+            </div>
+          )}
+          {managedAd ? (
+            <a
+              href={managedAd.clickUrl || managedAd.destination || "/advertise"}
+              className="mt-5 flex items-center justify-between rounded-2xl border border-border bg-elevated p-4"
+            >
+              <span className="text-[12.5px] font-medium">
+                <span className="mr-2 inline-flex rounded-full bg-brand-tint/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-ink">
+                  {managedAd.disclosure || "Sponsored"}
+                </span>
+                {managedAd.title}
+                {managedAd.desc ? <span className="ml-2 text-muted-foreground">{managedAd.desc}</span> : null}
+              </span>
+              <b className="text-[12px] text-primary">{managedAd.ctaText || "Learn more"} →</b>
+            </a>
+          ) : null}
         </div>
       </section>
 

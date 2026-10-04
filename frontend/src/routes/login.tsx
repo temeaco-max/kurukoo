@@ -27,8 +27,8 @@ function LoginPage() {
       returnTo={search['return'] || "/chat"}
       conversationId={search['conversationId'] || undefined}
       guestId={search['guest_id'] || undefined}
-      title="Welcome back"
-      subtitle="Log in to see what Kurukoo has been getting on with."
+      title="Continue securely."
+      subtitle="Log in to see what Kurukoo has been getting on with. We send a one-time verification code to your email or phone — no password, no trial."
       cta="Log in"
       footer={
         <>

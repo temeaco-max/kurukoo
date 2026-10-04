@@ -20,7 +20,7 @@ function AdvertisePage() {
       eyebrow="For advertisers"
       title="Reach people when what you offer is relevant."
       intro="Kurukoo advertising is designed around useful discovery: clearly labelled sponsored offers can appear where people are already exploring services, products, Topics, creators and opportunities."
-      whatKurukooIs="A place to reach people through declared, contextual discovery rather than treating private conversations as an advertising feed. Sponsored content stays distinct from organic recommendations and is subject to eligibility, creative and moderation rules."
+      whatKurukooIs="A place to reach people through declared, contextual discovery rather than treating private conversations as an advertising feed. Sponsored content stays distinct from organic recommendations and is subject to eligibility, creative and moderation rules. Only approved placements may carry sponsored offers."
       participation={[
         "Promote a genuine business, product, service, event or other eligible offer.",
         "Choose suitable placements, audience context and campaign goals within the controls Kurukoo provides.",

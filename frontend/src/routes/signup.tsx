@@ -22,7 +22,7 @@ function SignupPage() {
   return (
     <AuthPanel
       title="Get started"
-      subtitle="Tell Kurukoo what you need. It gets to work."
+      subtitle="We send a one-time verification code to your email or phone. Tell Kurukoo what you need. It gets to work."
       cta="Create account"
       showName
       footer={

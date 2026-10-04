@@ -78,6 +78,11 @@ function PricingPage() {
         title="Plans and pricing"
         subtitle="Choose the access that fits you. When money is involved in a request, Kurukoo keeps the service, price and approval visible."
       />
+      <p className="mt-4 max-w-2xl text-[12.5px] leading-6 text-muted-foreground">
+        Start with a conversation: every plan begins by telling Kurukoo what you want done, and any
+        provider payment stays visible with the provider acceptance state. A payment service provider
+        is not configured yet, so checkout is not activated in this build.
+      </p>
       {groups.map(([label, audience]) => {
         const list = plans.filter((p) => p.audience === audience);
         return list.length ? (
