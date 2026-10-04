@@ -40,7 +40,7 @@ export const CLIENT_SURFACES: readonly ClientSurface[] = [
   { id: 'web-api-docs', label: 'API documentation', family: 'web', route: '/developers/api', primaryNavigation: 'marketing', semanticOwners: ['contentRoutes', 'developer-docs'], states: ['represented', 'implemented'], responsive: true },
 
   // Authenticated browser OS — clean URLs
-  { id: 'web-desk', label: 'Desk', family: 'web', route: '/desk', primaryNavigation: 'workspace', semanticOwners: ['appSurfaceRoutes', 'pageContentContracts', 'conversationWorkspace'], states: ['represented', 'implemented', 'contract_tested'], responsive: true },
+  { id: 'web-desk', label: 'Desk', family: 'web', route: '/field', primaryNavigation: 'workspace', semanticOwners: ['appSurfaceRoutes', 'pageContentContracts', 'conversationWorkspace'], states: ['represented', 'implemented', 'contract_tested'], responsive: true },
   { id: 'web-chat', label: 'Chat', family: 'web', route: '/chat', primaryNavigation: 'agent', semanticOwners: ['canonicalChatTurnService', 'contextArbitration', 'conversationWorkspace'], states: ['represented', 'implemented', 'contract_tested'], responsive: true },
   { id: 'web-chat-conversation', label: 'Conversation', family: 'web', route: '/chat/:conversationId', primaryNavigation: 'agent', semanticOwners: ['canonicalChatTurnService', 'conversationWorkspace'], states: ['represented', 'implemented', 'contract_tested'], responsive: true },
   { id: 'web-discover', label: 'Discover', family: 'web', route: '/discover', primaryNavigation: 'discover', semanticOwners: ['discoveryRoutes', 'nearbyPulse', 'opportunityEngine'], states: ['represented', 'implemented'], responsive: true },
@@ -74,7 +74,7 @@ export const CLIENT_SURFACES: readonly ClientSurface[] = [
   { id: 'web-share', label: 'Shared conversation', family: 'web', route: '/share/:shareId', primaryNavigation: 'secondary', semanticOwners: ['conversationWorkspace', 'share'], states: ['represented', 'implemented'], responsive: true },
 
   // PWA / native clients
-  { id: 'pwa-shell', label: 'PWA application shell', family: 'pwa', route: '/desk', primaryNavigation: 'workspace', semanticOwners: ['canonical API', 'service worker', 'clientSurfaceRegistry'], states: ['represented', 'implemented', 'contract_tested'], responsive: true },
+  { id: 'pwa-shell', label: 'PWA application shell', family: 'pwa', route: '/field', primaryNavigation: 'workspace', semanticOwners: ['canonical API', 'service worker', 'clientSurfaceRegistry'], states: ['represented', 'implemented', 'contract_tested'], responsive: true },
   { id: 'native-ios', label: 'iOS application', family: 'native', route: 'native://ios', primaryNavigation: 'agent', semanticOwners: ['canonical API', 'native device adapters', 'clientSurfaceRegistry'], states: ['represented', 'implemented', 'device_verification'], responsive: false, nativeOnly: true },
   { id: 'native-android', label: 'Android application', family: 'native', route: 'native://android', primaryNavigation: 'agent', semanticOwners: ['canonical API', 'native device adapters', 'clientSurfaceRegistry'], states: ['represented', 'implemented', 'device_verification'], responsive: false, nativeOnly: true },
 

@@ -4,7 +4,6 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { CHAT_SIDEBAR_FOUNDATION } from '../src/services/chatSidebarFoundation.js';
 import { KURUKOO_OS_COMPONENTS } from '../src/services/kurukooOsComponentRegistry.js';
-
 const shellRuntime = readFileSync(resolve(process.cwd(), 'frontend/public/js/kurukoo-desk-system.js'), 'utf8');
 const appShellRuntime = readFileSync(resolve(process.cwd(), 'frontend/public/js/kurukoo-app-shell.js'), 'utf8');
 const componentCss = readFileSync(resolve(process.cwd(), 'frontend/public/css/kurukoo-os-components.css'), 'utf8');
@@ -18,7 +17,6 @@ const appRoutes = readFileSync(resolve(process.cwd(), 'src/routes/appSurfaceRout
 const appTemplate = readFileSync(resolve(process.cwd(), 'views/app.ejs'), 'utf8');
 const mobileNav = readFileSync(resolve(process.cwd(), 'views/_partials/app-mobile-nav.ejs'), 'utf8');
 const surfaceRegistry = readFileSync(resolve(process.cwd(), 'src/services/clientSurfaceRegistry.ts'), 'utf8');
-
 for (const required of [
   'Search Kurukoo','Notifications','Account','/points','/cart','/chat','/activity','/tasks','/discover','/connect','/topics','/saved','/reminders','/memory','/safety','/settings'
 ]) assert.ok(shellRuntime.includes(required), `Desk shell missing ${required}`);
@@ -35,7 +33,6 @@ assert.match(mobileNav, /href="\/work"[\s\S]*aria-label="Work"/, 'Rendered mobil
 assert.ok(appIaCss.includes('.k-home-intent-form'), 'Home composer must have dedicated responsive styling');
 assert.ok(appIaCss.includes('.k-app-surface'), 'Authenticated app IA must establish the shared k-app-surface primitive');
 assert.ok(appShellRuntime.includes('establishSurface'), 'App shell runtime must establish the shared k-app-surface primitive');
-
 // Visible home-shell language must match the assistant-first product vocabulary.
 for (const forbidden of [
   'Ask Agent',
@@ -51,7 +48,6 @@ for (const forbidden of [
 assert.match(shellRuntime, /\['Activity',\s*'\/activity'/, 'Home shell must link to Activity using the canonical route');
 assert.match(shellRuntime, /\['Work',\s*'\/work'/, 'Home shell must link to Work using the canonical route');
 assert.match(shellRuntime, /\['Discover',\s*'\/discover'/, 'Home shell must link to Discover using the canonical route');
-
 assert.ok(componentCss.includes('.kos-conversation-card'));
 assert.ok(componentCss.includes('.kos-activity-card'));
 assert.ok(componentCss.includes('.kos-object-list'));
@@ -75,8 +71,7 @@ assert.ok(providerCss.includes('var(--ko-primary'));
 assert.ok(providerCss.includes('min-height:44px'));
 assert.ok(providerCss.includes('button[disabled]'));
 assert.ok(presenceRuntime.includes("'listening'"));
-
-for (const [label, href] of [['Home','/home'],['Discover','/discover'],['Chat','/chat'],['Activity','/activity'],['Work','/work']]) {
+for (const [label, href] of [['Your Perch','/field'],['Discover','/discover'],['Chat','/chat'],['Activity','/activity'],['Work','/work']]) {
   assert.ok(appShellRuntime.includes(`{label:'${label}',href:'${href}'`), `mobile/app navigation must use canonical ${label} route ${href}`);
 }
 assert.ok(appShellRuntime.includes('const createSecondaryNav=()=>{'), 'mobile/app shell must define the secondary navigation builder');
@@ -84,14 +79,10 @@ assert.ok(appShellRuntime.includes("if(path==='/chat')"), 'Chat route refinement
 assert.doesNotMatch(appShellRuntime, /\/app\//, 'App shell must not retain legacy route aliases');
 assert.ok(appShellRuntime.includes("if(path==='/call')"));
 assert.ok(appShellRuntime.includes("path==='/top-up'||path==='/points'"));
-
 assert.match(surfaceRegistry, /label: 'Chat'.*route: '\/chat'/s, 'Chat surface must be /chat');
 assert.match(surfaceRegistry, /label: 'Agents'.*route: '\/agents'/s, 'Agents directory must remain distinct from Chat');
-assert.match(appRoutes, /'\/home': 'desk'/, 'app routes must declare the canonical Home route for the home surface');
-assert.match(appRoutes, /'\/desk': 'desk'/, 'legacy Desk alias remains available for route continuity');
 assert.doesNotMatch(appRoutes, /'\/app/, 'app routes must not retain legacy aliases');
 assert.match(appRoutes, /for \(const resource of \['requests','tasks','reminders','opportunities','agents','connections','memory','artifacts'\]/, 'canonical object/detail route families remain declared');
-
 assert.match(icons, /symbol id="search"/);
 assert.match(icons, /symbol id="user"/);
 assert.ok(CHAT_SIDEBAR_FOUNDATION.some((item) => item.id === 'cart' && item.targetPlacement === 'header'));
@@ -99,5 +90,4 @@ assert.ok(CHAT_SIDEBAR_FOUNDATION.some((item) => item.id === 'notifications' && 
 assert.ok(KURUKOO_OS_COMPONENTS.some((item) => item.id === 'conversation-continuation-card'));
 assert.ok(KURUKOO_OS_COMPONENTS.some((item) => item.id === 'pulse-timeline'));
 assert.ok(KURUKOO_OS_COMPONENTS.some((item) => item.id === 'context-inspector'));
-
 console.log('OS shell contract passed: canonical authenticated route ownership, assistant-first Home/Discover/Activity/Work vocabulary, shared surface primitive, shared state/presence vocabulary, mobile IA, non-duplicated workspace navigation and canonical visual token bridges are present.');

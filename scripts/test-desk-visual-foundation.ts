@@ -9,7 +9,7 @@ const deskCss = fs.readFileSync('frontend/public/css/kurukoo-desk-system.css', '
 const manifest = JSON.parse(fs.readFileSync('src/services/canonicalAuthenticatedScreenSetManifest.json', 'utf8'));
 
 assert.equal(DESK_VISUAL_REFERENCE.asset, 'kurukoo-os-personal-workspace.png');
-assert.ok(DESK_VISUAL_REFERENCE.appliesTo.includes('/desk'));
+assert.ok(DESK_VISUAL_REFERENCE.appliesTo.includes('/field'));
 assert.ok(DESK_VISUAL_REFERENCE.doesNotApplyTo.includes('Chat page body composition'));
 assert.ok(DESK_VISUAL_REFERENCE.requiredPatterns.includes('centred universal search control in the authenticated header'));
 assert.ok(DESK_VISUAL_REFERENCE.requiredPatterns.includes('notification control adjacent to account/profile controls'));

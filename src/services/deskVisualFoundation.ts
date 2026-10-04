@@ -13,7 +13,7 @@ export const DESK_VISUAL_REFERENCE: DeskReferenceBoundary = {
   asset: 'kurukoo-os-personal-workspace.png',
   role: 'desk-content-reference',
   appliesTo: [
-    '/desk',
+    '/field',
     'Desk content hierarchy',
     'Desk card composition',
     'Desk content density',

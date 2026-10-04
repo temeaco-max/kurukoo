@@ -15,7 +15,7 @@ const router = express.Router();
 
 const surfaceMap = new Map([
   ['agent', { title: 'Chat', eyebrow: 'Your conversation', description: 'Tell Kurukoo what you need, want, notice, or are worried about. Kurukoo will figure out who or what can help.', cta: '/chat', ctaLabel: 'Continue in Chat' }],
-  ['desk', { title: 'Home', eyebrow: 'What matters now', description: 'See what needs your attention, pick up where you left off, and start something new with Kurukoo.', cta: '/chat', ctaLabel: 'Talk to Kurukoo' }],
+  ['desk', { title: 'Your Perch', eyebrow: 'What matters now', description: 'See what needs your attention, pick up where you left off, and start something new with Kurukoo.', cta: '/chat', ctaLabel: 'Talk to Kurukoo' }],
   ['discover', { title: 'Explore', eyebrow: 'Find something useful', description: 'Find people, places, services, products, Topics and opportunities, then bring what matters into a conversation.', cta: '/chat', ctaLabel: 'Ask Kurukoo' }],
   ['topics', { title: 'Topics', eyebrow: 'Community context', description: 'Browse and share moderated community questions, reports and experiences without turning community content into a provider, offer or payment claim.', cta: '/topics', ctaLabel: 'Open Topics' }],
   ['requests', { title: 'Activity', eyebrow: 'Work in motion', description: 'See what is happening, what needs you, and what has finished. Open any item to continue the work in context.', cta: '/chat?prompt=Show%20me%20what%20needs%20my%20attention', ctaLabel: 'Ask what is next' }],
@@ -43,11 +43,11 @@ const surfaceMap = new Map([
 ]);
 
 const cleanCanonicalSections: Record<string, string> = {
-  '/agent': 'agent', '/chat': 'agent', '/home': 'desk', '/desk': 'desk', '/discover': 'discover', '/topics': 'topics', '/activity': 'requests', '/requests': 'requests', '/reminders': 'reminders', '/saved': 'saved', '/cart': 'cart', '/work': 'tasks', '/tasks': 'tasks', '/connect': 'connect', '/agents': 'agents', '/capabilities': 'capabilities', '/opportunities': 'opportunities', '/wallet': 'wallet', '/points': 'points', '/top-up': 'top-up', '/subscriptions': 'subscriptions', '/checkout': 'checkout', '/confirmations': 'confirmations', '/memory': 'memory', '/artifacts': 'artifacts', '/prayer': 'prayer', '/call': 'call', '/notifications': 'notifications', '/safety': 'safety', '/settings': 'settings',
+  '/agent': 'agent', '/chat': 'agent', '/discover': 'discover', '/topics': 'topics', '/activity': 'requests', '/requests': 'requests', '/reminders': 'reminders', '/saved': 'saved', '/cart': 'cart', '/work': 'tasks', '/tasks': 'tasks', '/connect': 'connect', '/agents': 'agents', '/capabilities': 'capabilities', '/opportunities': 'opportunities', '/wallet': 'wallet', '/points': 'points', '/top-up': 'top-up', '/subscriptions': 'subscriptions', '/checkout': 'checkout', '/confirmations': 'confirmations', '/memory': 'memory', '/artifacts': 'artifacts', '/prayer': 'prayer', '/call': 'call', '/notifications': 'notifications', '/safety': 'safety', '/settings': 'settings',
 };
 
 const canonicalPathBySection: Record<string, string> = {
-  agent: '/chat', desk: '/home', discover: '/discover', requests: '/activity', tasks: '/work', topics: '/topics', reminders: '/reminders', saved: '/saved', cart: '/cart', connect: '/connect', agents: '/agents', capabilities: '/capabilities', opportunities: '/opportunities', wallet: '/wallet', points: '/points', 'top-up': '/top-up', subscriptions: '/subscriptions', checkout: '/checkout', confirmations: '/confirmations', memory: '/memory', artifacts: '/artifacts', prayer: '/prayer', call: '/call', notifications: '/notifications', safety: '/safety', settings: '/settings',
+  agent: '/chat', desk: '/field', discover: '/discover', requests: '/activity', tasks: '/work', topics: '/topics', reminders: '/reminders', saved: '/saved', cart: '/cart', connect: '/connect', agents: '/agents', capabilities: '/capabilities', opportunities: '/opportunities', wallet: '/wallet', points: '/points', 'top-up': '/top-up', subscriptions: '/subscriptions', checkout: '/checkout', confirmations: '/confirmations', memory: '/memory', artifacts: '/artifacts', prayer: '/prayer', call: '/call', notifications: '/notifications', safety: '/safety', settings: '/settings',
 };
 
 const sharedPublicAuthenticated = new Set(['/discover', '/topics', '/chat']);
@@ -67,7 +67,7 @@ function renderApp(req: express.Request, res: express.Response, section = 'desk'
   const integrations = getExternalIntegrationReadiness();
   const enabledIntegrations = integrations.filter((item: any) => item.implementation?.state === 'IMPLEMENTED' || item.implementation?.implemented === true).length;
   const content = getPageContentContract(section);
-  const canonicalPath = requestedPath && cleanCanonicalSections[requestedPath] === section && requestedPath.startsWith('/') ? (canonicalPathBySection[section] ?? requestedPath) : (canonicalPathBySection[section] ?? '/home');
+  const canonicalPath = requestedPath && cleanCanonicalSections[requestedPath] === section && requestedPath.startsWith('/') ? (canonicalPathBySection[section] ?? requestedPath) : (canonicalPathBySection[section] ?? '/field');
   return res.render('app', { selected, section, canonicalPath, displayName: authReq.user.name || authReq.user.phone, phone: authReq.user.phone, surfaces, readiness, integrations, enabledIntegrations, integrationCount: integrations.length, visualFeatures: getCanonicalDiscoverablePlatformFeatures().filter(feature => !feature.audience.includes('admin')), contentContract: content }, (error, html) => {
     if (error) return res.status(500).send('Unable to render application surface');
     const assets = screenAssets(section);
@@ -95,6 +95,7 @@ router.get('/developers/api', (_req, res) => res.redirect(302, '/api-docs'));
 router.get('/chat/:conversationId', (req, res) => { res.setHeader('X-Kurukoo-Conversation-Id', String(req.params.conversationId)); return res.redirect(302, `/chat?conversationId=${encodeURIComponent(req.params.conversationId)}`); });
 router.get('/share/:shareId', (req, res) => { res.setHeader('X-Kurukoo-Share-Id', String(req.params.shareId)); return res.redirect(302, `/chat?shareId=${encodeURIComponent(req.params.shareId)}`); });
 
+router.get(['/home','/desk'],(_req,res)=>res.redirect(302,'/field'));
 for (const [pathname, section] of Object.entries(cleanCanonicalSections)) {
   router.get(pathname, optionalAuthenticateUser, (req, res, next) => {
     const authReq = req as AuthRequest;

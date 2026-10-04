@@ -75,7 +75,7 @@ export const PRODUCT_SURFACE_COMPLETENESS: readonly ProductSurfaceCompletenessCo
     purpose: 'Keep the same product/resource vocabulary and state semantics across web, PWA and native apps.',
     requiredRepresentations: ['Desk', 'Agent/Chat', 'Discover', 'Requests', 'Tasks', 'Connect', 'Notifications', 'Memory where supported', 'durable object deep links', 'auth continuation', 'QR/deep links', 'offline/reconnect', 'push notification state'],
     requiredStates: ['available', 'authenticated', 'guest', 'offline', 'reconnecting', 'permission_required', 'unsupported'],
-    canonicalUrls: ['/desk', '/chat', '/discover', '/requests', '/tasks', '/connect'],
+    canonicalUrls: ['/field', '/chat', '/discover', '/requests', '/tasks', '/connect'],
   },
 ] as const;
 

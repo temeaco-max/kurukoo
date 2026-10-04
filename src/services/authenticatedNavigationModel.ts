@@ -4,7 +4,7 @@ export type AuthNavFrequency = 'core' | 'frequent' | 'occasional' | 'setup' | 'c
 export interface AuthNavItem { id: string; label: string; route?: string; placement: AuthNavPlacement; frequency: AuthNavFrequency; purpose: string; reason?: string; }
 export const AUTHENTICATED_NAVIGATION: readonly AuthNavItem[] = [
   { id: 'chat', label: 'Chat', route: '/chat', placement: 'primary-sidebar', frequency: 'core', purpose: 'The conversational control surface for asking Kurukoo to get things done.', reason: 'Core daily interaction.' },
-  { id: 'home', label: 'Home', route: '/home', placement: 'primary-sidebar', frequency: 'core', purpose: 'Personal starting point for what matters now, ongoing work and useful next actions.', reason: 'Always-visible home.' },
+  { id: 'field', label: 'Your Perch', route: '/field', placement: 'primary-sidebar', frequency: 'core', purpose: 'Personal starting point for what matters now, ongoing work and useful next actions.', reason: 'Always-visible home.' },
   { id: 'discover', label: 'Discover', route: '/discover', placement: 'primary-sidebar', frequency: 'frequent', purpose: 'Discover useful people, places, services, products, Topics and opportunities.', reason: 'Frequent discovery task.' },
   { id: 'activity', label: 'Activity', route: '/activity', placement: 'primary-sidebar', frequency: 'core', purpose: 'See what is happening, what needs attention and what has finished.', reason: 'Core continuity surface.' },
   { id: 'work', label: 'Work', route: '/work', placement: 'primary-sidebar', frequency: 'frequent', purpose: 'Review tasks and follow-through that need attention.', reason: 'Active work surface.' },

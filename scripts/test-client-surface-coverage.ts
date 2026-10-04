@@ -69,7 +69,7 @@ if (!topicRoutes.includes("router.get('/topics'")) failures.push('Topics public/
 if (!topicRoutes.includes("router.get('/topics/:slug'")) failures.push('Topic detail route missing');
 
 const appRouter = read('src/routes/appSurfaceRoutes.ts');
-if (!appRouter.includes("'/desk': 'desk'")) failures.push('Canonical Web App desk route is missing');
+if (!appRouter.includes("router.get(['/home','/desk']")) failures.push('Home/Desk compatibility redirect is missing');
 if (!appRouter.includes('cleanCanonicalSections')) failures.push('Canonical Web App direct section routing is missing');
 for (const route of CLIENT_SURFACES.filter(s => s.family === 'web' && /^\/(desk|requests|tasks|connect|agents|capabilities|opportunities|wallet|points|top-up|subscriptions|checkout|confirmations|memory|artifacts|prayer|call|notifications|safety|settings)$/.test(s.route)).map(s => s.route.slice(1))) if (!appRouter.includes(`'/${route}'`)) failures.push(`Canonical Web App surface ${route} missing from direct route map`);
 for (const route of retiredSingularAliases) if (appRouter.includes(`'${route}'`)) failures.push(`Canonical Web App must not expose retired alias ${route}`);

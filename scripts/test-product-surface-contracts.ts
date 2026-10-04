@@ -6,7 +6,7 @@ import { PUBLIC_PAGE_CONTENT_CONTRACTS } from '../src/services/publicPageContent
 import { ADMIN_PAGE_CONTENT_CONTRACTS } from '../src/services/adminPageContentContracts.js';
 
 assert.equal(DESKTOP_AUTHENTICATED_HOME, 'web-desk');
-assert.ok(CLIENT_SURFACES.some(surface => surface.route === '/desk' && surface.id === 'web-desk'));
+assert.ok(CLIENT_SURFACES.some(surface => surface.route === '/field' && surface.id === 'web-desk'));
 assert.ok(CLIENT_SURFACES.some(surface => surface.route === '/chat' && surface.id === 'web-chat'));
 assert.ok(CLIENT_SURFACES.some(surface => surface.route === '/requests/:requestId'));
 assert.ok(CLIENT_SURFACES.some(surface => surface.route === '/admin/providers'));

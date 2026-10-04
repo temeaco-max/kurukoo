@@ -6,7 +6,7 @@ import { CANONICAL_URLS } from '../src/services/canonicalUrlRegistry.js';
 const failures: string[] = [];
 const require = (condition: boolean, message: string) => { if (!condition) failures.push(message); };
 
-require(CANONICAL_URLS.desk.home === '/home', 'Home must be the canonical authenticated home.');
+require(CANONICAL_URLS.desk.home === '/field', 'Home must be the canonical authenticated home.');
 require(CANONICAL_URLS.conversation.agent === '/chat', 'Agent must use /chat as the conversational surface.');
 require(CANONICAL_URLS.conversation.conversation('abc') === '/chat/abc', 'Conversation detail URL must be /chat/:conversationId.');
 require(CANONICAL_URLS.conversation.share('abc') === '/share/abc', 'Shared conversation URL must be /share/:shareId.');

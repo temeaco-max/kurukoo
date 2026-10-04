@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { DESKTOP_AUTHENTICATED_HOME, CLIENT_SURFACES } from '../src/services/clientSurfaceRegistry.js';
 import { CANONICAL_PLATFORM_FEATURE_CONTRACTS, assertCanonicalPlatformFeatureSurfaces } from '../src/services/canonicalPlatformFeatureRegistry.js';
 
-assert.equal(CLIENT_SURFACES.find(surface => surface.id === DESKTOP_AUTHENTICATED_HOME)?.route, '/desk');
-assert.equal(CLIENT_SURFACES.some(surface => surface.route === '/desk' && surface.id === 'web-desk'), true);
+assert.equal(CLIENT_SURFACES.find(surface => surface.id === DESKTOP_AUTHENTICATED_HOME)?.route, '/field');
+assert.equal(CLIENT_SURFACES.some(surface => surface.route === '/field' && surface.id === 'web-desk'), true);
 assert.equal(CLIENT_SURFACES.some(surface => surface.route === '/chat' && surface.id === 'web-chat'), true);
 assert.equal(CLIENT_SURFACES.some(surface => surface.route === '/chat/:conversationId'), true);
 assert.equal(CLIENT_SURFACES.some(surface => surface.route === '/share/:shareId'), true);

@@ -31,7 +31,7 @@ export const CANONICAL_URLS = {
     share: (shareId: string) => `/share/${encodeURIComponent(shareId)}`,
   },
   desk: {
-    home: '/home',
+    home: '/field',
     discover: '/discover',
     topics: '/topics',
     requests: '/activity',
