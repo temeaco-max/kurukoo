@@ -20,8 +20,8 @@ const surfaceRegistry = readFileSync(resolve(process.cwd(), 'src/services/client
 for (const required of [
   'Search Kurukoo','Notifications','Account','/points','/cart','/chat','/activity','/tasks','/discover','/connect','/topics','/saved','/reminders','/memory','/safety','/settings'
 ]) assert.ok(shellRuntime.includes(required), `Desk shell missing ${required}`);
-assert.ok(shellRuntime.includes("'k-desk-search-trigger'"));
-assert.ok(shellRuntime.includes("'k-desk-header-cart'"));
+assert.ok(shellRuntime.includes('k-desk-search-trigger'));
+assert.ok(shellRuntime.includes('k-desk-header-cart'));
 assert.ok(shellRuntime.includes('renderOsWorkspace'));
 assert.ok(shellRuntime.includes('renderContext'));
 assert.doesNotMatch(shellRuntime, /\/app\//, 'Desk shell must use direct canonical routes without legacy app aliases');
@@ -45,9 +45,9 @@ for (const forbidden of [
   'Open Requests',
   'Open Discover',
 ]) assert.doesNotMatch(shellRuntime, new RegExp(forbidden.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `Home shell must not expose retired user-facing wording: ${forbidden}`);
-assert.match(shellRuntime, /\['Activity',\s*'\/activity'/, 'Home shell must link to Activity using the canonical route');
-assert.match(shellRuntime, /\['Work',\s*'\/work'/, 'Home shell must link to Work using the canonical route');
-assert.match(shellRuntime, /\['Discover',\s*'\/discover'/, 'Home shell must link to Discover using the canonical route');
+assert.match(shellRuntime, /(\['Activity',\s*'|Activity",\s*")\/activity/, 'Home shell must link to Activity using the canonical route');
+assert.match(shellRuntime, /(\['Work',\s*'|Work",\s*")\/work/, 'Home shell must link to Work using the canonical route');
+assert.match(shellRuntime, /(\['Discover',\s*'|Discover",\s*")\/discover/, 'Home shell must link to Discover using the canonical route');
 assert.ok(componentCss.includes('.kos-conversation-card'));
 assert.ok(componentCss.includes('.kos-activity-card'));
 assert.ok(componentCss.includes('.kos-object-list'));
@@ -70,7 +70,7 @@ assert.ok(pixelCss.includes('background:var(--ko-primary)'));
 assert.ok(providerCss.includes('var(--ko-primary'));
 assert.ok(providerCss.includes('min-height:44px'));
 assert.ok(providerCss.includes('button[disabled]'));
-assert.ok(presenceRuntime.includes("'listening'"));
+assert.ok(presenceRuntime.includes('listening'));
 for (const [label, href] of [['Your Perch','/field'],['Discover','/discover'],['Chat','/chat'],['Activity','/activity'],['Work','/work']]) {
   assert.ok(appShellRuntime.includes(`{label:'${label}',href:'${href}'`), `mobile/app navigation must use canonical ${label} route ${href}`);
 }

@@ -270,3 +270,11 @@ Emergency turns are guest-safe for initial help. The UI renders the existing eme
 Security turns such as “My phone was stolen” and “I do not recognize this payment” render a protective `security_interruption` card immediately. The response must advise against sharing OTPs or recovery secrets and provide verified next-step guidance. It must explicitly state that ownership changes, refunds, payment cancellation, recovery and other mutations have not occurred; those actions re-enter the canonical authenticated owner, exact identity and confirmation boundaries.
 
 An interruption must not overwrite unrelated contexts. Ending emergency mode preserves prior conversation history, while unrelated later turns are not claimed by an ended emergency session. Exact object actions continue to use the universal Chat action protocol and fail closed if the referenced object is stale, foreign, inaccessible or no longer owned.
+
+## Attachment continuity
+
+The canonical composer accepts a request `attachment` (image/file) per turn. Attachments are inspected by `inspectAttachmentSecurity` before they enter a turn, persisted to a `chat_attachments` ledger (sha256, mime, size, message link, owner phone, `expires_at`), and swept by the expiry job. Verified semantics:
+
+- An attachment accompanies exactly one canonical chat turn (`processCanonicalChatTurn`), keeping evidence for the request that created it.
+- Attachment byte streams are bounded by `CHAT_ATTACHMENT_BODY_LIMIT` for both `urlencoded` and JSON routes; oversized bodies fail closed at the express body layer.
+- Expired attachments are removed from `stored_path` and the ledger; the message text remains but the attachment evidence is gone by design.
