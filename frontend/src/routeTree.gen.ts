@@ -114,6 +114,7 @@ import { Route as TopicsMineRouteImport } from './routes/topics.mine'
 import { Route as VideosVideoIdRouteImport } from './routes/videos.$videoId'
 import { Route as WorkIndexRouteImport } from './routes/work.index'
 import { Route as WorkWorkIdRouteImport } from './routes/work.$workId'
+import { Route as AuthChallengeCompleteRouteImport } from './routes/auth.challenge.complete'
 import { Route as TopicsCategoryCategorySlugRouteImport } from './routes/topics.category.$categorySlug'
 import { Route as TopicsEditIdRouteImport } from './routes/topics.edit.$id'
 
@@ -643,6 +644,11 @@ const WorkWorkIdRoute = WorkWorkIdRouteImport.update({
   path: '/$workId',
   getParentRoute: () => WorkRoute,
 } as any)
+const AuthChallengeCompleteRoute = AuthChallengeCompleteRouteImport.update({
+  id: '/auth/challenge/complete',
+  path: '/auth/challenge/complete',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TopicsCategoryCategorySlugRoute =
   TopicsCategoryCategorySlugRouteImport.update({
     id: '/category/$categorySlug',
@@ -761,6 +767,7 @@ export interface FileRoutesByFullPath {
   '/videos/$videoId': typeof VideosVideoIdRoute
   '/work/$workId': typeof WorkWorkIdRoute
   '/work/': typeof WorkIndexRoute
+  '/auth/challenge/complete': typeof AuthChallengeCompleteRoute
   '/topics/category/$categorySlug': typeof TopicsCategoryCategorySlugRoute
   '/topics/edit/$id': typeof TopicsEditIdRoute
 }
@@ -869,6 +876,7 @@ export interface FileRoutesByTo {
   '/videos/$videoId': typeof VideosVideoIdRoute
   '/work/$workId': typeof WorkWorkIdRoute
   '/work': typeof WorkIndexRoute
+  '/auth/challenge/complete': typeof AuthChallengeCompleteRoute
   '/topics/category/$categorySlug': typeof TopicsCategoryCategorySlugRoute
   '/topics/edit/$id': typeof TopicsEditIdRoute
 }
@@ -979,6 +987,7 @@ export interface FileRoutesById {
   '/videos/$videoId': typeof VideosVideoIdRoute
   '/work/$workId': typeof WorkWorkIdRoute
   '/work/': typeof WorkIndexRoute
+  '/auth/challenge/complete': typeof AuthChallengeCompleteRoute
   '/topics/category/$categorySlug': typeof TopicsCategoryCategorySlugRoute
   '/topics/edit/$id': typeof TopicsEditIdRoute
 }
@@ -1090,6 +1099,7 @@ export interface FileRouteTypes {
     | '/videos/$videoId'
     | '/work/$workId'
     | '/work/'
+    | '/auth/challenge/complete'
     | '/topics/category/$categorySlug'
     | '/topics/edit/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -1198,6 +1208,7 @@ export interface FileRouteTypes {
     | '/videos/$videoId'
     | '/work/$workId'
     | '/work'
+    | '/auth/challenge/complete'
     | '/topics/category/$categorySlug'
     | '/topics/edit/$id'
   id:
@@ -1307,6 +1318,7 @@ export interface FileRouteTypes {
     | '/videos/$videoId'
     | '/work/$workId'
     | '/work/'
+    | '/auth/challenge/complete'
     | '/topics/category/$categorySlug'
     | '/topics/edit/$id'
   fileRoutesById: FileRoutesById
@@ -1385,6 +1397,7 @@ export interface RootRouteChildren {
   WorkspaceRoute: typeof WorkspaceRoute
   YouRoute: typeof YouRoute
   EarnTopicRoute: typeof EarnTopicRoute
+  AuthChallengeCompleteRoute: typeof AuthChallengeCompleteRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -2124,6 +2137,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkWorkIdRouteImport
       parentRoute: typeof WorkRoute
     }
+    '/auth/challenge/complete': {
+      id: '/auth/challenge/complete'
+      path: '/auth/challenge/complete'
+      fullPath: '/auth/challenge/complete'
+      preLoaderRoute: typeof AuthChallengeCompleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/topics/category/$categorySlug': {
       id: '/topics/category/$categorySlug'
       path: '/category/$categorySlug'
@@ -2383,6 +2403,7 @@ const rootRouteChildren: RootRouteChildren = {
   WorkspaceRoute: WorkspaceRoute,
   YouRoute: YouRoute,
   EarnTopicRoute: EarnTopicRoute,
+  AuthChallengeCompleteRoute: AuthChallengeCompleteRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

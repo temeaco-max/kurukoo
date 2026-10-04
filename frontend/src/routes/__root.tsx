@@ -36,6 +36,7 @@ import {
 const publicPrefixes = [
   "/discover",
   "/features",
+  "/auth/challenge/complete",
   "/developers",
   "/about",
   "/blog",
