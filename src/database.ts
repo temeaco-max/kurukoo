@@ -19,6 +19,9 @@ export async function getDb() {
       initEconomicParticipantTables(db);
       initExecutionTables(db);
       seedCanonicalOperatorState(db);
+      if (process.env.NODE_ENV !== 'production') {
+        seedDemoTopics(db);
+      }
       auditAppointmentSkillFlows(db);
       saveDb();
     } else {
@@ -30,6 +33,7 @@ export async function getDb() {
       seedSkillFlows(db);
       if (process.env.NODE_ENV !== 'production') {
         seedDemoProviders(db);
+        seedDemoTopics(db);
       }
       auditAppointmentSkillFlows(db);
       saveDb();
@@ -457,6 +461,64 @@ function seedDemoProviders(database: any) {
     const skill = skills[i % skills.length];
     database.run(`INSERT OR IGNORE INTO memory_profiles(phone, name, location, country, subscription_tier, wallet_balance_minor, is_available) VALUES(?,?,?,'ng','Plus',200,1)`, [phone, `Provider ${i}`, 'Lagos']);
     database.run(`INSERT OR IGNORE INTO skills(phone, skill, source, confidence, is_available, operation_mode, hourly_rate, rating, jobs_completed) VALUES(?,?, 'explicit',1,1,'mobile',2500,4.8,15)`, [phone, skill]);
+  }
+}
+
+const DEMO_TOPICS: ReadonlyArray<{
+  id: string; slug: string; author: string; title: string; body: string; type: string; category: string; skills: string[]; city: string; lga: string; resources: string[]; replies: string[];
+}> = [
+  {
+    id: 'topic_seed_plumber_lagos', slug: 'finding-a-trustworthy-plumber-in-lagos', author: '+2348000000001',
+    title: 'How do I find a trustworthy plumber in Lagos?',
+    body: 'My kitchen sink started leaking on Sunday evening and I do not want to pay someone who turns up and does nothing. What should I ask for before someone is allowed to start, and how do I check the work afterwards?',
+    type: 'question', category: 'home-services', skills: ['plumber'], city: 'Lagos', lga: 'Ikeja', resources: ['how-kurukoo-works', 'staying-safe-and-resolving-disputes'],
+    replies: ['Ask for the price, the parts and the timing before the work starts. If someone refuses to state any of that, treat it as a reason to stop.', 'Keep the conversation and the request together so the outcome stays connected to the job.'],
+  },
+  {
+    id: 'topic_seed_rent_deposit', slug: 'landlord-and-deposit-question-for-tenants', author: '+2348000000002',
+    title: 'What should I do before paying a new apartment deposit?',
+    body: 'I have an agreement to move into a flat next month and the landlord wants the deposit this week. I want to understand what I can actually check, and what evidence should exist afterwards.',
+    type: 'question', category: 'housing', skills: [], city: 'Abuja', lga: 'Municipal', resources: ['how-kurukoo-works'],
+    replies: ['Ask for the payment terms, the agreement and the receipts in one place so the commitment stays reviewable.'],
+  },
+  {
+    id: 'topic_seed_market_prices', slug: 'checking-market-prices-before-buying', author: '+2348000000003',
+    title: 'Is this a fair price for what I am buying?',
+    body: 'I was quoted a price for a service and I cannot tell whether it is fair. What information should I give Kurukoo so it can help me check instead of guessing?',
+    type: 'price_report', category: 'shopping', skills: [], city: 'Port Harcourt', lga: 'Obio-Akpor', resources: ['how-kurukoo-works', 'points-plans-and-payments'],
+    replies: ['Describe the job, the area and the timing. Any price claim still has to come from a real source rather than an assumption.'],
+  },
+  {
+    id: 'topic_seed_language_classes', slug: 'finding-evening-language-classes', author: '+2348000000004',
+    title: 'Looking for evening language classes nearby',
+    body: 'I work during the day and want to find evening classes. Has anyone here started one, and what should I look for before paying anyone?',
+    type: 'recommendation', category: 'education', skills: ['tutor'], city: 'Lagos', lga: 'Yaba', resources: ['provider-and-capability-guides'],
+    replies: [],
+  },
+  {
+    id: 'topic_seed_power_outage', slug: 'preparing-for-a-long-power-outage', author: '+2348000000005',
+    title: 'How should I prepare for a long power outage?',
+    body: 'Our area has had extended outages. What can I set up now so the important things — food, phone, medicines — are covered when the power goes for hours?',
+    type: 'guide', category: 'everyday', skills: ['electrician'], city: 'Enugu', lga: 'Enugu East', resources: ['memory-and-connected-context'],
+    replies: ['Reminders and a short routine are useful here. Ask Kurukoo to keep the routine attached to the same identity.'],
+  },
+];
+
+function seedDemoTopics(database: any) {
+  for (const topic of DEMO_TOPICS) {
+    database.run(
+      `INSERT OR IGNORE INTO topics(id, slug, author_phone, title, body, type, category, skills_json, city, lga, status, published_at) VALUES(?,?,?,?,?,?,?,?,?,?,'public',datetime('now'))`,
+      [topic.id, topic.slug, topic.author, topic.title, topic.body, topic.type, topic.category, JSON.stringify(topic.skills), topic.city, topic.lga],
+    );
+    topic.replies.forEach((body, index) => {
+      database.run(
+        `INSERT OR IGNORE INTO topic_replies(id, topic_id, author_phone, body, status) VALUES(?,?,?,?,'public')`,
+        [`${topic.id}_reply_${index + 1}`, topic.id, `+23480000001${index + 1}`, body],
+      );
+    });
+    for (const resourceSlug of topic.resources) {
+      database.run(`INSERT OR IGNORE INTO topic_resource_links(topic_id, resource_slug, created_by) VALUES(?,?,?)`, [topic.id, resourceSlug, 'dev-seed']);
+    }
   }
 }
 
