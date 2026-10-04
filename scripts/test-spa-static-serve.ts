@@ -65,6 +65,8 @@ try {
       '/resources': /<title>Kurukoo resources and visual guides<\/title>/,
       '/discover': /<title>Discover — Kurukoo<\/title>/,
       '/login': /<title>Log in — Kurukoo<\/title>/,
+      '/features': /<title>Features — Kurukoo<\/title>/,
+      '/developers': /<title>Developers — Kurukoo<\/title>/,
       '/discover/food': /<title>Discover — Kurukoo<\/title>/,
       '/discover/work': /<title>Discover — Kurukoo<\/title>/,
     };

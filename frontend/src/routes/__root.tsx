@@ -35,6 +35,8 @@ import {
 } from "@/lib/kurukoo-auth";
 const publicPrefixes = [
   "/discover",
+  "/features",
+  "/developers",
   "/about",
   "/blog",
   "/capabilities",

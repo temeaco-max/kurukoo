@@ -90,9 +90,7 @@ router.get('/api/platform/feature-visuals', (_req, res) => res.json({ success: t
 router.use('/api', economicDispatchRoutes);
 router.use('/api', executionOverviewRoutes);
 
-router.get('/features', (_req, res) => res.render('features'));
-router.get('/developers', (_req, res) => res.render('developers'));
-router.get('/developers/api', (_req, res) => res.render('developers'));
+router.get('/developers/api', (_req, res) => res.redirect(302, '/api-docs'));
 
 router.get('/chat/:conversationId', (req, res) => { res.setHeader('X-Kurukoo-Conversation-Id', String(req.params.conversationId)); return res.redirect(302, `/chat?conversationId=${encodeURIComponent(req.params.conversationId)}`); });
 router.get('/share/:shareId', (req, res) => { res.setHeader('X-Kurukoo-Share-Id', String(req.params.shareId)); return res.redirect(302, `/chat?shareId=${encodeURIComponent(req.params.shareId)}`); });

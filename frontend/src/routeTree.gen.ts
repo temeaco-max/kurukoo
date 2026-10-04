@@ -39,7 +39,9 @@ import { Route as CreatorsRouteImport } from './routes/creators'
 import { Route as CredentialsRouteImport } from './routes/credentials'
 import { Route as DailyPicksRouteImport } from './routes/daily-picks'
 import { Route as DeveloperRouteImport } from './routes/developer'
+import { Route as DevelopersRouteImport } from './routes/developers'
 import { Route as DiscoverRouteImport } from './routes/discover'
+import { Route as FeaturesRouteImport } from './routes/features'
 import { Route as FieldRouteImport } from './routes/field'
 import { Route as FollowingRouteImport } from './routes/following'
 import { Route as HelpRouteImport } from './routes/help'
@@ -265,9 +267,19 @@ const DeveloperRoute = DeveloperRouteImport.update({
   path: '/developer',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevelopersRoute = DevelopersRouteImport.update({
+  id: '/developers',
+  path: '/developers',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DiscoverRoute = DiscoverRouteImport.update({
   id: '/discover',
   path: '/discover',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FeaturesRoute = FeaturesRouteImport.update({
+  id: '/features',
+  path: '/features',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FieldRoute = FieldRouteImport.update({
@@ -674,7 +686,9 @@ export interface FileRoutesByFullPath {
   '/credentials': typeof CredentialsRoute
   '/daily-picks': typeof DailyPicksRoute
   '/developer': typeof DeveloperRoute
+  '/developers': typeof DevelopersRoute
   '/discover': typeof DiscoverRouteWithChildren
+  '/features': typeof FeaturesRoute
   '/field': typeof FieldRoute
   '/following': typeof FollowingRoute
   '/help': typeof HelpRoute
@@ -781,7 +795,9 @@ export interface FileRoutesByTo {
   '/credentials': typeof CredentialsRoute
   '/daily-picks': typeof DailyPicksRoute
   '/developer': typeof DeveloperRoute
+  '/developers': typeof DevelopersRoute
   '/discover': typeof DiscoverRouteWithChildren
+  '/features': typeof FeaturesRoute
   '/field': typeof FieldRoute
   '/following': typeof FollowingRoute
   '/help': typeof HelpRoute
@@ -888,7 +904,9 @@ export interface FileRoutesById {
   '/credentials': typeof CredentialsRoute
   '/daily-picks': typeof DailyPicksRoute
   '/developer': typeof DeveloperRoute
+  '/developers': typeof DevelopersRoute
   '/discover': typeof DiscoverRouteWithChildren
+  '/features': typeof FeaturesRoute
   '/field': typeof FieldRoute
   '/following': typeof FollowingRoute
   '/help': typeof HelpRoute
@@ -997,7 +1015,9 @@ export interface FileRouteTypes {
     | '/credentials'
     | '/daily-picks'
     | '/developer'
+    | '/developers'
     | '/discover'
+    | '/features'
     | '/field'
     | '/following'
     | '/help'
@@ -1104,7 +1124,9 @@ export interface FileRouteTypes {
     | '/credentials'
     | '/daily-picks'
     | '/developer'
+    | '/developers'
     | '/discover'
+    | '/features'
     | '/field'
     | '/following'
     | '/help'
@@ -1210,7 +1232,9 @@ export interface FileRouteTypes {
     | '/credentials'
     | '/daily-picks'
     | '/developer'
+    | '/developers'
     | '/discover'
+    | '/features'
     | '/field'
     | '/following'
     | '/help'
@@ -1318,7 +1342,9 @@ export interface RootRouteChildren {
   CredentialsRoute: typeof CredentialsRoute
   DailyPicksRoute: typeof DailyPicksRoute
   DeveloperRoute: typeof DeveloperRoute
+  DevelopersRoute: typeof DevelopersRoute
   DiscoverRoute: typeof DiscoverRouteWithChildren
+  FeaturesRoute: typeof FeaturesRoute
   FieldRoute: typeof FieldRoute
   FollowingRoute: typeof FollowingRoute
   HelpRoute: typeof HelpRoute
@@ -1573,11 +1599,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DeveloperRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/developers': {
+      id: '/developers'
+      path: '/developers'
+      fullPath: '/developers'
+      preLoaderRoute: typeof DevelopersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/discover': {
       id: '/discover'
       path: '/discover'
       fullPath: '/discover'
       preLoaderRoute: typeof DiscoverRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/features': {
+      id: '/features'
+      path: '/features'
+      fullPath: '/features'
+      preLoaderRoute: typeof FeaturesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/field': {
@@ -2300,7 +2340,9 @@ const rootRouteChildren: RootRouteChildren = {
   CredentialsRoute: CredentialsRoute,
   DailyPicksRoute: DailyPicksRoute,
   DeveloperRoute: DeveloperRoute,
+  DevelopersRoute: DevelopersRoute,
   DiscoverRoute: DiscoverRouteWithChildren,
+  FeaturesRoute: FeaturesRoute,
   FieldRoute: FieldRoute,
   FollowingRoute: FollowingRoute,
   HelpRoute: HelpRoute,
