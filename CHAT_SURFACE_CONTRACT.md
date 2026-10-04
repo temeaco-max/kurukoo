@@ -278,3 +278,7 @@ The canonical composer accepts a request `attachment` (image/file) per turn. Att
 - An attachment accompanies exactly one canonical chat turn (`processCanonicalChatTurn`), keeping evidence for the request that created it.
 - Attachment byte streams are bounded by `CHAT_ATTACHMENT_BODY_LIMIT` for both `urlencoded` and JSON routes; oversized bodies fail closed at the express body layer.
 - Expired attachments are removed from `stored_path` and the ledger; the message text remains but the attachment evidence is gone by design.
+
+## Detail surfaces and identity continuity
+
+`/topics/:slug` and `/resources/:slug` are SPA-owned detail routes served by `spaSsrService.serveSpaDetail`: the prerendered document is preferred, otherwise the built Node server entry renders the route, otherwise the route returns a truthful 503. Each route keeps its own existence guard (`getPublicTopic`, `getResourceBySlug`), so an unknown slug is 404 rather than an empty page. `/p/:providerSlug` is retired; provider content remains available through the JSON content API.

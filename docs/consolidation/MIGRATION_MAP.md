@@ -12,9 +12,9 @@ Backend renders pages via `src/routes/publicRoutes.ts`, `appSurfaceRoutes.ts`, `
 |---|---|---|---|
 | `/` (`index.ejs`) | `/` (`routes/index.tsx`) | SUPERSEDED | SEO/ads data via `pageContentRoutes` API; backend route must serve SEO until cutover |
 | `/discover`, `/discover/:slug` (`discover/`) | `/discover`, `routes/discover/`, `routes/discover/<slug>.tsx` | SUPERSEDED | `/explore` retired 2026-10-03; `/explore` and `/explore/*` now 302 to `/discover` |
-| `/p/:providerSlug` (`provider-profile.ejs`) | `routes/profile.$slug.tsx`, `routes/provider.tsx` | INVESTIGATE | verify slug schema parity (provider profile cards) |
+RETIRED | `/p/:providerSlug` (`provider-profile.ejs` deleted; JSON `/api/content/providers/:slug` remains the owner) | `routes/profile.$slug.tsx`, `routes/provider.tsx` | INVESTIGATE | verify slug schema parity (provider profile cards) |
 | `/topics`, `/topics/:slug` (`topics/`) | `routes/topics*.tsx` | SUPERSEDED | recent commits already wired frontend topics incl. ads |
-| `/login` (`login.ejs`) | `routes/login.tsx` | MIGRATE | magic-link/challenge flow must be fully consumed by TanStack login before retirement |
+| `/login` | `routes/login.tsx` | DONE | EJS retired; the SPA login threads `return`, `conversationId` and `guest_id`, posts to the canonical OTP endpoints and redirects through the same-origin return guard |
 | `/resources`, `/resources/:slug` (`resources/`) | `routes/resources.tsx`, `resources.$slug.tsx` | SUPERSEDED | content via `/api/content/resources/:slug` |
 | `/partners` | `routes/partners.tsx` | SUPERSEDED | |
 | `/advertise` | `routes/advertise.tsx` | SUPERSEDED | |
@@ -23,8 +23,8 @@ Backend renders pages via `src/routes/publicRoutes.ts`, `appSurfaceRoutes.ts`, `
 | `/careers` | `routes/careers.tsx` | SUPERSEDED | |
 | `/api-docs` (`api_docs.ejs`) | `routes/api-docs.tsx` | SUPERSEDED | |
 | `/legal/:section?` (`legal.ejs`) | `routes/legal.tsx`, `legal.$section.tsx` | SUPERSEDED | |
-| `/features` (`features.ejs`) | `routes/use-cases.tsx` / `routes/capabilities.tsx` | INVESTIGATE | confirm which frontend route carries the feature story |
-| `/developers`, `/developers/api` (`developers.ejs`) | `routes/developer.tsx`, `routes/api-docs.tsx` | INVESTIGATE | |
+| `/features` | `routes/features.tsx` | DONE | dedicated SPA page built from the EJS copy; EJS retired |
+| `/developers`, `/developers/api` | `routes/developers.tsx`, `routes/api-docs.tsx` | DONE | dedicated SPA page built from the EJS copy; `/developers/api` 302s to `/api-docs` |
 | `/:country(ng|gh|gb)` (`index.ejs`) | frontend country context | INVESTIGATE | confirm frontend renders localized home per country |
 | Authenticated `/desk`, `/workspace`, resource pages (`app.ejs` via `appSurfaceRoutes`) | `/chat`, `/work`, `/workspace`, `/perch`, `/artifacts`, `/connect` | SUPERSEDED | authenticated app.ejs shell is the old OS; frontend OS shell is canonical |
 | `/chat/:conversationId`, `/share/:shareId` (redirects) | — | KEEP | pure redirects, not UI |
@@ -32,9 +32,9 @@ Backend renders pages via `src/routes/publicRoutes.ts`, `appSurfaceRoutes.ts`, `
 | `/auth-challenge-complete` (`auth-challenge-complete.ejs`) | — | KEEP | magic-link completion surface; no frontend equivalent yet |
 | `/whatsapp-linked-device` (`whatsapp-linked-device.ejs`) | — | KEEP | channel linking surface |
 | `/robots.txt`, `/sitemap-topics.xml` | — | KEEP | SEO endpoints (backend-owned per boundaries) |
-| Unrouted `views/` templates (`about.ejs`, `help.ejs`, `how-it-works.ejs`, `network.ejs`, `pricing.ejs`, `programmatic.ejs`, `channels.ejs`, `contact.ejs`, `settings.ejs`, `admin/login.ejs` etc.) | corresponding TanStack routes exist for most (`about.tsx`, `help.tsx`, `how-it-works.tsx`, `network.tsx`, `pricing.tsx`, `contact.tsx`, `settings.tsx`) | MIGRATE/retire | confirm zero direct renders, then mark deprecated |
+| Remaining `views/` templates (`index.ejs`, `app.ejs` only) | `routes/index.tsx`, `routes/field.tsx` | KEEP | homepage/country variants and the authenticated shell still render server-side; every other EJS page template is deleted and served from the SPA prerender (`src/services/spaStaticService.ts`, `src/services/spaSsrService.ts`) |
 
-Verified render inventory (grep of `src/routes/*.ts`): only `index`, `discover/category`, `provider-profile`, `features`, `developers`, `login`, `resources/index`, `resources/article`, `app`, `auth-challenge-complete`, `topics/index`, `topics/detail`, plus dynamic `renderPage(view)` usage in publicRoutes. All other `views/*.ejs` are currently unreferenced by routes.
+Verified render inventory (grep of `src/routes/*.ts`): only `index` (homepage + `/:country` variants) and `app` (authenticated shell) remain referenced, plus `features`/`developers`/`login`/`whatsapp-linked-device`/`auth-challenge-complete`/`discover*`/`topics*`/`resources*`/`provider-profile` strings inside comment and contract text only. The retired detail surfaces `/topics/:slug`, `/resources/:slug` and `/p/:providerSlug` are SPA-owned (`src/services/spaSsrService.ts`). All other `views/*.ejs` are unreferenced by routes.
 
 ## 2. Admin
 

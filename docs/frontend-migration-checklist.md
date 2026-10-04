@@ -27,7 +27,7 @@ Legend: ✅ exists and wired · 🟡 page exists, content still prototype/demo �
 | `/resources`, `/resources/:slug` | `views/resources/*`, `/api/content/resources` + `/api/content/resources/:slug` | `/resources` (index) + `/resources/$slug` (detail) | ✅ moved hub content (audience columns, need-starters, living-memory, live guides grid); detail route fixed to render guides |
 | `/discover` | `views/discover.ejs` | `/discover` | 🟡 |
 | `/features`, `/developers`, `/developers/api` | `views/features.ejs`, `views/developers.ejs` | `/developer` | 🟡 consolidate |
-| `/p/:providerSlug` public provider profile | DB (`memory_profiles`+`skills`), `/api/content/providers/:slug` | `/profile/$slug` | 🟡 wire to API |
+RETIRED | `/p/:providerSlug` public provider profile (page removed; JSON API `/api/content/providers/:slug` | `/profile/$slug` | 🟡 wire to API |
 | `/earn/:topic`, `/earn/rides` | redirect map, `/api/content/earn-map` | `/earn/$topic` | ✅ redirect implemented |
 | `/events` | redirect → `/discover/events` | `/discover/events` | ✅ |
 | `/discover`, `/discover/:slug` | `views/discover/category.ejs` | `/discover` + `routes/discover/<slug>.tsx` | ✅ single spine |

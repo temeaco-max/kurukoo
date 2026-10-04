@@ -75,7 +75,7 @@ export function createPageContentRouter(): Router {
     } catch (error) { next(error); }
   });
 
-  /** GET /api/content/providers/:slug — public provider profile (mirrors /p/:providerSlug). */
+  /** GET /api/content/providers/:slug — public provider profile content. The /p/:providerSlug page is retired; this JSON contract is the owner. */
   router.get('/api/content/providers/:slug', async (req, res, next) => {
     try {
       const slug = String(req.params.slug || '').slice(0, 120);

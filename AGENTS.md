@@ -1029,6 +1029,24 @@ A new abstraction must solve a real ownership problem.
 
 ---
 
+# 29a. SPA OWNERSHIP AND DETAIL ROUTES
+
+The TanStack SPA owns the public and authenticated product UI. Backend `src/index.ts` serves the built SPA before any legacy renderer:
+
+1. Prerendered documents (`dist/spa`) for the routes listed in `SPA_PILOT_ROUTES`.
+2. `frontend/public` legacy shells, then Admin static.
+3. JSON API routers.
+4. Detail-route owner chain for `/topics/:slug` and `/resources/:slug`: prerendered document, then the Node server entry copied to `dist/spa-server`, then a truthful 503.
+5. Remaining EJS routers (currently the homepage and its country variants, the legacy chat shell, and the authenticated shell).
+
+Consequences:
+
+- An EJS template may only be deleted after its route serves SPA-owned content at that URL, verified in a runtime request.
+- A new slug-based detail surface does not get an EJS template. It uses the SPA route plus the detail owner chain, and keeps its own existence guard so an unknown slug is 404.
+- `/home` and `/desk` are retired: `/field` is the canonical personal surface and both old paths 302 there.
+- `/p/:providerSlug` is retired; provider content is a JSON API concern.
+- `scripts/test-spa-static-serve.ts` is the contract for SPA ownership: real prerendered content, a reachable client bundle, and 404s for unknown slugs.
+
 # 30. DO NOT CREATE PARALLEL AUTHORITIES
 
 Never create a second:
