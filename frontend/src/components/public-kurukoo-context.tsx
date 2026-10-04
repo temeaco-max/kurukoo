@@ -245,7 +245,7 @@ function PublicGuideCarousel({
       </div>
       <div className="flex items-center justify-between gap-2 border-t border-background/10 px-3 py-2.5 text-background/65">
         <Link
-          to="/resources/$slug"
+          to="/help/guides/$slug"
           params={{ slug: resourceSlug }}
           className="min-w-0 truncate text-[9.5px] font-medium hover:text-background"
         >

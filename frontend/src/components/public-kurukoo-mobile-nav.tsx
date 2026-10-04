@@ -40,7 +40,7 @@ const items = [
   ["/topics", "Topics", Tags],
 ] as const;
 const moreItems = [
-  ["/resources", "Resources", BookOpen],
+  ["/help", "Help", BookOpen],
   ["/agents", "Agentic Storefront", Store],
   ["/connect", "Channels", Radio],
   ["/capabilities", "Capabilities", Zap],

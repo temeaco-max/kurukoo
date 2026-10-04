@@ -7,6 +7,8 @@ import { PublicRail, RotatingPublicPrompt } from "@/components/public-kurukoo-ra
 import { PublicContextRail } from "@/components/public-kurukoo-context";
 import { PublicMobileNavigation } from "@/components/public-kurukoo-mobile-nav";
 export { PublicHome } from "@/components/public-kurukoo-home";
+// Top navigation: Features, Discover, then a Resources menu that holds the
+// explanatory surfaces (Help and its guides, Kurukoo updates, Topics and policy).
 const productFeatures = [
   {
     items: [
@@ -21,13 +23,18 @@ const productFeatures = [
 const productResources = [
   {
     items: [
-      ["/help", "Help", "Get answers to common questions."],
-      ["/blog", "Blog", "Thoughts on AI and everyday work."],
+      ["/help", "Help", "Answers, guides and ideas in one place."],
+      ["/blog", "Kurukoo updates", "What changed, what is new, what is still pending."],
+      ["/topics", "Topics", "Questions, experiences and local discussion."],
+      ["/help", "All guides and ideas", "Browse the Help centre, its guides and ideas."],
       ["/legal/privacy", "Privacy & safety", "How your data, credentials, and actions are protected."],
       ["/legal", "Legal", "Terms, cookies, and policies."],
     ],
   },
 ] as const;
+const topNavLinkClass = (active: boolean) =>
+  `text-[12.5px] font-medium transition-colors ${active ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`;
+
 const routerDestinations = new Set([
   "/",
   "/discover",
@@ -59,7 +66,6 @@ const routerDestinations = new Set([
   "/kurukoo-ai",
   "/connect",
   "/integrations",
-  "/resources",
   "/legal",
   "/cookies",
   "/chat",
@@ -199,7 +205,7 @@ function PublicMenu({
                         See it in action
                       </p>
                       <Link
-                        to="/resources/$slug"
+                        to="/help/guides/$slug"
                         params={{ slug: "how-kurukoo-works" }}
                         onClick={() => setOpen(false)}
                         className="group block overflow-hidden border border-border bg-foreground text-background"
@@ -358,12 +364,18 @@ export function PublicKurukooShell({ children }: { children: ReactNode }) {
             aria-label="Kurukoo"
             className="absolute left-1/2 hidden h-full -translate-x-1/2 items-center justify-center gap-8 text-[12.5px] md:flex"
           >
-                        <PublicMenu
-              label="Product"
-              kind="product"
-              items={productFeatures}
-              railCollapsed={railCollapsed}
-            />
+            <Link
+              to="/features"
+              className={topNavLinkClass(pathname === "/features")}
+            >
+              Features
+            </Link>
+            <Link
+              to="/discover"
+              className={topNavLinkClass(pathname === "/discover")}
+            >
+              Discover
+            </Link>
             <PublicMenu
               label="Resources"
               kind="resources"

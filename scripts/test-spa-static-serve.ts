@@ -54,7 +54,7 @@ try {
       '/pricing': /<title>Plans and pricing — Kurukoo<\/title>/,
       '/contact': /<title>Contact — Kurukoo<\/title>/,
       '/careers': /<title>Careers — Kurukoo<\/title>/,
-      '/blog': /<title>Blog — Kurukoo<\/title>/,
+      '/blog': /<title>Kurukoo updates — Kurukoo<\/title>/,
       '/api-docs': /<title>API reference — Kurukoo<\/title>/,
       '/legal': /<title>Legal &amp; policies — Kurukoo<\/title>/,
       '/how-it-works': /<title>How Kurukoo works — everyday AI that gets things done<\/title>/,
@@ -62,7 +62,6 @@ try {
       '/advertise': /<title>Advertisers — Kurukoo<\/title>/,
       '/network': /<title>The Kurukoo Network<\/title>/,
       '/topics': /<title>Topics — Kurukoo<\/title>/,
-      '/resources': /<title>Kurukoo resources and visual guides<\/title>/,
       '/discover': /<title>Discover — Kurukoo<\/title>/,
       '/login': /<title>Log in — Kurukoo<\/title>/,
       '/features': /<title>Features — Kurukoo<\/title>/,
@@ -107,15 +106,19 @@ try {
 
   // Detail surfaces with a real prerendered document must be served by the SPA,
   // not by a legacy template, and an unknown slug must stay a 404.
-  const seededResource = await fetch(`${base}/resources/how-kurukoo-works/`, { redirect: 'follow' });
-  assert.equal(seededResource.status, 200, 'A prerendered /resources/<slug> guide must be served');
-  assert.match(await seededResource.text(), /id="\$tsr-stream-barrier"/, 'Resource detail must come from the SPA prerender');
+  // Guides live under Help now; /resources is retired as a page.
+  const seededGuide = await fetch(`${base}/help/guides/how-kurukoo-works`, { redirect: 'follow' });
+  assert.equal(seededGuide.status, 200, 'A /help/guides/<slug> guide must be served');
+  assert.match(await seededGuide.text(), /id="\$tsr-stream-barrier"/, 'Guide detail must come from the SPA owner');
+  const retiredResources = await fetch(`${base}/resources`, { redirect: 'follow' });
+  assert.equal(retiredResources.status, 200, '/resources must still resolve');
+  assert.match(await retiredResources.text(), /<title>Help — Kurukoo<\/title>/, '/resources must land on the merged Help surface');
 
   const seededTopic = await fetch(`${base}/topics/finding-a-trustworthy-plumber-in-lagos`);
   assert.equal(seededTopic.status, 200, 'A public Topic detail must be served');
   assert.match(await seededTopic.text(), /id="\$tsr-stream-barrier"/, 'Topic detail must come from the SPA owner');
 
-  const unknownResource = await fetch(`${base}/resources/not-a-real-resource/`);
+  const unknownResource = await fetch(`${base}/help/guides/not-a-real-guide`);
   assert.equal(unknownResource.status, 404, 'Unknown resource slugs must stay not found');
   const unknownTopic = await fetch(`${base}/topics/not-a-real-topic`);
   assert.equal(unknownTopic.status, 404, 'Unknown topic slugs must stay not found');

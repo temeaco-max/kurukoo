@@ -64,7 +64,6 @@ import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ProviderRouteImport } from './routes/provider'
 import { Route as ProvidersRouteImport } from './routes/providers'
 import { Route as QuickActionsRouteImport } from './routes/quick-actions'
-import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as SafetyRouteImport } from './routes/safety'
 import { Route as SecureExecutionRouteImport } from './routes/secure-execution'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -108,7 +107,6 @@ import { Route as ProfileEntityIdRouteImport } from './routes/profile.$entityId'
 import { Route as ProfileSlugRouteImport } from './routes/profile.$slug'
 import { Route as ProfileKurukooAiRouteImport } from './routes/profile/kurukoo-ai'
 import { Route as ProfileTemeAiRouteImport } from './routes/profile/teme-ai'
-import { Route as ResourcesSlugRouteImport } from './routes/resources.$slug'
 import { Route as TopicsSlugRouteImport } from './routes/topics.$slug'
 import { Route as TopicsCreateRouteImport } from './routes/topics.create'
 import { Route as TopicsMineRouteImport } from './routes/topics.mine'
@@ -116,6 +114,7 @@ import { Route as VideosVideoIdRouteImport } from './routes/videos.$videoId'
 import { Route as WorkIndexRouteImport } from './routes/work.index'
 import { Route as WorkWorkIdRouteImport } from './routes/work.$workId'
 import { Route as AuthChallengeCompleteRouteImport } from './routes/auth.challenge.complete'
+import { Route as HelpGuidesSlugRouteImport } from './routes/help.guides.$slug'
 import { Route as TopicsCategoryCategorySlugRouteImport } from './routes/topics.category.$categorySlug'
 import { Route as TopicsEditIdRouteImport } from './routes/topics.edit.$id'
 
@@ -394,11 +393,6 @@ const QuickActionsRoute = QuickActionsRouteImport.update({
   path: '/quick-actions',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ResourcesRoute = ResourcesRouteImport.update({
-  id: '/resources',
-  path: '/resources',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SafetyRoute = SafetyRouteImport.update({
   id: '/safety',
   path: '/safety',
@@ -615,11 +609,6 @@ const ProfileTemeAiRoute = ProfileTemeAiRouteImport.update({
   path: '/teme-ai',
   getParentRoute: () => ProfileRoute,
 } as any)
-const ResourcesSlugRoute = ResourcesSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => ResourcesRoute,
-} as any)
 const TopicsSlugRoute = TopicsSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -654,6 +643,11 @@ const AuthChallengeCompleteRoute = AuthChallengeCompleteRouteImport.update({
   id: '/auth/challenge/complete',
   path: '/auth/challenge/complete',
   getParentRoute: () => rootRouteImport,
+} as any)
+const HelpGuidesSlugRoute = HelpGuidesSlugRouteImport.update({
+  id: '/guides/$slug',
+  path: '/guides/$slug',
+  getParentRoute: () => HelpRoute,
 } as any)
 const TopicsCategoryCategorySlugRoute =
   TopicsCategoryCategorySlugRouteImport.update({
@@ -703,7 +697,7 @@ export interface FileRoutesByFullPath {
   '/features': typeof FeaturesRoute
   '/field': typeof FieldRoute
   '/following': typeof FollowingRoute
-  '/help': typeof HelpRoute
+  '/help': typeof HelpRouteWithChildren
   '/how-it-works': typeof HowItWorksRoute
   '/integrations': typeof IntegrationsRoute
   '/kurukoo-ai': typeof KurukooAiRoute
@@ -723,7 +717,6 @@ export interface FileRoutesByFullPath {
   '/provider': typeof ProviderRoute
   '/providers': typeof ProvidersRoute
   '/quick-actions': typeof QuickActionsRoute
-  '/resources': typeof ResourcesRouteWithChildren
   '/safety': typeof SafetyRoute
   '/secure-execution': typeof SecureExecutionRoute
   '/settings': typeof SettingsRoute
@@ -767,7 +760,6 @@ export interface FileRoutesByFullPath {
   '/profile/$slug': typeof ProfileSlugRoute
   '/profile/kurukoo-ai': typeof ProfileKurukooAiRoute
   '/profile/teme-ai': typeof ProfileTemeAiRoute
-  '/resources/$slug': typeof ResourcesSlugRoute
   '/topics/$slug': typeof TopicsSlugRoute
   '/topics/create': typeof TopicsCreateRoute
   '/topics/mine': typeof TopicsMineRoute
@@ -775,6 +767,7 @@ export interface FileRoutesByFullPath {
   '/work/$workId': typeof WorkWorkIdRoute
   '/work/': typeof WorkIndexRoute
   '/auth/challenge/complete': typeof AuthChallengeCompleteRoute
+  '/help/guides/$slug': typeof HelpGuidesSlugRoute
   '/topics/category/$categorySlug': typeof TopicsCategoryCategorySlugRoute
   '/topics/edit/$id': typeof TopicsEditIdRoute
 }
@@ -814,7 +807,7 @@ export interface FileRoutesByTo {
   '/features': typeof FeaturesRoute
   '/field': typeof FieldRoute
   '/following': typeof FollowingRoute
-  '/help': typeof HelpRoute
+  '/help': typeof HelpRouteWithChildren
   '/how-it-works': typeof HowItWorksRoute
   '/integrations': typeof IntegrationsRoute
   '/kurukoo-ai': typeof KurukooAiRoute
@@ -834,7 +827,6 @@ export interface FileRoutesByTo {
   '/provider': typeof ProviderRoute
   '/providers': typeof ProvidersRoute
   '/quick-actions': typeof QuickActionsRoute
-  '/resources': typeof ResourcesRouteWithChildren
   '/safety': typeof SafetyRoute
   '/secure-execution': typeof SecureExecutionRoute
   '/settings': typeof SettingsRoute
@@ -877,7 +869,6 @@ export interface FileRoutesByTo {
   '/profile/$slug': typeof ProfileSlugRoute
   '/profile/kurukoo-ai': typeof ProfileKurukooAiRoute
   '/profile/teme-ai': typeof ProfileTemeAiRoute
-  '/resources/$slug': typeof ResourcesSlugRoute
   '/topics/$slug': typeof TopicsSlugRoute
   '/topics/create': typeof TopicsCreateRoute
   '/topics/mine': typeof TopicsMineRoute
@@ -885,6 +876,7 @@ export interface FileRoutesByTo {
   '/work/$workId': typeof WorkWorkIdRoute
   '/work': typeof WorkIndexRoute
   '/auth/challenge/complete': typeof AuthChallengeCompleteRoute
+  '/help/guides/$slug': typeof HelpGuidesSlugRoute
   '/topics/category/$categorySlug': typeof TopicsCategoryCategorySlugRoute
   '/topics/edit/$id': typeof TopicsEditIdRoute
 }
@@ -925,7 +917,7 @@ export interface FileRoutesById {
   '/features': typeof FeaturesRoute
   '/field': typeof FieldRoute
   '/following': typeof FollowingRoute
-  '/help': typeof HelpRoute
+  '/help': typeof HelpRouteWithChildren
   '/how-it-works': typeof HowItWorksRoute
   '/integrations': typeof IntegrationsRoute
   '/kurukoo-ai': typeof KurukooAiRoute
@@ -945,7 +937,6 @@ export interface FileRoutesById {
   '/provider': typeof ProviderRoute
   '/providers': typeof ProvidersRoute
   '/quick-actions': typeof QuickActionsRoute
-  '/resources': typeof ResourcesRouteWithChildren
   '/safety': typeof SafetyRoute
   '/secure-execution': typeof SecureExecutionRoute
   '/settings': typeof SettingsRoute
@@ -989,7 +980,6 @@ export interface FileRoutesById {
   '/profile/$slug': typeof ProfileSlugRoute
   '/profile/kurukoo-ai': typeof ProfileKurukooAiRoute
   '/profile/teme-ai': typeof ProfileTemeAiRoute
-  '/resources/$slug': typeof ResourcesSlugRoute
   '/topics/$slug': typeof TopicsSlugRoute
   '/topics/create': typeof TopicsCreateRoute
   '/topics/mine': typeof TopicsMineRoute
@@ -997,6 +987,7 @@ export interface FileRoutesById {
   '/work/$workId': typeof WorkWorkIdRoute
   '/work/': typeof WorkIndexRoute
   '/auth/challenge/complete': typeof AuthChallengeCompleteRoute
+  '/help/guides/$slug': typeof HelpGuidesSlugRoute
   '/topics/category/$categorySlug': typeof TopicsCategoryCategorySlugRoute
   '/topics/edit/$id': typeof TopicsEditIdRoute
 }
@@ -1058,7 +1049,6 @@ export interface FileRouteTypes {
     | '/provider'
     | '/providers'
     | '/quick-actions'
-    | '/resources'
     | '/safety'
     | '/secure-execution'
     | '/settings'
@@ -1102,7 +1092,6 @@ export interface FileRouteTypes {
     | '/profile/$slug'
     | '/profile/kurukoo-ai'
     | '/profile/teme-ai'
-    | '/resources/$slug'
     | '/topics/$slug'
     | '/topics/create'
     | '/topics/mine'
@@ -1110,6 +1099,7 @@ export interface FileRouteTypes {
     | '/work/$workId'
     | '/work/'
     | '/auth/challenge/complete'
+    | '/help/guides/$slug'
     | '/topics/category/$categorySlug'
     | '/topics/edit/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -1169,7 +1159,6 @@ export interface FileRouteTypes {
     | '/provider'
     | '/providers'
     | '/quick-actions'
-    | '/resources'
     | '/safety'
     | '/secure-execution'
     | '/settings'
@@ -1212,7 +1201,6 @@ export interface FileRouteTypes {
     | '/profile/$slug'
     | '/profile/kurukoo-ai'
     | '/profile/teme-ai'
-    | '/resources/$slug'
     | '/topics/$slug'
     | '/topics/create'
     | '/topics/mine'
@@ -1220,6 +1208,7 @@ export interface FileRouteTypes {
     | '/work/$workId'
     | '/work'
     | '/auth/challenge/complete'
+    | '/help/guides/$slug'
     | '/topics/category/$categorySlug'
     | '/topics/edit/$id'
   id:
@@ -1279,7 +1268,6 @@ export interface FileRouteTypes {
     | '/provider'
     | '/providers'
     | '/quick-actions'
-    | '/resources'
     | '/safety'
     | '/secure-execution'
     | '/settings'
@@ -1323,7 +1311,6 @@ export interface FileRouteTypes {
     | '/profile/$slug'
     | '/profile/kurukoo-ai'
     | '/profile/teme-ai'
-    | '/resources/$slug'
     | '/topics/$slug'
     | '/topics/create'
     | '/topics/mine'
@@ -1331,6 +1318,7 @@ export interface FileRouteTypes {
     | '/work/$workId'
     | '/work/'
     | '/auth/challenge/complete'
+    | '/help/guides/$slug'
     | '/topics/category/$categorySlug'
     | '/topics/edit/$id'
   fileRoutesById: FileRoutesById
@@ -1371,7 +1359,7 @@ export interface RootRouteChildren {
   FeaturesRoute: typeof FeaturesRoute
   FieldRoute: typeof FieldRoute
   FollowingRoute: typeof FollowingRoute
-  HelpRoute: typeof HelpRoute
+  HelpRoute: typeof HelpRouteWithChildren
   HowItWorksRoute: typeof HowItWorksRoute
   IntegrationsRoute: typeof IntegrationsRoute
   KurukooAiRoute: typeof KurukooAiRoute
@@ -1391,7 +1379,6 @@ export interface RootRouteChildren {
   ProviderRoute: typeof ProviderRoute
   ProvidersRoute: typeof ProvidersRoute
   QuickActionsRoute: typeof QuickActionsRoute
-  ResourcesRoute: typeof ResourcesRouteWithChildren
   SafetyRoute: typeof SafetyRoute
   SecureExecutionRoute: typeof SecureExecutionRoute
   SettingsRoute: typeof SettingsRoute
@@ -1800,13 +1787,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QuickActionsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/resources': {
-      id: '/resources'
-      path: '/resources'
-      fullPath: '/resources'
-      preLoaderRoute: typeof ResourcesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/safety': {
       id: '/safety'
       path: '/safety'
@@ -2108,13 +2088,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileTemeAiRouteImport
       parentRoute: typeof ProfileRoute
     }
-    '/resources/$slug': {
-      id: '/resources/$slug'
-      path: '/$slug'
-      fullPath: '/resources/$slug'
-      preLoaderRoute: typeof ResourcesSlugRouteImport
-      parentRoute: typeof ResourcesRoute
-    }
     '/topics/$slug': {
       id: '/topics/$slug'
       path: '/$slug'
@@ -2163,6 +2136,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/challenge/complete'
       preLoaderRoute: typeof AuthChallengeCompleteRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/help/guides/$slug': {
+      id: '/help/guides/$slug'
+      path: '/guides/$slug'
+      fullPath: '/help/guides/$slug'
+      preLoaderRoute: typeof HelpGuidesSlugRouteImport
+      parentRoute: typeof HelpRoute
     }
     '/topics/category/$categorySlug': {
       id: '/topics/category/$categorySlug'
@@ -2256,6 +2236,16 @@ const DiscoverRouteWithChildren = DiscoverRoute._addFileChildren(
   DiscoverRouteChildren,
 )
 
+interface HelpRouteChildren {
+  HelpGuidesSlugRoute: typeof HelpGuidesSlugRoute
+}
+
+const HelpRouteChildren: HelpRouteChildren = {
+  HelpGuidesSlugRoute: HelpGuidesSlugRoute,
+}
+
+const HelpRouteWithChildren = HelpRoute._addFileChildren(HelpRouteChildren)
+
 interface LegalRouteChildren {
   LegalSectionRoute: typeof LegalSectionRoute
 }
@@ -2294,18 +2284,6 @@ const ProfileRouteChildren: ProfileRouteChildren = {
 
 const ProfileRouteWithChildren =
   ProfileRoute._addFileChildren(ProfileRouteChildren)
-
-interface ResourcesRouteChildren {
-  ResourcesSlugRoute: typeof ResourcesSlugRoute
-}
-
-const ResourcesRouteChildren: ResourcesRouteChildren = {
-  ResourcesSlugRoute: ResourcesSlugRoute,
-}
-
-const ResourcesRouteWithChildren = ResourcesRoute._addFileChildren(
-  ResourcesRouteChildren,
-)
 
 interface TopicsRouteChildren {
   TopicsSlugRoute: typeof TopicsSlugRoute
@@ -2385,7 +2363,7 @@ const rootRouteChildren: RootRouteChildren = {
   FeaturesRoute: FeaturesRoute,
   FieldRoute: FieldRoute,
   FollowingRoute: FollowingRoute,
-  HelpRoute: HelpRoute,
+  HelpRoute: HelpRouteWithChildren,
   HowItWorksRoute: HowItWorksRoute,
   IntegrationsRoute: IntegrationsRoute,
   KurukooAiRoute: KurukooAiRoute,
@@ -2405,7 +2383,6 @@ const rootRouteChildren: RootRouteChildren = {
   ProviderRoute: ProviderRoute,
   ProvidersRoute: ProvidersRoute,
   QuickActionsRoute: QuickActionsRoute,
-  ResourcesRoute: ResourcesRouteWithChildren,
   SafetyRoute: SafetyRoute,
   SecureExecutionRoute: SecureExecutionRoute,
   SettingsRoute: SettingsRoute,

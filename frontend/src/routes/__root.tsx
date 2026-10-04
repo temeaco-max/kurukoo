@@ -62,7 +62,6 @@ const publicPrefixes = [
   "/businesses",
   "/kurukoo-ai",
   "/integrations",
-  "/resources",
   "/signup",
   "/topics",
   "/use-cases",

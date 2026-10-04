@@ -6,15 +6,15 @@ import { articles } from "@/lib/kurukoo-demo";
 export const Route = createFileRoute("/blog")({
   head: () => ({
     meta: [
-      { title: "Blog — Kurukoo" },
+      { title: "Kurukoo updates — Kurukoo" },
       {
         name: "description",
-        content: "Notes on conversation, trust, coordination and building useful AI.",
+        content: "Product updates, releases and notes on what Kurukoo can do now.",
       },
-      { property: "og:title", content: "Blog — Kurukoo" },
+      { property: "og:title", content: "Kurukoo updates" },
       {
         property: "og:description",
-        content: "Notes on building useful AI and a conversation-first operating layer.",
+        content: "What changed in Kurukoo: new capabilities, fixes and honest availability notes.",
       },
     ],
   }),
@@ -31,13 +31,13 @@ function BlogPage() {
   return (
     <div className="mx-auto w-full max-w-5xl">
       <section className="max-w-4xl">
-        <p className="text-[12px] font-medium text-muted-foreground">Kurukoo journal</p>
+        <p className="text-[12px] font-medium text-muted-foreground">Kurukoo updates</p>
         <h1 className="mt-2 font-serif text-[44px] leading-[1.01] tracking-[-0.05em] md:text-[60px]">
-          Notes on building AI that is useful after the chat.
+          What changed in Kurukoo, and what is now possible.
         </h1>
         <p className="mt-5 max-w-3xl text-[16px] leading-7 text-muted-foreground">
-          Writing about handover, trust, coordination, discovery and the product decisions behind
-          Kurukoo.
+          Releases, new capabilities and honest availability notes — what Kurukoo can do now, and
+          what is still being connected.
         </p>
       </section>
 

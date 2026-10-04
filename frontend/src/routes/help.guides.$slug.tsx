@@ -12,10 +12,10 @@ type Resource = {
   excerpt: string;
   updated_at?: string | null;
 };
-export const Route = createFileRoute("/resources/$slug")({
+export const Route = createFileRoute("/help/guides/$slug")({
   head: () => ({
     meta: [
-      { title: "Kurukoo resource" },
+      { title: "Kurukoo guide" },
       {
         name: "description",
         content: "A practical Kurukoo guide for getting more from the product.",
@@ -74,7 +74,7 @@ function ResourcePage() {
           The guide may have moved or is not available right now.
         </p>
         <Link
-          to="/resources"
+          to="/help"
           className="mt-4 inline-flex items-center gap-1.5 text-[12px] text-primary"
         >
           Back to Resources <ArrowUpRight className="size-3.5" />
@@ -84,7 +84,7 @@ function ResourcePage() {
   return (
     <article className="mx-auto max-w-3xl space-y-8">
       <Link
-        to="/resources"
+        to="/help"
         className="inline-flex items-center gap-1.5 text-[11.5px] font-medium text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-3.5" /> Resources

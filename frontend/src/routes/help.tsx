@@ -1,6 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowUpRight, BookOpen, MessageCircle, Search, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
+import { ArrowUpRight, BookOpen, MessageCircle, Search, ShieldCheck, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Action, actionClass } from "@/components/kurukoo/primitives";
 import { AskKurukoo } from "@/components/kurukoo/ask-kurukoo";
 import { Panel, SearchField } from "@/components/kurukoo/ui";
@@ -69,13 +69,45 @@ const sections = [
   ],
 ];
 
+type Guide = { slug: string; title: string; category: string; excerpt: string };
+
+const ideas = [
+  ["Ask for a price check", "Compare what you have been quoted before you commit.", "/chat?prompt=Help%20me%20check%20a%20price%20I%20was%20quoted"],
+  ["Plan the week", "Turn a loose plan into reminders and a work list.", "/chat?prompt=Help%20me%20plan%20my%20week"],
+  ["Find someone reliable", "Describe the job and let Kurukoo look for the right route.", "/chat?prompt=Help%20me%20find%20someone%20for%20a%20job"],
+  ["Follow up on a request", "Return to an existing request instead of starting again.", "/chat?prompt=Help%20me%20follow%20up%20on%20an%20open%20request"],
+] as const;
+
 function HelpPage() {
+  const pathname = useLocation({ select: (location) => location.pathname });
   const [q, setQ] = useState("");
+  const [guides, setGuides] = useState<Guide[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/resources")
+      .then((response) => (response.ok ? response.json() : Promise.reject(new Error("guides"))))
+      .then((payload: { resources?: Guide[] }) => {
+        if (!cancelled) setGuides(Array.isArray(payload.resources) ? payload.resources : []);
+      })
+      .catch(() => {
+        if (!cancelled) setGuides([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const normalized = q.trim().toLowerCase();
   const list = sections.filter(
     ([title, note, body]) =>
       !normalized || `${title} ${note} ${body}`.toLowerCase().includes(normalized),
   );
+  const visibleGuides = guides.filter(
+    (guide) =>
+      !normalized || `${guide.title} ${guide.category} ${guide.excerpt}`.toLowerCase().includes(normalized),
+  );
+  if (pathname !== "/help" && pathname !== "/help/") {
+    return <Outlet />;
+  }
   return (
     <div className="w-full">
       <section className="max-w-3xl">
@@ -84,8 +116,8 @@ function HelpPage() {
           Find the answer, or just ask.
         </h1>
         <p className="mt-4 max-w-2xl text-[16px] leading-relaxed text-muted-foreground">
-          Learn how to use Kurukoo, find the right surface, or take a question straight into
-          Conversation.
+          Learn how to use Kurukoo, read the guides, find the right surface, or take a
+          question straight into Conversation.
         </p>
       </section>
       <div className="mt-8 max-w-2xl">
@@ -175,6 +207,84 @@ function HelpPage() {
           </Panel>
         )}
       </section>
+      <section className="mt-10" aria-labelledby="help-guides">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">GUIDES</p>
+            <h2 id="help-guides" className="mt-1.5 text-[20px] font-semibold tracking-tight">
+              Guides that explain how Kurukoo actually works
+            </h2>
+            <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-muted-foreground">
+              Short, practical writing on requests, identity, memory, channels, payments and
+              evidence. Read one, or ask about it in the same conversation.
+            </p>
+          </div>
+          <AskKurukoo prompt="Show me the guide that matches what I am trying to do." />
+        </div>
+        {visibleGuides.length ? (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {visibleGuides.map((guide) => (
+              <Link
+                key={guide.slug}
+                to="/help/guides/$slug"
+                params={{ slug: guide.slug }}
+                className="group rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-primary/30"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-elevated text-muted-foreground">
+                    <BookOpen className="size-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[9.5px] font-semibold uppercase tracking-[0.1em] text-primary">
+                      {guide.category}
+                    </p>
+                    <h3 className="mt-1 text-[14px] font-semibold leading-snug">{guide.title}</h3>
+                    <p className="mt-1.5 line-clamp-3 text-[11.5px] leading-relaxed text-muted-foreground">
+                      {guide.excerpt}
+                    </p>
+                  </div>
+                  <ArrowUpRight className="size-4 shrink-0 text-muted-foreground" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <Panel className="mt-4">
+            <p className="text-[13px] text-muted-foreground">
+              {normalized
+                ? "No guides match that search yet."
+                : "Guides are being prepared. You can ask Kurukoo directly in the meantime."}
+            </p>
+          </Panel>
+        )}
+      </section>
+
+      <section className="mt-10" aria-labelledby="help-ideas">
+        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">IDEAS</p>
+        <h2 id="help-ideas" className="mt-1.5 text-[20px] font-semibold tracking-tight">
+          Things people ask Kurukoo to handle
+        </h2>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {ideas.map(([title, body, to]) => (
+            <Link
+              key={title}
+              to={to}
+              className="rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-primary/30"
+            >
+              <div className="flex items-start gap-3">
+                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-tint text-brand-ink">
+                  <Sparkles className="size-4" />
+                </span>
+                <div>
+                  <h3 className="text-[14px] font-semibold">{title}</h3>
+                  <p className="mt-1 text-[11.5px] leading-relaxed text-muted-foreground">{body}</p>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       <section className="mt-10 rounded-[24px] border border-border bg-surface p-6 md:p-7">
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div>

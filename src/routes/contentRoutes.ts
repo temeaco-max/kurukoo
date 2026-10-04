@@ -8,7 +8,9 @@ export function createContentRouter(): Router {
     const router = express.Router();
 
 
-    router.get('/resources/:slug', async (req, res, next) => {
+    // Guides live under Help: /resources is retired as a page and its guides are
+    // part of the Help surface (see frontend/src/routes/help.guides.$slug.tsx).
+    router.get(['/help/guides/:slug', '/resources/:slug'], async (req, res, next) => {
         try {
             const resource = await getResourceBySlug(String(req.params.slug || ''));
             if (!resource) return res.status(404).send('Resource not found');

@@ -263,7 +263,7 @@ export function HomePage() {
         <Panel className="min-h-[132px] p-4">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-[14px] font-semibold">Resources</h2>
-            <SectionAction to="/resources">Open</SectionAction>
+            <SectionAction to="/help">Open</SectionAction>
           </div>
           <p className="text-[12px] leading-relaxed text-muted-foreground">
             Guides and useful tools for getting more from Kurukoo.

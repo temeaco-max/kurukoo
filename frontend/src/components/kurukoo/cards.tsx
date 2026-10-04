@@ -119,7 +119,7 @@ export function VideoFrame({
 export function VideoCard({ video, creatorName }: { video: Video; creatorName: string }) {
   return (
     <div className="min-w-0">
-      <Link to="/resources" className="block">
+      <Link to="/help" className="block">
         <div className="relative">
           <VideoFrame label={video.title} />
           <span className="absolute bottom-2 right-2 rounded bg-background/85 px-1.5 py-0.5 text-[11.5px]">
@@ -128,7 +128,7 @@ export function VideoCard({ video, creatorName }: { video: Video; creatorName: s
         </div>
       </Link>
       <Link
-        to="/resources"
+        to="/help"
         className="mt-2 block text-[14.5px] font-medium leading-snug hover:underline"
       >
         {video.title}

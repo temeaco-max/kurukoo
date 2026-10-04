@@ -243,7 +243,7 @@ function HowItWorksPage() {
             <ArrowRight className="size-3.5" />
           </Link>
           <Link
-            to="/resources"
+            to="/help"
             className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-border px-3.5 text-[11.5px] font-medium"
           >
             View guides

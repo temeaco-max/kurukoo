@@ -34,7 +34,7 @@ RETIRED | `/p/:providerSlug` (`provider-profile.ejs` deleted; JSON `/api/content
 | `/robots.txt`, `/sitemap-topics.xml` | — | KEEP | SEO endpoints (backend-owned per boundaries) |
 | Remaining `views/` templates (`index.ejs`, `app.ejs` only) | `routes/index.tsx`, `routes/field.tsx` | KEEP | homepage/country variants and the authenticated shell still render server-side; every other EJS page template is deleted and served from the SPA prerender (`src/services/spaStaticService.ts`, `src/services/spaSsrService.ts`) |
 
-Verified render inventory (grep of `src/routes/*.ts`): only `index` (homepage + `/:country` variants) and `app` (authenticated shell) remain referenced, plus `features`/`developers`/`login`/`whatsapp-linked-device`/`auth-challenge-complete`/`discover*`/`topics*`/`resources*`/`provider-profile` strings inside comment and contract text only. The retired detail surfaces `/topics/:slug`, `/resources/:slug` and `/p/:providerSlug` are SPA-owned (`src/services/spaSsrService.ts`). All other `views/*.ejs` are unreferenced by routes.
+Verified render inventory (grep of `src/routes/*.ts`): only `index` (homepage + `/:country` variants) and `app` (authenticated shell) remain referenced, plus `features`/`developers`/`login`/`whatsapp-linked-device`/`auth-challenge-complete`/`discover*`/`topics*`/`resources*`/`provider-profile` strings inside comment and contract text only. The retired detail surfaces `/topics/:slug` and `/help/guides/:slug` are SPA-owned (`src/services/spaSsrService.ts`); `/resources` and `/p/:providerSlug` are retired pages (302 to `/help`, and 404). All other `views/*.ejs` are unreferenced by routes.
 
 ## 2. Admin
 
