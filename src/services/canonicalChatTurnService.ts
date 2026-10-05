@@ -91,6 +91,11 @@ function extractInlineIdentityName(message: string): string | undefined {
 function isStandaloneName(message: string): boolean {
   const text = message.trim();
   if (/^(?:hi|hey|hello|hiya|yo|sup|morning|afternoon|evening|good\s+(?:morning|afternoon|evening)|how\s+are\s+you|how're\s+you|how\s+are\s+things)[.!?,\s]*$/i.test(text)) return false;
+  // A question, request or exploration is never a name. Without this guard any
+  // short wordy message ("show me what Garki could become") was captured as
+  // identity input instead of being routed to its real intent.
+  if (/[?!]/.test(text)) return false;
+  if (/\b(?:what|which|where|when|who|whom|whose|why|how|show|open|find|tell|list|explain|compare|check|search|browse|see|view|help|need|want|please|can|could|should|would|is|are|do|does|did|has|have)\b/i.test(text)) return false;
   return text.length >= 2 && text.length <= 60 && /^[A-Za-z][A-Za-z0-9 .'-]*$/.test(text) && !/\b(?:need|want|find|book|repair|plumber|ride|food|help|remind|compare|plan|venue|service|please|someone|anyone|clean|cleaning|housekeeping|house|home|flat|weekend|tomorrow|today|phone|screen|laptop|computer|acting|working|problem|issue|fix)\b/i.test(text);
 }
 

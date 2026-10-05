@@ -1,10 +1,10 @@
-export type DiscoverItemType = "discovery" | "topic" | "capability" | "promotion";
+export type DiscoverItemType = "discovery" | "topic" | "capability" | "promotion" | "place";
 export type DiscoverAction = "watch" | "follow" | "save" | "open_chat" | "act";
 
 export type DiscoverItem = {
   id: string;
   type: DiscoverItemType;
-  section?: "for_you" | "nearby" | "today" | "topics" | "opportunities" | "explore";
+  section?: "for_you" | "nearby" | "today" | "topics" | "opportunities" | "explore" | "places";
   title: string;
   detail: string;
   category?: string;

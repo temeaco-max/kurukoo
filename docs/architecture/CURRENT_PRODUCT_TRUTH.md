@@ -2,7 +2,7 @@
 
 **Authority:** This is the single current-state product truth document. Other matrices, audits, reports and snapshots are supporting evidence only; they must not override this document or canonical code/tests.
 
-**Last reconciled:** 22 August 2026
+**Last reconciled:** 4 October 2026
 
 ## 1. Truth hierarchy
 
@@ -65,6 +65,7 @@ Never use `COMPLETE`, `DONE`, `LIVE`, `READY`, `PRODUCTION`, or `VERIFIED` as a 
 | Discover | canonical discovery services | Implemented; source/availability claims remain evidence-bound. |
 | Browse spine | `/discover` (+ `/discover/:category`) | Measured: `/explore` and `/explore/*` are retired. The public router 302s `/explore` to `/discover`; the 15 category pages now live at `frontend/src/routes/discover/<slug>.tsx`; served from the prerendered SPA (`views/discover/category.ejs` retired). `/discover` is the single browse surface and every internal link, nav registry, sitemap and entry point resolves to it. |
 | Topics | canonical Topic services | Implemented/foundation depending on deployment surface. |
+| Places | `placeService` + `placeRoutes` (see `docs/architecture/PLACES.md`) | Implemented; repository-tested via `test:places-truth`. External imagery/provider/authority activation remains unverified. |
 | Student model | `ml/` + canonical AI runtime | Training foundation exists; a Kurukoo-trained production adapter is **not** assumed until evaluation/registry evidence proves it. |
 | Web serving | SPA prerender (proven routes) → Express static → API routers → SPA detail owner chain → EJS routers | Measured request order: built SPA documents from `dist/spa` (`scripts/copy-public.mjs`), served for `SPA_PILOT_ROUTES` by `spaStaticService.ts` → `frontend/public` legacy shells → Admin → API routers → detail-route owner chain (`spaSsrService.serveSpaDetail`: prerendered document, then the built Node server entry `dist/spa-server/index.mjs`, then a truthful 503) → remaining EJS routers. SPA-owned public surfaces: `/about`, `/help`, `/pricing`, `/contact`, `/careers`, `/blog`, `/api-docs`, `/legal`, `/how-it-works`, `/partners`, `/advertise`, `/network`, `/topics`, `/resources`, `/login`, `/features`, `/developers`, `/discover` + all 15 `/discover/<slug>` pages, `/auth/challenge/complete`, `/whatsapp-linked-device` (their EJS templates and routes are deleted). Detail surfaces `/topics/:slug` and `/resources/:slug` are SPA-owned through that chain, keep their existing 404 guards, and their EJS templates are deleted; `/p/:providerSlug` is retired (404) with `views/provider-profile.ejs` removed — the JSON provider-content API (`/api/content/providers/:slug`) is unchanged. `/resources` is retired as a page and 302s to `/help`; Help now owns help areas, guides (`/help/guides/<slug>`) and ideas, and `/blog` is Kurukoo updates. `/chat` is now SPA-owned (`SPA_PILOT_ROUTES`) so identity can happen in the conversation. Still EJS by design: `/` + `/:country` (homepageAds + country variants, canonical/OG/JSON-LD/FAQ markup and `kurukoo-home.css`), `/app` authenticated shell, and `/login` legacy CSS support files. Each remaining EJS route may only retire once the SPA route prerenders real content at that URL. |
 
@@ -79,7 +80,9 @@ Detail surfaces: `/topics/:slug` (guarded by `getPublicTopic`) and `/help/guides
 
 Identity: sign in, create account and sign out are presented as a card inside the conversation (`frontend/src/components/kurukoo/chat-identity-card.tsx`); the public header's primary action is `Ask Kurukoo` linking to `/chat`, and `?auth=login|signup` opens the card directly. The retired `Try for free` copy no longer appears in any header, rail or mobile drawer.
 
-Dev data: `seedDemoTopics` inserts five public Topics with replies and editorial resource links in non-production databases, so `/topics` and every detail URL have real content locally.
+Demo seeds: `allowDemoSeeds()` keeps providers, Topics and Places out of production **and** out
+of automated test databases, honouring `scripts/test-demo-workspace-seed.ts`; tests seed their
+own fixtures. Dev data: `seedDemoTopics` inserts five public Topics with replies and editorial resource links in non-production databases, so `/topics` and every detail URL have real content locally. `seedDemoPlaces` inserts ten pilot Places (Abuja ×3, Enugu ×3, Lagos ×2, Ibadan ×1, Port Harcourt ×1) with geocoded centres and empty reality, so `/places` and every place detail URL resolve locally with honest unknown-state needs and no invented community signal.
 
 ## 5. Locked Agent / communication foundation
 
@@ -235,5 +238,43 @@ Before adding breadth, prove these repeatedly:
 4. Conversation → voice input/output → same canonical conversation.
 5. Conversation → Agent goal → bounded execution → outcome.
 6. Quick Ride → Economic Request → dispatch lifecycle → provider communication → review, with external activation explicitly separated.
+7. Conversation → Place → Concept → Vote → Opportunity → Economic Request, with unsourced reality labelled missing and one canonical request per concept.
 
 Kurukoo should spend more engineering time proving these journeys work than proving that the repository contains feature names.
+
+## 12. Places (Kurukoo Places — "See it. Shape it. Build it.")
+
+Places extends the existing OS rather than creating a parallel platform: a Place holds labelled
+reality (`verified | estimated | community-reported | missing`), creators publish Concepts that
+evolve by forking (losers are kept, never deleted), residents vote once per concept with a
+declared place role, strong concepts feed the existing Opportunity feed with evidence-worded
+copy, and "Make this real" creates exactly one canonical Economic Request per concept.
+Radar layers (`existing | proposed | voting | seeking_dev | building | built`) are a fuzzed
+projection over Places, not a second presence store. Sponsored concepts are always labelled.
+Places accept labelled live OSM context through a fail-closed refresh (community-reported,
+sourced, timestamped; failures write nothing), real OSRM walk-time and SRTM elevation
+enrichment (both fail-soft), and followable through the canonical
+relationship primitive (`place` target), with status transitions and new concepts fanning
+out via `notifyRelationshipTargetUpdate`. Creators earn one points milestone at 10 supporters
+and appear on a privacy-respecting leaderboard; moderation (`removed`) hides concepts from
+every public surface and freezes their votes, forks, opportunities and execution links.
+Chat resolves places deterministically (`place_card`, no model call; unknown areas get an
+honest clarification naming only real places). Concepts can be turned real against
+`find_worker`/`architect`/`urban_planner`/`civil_engineer`/`quantity_surveyor`/`land_surveyor`.
+A printable pilot poster (signed QR, 90-day expiry) plus WhatsApp share recruits participants;
+an explicit approval workflow records authority decisions separately from community support.
+Developer intelligence is Plus/Business-gated (participation stays free), sponsored concepts are
+labelled, `places_detail` is an ad placement that is empty until bought, and creators earn one
+points milestone at 10 supporters. Places project into Discover home (`places` section),
+sitemap/robots/llms.txt, the feature/capability/component/surface registries and canonical URLs,
+the Expo client (detail screen + client + contract entry; device proof remains UNVERIFIED), and
+LGA/state aggregation (`district-pulse`). Historical imagery is schema + API + UI with an honest empty state
+until a source connects; land registries are a visible `not_connected` seam.
+Visualisation is deterministic SVG massing (free, always) plus at most one cached AI hero
+render per concept revision when an image backend is configured — renders are labelled
+illustrative, never plans. The place surface is `/places` (SPA-piloted) and `GET /places/:slug` through the SPA detail
+owner chain (`frontend/src/routes/places.$slug.tsx`), with a truthful 503 when the app build
+is absent and 404 for unknown slugs. Repository verification is `IMPLEMENTED` (contract `test:places-truth` in
+`test:route-sequence`); runtime verification of the pilot journey and all real-world
+provider/authority activation remain `UNVERIFIED`/`BLOCKED_EXTERNAL` until evidenced.
+Ownership detail: `docs/architecture/PLACES.md`.

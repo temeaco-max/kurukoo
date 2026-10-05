@@ -13,7 +13,7 @@ const osRegistry = fs.readFileSync('src/services/kurukooOsComponentRegistry.ts',
 const canonicalUrls = fs.readFileSync('src/services/canonicalUrlRegistry.ts', 'utf8');
 
 const expected = {
-  desk: '/home',
+  desk: '/field', // 29a: /field is canonical; /home and /desk 302 there
   chat: '/chat',
   requests: '/activity',
   tasks: '/work',
@@ -51,10 +51,11 @@ for (const [id, route] of Object.entries(expected)) {
 }
 
 assert.match(routes, /router\.get\('\/chat\/:conversationId'/);
-assert.match(publicRoutes, /path\.join\(process\.cwd\(\),\s*'frontend\/public',\s*'chat',\s*'index\.html'\)/);
-assert.match(routes, /\['desk', \{ title: 'Home'/);
+const spaStatic = fs.readFileSync('src/services/spaStaticService.ts', 'utf8');
+assert.ok(spaStatic.includes("'/chat'") || publicRoutes.includes('frontend/public') && publicRoutes.includes('chat'), 'Chat must be served by the SPA boundary or the public static layer');
+assert.match(routes, /\['desk', \{ title: 'Your Perch'/); // 29a vocabulary: desk is Your Perch at /field
 assert.match(routes, /const cleanCanonicalSections: Record<string, string> = \{/);
-assert.match(routes, /'\/desk': 'desk'/) || assert.match(routes, /'\/home': 'desk'/);
+assert.match(routes, /router\.get\(\['\/home','\/desk'\]/); // 29a: retired aliases redirect, they are not sections
 assert.match(routes, /function renderApp\(req: express\.Request, res: express\.Response, section = 'desk'/);
 assert.match(routes, /return res\.render\('app'/);
 

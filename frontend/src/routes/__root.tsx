@@ -98,6 +98,7 @@ const authenticatedSurfacePrefixes = [
 const moreItems = [
   ["/work", "Actions"],
   ["/topics", "Topics"],
+  ["/places", "Places"],
   ["/capabilities", "Capabilities"],
   ["/provider", "Providers"],
   ["/businesses", "Businesses"],
@@ -293,12 +294,12 @@ function ProtectedPrompt() {
           Your Field keeps your conversations, work and account context private. Sign in to continue
           where you left off.
         </p>
-        <Link
-          to="/login"
+        <a
+          href="/chat?auth=login"
           className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-primary px-4 py-2 text-[12px] font-medium text-primary-foreground"
         >
-          Log in
-        </Link>
+          Sign in with Kurukoo
+        </a>
       </div>
     </div>
   );

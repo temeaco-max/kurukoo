@@ -59,6 +59,7 @@ import { Route as OpportunitiesRouteImport } from './routes/opportunities'
 import { Route as PartnersRouteImport } from './routes/partners'
 import { Route as PeopleRouteImport } from './routes/people'
 import { Route as PerchRouteImport } from './routes/perch'
+import { Route as PlacesRouteImport } from './routes/places'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ProviderRouteImport } from './routes/provider'
@@ -103,6 +104,7 @@ import { Route as DiscoverWorkRouteImport } from './routes/discover/work'
 import { Route as EarnTopicRouteImport } from './routes/earn.$topic'
 import { Route as LegalSectionRouteImport } from './routes/legal.$section'
 import { Route as MessagesThreadIdRouteImport } from './routes/messages.$threadId'
+import { Route as PlacesSlugRouteImport } from './routes/places.$slug'
 import { Route as ProfileEntityIdRouteImport } from './routes/profile.$entityId'
 import { Route as ProfileSlugRouteImport } from './routes/profile.$slug'
 import { Route as ProfileKurukooAiRouteImport } from './routes/profile/kurukoo-ai'
@@ -368,6 +370,11 @@ const PerchRoute = PerchRouteImport.update({
   path: '/perch',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlacesRoute = PlacesRouteImport.update({
+  id: '/places',
+  path: '/places',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
@@ -589,6 +596,11 @@ const MessagesThreadIdRoute = MessagesThreadIdRouteImport.update({
   path: '/$threadId',
   getParentRoute: () => MessagesRoute,
 } as any)
+const PlacesSlugRoute = PlacesSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => PlacesRoute,
+} as any)
 const ProfileEntityIdRoute = ProfileEntityIdRouteImport.update({
   id: '/$entityId',
   path: '/$entityId',
@@ -712,6 +724,7 @@ export interface FileRoutesByFullPath {
   '/partners': typeof PartnersRoute
   '/people': typeof PeopleRoute
   '/perch': typeof PerchRoute
+  '/places': typeof PlacesRouteWithChildren
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRouteWithChildren
   '/provider': typeof ProviderRoute
@@ -756,6 +769,7 @@ export interface FileRoutesByFullPath {
   '/earn/$topic': typeof EarnTopicRoute
   '/legal/$section': typeof LegalSectionRoute
   '/messages/$threadId': typeof MessagesThreadIdRoute
+  '/places/$slug': typeof PlacesSlugRoute
   '/profile/$entityId': typeof ProfileEntityIdRoute
   '/profile/$slug': typeof ProfileSlugRoute
   '/profile/kurukoo-ai': typeof ProfileKurukooAiRoute
@@ -822,6 +836,7 @@ export interface FileRoutesByTo {
   '/partners': typeof PartnersRoute
   '/people': typeof PeopleRoute
   '/perch': typeof PerchRoute
+  '/places': typeof PlacesRouteWithChildren
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRouteWithChildren
   '/provider': typeof ProviderRoute
@@ -865,6 +880,7 @@ export interface FileRoutesByTo {
   '/earn/$topic': typeof EarnTopicRoute
   '/legal/$section': typeof LegalSectionRoute
   '/messages/$threadId': typeof MessagesThreadIdRoute
+  '/places/$slug': typeof PlacesSlugRoute
   '/profile/$entityId': typeof ProfileEntityIdRoute
   '/profile/$slug': typeof ProfileSlugRoute
   '/profile/kurukoo-ai': typeof ProfileKurukooAiRoute
@@ -932,6 +948,7 @@ export interface FileRoutesById {
   '/partners': typeof PartnersRoute
   '/people': typeof PeopleRoute
   '/perch': typeof PerchRoute
+  '/places': typeof PlacesRouteWithChildren
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRouteWithChildren
   '/provider': typeof ProviderRoute
@@ -976,6 +993,7 @@ export interface FileRoutesById {
   '/earn/$topic': typeof EarnTopicRoute
   '/legal/$section': typeof LegalSectionRoute
   '/messages/$threadId': typeof MessagesThreadIdRoute
+  '/places/$slug': typeof PlacesSlugRoute
   '/profile/$entityId': typeof ProfileEntityIdRoute
   '/profile/$slug': typeof ProfileSlugRoute
   '/profile/kurukoo-ai': typeof ProfileKurukooAiRoute
@@ -1044,6 +1062,7 @@ export interface FileRouteTypes {
     | '/partners'
     | '/people'
     | '/perch'
+    | '/places'
     | '/pricing'
     | '/profile'
     | '/provider'
@@ -1088,6 +1107,7 @@ export interface FileRouteTypes {
     | '/earn/$topic'
     | '/legal/$section'
     | '/messages/$threadId'
+    | '/places/$slug'
     | '/profile/$entityId'
     | '/profile/$slug'
     | '/profile/kurukoo-ai'
@@ -1154,6 +1174,7 @@ export interface FileRouteTypes {
     | '/partners'
     | '/people'
     | '/perch'
+    | '/places'
     | '/pricing'
     | '/profile'
     | '/provider'
@@ -1197,6 +1218,7 @@ export interface FileRouteTypes {
     | '/earn/$topic'
     | '/legal/$section'
     | '/messages/$threadId'
+    | '/places/$slug'
     | '/profile/$entityId'
     | '/profile/$slug'
     | '/profile/kurukoo-ai'
@@ -1263,6 +1285,7 @@ export interface FileRouteTypes {
     | '/partners'
     | '/people'
     | '/perch'
+    | '/places'
     | '/pricing'
     | '/profile'
     | '/provider'
@@ -1307,6 +1330,7 @@ export interface FileRouteTypes {
     | '/earn/$topic'
     | '/legal/$section'
     | '/messages/$threadId'
+    | '/places/$slug'
     | '/profile/$entityId'
     | '/profile/$slug'
     | '/profile/kurukoo-ai'
@@ -1374,6 +1398,7 @@ export interface RootRouteChildren {
   PartnersRoute: typeof PartnersRoute
   PeopleRoute: typeof PeopleRoute
   PerchRoute: typeof PerchRoute
+  PlacesRoute: typeof PlacesRouteWithChildren
   PricingRoute: typeof PricingRoute
   ProfileRoute: typeof ProfileRouteWithChildren
   ProviderRoute: typeof ProviderRoute
@@ -1752,6 +1777,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PerchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/places': {
+      id: '/places'
+      path: '/places'
+      fullPath: '/places'
+      preLoaderRoute: typeof PlacesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pricing': {
       id: '/pricing'
       path: '/pricing'
@@ -2060,6 +2092,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MessagesThreadIdRouteImport
       parentRoute: typeof MessagesRoute
     }
+    '/places/$slug': {
+      id: '/places/$slug'
+      path: '/$slug'
+      fullPath: '/places/$slug'
+      preLoaderRoute: typeof PlacesSlugRouteImport
+      parentRoute: typeof PlacesRoute
+    }
     '/profile/$entityId': {
       id: '/profile/$entityId'
       path: '/$entityId'
@@ -2268,6 +2307,17 @@ const MessagesRouteWithChildren = MessagesRoute._addFileChildren(
   MessagesRouteChildren,
 )
 
+interface PlacesRouteChildren {
+  PlacesSlugRoute: typeof PlacesSlugRoute
+}
+
+const PlacesRouteChildren: PlacesRouteChildren = {
+  PlacesSlugRoute: PlacesSlugRoute,
+}
+
+const PlacesRouteWithChildren =
+  PlacesRoute._addFileChildren(PlacesRouteChildren)
+
 interface ProfileRouteChildren {
   ProfileEntityIdRoute: typeof ProfileEntityIdRoute
   ProfileSlugRoute: typeof ProfileSlugRoute
@@ -2378,6 +2428,7 @@ const rootRouteChildren: RootRouteChildren = {
   PartnersRoute: PartnersRoute,
   PeopleRoute: PeopleRoute,
   PerchRoute: PerchRoute,
+  PlacesRoute: PlacesRouteWithChildren,
   PricingRoute: PricingRoute,
   ProfileRoute: ProfileRouteWithChildren,
   ProviderRoute: ProviderRoute,

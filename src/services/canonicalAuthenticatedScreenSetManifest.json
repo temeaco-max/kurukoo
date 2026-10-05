@@ -50,7 +50,7 @@
     {
       "id": "desk",
       "screen": "Home",
-      "route": "/home",
+      "route": "/field",
       "routeOwner": "src/routes/appSurfaceRoutes.ts::renderApp(section='desk')",
       "templateComponentOwner": "views/app.ejs",
       "cssOwner": ["frontend/public/css/site.css", "frontend/public/css/kurukoo-client-foundation.css", "frontend/public/css/kurukoo-os-final.css", "frontend/public/css/kurukoo-desktop-final.css"],

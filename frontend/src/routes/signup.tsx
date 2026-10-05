@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { AuthPanel } from "@/components/kurukoo/auth";
 
 export const Route = createFileRoute("/signup")({
@@ -15,6 +15,9 @@ export const Route = createFileRoute("/signup")({
     ],
     links: [{ rel: "canonical", href: "/signup" }],
   }),
+  beforeLoad: () => {
+    throw redirect({ to: "/chat", search: { auth: "signup" } as never });
+  },
   component: SignupPage,
 });
 

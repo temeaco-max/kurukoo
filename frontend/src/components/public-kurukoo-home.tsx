@@ -75,6 +75,34 @@ export function PublicHome({ onSend }: { onSend?: (message: string) => void }) {
 
   return (
     <div className="w-full pb-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: [
+              {
+                "@type": "Question",
+                name: "What can Kurukoo do?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Kurukoo is a conversational fulfilment network. Describe your need and Kurukoo works out who or what can help and stays connected to the outcome.",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "Do I need an account?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "You can use Kurukoo as a guest. When an action needs your identity, you sign in inside the same conversation.",
+                },
+              },
+            ],
+          }),
+        }}
+      />
+      <link rel="stylesheet" href="/css/kurukoo-home.css?v=3.0.1" />
       <section
         id="public-home-hero"
         className="relative min-h-[calc(100vh-120px)] overflow-hidden border-b border-border/80 py-8 md:py-12"

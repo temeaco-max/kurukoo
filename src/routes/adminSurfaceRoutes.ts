@@ -6,6 +6,7 @@ const router = express.Router();
 
 const pages: Record<string, string> = {
   '/': 'index.html',
+  '/login': 'login.html',
   '/conversations': 'index.html',
   '/providers': 'index.html',
   '/economic': 'index.html',

@@ -6,6 +6,7 @@ import { buildConversationTurnContract, buildConversationalSystemDirective } fro
 import { interpretConversationSemantics } from './semanticConversationInterpreter.js';
 import { routeIntent as legacyRouteIntent } from './legacyIntentRouter.js';
 import { isFeatureEnabled } from './featureFlags.js';
+import { listPlaces } from './placeService.js';
 import type { IntentRoutingResult } from '../types.js';
 
 /** Derive a market country code from phone number or context hint. Used by
@@ -45,6 +46,8 @@ const AUTOMOTIVE_SERVICE_OUTCOME_RE = /\b(?:car|vehicle|auto|engine|tyre|tire|br
 const INTERNET_SERVICE_OUTCOME_RE = /\b(?:sort out|fix|install|set[ -]?up|arrange|find|book|need|want|help)\b[\s\S]*\b(?:wi-?fi|internet|broadband|router|network)\b|\b(?:wi-?fi|internet|broadband|router|network)\b[\s\S]*\b(?:installer|technician|provider|repair|fix|set[ -]?up|not working|slow)\b/i;
 const HEALTHCARE_OUTCOME_RE = /\b(?:find|book|arrange|need|want|see|speak(?:\s+to)?|consult)\b[\s\S]*\b(?:doctor|clinic|hospital|healthcare|health care|dermatologist|dentist|paediatrician|pediatrician|nurse|specialist|appointment)\b|\b(?:doctor|clinic|hospital|healthcare|health care|dermatologist|dentist|paediatrician|pediatrician|nurse|specialist)\b[\s\S]*\b(?:appointment|available|availability|consult|see|book)\b/i;
 const TOPIC_OUTCOME_RE = /^(?:ask|share|post)\s+(?:with|to)\s+the\s+community\b/i;
+const PLACE_OUTCOME_RE = /\b(?:show me|open|take me to|what (?:could|can|should)|imagine|vision|future|potential|develop(?:ment|ing)?|area|neighbourhood|neighborhood|district|community|place|visions?)\b/i;
+const PLACE_AREA_RE = /\b(?:my|this|that|our)\s+area\b|\bwhat could .* become\b|\bshow me .* (?:area|place|visions?)\b/i;
 const COMMUNICATION_CONTINUATION_RE = /^(?:resolve the recipient for this message|choose an available channel for this message|confirm(?: and)? send(?:ing)? this message|copy this message)\b/i;
 
 function shouldDelegateDeterministically(message: string): boolean {
@@ -77,6 +80,80 @@ function progressFor(mode: string): IntentRoutingResult['progressStage'] {
   return 'complete';
 }
 
+function normalizePlaceText(value: string): string {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Deterministic Chat → Place resolution (no model call). Matches the message
+ * against known Kurukoo places; unknown areas get an honest clarification that
+ * names only places that actually exist. Never invents a place.
+ */
+async function resolvePlaceIntent(message: string): Promise<IntentRoutingResult | null> {
+  const normalized = normalizePlaceText(message);
+  if (!PLACE_OUTCOME_RE.test(normalized) && !PLACE_AREA_RE.test(normalized)) return null;
+  let places: any[] = [];
+  try {
+    places = await listPlaces({ limit: 100 });
+  } catch {
+    return null;
+  }
+  if (!places.length) return null;
+  const matches = places.filter((place) => {
+    const name = normalizePlaceText(place.name);
+    const slugWords = normalizePlaceText(String(place.slug).replace(/-/g, ' '));
+    if (!name) return false;
+    if (normalized.includes(name) || normalized.includes(slugWords)) return true;
+    const tokens = name.split(' ').filter((token) => token.length > 2);
+    return tokens.length > 0 && tokens.every((token) => normalized.includes(token));
+  });
+  if (matches.length === 1) {
+    const place = matches[0];
+    const concepts = await listPlaceConceptCounts(place.id);
+    return {
+      skill: 'general_question',
+      reply: `Here is ${place.name}${place.lga || place.state ? ` (${[place.lga, place.state].filter(Boolean).join(', ')})` : ''}: currently ${place.status}, with ${concepts.count} vision${concepts.count === 1 ? '' : 's'} and ${concepts.support} supporter${concepts.support === 1 ? '' : 's'} so far. These are possibilities being discussed, not plans.`,
+      cardData: {
+        type: 'place_card',
+        slug: String(place.slug),
+        title: String(place.name),
+        status: String(place.status),
+        visions: concepts.count,
+        support: concepts.support,
+        link: `/places/${encodeURIComponent(String(place.slug))}`,
+      },
+      classificationSource: 'rules',
+      intentConfidence: 0.9,
+      extractionSource: 'deterministic',
+      progressStage: 'information',
+    };
+  }
+  const listed = matches.length > 1 ? matches : places.slice(0, 10);
+  const names = listed.map((place) => String(place.name)).join(', ');
+  const clarification = {
+    type: 'place_clarification',
+    knownPlaces: listed.slice(0, 10).map((place) => ({ slug: String(place.slug), name: String(place.name), link: `/places/${encodeURIComponent(String(place.slug))}` })),
+  };
+  return {
+    skill: 'general_question',
+    reply: matches.length > 1
+      ? `I know more than one matching area: ${names}. Which one did you mean?`
+      : `Tell me which area you mean — places I know so far include ${names}. I only open places that exist; I never guess an area.`,
+    cardData: clarification,
+    canonicalAction: 'place.clarify',
+    classificationSource: 'rules',
+    intentConfidence: 0.7,
+    extractionSource: 'deterministic',
+    progressStage: 'understanding',
+  };
+}
+
+async function listPlaceConceptCounts(placeId: string): Promise<{ count: number; support: number }> {
+  const { listConceptsForPlace } = await import('./placeService.js');
+  const concepts = await listConceptsForPlace(String(placeId));
+  return { count: concepts.length, support: concepts.reduce((sum: number, concept: any) => sum + Number(concept?.votes?.support || 0), 0) };
+}
+
 export async function routeIntent(query: string, phone?: string, provider?: AIProvider, contextHint?: ConversationalContextHint, threadId?: string): Promise<IntentRoutingResult> {
   const message = query.trim();
   if (!message) return legacyRouteIntent(query, phone, provider, contextHint, threadId);
@@ -106,6 +183,11 @@ export async function routeIntent(query: string, phone?: string, provider?: AIPr
   if (shouldDelegateDeterministically(message)) {
     return legacyRouteIntent(query, phone, provider, contextHint, threadId);
   }
+
+  // Chat → Place: resolve known areas deterministically before any model call.
+  // Unknown areas get an honest clarification, never an invented place.
+  const placeOutcome = await resolvePlaceIntent(message);
+  if (placeOutcome) return placeOutcome;
 
   const semantic = await interpretConversationSemantics({
     message,

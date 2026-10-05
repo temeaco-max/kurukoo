@@ -277,7 +277,9 @@ export async function getOpportunitiesForFeed(phone: string): Promise<any[]> {
             urgency: row.urgency,
             businessValue: row.business_value,
             status: row.status,
-            createdAt: row.created_at
+            createdAt: row.created_at,
+            placeId: (row as any).place_id ? String((row as any).place_id) : null,
+            conceptId: (row as any).concept_id ? String((row as any).concept_id) : null
         });
     }
     stmt.free();

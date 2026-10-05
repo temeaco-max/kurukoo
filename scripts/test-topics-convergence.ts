@@ -162,12 +162,14 @@ try {
   assert.equal(economicTable.length, 1, 'Fresh schema must initialize the Economic Request authority without Topic code owning it');
   const indexPage = await fetch(`${baseUrl}/topics`);
   assert.equal(indexPage.status, 200);
-  assert.match(await indexPage.text(), /Community context/);
+  assert.match(await indexPage.text(), /<title>Topics — Kurukoo<\/title>/, 'public Topics page must serve SPA-owned community content');
   const detailPage = await fetch(`${baseUrl}/topics/${encodeURIComponent(slug)}`);
   assert.equal(detailPage.status, 200);
   const detailHtml = await detailPage.text();
-  assert.match(detailHtml, /id="topic-detail"/);
+  assert.match(detailHtml, /id="\$tsr-stream-barrier"/, 'detail route must serve the SPA shell that hydrates topic content');
   assert.match(detailHtml, /index,follow/, 'only the quality-gated public Topic receives indexable metadata');
+  const unknownDetail = await fetch(`${baseUrl}/topics/no-such-topic-xyz`);
+  assert.equal(unknownDetail.status, 404, 'unknown topic slug stays 404');
   const sitemap = await fetch(`${baseUrl}/sitemap-topics.xml`); assert.equal(sitemap.status, 200); assert.match(await sitemap.text(), new RegExp(`/topics/${slug}`));
   const robots = await fetch(`${baseUrl}/robots.txt`); assert.equal(robots.status, 200); assert.match(await robots.text(), /sitemap-topics\.xml/);
 

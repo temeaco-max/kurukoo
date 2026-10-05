@@ -2,10 +2,12 @@
 import contentRouter from '../src/routes/contentRoutes.js';
 
 const stack = (contentRouter as any).stack || [];
-const routes = stack.filter((layer: any) => layer.route).map((layer: any) => ({ path: layer.route.path, methods: Object.keys(layer.route.methods) }));
+const routes = stack.filter((layer: any) => layer.route).flatMap((layer: any) => (Array.isArray(layer.route.path) ? layer.route.path : [layer.route.path]).map((p: string) => ({ path: p, methods: Object.keys(layer.route.methods) })));
 
 for (const [method, path] of [
-    ['GET', '/resources'],
+    // '/resources' is retired (29a): the page and its index are gone and the
+    // public router 302s them to /help. Only the detail alias is still served.
+    ['GET', '/help/guides/:slug'],
     ['GET', '/resources/:slug'],
     ['GET', '/api/resources'],
     ['GET', '/api/resources/:slug'],
@@ -16,4 +18,4 @@ for (const [method, path] of [
     if (!route) throw new Error(`Missing ${method} ${path}`);
 }
 
-console.log('Content route contract passed: Resources and Blog endpoints present.');
+console.log('Content route contract passed: Help guides (with the retired /resources detail alias) and Blog endpoints present.');

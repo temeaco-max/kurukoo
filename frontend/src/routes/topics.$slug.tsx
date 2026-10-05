@@ -44,6 +44,8 @@ export const Route = createFileRoute("/topics/$slug")({
         property: "og:description",
         content: "Public community context, moderated discussion and useful Kurukoo pathways.",
       },
+      // Only public topics reach this route (the detail chain 404s the rest).
+      { name: "robots", content: "index,follow" },
     ],
   }),
   component: TopicPage,
@@ -234,13 +236,14 @@ function TopicPage() {
   if (loading)
     return (
       <div
+        id="topic-detail"
         className="h-96 animate-pulse rounded-[24px] border border-border bg-surface"
         aria-label="Loading Topic"
       />
     );
   if (!topic)
     return (
-      <>
+      <div id="topic-detail">
         <PageHeader title="Topic" />
         <EmptyState
           title="Topic not found"
@@ -249,13 +252,13 @@ function TopicPage() {
         <Link to="/topics" className="mt-4 inline-flex items-center gap-1.5 underline text-[14px]">
           <ArrowLeft className="size-3.5" /> All Topics
         </Link>
-      </>
+      </div>
     );
   const following = Boolean(relationship);
   const muted = relationship?.notificationPreference === "muted";
   const locality = [topic.city, topic.lga].filter(Boolean).join(" · ");
   return (
-    <div className="w-full max-w-4xl">
+    <div className="w-full max-w-4xl" id="topic-detail">
       <Link
         to="/topics"
         className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground"

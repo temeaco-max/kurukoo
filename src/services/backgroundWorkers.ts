@@ -8,7 +8,6 @@ import { processExpiredCheckIns } from './safetyService.js';
 import { purgeExpiredData } from '../database.js';
 import { find_worker } from './find-worker.js';
 import { sendFcmPush } from './pushNotifications.js';
-import { drainFcmQueue } from './pushNotifications.js';
 import { getEconomicRequest, transitionEconomicRequest } from './skillFlows.js';
 import { ensureTrustScoreSchema, recalculateAllTrustScores } from './trustScore.js';
 import { releaseExpiredDurableJobLeases } from './durableJobQueue.js';
@@ -89,7 +88,6 @@ export function startBackgroundWorkers(): void {
   const memoryMs = process.env.KURUKOO_MEMORY_INTERVAL_SEC ? Math.max(300_000, Number(process.env.KURUKOO_MEMORY_INTERVAL_SEC) * 1000) : 24 * 60 * 60 * 1000;
   const purgeMs = process.env.KURUKOO_PURGE_INTERVAL_SEC ? Math.max(300_000, Number(process.env.KURUKOO_PURGE_INTERVAL_SEC) * 1000) : 24 * 60 * 60 * 1000;
   const trustMs = process.env.KURUKOO_TRUST_SCORE_INTERVAL_SEC ? Math.max(300_000, Number(process.env.KURUKOO_TRUST_SCORE_INTERVAL_SEC) * 1000) : 24 * 60 * 60 * 1000;
-  const fcmMs = process.env.KURUKOO_FCM_DRAIN_INTERVAL_SEC ? Math.max(15_000, Number(process.env.KURUKOO_FCM_DRAIN_INTERVAL_SEC) * 1000) : 30_000;
   const providerVerificationMs = process.env.KURUKOO_PROVIDER_VERIFICATION_INTERVAL_SEC ? Math.max(300_000, Number(process.env.KURUKOO_PROVIDER_VERIFICATION_INTERVAL_SEC) * 1000) : 24 * 60 * 60 * 1000;
   const leaseMs = process.env.KURUKOO_JOB_LEASE_SWEEP_INTERVAL_SEC ? Math.max(30_000, Number(process.env.KURUKOO_JOB_LEASE_SWEEP_INTERVAL_SEC) * 1000) : 60_000;
   const webhookPurgeMs = process.env.KURUKOO_WEBHOOK_DEDUP_PURGE_INTERVAL_SEC ? Math.max(300_000, Number(process.env.KURUKOO_WEBHOOK_DEDUP_PURGE_INTERVAL_SEC) * 1000) : 24 * 60 * 60 * 1000;
@@ -103,7 +101,6 @@ export function startBackgroundWorkers(): void {
   timers.push(setInterval(() => { void safe('memory', async () => { await ensureLivingMemorySchema(); const decay = await runDailyMemoryDecay(); const prune = await runWeeklyMemoryPrune(); const crystallize = await runMemoryCrystallize(); console.log(`[Worker:memory] decay=${decay.updated} prune=${prune.deleted} crystallize=${crystallize.promoted}`); }); }, memoryMs));
   timers.push(setInterval(() => { void safe('purge', async () => { const r = await purgeExpiredData(); console.log(`[Worker:purge] messages=${r.messagesDeleted} sessions=${r.tempSessionsDeleted} pulse=${r.pulseLocationsDeleted}`); }); }, purgeMs));
   timers.push(setInterval(() => { void safe('trust-score', async () => { await ensureTrustScoreSchema(); const updated = await recalculateAllTrustScores(); if (updated) console.log(`[Worker:trust-score] recalculated=${updated}`); }); }, trustMs));
-  timers.push(setInterval(() => { void safe('fcm-drain', async () => { const result = await drainFcmQueue(50); if (result.sent || result.retried || result.invalidTokens) console.log(`[Worker:fcm] sent=${result.sent} retried=${result.retried} invalidTokens=${result.invalidTokens}`); }); }, fcmMs));
   timers.push(setInterval(() => { void safe('provider-verification-expiry', async () => { const expired = await expireProviderVerifications(); if (expired) console.log(`[Worker:provider-verification] expired=${expired}`); }); }, providerVerificationMs));
   timers.push(setInterval(() => { void safe('durable-job-leases', async () => { const released = await releaseExpiredDurableJobLeases(); if (released) console.log(`[Worker:durable-jobs] releasedExpiredLeases=${released}`); }); }, leaseMs));
   timers.push(setInterval(() => { void safe('webhook-dedup-purge', async () => { const deleted = await purgeOldWebhookEvents(30); if (deleted) console.log(`[Worker:webhook-dedup] deleted=${deleted}`); }); }, webhookPurgeMs));
@@ -116,12 +113,16 @@ export function startBackgroundWorkers(): void {
     void safe('reminders:boot', async () => { await processDueReminders(100); });
     void safe('safety:boot', async () => { await processExpiredCheckIns(); });
     void safe('trust-score:boot', async () => { await ensureTrustScoreSchema(); await recalculateAllTrustScores(); });
-    void safe('fcm:boot', async () => { await drainFcmQueue(50); });
+    // NOTE: FCM queue draining is intentionally NOT repeated here.
+    // backgroundServices owns the single drain (drainFcmQueue plus
+    // requeueDueFcmFailures). drainFcmQueue selects queued rows and then sends
+    // them, so two concurrent drainers in one process can select the same row
+    // and deliver a duplicate push. One drainer per process, as before.
     void safe('provider-verification:boot', async () => { await expireProviderVerifications(); });
     void safe('durable-job-leases:boot', async () => { await releaseExpiredDurableJobLeases(); });
     void safe('webhook-dedup:boot', async () => { await purgeOldWebhookEvents(30); });
     void safe('discover-watches:boot', async () => { await processDiscoverWatches(100); });
   }, 15_000).unref?.();
-  console.log(`[Workers] Started orchestration=${Math.round(orchMs / 1000)}s deferred=${Math.round(deferredMs / 1000)}s agent=${Math.round(agentMs / 1000)}s reminders=${Math.round(reminderMs / 1000)}s safety=${Math.round(safetyMs / 1000)}s memory=${Math.round(memoryMs / 1000)}s purge=${Math.round(purgeMs / 1000)}s trust=${Math.round(trustMs / 1000)}s fcm=${Math.round(fcmMs / 1000)}s providerVerification=${Math.round(providerVerificationMs / 1000)}s durableJobLeases=${Math.round(leaseMs / 1000)}s webhookDedup=${Math.round(webhookPurgeMs / 1000)}s discoverWatches=${Math.round(discoverWatchMs / 1000)}s`);
+  console.log(`[Workers] Started orchestration=${Math.round(orchMs / 1000)}s deferred=${Math.round(deferredMs / 1000)}s agent=${Math.round(agentMs / 1000)}s reminders=${Math.round(reminderMs / 1000)}s safety=${Math.round(safetyMs / 1000)}s memory=${Math.round(memoryMs / 1000)}s purge=${Math.round(purgeMs / 1000)}s trust=${Math.round(trustMs / 1000)}s fcm=owned-by-backgroundServices providerVerification=${Math.round(providerVerificationMs / 1000)}s durableJobLeases=${Math.round(leaseMs / 1000)}s webhookDedup=${Math.round(webhookPurgeMs / 1000)}s discoverWatches=${Math.round(discoverWatchMs / 1000)}s`);
 }
 export function stopBackgroundWorkers(): void { for (const t of timers) clearInterval(t); timers.length = 0; started = false; }

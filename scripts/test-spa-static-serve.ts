@@ -23,6 +23,15 @@ process.env.JWT_SECRET = 'spa-serve-contract-secret-that-is-long-enough';
 
 const { getSpaStaticBoundary, SPA_PILOT_ROUTES, resolveSpaPublicDir } = await import('../src/services/spaStaticService.ts');
 const { app } = await import('../src/index.ts');
+const { getDb } = await import('../src/database.ts');
+const { createTopic } = await import('../src/services/topicService.ts');
+// Test databases are intentionally unseeded (allowDemoSeeds), so this contract
+// publishes its own public Topic instead of relying on ambient dev fixtures.
+const spaDb = await getDb();
+const { moderateTopic } = await import('../src/services/topicService.ts');
+const spaFixtureTopic = await createTopic('+2348099000111', { title: 'Finding a trustworthy plumber in Lagos', body: 'A contract fixture Topic used to prove that public Topic detail pages are served by the SPA owner rather than a legacy template.', type: 'question', lga: 'Ikeja' });
+await moderateTopic(spaFixtureTopic.id, { decision: 'public', note: 'contract fixture' });
+void spaDb;
 
 const server = app.listen(0, '127.0.0.1');
 await new Promise<void>((resolve) => server.once('listening', resolve));
@@ -62,6 +71,7 @@ try {
       '/advertise': /<title>Advertisers — Kurukoo<\/title>/,
       '/network': /<title>The Kurukoo Network<\/title>/,
       '/topics': /<title>Topics — Kurukoo<\/title>/,
+      '/places': /<title>Places — Kurukoo<\/title>/,
       '/chat': /<title>Chat \/ Voice — Kurukoo<\/title>/,
       '/discover': /<title>Discover — Kurukoo<\/title>/,
       '/login': /<title>Log in — Kurukoo<\/title>/,
@@ -115,7 +125,7 @@ try {
   assert.equal(retiredResources.status, 200, '/resources must still resolve');
   assert.match(await retiredResources.text(), /<title>Help — Kurukoo<\/title>/, '/resources must land on the merged Help surface');
 
-  const seededTopic = await fetch(`${base}/topics/finding-a-trustworthy-plumber-in-lagos`);
+  const seededTopic = await fetch(`${base}/topics/${encodeURIComponent(String(spaFixtureTopic.slug))}`);
   assert.equal(seededTopic.status, 200, 'A public Topic detail must be served');
   assert.match(await seededTopic.text(), /id="\$tsr-stream-barrier"/, 'Topic detail must come from the SPA owner');
 

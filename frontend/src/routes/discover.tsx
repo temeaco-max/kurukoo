@@ -36,6 +36,7 @@ import {
   type PulseProvider,
 } from "@/lib/kurukoo-api";
 import { exploreGoalGroups } from "@/lib/explore-goals";
+import { fetchNearbyPlaces, type NearbyPlace } from "@/lib/places-api";
 
 export const Route = createFileRoute("/discover")({
   head: () => ({
@@ -257,6 +258,7 @@ function DiscoverPage() {
   >([]);
   const [topics, setTopics] = useState<CanonicalTopic[]>([]);
   const [opportunities, setOpportunities] = useState<ProactiveOpportunity[]>([]);
+  const [nearbyPlaces, setNearbyPlaces] = useState<NearbyPlace[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [located, setLocated] = useState(false);
@@ -319,6 +321,9 @@ function DiscoverPage() {
       (position) => {
         setLocated(true);
         void load(position, q.trim() || undefined);
+        fetchNearbyPlaces(position.coords.latitude, position.coords.longitude, 10000)
+          .then(setNearbyPlaces)
+          .catch(() => undefined);
       },
       () =>
         setError("Location was not granted. Discover can still show source-attributed context."),
@@ -597,6 +602,38 @@ function DiscoverPage() {
           </div>
         </section>
       ) : null}
+      {nearbyPlaces.length ? (
+        <section>
+          <div className="mb-3">
+            <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-primary">
+              Places being shaped
+            </p>
+            <h2 className="mt-1 text-[17px] font-semibold">What your area could become</h2>
+            <p className="mt-1 text-[10.5px] text-muted-foreground">
+              Community visions are possibilities, not plans. Votes record support, not approval.
+            </p>
+          </div>
+          <div className="grid gap-px overflow-hidden border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
+            {nearbyPlaces.map((place) => (
+              <Link
+                key={place.slug}
+                to="/places/$slug"
+                params={{ slug: place.slug }}
+                className="bg-surface p-5 hover:bg-elevated/45"
+              >
+                <p className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-primary">
+                  Place · {place.status}
+                </p>
+                <h3 className="mt-2 text-[13px] font-semibold leading-snug">{place.name}</h3>
+                <p className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
+                  {place.concepts} visions · {place.votes} votes
+                  {Number.isFinite(place.distanceMetres) ? ` · ${Math.round(place.distanceMetres / 1000)} km away` : ""}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
       <section className="border-t border-border pt-7">
         <div className="mb-3">
           <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-primary">
@@ -620,6 +657,12 @@ function DiscoverPage() {
             className="inline-flex min-h-9 items-center gap-1 border border-border px-3 text-[10.5px] font-medium"
           >
             Open Topics <ArrowUpRight className="size-3.5" />
+          </Link>
+          <Link
+            to="/places"
+            className="inline-flex min-h-9 items-center gap-1 border border-border px-3 text-[10.5px] font-medium"
+          >
+            Open Places <ArrowUpRight className="size-3.5" />
           </Link>
         </div>
       </section>

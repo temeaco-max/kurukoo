@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { AuthPanel } from "@/components/kurukoo/auth";
 
 export const Route = createFileRoute("/login")({
@@ -17,6 +17,9 @@ export const Route = createFileRoute("/login")({
     conversationId: typeof search['conversationId'] === "string" ? search['conversationId'] : "",
     guest_id: typeof search['guest_id'] === "string" ? search['guest_id'] : "",
   }),
+  beforeLoad: () => {
+    throw redirect({ to: "/chat", search: { auth: "login" } as never });
+  },
   component: LoginPage,
 });
 

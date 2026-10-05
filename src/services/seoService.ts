@@ -246,6 +246,7 @@ Sitemap: https://kurukoo.com/sitemap-pages.xml
 Sitemap: https://kurukoo.com/sitemap-categories.xml
 Sitemap: https://kurukoo.com/sitemap-blog.xml
 Sitemap: https://kurukoo.com/sitemap-topics.xml
+Sitemap: https://kurukoo.com/sitemap-places.xml
 `;
     }
     return txt;
@@ -263,6 +264,7 @@ Kurukoo is an everyday utility platform powered by AI that enables users to requ
 - Discover: https://kurukoo.com/discover
 - Developer & API Docs: https://kurukoo.com/api/docs
 - Help & Support: https://kurukoo.com/help
+- Places: https://kurukoo.com/places
 - Pricing Tiers: https://kurukoo.com/pricing
 `;
 }
@@ -281,6 +283,9 @@ export async function getSitemapIndex(): Promise<string> {
    </sitemap>
    <sitemap>
       <loc>https://kurukoo.com/sitemap-topics.xml</loc>
+   </sitemap>
+   <sitemap>
+      <loc>https://kurukoo.com/sitemap-places.xml</loc>
    </sitemap>
 </sitemapindex>`;
 }

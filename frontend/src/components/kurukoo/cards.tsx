@@ -3,6 +3,7 @@ import {
   BadgeCheck,
   Check,
   ChevronRight,
+  MapPin,
   MessageSquare,
   Play,
   ShieldCheck,
@@ -770,6 +771,42 @@ function InteractiveChatCard({
         </>
       ),
     });
+  if (type === "place_clarification") {
+    const known = Array.isArray(data["knownPlaces"]) ? data["knownPlaces"] : [];
+    return cardShell({
+      icon: <MapPin className="size-4 text-primary" />,
+      title: "Which area?",
+      body: body || "Kurukoo only opens places that exist. It never guesses an area.",
+      children: (
+        <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[12px]">
+          {known.map((place: any) => (
+            <li key={String(place?.slug)}>
+              <Link to={String(place?.link || "/places")} className="underline">
+                {String(place?.name || "Place")}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ),
+    });
+  }
+  if (["place", "place_card"].includes(type))
+    return cardShell({
+      icon: <MapPin className="size-4 text-primary" />,
+      title: title || "Place",
+      body: body || "A real area being understood and imagined. Visions are possibilities, not plans.",
+      children: (
+        <>
+          {dataList(data, ["status", "visions", "support", "provenance"])}
+          {cardAction(
+            "Open place",
+            undefined,
+            String(data['link'] || "/places"),
+            true,
+          )}
+        </>
+      ),
+    });
   if (["memory", "memory_card", "memory_action"].includes(type))
     return cardShell({
       icon: <Zap className="size-4 text-primary" />,
@@ -799,9 +836,9 @@ function InteractiveChatCard({
         <>
           {dataList(data, ["status", "goal", "schedule", "attention", "conversationId"])}
           {cardAction("Open Agent goals", undefined, "/agents", true)}
-          {Array.isArray(data.goals) ? (
+          {Array.isArray(data['goals']) ? (
             <div className="mt-2 space-y-2">
-              {data.goals.slice(0, 5).map((goal: any) => (
+              {data['goals'].slice(0, 5).map((goal: any) => (
                 <button
                   key={goal.id}
                   type="button"
@@ -836,8 +873,8 @@ function InteractiveChatCard({
         <>
           {dataList(data, ["target", "condition", "status", "notificationPermission"])}
           <div className="mt-3 flex flex-wrap gap-2">
-            {Array.isArray(data.actions)
-              ? data.actions
+            {Array.isArray(data['actions'])
+              ? data['actions']
                   .slice(0, 4)
                   .map((item: any) =>
                     cardAction(String(item.label || item.id), () =>

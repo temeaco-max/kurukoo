@@ -19,7 +19,10 @@ export const Route = createFileRoute("/")({
     meta: [
       { title: "Kurukoo — Your Everyday AI that gets things done" },
       { name: "description", content: description },
+      { property: "og:title", content: "Kurukoo — Your Everyday AI that gets things done" },
+      { property: "og:description", content: description },
     ],
+    links: [{ rel: "canonical", href: "https://kurukoo.com/" }],
   }),
   component: HomePage,
 });
@@ -262,7 +265,7 @@ export function HomePage() {
         </Panel>
         <Panel className="min-h-[132px] p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-[14px] font-semibold">Resources</h2>
+            <h2 className="text-[14px] font-semibold">Help</h2>
             <SectionAction to="/help">Open</SectionAction>
           </div>
           <p className="text-[12px] leading-relaxed text-muted-foreground">

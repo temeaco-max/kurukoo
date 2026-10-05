@@ -4,7 +4,7 @@ import { getDb, saveDb } from '../database.js';
 import { getDiscoveryEntity } from './discoveryNetwork.js';
 import { sendFcmPush } from './pushNotifications.js';
 
-export const RELATIONSHIP_TARGET_TYPES = ['person', 'provider', 'contributor', 'topic', 'opportunity', 'agent', 'discovery'] as const;
+export const RELATIONSHIP_TARGET_TYPES = ['person', 'provider', 'contributor', 'topic', 'opportunity', 'agent', 'discovery', 'place'] as const;
 export type RelationshipTargetType = typeof RELATIONSHIP_TARGET_TYPES[number];
 
 /**
@@ -186,6 +186,13 @@ async function resolveTarget(targetType: RelationshipTargetType, targetId: strin
     if (!row[0]?.values?.length) throw new Error('Relationship target is private or unavailable');
     return;
   }
+  if (targetType === 'place') {
+    // Places are public civic objects; any existing place is followable.
+    // Resolution is lazy to avoid a hard dependency on placeService.
+    const row = db.exec(`SELECT id FROM places WHERE id=? LIMIT 1`, [targetId]);
+    if (!row[0]?.values?.length) throw new Error('Relationship target was not found');
+    return;
+  }
   const entity = await getDiscoveryEntity(targetId);
   if (!entity) throw new Error('Relationship target was not found');
 }
@@ -336,6 +343,7 @@ async function isTargetStillNotifiable(targetType: string, targetId: string): Pr
   if (targetType === 'agent') return Boolean(db.exec(`SELECT 1 FROM ai_agents WHERE id=? AND status='active' LIMIT 1`, [targetId])[0]?.values?.length);
   if (targetType === 'opportunity') return Boolean(db.exec(`SELECT 1 FROM proactive_opportunities WHERE id=? AND status!='dismissed' LIMIT 1`, [targetId])[0]?.values?.length);
   if (targetType === 'discovery') return Boolean(await getDiscoveryEntity(targetId));
+  if (targetType === 'place') return Boolean(db.exec(`SELECT 1 FROM places WHERE id=? LIMIT 1`, [targetId])[0]?.values?.length);
   return false;
 }
 

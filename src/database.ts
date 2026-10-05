@@ -7,6 +7,15 @@ let db: any = null;
 let dbInitialization: Promise<any> | null = null;
 const dbFilePath = process.env.DB_PATH || path.join(process.cwd(), 'kurukoo.sqlite');
 
+/** Demo seeds run in development-like environments only. Automated test
+ *  databases stay empty so contract tests observe truthful empty states
+ *  (see scripts/test-demo-workspace-seed.ts); tests seed their own fixtures. */
+export function allowDemoSeeds(): boolean {
+  if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test') return false;
+  if (process.env.KURUKOO_DEMO_DATA === '0' || process.env.KURUKOO_DEMO_DATA === 'false') return false;
+  return true;
+}
+
 export async function getDb() {
   if (db) return db;
   if (dbInitialization) return dbInitialization;
@@ -19,8 +28,9 @@ export async function getDb() {
       initEconomicParticipantTables(db);
       initExecutionTables(db);
       seedCanonicalOperatorState(db);
-      if (process.env.NODE_ENV !== 'production') {
+      if (allowDemoSeeds()) {
         seedDemoTopics(db);
+        seedDemoPlaces(db);
       }
       auditAppointmentSkillFlows(db);
       saveDb();
@@ -31,9 +41,10 @@ export async function getDb() {
       initExecutionTables(db);
       seedCanonicalOperatorState(db);
       seedSkillFlows(db);
-      if (process.env.NODE_ENV !== 'production') {
+      if (allowDemoSeeds()) {
         seedDemoProviders(db);
         seedDemoTopics(db);
+        seedDemoPlaces(db);
       }
       auditAppointmentSkillFlows(db);
       saveDb();
@@ -524,6 +535,60 @@ function seedDemoTopics(database: any) {
 
 function auditAppointmentSkillFlows(database: any) {
   return 0;
+}
+
+/**
+ * Development pilot places (Abuja, Enugu, Lagos, Ibadan, Port Harcourt).
+ * Centres were geocoded once against OpenStreetMap and baked in so seeding
+ * stays offline-safe. Reality starts EMPTY: every need reads unknown until a
+ * labelled refresh or survey provides evidence. No concepts, votes, or
+ * opportunities are seeded — community signal must come from real people.
+ * Non-production only; production pilots are created through the API.
+ */
+const DEMO_PLACES = [
+  { id: 'seed-place-garki-abuja', slug: 'garki-abuja', name: 'Garki', state: 'FCT', lga: 'Abuja Municipal', lat: 9.0131, lng: 7.4813 },
+  { id: 'seed-place-wuse-abuja', slug: 'wuse-abuja', name: 'Wuse', state: 'FCT', lga: 'Abuja Municipal', lat: 9.062, lng: 7.4666 },
+  { id: 'seed-place-lugbe-abuja', slug: 'lugbe-phase-2-abuja', name: 'Lugbe Phase 2', state: 'FCT', lga: 'Abuja Municipal', lat: 8.991, lng: 7.3575 },
+  { id: 'seed-place-independence-layout-enugu', slug: 'independence-layout-enugu', name: 'Independence Layout', state: 'Enugu', lga: 'Enugu North', lat: 6.443, lng: 7.5197 },
+  { id: 'seed-place-trans-ekulu-enugu', slug: 'trans-ekulu-enugu', name: 'Trans-Ekulu', state: 'Enugu', lga: 'Enugu East', lat: 6.4792, lng: 7.4884 },
+  { id: 'seed-place-gra-enugu', slug: 'gra-enugu', name: 'GRA Enugu', state: 'Enugu', lga: 'Enugu North', lat: 6.4602, lng: 7.4944 },
+  { id: 'seed-place-ikeja-lagos', slug: 'ikeja-lagos', name: 'Ikeja', state: 'Lagos', lga: 'Ikeja', lat: 6.6016, lng: 3.3516 },
+  { id: 'seed-place-lekki-lagos', slug: 'lekki-phase-1-lagos', name: 'Lekki Phase 1', state: 'Lagos', lga: 'Eti-Osa', lat: 6.436, lng: 3.4512 },
+  { id: 'seed-place-bodija-ibadan', slug: 'old-bodija-ibadan', name: 'Old Bodija', state: 'Oyo', lga: 'Ibadan North', lat: 7.4173, lng: 3.9021 },
+  { id: 'seed-place-gra-ph', slug: 'old-gra-port-harcourt', name: 'Old GRA Port Harcourt', state: 'Rivers', lga: 'Port Harcourt', lat: 4.779, lng: 7.0125 },
+];
+
+export function seedDemoPlaces(database: any) {
+  database.run(`
+    CREATE TABLE IF NOT EXISTS places (
+      id TEXT PRIMARY KEY,
+      slug TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      state TEXT,
+      lga TEXT,
+      center_lat REAL NOT NULL,
+      center_lng REAL NOT NULL,
+      bbox_json TEXT NOT NULL DEFAULT '{}',
+      status TEXT NOT NULL DEFAULT 'observed',
+      reality_json TEXT NOT NULL DEFAULT '{}',
+      confidence_json TEXT NOT NULL DEFAULT '{}',
+      needs_json TEXT NOT NULL DEFAULT '[]',
+      topic_id TEXT,
+      created_by TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_places_slug ON places(slug);
+    CREATE INDEX IF NOT EXISTS idx_places_state_lga ON places(state, lga);
+    CREATE INDEX IF NOT EXISTS idx_places_status ON places(status);
+  `);
+  for (const place of DEMO_PLACES) {
+    database.run(
+      `INSERT OR IGNORE INTO places(id, slug, name, state, lga, center_lat, center_lng, status, reality_json, confidence_json, needs_json, created_by)
+       VALUES(?,?,?,?,?, ?,?,'observed','{}','{}','[]','kurukoo-seed')`,
+      [place.id, place.slug, place.name, place.state, place.lga, place.lat, place.lng],
+    );
+  }
 }
 
 export async function searchUserMessages(phone: string, keyword: string): Promise<any[]> {

@@ -15,6 +15,7 @@ const sectionMeta: Record<string, [string, string]> = {
   today: ["Daily Picks", "Time-sensitive"],
   topics: ["Topics", "Join the conversation"],
   opportunities: ["Opportunities", "Things you could act on"],
+  places: ["Places", "What your area could become"],
   explore: ["Explore Kurukoo", "Things Kurukoo can help you do"],
 };
 
@@ -39,6 +40,22 @@ export default function DiscoverScreen() {
   const refresh = () => { if (refreshing) return; haptic.light(); setRefreshing(true); void load(); };
   const visibleSections = Object.entries(home?.sections || {}).filter(([key]) => view === "all" || key === view || (view === "nearby" && ["for_you", "nearby", "today"].includes(key)));
   const openChat = (item: DiscoverItem) => { haptic.light(); router.push({ pathname: "/chat", params: { prompt: item.chatAction?.prompt || `Help me explore ${item.title}` } }); };
+  // Places open their own detail surface; everything else continues in Chat.
+  // Place items carry the place slug in chatAction.id; the item id is the internal id.
+  const placeSlug = (item: DiscoverItem) => String(item.chatAction?.id || "");
+  const openItem = (item: DiscoverItem) => {
+    if (item.type === "place") {
+      const slug = placeSlug(item);
+      if (!slug) { openChat(item); return; }
+      haptic.light();
+      router.push({ pathname: "/surface/places/[slug]", params: { slug } });
+      return;
+    }
+    openChat(item);
+  };
+  const followPlaceItem = async (item: DiscoverItem) => {
+    try { await setDiscoverAction(item.type, item.id, "follow"); } catch { /* do not claim a follow was stored */ }
+  };
   const watch = async (item: DiscoverItem) => { try { await setDiscoverAction(item.type, item.id, "watch"); } catch { /* do not claim a watch was stored */ } };
 
   if (loading && !home) return <ScreenContainer className="px-4 pt-3"><View style={styles.loading}><ActivityIndicator color={colors.primary} /><PlatformStateBanner title="Preparing Discover" detail="Loading the canonical discovery feed. No local availability is implied until the feed confirms it." tone="info" /></View></ScreenContainer>;
@@ -50,7 +67,7 @@ export default function DiscoverScreen() {
       <PlatformStateBanner title="Discovery evidence boundary" detail="Discovery cards are contextual candidates. Verification, availability, invitations and fulfilment outcomes appear only when the canonical source confirms them." tone="info" />
       <View style={styles.filters}>{[["all","All"],["nearby","Nearby"],["topics","Topics"],["opportunities","Opportunities"],["explore","What Kurukoo can do"]].map(([key,label]) => <Pressable key={key} onPress={() => { haptic.selection(); setView(key); }} style={[styles.filter, { borderColor: colors.border, backgroundColor: view === key ? `${colors.primary}16` : colors.surface }]}><Text style={[styles.filterText, { color: view === key ? colors.primary : colors.muted }]}>{label}</Text></Pressable>)}</View>
       {home?.sparse ? <SectionCard><Text style={[styles.title, { color: colors.foreground }]}>A quieter area can still be useful</Text><Text style={[styles.muted, { color: colors.muted }]}>{home.explanation}</Text><ActionButton label="Ask Kurukoo" onPress={() => openChat({ id: "sparse", type: "capability", title: "something useful nearby", detail: "", chatAction: { prompt: "Help me find something useful nearby" } })} /></SectionCard> : null}
-      {visibleSections.map(([key, items]) => <SectionCard key={key}><View style={styles.sectionHeader}><View><Text style={[styles.eyebrow, { color: colors.muted }]}>{sectionMeta[key]?.[1] || "Discover"}</Text><Text style={[styles.title, { color: colors.foreground }]}>{sectionMeta[key]?.[0] || key}</Text></View><StatusPill label={String(items.length)} tone="neutral" /></View>{!items.length ? <Text style={[styles.muted, { color: colors.muted }]}>Nothing attributed here yet.</Text> : items.slice(0, 6).map((item) => <View key={`${key}:${item.id}`} style={[styles.item, { borderColor: colors.border, backgroundColor: colors.surface }]}><View style={styles.itemBody}><View style={styles.itemTitleRow}><Text style={[styles.itemTitle, { color: colors.foreground }]}>{item.title}</Text>{item.sponsored ? <StatusPill label={item.disclosure || "Sponsored"} tone="warning" /> : null}</View><Text style={[styles.muted, { color: colors.muted }]}>{item.detail}</Text><View style={styles.badges}>{item.verified ? <StatusPill label="Verified" tone="success" /> : null}{item.available ? <StatusPill label="Available" tone="success" /> : null}{item.lifecycle ? <StatusPill label={item.lifecycle.replaceAll("_", " ")} tone="neutral" /> : null}</View><View style={styles.actions}><ActionButton label={item.type === "promotion" ? (item.ctaText || "Learn more") : item.type === "capability" ? "Ask Kurukoo" : "Open in Chat"} onPress={() => openChat(item)} /><ActionButton label="Watch" variant="secondary" onPress={() => watch(item)} /></View></View></View>)}</SectionCard>)}
+      {visibleSections.map(([key, items]) => <SectionCard key={key}><View style={styles.sectionHeader}><View><Text style={[styles.eyebrow, { color: colors.muted }]}>{sectionMeta[key]?.[1] || "Discover"}</Text><Text style={[styles.title, { color: colors.foreground }]}>{sectionMeta[key]?.[0] || key}</Text></View><StatusPill label={String(items.length)} tone="neutral" /></View>{!items.length ? <Text style={[styles.muted, { color: colors.muted }]}>Nothing attributed here yet.</Text> : items.slice(0, 6).map((item) => <View key={`${key}:${item.id}`} style={[styles.item, { borderColor: colors.border, backgroundColor: colors.surface }]}><View style={styles.itemBody}><View style={styles.itemTitleRow}><Text style={[styles.itemTitle, { color: colors.foreground }]}>{item.title}</Text>{item.sponsored ? <StatusPill label={item.disclosure || "Sponsored"} tone="warning" /> : null}</View><Text style={[styles.muted, { color: colors.muted }]}>{item.detail}</Text><View style={styles.badges}>{item.verified ? <StatusPill label="Verified" tone="success" /> : null}{item.available ? <StatusPill label="Available" tone="success" /> : null}{item.lifecycle ? <StatusPill label={item.lifecycle.replaceAll("_", " ")} tone="neutral" /> : null}</View><View style={styles.actions}><ActionButton label={item.type === "place" ? "Open place" : item.type === "promotion" ? (item.ctaText || "Learn more") : item.type === "capability" ? "Ask Kurukoo" : "Open in Chat"} onPress={() => openItem(item)} /><ActionButton label={item.type === "place" ? "Follow" : "Watch"} variant="secondary" onPress={() => (item.type === "place" ? void followPlaceItem(item) : void watch(item))} /></View></View></View>)}</SectionCard>)}
       <SectionCard><Text style={[styles.eyebrow, { color: colors.primary }]}>Nearby map</Text><Text style={[styles.title, { color: colors.foreground }]}>Map stays a presentation layer</Text><Text style={[styles.muted, { color: colors.muted }]}>The canonical feed powers the mobile surface. The full privacy-preserving map remains available on the web Discover surface.</Text><ActionButton label="Open Discover on web" variant="secondary" onPress={() => router.push("/surface/discovery")} /></SectionCard>
     </ScrollView>
   </ScreenContainer>;

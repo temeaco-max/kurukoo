@@ -104,7 +104,7 @@ for (const [pathname, section] of Object.entries(cleanCanonicalSections)) {
   });
 }
 
-for (const resource of ['requests','tasks','reminders','opportunities','connections','artifacts']) {
+for (const resource of ['requests','tasks','reminders','opportunities','agents','connections','memory','artifacts']) {
   router.get(`/${resource}/:id`, optionalAuthenticateUser, (req, res) => {
     const authReq = req as AuthRequest;
     if (!authReq.user?.phone) return res.redirect(302, `/login?return=${encodeURIComponent(req.originalUrl)}`);

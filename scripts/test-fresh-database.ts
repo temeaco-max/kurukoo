@@ -65,6 +65,11 @@ process.env.ADMIN_USERNAME = 'fresh-admin';
 process.env.ADMIN_PASSWORD = 'fresh-admin-password';
 process.env.KURUKOO_DISABLE_LISTEN = 'true';
 process.env.KURUKOO_DEV_AUTH = 'false';
+// Pin the flags this contract asserts on: local developer .env files must not
+// leak into readiness expectations. The DISABLED assertions below describe a
+// fresh database without operator-enabled autonomy, not the ambient workspace.
+process.env.KURUKOO_AGENT_ENABLED = 'false';
+process.env.KURUKOO_AGENT_AUTONOMOUS = 'false';
 
 const { app } = await import('../src/index.js');
 const { getDb } = await import('../src/database.js');

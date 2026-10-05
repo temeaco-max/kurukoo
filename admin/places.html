@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Places Moderation | Kurukoo Admin</title>
+  <link rel="stylesheet" href="/css/site.css">
+  <link rel="stylesheet" href="/css/admin-console.css">
+  <link rel="stylesheet" href="/css/admin-pages/admin-base.css">
+  <script src="/admin/admin-auth.js"></script>
+</head>
+<body class="admin-shell">
+  <main class="curation-shell">
+    <header class="admin-page-header"><p class="k-muted">Control Room</p><h1>Places moderation</h1><p>Community visions are possibilities, not plans. Removal hides a concept from every public surface; votes on it become inert.</p></header>
+    <section class="curation-toolbar" aria-label="Queue controls">
+      <button type="button" class="btn-primary" id="refresh" aria-label="Refresh places">Refresh places</button><span id="stats" class="k-muted" aria-live="polite"></span>
+    </section>
+    <div class="curation-grid">
+      <section class="curation-card"><h2>Places</h2><div id="queue" class="curation-list" aria-live="polite"><p>Loading places…</p></div></section>
+      <section class="curation-card curation-detail" aria-labelledby="detail-title"><h2 id="detail-title">Select a place</h2><div id="detail"><p class="k-muted">Concepts, votes and status controls will appear here.</p></div></section>
+    </div>
+  </main>
+<script>
+(() => {
+  const queue = document.getElementById('queue'), detail = document.getElementById('detail'), stats = document.getElementById('stats');
+  let selected = null;
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const api = async (url, options) => { const response = await fetch(url, options); const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.error || 'Request failed'); return body; };
+  const renderDetail = async place => {
+    selected = place;
+    document.getElementById('detail-title').textContent = place.name;
+    detail.innerHTML = '<p>Loading concepts…</p>';
+    try {
+      const body = await api('/api/admin/places/' + encodeURIComponent(place.slug) + '/concepts');
+      const concepts = body.concepts || [];
+      detail.innerHTML = `<p><strong>Status:</strong> ${esc(place.status)} · <strong>Concepts:</strong> ${concepts.length}</p>`
+        + `<label for="place-status">Place status</label><select id="place-status">${['observed','visioning','proposed','approved','building','built'].map(s => `<option value="${s}"${s === place.status ? ' selected' : ''}>${s}</option>`).join('')}</select> <button type="button" id="set-place-status">Advance place</button>`
+        + (concepts.length ? concepts.map(c => `<article class="curation-row" data-id="${esc(c.id)}"><strong>${esc(c.title)}</strong><div class="curation-meta"><span class="curation-pill">${esc(c.status)}</span><span>${esc(c.scenario)}</span><span>v${esc(c.version)}</span><span>+${c.votes?.support ?? 0}/-${c.votes?.oppose ?? 0}</span>${c.sponsored ? '<span>sponsored</span>' : ''}${c.rewarded ? '<span>rewarded</span>' : ''}</div><small>${esc(c.description).slice(0, 220)}</small><div><label>Set status <select class="concept-status">${['published','leading','proposed','approved','building','built','removed'].map(s => `<option value="${s}"${s === c.status ? ' selected' : ''}>${s}</option>`).join('')}</select></label> <button type="button" class="set-concept-status">Apply</button></div></article>`).join('') : '<p>No concepts yet.</p>');
+      document.getElementById('set-place-status').addEventListener('click', async () => {
+        try { await api('/api/admin/places/' + encodeURIComponent(place.slug) + '/status', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: document.getElementById('place-status').value }) }); await load(); } catch (error) { alert(error.message); }
+      });
+      detail.querySelectorAll('.curation-row').forEach(row => {
+        row.querySelector('.set-concept-status').addEventListener('click', async () => {
+          try { await api('/api/admin/concepts/' + encodeURIComponent(row.dataset.id) + '/status', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: row.querySelector('.concept-status').value }) }); await renderDetail({ ...place }); } catch (error) { alert(error.message); }
+        });
+      });
+    } catch (error) { detail.innerHTML = `<p role="alert">${esc(error.message)}</p>`; }
+  };
+  const load = async () => {
+    queue.innerHTML = '<p>Loading places…</p>';
+    try {
+      const body = await api('/api/admin/places');
+      const places = body.places || [];
+      stats.textContent = `${places.length} places`;
+      queue.innerHTML = places.length ? places.map(p => `<article class="curation-row" data-slug="${esc(p.slug)}"><strong>${esc(p.name)}</strong><div class="curation-meta"><span class="curation-pill">${esc(p.status)}</span><span>${esc([p.lga, p.state].filter(Boolean).join(', '))}</span><span>${p.conceptCount} concepts</span><span>${p.voteCount} votes</span></div></article>`).join('') : '<p>No places yet.</p>';
+      queue.querySelectorAll('[data-slug]').forEach(row => row.addEventListener('click', async () => {
+        const found = (await api('/api/admin/places')).places.find(p => p.slug === row.dataset.slug);
+        if (found) await renderDetail(found);
+      }));
+    } catch (error) { queue.innerHTML = `<p role="alert">${esc(error.message)}</p>`; }
+  };
+  document.getElementById('refresh').addEventListener('click', load); load();
+})();
+</script>
+</body>
+</html>

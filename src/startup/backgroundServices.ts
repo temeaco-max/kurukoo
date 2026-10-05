@@ -15,6 +15,7 @@ import { runProviderInquiryFollowUpPass } from '../services/providerInquiryFollo
 import { registerGoalEventSubscribers } from '../services/goalEventSubscribers.js';
 import { registerRequestEventSubscribers } from '../services/requestEventSubscribers.js';
 import { runDurableJobCycle } from '../services/durableJobWorker.js';
+import { startBackgroundWorkers, stopBackgroundWorkers } from '../services/backgroundWorkers.js';
 import { triggerDailyEngagementCheck } from '../services/engagementScheduler.js';
 import { startSurveyScheduler, dispatchSurveySweep } from '../services/surveyEngine.js';
 
@@ -26,6 +27,10 @@ export async function startBackgroundServices(): Promise<void> {
     backgroundServicesStarted = true;
     registerGoalEventSubscribers();
     registerRequestEventSubscribers();
+    // Canonical in-process workers (deferred matching, reminders, memory,
+    // trust scores, FCM drain, discover watches). Previously defined but never
+    // started, which silently disabled watch notifications and deferred work.
+    try { startBackgroundWorkers(); } catch (error) { console.error('Failed to start background workers:', error); }
     try { await seedDemoAdCampaigns(); } catch (error) { console.error('Error seeding demo ad campaigns:', error); }
     try { await ensureAuthenticatedLeftRailDemoAd(); } catch (error) { console.error('Error seeding authenticated left-rail demo ad:', error); }
     try { await startContactSyncService(); } catch (error) { console.error('Failed to start contact sync service:', error); }
@@ -114,6 +119,7 @@ export async function startBackgroundServices(): Promise<void> {
 }
 
 export function stopBackgroundServices(): void {
+    try { stopBackgroundWorkers(); } catch { /* workers may not have started */ }
     void stopWhatsAppLinkedDevice(false).catch(() => undefined);
     while (backgroundTimers.length) { const timer = backgroundTimers.pop(); if (timer) clearTimeout(timer); }
     markAgentWorkerStopped();

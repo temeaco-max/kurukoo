@@ -19,7 +19,6 @@ const allowedFiles = new Set([
   'scripts/run-desktop-playwright-walkthrough.mjs',
   'scripts/test-web-app-flow.ts',
   'scripts/test-desktop-screen-flow.ts',
-  'scripts/test-client-surface-coverage.ts',
 ]);
 
 const files = [];
