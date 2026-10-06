@@ -6,6 +6,7 @@ import { listAgentExecutionTrace } from '../services/agentExecutionTrace.js';
 import { buildAgentBrief, enqueueAgentBriefNotification } from '../services/agentBriefService.js';
 import { attachAgentGoalDependency, getAgentEconomicRequestLink, listAgentGoalDependencies, refreshAgentGoalDependencies } from '../services/agentEconomicRequestOrchestrator.js';
 import { getAgentGoalContinuation } from '../services/agentGoalContinuation.js';
+import { ownerDashboardForGoals } from '../services/staffRoles.js';
 
 const router = Router();
 
@@ -41,6 +42,12 @@ router.post('/brief/notify', authenticateUser, async (req: AuthRequest, res) => 
     console.error('[Agent] brief notification fallback failed:', error);
     res.status(500).json({ error: 'Unable to prepare your Kurukoo brief notification' });
   }
+});
+
+router.get('/owner-dashboard', authenticateUser, async (req: AuthRequest, res) => {
+  const owner = phone(req); if (!owner) return res.status(401).json({ error: 'Authentication required' });
+  const goals = await listAgentGoals(owner, req.query.includeClosed === 'true');
+  res.json({ success: true, staffDashboard: ownerDashboardForGoals(goals) });
 });
 
 router.get('/goals', authenticateUser, async (req: AuthRequest, res) => {
