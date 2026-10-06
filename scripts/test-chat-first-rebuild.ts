@@ -2,7 +2,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const dbPath = '/tmp/kurukoo-chat-first-rebuild.sqlite';
+// Unique per run: a fixed shared name collides with a concurrent run and the
+// rmSync below would then delete state this run does not own.
+const dbPath = `/tmp/kurukoo-chat-first-rebuild-${process.pid}-${Date.now()}.sqlite`;
 try { fs.rmSync(dbPath, { force: true }); } catch {}
 process.env.NODE_ENV = 'test';
 process.env.DB_PATH = dbPath;

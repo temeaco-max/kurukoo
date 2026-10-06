@@ -4,6 +4,12 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { AddressInfo } from 'node:net';
 
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-composition-routes-${process.pid}-${Date.now()}.sqlite`;
+
 const indexSource = await fs.readFile(new URL('../src/index.ts', import.meta.url), 'utf8');
 const publicSource = await fs.readFile(new URL('../src/routes/publicRoutes.ts', import.meta.url), 'utf8');
 

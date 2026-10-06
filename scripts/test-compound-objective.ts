@@ -6,11 +6,17 @@
  * failure/cancel propagation, idempotency, owner isolation, restart persistence.
  */
 import { recognizeCompoundObjective, resolveSubGoalSkill } from '../src/services/compoundObjectiveResolver.js';
-import { createCompoundGoalIfRecognized } from '../src/services/compoundGoalLifecycle.js';
-import { createConversationGoal, failAgentGoal, cancelAgentGoal, getAgentGoal, listSubGoals } from '../src/services/agentRuntime.js';
-import { refreshAgentGoalDependencies, syncSubGoalStatusesWithDependencies } from '../src/services/agentEconomicRequestOrchestrator.js';
-import { getCanonicalStore } from '../src/services/canonicalStore.js';
-import { syncAgentGoalFromCapabilityResult } from '../src/services/agentCapabilityOutcomeService.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-compound-objective-${process.pid}-${Date.now()}.sqlite`;
+const { createCompoundGoalIfRecognized } = await import('../src/services/compoundGoalLifecycle.js');
+const { createConversationGoal, failAgentGoal, cancelAgentGoal, getAgentGoal, listSubGoals } = await import('../src/services/agentRuntime.js');
+const { refreshAgentGoalDependencies, syncSubGoalStatusesWithDependencies } = await import('../src/services/agentEconomicRequestOrchestrator.js');
+const { getCanonicalStore } = await import('../src/services/canonicalStore.js');
+const { syncAgentGoalFromCapabilityResult } = await import('../src/services/agentCapabilityOutcomeService.js');
 
 let pass = 0, failCount = 0;
 function check(name: string, cond: boolean, detail?: unknown) { if (cond) { pass++; console.log('PASS', name); } else { failCount++; console.log('FAIL', name, detail !== undefined ? JSON.stringify(detail) : ''); } }

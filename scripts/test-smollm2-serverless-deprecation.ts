@@ -2,6 +2,12 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-smollm2-serverless-deprecation-${process.pid}-${Date.now()}.sqlite`;
+
 const root = new URL('..', import.meta.url);
 const source = fs.readFileSync(new URL('../src/services/smolLm2Service.ts', import.meta.url), 'utf8');
 const engine = fs.readFileSync(new URL('../src/services/unifiedAiEngine.ts', import.meta.url), 'utf8');

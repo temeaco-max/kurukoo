@@ -1,12 +1,17 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
 
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-provider-capabilities-${process.pid}-${Date.now()}.sqlite`;
+
 process.env.MISTRAL_API_KEY = '';
 process.env.GEMINI_API_KEY = '';
 process.env.API_KEY = '';
 process.env.KURUKOO_VOICE_ENABLED = 'false';
 process.env.FF_TEST_HOSTED_MISTRAL = 'false';
-
 const { getMistralStatus, queryMistral, transcribeMistralAudio, testMistralConnection } = await import('../src/services/mistralService.js');
 const { getVoiceStatus } = await import('../src/services/voiceService.js');
 const { queryUnifiedAI } = await import('../src/services/unifiedAiEngine.js');

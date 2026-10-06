@@ -1,7 +1,13 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
-import { calculateTrustScoreValue, listTrustScoreLedger, recalculateTrustScore } from '../src/services/trustScore.js';
-import { upsertProfile } from '../src/routes/authRoutes.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-trust-score-${process.pid}-${Date.now()}.sqlite`;
+const { calculateTrustScoreValue, listTrustScoreLedger, recalculateTrustScore } = await import('../src/services/trustScore.js');
+const { upsertProfile } = await import('../src/routes/authRoutes.js');
 
 assert.equal(calculateTrustScoreValue({ avgRating: 3, completedJobs: 0, verifiedProvider: false, disputesLost: 0, accountAgeDays: 0 }), 5, 'neutral profile should begin at the 5.0 baseline');
 assert.equal(calculateTrustScoreValue({ avgRating: 5, completedJobs: 100, verifiedProvider: true, disputesLost: 0, accountAgeDays: 365 }), 8, 'formula should cap at the documented 8.0 range');

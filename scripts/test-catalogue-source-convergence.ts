@@ -1,7 +1,13 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
-import { registerCatalogueSource, upsertCatalogueProduct, searchCatalogueProducts } from '../src/services/catalogueSourceRegistry.js';
-import { getDb, saveDb } from '../src/database.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-catalogue-source-convergence-${process.pid}-${Date.now()}.sqlite`;
+const { registerCatalogueSource, upsertCatalogueProduct, searchCatalogueProducts } = await import('../src/services/catalogueSourceRegistry.js');
+const { getDb, saveDb } = await import('../src/database.js');
 
 const db = await getDb();
 let sourceId = '';

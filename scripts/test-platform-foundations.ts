@@ -1,9 +1,16 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
-import { getDb, saveDb } from '../src/database.js';
-import { enqueueDurableJob, claimDurableJob, completeDurableJob, getDurableJob } from '../src/services/durableJobQueue.js';
-import { ensureProviderVerification, submitProviderVerification, getProviderVerification } from '../src/services/providerVerificationLifecycle.js';
+
 import { inspectAttachmentSecurity } from '../src/services/attachmentSecurityBoundary.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-platform-foundations-${process.pid}-${Date.now()}.sqlite`;
+const { getDb, saveDb } = await import('../src/database.js');
+const { enqueueDurableJob, claimDurableJob, completeDurableJob, getDurableJob } = await import('../src/services/durableJobQueue.js');
+const { ensureProviderVerification, submitProviderVerification, getProviderVerification } = await import('../src/services/providerVerificationLifecycle.js');
 
 const worker = `foundation-test-${process.pid}`;
 const jobId = `foundation-test:${process.pid}:${Date.now()}`;

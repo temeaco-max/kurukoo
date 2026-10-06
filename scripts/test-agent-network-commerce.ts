@@ -1,8 +1,14 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
-import { getDb, saveDb } from '../src/database.js';
-import { registerNetworkAgent, getNetworkAgentByPhone, getProviderLeadCost, chargeProviderLead, createPointsTopUpIntent, recordPointsTopUpEvidence, settlePointsTopUp } from '../src/services/agentNetworkCommerce.js';
-import { getAgentCommissionBalance, requestAgentCommissionPayout } from '../src/services/agentCommissionSettlement.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-agent-network-commerce-${process.pid}-${Date.now()}.sqlite`;
+const { getDb, saveDb } = await import('../src/database.js');
+const { registerNetworkAgent, getNetworkAgentByPhone, getProviderLeadCost, chargeProviderLead, createPointsTopUpIntent, recordPointsTopUpEvidence, settlePointsTopUp } = await import('../src/services/agentNetworkCommerce.js');
+const { getAgentCommissionBalance, requestAgentCommissionPayout } = await import('../src/services/agentCommissionSettlement.js');
 
 const suffix=Date.now();const agentPhone=`ci_agent_${suffix}@example.com`;const providerPhone=`ci_provider_${suffix}@example.com`;const customerPhone=`ci_customer_${suffix}@example.com`;const db=await getDb();
 try{

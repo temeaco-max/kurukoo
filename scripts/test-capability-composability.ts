@@ -1,8 +1,15 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
-import { listUniversalCapabilities } from '../src/services/universalCapabilityProtocol.js';
-import { ensureCapabilityFoundation } from '../src/services/capabilityFoundation.js';
-import { resolveSkillCapabilityPlan } from '../src/services/capabilityFoundationIntegration.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-capability-composability-${process.pid}-${Date.now()}.sqlite`;
+const { listUniversalCapabilities } = await import('../src/services/universalCapabilityProtocol.js');
+const { ensureCapabilityFoundation } = await import('../src/services/capabilityFoundation.js');
+const { resolveSkillCapabilityPlan } = await import('../src/services/capabilityFoundationIntegration.js');
+
 ensureCapabilityFoundation();
 const catalog = await listUniversalCapabilities();
 assert.ok(catalog.length >= 205, 'canonical catalog must retain all known skills');

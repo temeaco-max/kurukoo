@@ -1,18 +1,15 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
-import {
-  buildProviderInquiryQuestion,
-  createFulfilment,
-  createOffer,
-  createProviderInquiry,
-  listOffers,
-  rankOffers,
-  recordProviderInquiryResponse,
-  selectOffer,
-  updateFulfilmentRequirements,
-} from '../src/services/canonicalFulfilmentService.js';
+
 import { getFulfilmentMechanismForSkill, getFulfilmentSkillBinding, resolveMissingFulfilmentInputs } from '../src/services/fulfilmentSkillBindings.js';
-import { getInternalNotifications } from '../src/services/pushNotifications.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-canonical-fulfilment-${process.pid}-${Date.now()}.sqlite`;
+const { buildProviderInquiryQuestion, createFulfilment, createOffer, createProviderInquiry, listOffers, rankOffers, recordProviderInquiryResponse, selectOffer, updateFulfilmentRequirements } = await import('../src/services/canonicalFulfilmentService.js');
+const { getInternalNotifications } = await import('../src/services/pushNotifications.js');
 
 const owner = `+234809${String(Date.now()).slice(-7)}`;
 

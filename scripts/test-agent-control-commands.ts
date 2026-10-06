@@ -6,6 +6,11 @@ process.env.KURUKOO_DISABLE_LISTEN = 'true';
 
 import fs from 'node:fs';
 
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-agent-control-commands-${process.pid}-${Date.now()}.sqlite`;
 const { processCanonicalChatTurn } = await import('../src/services/canonicalChatTurnService.js');
 const { createConversationGoal, getAgentGoal, listAgentGoals, runAgentGoal } = await import('../src/services/agentRuntime.js');
 

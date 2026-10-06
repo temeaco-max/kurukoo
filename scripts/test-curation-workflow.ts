@@ -1,8 +1,14 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { getDb, saveDb } from '../src/database.js';
-import { ensureCurationSchema, getCurationCandidate, reviewCurationCandidate, rewriteCurationCandidate, getCurationAudit, getAcceptedCorpusGate, acceptedCorpusHash } from '../src/services/curationService.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-curation-workflow-${process.pid}-${Date.now()}.sqlite`;
+const { getDb, saveDb } = await import('../src/database.js');
+const { ensureCurationSchema, getCurationCandidate, reviewCurationCandidate, rewriteCurationCandidate, getCurationAudit, getAcceptedCorpusGate, acceptedCorpusHash } = await import('../src/services/curationService.js');
 
 async function main() {
   const routeSource = fs.readFileSync(new URL('../src/routes/adminRoutes.ts', import.meta.url), 'utf8');

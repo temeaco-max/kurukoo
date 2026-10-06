@@ -1,9 +1,15 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
-import { registerConnectedResource, activateConnectedResource, controlConnectedResource, connectedResourceSupportProfile } from '../src/services/connectedResourceService.js';
-import { routeIntent } from '../src/services/intentRouter.js';
-import { processCanonicalChatTurn } from '../src/services/canonicalChatTurnService.js';
-import { getEconomicRequest } from '../src/services/skillFlows.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-connected-resource-command-ledger-${process.pid}-${Date.now()}.sqlite`;
+const { registerConnectedResource, activateConnectedResource, controlConnectedResource, connectedResourceSupportProfile } = await import('../src/services/connectedResourceService.js');
+const { routeIntent } = await import('../src/services/intentRouter.js');
+const { processCanonicalChatTurn } = await import('../src/services/canonicalChatTurnService.js');
+const { getEconomicRequest } = await import('../src/services/skillFlows.js');
 
 const phone = `+234809${String(Date.now()).slice(-7)}`;
 const { resource, challenge } = await registerConnectedResource({

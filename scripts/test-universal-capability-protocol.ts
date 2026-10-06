@@ -1,14 +1,15 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
-import {
-  listUniversalCapabilities,
-  projectCapabilityResult,
-  validateCapabilityProposal,
-  type CapabilityActionProposal,
-} from '../src/services/universalCapabilityProtocol.js';
-import { ensureCapabilityFoundation, normalizeSkillCapabilityReference } from '../src/services/capabilityFoundation.js';
-import { getCapabilityRegistration, listCapabilityRegistrations, resolveCapabilityComposition, validateCapabilityRegistry } from '../src/services/capabilityRegistry.js';
-import { getSkillCapabilities } from '../src/services/skillFlows.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-universal-capability-protocol-${process.pid}-${Date.now()}.sqlite`;
+const { listUniversalCapabilities, projectCapabilityResult, validateCapabilityProposal } = await import('../src/services/universalCapabilityProtocol.js');
+const { ensureCapabilityFoundation, normalizeSkillCapabilityReference } = await import('../src/services/capabilityFoundation.js');
+const { getCapabilityRegistration, listCapabilityRegistrations, resolveCapabilityComposition, validateCapabilityRegistry } = await import('../src/services/capabilityRegistry.js');
+const { getSkillCapabilities } = await import('../src/services/skillFlows.js');
 
 ensureCapabilityFoundation();
 const fabricValidation = validateCapabilityRegistry();

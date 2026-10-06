@@ -3,7 +3,11 @@ import assert from 'node:assert/strict';
 
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'progressive-trust-test-secret-0123456789';
-process.env.DB_PATH = process.env.DB_PATH || `tmp/progressive-trust-test-${Date.now()}.sqlite`;
+// Unconditional and per-run. `||` would inherit the ambient DB_PATH — `.env`
+// sets tmp/kurukoo.sqlite and a running dev server exports it — so trusted
+// devices and challenges from earlier runs would satisfy this run's assertions
+// and the contract would stop being a gate.
+process.env.DB_PATH = `/tmp/kurukoo-progressive-trust-${process.pid}-${Date.now()}.sqlite`;
 
 const { registerTrustedDevice, getTrustedDeviceStatus, createTrustChallenge, getPendingTrustChallenges, approveTrustChallenge, denyTrustChallenge, listTrustedDevices, revokeTrustedDevice, recordChannelEvidence, recordLocationConsent, getProgressiveTrust } = await import('../src/services/progressiveTrustService.ts');
 

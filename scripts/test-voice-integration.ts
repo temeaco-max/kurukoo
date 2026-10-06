@@ -1,9 +1,15 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { ensureConversation } from '../src/services/chatConversationService.js';
-import { getVoiceStatus } from '../src/services/voiceService.js';
-import { getVoiceToolDeclarations, isVoiceToolAllowed } from '../src/services/voiceToolRegistry.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-voice-integration-${process.pid}-${Date.now()}.sqlite`;
+const { ensureConversation } = await import('../src/services/chatConversationService.js');
+const { getVoiceStatus } = await import('../src/services/voiceService.js');
+const { getVoiceToolDeclarations, isVoiceToolAllowed } = await import('../src/services/voiceToolRegistry.js');
 
 async function main() {
   const previousEnabled = process.env.KURUKOO_VOICE_ENABLED;

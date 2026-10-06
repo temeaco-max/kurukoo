@@ -1,7 +1,13 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import 'dotenv/config';
 import assert from 'node:assert/strict';
-import { activateConfiguredExternalProviders } from '../src/services/externalActivationService.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-external-provider-activation-${process.pid}-${Date.now()}.sqlite`;
+const { activateConfiguredExternalProviders } = await import('../src/services/externalActivationService.js');
 
 const result = await activateConfiguredExternalProviders();
 assert.ok(result && Array.isArray(result.results), 'activation result must contain provider results');

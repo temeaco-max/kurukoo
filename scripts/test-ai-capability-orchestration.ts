@@ -1,7 +1,14 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
-import { buildAICapabilityOrchestration } from '../src/services/aiCapabilityOrchestrator.js';
-import { buildConversationTurnContract } from '../src/services/conversationTurnContractService.js';
+
 import type { IntentRoutingResult } from '../src/types.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-ai-capability-orchestration-${process.pid}-${Date.now()}.sqlite`;
+const { buildAICapabilityOrchestration } = await import('../src/services/aiCapabilityOrchestrator.js');
+const { buildConversationTurnContract } = await import('../src/services/conversationTurnContractService.js');
 
 function contract(message: string, activeContextIds: string[] = []) {
   return buildConversationTurnContract({

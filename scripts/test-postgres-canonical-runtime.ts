@@ -1,6 +1,12 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
 
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-postgres-canonical-runtime-${process.pid}-${Date.now()}.sqlite`;
+
 const connectionString = String(process.env.KURUKOO_TEST_POSTGRES_URL || '').trim();
 if (!connectionString) {
   console.log('PostgreSQL canonical runtime: BLOCKED_EXTERNAL — set KURUKOO_TEST_POSTGRES_URL to a disposable local PostgreSQL database.');
@@ -18,7 +24,6 @@ const phone = String(process.env.KURUKOO_POSTGRES_RUNTIME_PHONE || '+23480000009
 const requestId = String(process.env.KURUKOO_POSTGRES_RUNTIME_REQUEST_ID || '');
 const executionId = String(process.env.KURUKOO_POSTGRES_RUNTIME_EXECUTION_ID || '');
 if (!requestId || !executionId) throw new Error('KURUKOO_POSTGRES_RUNTIME_REQUEST_ID and KURUKOO_POSTGRES_RUNTIME_EXECUTION_ID are required.');
-
 const { closeCanonicalStore } = await import('../src/services/canonicalStore.js');
 const { getProfile, getMemoryFacts, recordMemoryFact } = await import('../src/services/memoryProfile.js');
 const { appendChatMessage, listChatMessages } = await import('../src/services/chatConversationService.js');

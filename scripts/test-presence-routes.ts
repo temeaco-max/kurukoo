@@ -1,7 +1,13 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
 import express from 'express';
-import presenceRouter from '../src/routes/presenceRoutes.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-presence-routes-${process.pid}-${Date.now()}.sqlite`;
+const { default: presenceRouter } = await import('../src/routes/presenceRoutes.js');
 
 const stack = (presenceRouter as any).stack || [];
 const routes = stack.filter((layer: any) => layer.route).map((layer: any) => ({

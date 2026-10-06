@@ -1,7 +1,13 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
-import { getAgentRunSummary, getKurukooAgentCard, listAgentOperatingCapabilities, validateAgentOperatingModel } from '../src/services/agentOperatingModel.js';
-import { listAgentTools } from '../src/services/agentToolRegistry.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-agent-operating-model-${process.pid}-${Date.now()}.sqlite`;
+const { getAgentRunSummary, getKurukooAgentCard, listAgentOperatingCapabilities, validateAgentOperatingModel } = await import('../src/services/agentOperatingModel.js');
+const { listAgentTools } = await import('../src/services/agentToolRegistry.js');
 
 const card = getKurukooAgentCard();
 assert.equal(card.id, 'kurukoo.agent');

@@ -2,6 +2,12 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-postgres-domain-runtime-${process.pid}-${Date.now()}.sqlite`;
+
 const connectionString = String(process.env.KURUKOO_TEST_POSTGRES_URL || '').trim();
 if (!connectionString) {
   console.log('PostgreSQL domain runtime: BLOCKED_EXTERNAL — set KURUKOO_TEST_POSTGRES_URL to a disposable local PostgreSQL database.');
@@ -22,7 +28,6 @@ const conversationId = `pg-domain-conv-${crypto.randomUUID()}`;
 const requestId = `pg-domain-erq-${crypto.randomUUID()}`;
 const orderId = `pg-domain-order-${crypto.randomUUID()}`;
 const markerId = `pg-domain-marker-${crypto.randomUUID()}`;
-
 const { getCanonicalStore, closeCanonicalStore } = await import('../src/services/canonicalStore.js');
 const { ensureMemoryProfileSchema, ensureOrderSchema, ensureProfileAccessLogSchema } = await import('../src/services/canonicalDomainSchemas.js');
 const { updateProfile, getProfile } = await import('../src/services/memoryProfile.js');

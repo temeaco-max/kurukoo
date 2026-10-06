@@ -1,6 +1,13 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
-import { deriveActionInteractionPolicy } from '../src/services/actionInteractionPolicyService.js';
+
 import type { UniversalCapabilityDescriptor } from '../src/services/universalCapabilityProtocol.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-action-interaction-policy-${process.pid}-${Date.now()}.sqlite`;
+const { deriveActionInteractionPolicy } = await import('../src/services/actionInteractionPolicyService.js');
 
 const descriptor = (capability: string, family: string, mode: UniversalCapabilityDescriptor['mode'], actions: string[], risk: UniversalCapabilityDescriptor['risk']): UniversalCapabilityDescriptor => ({
   capability,

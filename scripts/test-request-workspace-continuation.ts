@@ -1,8 +1,14 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import { getEconomicRequest, listEconomicRequestsForPhone } from '../src/services/economicRequestPersistence.js';
-import { resumeStorefrontFromRequest, startStorefrontSession } from '../src/services/agenticStorefront.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-request-workspace-continuation-${process.pid}-${Date.now()}.sqlite`;
+const { getEconomicRequest, listEconomicRequestsForPhone } = await import('../src/services/economicRequestPersistence.js');
+const { resumeStorefrontFromRequest, startStorefrontSession } = await import('../src/services/agenticStorefront.js');
 
 const owner = `request-workspace-${crypto.randomUUID()}@example.test`;
 const conversationId = `conversation-${crypto.randomUUID()}`;

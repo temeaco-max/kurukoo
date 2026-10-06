@@ -1,5 +1,11 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
-import publicRouter from '../src/routes/publicRoutes.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-public-routes-${process.pid}-${Date.now()}.sqlite`;
+const { default: publicRouter } = await import('../src/routes/publicRoutes.js');
 
 const expected = [
     '/referral-qr/',
@@ -29,7 +35,6 @@ const expected = [
 // '/chat' and '/' are SPA-owned (SPA_PILOT_ROUTES); '/:country' redirects to '/'
 // so the public router no longer owns the homepage or its country variants.
 ];
-
 
 const stack = (publicRouter as any).stack || [];
 const routes: string[] = stack.filter((layer: any) => layer.route).flatMap((layer: any) => layer.route.path);

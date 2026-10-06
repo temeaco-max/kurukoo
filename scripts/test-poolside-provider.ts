@@ -1,9 +1,17 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
-import { AIProvider, resolveHostedProviderCandidates, resolveConfiguredHostedProvider } from '../src/services/unifiedAiEngine.js';
+
 import { AiProvider, isAiProviderUsable, recordAiProviderSuccess, recordAiProviderFailure, resetAiProviderHealth, listAiProviderHealth } from '../src/services/aiProviderHealth.js';
 import { getFeatureFlag, getFeatureFlagStatus } from '../src/services/featureFlags.js';
-import { chooseInferenceProvider, type InferenceTask } from '../src/services/aiInferencePolicy.js';
+
 import { hasConfiguredSecret } from '../src/services/providerCapabilities.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-poolside-provider-${process.pid}-${Date.now()}.sqlite`;
+const { AIProvider, resolveHostedProviderCandidates, resolveConfiguredHostedProvider } = await import('../src/services/unifiedAiEngine.js');
+const { chooseInferenceProvider } = await import('../src/services/aiInferencePolicy.js');
 
 const PASS = '✅ PASS';
 const FAIL = '❌ FAIL';

@@ -4,6 +4,12 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-postgres-domain-restart-${process.pid}-${Date.now()}.sqlite`;
+
 const mode = process.argv[2] || 'write';
 const connectionString = String(process.env.KURUKOO_TEST_POSTGRES_URL || '').trim();
 if (!connectionString) throw new Error('KURUKOO_TEST_POSTGRES_URL is required.');
@@ -16,7 +22,6 @@ process.env.JWT_SECRET=process.env.JWT_SECRET||'domain-restart-test-secret-01234
 const ownerA='+2348000000811';
 const ownerB='+2348000000822';
 const orderId=`restart-order-${crypto.randomUUID()}`;
-
 const { getCanonicalStore, closeCanonicalStore } = await import('../src/services/canonicalStore.js');
 const { updateProfile, getProfile } = await import('../src/services/memoryProfile.js');
 const { createEconomicRequest, getEconomicRequest } = await import('../src/services/economicRequestPersistence.js');

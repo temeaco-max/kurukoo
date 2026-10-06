@@ -1,5 +1,11 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
-import { deriveInteractionPolicyForCapabilityName, getAllCapabilityInteractionPolicies, type CapabilityInteractionPolicy } from '../src/services/capabilityInteractionPolicyService.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-capability-interaction-policy-${process.pid}-${Date.now()}.sqlite`;
+const { deriveInteractionPolicyForCapabilityName, getAllCapabilityInteractionPolicies } = await import('../src/services/capabilityInteractionPolicyService.js');
 
 const policies = await getAllCapabilityInteractionPolicies();
 if (policies.length < 200) throw new Error(`Expected the universal catalog to expose at least 200 capabilities; got ${policies.length}`);

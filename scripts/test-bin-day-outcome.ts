@@ -1,8 +1,14 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
-import { getDb, saveDb } from '../src/database.js';
-import { resolveBinDaySchedule, upsertAuthoritativeBinDaySchedule, createBinDayReminder } from '../src/services/binDayService.js';
-import { cancelReminder } from '../src/services/reminderService.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-bin-day-outcome-${process.pid}-${Date.now()}.sqlite`;
+const { getDb, saveDb } = await import('../src/database.js');
+const { resolveBinDaySchedule, upsertAuthoritativeBinDaySchedule, createBinDayReminder } = await import('../src/services/binDayService.js');
+const { cancelReminder } = await import('../src/services/reminderService.js');
 
 const phone = 'bin-day-contract-user';
 const db = await getDb();

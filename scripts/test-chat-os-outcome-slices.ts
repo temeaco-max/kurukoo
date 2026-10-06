@@ -1,13 +1,19 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
-import { routeIntent } from '../src/services/intentRouter.js';
-import { processCanonicalChatTurn } from '../src/services/canonicalChatTurnService.js';
-import { sendFcmPush } from '../src/services/pushNotifications.js';
-import { createEconomicRequest, getEconomicRequest, transitionEconomicRequest } from '../src/services/skillFlows.js';
-import { executeCanonicalCapabilityProposal } from '../src/services/canonicalCapabilityExecutor.js';
-import { listAgentGoals } from '../src/services/agentRuntime.js';
-import { upsertProfile } from '../src/routes/authRoutes.js';
-import { addContact } from '../src/services/identityContactService.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-chat-os-outcome-slices-${process.pid}-${Date.now()}.sqlite`;
+const { routeIntent } = await import('../src/services/intentRouter.js');
+const { processCanonicalChatTurn } = await import('../src/services/canonicalChatTurnService.js');
+const { sendFcmPush } = await import('../src/services/pushNotifications.js');
+const { createEconomicRequest, getEconomicRequest, transitionEconomicRequest } = await import('../src/services/skillFlows.js');
+const { executeCanonicalCapabilityProposal } = await import('../src/services/canonicalCapabilityExecutor.js');
+const { listAgentGoals } = await import('../src/services/agentRuntime.js');
+const { upsertProfile } = await import('../src/routes/authRoutes.js');
+const { addContact } = await import('../src/services/identityContactService.js');
 
 const phone = `+234807${String(Date.now()).slice(-7)}`;
 const conversationId = `chat-os-outcomes-${Date.now()}`;

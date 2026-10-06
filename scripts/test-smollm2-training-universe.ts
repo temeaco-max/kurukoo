@@ -3,9 +3,15 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { ensureCapabilityFoundation } from '../src/services/capabilityFoundation.js';
-import { listCapabilityRegistrations } from '../src/services/capabilityRegistry.js';
-import { getAllConvergedSkillNames } from '../src/services/skillBehaviourConvergence.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-smollm2-training-universe-${process.pid}-${Date.now()}.sqlite`;
+const { ensureCapabilityFoundation } = await import('../src/services/capabilityFoundation.js');
+const { listCapabilityRegistrations } = await import('../src/services/capabilityRegistry.js');
+const { getAllConvergedSkillNames } = await import('../src/services/skillBehaviourConvergence.js');
 
 const base = path.join(process.cwd(), 'ml', 'datasets', 'kurukoo-core-v2');
 const manifestPath = `${base}.manifest.json`;

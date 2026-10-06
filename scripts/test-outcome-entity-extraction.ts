@@ -1,8 +1,15 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
-import { extractConversationalEntities, validateConversationalEntities } from '../src/services/conversationalExtraction.js';
+
 import { detectUserOutcomeVerb, isDirectOutcomeRequest } from '../src/services/outcomeSupport.js';
-import { routeIntent } from '../src/services/intentRouter.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-outcome-entity-extraction-${process.pid}-${Date.now()}.sqlite`;
+const { extractConversationalEntities, validateConversationalEntities } = await import('../src/services/conversationalExtraction.js');
+const { routeIntent } = await import('../src/services/intentRouter.js');
 
 const slowPhone = validateConversationalEntities(extractConversationalEntities('My iPhone 13 is running slowly. Can you check it?', 'device_support'), 'device_support');
 assert.equal(slowPhone.outcomeVerb, 'check');

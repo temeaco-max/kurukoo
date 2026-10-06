@@ -2,6 +2,12 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-intelligence-runtime-${process.pid}-${Date.now()}.sqlite`;
+
 // ---------------------------------------------------------------------------
 // Phase 1: Static assertions — verify the Intelligence Runtime boundary exists
 // and is wired into the canonical Chat path.
@@ -67,11 +73,9 @@ const convergenceSource = fs.readFileSync(
 );
 assert.match(convergenceSource, /FASTTEXT_HINT_MAX_CONFIDENCE/, 'FastText must have a confidence cap');
 
-
 // ---------------------------------------------------------------------------
 // Phase 2: Runtime assertions — verify delegation and FastText boundary.
 // ---------------------------------------------------------------------------
-
 const { understand, reason, selectCapabilities, processIntelligenceTurn } = await import('../src/services/kurukooIntelligenceRuntime.js');
 const { classifyAiRoutingSignal, shouldEscalateToAi, FASTTEXT_HINT_MAX_CONFIDENCE } = await import('../src/services/aiRoutingConvergence.js');
 

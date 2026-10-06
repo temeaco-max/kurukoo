@@ -1,14 +1,14 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
-import { getDb } from '../src/database.js';
-import {
-  createAuthChallenge,
-  consumeAuthChallengeToken,
-  isProvisionalEmailSubject,
-  progressiveAuthReadiness,
-  sanitizeReturnPath,
-} from '../src/services/authChallengeService.js';
-import { assessProgressiveIdentity } from '../src/services/progressiveIdentityService.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-progressive-identity-${process.pid}-${Date.now()}.sqlite`;
+const { getDb } = await import('../src/database.js');
+const { createAuthChallenge, consumeAuthChallengeToken, isProvisionalEmailSubject, progressiveAuthReadiness, sanitizeReturnPath } = await import('../src/services/authChallengeService.js');
+const { assessProgressiveIdentity } = await import('../src/services/progressiveIdentityService.js');
 
 process.env.NODE_ENV = 'test';
 process.env.KURUKOO_PROGRESSIVE_TRUST_ENABLED = 'false';

@@ -1,7 +1,13 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import { normalizeWhatsAppBusinessWebhook, verifyWhatsAppSignature, verifyWhatsAppWebhook } from '../src/services/whatsappBusinessPlatformService.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-whatsapp-business-platform-${process.pid}-${Date.now()}.sqlite`;
+const { normalizeWhatsAppBusinessWebhook, verifyWhatsAppSignature, verifyWhatsAppWebhook } = await import('../src/services/whatsappBusinessPlatformService.js');
 
 process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN = 'kurukoo-test-verify';
 process.env.WHATSAPP_APP_SECRET = 'kurukoo-test-secret';

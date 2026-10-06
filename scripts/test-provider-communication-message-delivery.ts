@@ -4,12 +4,17 @@ import crypto from 'node:crypto';
 import { AddressInfo } from 'node:net';
 import jwt from 'jsonwebtoken';
 
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-provider-communication-message-delivery-${process.pid}-${Date.now()}.sqlite`;
+
 process.env.KURUKOO_DISABLE_LISTEN = 'true';
 process.env.KURUKOO_WORKERS = '0';
 process.env.KURUKOO_EXTERNAL_AUTO_ACTIVATE = 'false';
 process.env.KURUKOO_AUTH_MAX_REQUESTS = '500';
 process.env.JWT_SECRET = 'provider-message-delivery-test-secret-32';
-
 const { app } = await import('../src/index.ts');
 const { getDb, saveDb } = await import('../src/database.ts');
 

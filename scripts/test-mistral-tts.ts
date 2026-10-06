@@ -1,6 +1,12 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
 
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-mistral-tts-${process.pid}-${Date.now()}.sqlite`;
+
 process.env.NODE_ENV = 'test';
 process.env.KURUKOO_DEFAULT_COUNTRY = 'ng';
 process.env.KURUKOO_VOICE_TTS_PROVIDER = 'mistral';

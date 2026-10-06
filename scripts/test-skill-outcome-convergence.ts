@@ -1,8 +1,14 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
-import { buildSkillOutcomeCoverage, getAllConvergedSkillNames, getConvergedSkillBehaviour } from '../src/services/skillBehaviourConvergence.js';
-import { getLocalSkillExtensions } from '../src/services/skillCatalogueConvergence.js';
-import { getKnownSkills } from '../src/services/skillFlows.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-skill-outcome-convergence-${process.pid}-${Date.now()}.sqlite`;
+const { buildSkillOutcomeCoverage, getAllConvergedSkillNames, getConvergedSkillBehaviour } = await import('../src/services/skillBehaviourConvergence.js');
+const { getLocalSkillExtensions } = await import('../src/services/skillCatalogueConvergence.js');
+const { getKnownSkills } = await import('../src/services/skillFlows.js');
 
 const names = getAllConvergedSkillNames();
 assert.equal(new Set(names).size, names.length, 'skill IDs must be unique');

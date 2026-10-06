@@ -1,8 +1,14 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
-import { processCanonicalChatTurn } from '../src/services/canonicalChatTurnService.js';
-import { getEmergencyDirectory } from '../src/services/emergencyService.js';
-import { listUniversalCapabilities } from '../src/services/universalCapabilityProtocol.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-emergency-mode-${process.pid}-${Date.now()}.sqlite`;
+const { processCanonicalChatTurn } = await import('../src/services/canonicalChatTurnService.js');
+const { getEmergencyDirectory } = await import('../src/services/emergencyService.js');
+const { listUniversalCapabilities } = await import('../src/services/universalCapabilityProtocol.js');
 
 const guest = `anon_emergency_${Date.now()}`;
 const directory = getEmergencyDirectory();

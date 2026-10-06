@@ -2,6 +2,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-compliance-${process.pid}-${Date.now()}.sqlite`;
+
 test('checkCompliance flags scam keywords', async () => {
   const { checkCompliance } = await import('../src/services/complianceFilter.js');
   // Scam keywords from SCAM_KEYWORDS in complianceFilter.ts

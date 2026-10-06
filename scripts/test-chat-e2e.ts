@@ -32,7 +32,9 @@ import path from 'node:path';
 const root = process.cwd();
 const PORT = 3470;
 const BASE = `http://127.0.0.1:${PORT}`;
-const dbPath = path.join(root, 'tmp-e2e-chat.sqlite');
+// Unique per run: a fixed shared name collides with a concurrent run and the
+// rmSync below would then delete state this run does not own.
+const dbPath = path.join(root, `tmp-e2e-chat-${process.pid}-${Date.now()}.sqlite`);
 
 // Isolated temporary database BEFORE any src module import.
 process.env.DB_PATH = dbPath;

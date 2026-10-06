@@ -3,13 +3,18 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import type { AddressInfo } from 'node:net';
 
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-qr-context-${process.pid}-${Date.now()}.sqlite`;
+
 process.env.NODE_ENV = 'development';
 process.env.OTP_DEBUG = 'true';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'qr-context-test-secret-0123456789abcdef';
 process.env.KURUKOO_DISABLE_LISTEN = 'true';
 delete process.env.WHATSAPP_TOKEN;
 delete process.env.WHATSAPP_PHONE_NUMBER_ID;
-
 const { app } = await import('../src/index.js');
 const { getDb } = await import('../src/database.js');
 const { upsertProfile } = await import('../src/routes/authRoutes.js');

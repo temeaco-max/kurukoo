@@ -1,9 +1,15 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
-import { getDb, saveDb } from '../src/database.js';
-import { addContact, canCommunicate, getPersonProfile, listContacts, placeholderAvatar, removeContact, contactSchemaForTests } from '../src/services/identityContactService.js';
-import { processCanonicalChatTurn } from '../src/services/canonicalChatTurnService.js';
-import { routeIntent } from '../src/services/intentRouter.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-identity-contact-foundation-${process.pid}-${Date.now()}.sqlite`;
+const { getDb, saveDb } = await import('../src/database.js');
+const { addContact, canCommunicate, getPersonProfile, listContacts, placeholderAvatar, removeContact, contactSchemaForTests } = await import('../src/services/identityContactService.js');
+const { processCanonicalChatTurn } = await import('../src/services/canonicalChatTurnService.js');
+const { routeIntent } = await import('../src/services/intentRouter.js');
 
 const suffix = Date.now();
 const owner = `identity_owner_${suffix}@example.com`;

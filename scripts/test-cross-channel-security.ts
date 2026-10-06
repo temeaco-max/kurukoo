@@ -3,7 +3,12 @@ import assert from 'node:assert/strict';
 
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'cross-channel-security-test-secret-0123456789';
-process.env.DB_PATH = process.env.DB_PATH || `tmp/cross-channel-security-test-${Date.now()}.sqlite`;
+// Unconditional and per-run. `||` would inherit the ambient DB_PATH — `.env`
+// sets tmp/kurukoo.sqlite and a running dev server exports it — so this
+// contract would silently write into the developer's real database and let
+// state accumulate across runs until correct assertions fail on someone else's
+// data. A test whose result depends on ambient shell state is not a gate.
+process.env.DB_PATH = `/tmp/kurukoo-cross-channel-security-${process.pid}-${Date.now()}.sqlite`;
 
 const {
   registerTrustedDevice,

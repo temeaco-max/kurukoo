@@ -2,12 +2,17 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-stripe-payment-${process.pid}-${Date.now()}.sqlite`;
+
 process.env.KURUKOO_PAY_PROVIDER = 'stripe';
 process.env.STRIPE_SECRET_KEY = 'sk_test_adapter_contract';
 process.env.STRIPE_WEBHOOK_SECRET = 'whsec_adapter_contract';
 process.env.KURUKOO_TEST_STRIPE_SECRET_KEY = '';
 process.env.KURUKOO_TEST_STRIPE_WEBHOOK_SECRET = '';
-
 const { stripeStatus, verifyStripeWebhook } = await import('../src/services/stripePayment.js');
 assert.equal(stripeStatus().configured, true, 'Stripe must report configured only when both server secrets and provider selection are present');
 const payload = Buffer.from(JSON.stringify({ id: 'evt_contract_1', type: 'payment_intent.succeeded', data: { object: { id: 'pi_contract_1', status: 'succeeded', amount: 4500, currency: 'gbp', metadata: { economic_request_id: 'request_contract_1' } } } }));

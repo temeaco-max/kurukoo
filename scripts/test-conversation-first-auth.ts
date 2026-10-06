@@ -2,11 +2,16 @@
 import assert from 'node:assert/strict';
 import type { AddressInfo } from 'node:net';
 
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-conversation-first-auth-${process.pid}-${Date.now()}.sqlite`;
+
 process.env.NODE_ENV = 'development';
 process.env.OTP_DEBUG = 'true';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'conversation-first-test-secret-0123456789abcdef';
 process.env.KURUKOO_DISABLE_LISTEN = 'true';
-
 const { app } = await import('../src/index.js');
 const server = app.listen(0, '127.0.0.1');
 await new Promise<void>((resolve, reject) => {

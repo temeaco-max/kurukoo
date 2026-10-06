@@ -1,5 +1,11 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
-import contentRouter from '../src/routes/contentRoutes.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-content-routes-${process.pid}-${Date.now()}.sqlite`;
+const { default: contentRouter } = await import('../src/routes/contentRoutes.js');
 
 const stack = (contentRouter as any).stack || [];
 const routes = stack.filter((layer: any) => layer.route).flatMap((layer: any) => (Array.isArray(layer.route.path) ? layer.route.path : [layer.route.path]).map((p: string) => ({ path: p, methods: Object.keys(layer.route.methods) })));

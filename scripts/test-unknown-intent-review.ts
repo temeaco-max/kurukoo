@@ -1,7 +1,13 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import { strict as assert } from 'node:assert';
-import { getDb } from '../src/database.js';
-import { recordUnknownIntentCandidate, listUnknownIntentReviewCandidates, reviewUnknownIntentCandidate } from '../src/services/unknownIntentReviewService.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-unknown-intent-review-${process.pid}-${Date.now()}.sqlite`;
+const { getDb } = await import('../src/database.js');
+const { recordUnknownIntentCandidate, listUnknownIntentReviewCandidates, reviewUnknownIntentCandidate } = await import('../src/services/unknownIntentReviewService.js');
 
 const query = `synthetic review candidate ${Date.now()}`;
 await recordUnknownIntentCandidate(query);

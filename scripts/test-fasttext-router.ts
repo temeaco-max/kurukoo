@@ -1,6 +1,12 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
-import { routeIntent } from '../src/services/intentRouter.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-fasttext-router-${process.pid}-${Date.now()}.sqlite`;
+const { routeIntent } = await import('../src/services/intentRouter.js');
 
 const howTo = await routeIntent('How do I fix a leaking tap?', undefined);
 assert.notEqual(howTo.skill, 'find_worker', 'a how-to repair question should remain native assistance until the user asks to find someone');

@@ -3,6 +3,12 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-memory-self-service-${process.pid}-${Date.now()}.sqlite`;
+
 process.env.NODE_ENV = 'test';
 const { getDb } = await import('../src/database.js');
 const { getMemoryFacts, recordMemoryFact, revokeMemoryFact } = await import('../src/services/memoryProfile.js');

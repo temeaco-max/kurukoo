@@ -1,9 +1,14 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
 
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-provider-payout-lifecycle-${process.pid}-${Date.now()}.sqlite`;
+
 process.env.KURUKOO_DATABASE_MODE = 'sqljs';
 process.env.NODE_ENV = 'test';
-
 const { getProviderPayoutBalance, requestProviderPayout, settleProviderPayout, failProviderPayout, listProviderPayouts } = await import('../src/services/providerPayoutService.js');
 const { recordCommercialEvent } = await import('../src/services/commercialLedger.js');
 

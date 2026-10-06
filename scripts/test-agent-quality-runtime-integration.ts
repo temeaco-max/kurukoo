@@ -11,16 +11,19 @@ import {
   recordAgentExecutionAction,
   type AgentExecutionBudget,
 } from '../src/services/agentExecutionControls.js';
-import {
-  ensureAgentExecutionTraceSchema,
-  recordAgentExecutionTrace,
-  listAgentExecutionTrace,
-} from '../src/services/agentExecutionTrace.js';
+
 import { evaluateAgentWork } from '../src/services/agentQualityGate.js';
-import { createConversationGoal, completeAgentGoal, getAgentGoal } from '../src/services/agentRuntime.js';
-import { createCompoundGoalIfRecognized } from '../src/services/compoundGoalLifecycle.js';
-import { syncSubGoalStatusesWithDependencies } from '../src/services/agentEconomicRequestOrchestrator.js';
-import { syncAgentGoalFromCapabilityResult } from '../src/services/agentCapabilityOutcomeService.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-agent-quality-runtime-integration-${process.pid}-${Date.now()}.sqlite`;
+const { ensureAgentExecutionTraceSchema, recordAgentExecutionTrace, listAgentExecutionTrace } = await import('../src/services/agentExecutionTrace.js');
+const { createConversationGoal, completeAgentGoal, getAgentGoal } = await import('../src/services/agentRuntime.js');
+const { createCompoundGoalIfRecognized } = await import('../src/services/compoundGoalLifecycle.js');
+const { syncSubGoalStatusesWithDependencies } = await import('../src/services/agentEconomicRequestOrchestrator.js');
+const { syncAgentGoalFromCapabilityResult } = await import('../src/services/agentCapabilityOutcomeService.js');
 
 let pass = 0, failCount = 0;
 process.env.KURUKOO_AGENT_ENABLED = 'true';

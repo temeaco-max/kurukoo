@@ -2,7 +2,12 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const dbPath = process.env.DB_PATH || '/tmp/kurukoo-behavioral-matrix.sqlite';
+// A per-run path this contract OWNS, never one inherited from the environment.
+// `.env` sets DB_PATH=tmp/kurukoo.sqlite and a running dev server exports it, so
+// a `process.env.DB_PATH || …` fallback resolves to the developer's REAL
+// database — and the rmSync below then deletes it before the first assertion
+// runs. That is data loss, not a flaky test. Proven with a canary file.
+const dbPath = `/tmp/kurukoo-behavioral-matrix-${process.pid}-${Date.now()}.sqlite`;
 try { fs.rmSync(dbPath, { force: true }); } catch {}
 process.env.NODE_ENV = 'test';
 process.env.KURUKOO_DEV_AUTH = 'true';

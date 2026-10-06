@@ -1,6 +1,14 @@
 /* Copyright (c) 2026 temeaco-max. All rights reserved. Proprietary and confidential. */
 import assert from 'node:assert/strict';
-import { classifyAiRoutingSignal, shouldEscalateToAi } from '../src/services/aiRoutingConvergence.js';
+
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-ai-routing-convergence-${process.pid}-${Date.now()}.sqlite`;
+const { classifyAiRoutingSignal, shouldEscalateToAi } = await import('../src/services/aiRoutingConvergence.js');
+const { FASTTEXT_HINT_MAX_CONFIDENCE } = await import('../src/services/aiRoutingConvergence.js');
+const { getFastTextRuntimeStatus } = await import('../src/services/fastTextService.js');
 
 const cases: Array<{ text: string; act?: string; skill?: string; escalate?: boolean }> = [
   { text: 'hello', act: 'greeting', escalate: false },
@@ -32,8 +40,6 @@ console.log(`AI routing convergence passed ${cases.length + 1} cases.`);
 // 1. The canonical conversational path (rules + skill catalogue) must classify
 //    catalogue-solvable requests WITHOUT consulting FastText first-line.
 // 2. FastText may only appear as a downstream hint, never above the escalation threshold.
-import { FASTTEXT_HINT_MAX_CONFIDENCE } from '../src/services/aiRoutingConvergence.js';
-import { getFastTextRuntimeStatus } from '../src/services/fastTextService.js';
 
 assert.ok(FASTTEXT_HINT_MAX_CONFIDENCE < 0.72, 'FastText hint confidence cap must stay below the escalation threshold');
 

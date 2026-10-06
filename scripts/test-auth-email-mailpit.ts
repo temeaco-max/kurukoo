@@ -15,7 +15,9 @@ const root = process.cwd();
 const SMTP_PORT = 11025;
 const UI_PORT = 18025;
 const SMTP_HOST = '127.0.0.1';
-const dbPath = path.join(root, 'tmp-mailpit-auth.sqlite');
+// Unique per run: a fixed shared name collides with a concurrent run and the
+// rmSync below would then delete state this run does not own.
+const dbPath = path.join(root, `tmp-mailpit-auth-${process.pid}-${Date.now()}.sqlite`);
 
 // Locate the Mailpit binary (local dev tool, not shipped with the repo).
 const candidates = [

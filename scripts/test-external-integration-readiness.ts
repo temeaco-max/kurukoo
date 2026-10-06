@@ -4,6 +4,12 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-external-integration-readiness-${process.pid}-${Date.now()}.sqlite`;
+
 const originalEnv = { ...process.env };
 const keys = [
   'KURUKOO_GOOGLE_DRIVE_CLIENT_ID', 'KURUKOO_GOOGLE_DRIVE_CLIENT_SECRET', 'KURUKOO_GOOGLE_DRIVE_REDIRECT_URI', 'KURUKOO_NOTION_CLIENT_ID', 'KURUKOO_NOTION_CLIENT_SECRET', 'KURUKOO_NOTION_REDIRECT_URI', 'FF_TEST_NOTION', 'KURUKOO_MICROSOFT_CLIENT_ID', 'KURUKOO_MICROSOFT_CLIENT_SECRET', 'KURUKOO_MICROSOFT_REDIRECT_URI', 'FF_TEST_OUTLOOK', 'FF_TEST_ONEDRIVE', 'KURUKOO_GOOGLE_SHEETS_CLIENT_ID', 'KURUKOO_GOOGLE_SHEETS_CLIENT_SECRET', 'KURUKOO_GOOGLE_SHEETS_REDIRECT_URI', 'KURUKOO_STORAGE_ENCRYPTION_KEY', 'FF_TEST_GOOGLE_DRIVE', 'FF_TEST_GOOGLE_SHEETS',
@@ -13,7 +19,6 @@ const keys = [
 for (const key of keys) delete process.env[key];
 process.env.NODE_ENV = 'test';
 process.env.KURUKOO_MCP_ENABLED = 'false';
-
 const { getExternalIntegrationReadiness } = await import('../src/services/externalIntegrationReadiness.js');
 
 try {

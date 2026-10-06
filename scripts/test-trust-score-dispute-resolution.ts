@@ -3,7 +3,11 @@ import assert from 'node:assert/strict';
 
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'trust-score-dispute-test-secret-0123456789';
-process.env.DB_PATH = process.env.DB_PATH || `tmp/trust-score-dispute-test-${Date.now()}.sqlite`;
+// Unconditional and per-run. `||` would inherit the ambient DB_PATH — `.env`
+// sets tmp/kurukoo.sqlite and a running dev server exports it — so the trust
+// ledger would carry earlier runs' scores and a dispute would resolve against
+// pre-existing rows rather than this run's.
+process.env.DB_PATH = `/tmp/kurukoo-trust-score-dispute-${process.pid}-${Date.now()}.sqlite`;
 
 const { ensureTrustScoreSchema, recalculateTrustScore, listTrustScoreLedger, getTrustScoreBreakdown } = await import('../src/services/trustScore.ts');
 const { getDb, saveDb } = await import('../src/database.ts');

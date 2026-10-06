@@ -3,8 +3,13 @@
 // adapters at runtime (points, discovery, subscription, payment, order, channel,
 // connected_resource) and that connected_resource control is dispatched, not a stub.
 
-import { listExecutionAdapters, getExecutionAdapter } from '../src/services/capabilityExecutionAdapterBridgeV2.js';
-import { getCapabilityRegistration } from '../src/services/capabilityRegistry.js';
+// Unconditional, per-run database path. `.env` sets DB_PATH=tmp/kurukoo.sqlite
+// and a running dev server exports it, so a contract that reads the ambient
+// value writes into the developer's real store. Assigned below every import
+// and before the canonical store loads (AGENTS.md §66.1).
+process.env.DB_PATH = `/tmp/kurukoo-test-capability-adapter-registration-${process.pid}-${Date.now()}.sqlite`;
+const { listExecutionAdapters, getExecutionAdapter } = await import('../src/services/capabilityExecutionAdapterBridgeV2.js');
+const { getCapabilityRegistration } = await import('../src/services/capabilityRegistry.js');
 
 const EXPECTED = ['points', 'discovery', 'subscription', 'payment', 'order', 'channel', 'connected_resource'];
 
