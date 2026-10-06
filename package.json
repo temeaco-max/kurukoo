@@ -40,6 +40,7 @@
     "test:fulfilment-storefront-integration": "tsx scripts/test-fulfilment-storefront-integration.ts",
     "test:capability-composability": "tsx scripts/test-capability-composability.ts",
     "test:capability-adapter-registration": "tsx scripts/test-capability-adapter-registration.ts",
+    "test:hermeticity": "node --import tsx scripts/test-test-hermeticity.ts",
     "test:suite": "node --import tsx --test test/*.test.ts",
     "test:startup": "node --import tsx --test test/startup.test.ts",
     "test:feature-flags": "tsx scripts/test-feature-flags.ts",

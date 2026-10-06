@@ -61,6 +61,10 @@ secrets/
 /ml/artifacts/
 /artifacts/learning-cycle/
 /data/scenario-lab/teacher-evaluation*.json*
+# Generated scenario-lab run reports: machine-specific snapshots stamped with a
+# generatedAt timestamp, so committing one only ever produces churn.
+/data/scenario-lab/*-report.json
+/data/scenario-lab/*-report.jsonl
 /ml/teachers/__pycache__/
 
 # Local model binaries / runtime checkpoints — never commit (machine-specific, huge)
